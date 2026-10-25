@@ -1,4 +1,4 @@
-# MeshCrossway UI Prototype v0
+# MeshCrossway UI Prototype — Field Console
 
 This folder contains a browser-based UI concept for the 3.5-inch MeshCrossway touchscreen.
 
@@ -23,7 +23,7 @@ This folder contains a browser-based UI concept for the 3.5-inch MeshCrossway to
 
 Open [the interactive GitHub Pages prototype](https://renbrant.github.io/MeshCrossway/) or open [index.html](index.html) locally in a browser.
 
-> GitHub's normal file view displays the source code rather than executing the HTML. GitHub Pages can be enabled later if we want a permanent hosted demo URL.
+> GitHub's normal file view displays the source code rather than executing the HTML. The current demo is published through GitHub Pages.
 
 ## Static overview
 
@@ -38,7 +38,7 @@ The prototype deliberately avoids claiming that queued messages were transmitted
 
 ## Selected bench hardware
 
-The concept now targets a Waveshare ESP32-S3-Touch-LCD-3.5, two ESP32-S3/SX1262 LoRa V3 boards from the Aideepen two-pack (one per network), a SparkFun SAM-M10Q Qwiic GNSS, and onboard microSD. The radio-side UART proposal is RX GPIO4 / TX GPIO5, separate from programming USB. Headers, board routing, central firmware and the MeshCore UART build remain unverified. See the [wiring and shopping guide](../hardware-wiring.md). This simulator does not connect to or validate those boards.
+The concept now targets a Waveshare ESP32-S3-Touch-LCD-3.5, two ESP32-S3/SX1262 LoRa V3 boards from the Aideepen two-pack (one per network), a Uputronics u-blox MAX-M10S (3 V variant) GNSS breakout with external antenna, and onboard microSD. The radio-side UART proposal is RX GPIO4 / TX GPIO5, separate from programming USB. Headers, board routing, central firmware and the MeshCore UART build remain unverified. See the [wiring and shopping guide](../hardware-wiring.md). This simulator does not connect to or validate those boards.
 
 
 ## Navigation and sharing concept
@@ -64,3 +64,6 @@ The Navigation screen includes an explicit opt-in **Live share** configuration:
 - Avoid broadcasting exact location to a public channel without a privacy warning and explicit consent. Group membership, encryption, and delivery guarantees are protocol-specific.
 
 This browser UI only changes simulation state. It does not poll actual GNSS, schedule transmissions, or share coordinates. Firmware implementation must add transmission budgets, minimum intervals, deduplication, geodesic distance calculation, monotonic timers, persisted consent/session policy, and per-protocol encoding and capabilities.
+
+
+For the consolidated implementation specification (including session intervals, movement thresholds, privacy, transport choices, and limits), see [Navigation and sharing](../navigation-and-sharing.md).
