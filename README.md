@@ -48,7 +48,7 @@ The first prototype will focus on:
 
 ## Documentation
 
-- [Bench wiring guide: connectors, GPIOs, power, and connection diagrams](docs/hardware-wiring.md) — schematic-reviewed proposal; not bench-tested.
+- [Bench wiring guide: connectors, GPIOs, power, and connection diagrams](docs/hardware-wiring.md) — provisional proposal; GNSS drawings and BOM require revalidation after the MAX-M10S selection.
 - [Meshtastic and MeshCore: concepts, differences, and official links](docs/meshtastic-vs-meshcore.md)
 
 ## Architecture
@@ -87,7 +87,8 @@ These are the selected purchase references. The [buying and wiring guide](docs/h
 |---:|---|---|
 | 1 | [**Waveshare ESP32-S3-Touch-LCD-3.5**](https://www.amazon.com/dp/B0F3WS2W5R), standard/no camera | Selected touch controller; $35.99 in supplied screenshot; revision and 32-pin labels to verify |
 | 1 two-pack | [**Aideepen LoRa V3 ESP32-S3 + SX1262, 863–928 MHz**](https://www.amazon.com/dp/B0DRSJV1ZL), option **Lora-V3 2Pcs** | Two boards: one Meshtastic, one MeshCore; $39.99 per pair in supplied screenshot; headers and Heltec V3-compatible routing to verify |
-| 1 | **SparkFun SAM-M10Q Qwiic breakout, GPS-21834** | Selected u-blox GNSS candidate with integrated antenna |
+| 1 | [**Uputronics u-blox MAX-M10S breakout (3 V variant)**](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751) | Selected GNSS board with SMA connector for an external active GNSS antenna; $36.00 reference price |
+| 1 | Compatible external **active GNSS antenna**, SMA connection | Required separately; check antenna bias voltage/current, frequency bands, connector and mounting before ordering |
 | 1 | microSD card | Local history and diagnostic logs; capacity and format to be defined |
 | As needed | Jumpers, USB-C cables, and regulated USB supplies | Use the two antenna/pigtail sets shown in the radio package; verify contents before buying extras |
 | 2 optional | Additional compatible radio nodes | One remote peer for each protocol during bench testing |
@@ -106,15 +107,15 @@ For the first bench prototype, separate USB supplies are planned for the control
 |---|---|---|
 | Controller to Meshtastic node | Dedicated UART using the serial client API in `PROTO` mode | Pin assignment, configuration, framing, and recovery |
 | Controller to MeshCore node | Separate UART using the Companion protocol | Heltec V3-compatible target, build flags, and physical GPIO routing |
-| Controller to GNSS | I²C | Available pins, address, and driver integration |
+| Controller to MAX-M10S breakout | I²C (provisional) | Verify breakout SDA/SCL labels, signal voltage, pin order, GNSS configuration and power budget |
 | Controller to storage | Onboard microSD interface | Concurrent operation with the display and other peripherals |
 | Controller to display and touch | Onboard connections | Driver integration and responsiveness |
 
 **MeshCore UART integration still needs a compiled and tested build.** The reviewed upstream ESP32 Companion source includes a hardware UART interface selected by `SERIAL_RX` / `SERIAL_TX`. The proposed radio assignment is RX GPIO4 / TX GPIO5 at 115200 baud. A stock USB/BLE binary must not be assumed to enable it.
 
-The [bench wiring proposal](docs/hardware-wiring.md) assigns Meshtastic to GPIO39/40, MeshCore to GPIO17/18, and GNSS to GPIO21/38. Each radio uses proposed RX GPIO4 / TX GPIO5. The guide explicitly distinguishes the 32-pin Waveshare listing-photo numbering from Rev2 PDF J8 numbering: the two positions in each row are reversed. Use GPIO identities and confirm the actual PCB labels before wiring. This allocation still requires validation with the display, touch, microSD, GNSS, and both radio links active.
+The [bench wiring proposal](docs/hardware-wiring.md) assigns Meshtastic to GPIO39/40, MeshCore to GPIO17/18, and GNSS I²C provisionally to GPIO21/38. Each radio uses proposed RX GPIO4 / TX GPIO5. The guide explicitly distinguishes the 32-pin Waveshare listing-photo numbering from Rev2 PDF J8 numbering: the two positions in each row are reversed. Use GPIO identities and confirm the actual PCB labels before wiring. This allocation still requires validation with the display, touch, microSD, GNSS, and both radio links active.
 
-Reference parts subtotal: **$143.78** when reusing USB supplies/cables; **$187.13** with three new supplies and cables; **$256.02** with two additional remote test radios and their power accessories. These are October 24, 2026 reference budgets, excluding shipping/taxes; see the [full bill of materials](docs/hardware-wiring.md#2-shopping-list-and-budget).
+Revised provisional parts subtotal: **$126.33 plus the external active GNSS antenna and any necessary RF accessories** when reusing USB supplies/cables. This is a parts estimate, not a complete assembled-device cost; see the [bill of materials](docs/hardware-wiring.md#2-shopping-list-and-budget).
 
 ## Planned software
 
@@ -173,6 +174,7 @@ The controller will maintain bounded local queues and history, with explicit pol
 - [ ] Add GNSS, persistent history, and restart recovery.
 - [ ] Measure RF coexistence and power consumption.
 - [ ] Run sustained offline and fault-recovery tests.
+- [ ] Design a modular carrier PCB with central display, radios toward opposite edges, externally mounted GNSS antenna, and a rear battery/power section.
 - [ ] Evaluate a portable enclosure and battery system.
 - [ ] Consider a custom PCB after the bench design is reproducible.
 
@@ -231,7 +233,8 @@ Use [GitHub Issues](https://github.com/Renbrant/MeshCrossway/issues) to discuss 
 - [Heltec WiFi LoRa 32 V3 hardware reference](https://heltec.org/project/wifi-lora-32-v3/)
 - [Selected LoRa V3 two-pack listing](https://www.amazon.com/dp/B0DRSJV1ZL)
 - [MeshCore ESP32 Companion UART source](https://github.com/meshcore-dev/MeshCore/blob/main/examples/companion_radio/main.cpp)
-- [SparkFun SAM-M10Q hardware documentation](https://docs.sparkfun.com/SparkFun_u-blox_SAM-M10Q/)
+- [Selected Uputronics MAX-M10S breakout (3 V variant)](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751)
+- [u-blox MAX-M10S product documentation](https://www.u-blox.com/en/product/max-m10-series)
 - [Meshtastic firmware](https://github.com/meshtastic/firmware)
 - [Meshtastic serial module documentation](https://meshtastic.org/docs/configuration/module/serial/)
 - [MeshCore firmware](https://github.com/meshcore-dev/MeshCore)
