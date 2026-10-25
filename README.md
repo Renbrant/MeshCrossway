@@ -12,11 +12,11 @@ MeshCrossway is an open-source, standalone touchscreen communicator being design
 
 [![Launch the MeshCrossway UI simulator](https://img.shields.io/badge/OPEN-INTERACTIVE%20UI%20SIMULATOR-007acc?style=for-the-badge)](https://renbrant.github.io/MeshCrossway/)
 
-[![MeshCrossway interface overview](docs/ui-prototype/ui-overview.svg)](https://renbrant.github.io/MeshCrossway/)
+[![Current MeshCrossway Home, Navigation and Map Tools interface](docs/ui-prototype/ui-overview-current.svg)](https://renbrant.github.io/MeshCrossway/)
 
 **[Try the interactive touchscreen simulator →](https://renbrant.github.io/MeshCrossway/)**
 
-A browser preview of the planned **480 × 320** interface. The illustration above is an earlier static overview; the link opens the current simulator.
+A browser preview of the planned **480 × 320** interface. The static illustration highlights the current Home, Map and Map → Tools navigation. The link opens the full interactive simulator, including chats, live-location sharing, POIs, tracks and diagnostics.
 
 ## Planned capabilities
 
