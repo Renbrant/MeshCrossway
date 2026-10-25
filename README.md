@@ -25,7 +25,7 @@ The goal is to give travelers, outdoor users, and eventually search-and-rescue t
 
 **[▶ Open the live, clickable MeshCrossway simulator](https://renbrant.github.io/MeshCrossway/)**
 
-Explore the planned 480 × 320 touchscreen experience: dual-network messaging, conversations, GNSS/peer positions, radio diagnostics, quick replies, and field tools.
+Explore the planned 480 × 320 touchscreen experience: dual-network messaging, GNSS/peer positions, POIs and waypoints, track recording, route summaries, opt-in live position sharing for individuals or groups, radio diagnostics, quick replies, and field tools.
 
 > **UI concept only.** Screens contain simulated information; there is no real messaging, GPS tracking, RF diagnostics, or emergency alert. GitHub READMEs cannot embed executable interactive HTML, so the preview opens the simulator hosted on GitHub Pages. The image above is an earlier static screen overview; the linked simulator is the current interactive version.
 
@@ -51,6 +51,8 @@ The first prototype will focus on:
 - [V1 power architecture: Waveshare AXP2101, shared J8 3V3 rail, capacitors and validation](docs/power-architecture.md)
 - [Bench wiring guide: connectors, GPIOs, power, and connection diagrams](docs/hardware-wiring.md) — provisional proposal; GNSS drawings and BOM require revalidation after the MAX-M10S selection.
 - [Meshtastic and MeshCore: concepts, differences, and official links](docs/meshtastic-vs-meshcore.md)
+- [Navigation, POIs, tracks, GPX and live location sharing specification](docs/navigation-and-sharing.md)
+- [Interactive touchscreen simulator and feature notes](docs/ui-prototype/README.md)
 
 ## Architecture
 
@@ -137,6 +139,8 @@ A failure or reconnection in one adapter should leave the other network and stor
 
 The first interface will prioritize conversations, a virtual keyboard, predefined messages, radio status, GNSS coordinates, position age, and history.
 
+The [navigation and sharing specification](docs/navigation-and-sharing.md) covers POIs, waypoints, track recording, GPX exchange, live location sharing to one person or a group, and configurable time/movement triggers. Large GPX files are planned for a future authenticated Bluetooth companion connection rather than direct LoRa transmission. All of these are product/design features; the browser simulator is not working firmware.
+
 Detailed offline maps are a later milestone. They introduce additional storage, rendering, data-format, and licensing work.
 
 ### Message behavior
@@ -174,6 +178,10 @@ The controller will maintain bounded local queues and history, with explicit pol
 - [ ] Keep one adapter working while the other node is disconnected.
 - [ ] Add the touch interface, message composition, and accurate status reporting.
 - [ ] Add GNSS, persistent history, and restart recovery.
+- [ ] Implement local POI/waypoint management, track recording and GPX import/export.
+- [ ] Validate opt-in live position sharing to a person or group with time, movement and auto-stop settings.
+- [ ] Prototype an authenticated Bluetooth companion channel for bulk GPX transfers.
+- [ ] Show peer positions with network identity, last-update age and stale-fix warnings.
 - [ ] Measure RF coexistence and power consumption.
 - [ ] Run sustained offline and fault-recovery tests.
 - [ ] Design a modular carrier PCB with central display, radios toward opposite edges, externally mounted GNSS antenna, and a rear battery/power section.
