@@ -53,6 +53,7 @@ The first prototype will focus on:
 - [Meshtastic and MeshCore: concepts, differences, and official links](docs/meshtastic-vs-meshcore.md)
 - [Navigation, POIs, tracks, GPX and live location sharing specification](docs/navigation-and-sharing.md)
 - [Interactive touchscreen simulator and feature notes](docs/ui-prototype/README.md)
+- [Radio firmware strategy, independent processors and validation plan](docs/radio-firmware-strategy.md)
 
 ## Architecture
 
@@ -180,6 +181,12 @@ The controller will maintain bounded local queues and history, with explicit pol
 
 **[Full Direct Tracking, position sharing and anti-congestion design](docs/navigation-and-sharing.md#direct-tracking-local-one-hop-location-sharing-design-proposal)**. The simulator does not implement RF transmissions or enforce these budgets.
 
+### Radio firmware maintenance policy
+
+**Upstream-first architecture:** the Waveshare controller runs MeshCrossway applications (LVGL, GPS/navigation, POIs/tracks, location scheduler, microSD and future Bluetooth companion exchange). Each ESP32-S3/SX1262 radio runs its own protocol firmware and is **not** treated as a general-purpose processing coprocessor. Use **Meshtastic official firmware with serial `PROTO` configuration** and **MeshCore upstream Companion**, possibly requiring a board-specific UART build. Avoid source-level forks unless a tested essential feature (such as strict zero-hop Direct Tracking) truly cannot be implemented through available APIs.
+
+The preferred progression is **(1) official image + settings → (2) upstream-based custom build with UART pin/flags → (3) minimal upstream-proposed source patch only as a last resort**. Firmware versions, build flags, pins and binary checksums must remain reproducible. See [radio firmware strategy](docs/radio-firmware-strategy.md) for responsibilities, FreeRTOS boundaries and acceptance gates.
+
 ## Development roadmap
 
 - [x] Define a standalone ESP32 touchscreen architecture.
@@ -187,6 +194,7 @@ The controller will maintain bounded local queues and history, with explicit pol
 - [x] Identify candidate radio nodes and GNSS hardware.
 - [ ] Validate the controller board revision and complete GPIO allocation.
 - [ ] Prove the Meshtastic UART connection.
+- [ ] Record reproducible upstream firmware targets, versions, UART settings and binary build manifests for both radios.
 - [ ] Build and validate the MeshCore Companion UART configuration.
 - [ ] Send and receive messages through both adapters.
 - [ ] Keep one adapter working while the other node is disconnected.
