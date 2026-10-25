@@ -68,7 +68,7 @@ Source for roles, routing, and openness: [official MeshCore FAQ](https://docs.me
 
 ### Integration with MeshCrossway
 
-The planned adapter uses the [Companion protocol](https://docs.meshcore.io/companion_protocol/). Connecting that interface to a physical UART on the selected RAK4631 target still requires a validated firmware configuration or custom build.
+The planned adapter uses the [Companion protocol](https://docs.meshcore.io/companion_protocol/). The selected terminal uses two ESP32-S3/SX1262 LoRa V3 boards from the Aideepen two-pack. The reviewed upstream ESP32 Companion implementation includes hardware UART selection through `SERIAL_RX` and `SERIAL_TX`; the proposal uses radio RX GPIO4 / TX GPIO5. A compatible source snapshot, custom build and actual-board validation are still required. See the [current wiring and purchase guide](hardware-wiring.md).
 
 ## Main differences
 
@@ -137,3 +137,4 @@ The following are MeshCrossway engineering decisions and validation requirements
 - [Web flasher](https://flasher.meshcore.io/)
 
 MeshCrossway is an independent project. References to upstream projects do not imply affiliation or endorsement.
+

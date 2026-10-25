@@ -34,3 +34,8 @@ Open [the interactive GitHub Pages prototype](https://renbrant.github.io/MeshCro
 This is a UI mockup only. It uses demo data and does not communicate with Meshtastic, MeshCore, GNSS hardware, storage, or the ESP32.
 
 The prototype deliberately avoids claiming that queued messages were transmitted or delivered. The firmware implementation will need to map each protocol's real evidence into accurate message states.
+
+
+## Selected bench hardware
+
+The concept now targets a Waveshare ESP32-S3-Touch-LCD-3.5, two ESP32-S3/SX1262 LoRa V3 boards from the Aideepen two-pack (one per network), a SparkFun SAM-M10Q Qwiic GNSS, and onboard microSD. The radio-side UART proposal is RX GPIO4 / TX GPIO5, separate from programming USB. Headers, board routing, central firmware and the MeshCore UART build remain unverified. See the [wiring and shopping guide](../hardware-wiring.md). This simulator does not connect to or validate those boards.

@@ -1,6 +1,6 @@
 # MeshCrossway
 
-![MeshCrossway bench prototype: ESP32-S3 touchscreen, dedicated Meshtastic and MeshCore radio nodes, u-blox GNSS, and microSD storage](docs/images/meshcrossway-bench-prototype.webp)
+![MeshCrossway bench prototype: ESP32-S3 touchscreen, two LoRa V3 Meshtastic and MeshCore radio boards, u-blox GNSS, and microSD storage](docs/images/hardware-overview.svg)
 
 **Two mesh networks. One portable terminal.**
 
@@ -74,19 +74,18 @@ Independent nodes also allow each mesh firmware to evolve without moving its com
 
 ## Selected prototype hardware
 
-These are the current design selections, **not a validated bill of materials or a confirmed shopping list**.
+These are the selected purchase references. The [buying and wiring guide](docs/hardware-wiring.md) records prices, quantities and validation requirements; no complete hardware assembly has been bench-tested.
 
 | Quantity | Component | Purpose and status |
 |---:|---|---|
-| 1 | **Waveshare ESP32-S3-Touch-LCD-3.5**, standard version without case or camera | Selected central controller and touch display; revision V2 preferred, subject to confirmation |
-| 2 | **RAK4631 + RAK19007**, US915 variants for the initial US bench | One dedicated node per protocol; serial integration remains to be validated |
-| 2 | **RAK13002** IO expansion boards | Proposed access to radio-node signals; connector assembly and pin access require confirmation |
+| 1 | [**Waveshare ESP32-S3-Touch-LCD-3.5**](https://www.amazon.com/dp/B0F3WS2W5R), standard/no camera | Selected touch controller; $35.99 in supplied screenshot; revision and 32-pin labels to verify |
+| 1 two-pack | [**Aideepen LoRa V3 ESP32-S3 + SX1262, 863–928 MHz**](https://www.amazon.com/dp/B0DRSJV1ZL), option **Lora-V3 2Pcs** | Two boards: one Meshtastic, one MeshCore; $39.99 per pair in supplied screenshot; headers and Heltec V3-compatible routing to verify |
 | 1 | **SparkFun SAM-M10Q Qwiic breakout, GPS-21834** | Selected u-blox GNSS candidate with integrated antenna |
 | 1 | microSD card | Local history and diagnostic logs; capacity and format to be defined |
-| As needed | Suitable LoRa antennas, cables, jumpers, and USB power supplies | Final selection depends on the board revisions and test setup |
+| As needed | Jumpers, USB-C cables, and regulated USB supplies | Use the two antenna/pigtail sets shown in the radio package; verify contents before buying extras |
 | 2 optional | Additional compatible radio nodes | One remote peer for each protocol during bench testing |
 
-The selected controller combines an ESP32-S3, a 3.5-inch touch display, PSRAM, flash, and a microSD slot. The exact board revision, exposed GPIOs, and peripheral conflicts must be checked before publishing a wiring guide.
+The selected controller combines an ESP32-S3, a 3.5-inch touch display, PSRAM, flash, and a microSD slot. The proposed wiring is documented, but the actual board revisions and shared GPIOs must be checked before assembly. The radio listing is branded Aideepen and does not establish original Heltec manufacture or pre-soldered headers. No separate radio base or IO adapter is required. The former modular radio selection is superseded.
 
 For the first bench prototype, separate USB supplies are planned for the controller and radio nodes. External signals must use compatible logic levels and a common ground. Do not assume the controller's regulator can power the complete assembly.
 
@@ -95,14 +94,16 @@ For the first bench prototype, separate USB supplies are planned for the control
 | Connection | Planned interface | Validation needed |
 |---|---|---|
 | Controller to Meshtastic node | Dedicated UART using the serial client API in `PROTO` mode | Pin assignment, configuration, framing, and recovery |
-| Controller to MeshCore node | Separate UART using the Companion protocol | RAK4631 firmware target and physical UART binding |
+| Controller to MeshCore node | Separate UART using the Companion protocol | Heltec V3-compatible target, build flags, and physical GPIO routing |
 | Controller to GNSS | I²C | Available pins, address, and driver integration |
 | Controller to storage | Onboard microSD interface | Concurrent operation with the display and other peripherals |
 | Controller to display and touch | Onboard connections | Driver integration and responsiveness |
 
-**MeshCore UART integration is an open engineering task.** A Companion USB firmware image must not be assumed to expose the same protocol on external UART pins. A custom build or target configuration may be required.
+**MeshCore UART integration still needs a compiled and tested build.** The reviewed upstream ESP32 Companion source includes a hardware UART interface selected by `SERIAL_RX` / `SERIAL_TX`. The proposed radio assignment is RX GPIO4 / TX GPIO5 at 115200 baud. A stock USB/BLE binary must not be assumed to enable it.
 
-The [bench wiring proposal](docs/hardware-wiring.md) assigns Meshtastic to GPIO39/40, MeshCore to GPIO17/18, and GNSS to GPIO21/38. It uses the Rev2 schematic's 32-pin J8 numbering, which differs from a 26-pin illustration on the manufacturer's page. Match the actual PCB before wiring. This allocation still requires validation with the display, touch, microSD, GNSS, and both radio links active.
+The [bench wiring proposal](docs/hardware-wiring.md) assigns Meshtastic to GPIO39/40, MeshCore to GPIO17/18, and GNSS to GPIO21/38. Each radio uses proposed RX GPIO4 / TX GPIO5. The guide explicitly distinguishes the 32-pin Waveshare listing-photo numbering from Rev2 PDF J8 numbering: the two positions in each row are reversed. Use GPIO identities and confirm the actual PCB labels before wiring. This allocation still requires validation with the display, touch, microSD, GNSS, and both radio links active.
+
+Reference parts subtotal: **$143.78** when reusing USB supplies/cables; **$187.13** with three new supplies and cables; **$256.02** with two additional remote test radios and their power accessories. These are October 24, 2026 reference budgets, excluding shipping/taxes; see the [full bill of materials](docs/hardware-wiring.md#2-shopping-list-and-budget).
 
 ## Planned software
 
@@ -216,7 +217,9 @@ Use [GitHub Issues](https://github.com/Renbrant/MeshCrossway/issues) to discuss 
 ## References
 
 - [Waveshare ESP32-S3-Touch-LCD-3.5](https://www.waveshare.com/esp32-s3-touch-lcd-3.5.htm)
-- [RAKwireless documentation](https://docs.rakwireless.com/)
+- [Heltec WiFi LoRa 32 V3 hardware reference](https://heltec.org/project/wifi-lora-32-v3/)
+- [Selected LoRa V3 two-pack listing](https://www.amazon.com/dp/B0DRSJV1ZL)
+- [MeshCore ESP32 Companion UART source](https://github.com/meshcore-dev/MeshCore/blob/main/examples/companion_radio/main.cpp)
 - [SparkFun SAM-M10Q hardware documentation](https://docs.sparkfun.com/SparkFun_u-blox_SAM-M10Q/)
 - [Meshtastic firmware](https://github.com/meshtastic/firmware)
 - [Meshtastic serial module documentation](https://meshtastic.org/docs/configuration/module/serial/)
@@ -231,3 +234,4 @@ Original MeshCrossway code and documentation in this repository are licensed und
 Third-party firmware, libraries, hardware designs, and assets retain their respective licenses. This repository's MIT license does not relicense those components; integration and distribution must respect their applicable terms.
 
 MeshCrossway is an independent project and is not affiliated with or endorsed by the manufacturers or upstream projects referenced here.
+
