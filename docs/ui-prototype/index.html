@@ -54,12 +54,12 @@ footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:cente
 <section class="page" id="more">
 <div class="heading">Field tools & settings</div>
 <div class="field-grid">
-<button class="field-tile" data-feature="tracker"><strong>◉ Tracker</strong><small>Trail-Mate · GPX</small></button>
-<button class="field-tile" data-feature="team"><strong>♙ Team</strong><small>Trail-Mate · peers</small></button>
-<button class="field-tile" data-feature="sky"><strong>✧ GNSS Sky</strong><small>Trail-Mate · fix</small></button>
-<button class="field-tile" data-feature="paths"><strong>⌁ Paths</strong><small>Ripple · saved routes</small></button>
-<button class="field-tile" data-feature="control"><strong>☷ Control</strong><small>MeshOS · quick toggles</small></button>
-<button class="field-tile" data-feature="display"><strong>◐ Display</strong><small>Ripple · themes</small></button>
+<button class="field-tile" data-feature="tracker"><strong>◉ Tracker</strong><small>GPX</small></button>
+<button class="field-tile" data-feature="team"><strong>♙ Team</strong><small>peers</small></button>
+<button class="field-tile" data-feature="sky"><strong>✧ GNSS Sky</strong><small>fix</small></button>
+<button class="field-tile" data-feature="paths"><strong>⌁ Paths</strong><small>saved routes</small></button>
+<button class="field-tile" data-feature="control"><strong>☷ Control</strong><small>quick toggles</small></button>
+<button class="field-tile" data-feature="display"><strong>◐ Display</strong><small>themes</small></button>
 </div>
 
 <div class="rowitem" id="quickOpen"><div class="grow"><strong>Quick messages</strong><div class="sub">Check in · Need help · Position</div></div>›</div>
@@ -113,7 +113,7 @@ team:['Team coordination','<div class="card"><strong>Expedition Alpha · demo</s
 sky:['GNSS sky plot','<div class="line"><div class="sky"><span class="sat" style="left:20%;top:17%">G</span><span class="sat" style="left:66%;top:27%;background:#ffc579">E</span><span class="sat" style="left:47%;top:64%">B</span></div><div class="grow"><strong>12 satellites · 3D</strong><div class="metric">Used: 8 · HDOP: 0.9</div><div class="metric">Fix age: 2 sec</div><div class="metric">G: GPS · E: Galileo · B: BeiDou</div></div></div><div class="demo-caption">Illustrative sky plot, not live GNSS measurements.</div>'],
 paths:['Saved radio paths','<div class="card"><strong>Ridge → Base</strong><div class="metric">MeshCore · 2 relay hops</div><div class="metric">Manual route · inactive demo</div></div><div class="action-row"><button class="btn" id="pathButton">Select example path</button></div><div class="demo-caption">Paths are protocol-specific; no cross-network forwarding.</div>'],
 control:['Quick controls','<div class="field-grid"><button class="field-tile control-toggle" data-tog="GPS" data-on="true"><strong>GPS</strong><small>ON · demo</small></button><button class="field-tile control-toggle" data-tog="Bluetooth" data-on="false"><strong>Bluetooth</strong><small>OFF · demo</small></button><button class="field-tile control-toggle" data-tog="Wi-Fi" data-on="false"><strong>Wi-Fi</strong><small>OFF · demo</small></button><button class="field-tile control-toggle" data-tog="Sound" data-on="true"><strong>Sound</strong><small>ON · demo</small></button></div><div class="track-head">Brightness</div><input type="range" min="20" max="100" value="80" id="bright" aria-label="Brightness" style="width:95%"><div class="demo-caption">Visual controls only. No device peripherals are changed.</div>'],
-display:['Display appearance','<div class="card"><strong>Color mode</strong><div class="action-row"><button class="btn" id="darkTheme">Dark</button><button class="btn dark" id="lightTheme">Light</button></div><div class="track-head">Accent color</div><div class="action-row"><button class="chip themeAccent" data-color="#69d6ff">Blue</button><button class="chip themeAccent" data-color="#5df0d8">Teal</button><button class="chip themeAccent" data-color="#ffbf72">Amber</button></div></div><div class="demo-caption">Ripple-inspired settings. Changes affect this browser preview only.</div>']
+display:['Display appearance','<div class="card"><strong>Color mode</strong><div class="action-row"><button class="btn" id="darkTheme">Dark</button><button class="btn dark" id="lightTheme">Light</button></div><div class="track-head">Accent color</div><div class="action-row"><button class="chip themeAccent" data-color="#69d6ff">Blue</button><button class="chip themeAccent" data-color="#5df0d8">Teal</button><button class="chip themeAccent" data-color="#ffbf72">Amber</button></div></div><div class="demo-caption">MeshCrossway display settings. Changes affect this browser preview only.</div>']
 };
 function feature(name){const d=examples[name];if(!d)return;ft.textContent=d[0];fc.innerHTML=d[1];open('featurePanel');
 const click=(id,fn)=>{const el=document.getElementById(id);if(el)el.onclick=fn};
