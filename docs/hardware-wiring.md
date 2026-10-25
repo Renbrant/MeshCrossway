@@ -8,6 +8,12 @@
 
 ## 1. Identify the purchased boards
 
+| Controller: selected Amazon listing | Radios: selected two-pack |
+|:---:|:---:|
+| [![Waveshare touchscreen controller](images/amazon/waveshare-product.jpg)](https://www.amazon.com/dp/B0F3WS2W5R) | [![Two LoRa V3 boards and supplied accessories](images/amazon/lora-v3-two-pack.jpg)](https://www.amazon.com/dp/B0DRSJV1ZL) |
+
+These are original listing images. Product screens are vendor examples. [Image sources and rights](images/amazon/README.md).
+
 | ID | Selected component | Purchase reference | Verification on receipt |
 |---|---|---|---|
 | U1 | Waveshare ESP32-S3-Touch-LCD-3.5, standard/no camera | [Amazon B0F3WS2W5R](https://www.amazon.com/dp/B0F3WS2W5R) | Exact model, PCB revision, 32-pin expansion connector and GPIO labels; V2 preferred, not established by the listing |
@@ -19,7 +25,7 @@
 
 The seller lists the radio brand as Aideepen; original Heltec manufacture and identical pin routing are **not established**. The primary Heltec V3 documentation is a design reference, not proof about every board sold as “V3.” If the received radio differs, remap or replace it before proceeding.
 
-The listing describes CP2102 in its detailed specifications, despite “CP2012” in its title. Its photos show both mounted and loose header strips; **assembled headers are not confirmed**. Ordinary through-hole soldering may be needed. Neither a separate radio baseboard nor an IO expansion adapter is required for this proposed assembly.
+The listing describes CP2102 in its detailed specifications, despite “CP2012” in its title. The package photo shows loose header strips and the board close-up shows a **V3.2** marking. **Plan to solder the supplied headers**; soldering is acceptable for this build. Inspect the actual shipment rather than assuming its revision or assembly matches every listing illustration. Neither a separate radio baseboard nor an IO expansion adapter is required for this proposed assembly.
 
 ## 2. Shopping list and budget
 
@@ -61,6 +67,10 @@ The terminal contains **two radio boards**. The complete test bench contains fou
 
 ## 3. Controller GPIOs and the connector-numbering correction
 
+[![Original Waveshare listing image: board components and numbered 32-pin connector](images/amazon/waveshare-board-and-pinout.jpg)](https://www.amazon.com/dp/B0F3WS2W5R)
+
+The original listing pinout above identifies the GPIOs. The project diagram below selects the signals used by MeshCrossway.
+
 ![Controller connector and radio GPIO reference](images/connector-reference.svg)
 
 **Use GPIO names as the electrical identity.** The 32-pin numbered photo from the Waveshare Amazon listing and the Rev2 PDF label the two positions in each row oppositely. Numbers in the “listing photo” column below follow that exact photo, viewed as shown, with BAT/5V at the top. They are not a universal numbering system for every board revision.
@@ -76,7 +86,7 @@ The terminal contains **two radio boards**. The complete test bench contains fou
 | Common ground | GND | 29 or 30 | 29 or 30 | A GND, B GND, G1 GND |
 | GNSS supply | 3V3 | 31 or 32 | 31 or 32 | G1 3.3 V, after rail/load verification |
 
-Do not silently substitute a photo position for a PDF connector number. Check the actual PCB signal labels and ground continuity before applying power. The listing illustration also reverses the usual UART0 TX/RX names beside GPIO43/44; those signals are not used for either radio in this plan.
+Do not silently substitute a photo position for a PDF connector number. Check the actual PCB signal labels and ground continuity before applying power. GPIO43/44 remain reserved for UART0 diagnostics and are not used for either radio in this plan.
 
 Assign ESP32 UART1 to GPIO39 TX / GPIO40 RX and UART2 to GPIO17 TX / GPIO18 RX. These are project-selected peripheral mappings, not automatic defaults.
 
@@ -86,18 +96,24 @@ Sources: [Waveshare Rev2 PDF](https://files.waveshare.com/wiki/ESP32-S3-Touch-LC
 
 ## 4. Radio wiring: same GPIO assignment on A and B
 
+[![Original Amazon LoRa V3.2 pinout showing J2 and J3 connector positions](images/amazon/lora-v3-pinout.jpg)](https://www.amazon.com/dp/B0DRSJV1ZL)
+
+[![Original Amazon close-up of the LoRa V3 board](images/amazon/lora-v3-board.jpg)](https://www.amazon.com/dp/B0DRSJV1ZL)
+
+**Positions in the pictured pinout:** J3.15 = GPIO4; J3.16 = GPIO5; J3.1 and J2.1 = GND. These connector references apply to that illustration; match the actual PCB before soldering. Install the header strips straight, inspect for bridges, and check continuity with all power disconnected.
+
 ![Two independent UART connections](images/radio-wiring.svg)
 
-The Heltec V3 pin map exposes GPIO4 and GPIO5 without assigning them to the onboard LoRa SPI or OLED. The selected seller's boards must match that routing. **RX4/TX5 is our proposed configuration, not a stock UART pin assignment.** Radio-side positions are specified by printed GPIO names, not invented connector numbers.
+The Heltec V3 pin map exposes GPIO4 and GPIO5 without assigning them to the onboard LoRa SPI or OLED. The selected seller's boards must match that routing. **RX4/TX5 is our proposed configuration, not a stock UART pin assignment.** The table gives GPIO identities and the J3 positions shown in the original listing pinout.
 
 | Wire | From | To | Direction |
 |---|---|---|---|
-| A-TX | U1 GPIO39, listing photo 9 | A GPIO4 / configured RX | Host to Meshtastic |
-| A-RX | A GPIO5 / configured TX | U1 GPIO40, listing photo 11 | Meshtastic to host |
-| A-GND | U1 ground distribution | A pin labeled GND | Signal reference |
-| B-TX | U1 GPIO17, listing photo 16 | B GPIO4 / configured RX | Host to MeshCore |
-| B-RX | B GPIO5 / configured TX | U1 GPIO18, listing photo 18 | MeshCore to host |
-| B-GND | U1 ground distribution | B pin labeled GND | Signal reference |
+| A-TX | U1 GPIO39, listing photo 9 | A GPIO4 / configured RX, J3.15 | Host to Meshtastic |
+| A-RX | A GPIO5 / configured TX, J3.16 | U1 GPIO40, listing photo 11 | Meshtastic to host |
+| A-GND | U1 ground distribution | A GND, J3.1 or J2.1 | Signal reference |
+| B-TX | U1 GPIO17, listing photo 16 | B GPIO4 / configured RX, J3.15 | Host to MeshCore |
+| B-RX | B GPIO5 / configured TX, J3.16 | U1 GPIO18, listing photo 18 | MeshCore to host |
+| B-GND | U1 ground distribution | B GND, J3.1 or J2.1 | Signal reference |
 
 Use three wires per radio: TX, RX, and ground. Each radio is independently USB-powered. Leave its 3V3, 5V, battery, reset and unused GPIO pins disconnected from U1. Do not connect A directly to B.
 

@@ -30,7 +30,7 @@ s=start(1280,950,'MeshCrossway | LoRa V3 radio wiring','Proposed, not bench-test
 s+=box(40,120,480,650,'Waveshare ESP32-S3 controller')
 s+=box(770,120,470,290,'Radio A | Meshtastic',BLUE)
 s+=box(770,450,470,290,'Radio B | MeshCore',PURPLE)
-for y,left,right,col,rev in [(230,'Photo 9 / GPIO39 / TX','GPIO4 / configured RX',BLUE,False),(300,'Photo 11 / GPIO40 / RX','GPIO5 / configured TX',GREEN,True),(560,'Photo 16 / GPIO17 / TX','GPIO4 / configured RX',PURPLE,False),(630,'Photo 18 / GPIO18 / RX','GPIO5 / configured TX',GREEN,True)]:
+for y,left,right,col,rev in [(230,'Photo 9 / GPIO39 / TX','GPIO4 / RX / J3.15',BLUE,False),(300,'Photo 11 / GPIO40 / RX','GPIO5 / TX / J3.16',GREEN,True),(560,'Photo 16 / GPIO17 / TX','GPIO4 / RX / J3.15',PURPLE,False),(630,'Photo 18 / GPIO18 / RX','GPIO5 / TX / J3.16',GREEN,True)]:
     s += [text(65,y-12,left,19,INK,True),text(795,y-12,right,19,INK,True),wire(770 if rev else 520,y,520 if rev else 770,y,col)]
 s += [text(795,195,'LoRa V3: ESP32-S3 + SX1262',17),text(795,370,'PROTO: RX4 / TX5, 115200 8N1',17),text(795,525,'Second board from the two-pack',17),text(795,700,'Build flags: SERIAL_RX=4 / SERIAL_TX=5',16,PURPLE,True),text(65,710,'UART0 GPIO43/44 reserved for diagnostics',17,MUTED),text(65,745,'Camera absent; camera driver disabled',17,MUTED)]
 s+=box(40,795,1200,110,'3.3 V signals + common ground + separate USB power',GRAY)
@@ -48,7 +48,7 @@ for row,(a,b) in enumerate(zip(left,right)):
         c=used.get(num,'#cdd6e2')
         s += [f'<circle cx="{cx}" cy="{y-6}" r="16" fill="{c}"/>',text(cx,y-1,str(num),13,'white' if num in used else INK,True,'middle'),text(lx,y,label,17,used.get(num,INK),num in used,anch)]
 s+=box(890,120,570,415,'Each radio | connect by GPIO label',PURPLE)
-for i,label in enumerate(['GPIO4 = RX from U1','GPIO5 = TX to U1','GND = common ground','USB-C = independent power','GPIO43/44 = reserve for USB UART','3V3 / 5V = no jumper to U1','Other GPIOs = leave disconnected']):
+for i,label in enumerate(['GPIO4 / J3.15 = RX from U1','GPIO5 / J3.16 = TX to U1','GND / J3.1 or J2.1 = common ground','USB-C = independent power','GPIO43/44 = reserve for USB UART','3V3 / 5V = no jumper to U1','Other GPIOs = leave disconnected']):
     s.append(text(915,212+i*44,label,18))
 s+=box(890,570,570,430,'Numbering correction',GRAY)
 for i,line in enumerate(['MT = Meshtastic; MC = MeshCore.','U1 GPIO39: photo 9 / PDF J8.10','U1 GPIO40: photo 11 / PDF J8.12','U1 GPIO17: photo 16 / PDF J8.15','U1 GPIO18: photo 18 / PDF J8.17','U1 GPIO21: photo 5 / PDF J8.6','U1 GPIO38: photo 7 / PDF J8.8','Do not substitute one numbering','system for the other. Check the PCB.']):

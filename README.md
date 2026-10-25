@@ -1,6 +1,11 @@
 # MeshCrossway
 
-![MeshCrossway bench prototype: ESP32-S3 touchscreen, two LoRa V3 Meshtastic and MeshCore radio boards, u-blox GNSS, and microSD storage](docs/images/hardware-overview.svg)
+| Touchscreen controller | Two independent radio nodes |
+|:---:|:---:|
+| [![Waveshare ESP32-S3-Touch-LCD-3.5 from the selected Amazon listing](docs/images/amazon/waveshare-product.jpg)](https://www.amazon.com/dp/B0F3WS2W5R) | [![Aideepen LoRa V3 two-pack with boards, antennas, pigtails and loose headers](docs/images/amazon/lora-v3-two-pack.jpg)](https://www.amazon.com/dp/B0DRSJV1ZL) |
+| **Waveshare ESP32-S3-Touch-LCD-3.5** | **LoRa V3 ESP32-S3 + SX1262, two-pack** |
+
+Original product photos from the selected Amazon listings. Displays and firmware shown are vendor examples, not working MeshCrossway firmware. [Photo sources and rights](docs/images/amazon/README.md).
 
 **Two mesh networks. One portable terminal.**
 
@@ -84,6 +89,10 @@ These are the selected purchase references. The [buying and wiring guide](docs/h
 | 1 | microSD card | Local history and diagnostic logs; capacity and format to be defined |
 | As needed | Jumpers, USB-C cables, and regulated USB supplies | Use the two antenna/pigtail sets shown in the radio package; verify contents before buying extras |
 | 2 optional | Additional compatible radio nodes | One remote peer for each protocol during bench testing |
+
+[![LoRa V3 board close-up from the Amazon listing](docs/images/amazon/lora-v3-board.jpg)](https://www.amazon.com/dp/B0DRSJV1ZL)
+
+The listing's close-up shows a **V3.2** marking; the package photo shows **loose header strips**. Soldering the headers is part of the planned bench assembly. Confirm the delivered revision and GPIO routing before using the wiring tables.
 
 The selected controller combines an ESP32-S3, a 3.5-inch touch display, PSRAM, flash, and a microSD slot. The proposed wiring is documented, but the actual board revisions and shared GPIOs must be checked before assembly. The radio listing is branded Aideepen and does not establish original Heltec manufacture or pre-soldered headers. No separate radio base or IO adapter is required. The former modular radio selection is superseded.
 
@@ -231,7 +240,7 @@ Use [GitHub Issues](https://github.com/Renbrant/MeshCrossway/issues) to discuss 
 
 Original MeshCrossway code and documentation in this repository are licensed under the [MIT License](LICENSE).
 
-Third-party firmware, libraries, hardware designs, and assets retain their respective licenses. This repository's MIT license does not relicense those components; integration and distribution must respect their applicable terms.
+Amazon listing photos are third-party materials credited in [photo sources and rights](docs/images/amazon/README.md); they are not covered by the MeshCrossway MIT license. Third-party firmware, libraries, hardware designs, and assets retain their respective licenses. This repository's MIT license does not relicense those components; integration and distribution must respect their applicable terms.
 
 MeshCrossway is an independent project and is not affiliated with or endorsed by the manufacturers or upstream projects referenced here.
 

@@ -106,9 +106,9 @@
 <rect x="890" y="120" width="570" height="415" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
 <path d="M906 120H1444Q1460 120 1460 136V172H890V136Q890 120 906 120" fill="#8553b5"/>
 <text x="910" y="154" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">Each radio | connect by GPIO label</text>
-<text x="915" y="212" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">GPIO4 = RX from U1</text>
-<text x="915" y="256" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">GPIO5 = TX to U1</text>
-<text x="915" y="300" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">GND = common ground</text>
+<text x="915" y="212" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">GPIO4 / J3.15 = RX from U1</text>
+<text x="915" y="256" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">GPIO5 / J3.16 = TX to U1</text>
+<text x="915" y="300" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">GND / J3.1 or J2.1 = common ground</text>
 <text x="915" y="344" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">USB-C = independent power</text>
 <text x="915" y="388" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">GPIO43/44 = reserve for USB UART</text>
 <text x="915" y="432" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">3V3 / 5V = no jumper to U1</text>

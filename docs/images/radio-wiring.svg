@@ -14,16 +14,16 @@
 <path d="M786 450H1224Q1240 450 1240 466V502H770V466Q770 450 786 450" fill="#8553b5"/>
 <text x="790" y="484" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">Radio B | MeshCore</text>
 <text x="65" y="218" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">Photo 9 / GPIO39 / TX</text>
-<text x="795" y="218" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">GPIO4 / configured RX</text>
+<text x="795" y="218" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">GPIO4 / RX / J3.15</text>
 <path d="M520 230L770 230" fill="none" stroke="#1768b5" stroke-width="3" marker-end="url(#arrow)"/>
 <text x="65" y="288" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">Photo 11 / GPIO40 / RX</text>
-<text x="795" y="288" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">GPIO5 / configured TX</text>
+<text x="795" y="288" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">GPIO5 / TX / J3.16</text>
 <path d="M770 300L520 300" fill="none" stroke="#087f68" stroke-width="3" marker-end="url(#arrow)"/>
 <text x="65" y="548" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">Photo 16 / GPIO17 / TX</text>
-<text x="795" y="548" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">GPIO4 / configured RX</text>
+<text x="795" y="548" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">GPIO4 / RX / J3.15</text>
 <path d="M520 560L770 560" fill="none" stroke="#8553b5" stroke-width="3" marker-end="url(#arrow)"/>
 <text x="65" y="618" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">Photo 18 / GPIO18 / RX</text>
-<text x="795" y="618" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">GPIO5 / configured TX</text>
+<text x="795" y="618" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">GPIO5 / TX / J3.16</text>
 <path d="M770 630L520 630" fill="none" stroke="#087f68" stroke-width="3" marker-end="url(#arrow)"/>
 <text x="795" y="195" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">LoRa V3: ESP32-S3 + SX1262</text>
 <text x="795" y="370" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">PROTO: RX4 / TX5, 115200 8N1</text>
