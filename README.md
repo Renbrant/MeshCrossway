@@ -10,6 +10,18 @@ The goal is to give travelers, outdoor users, and eventually search-and-rescue t
 
 > **Project status: architecture and bench-prototype planning.** This repository currently contains project documentation and a license. A schematic-reviewed wiring proposal is available below. Application firmware, bench-validated assembly instructions, build commands, and test results are not yet available. Features described below are planned unless explicitly marked otherwise.
 
+## Interactive touchscreen UI preview
+
+[![Open the MeshCrossway live UI simulator](https://img.shields.io/badge/Launch-Interactive%20UI%20Simulator-007acc?style=for-the-badge)](https://renbrant.github.io/MeshCrossway/)
+
+[![MeshCrossway touchscreen UI concept: Home, messages, position, and independent radio status](docs/ui-prototype/ui-overview.svg)](https://renbrant.github.io/MeshCrossway/)
+
+**[▶ Open the live, clickable MeshCrossway simulator](https://renbrant.github.io/MeshCrossway/)**
+
+Explore the planned 480 × 320 touchscreen experience: dual-network messaging, conversations, GNSS/peer positions, radio diagnostics, quick replies, and field tools.
+
+> **UI concept only.** Screens contain simulated information; there is no real messaging, GPS tracking, RF diagnostics, or emergency alert. GitHub READMEs cannot embed executable interactive HTML, so the preview opens the simulator hosted on GitHub Pages. The image above is an earlier static screen overview; the linked simulator is the current interactive version.
+
 ## Why MeshCrossway?
 
 Different groups may use different mesh ecosystems. Switching between separate devices and applications adds friction when users need to follow conversations and positions across those networks.
