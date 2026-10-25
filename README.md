@@ -1,5 +1,7 @@
 # MeshCrossway
 
+![MeshCrossway: two mesh networks, one portable terminal. Concept illustration of the planned touchscreen communicator.](docs/images/meshcrossway-hero.webp)
+
 | Touchscreen controller | Two independent radio nodes |
 |:---:|:---:|
 | [![Waveshare ESP32-S3-Touch-LCD-3.5 from the selected Amazon listing](docs/images/amazon/waveshare-product.jpg)](https://www.amazon.com/dp/B0F3WS2W5R) | [![Aideepen LoRa V3 two-pack with boards, antennas, pigtails and loose headers](docs/images/amazon/lora-v3-two-pack.jpg)](https://www.amazon.com/dp/B0DRSJV1ZL) |
