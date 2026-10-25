@@ -22,7 +22,7 @@ footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:cente
 /* Field Console v3 extensions */
 :root{--accent:#69d6ff}.screen.light{background:#e8f2f6;color:#08202d}.screen.light main{background:#e8f2f6;color:#08202d}.screen.light .card,.screen.light .rowitem{background:#fff;color:#08202d;border-color:#a5bfcb}.screen.light .sub,.screen.light .metric{color:#395e71}.screen.light nav{background:#d2e4eb}.screen.light nav button{color:#284c61}.screen.light nav button.active{background:#b2d8ea;color:#071923;border-top-color:var(--accent)}.screen.light header{background:#b9d9e8;color:#092434}.screen.light .overlay{background:#eef7fa;color:#092434}.screen.light .heading{color:#092434}.screen.light .pill,.screen.light .chip{color:#effaff}.screen{border-top-color:var(--accent)}
 .field-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:9px}.field-tile{border:1px solid #3f6277;border-radius:9px;background:#153548;color:#f6fbff;padding:9px 7px;text-align:left;min-height:57px;cursor:pointer}.field-tile strong{font-size:14px;display:block}.field-tile small{color:#bdd2df;font-size:11px}.field-tile:focus-visible,button:focus-visible{outline:3px solid #faca59}.sky{height:105px;width:105px;border-radius:50%;border:2px solid #4c7489;background:radial-gradient(circle,transparent 27%,#4a738b88 28%,transparent 30%,transparent 60%,#4a738b88 61%,transparent 63%),linear-gradient(90deg,transparent 49%,#527e91 50%,transparent 51%),linear-gradient(transparent 49%,#527e91 50%,transparent 51%),#102c3e;position:relative;flex:none}.sat{position:absolute;font-size:10px;font-weight:900;color:#081c23;background:#77e7b0;border-radius:50%;width:20px;height:20px;text-align:center;line-height:20px}.track-head{font-size:12px;color:#a9c6d8;margin:6px 0}.action-row{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}.demo-caption{font-size:11px;color:#b1c9d8;margin:8px 0}
-</style></head><body>
+.map-dropdown{position:absolute;top:75px;right:9px;width:250px;max-height:193px;overflow-y:auto;background:#183447;border:1px solid #6a90a6;border-radius:10px;padding:5px;z-index:2;box-shadow:0 8px 20px #0009}.map-dropdown[hidden]{display:none}.map-dropdown button{display:block;width:100%;font-size:14px;text-align:left;color:#f3fcff;background:transparent;border:0;border-bottom:1px solid #426074;padding:9px 7px;min-height:38px}.map-dropdown button:last-child{border-bottom:0}.map-dropdown button:active{background:#2e5870}</style></head><body>
 <h1>MeshCrossway · Field Console v2</h1><p class="intro">Meshtastic + MeshCore · touchscreen prototype · 480 × 320</p>
 <div class="device"><div class="screen">
 <header><span>MeshCrossway</span><small>● MT &nbsp; ● MC &nbsp; GPS 3D</small></header><main>
@@ -40,14 +40,9 @@ footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:cente
 <div class="rowitem conversation" data-net="MT" data-thread="Alex"><span class="tag mt">MT</span><div class="grow"><strong>Alex</strong><div class="sub">Copy · stored locally</div></div><span class="sub">14:22</span></div>
 </section>
 <section class="page" id="map">
-<div class="line" style="margin-bottom:6px"><span class="heading">Navigation</span><span class="sub">GNSS 3D · 2 s</span></div>
+<div class="line" style="margin-bottom:6px"><span class="heading">Navigation</span><button class="btn dark" id="mapMenuToggle" aria-expanded="false" aria-controls="mapMenu">Tools ▾</button></div><div id="mapMenu" class="map-dropdown" hidden><button data-gps="pois">⌖ POIs & waypoints</button><button data-gps="tracks">↝ Saved tracks</button><button data-gps="record">● Record track</button><button id="liveShareOpen">◎ Live location</button><button data-gps="share">⇧ Share location / GPX</button><button data-feature="team">♙ Team positions</button><button data-feature="sky">✧ GNSS sky</button><button data-feature="paths">⌁ Saved paths</button><button data-feature="tracker">◉ Track details</button></div>
 <div class="map" id="maparea"><div class="pin"></div><div class="peer" style="left:30%;top:22%"></div><div class="peer mcpeer" style="left:76%;top:60%"></div><div class="peer" style="left:38%;top:75%"></div><label>Illustrative map · not real tiles</label></div>
-<div class="action-row" style="margin-top:7px;gap:5px">
-<button class="chip" data-gps="pois">⌖ POIs</button>
-<button class="chip" data-gps="tracks">↝ Tracks</button>
-<button class="chip" data-gps="share">⇧ Share</button>
-<button class="chip" data-gps="record">● Record</button><button class="chip" id="liveShareOpen">◎ Live share</button>
-<button class="chip" id="zoom">Zoom +</button></div>
+<div class="line" style="margin-top:8px"><span class="sub">GNSS 3D · demo fix age 2 s</span><button class="chip" id="zoom">Zoom +</button></div>
 </section>
 <section class="page" id="tools">
 <div class="line"><span class="heading">Radio tools</span><button class="btn dark" id="discover">Discover</button></div>
@@ -178,4 +173,5 @@ function livePanel(){
  id('liveStop').onclick=()=>{liveState.active=false;liveState.paused=false;notice('Demo session stopped');livePanel()};
 }
 document.getElementById('liveShareOpen').onclick=livePanel;
+const mapToggle=document.getElementById('mapMenuToggle'),mapMenu=document.getElementById('mapMenu');function closeMapMenu(){mapMenu.hidden=true;mapToggle.setAttribute('aria-expanded','false')}mapToggle.addEventListener('click',()=>{mapMenu.hidden=!mapMenu.hidden;mapToggle.setAttribute('aria-expanded',String(!mapMenu.hidden))});mapMenu.querySelectorAll('button').forEach(b=>b.addEventListener('click',closeMapMenu));navs.forEach(b=>b.addEventListener('click',closeMapMenu));
 </script></body></html>
