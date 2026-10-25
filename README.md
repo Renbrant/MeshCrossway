@@ -25,6 +25,10 @@ The first prototype will focus on:
 
 **A unified interface does not make the networks interoperable.** The initial design does not automatically forward messages between Meshtastic and MeshCore. Both radios are intended to remain active, but simultaneous availability and RF coexistence still require testing.
 
+## Documentation
+
+- [Meshtastic and MeshCore: concepts, differences, and official links](docs/meshtastic-vs-meshcore.md)
+
 ## Architecture
 
 The ESP32 runs the user interface and coordinates two independent nodes. Each radio node runs its own mesh firmware.
