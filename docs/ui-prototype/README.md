@@ -50,3 +50,17 @@ The Navigation screen now includes interactive **POIs**, **saved tracks**, **tra
 - Bluetooth transport is a future development requirement, not a feature of the current browser simulator or a guarantee that both radio firmware implementations support it.
 - The example coordinates and GPX metadata are fictional. The simulator does not access actual GNSS, retain recordings, or transmit anything.
 - Design follow-ups include GPX import/export, track point simplification and bounds, POI category/icon management, offline basemaps, explicit location privacy, file integrity, transfer progress, interruption recovery, and battery impact.
+
+
+## Live position sharing concept
+
+The Navigation screen includes an explicit opt-in **Live share** configuration:
+
+- Share with one selected contact or a selected group/channel; identify the chosen radio network.
+- Configure a time interval (30 seconds to 30 minutes) and a displacement threshold (0 to 500 meters).
+- Select **time OR movement** or **time AND movement** criteria. These are proposal-level semantics, not guaranteed by either protocol.
+- Set a mandatory automatic stop duration (15 minutes to 8 hours), and pause/resume/stop explicitly.
+- Keep sharing disabled by default; require a valid fresh GNSS fix and network-specific feasibility/airtime restrictions before any real transmission.
+- Avoid broadcasting exact location to a public channel without a privacy warning and explicit consent. Group membership, encryption, and delivery guarantees are protocol-specific.
+
+This browser UI only changes simulation state. It does not poll actual GNSS, schedule transmissions, or share coordinates. Firmware implementation must add transmission budgets, minimum intervals, deduplication, geodesic distance calculation, monotonic timers, persisted consent/session policy, and per-protocol encoding and capabilities.
