@@ -8,7 +8,7 @@ MeshCrossway is an open-source project to build an ESP32-based portable communic
 
 The goal is to give travelers, outdoor users, and eventually search-and-rescue teams a single interface for communicating across multiple networks where internet access or cellular coverage may be unavailable.
 
-> **Project status: architecture and bench-prototype planning.** This repository currently contains project documentation and a license. Application firmware, wiring instructions, build commands, and test results are not yet available. Features described below are planned unless explicitly marked otherwise.
+> **Project status: architecture and bench-prototype planning.** This repository currently contains project documentation and a license. A schematic-reviewed wiring proposal is available below. Application firmware, bench-validated assembly instructions, build commands, and test results are not yet available. Features described below are planned unless explicitly marked otherwise.
 
 ## Why MeshCrossway?
 
@@ -29,6 +29,7 @@ The first prototype will focus on:
 
 ## Documentation
 
+- [Bench wiring guide: connectors, GPIOs, power, and connection diagrams](docs/hardware-wiring.md) — schematic-reviewed proposal; not bench-tested.
 - [Meshtastic and MeshCore: concepts, differences, and official links](docs/meshtastic-vs-meshcore.md)
 
 ## Architecture
@@ -89,7 +90,7 @@ For the first bench prototype, separate USB supplies are planned for the control
 
 **MeshCore UART integration is an open engineering task.** A Companion USB firmware image must not be assumed to expose the same protocol on external UART pins. A custom build or target configuration may be required.
 
-No GPIO assignment is final yet. A tested pin map will follow validation with the display, touch controller, microSD, GNSS, and both radio links active.
+The [bench wiring proposal](docs/hardware-wiring.md) assigns Meshtastic to GPIO39/40, MeshCore to GPIO17/18, and GNSS to GPIO21/38. It uses the Rev2 schematic's 32-pin J8 numbering, which differs from a 26-pin illustration on the manufacturer's page. Match the actual PCB before wiring. This allocation still requires validation with the display, touch, microSD, GNSS, and both radio links active.
 
 ## Planned software
 
