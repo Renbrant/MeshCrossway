@@ -27,7 +27,9 @@ Open [the interactive GitHub Pages prototype](https://renbrant.github.io/MeshCro
 
 ## Static overview
 
-![MeshCrossway UI prototype overview](ui-overview.svg)
+![MeshCrossway current Home, Map and Tools menu overview](ui-overview-current.svg)
+
+The interface groups POIs, waypoints, saved tracks, track recording, live-location sharing, GNSS sky, team positions and saved paths under **Map → Tools**. **More** contains general device controls and settings. The overview is illustrative; open the live simulator to interact with the current controls.
 
 ## Important
 
