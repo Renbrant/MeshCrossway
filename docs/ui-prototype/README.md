@@ -21,7 +21,7 @@ This folder contains a browser-based UI concept for the 3.5-inch MeshCrossway to
 
 ## Open the prototype
 
-Open [index.html](index.html) locally in a browser or use a static hosting preview.
+Open [the interactive GitHub Pages prototype](https://renbrant.github.io/MeshCrossway/) or open [index.html](index.html) locally in a browser.
 
 > GitHub's normal file view displays the source code rather than executing the HTML. GitHub Pages can be enabled later if we want a permanent hosted demo URL.
 
