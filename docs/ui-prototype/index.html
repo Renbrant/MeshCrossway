@@ -1,75 +1,92 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MeshCrossway Touch UI v1</title>
+<title>MeshCrossway UI v2 — Field Console</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#040a10;color:#f7fcff;font-family:system-ui,-apple-system,Arial,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px}
-h1{font-size:20px;margin:0 0 10px}.note{font-size:13px;color:#a2b6c2;margin:12px 0;text-align:center;max-width:550px}
-.device{padding:14px;background:#131e27;border:2px solid #385064;border-radius:22px;max-width:100%;box-shadow:0 20px 60px #000}
-.screen{width:480px;height:320px;max-width:100%;background:#07141d;border:2px solid #385064;border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
-header{height:38px;flex:none;display:flex;align-items:center;justify-content:space-between;background:#112431;padding:0 12px;font-size:14px;font-weight:800}
-header .right{color:#87e6a1;font-size:12px}
-main{height:226px;flex:none;overflow:hidden;padding:9px 11px}
-.view{display:none;height:100%}.view.active{display:block}
-nav{height:56px;flex:none;display:grid;grid-template-columns:repeat(5,1fr);background:#102332;border-top:1px solid #385064}
-nav button{background:transparent;color:#a8bac7;border:0;font-size:11px;font-weight:800;padding:6px 1px;cursor:pointer}
-nav button .ico{display:block;font-size:21px;line-height:24px}
-nav button.active{color:#fff;background:#1c4359;border-top:3px solid #62d7ff}
-.card{background:#112431;border:1px solid #395264;border-radius:10px;padding:10px}
-.line{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.heading{font-size:17px;font-weight:900;margin-bottom:8px}
-.muted{color:#adc1cd;font-size:13px}.tag{font-size:12px;font-weight:900;border-radius:5px;padding:4px 7px}
-.mt{color:#46f3db}.mc{color:#ffbd69}.tag.mt{background:#113f3c}.tag.mc{background:#49311d}
-button{font-family:inherit;cursor:pointer}.big{font-size:15px;font-weight:900;color:#07141d;background:#dff5ff;border:0;border-radius:9px;padding:11px}
-.primary-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px}
-.network{padding:10px;border-radius:9px;background:#122c3a;border:1px solid #395264}
-.network .label{font-size:15px;font-weight:900}.network .sub{font-size:12px;color:#a9bfcb;margin-top:5px}
-.message-row{display:flex;align-items:center;gap:9px;background:#0d202d;border:1px solid #304959;padding:9px;border-radius:9px;margin-bottom:7px;cursor:pointer}
-.message-row .content{min-width:0;flex:1}.message-row strong{display:block;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.message-row .preview{color:#b0c4d0;font-size:13px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.message-row .time{font-size:12px;color:#afc4cd}
-.view-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}.view-head .heading{margin:0}
-.pills{display:flex;gap:5px}.pill{font-size:13px;color:#e6f2f9;background:#1c3748;border:1px solid #385669;border-radius:7px;padding:7px 10px}.pill.active{background:#e6f5fe;color:#08151e}
-.map{height:152px;position:relative;overflow:hidden;border:1px solid #3e6171;border-radius:9px;background:linear-gradient(#23445555 1px,transparent 1px),linear-gradient(90deg,#23445555 1px,transparent 1px),#122a37;background-size:25px 25px}.pin{position:absolute;left:49%;top:45%;height:22px;width:22px;border:6px solid #69e4fd;border-radius:50%;background:#fff}.map-text{position:absolute;bottom:8px;left:8px;font-size:13px;background:#07141dca;padding:6px;border-radius:5px}
-.radio{margin-bottom:10px;padding:14px;background:#112c3b;border:1px solid #365265;border-radius:10px}.radio strong{font-size:18px}.radio p{font-size:14px;margin:5px 0 0;color:#c6d6e0}
-.setting{display:flex;justify-content:space-between;align-items:center;border:1px solid #395365;background:#112431;border-radius:9px;padding:13px;margin-bottom:9px;font-size:15px;font-weight:800}.toggle{font-size:13px;background:#1e806a;padding:6px 12px;border-radius:20px}
-.overlay{display:none;position:absolute;inset:38px 0 56px;background:#07141df5;padding:10px;z-index:2}.overlay.show{display:block}.screen{position:relative}
-.compose label{display:block;font-size:13px;font-weight:800;margin:6px 0 3px}.compose select,.compose textarea{width:100%;font-family:inherit;font-size:16px;color:#f4fbff;background:#163344;border:1px solid #547084;border-radius:6px;padding:6px}.compose textarea{height:55px;resize:none}.compose-actions{display:flex;gap:8px;margin-top:8px}.compose-actions button{flex:1;padding:8px;font-size:14px;border-radius:7px;border:1px solid #3f5f70;background:#193b4e;color:#fff}.compose-actions .big{color:#07141d;background:#dff5ff}
-@media(max-width:540px){.device{padding:5px;border-radius:10px}.screen{width:480px;zoom:1}body{padding:4px}.note{font-size:12px}}
-</style></head>
-<body><h1>MeshCrossway · Touch UI v1</h1>
-<div class="device"><div class="screen"><header><span>MeshCrossway</span><span class="right">● GPS OK &nbsp; USB</span></header>
-<main>
-<section class="view active" data-view="home">
-<div class="primary-row">
-<div class="network"><div class="line"><span class="label">Meshtastic</span><span class="tag mt">MT</span></div><div class="sub">● Online · 4 peers</div></div>
-<div class="network"><div class="line"><span class="label">MeshCore</span><span class="tag mc">MC</span></div><div class="sub">● Online · 3 contacts</div></div>
+*{box-sizing:border-box}body{background:#030b12;color:#f1f8fd;font-family:system-ui,Arial;margin:0;min-height:100vh;display:flex;align-items:center;flex-direction:column;padding:14px}
+h1{font-size:20px;margin:8px}.intro{font-size:13px;color:#a5bccd;text-align:center;margin:5px 0 15px}.device{background:#142533;border:2px solid #42596b;border-radius:18px;padding:12px;max-width:100%}.screen{width:480px;height:320px;max-width:100%;background:#091723;border:1px solid #3a5365;border-radius:9px;position:relative;overflow:hidden}
+header{height:35px;background:#112637;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:14px;font-weight:850}header small{font-size:11px;color:#a7eaba}
+main{height:235px;padding:9px 11px;overflow:auto;scrollbar-width:thin}.page{display:none}.page.active{display:block}
+nav{height:50px;display:grid;grid-template-columns:repeat(5,1fr);background:#122939;border-top:1px solid #355266}nav button{font-size:11px;font-weight:800;background:none;border:0;color:#a5bccd;padding:2px 0;cursor:pointer}nav button.active{color:white;background:#1b4963;border-top:3px solid #69d6ff}nav span{display:block;font-size:20px;line-height:22px}
+.heading{font-size:17px;font-weight:900}.sub{font-size:12px;color:#acc2ce}.line{display:flex;align-items:center;justify-content:space-between;gap:8px}.btn{background:#def3ff;color:#061722;border:0;border-radius:8px;padding:9px 11px;font-size:14px;font-weight:900;cursor:pointer}.btn.dark{background:#1a3a4c;color:#f1f8fd;border:1px solid #416077}.btn:active,.rowitem:active{filter:brightness(1.35)}
+.mt{color:#5df0d8}.mc{color:#ffbf72}.tag{padding:3px 6px;border-radius:5px;font-size:11px;font-weight:900}.tag.mt{background:#173f42}.tag.mc{background:#533720}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.card{border:1px solid #355165;background:#102636;border-radius:9px;padding:9px}.card strong{font-size:15px}.metric{font-size:13px;margin-top:5px;color:#bfd2de}.rowitem{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid #2c4658;background:#102432;border-radius:9px;margin-top:7px;cursor:pointer;min-height:50px}.grow{flex:1;min-width:0}.rowitem strong{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rowitem .sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tabs{display:flex;gap:5px}.tabs button{font-size:12px;padding:6px 9px;border-radius:7px;background:#1a3a4c;color:#cfdeea;border:1px solid #385c73}.tabs button.selected{background:#dcf3ff;color:#091723}
+.map{position:relative;height:150px;background:linear-gradient(#2744565a 1px,transparent 1px),linear-gradient(90deg,#2744565a 1px,transparent 1px),#122b3b;background-size:24px 24px;border:1px solid #48657a;border-radius:8px;overflow:hidden}.map:before{content:'';position:absolute;left:0;top:70%;width:120%;height:20px;background:#54728644;transform:rotate(-23deg)}.map .pin{position:absolute;left:50%;top:43%;background:#e8fbff;border:5px solid #39bedf;width:20px;height:20px;border-radius:50%}.map .peer{position:absolute;background:#5df0d8;border:2px solid #102636;border-radius:50%;width:13px;height:13px}.map .peer.mcpeer{background:#ffbf72}.map label{position:absolute;bottom:7px;left:7px;font-size:12px;background:#06121ddc;border-radius:5px;padding:4px}
+.controls{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #45667b;background:#173546;color:#f1f8fd;border-radius:7px;font-size:13px;font-weight:700;padding:7px 9px}
+.overlay{position:absolute;inset:35px 0 50px;background:#0a1925;z-index:2;display:none;padding:9px 12px;overflow-y:auto}.overlay.open{display:block}.overlay h2{font-size:17px;margin:0 0 6px}.overlay label{display:block;font-size:12px;color:#b5c9d8;font-weight:700;margin:5px 0 3px}.overlay select,.overlay textarea{background:#183749;border:1px solid #4b6a7d;border-radius:7px;color:white;padding:6px 8px;width:100%;font-family:inherit;font-size:15px}.overlay textarea{resize:none;height:45px}.overlay .line{margin-bottom:6px}.quick{display:flex;gap:5px;margin:5px 0}.quick button{background:#244559;color:#fff;border:1px solid #506c7d;border-radius:6px;font-size:12px;padding:5px}
+.kbd{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;margin-top:5px}.kbd button{border:1px solid #49687b;border-radius:5px;background:#264759;color:white;font-size:12px;height:24px;padding:0}
+.toast{position:absolute;bottom:51px;left:9px;right:9px;border:1px solid #548397;background:#15394a;border-radius:8px;padding:8px;font-size:12px;display:none;z-index:3}.toast.show{display:block}
+footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:center}a{color:#8edaff}
+@media(max-width:520px){body{padding:5px}.device{padding:5px;border-radius:10px}h1{font-size:17px}.intro{font-size:12px;margin-bottom:7px}}
+</style></head><body>
+<h1>MeshCrossway · Field Console v2</h1><p class="intro">Meshtastic + MeshCore · touchscreen prototype · 480 × 320</p>
+<div class="device"><div class="screen">
+<header><span>MeshCrossway</span><small>● MT &nbsp; ● MC &nbsp; GPS 3D</small></header><main>
+<section class="page active" id="home">
+<div class="grid2"><div class="card"><div class="line"><strong class="mt">Meshtastic</strong><span class="tag mt">MT</span></div><div class="metric">● Online · 4 nodes</div></div><div class="card"><div class="line"><strong class="mc">MeshCore</strong><span class="tag mc">MC</span></div><div class="metric">● Online · 3 contacts</div></div></div>
+<div class="line" style="margin-top:11px"><span class="heading">Latest messages</span><button class="btn" data-compose>+ Message</button></div>
+<div class="rowitem" data-open="chat"><span class="tag mt">MT</span><div class="grow"><strong>Trail Team</strong><div class="sub">Reached checkpoint 3.</div></div><span class="sub">14:35</span></div>
+<div class="rowitem" data-open="chat"><span class="tag mc">MC</span><div class="grow"><strong>SAR Base</strong><div class="sub">Weather moving in.</div></div><span class="sub">14:31</span></div>
+</section>
+<section class="page" id="chat">
+<div class="line"><span class="heading">Conversations</span><button class="btn" data-compose>+ New</button></div>
+<div class="tabs" style="margin-top:7px"><button class="selected" data-filter="all">All</button><button data-filter="MT">Meshtastic</button><button data-filter="MC">MeshCore</button></div>
+<div class="rowitem conversation" data-net="MT" data-thread="Trail Team"><span class="tag mt">MT</span><div class="grow"><strong>Trail Team</strong><div class="sub">Reached checkpoint 3 · received</div></div><span class="sub">14:35</span></div>
+<div class="rowitem conversation" data-net="MC" data-thread="SAR Base"><span class="tag mc">MC</span><div class="grow"><strong>SAR Base</strong><div class="sub">Weather moving in · unread</div></div><span class="sub">14:31</span></div>
+<div class="rowitem conversation" data-net="MT" data-thread="Alex"><span class="tag mt">MT</span><div class="grow"><strong>Alex</strong><div class="sub">Copy · stored locally</div></div><span class="sub">14:22</span></div>
+</section>
+<section class="page" id="map">
+<div class="line" style="margin-bottom:8px"><span class="heading">Position & peers</span><span class="sub">Fix: 2 s old</span></div>
+<div class="map" id="maparea"><div class="pin"></div><div class="peer" style="left:30%;top:22%"></div><div class="peer mcpeer" style="left:76%;top:60%"></div><div class="peer" style="left:38%;top:75%"></div><label>Diagram only · offline map future</label></div>
+<div class="line" style="margin-top:8px"><strong style="font-size:14px">40.0000 N · 105.0000 W</strong><button class="btn dark" id="zoom">Zoom +</button></div>
+</section>
+<section class="page" id="tools">
+<div class="line"><span class="heading">Radio tools</span><button class="btn dark" id="discover">Discover</button></div>
+<div class="grid2" style="margin-top:8px">
+<div class="card"><strong class="mt">Meshtastic</strong><div class="metric">US · LongFast<br>4 nodes · RX 2 s<br>UART healthy</div></div>
+<div class="card"><strong class="mc">MeshCore</strong><div class="metric">Companion · 3 peers<br>RX 6 s · 0 queued<br>UART healthy</div></div></div>
+<div class="controls"><button class="chip" data-tool="Signal scan">Signal scan</button><button class="chip" data-tool="Trace route">Trace route</button><button class="chip" data-tool="Packet log">Packet log</button><button class="chip" data-tool="Repeaters">Repeaters</button></div>
+</section>
+<section class="page" id="more">
+<div class="heading">Field tools & settings</div>
+<div class="rowitem" id="quickOpen"><div class="grow"><strong>Quick messages</strong><div class="sub">Check in · Need help · Position</div></div>›</div>
+<div class="rowitem" id="sos"><div class="grow"><strong style="color:#ff9b92">Emergency message</strong><div class="sub">Confirm destination and network</div></div>›</div>
+<div class="rowitem" id="settings"><div class="grow"><strong>Settings & profiles</strong><div class="sub">Privacy · English · Traveler</div></div>›</div>
+</section></main>
+<nav><button class="active" data-nav="home"><span>⌂</span>Home</button><button data-nav="chat"><span>✉</span>Chats</button><button data-nav="map"><span>⌖</span>Map</button><button data-nav="tools"><span>⌁</span>Radios</button><button data-nav="more"><span>☷</span>More</button></nav>
+<div class="overlay" id="compose">
+<div class="line"><h2 id="composerTitle">New message</h2><button class="chip" data-close>Close ×</button></div>
+<div class="line"><div style="flex:1"><label for="network">Network</label><select id="network"><option>Meshtastic</option><option>MeshCore</option></select></div><div style="flex:1"><label for="destination">To</label><select id="destination"><option>Trail Team</option><option>Alex</option></select></div></div>
+<textarea id="draft" aria-label="Message" placeholder="Enter your message"></textarea>
+<div class="quick"><button data-quick="I'm OK">I'm OK</button><button data-quick="Checking in">Check in</button><button data-quick="Need assistance">Need help</button></div>
+<div class="kbd" id="kbd"></div><div class="line" style="margin-top:7px"><button class="btn dark" id="backspace">⌫</button><button class="btn dark" id="space">Space</button><button class="btn" id="send">Queue (demo)</button></div>
 </div>
-<div class="line" style="margin-bottom:7px"><span class="heading" style="margin:0">Recent messages</span><button class="big" id="newMessage">+ Compose</button></div>
-<div class="message-row" data-go="messages"><span class="tag mt">MT</span><div class="content"><strong>Trail Team</strong><div class="preview">Reached checkpoint 3.</div></div><span class="time">14:35</span></div>
-<div class="message-row" data-go="messages"><span class="tag mc">MC</span><div class="content"><strong>SAR Base</strong><div class="preview">Weather moving in.</div></div><span class="time">14:31</span></div>
-</section>
-<section class="view" data-view="messages"><div class="view-head"><span class="heading">Messages</span><button class="big" id="newMessage2">+ New</button></div>
-<div class="message-row"><span class="tag mt">MT</span><div class="content"><strong>Trail Team</strong><div class="preview">Reached checkpoint 3.</div></div><span class="time">14:35</span></div>
-<div class="message-row"><span class="tag mc">MC</span><div class="content"><strong>SAR Base</strong><div class="preview">Weather moving in.</div></div><span class="time">14:31</span></div>
-<div class="message-row"><span class="tag mt">MT</span><div class="content"><strong>Alex</strong><div class="preview">Staying on channel.</div></div><span class="time">14:22</span></div>
-</section>
-<section class="view" data-view="position"><div class="view-head"><span class="heading">Position</span><span class="muted">3D fix · age 2 s</span></div><div class="map"><span class="pin"></span><span class="map-text">Illustrative grid · no offline map yet</span></div><div class="line" style="margin-top:9px;font-size:15px"><strong>40.0000° N</strong><strong>105.0000° W</strong></div></section>
-<section class="view" data-view="radios"><div class="heading">Radio connections</div>
-<div class="radio"><div class="line"><strong class="mt">Meshtastic</strong><span class="muted">Online ●</span></div><p>UART · US · LongFast · 4 peers</p></div>
-<div class="radio"><div class="line"><strong class="mc">MeshCore</strong><span class="muted">Online ●</span></div><p>UART Companion · 3 contacts</p></div></section>
-<section class="view" data-view="setup"><div class="heading">Device settings</div><div class="setting">Share my location <span class="toggle" style="background:#455c68">OFF</span></div><div class="setting">Save local history <span class="toggle">ON</span></div><div class="setting">Meshtastic adapter <span class="toggle">ON</span></div></section>
-</main>
-<nav><button class="active" data-nav="home"><span class="ico">⌂</span>Home</button><button data-nav="messages"><span class="ico">✉</span>Messages</button><button data-nav="position"><span class="ico">⌖</span>Position</button><button data-nav="radios"><span class="ico">⌁</span>Radios</button><button data-nav="setup"><span class="ico">⚙</span>Setup</button></nav>
-<div class="overlay" id="overlay"><div class="compose">
-<div class="line"><strong style="font-size:18px">New message</strong><button class="pill" id="close">Close ✕</button></div>
-<label for="network">Network</label><select id="network"><option>Meshtastic</option><option>MeshCore</option></select>
-<label for="destination">Destination</label><select id="destination"><option>Trail Team</option><option>Alex</option></select>
-<label for="message">Message</label><textarea id="message" placeholder="Type message"></textarea>
-<div class="compose-actions"><button id="cancel">Cancel</button><button class="big" id="queue">Queue (demo)</button></div></div></div>
-</div></div><p class="note">480 × 320 target screen. Demo data only — no actual radios or message transmission. On a high-DPI desktop, browser size may differ from the physical display.</p>
+<div class="overlay" id="detail"><div class="line"><h2 id="detailTitle">Conversation</h2><button class="chip" data-close>Close ×</button></div><div id="bubble" class="card" style="margin:10px 0;font-size:15px">Reached checkpoint 3.</div><div class="sub" id="detailState">Received via Meshtastic</div><button class="btn" style="margin-top:15px" id="reply">Reply</button></div>
+<div class="overlay" id="toolPanel"><div class="line"><h2 id="toolTitle">Tool</h2><button class="chip" data-close>Close ×</button></div><div class="card" id="toolContent" style="margin:12px 0;font-size:15px">Simulated information</div><div class="sub">Illustrative data, not live telemetry.</div></div>
+<div class="toast" id="toast"></div>
+</div></div>
+<footer>Interactive browser simulator with demo data. No transmission, real positioning, diagnostics or emergency alert. Features are design targets, not implemented ESP32 functionality.</footer>
 <script>
-const navs=[...document.querySelectorAll('[data-nav]')];function show(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.dataset.view===v));navs.forEach(x=>x.classList.toggle('active',x.dataset.nav===v))}
-navs.forEach(x=>x.addEventListener('click',()=>show(x.dataset.nav)));document.querySelectorAll('[data-go]').forEach(x=>x.addEventListener('click',()=>show(x.dataset.go)));
-const overlay=document.getElementById('overlay');const open=()=>overlay.classList.add('show'),close=()=>overlay.classList.remove('show');document.querySelectorAll('#newMessage,#newMessage2').forEach(x=>x.addEventListener('click',open));document.querySelectorAll('#close,#cancel').forEach(x=>x.addEventListener('click',close));
-document.getElementById('network').addEventListener('change',e=>{document.getElementById('destination').innerHTML=e.target.value==='MeshCore'?'<option>SAR Base</option><option>Rescue 2</option>':'<option>Trail Team</option><option>Alex</option>'});
-document.getElementById('queue').addEventListener('click',()=>{alert('Demo only: message NOT transmitted or queued to hardware.');close()});
-document.querySelectorAll('.setting').forEach(x=>x.addEventListener('click',()=>{const t=x.querySelector('.toggle');const on=t.textContent==='ON';t.textContent=on?'OFF':'ON';t.style.background=on?'#455c68':'#1e806a'}));
+const pages=[...document.querySelectorAll('.page')], navs=[...document.querySelectorAll('[data-nav]')];
+function show(id){pages.forEach(x=>x.classList.toggle('active',x.id===id));navs.forEach(x=>x.classList.toggle('active',x.dataset.nav===id))}
+navs.forEach(x=>x.onclick=()=>show(x.dataset.nav));document.querySelectorAll('[data-open]').forEach(x=>x.onclick=()=>show(x.dataset.open));
+const overlays=[...document.querySelectorAll('.overlay')];const close=()=>overlays.forEach(x=>x.classList.remove('open'));function open(id){close();document.getElementById(id).classList.add('open')}
+document.querySelectorAll('[data-close]').forEach(x=>x.onclick=close);
+const toast=document.getElementById('toast');function notice(s){toast.textContent=s;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),3000)}
+const network=document.getElementById('network'),destination=document.getElementById('destination'),draft=document.getElementById('draft');
+function syncDest(){destination.innerHTML=(network.value==='Meshtastic'?['Trail Team','Alex','LongFast channel']:['SAR Base','Rescue 2','Public channel']).map(x=>'<option>'+x+'</option>').join('')}network.onchange=syncDest;
+document.querySelectorAll('[data-compose]').forEach(x=>x.onclick=()=>{document.getElementById('composerTitle').textContent='New message';open('compose')});
+document.querySelectorAll('[data-quick]').forEach(x=>x.onclick=()=>{draft.value=x.dataset.quick});
+const kb=document.getElementById('kbd');'QWERTYUIOPASDFGHJKLZXCVBNM'.split('').forEach(c=>{let b=document.createElement('button');b.textContent=c;b.onclick=()=>draft.value+=c.toLowerCase();kb.appendChild(b)});
+document.getElementById('space').onclick=()=>draft.value+=' ';document.getElementById('backspace').onclick=()=>draft.value=draft.value.slice(0,-1);
+document.getElementById('send').onclick=()=>{if(!draft.value.trim()){notice('Enter a message first');return}close();notice('SIMULATION: message not actually queued or sent');draft.value=''};
+document.querySelectorAll('.tabs button').forEach(x=>x.onclick=()=>{document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('selected',b===x));document.querySelectorAll('.conversation').forEach(c=>c.style.display=(x.dataset.filter==='all'||x.dataset.filter===c.dataset.net)?'flex':'none')});
+document.querySelectorAll('.conversation').forEach(c=>c.onclick=()=>{document.getElementById('detailTitle').textContent=c.dataset.thread;document.getElementById('bubble').textContent=c.querySelector('.sub').textContent.split(' · ')[0];document.getElementById('detailState').textContent='Source: '+(c.dataset.net==='MT'?'Meshtastic':'MeshCore')+' · demo';network.value=c.dataset.net==='MT'?'Meshtastic':'MeshCore';syncDest();[...destination.options].forEach(o=>{if(o.text===c.dataset.thread)destination.value=o.value});open('detail')});
+document.getElementById('reply').onclick=()=>{document.getElementById('composerTitle').textContent='Reply';open('compose')};
+document.getElementById('quickOpen').onclick=()=>{draft.value='Checking in';open('compose')};
+document.getElementById('sos').onclick=()=>{draft.value='NEED ASSISTANCE. My last known position: 40.0000 N, 105.0000 W (DEMO ONLY)';open('compose');notice('DEMO ONLY: no emergency communication')};
+document.getElementById('settings').onclick=()=>{document.getElementById('toolTitle').textContent='Settings';document.getElementById('toolContent').textContent='Profile: Traveler · Location sharing: OFF · History: local · Languages: English / Português (planned)';open('toolPanel')};
+document.querySelectorAll('[data-tool]').forEach(x=>x.onclick=()=>{document.getElementById('toolTitle').textContent=x.dataset.tool;document.getElementById('toolContent').textContent=({'Signal scan':'Demo RSSI: -89 dBm | SNR: +6 dB (illustrative)','Trace route':'Demo path: Node A → Node B → Base','Packet log':'14:35 MT RX · 14:31 MC RX · 14:22 MT RX','Repeaters':'Example repeater: Ridge Node · last heard 3 min'})[x.dataset.tool];open('toolPanel')});
+document.getElementById('discover').onclick=()=>notice('Discovery simulation only; no radio commands sent');
+let z=1;document.getElementById('zoom').onclick=()=>{z=z===3?1:z+1;document.querySelector('.map').style.backgroundSize=(24*z)+'px '+(24*z)+'px';document.getElementById('zoom').textContent='Zoom '+z+'×'};
 </script></body></html>
