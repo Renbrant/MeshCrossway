@@ -48,6 +48,7 @@ The first prototype will focus on:
 
 ## Documentation
 
+- [V1 battery and power architecture: selected Adafruit BQ25185 #6092, limits and electrical validation](docs/power-architecture.md)
 - [Bench wiring guide: connectors, GPIOs, power, and connection diagrams](docs/hardware-wiring.md) — provisional proposal; GNSS drawings and BOM require revalidation after the MAX-M10S selection.
 - [Meshtastic and MeshCore: concepts, differences, and official links](docs/meshtastic-vs-meshcore.md)
 
@@ -89,6 +90,8 @@ These are the selected purchase references. The [buying and wiring guide](docs/h
 | 1 two-pack | [**Aideepen LoRa V3 ESP32-S3 + SX1262, 863–928 MHz**](https://www.amazon.com/dp/B0DRSJV1ZL), option **Lora-V3 2Pcs** | Two boards: one Meshtastic, one MeshCore; $39.99 per pair in supplied screenshot; headers and Heltec V3-compatible routing to verify |
 | 1 | [**Uputronics u-blox MAX-M10S breakout (3 V variant)**](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751) | Selected GNSS board with SMA connector for an external active GNSS antenna; $36.00 reference price |
 | 1 | [**Bingfu 4-System GNSS Helix active antenna**](https://www.amazon.com/dp/B0FL7PVF16), Amazon B0FL7PVF16 | Selected for V1 bench testing, **not electrically validated**; SMA male, GNSS L1, advertised $21.69. Confirm antenna bias voltage/current delivered at Uputronics SMA before use |
+| 1 | [**Adafruit BQ25185 charger + 3.3 V buck board #6092**](https://www.adafruit.com/product/6092) | **Selected for V1 power-system evaluation**, not bench-validated; USB-C battery charging and up to 1 A at 3.3 V; actual system peak current and low-battery droop must be checked |
+| 1 candidate | [**ETWOWUP 1S LiPo 10,000 mAh**](https://www.amazon.com/dp/B0H9H5CTGT) | Candidate pack only; verify discharge limit, polarity, protection, size and compatible charge settings |
 | 1 | microSD card | Local history and diagnostic logs; capacity and format to be defined |
 | As needed | Jumpers, USB-C cables, and regulated USB supplies | Use the two antenna/pigtail sets shown in the radio package; verify contents before buying extras |
 | 2 optional | Additional compatible radio nodes | One remote peer for each protocol during bench testing |
@@ -99,7 +102,7 @@ The listing's close-up shows a **V3.2** marking; the package photo shows **loose
 
 The selected controller combines an ESP32-S3, a 3.5-inch touch display, PSRAM, flash, and a microSD slot. The proposed wiring is documented, but the actual board revisions and shared GPIOs must be checked before assembly. The radio listing is branded Aideepen and does not establish original Heltec manufacture or pre-soldered headers. No separate radio base or IO adapter is required. The former modular radio selection is superseded.
 
-For the first bench prototype, separate USB supplies are planned for the controller and radio nodes. External signals must use compatible logic levels and a common ground. Do not assume the controller's regulator can power the complete assembly.
+For the initial bench tests, separate USB supplies may still be used for the controller and radio nodes. The **selected portable-power candidate is Adafruit BQ25185 #6092** with 1S LiPo charging and a nominal 3.3 V rail limited to 1 A. **Do not connect all modules to it until peak current and voltage droop are measured.** The Waveshare includes its own AXP2101 charging PMIC: never connect two chargers to the same battery, nor inject 3.3 V into an unverified Waveshare rail. See the [power architecture and safety checklist](docs/power-architecture.md).
 
 ### Interface plan
 
@@ -115,7 +118,7 @@ For the first bench prototype, separate USB supplies are planned for the control
 
 The [bench wiring proposal](docs/hardware-wiring.md) assigns Meshtastic to GPIO39/40, MeshCore to GPIO17/18, and GNSS I²C provisionally to GPIO21/38. Each radio uses proposed RX GPIO4 / TX GPIO5. The guide explicitly distinguishes the 32-pin Waveshare listing-photo numbering from Rev2 PDF J8 numbering: the two positions in each row are reversed. Use GPIO identities and confirm the actual PCB labels before wiring. This allocation still requires validation with the display, touch, microSD, GNSS, and both radio links active.
 
-Revised provisional parts subtotal: **$148.02**, including the Bingfu antenna at its screenshot reference price of $21.69, but **excluding any needed RF adapters, shipping and taxes**, when reusing USB supplies/cables. This is a parts estimate, not a complete assembled-device cost; see the [bill of materials](docs/hardware-wiring.md#2-shopping-list-and-budget).
+Previous bench-only parts subtotal: **$148.02**, including the Bingfu antenna at its screenshot reference price of $21.69, but **excluding the newly selected charger, battery, any needed RF adapters, shipping and taxes**, when reusing USB supplies/cables. This is a parts estimate, not a complete assembled-device cost; see the [bill of materials](docs/hardware-wiring.md#2-shopping-list-and-budget).
 
 ## Planned software
 
@@ -175,6 +178,8 @@ The controller will maintain bounded local queues and history, with explicit pol
 - [ ] Measure RF coexistence and power consumption.
 - [ ] Run sustained offline and fault-recovery tests.
 - [ ] Design a modular carrier PCB with central display, radios toward opposite edges, externally mounted GNSS antenna, and a rear battery/power section.
+- [x] Select Adafruit BQ25185 #6092 as the V1 battery/3.3 V power module for bench evaluation.
+- [ ] Validate combined load, power-path operation and safe isolation of the Waveshare AXP2101 charging circuit.
 - [ ] Evaluate a portable enclosure and battery system.
 - [ ] Consider a custom PCB after the bench design is reproducible.
 
@@ -229,6 +234,7 @@ Use [GitHub Issues](https://github.com/Renbrant/MeshCrossway/issues) to discuss 
 
 ## References
 
+- [Adafruit BQ25185 #6092 battery charger with 3.3V buck](https://www.adafruit.com/product/6092)
 - [Waveshare ESP32-S3-Touch-LCD-3.5](https://www.waveshare.com/esp32-s3-touch-lcd-3.5.htm)
 - [Heltec WiFi LoRa 32 V3 hardware reference](https://heltec.org/project/wifi-lora-32-v3/)
 - [Selected LoRa V3 two-pack listing](https://www.amazon.com/dp/B0DRSJV1ZL)
