@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="950" viewBox="0 0 1280 950" role="img" aria-labelledby="title desc">
+<title id="title">MeshCrossway | Radio wiring</title><desc id="desc">Rev2 J8 schematic numbering. Logical wiring, not a physical board layout. All UART signals: 3.3 V.</desc>
+<rect width="1280" height="950" fill="#f3f6fa"/>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse"><path d="M0 0L8 4L0 8Z" fill="context-stroke"/></marker></defs>
+<text x="40" y="50" font-family="DejaVu Sans,Arial,sans-serif" font-size="28" fill="#182b42" font-weight="700" text-anchor="start">MeshCrossway | Radio wiring</text>
+<text x="40" y="82" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#53657a" font-weight="400" text-anchor="start">Rev2 J8 schematic numbering. Logical wiring, not a physical board layout. All UART signals: 3.3 V.</text>
+<rect x="40" y="120" width="480" height="650" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
+<path d="M56 120H504Q520 120 520 136V172H40V136Q40 120 56 120" fill="#1768b5"/>
+<text x="60" y="154" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">Waveshare ESP32-S3 controller</text>
+<rect x="770" y="120" width="470" height="290" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
+<path d="M786 120H1224Q1240 120 1240 136V172H770V136Q770 120 786 120" fill="#1768b5"/>
+<text x="790" y="154" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">RAK A | Meshtastic</text>
+<rect x="770" y="450" width="470" height="290" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
+<path d="M786 450H1224Q1240 450 1240 466V502H770V466Q770 450 786 450" fill="#8553b5"/>
+<text x="790" y="484" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">RAK B | MeshCore</text>
+<text x="65" y="218" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">J8.10 / GPIO39 / TX</text>
+<text x="795" y="218" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">J5.6 / RXD1 / P0.15</text>
+<path d="M520 230L770 230" fill="none" stroke="#1768b5" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="65" y="288" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">J8.12 / GPIO40 / RX</text>
+<text x="795" y="288" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">J5.5 / TXD1 / P0.16</text>
+<path d="M770 300L520 300" fill="none" stroke="#087f68" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="65" y="548" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">J8.15 / GPIO17 / TX</text>
+<text x="795" y="548" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">J5.6 / RXD1 / P0.15</text>
+<path d="M520 560L770 560" fill="none" stroke="#8553b5" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="65" y="618" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">J8.17 / GPIO18 / RX</text>
+<text x="795" y="618" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="700" text-anchor="start">J5.5 / TXD1 / P0.16</text>
+<path d="M770 630L520 630" fill="none" stroke="#087f68" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="795" y="195" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">RAK4631 + RAK19007 + RAK13002</text>
+<text x="795" y="370" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#182b42" font-weight="400" text-anchor="start">PROTO client API; proposed 115200 8N1</text>
+<text x="795" y="525" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">RAK4631 + RAK19007 + RAK13002</text>
+<text x="795" y="700" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#8553b5" font-weight="700" text-anchor="start">Requires a custom UART Companion build</text>
+<text x="65" y="710" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#53657a" font-weight="400" text-anchor="start">UART0 GPIO43/44 reserved for diagnostics</text>
+<text x="65" y="745" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#53657a" font-weight="400" text-anchor="start">Camera absent; camera driver disabled</text>
+<rect x="40" y="795" width="1200" height="110" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
+<path d="M56 795H1224Q1240 795 1240 811V847H40V811Q40 795 56 795" fill="#596775"/>
+<text x="60" y="829" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">Common ground + independent USB power</text>
+<text x="65" y="877" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#182b42" font-weight="400" text-anchor="start">J8.29 GND -&gt; both RAK13002 J5.2 GND. Do not join 3.3 V or 5 V power outputs.</text>
+<text x="40" y="932" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#53657a" font-weight="400" text-anchor="start">Before a node is powered off, isolate its UART wires to avoid parasitic powering. No RTS/CTS in this plan.</text>
+</svg>
