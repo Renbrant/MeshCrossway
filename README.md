@@ -166,6 +166,20 @@ Positions should include their source, available quality information, and tempor
 
 The controller will maintain bounded local queues and history, with explicit policies for retention, storage exhaustion, and recovery. GNSS publication will use each protocol's actual capabilities and its own privacy and rate settings.
 
+### Direct Tracking and network protection
+
+**Proposed default for real-time positions: Direct Only (one-hop / no repeater forwarding).** Tracking sends compact, rate-limited updates only to nearby compatible peers without silently escalating to multi-hop forwarding. Ordinary user messages can still use their normal mesh routes. A radio channel remains shared even in one-hop mode, so **Direct Only lowers forwarding load but cannot eliminate congestion or guarantee delivery**.
+
+- **Direct Only:** no repeater forwarding and no automatic flooding fallback; stale/out-of-range peers show their last fix with timestamp, not a live location.
+- **Adaptive (future):** mesh fallback only after explicit user approval.
+- **Mesh Network (future):** routed location sharing with a separate, conservative airtime budget.
+- **Traffic protection:** minimum transmission gap, GNSS quality and movement filtering, per-radio airtime budget, backoff under congestion, bounded retries, deduplication, recipient caps and priority for user messages.
+- **Initial experimental cadence:** stationary no faster than 5 min; walking no faster than 60 s or 100 m (plus a mandatory minimum gap); any faster updates require RF measurements. Session duration is bounded and sharing remains OFF by default.
+- **Compatibility limitations:** Meshtastic zero-hop requires outgoing packet hop limit 0. MeshCore direct routing can still involve repeaters and group channels normally flood; verify true zero-hop behavior and disable route/flood fallback before enabling this mode.
+- **Range:** no fixed guaranteed radius. Portable 915 MHz LoRa range can vary from very short obstructed links to multiple kilometers with favorable line of sight; actual performance needs field tests.
+
+**[Full Direct Tracking, position sharing and anti-congestion design](docs/navigation-and-sharing.md#direct-tracking-local-one-hop-location-sharing-design-proposal)**. The simulator does not implement RF transmissions or enforce these budgets.
+
 ## Development roadmap
 
 - [x] Define a standalone ESP32 touchscreen architecture.
@@ -180,6 +194,8 @@ The controller will maintain bounded local queues and history, with explicit pol
 - [ ] Add GNSS, persistent history, and restart recovery.
 - [ ] Implement local POI/waypoint management, track recording and GPX import/export.
 - [ ] Validate opt-in live position sharing to a person or group with time, movement and auto-stop settings.
+- [ ] Validate Direct Only packet routing (zero repeater hops) independently for Meshtastic and MeshCore, with no implicit mesh fallback.
+- [ ] Measure airtime, collision and delivery impact; implement per-radio budgets, adaptive backoff, minimum gaps and GNSS jitter filtering.
 - [ ] Prototype an authenticated Bluetooth companion channel for bulk GPX transfers.
 - [ ] Show peer positions with network identity, last-update age and stale-fix warnings.
 - [ ] Measure RF coexistence and power consumption.
