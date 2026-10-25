@@ -18,6 +18,10 @@ nav{height:50px;display:grid;grid-template-columns:repeat(5,1fr);background:#122
 .toast{position:absolute;bottom:51px;left:9px;right:9px;border:1px solid #548397;background:#15394a;border-radius:8px;padding:8px;font-size:12px;display:none;z-index:3}.toast.show{display:block}
 footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:center}a{color:#8edaff}
 @media(max-width:520px){body{padding:5px}.device{padding:5px;border-radius:10px}h1{font-size:17px}.intro{font-size:12px;margin-bottom:7px}}
+
+/* Field Console v3 extensions */
+:root{--accent:#69d6ff}.screen.light{background:#e8f2f6;color:#08202d}.screen.light main{background:#e8f2f6;color:#08202d}.screen.light .card,.screen.light .rowitem{background:#fff;color:#08202d;border-color:#a5bfcb}.screen.light .sub,.screen.light .metric{color:#395e71}.screen.light nav{background:#d2e4eb}.screen.light nav button{color:#284c61}.screen.light nav button.active{background:#b2d8ea;color:#071923;border-top-color:var(--accent)}.screen.light header{background:#b9d9e8;color:#092434}.screen.light .overlay{background:#eef7fa;color:#092434}.screen.light .heading{color:#092434}.screen.light .pill,.screen.light .chip{color:#effaff}.screen{border-top-color:var(--accent)}
+.field-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:9px}.field-tile{border:1px solid #3f6277;border-radius:9px;background:#153548;color:#f6fbff;padding:9px 7px;text-align:left;min-height:57px;cursor:pointer}.field-tile strong{font-size:14px;display:block}.field-tile small{color:#bdd2df;font-size:11px}.field-tile:focus-visible,button:focus-visible{outline:3px solid #faca59}.sky{height:105px;width:105px;border-radius:50%;border:2px solid #4c7489;background:radial-gradient(circle,transparent 27%,#4a738b88 28%,transparent 30%,transparent 60%,#4a738b88 61%,transparent 63%),linear-gradient(90deg,transparent 49%,#527e91 50%,transparent 51%),linear-gradient(transparent 49%,#527e91 50%,transparent 51%),#102c3e;position:relative;flex:none}.sat{position:absolute;font-size:10px;font-weight:900;color:#081c23;background:#77e7b0;border-radius:50%;width:20px;height:20px;text-align:center;line-height:20px}.track-head{font-size:12px;color:#a9c6d8;margin:6px 0}.action-row{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}.demo-caption{font-size:11px;color:#b1c9d8;margin:8px 0}
 </style></head><body>
 <h1>MeshCrossway · Field Console v2</h1><p class="intro">Meshtastic + MeshCore · touchscreen prototype · 480 × 320</p>
 <div class="device"><div class="screen">
@@ -49,6 +53,15 @@ footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:cente
 </section>
 <section class="page" id="more">
 <div class="heading">Field tools & settings</div>
+<div class="field-grid">
+<button class="field-tile" data-feature="tracker"><strong>◉ Tracker</strong><small>Trail-Mate · GPX</small></button>
+<button class="field-tile" data-feature="team"><strong>♙ Team</strong><small>Trail-Mate · peers</small></button>
+<button class="field-tile" data-feature="sky"><strong>✧ GNSS Sky</strong><small>Trail-Mate · fix</small></button>
+<button class="field-tile" data-feature="paths"><strong>⌁ Paths</strong><small>Ripple · saved routes</small></button>
+<button class="field-tile" data-feature="control"><strong>☷ Control</strong><small>MeshOS · quick toggles</small></button>
+<button class="field-tile" data-feature="display"><strong>◐ Display</strong><small>Ripple · themes</small></button>
+</div>
+
 <div class="rowitem" id="quickOpen"><div class="grow"><strong>Quick messages</strong><div class="sub">Check in · Need help · Position</div></div>›</div>
 <div class="rowitem" id="sos"><div class="grow"><strong style="color:#ff9b92">Emergency message</strong><div class="sub">Confirm destination and network</div></div>›</div>
 <div class="rowitem" id="settings"><div class="grow"><strong>Settings & profiles</strong><div class="sub">Privacy · English · Traveler</div></div>›</div>
@@ -63,6 +76,8 @@ footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:cente
 </div>
 <div class="overlay" id="detail"><div class="line"><h2 id="detailTitle">Conversation</h2><button class="chip" data-close>Close ×</button></div><div id="bubble" class="card" style="margin:10px 0;font-size:15px">Reached checkpoint 3.</div><div class="sub" id="detailState">Received via Meshtastic</div><button class="btn" style="margin-top:15px" id="reply">Reply</button></div>
 <div class="overlay" id="toolPanel"><div class="line"><h2 id="toolTitle">Tool</h2><button class="chip" data-close>Close ×</button></div><div class="card" id="toolContent" style="margin:12px 0;font-size:15px">Simulated information</div><div class="sub">Illustrative data, not live telemetry.</div></div>
+
+<div class="overlay" id="featurePanel"><div class="line"><h2 id="featureTitle">Field feature</h2><button class="chip" data-close>Close ×</button></div><div id="featureContent"></div></div>
 <div class="toast" id="toast"></div>
 </div></div>
 <footer>Bench target: Waveshare 3.5-inch touch + 2 LoRa V3 ESP32-S3/SX1262 boards + SAM-M10Q. <a href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/hardware-wiring.md">Hardware &amp; wiring</a><br>Interactive browser simulator with demo data. No transmission, real positioning, diagnostics or emergency alert. Features are design targets, not implemented ESP32 functionality.</footer>
@@ -89,4 +104,27 @@ document.getElementById('settings').onclick=()=>{document.getElementById('toolTi
 document.querySelectorAll('[data-tool]').forEach(x=>x.onclick=()=>{document.getElementById('toolTitle').textContent=x.dataset.tool;document.getElementById('toolContent').textContent=({'Signal scan':'Demo RSSI: -89 dBm | SNR: +6 dB (illustrative)','Trace route':'Demo path: Node A → Node B → Base','Packet log':'14:35 MT RX · 14:31 MC RX · 14:22 MT RX','Repeaters':'Example repeater: Ridge Node · last heard 3 min'})[x.dataset.tool];open('toolPanel')});
 document.getElementById('discover').onclick=()=>notice('Discovery simulation only; no radio commands sent');
 let z=1;document.getElementById('zoom').onclick=()=>{z=z===3?1:z+1;document.querySelector('.map').style.backgroundSize=(24*z)+'px '+(24*z)+'px';document.getElementById('zoom').textContent='Zoom '+z+'×'};
+
+const screen=document.querySelector('.screen');
+const fp=document.getElementById('featurePanel'),ft=document.getElementById('featureTitle'),fc=document.getElementById('featureContent');
+const examples={
+tracker:['Track recording','<div class="card"><div class="line"><strong>Trail 01</strong><span class="tag mt">DEMO</span></div><div class="metric">Distance: <b id="trkDistance">2.4 km</b> · Duration: 32 min</div><div class="track-head">Breadcrumbs and GPX export planned. No GPS track is recorded.</div></div><div class="action-row"><button class="btn" id="trkButton">Start simulated track</button><button class="btn dark" id="gpxButton">Export example GPX</button></div>'],
+team:['Team coordination','<div class="card"><strong>Expedition Alpha · demo</strong><div class="metric">Leader: Base Camp · Members: 3</div></div><div class="rowitem"><span class="tag mt">MT</span><div class="grow"><strong>Alex</strong><div class="sub">Last position 3 min ago</div></div></div><div class="rowitem"><span class="tag mc">MC</span><div class="grow"><strong>Ranger 2</strong><div class="sub">Last position 8 min ago</div></div></div><div class="action-row"><button class="btn" id="waypointBtn">Create example waypoint</button></div><div class="demo-caption">Team membership and waypoint sharing are not connected to radios.</div>'],
+sky:['GNSS sky plot','<div class="line"><div class="sky"><span class="sat" style="left:20%;top:17%">G</span><span class="sat" style="left:66%;top:27%;background:#ffc579">E</span><span class="sat" style="left:47%;top:64%">B</span></div><div class="grow"><strong>12 satellites · 3D</strong><div class="metric">Used: 8 · HDOP: 0.9</div><div class="metric">Fix age: 2 sec</div><div class="metric">G: GPS · E: Galileo · B: BeiDou</div></div></div><div class="demo-caption">Illustrative sky plot, not live GNSS measurements.</div>'],
+paths:['Saved radio paths','<div class="card"><strong>Ridge → Base</strong><div class="metric">MeshCore · 2 relay hops</div><div class="metric">Manual route · inactive demo</div></div><div class="action-row"><button class="btn" id="pathButton">Select example path</button></div><div class="demo-caption">Paths are protocol-specific; no cross-network forwarding.</div>'],
+control:['Quick controls','<div class="field-grid"><button class="field-tile control-toggle" data-tog="GPS" data-on="true"><strong>GPS</strong><small>ON · demo</small></button><button class="field-tile control-toggle" data-tog="Bluetooth" data-on="false"><strong>Bluetooth</strong><small>OFF · demo</small></button><button class="field-tile control-toggle" data-tog="Wi-Fi" data-on="false"><strong>Wi-Fi</strong><small>OFF · demo</small></button><button class="field-tile control-toggle" data-tog="Sound" data-on="true"><strong>Sound</strong><small>ON · demo</small></button></div><div class="track-head">Brightness</div><input type="range" min="20" max="100" value="80" id="bright" aria-label="Brightness" style="width:95%"><div class="demo-caption">Visual controls only. No device peripherals are changed.</div>'],
+display:['Display appearance','<div class="card"><strong>Color mode</strong><div class="action-row"><button class="btn" id="darkTheme">Dark</button><button class="btn dark" id="lightTheme">Light</button></div><div class="track-head">Accent color</div><div class="action-row"><button class="chip themeAccent" data-color="#69d6ff">Blue</button><button class="chip themeAccent" data-color="#5df0d8">Teal</button><button class="chip themeAccent" data-color="#ffbf72">Amber</button></div></div><div class="demo-caption">Ripple-inspired settings. Changes affect this browser preview only.</div>']
+};
+function feature(name){const d=examples[name];if(!d)return;ft.textContent=d[0];fc.innerHTML=d[1];open('featurePanel');
+const click=(id,fn)=>{const el=document.getElementById(id);if(el)el.onclick=fn};
+click('trkButton',()=>{document.getElementById('trkButton').textContent='Stop simulated track';notice('Demo track state only')});
+click('gpxButton',()=>{const gpx='<?xml version="1.0"?><gpx version="1.1" creator="MeshCrossway UI demo"><metadata><name>Sample track only - not GPS</name></metadata></gpx>';const blob=new Blob([gpx],{type:'application/gpx+xml'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='meshcrossway-demo.gpx';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)});
+click('waypointBtn',()=>notice('Demo waypoint added to preview only'));
+click('pathButton',()=>notice('Example MeshCore path selected in preview only'));
+click('darkTheme',()=>{screen.classList.remove('light');notice('Dark mode preview')});
+click('lightTheme',()=>{screen.classList.add('light');notice('Light mode preview')});
+document.querySelectorAll('.themeAccent').forEach(b=>b.onclick=()=>{screen.style.setProperty('--accent',b.dataset.color);notice('Accent updated')});
+document.querySelectorAll('.control-toggle').forEach(b=>b.onclick=()=>{const on=b.dataset.on!=='true';b.dataset.on=String(on);b.querySelector('small').textContent=(on?'ON':'OFF')+' · demo'});
+}
+document.querySelectorAll('[data-feature]').forEach(b=>b.addEventListener('click',()=>feature(b.dataset.feature)));
 </script></body></html>
