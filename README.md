@@ -88,7 +88,7 @@ These are the selected purchase references. The [buying and wiring guide](docs/h
 | 1 | [**Waveshare ESP32-S3-Touch-LCD-3.5**](https://www.amazon.com/dp/B0F3WS2W5R), standard/no camera | Selected touch controller; $35.99 in supplied screenshot; revision and 32-pin labels to verify |
 | 1 two-pack | [**Aideepen LoRa V3 ESP32-S3 + SX1262, 863–928 MHz**](https://www.amazon.com/dp/B0DRSJV1ZL), option **Lora-V3 2Pcs** | Two boards: one Meshtastic, one MeshCore; $39.99 per pair in supplied screenshot; headers and Heltec V3-compatible routing to verify |
 | 1 | [**Uputronics u-blox MAX-M10S breakout (3 V variant)**](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751) | Selected GNSS board with SMA connector for an external active GNSS antenna; $36.00 reference price |
-| 1 | Compatible external **active GNSS antenna**, SMA connection | Required separately; check antenna bias voltage/current, frequency bands, connector and mounting before ordering |
+| 1 | [**Bingfu 4-System GNSS Helix active antenna**](https://www.amazon.com/dp/B0FL7PVF16), Amazon B0FL7PVF16 | Selected for V1 bench testing, **not electrically validated**; SMA male, GNSS L1, advertised $21.69. Confirm antenna bias voltage/current delivered at Uputronics SMA before use |
 | 1 | microSD card | Local history and diagnostic logs; capacity and format to be defined |
 | As needed | Jumpers, USB-C cables, and regulated USB supplies | Use the two antenna/pigtail sets shown in the radio package; verify contents before buying extras |
 | 2 optional | Additional compatible radio nodes | One remote peer for each protocol during bench testing |
@@ -115,7 +115,7 @@ For the first bench prototype, separate USB supplies are planned for the control
 
 The [bench wiring proposal](docs/hardware-wiring.md) assigns Meshtastic to GPIO39/40, MeshCore to GPIO17/18, and GNSS I²C provisionally to GPIO21/38. Each radio uses proposed RX GPIO4 / TX GPIO5. The guide explicitly distinguishes the 32-pin Waveshare listing-photo numbering from Rev2 PDF J8 numbering: the two positions in each row are reversed. Use GPIO identities and confirm the actual PCB labels before wiring. This allocation still requires validation with the display, touch, microSD, GNSS, and both radio links active.
 
-Revised provisional parts subtotal: **$126.33 plus the external active GNSS antenna and any necessary RF accessories** when reusing USB supplies/cables. This is a parts estimate, not a complete assembled-device cost; see the [bill of materials](docs/hardware-wiring.md#2-shopping-list-and-budget).
+Revised provisional parts subtotal: **$148.02**, including the Bingfu antenna at its screenshot reference price of $21.69, but **excluding any needed RF adapters, shipping and taxes**, when reusing USB supplies/cables. This is a parts estimate, not a complete assembled-device cost; see the [bill of materials](docs/hardware-wiring.md#2-shopping-list-and-budget).
 
 ## Planned software
 
@@ -233,6 +233,7 @@ Use [GitHub Issues](https://github.com/Renbrant/MeshCrossway/issues) to discuss 
 - [Heltec WiFi LoRa 32 V3 hardware reference](https://heltec.org/project/wifi-lora-32-v3/)
 - [Selected LoRa V3 two-pack listing](https://www.amazon.com/dp/B0DRSJV1ZL)
 - [MeshCore ESP32 Companion UART source](https://github.com/meshcore-dev/MeshCore/blob/main/examples/companion_radio/main.cpp)
+- [Bingfu 4-System GNSS Helix antenna, selected for V1 testing](https://www.amazon.com/dp/B0FL7PVF16)
 - [Selected Uputronics MAX-M10S breakout (3 V variant)](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751)
 - [u-blox MAX-M10S product documentation](https://www.u-blox.com/en/product/max-m10-series)
 - [Meshtastic firmware](https://github.com/meshtastic/firmware)
