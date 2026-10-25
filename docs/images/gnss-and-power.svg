@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="920" viewBox="0 0 1280 920" role="img" aria-labelledby="title desc">
+<title id="title">MeshCrossway | GNSS and bench power</title><desc id="desc">GNSS uses a dedicated I2C bus. Radio nodes are powered through their own USB-C ports.</desc>
+<rect width="1280" height="920" fill="#f3f6fa"/>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse"><path d="M0 0L8 4L0 8Z" fill="context-stroke"/></marker></defs>
+<text x="40" y="50" font-family="DejaVu Sans,Arial,sans-serif" font-size="28" fill="#182b42" font-weight="700" text-anchor="start">MeshCrossway | GNSS and bench power</text>
+<text x="40" y="82" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#53657a" font-weight="400" text-anchor="start">GNSS uses a dedicated I2C bus. Radio nodes are powered through their own USB-C ports.</text>
+<rect x="40" y="120" width="480" height="320" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
+<path d="M56 120H504Q520 120 520 136V172H40V136Q40 120 56 120" fill="#1768b5"/>
+<text x="60" y="154" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">Waveshare V2 | J8</text>
+<rect x="770" y="120" width="470" height="320" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
+<path d="M786 120H1224Q1240 120 1240 136V172H770V136Q770 120 786 120" fill="#087f68"/>
+<text x="790" y="154" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">SparkFun SAM-M10Q | Qwiic</text>
+<text x="65" y="225" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">J8.31 / VCC3V3</text>
+<text x="795" y="225" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">3.3 V / red</text>
+<path d="M520 218L770 218" fill="none" stroke="#c43c36" stroke-width="3"/>
+<text x="65" y="280" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">J8.29 / GND</text>
+<text x="795" y="280" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">GND / black</text>
+<path d="M520 273L770 273" fill="none" stroke="#596775" stroke-width="3"/>
+<text x="65" y="335" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">J8.6 / GPIO21</text>
+<text x="795" y="335" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">SDA / blue</text>
+<path d="M520 328L770 328" fill="none" stroke="#1768b5" stroke-width="3"/>
+<text x="65" y="390" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">J8.8 / GPIO38</text>
+<text x="795" y="390" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">SCL / yellow</text>
+<path d="M520 383L770 383" fill="none" stroke="#9a7800" stroke-width="3"/>
+<text x="40" y="485" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">Use a Qwiic-to-individual-wires cable. Verify signal names; cable colors alone are not a pinout.</text>
+<text x="40" y="518" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">Start at 100 kHz. Default 7-bit GNSS address: 0x42. No PPS or UART connection is required.</text>
+<text x="40" y="551" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">Keep the onboard I2C bus on GPIO8/7 separate. Check that the 3.3 V rail is enabled and stable.</text>
+<rect x="40" y="590" width="1200" height="265" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
+<path d="M56 590H1224Q1240 590 1240 606V642H40V606Q40 590 56 590" fill="#596775"/>
+<text x="60" y="624" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">USB power topology</text>
+<text x="70" y="695" font-family="DejaVu Sans,Arial,sans-serif" font-size="21" fill="#182b42" font-weight="700" text-anchor="start">USB 5 V branch 1</text>
+<path d="M205 718L205 755" fill="none" stroke="#c43c36" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="70" y="790" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="400" text-anchor="start">Waveshare USB-C</text>
+<text x="465" y="695" font-family="DejaVu Sans,Arial,sans-serif" font-size="21" fill="#182b42" font-weight="700" text-anchor="start">USB 5 V branch 2</text>
+<path d="M600 718L600 755" fill="none" stroke="#c43c36" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="465" y="790" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="400" text-anchor="start">RAK A USB-C</text>
+<text x="860" y="695" font-family="DejaVu Sans,Arial,sans-serif" font-size="21" fill="#182b42" font-weight="700" text-anchor="start">USB 5 V branch 3</text>
+<path d="M995 718L995 755" fill="none" stroke="#c43c36" stroke-width="3" marker-end="url(#arrow)"/>
+<text x="860" y="790" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="400" text-anchor="start">RAK B USB-C</text>
+<text x="65" y="833" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">No battery in this bench plan. Do not parallel board power outputs. All UART grounds are common.</text>
+<text x="40" y="892" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#53657a" font-weight="400" text-anchor="start">Signal-only diagrams: connector order is defined by the verified board labels and the tables in the guide.</text>
+</svg>
