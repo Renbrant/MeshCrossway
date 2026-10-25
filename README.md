@@ -1,5 +1,7 @@
 # MeshCrossway
 
+![MeshCrossway bench prototype: ESP32-S3 touchscreen, dedicated Meshtastic and MeshCore radio nodes, u-blox GNSS, and microSD storage](docs/images/meshcrossway-bench-prototype.webp)
+
 **Two mesh networks. One portable terminal.**
 
 MeshCrossway is an open-source project to build an ESP32-based portable communicator with a touchscreen, dedicated LoRa radios for Meshtastic and MeshCore, GNSS positioning, and local message storage.
