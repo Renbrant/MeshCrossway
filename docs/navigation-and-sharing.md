@@ -53,6 +53,8 @@ Meshtastic and MeshCore are **not mutually bridged by default**. Any future cros
 
 ## Direct Tracking: local one-hop location sharing (design proposal)
 
+**Firmware policy:** implement rate budgets, consent and movement/time scheduling on the central ESP32, using protocol-native radio APIs. Prefer unmodified official firmware and adjust only UART build settings if required; enable Direct Only only after verifying actual zero-hop packet behavior. If a required per-packet control is not exposed, document the limitation and consider an upstream contribution rather than silently changing firmware. See [radio firmware strategy](radio-firmware-strategy.md).
+
 **Default tracking mode: Direct Only.** This is a proposed protocol-aware application policy, **not a working feature or a new interoperable mesh protocol**. It is independent from ordinary messages, which may continue using normal multi-hop routing. A one-hop link is not a dedicated point-to-point frequency: everyone nearby sharing the channel can still experience contention, airtime consumption and collisions.
 
 ### Modes and fallback policy
