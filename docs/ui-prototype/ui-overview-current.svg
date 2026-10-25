@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="540" viewBox="0 0 1260 540">
+<defs><style>text{font-family:Arial,Helvetica,sans-serif}.h{fill:#f4fbff;font-weight:700}.s{fill:#adc5d3}.m{fill:#5df0d8}.c{fill:#ffbf72}.panel{fill:#102636;stroke:#355165}</style></defs>
+<rect width="1260" height="540" rx="18" fill="#07121b"/>
+<text x="42" y="52" class="h" font-size="28">MeshCrossway</text><text x="42" y="78" class="s" font-size="16">Touchscreen UI · current concept · 480 × 320</text>
+<g transform="translate(30 114)">
+<rect width="390" height="290" rx="16" fill="#172938" stroke="#52677a" stroke-width="3"/><rect x="10" y="10" width="370" height="270" rx="9" fill="#091723"/>
+<rect x="10" y="10" width="370" height="33" rx="8" fill="#112637"/><text x="23" y="32" class="h" font-size="15">MeshCrossway</text><text x="256" y="32" class="m" font-size="11">● MT  ● MC  GPS</text>
+<rect x="21" y="55" width="165" height="65" rx="9" class="panel"/><rect x="194" y="55" width="165" height="65" rx="9" class="panel"/>
+<text x="33" y="80" class="m" font-size="17" font-weight="700">Meshtastic</text><text x="33" y="104" class="s" font-size="13">Online · 4 nodes</text>
+<text x="206" y="80" class="c" font-size="17" font-weight="700">MeshCore</text><text x="206" y="104" class="s" font-size="13">Online · 3 contacts</text>
+<text x="22" y="148" class="h" font-size="18">Latest messages</text><rect x="251" y="127" width="109" height="30" rx="7" fill="#dff3ff"/><text x="267" y="147" fill="#061722" font-size="13" font-weight="700">+ Message</text>
+<rect x="21" y="167" width="338" height="43" rx="7" class="panel"/><text x="32" y="185" class="m" font-size="12">MT</text><text x="63" y="184" class="h" font-size="14">Trail Team</text><text x="63" y="201" class="s" font-size="12">Reached checkpoint 3.</text>
+<rect x="21" y="215" width="338" height="43" rx="7" class="panel"/><text x="32" y="232" class="c" font-size="12">MC</text><text x="63" y="232" class="h" font-size="14">SAR Base</text><text x="63" y="249" class="s" font-size="12">Weather moving in.</text>
+</g>
+<g transform="translate(435 114)">
+<rect width="390" height="290" rx="16" fill="#172938" stroke="#52677a" stroke-width="3"/><rect x="10" y="10" width="370" height="270" rx="9" fill="#091723"/>
+<rect x="10" y="10" width="370" height="33" rx="8" fill="#112637"/><text x="23" y="32" class="h" font-size="15">MeshCrossway</text><text x="256" y="32" class="m" font-size="11">● MT  ● MC  GPS</text>
+<text x="22" y="67" class="h" font-size="18">Navigation</text><rect x="262" y="48" width="98" height="32" rx="7" fill="#1a3a4c" stroke="#416077"/><text x="278" y="69" class="h" font-size="14">Tools ▾</text>
+<rect x="21" y="90" width="338" height="166" rx="8" fill="#122b3b" stroke="#48657a"/>
+<path d="M22 123H358M22 156H358M22 189H358M22 222H358M60 91V255M100 91V255M140 91V255M180 91V255M220 91V255M260 91V255M300 91V255" stroke="#365268" stroke-opacity=".6"/>
+<path d="M25 216L354 120" stroke="#789eb5" stroke-width="13" opacity=".18"/>
+<circle cx="196" cy="169" r="12" fill="#e8fbff" stroke="#39bedf" stroke-width="6"/><circle cx="119" cy="129" r="7" class="m"/><circle cx="292" cy="212" r="7" class="c"/>
+<rect x="30" y="227" width="230" height="23" rx="5" fill="#091723"/><text x="39" y="243" class="s" font-size="12">Illustrative map · demo data</text>
+</g>
+<g transform="translate(840 114)">
+<rect width="390" height="290" rx="16" fill="#172938" stroke="#52677a" stroke-width="3"/><rect x="10" y="10" width="370" height="270" rx="9" fill="#091723"/>
+<rect x="10" y="10" width="370" height="33" rx="8" fill="#112637"/><text x="23" y="32" class="h" font-size="15">MeshCrossway</text><text x="256" y="32" class="m" font-size="11">● MT  ● MC  GPS</text>
+<text x="22" y="67" class="h" font-size="18">Navigation</text>
+<rect x="147" y="47" width="214" height="211" rx="9" fill="#183447" stroke="#6a90a6"/>
+<text x="163" y="71" class="h" font-size="14">⌖ POIs &amp; waypoints</text><path d="M157 82H350" stroke="#426074"/>
+<text x="163" y="99" class="h" font-size="14">↝ Saved tracks</text><path d="M157 109H350" stroke="#426074"/>
+<text x="163" y="127" class="h" font-size="14">● Record track</text><path d="M157 136H350" stroke="#426074"/>
+<text x="163" y="154" class="h" font-size="14">◎ Live location</text><path d="M157 162H350" stroke="#426074"/>
+<text x="163" y="179" class="h" font-size="14">⇧ Share / GPX</text><path d="M157 187H350" stroke="#426074"/>
+<text x="163" y="205" class="h" font-size="14">♙ Team positions</text><path d="M157 212H350" stroke="#426074"/>
+<text x="163" y="230" class="h" font-size="14">✧ GNSS sky</text><text x="163" y="247" class="s" font-size="12">More tools on scroll...</text>
+</g>
+<text x="225" y="443" text-anchor="middle" class="h" font-size="19">Home</text><text x="630" y="443" text-anchor="middle" class="h" font-size="19">Map</text><text x="1035" y="443" text-anchor="middle" class="h" font-size="19">Map tools dropdown</text>
+<text x="630" y="493" text-anchor="middle" class="s" font-size="17">Static UI illustration · open the interactive simulator for current behavior</text>
+</svg>
