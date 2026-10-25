@@ -28,6 +28,52 @@ A browser preview of the planned **480 × 320** interface. The static illustrati
 - **Offline-first:** local microSD storage, with future map downloads and optional Bluetooth transfer of larger files.
 - **Field tools:** radio diagnostics, connection health and team-position views.
 
+## Key functions illustrated
+
+These are **illustrative screens with simulated data**, based on the planned touchscreen UI. They are not screenshots of operating hardware. **[Explore the interactive simulator](https://renbrant.github.io/MeshCrossway/)** for clickable examples.
+
+### Unified messaging
+
+[![Unified Meshtastic and MeshCore conversation preview](docs/ui-prototype/readme/messaging.svg)](https://renbrant.github.io/MeshCrossway/)
+
+Conversations from both networks appear in one inbox, while every contact and message retains its original network identity. Replies require an explicit destination.
+
+### Navigation and map tools
+
+[![Navigation dropdown menu preview](docs/ui-prototype/readme/navigation.svg)](https://renbrant.github.io/MeshCrossway/)
+
+The **Map → Tools** menu brings POIs, saved tracks, recording, team positions, sharing and GNSS tools together without crowding the map.
+
+### POIs and waypoints
+
+[![POI and waypoint interface preview](docs/ui-prototype/readme/pois.svg)](https://renbrant.github.io/MeshCrossway/)
+
+Save trailheads, checkpoints, water sources and other locations. Compact coordinates could be shared over a selected LoRa network, subject to protocol capability and airtime limits.
+
+### Tracks and GPX
+
+[![Recorded track library preview](docs/ui-prototype/readme/tracks.svg)](https://renbrant.github.io/MeshCrossway/)
+
+Record and review tracks locally. Full GPX transfer is planned through an authenticated Bluetooth companion in a future phase rather than sending large files over LoRa.
+
+### Live location sharing
+
+[![Location sharing configuration preview](docs/ui-prototype/readme/live-location.svg)](https://renbrant.github.io/MeshCrossway/)
+
+Choose a person or group, transmission interval, movement threshold and automatic expiration. **Direct Only** is the proposed default to avoid repeater forwarding, but it still occupies shared radio airtime. Strict zero-hop behavior must be validated with both protocols.
+
+### Radio status and diagnostics
+
+[![Independent radio status preview](docs/ui-prototype/readme/radios.svg)](https://renbrant.github.io/MeshCrossway/)
+
+Separate health information for Meshtastic and MeshCore, with planned diagnostics for link status, packet logs and routing behavior.
+
+### Device settings
+
+[![Device appearance and quick controls preview](docs/ui-prototype/readme/settings.svg)](https://renbrant.github.io/MeshCrossway/)
+
+Centralized preferences for display appearance, device controls, local storage and privacy—separate from the navigation tools.
+
 ## System overview
 
 ```mermaid
