@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="900" viewBox="0 0 1400 900">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#071018"/><stop offset="1" stop-color="#0b1a25"/></linearGradient>
+  <style>
+    .t{font-family:Arial,Helvetica,sans-serif;fill:#f3f7fa}.m{fill:#91a7b7}.p{fill:#0d1a24;stroke:#284052}.mt{fill:#28d7c0}.mc{fill:#ffad4a}.ok{fill:#69e27f}
+  </style>
+</defs>
+<rect width="1400" height="900" fill="#03080d"/>
+<text x="60" y="56" class="t" font-size="28" font-weight="700">MeshCrossway UI prototype v0</text>
+<text x="60" y="84" class="t m" font-size="16">480×320 touchscreen concept • browser mockup • demo data only</text>
+
+<!-- HOME -->
+<g transform="translate(60 120)">
+  <rect width="620" height="360" rx="22" fill="#101820" stroke="#334653" stroke-width="2"/>
+  <rect x="20" y="20" width="580" height="320" rx="12" fill="url(#bg)" stroke="#243747"/>
+  <rect x="20" y="20" width="580" height="38" rx="12" fill="#091620"/>
+  <text x="36" y="45" class="t" font-size="14" font-weight="700">MeshCrossway</text>
+  <circle cx="452" cy="39" r="5" class="ok"/><text x="464" y="43" class="t m" font-size="10">GNSS 3D</text>
+  <text x="545" y="43" class="t m" font-size="10">14:37</text>
+  <rect x="34" y="72" width="340" height="212" rx="10" class="p"/>
+  <text x="50" y="96" class="t" font-size="12" font-weight="700">Unified inbox</text>
+  <rect x="50" y="108" width="145" height="48" rx="8" fill="#0a1720" stroke="#28d7c0" stroke-opacity=".45"/>
+  <text x="62" y="129" class="t" font-size="11" font-weight="700">Meshtastic</text><text x="165" y="129" class="mt" font-size="9" font-weight="700">MT</text>
+  <text x="62" y="146" class="t m" font-size="9">US · LongFast · 4 peers</text>
+  <rect x="205" y="108" width="145" height="48" rx="8" fill="#0a1720" stroke="#ffad4a" stroke-opacity=".45"/>
+  <text x="217" y="129" class="t" font-size="11" font-weight="700">MeshCore</text><text x="320" y="129" class="mc" font-size="9" font-weight="700">MC</text>
+  <text x="217" y="146" class="t m" font-size="9">Companion · 3 contacts</text>
+  <g font-size="10">
+    <rect x="50" y="166" width="300" height="31" rx="7" fill="#0a1720" stroke="#203646"/>
+    <text x="60" y="185" class="mt" font-weight="700">MT</text><text x="88" y="180" class="t" font-weight="700">Trail Team</text><text x="88" y="191" class="t m" font-size="8">Reached checkpoint 3. All good.</text>
+    <rect x="50" y="203" width="300" height="31" rx="7" fill="#0a1720" stroke="#203646"/>
+    <text x="60" y="222" class="mc" font-weight="700">MC</text><text x="88" y="217" class="t" font-weight="700">SAR Base</text><text x="88" y="228" class="t m" font-size="8">Weather moving in from the west.</text>
+    <rect x="50" y="240" width="300" height="31" rx="7" fill="#0a1720" stroke="#203646"/>
+    <text x="60" y="259" class="mt" font-weight="700">MT</text><text x="88" y="254" class="t" font-weight="700">Alex / MT</text><text x="88" y="265" class="t m" font-size="8">Copy. Staying on channel.</text>
+  </g>
+  <rect x="388" y="72" width="198" height="42" rx="10" fill="#eaf7ff"/>
+  <text x="438" y="98" fill="#06111a" font-family="Arial" font-size="12" font-weight="700">+ New message</text>
+  <rect x="388" y="126" width="198" height="43" rx="9" fill="#0a1720" stroke="#244052"/><text x="402" y="151" class="t" font-size="11">⌖  Position</text>
+  <rect x="388" y="178" width="198" height="43" rx="9" fill="#0a1720" stroke="#244052"/><text x="402" y="203" class="t" font-size="11">⌁  Radio status</text>
+  <rect x="388" y="230" width="198" height="43" rx="9" fill="#0a1720" stroke="#244052"/><text x="402" y="255" class="t" font-size="11">☰  All messages</text>
+  <rect x="20" y="298" width="580" height="42" fill="#08141d"/>
+  <text x="70" y="324" class="t" font-size="10">⌂ Home</text><text x="180" y="324" class="t m" font-size="10">✉ Messages</text><text x="302" y="324" class="t m" font-size="10">⌖ Position</text><text x="412" y="324" class="t m" font-size="10">⌁ Radios</text><text x="518" y="324" class="t m" font-size="10">⚙ Setup</text>
+  <text x="0" y="390" class="t" font-size="16" font-weight="700">Home / Unified inbox</text>
+</g>
+
+<!-- MESSAGES -->
+<g transform="translate(720 120)">
+  <rect width="620" height="360" rx="22" fill="#101820" stroke="#334653" stroke-width="2"/>
+  <rect x="20" y="20" width="580" height="320" rx="12" fill="url(#bg)" stroke="#243747"/>
+  <rect x="20" y="20" width="580" height="38" rx="12" fill="#091620"/>
+  <text x="36" y="45" class="t" font-size="14" font-weight="700">MeshCrossway</text><text x="500" y="44" class="t m" font-size="10">GNSS 3D · 14:37</text>
+  <text x="38" y="88" class="t" font-size="16" font-weight="700">Messages</text><text x="38" y="104" class="t m" font-size="9">Network identity stays visible</text>
+  <rect x="460" y="72" width="112" height="28" rx="8" fill="#08141d" stroke="#213747"/><text x="475" y="90" class="t" font-size="9">All   MT   MC</text>
+  <g>
+    <rect x="38" y="120" width="534" height="48" rx="10" fill="#0b1822" stroke="#203646"/><text x="54" y="145" class="t" font-size="11" font-weight="700">Trail Team</text><text x="145" y="145" class="mt" font-size="9" font-weight="700">MT</text><text x="54" y="158" class="t m" font-size="9">Reached checkpoint 3. All good.</text><text x="520" y="145" class="ok" font-size="9">ACK</text>
+    <rect x="38" y="178" width="534" height="48" rx="10" fill="#0b1822" stroke="#203646"/><text x="54" y="203" class="t" font-size="11" font-weight="700">SAR Base</text><text x="128" y="203" class="mc" font-size="9" font-weight="700">MC</text><text x="54" y="216" class="t m" font-size="9">Weather moving in from the west.</text><text x="520" y="203" class="mc" font-size="9">NEW</text>
+    <rect x="38" y="236" width="534" height="48" rx="10" fill="#0b1822" stroke="#203646"/><text x="54" y="261" class="t" font-size="11" font-weight="700">Alex</text><text x="95" y="261" class="mt" font-size="9" font-weight="700">MT</text><text x="54" y="274" class="t m" font-size="9">Copy. Staying on channel.</text><text x="520" y="261" class="t m" font-size="9">stored</text>
+  </g>
+  <rect x="20" y="298" width="580" height="42" fill="#08141d"/>
+  <text x="70" y="324" class="t m" font-size="10">⌂ Home</text><text x="180" y="324" class="t" font-size="10">✉ Messages</text><text x="302" y="324" class="t m" font-size="10">⌖ Position</text><text x="412" y="324" class="t m" font-size="10">⌁ Radios</text><text x="518" y="324" class="t m" font-size="10">⚙ Setup</text>
+  <text x="0" y="390" class="t" font-size="16" font-weight="700">Messages</text>
+</g>
+
+<!-- POSITION -->
+<g transform="translate(60 535)">
+  <rect width="620" height="300" rx="22" fill="#101820" stroke="#334653" stroke-width="2"/>
+  <rect x="20" y="20" width="580" height="260" rx="12" fill="url(#bg)" stroke="#243747"/>
+  <text x="38" y="50" class="t" font-size="14" font-weight="700">Position</text>
+  <rect x="38" y="68" width="350" height="158" rx="10" fill="#0a1720" stroke="#243c4c"/>
+  <g stroke="#315060" stroke-opacity=".35"><path d="M38 108h350M38 148h350M38 188h350"/><path d="M98 68v158M158 68v158M218 68v158M278 68v158M338 68v158"/></g>
+  <circle cx="244" cy="145" r="9" fill="#e9f7ff" stroke="#188faa" stroke-width="4"/><circle cx="145" cy="110" r="6" class="mt"/><circle cx="320" cy="184" r="6" class="mc"/><circle cx="188" cy="196" r="6" class="mt"/>
+  <rect x="404" y="68" width="168" height="46" rx="9" class="p"/><text x="416" y="87" class="t m" font-size="8">GNSS FIX</text><text x="416" y="103" class="t" font-size="11" font-weight="700">3D · 12 sats · 2 s</text>
+  <rect x="404" y="124" width="168" height="46" rx="9" class="p"/><text x="416" y="143" class="t m" font-size="8">COORDINATES</text><text x="416" y="159" class="t" font-size="11" font-weight="700">40.0000 N / 105.0000 W</text>
+  <rect x="404" y="180" width="168" height="46" rx="9" class="p"/><text x="416" y="199" class="t m" font-size="8">NEARBY</text><text x="416" y="215" class="t" font-size="11" font-weight="700">7 peers · 4 MT · 3 MC</text>
+  <text x="0" y="330" class="t" font-size="16" font-weight="700">Position / GNSS</text>
+</g>
+
+<!-- RADIOS -->
+<g transform="translate(720 535)">
+  <rect width="620" height="300" rx="22" fill="#101820" stroke="#334653" stroke-width="2"/>
+  <rect x="20" y="20" width="580" height="260" rx="12" fill="url(#bg)" stroke="#243747"/>
+  <text x="38" y="50" class="t" font-size="14" font-weight="700">Radio status</text>
+  <rect x="38" y="70" width="252" height="150" rx="11" fill="#0a1720" stroke="#28d7c0" stroke-opacity=".45"/>
+  <text x="54" y="94" class="t" font-size="13" font-weight="700">Meshtastic</text><text x="227" y="94" class="mt" font-size="9">ONLINE</text>
+  <text x="54" y="120" class="t m" font-size="9">Interface</text><text x="238" y="120" class="t" font-size="9">UART</text>
+  <text x="54" y="140" class="t m" font-size="9">Region</text><text x="238" y="140" class="t" font-size="9">US</text>
+  <text x="54" y="160" class="t m" font-size="9">Peers</text><text x="238" y="160" class="t" font-size="9">4</text>
+  <text x="54" y="180" class="t m" font-size="9">Node link</text><text x="220" y="180" class="ok" font-size="9">healthy</text>
+  <rect x="320" y="70" width="252" height="150" rx="11" fill="#0a1720" stroke="#ffad4a" stroke-opacity=".45"/>
+  <text x="336" y="94" class="t" font-size="13" font-weight="700">MeshCore</text><text x="509" y="94" class="mc" font-size="9">ONLINE</text>
+  <text x="336" y="120" class="t m" font-size="9">Interface</text><text x="520" y="120" class="t" font-size="9">UART</text>
+  <text x="336" y="140" class="t m" font-size="9">Mode</text><text x="500" y="140" class="t" font-size="9">Companion</text>
+  <text x="336" y="160" class="t m" font-size="9">Contacts</text><text x="520" y="160" class="t" font-size="9">3</text>
+  <text x="336" y="180" class="t m" font-size="9">Node link</text><text x="502" y="180" class="ok" font-size="9">healthy</text>
+  <text x="0" y="330" class="t" font-size="16" font-weight="700">Independent radio status</text>
+</g>
+</svg>
