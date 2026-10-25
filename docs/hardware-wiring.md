@@ -26,6 +26,65 @@ Seat WisBlock connectors squarely and secure the modules with the supplied screw
 
 For the bench, use short jumper wires, a ground distribution point, and headers compatible with the actual assemblies. Check whether the supplied RAK13002 and Waveshare connectors require ordinary through-hole soldering. Do not substitute bare SAM-M10Q modules for the SparkFun breakout.
 
+## 1.1. Purchase links and reference prices
+
+**Price review: October 24, 2026. Currency: USD.** Prices exclude shipping, sales tax, import charges, discounts, and assembly labor. These are reference prices, not a checkout quote. Reuse suitable supplies, cables, jumpers, and a microSD card you already own.
+
+The Waveshare price is the publicly indexed catalog range; live access to its product page was blocked during this review, so the exact no-case variant price and V2 stock remain to be confirmed. RAK's generic kit starts at $19.50, but that starting price belongs to other core options: **the selected RAK4631 Arduino + RAK19007 US915 variant is $24.99**, as checked in the seller's product variant data.
+
+### Terminal: required hardware and assembly accessories
+
+| Qty | Component and purchase link | Exact selection / purpose | Unit price | Line total |
+|---:|---|---|---:|---:|
+| 1 | [Waveshare ESP32-S3-Touch-LCD-3.5](https://www.waveshare.com/esp32-s3-touch-lcd-3.5.htm) | **Without case**, SKU **30733**; request/confirm Rev2 and J8 before ordering; not 3.5B | $25.99–$32.99 catalog range | $25.99–$32.99 |
+| 2 | [RAK WisBlock Starter Kit — selected US915 variant](https://store.rakwireless.com/products/wisblock-starter-kit?variant=41786685063366) | **RAK19007 + RAK4631, Arduino, US915**, SKU **116013**; one for A and one for B | $24.99 | $49.98 |
+| 2 | [RAK13002 IO module](https://store.rakwireless.com/products/adapter-module-rak13002) | SKU **100029**, one per terminal radio; verify J5 headers are assembled | $6.00 | $12.00 |
+| 1 | [SparkFun SAM-M10Q Qwiic GNSS breakout](https://www.sparkfun.com/sparkfun-gps-breakout-chip-antenna-sam-m10q-qwiic.html) | **GPS-21834**, complete breakout with integrated antenna | $51.50 | $51.50 |
+| 1 | [SparkFun flexible Qwiic-to-breadboard cable](https://www.sparkfun.com/flexible-qwiic-cable-breadboard-jumper-4-pin.html) | **PRT-17912**, 150 mm; Qwiic to four male 2.54 mm contacts | $1.95 | $1.95 |
+| 1 | [SparkFun microSD card, 1 GB, Class 4](https://www.sparkfun.com/microsd-card-1gb-class-4.html) | **COM-15107**; economical initial message/log storage candidate; validate formatting and driver support | $5.50 | $5.50 |
+| 1 pack | [Adafruit female/male jumpers, 20 × 150 mm](https://www.adafruit.com/product/1954) | **1954**; female ends fit RAK13002 male pins, male ends fit U1 sockets or breadboard | $1.95 | $1.95 |
+| 1 pack | [Adafruit male/male jumpers, 20 × 150 mm](https://www.adafruit.com/product/1957) | **1957**; U1 socket to common-ground breadboard and short links | $1.95 | $1.95 |
+| 1 | [Adafruit half-size breadboard, 400 points](https://www.adafruit.com/product/64) | **64**; common-ground distribution and temporary test connections | $4.95 | $4.95 |
+| | **Terminal parts subtotal, before additional USB power/cable** | | | **$155.77–$162.77** |
+
+A 1 GB card is a cost-driven candidate for the first messaging bench, not a capacity commitment for future offline maps. Reuse a suitable larger card if available; buy only one card. The exact card and filesystem still need validation.
+
+**Do not buy the RAK4631 cores or RAK19007 bases separately in addition to these kits.** Each selected kit lists a base, core, LoRa antenna, BLE antenna, USB-C cable, and screws. Use its supplied LoRa antenna initially; no extra antenna, pigtail, or radio display is budgeted. Both terminal kits can be identical hardware: they receive different firmware. Buying a LoRaWAN kit does not make it ready for these mesh protocols without flashing.
+
+### USB power: purchase only what is missing
+
+| Qty for the terminal | Component and purchase link | Selection / purpose | Unit price | Maximum additional cost shown |
+|---:|---|---|---:|---:|
+| 3 | [SparkFun USB wall charger, 5 V / 2 A](https://www.sparkfun.com/usb-wall-charger-5v-2a.html) | **TOL-16893**; one USB-A supply per U1, A, and B; reuse equivalent regulated supplies if owned | $9.50 | $28.50 |
+| 1 | [Adafruit USB-A to USB-C data/power cable, approximately 1 m](https://www.adafruit.com/product/4474) | **4474**; extra cable for U1, assuming the two radio kits supply suitable cables | $4.95 | $4.95 |
+
+The terminal requires three powered USB connections, not three additional supplies if you already have suitable equipment. The table assumes the bundled radio cables have USB-A ends compatible with the listed chargers; check the shipment, and add $4.95 per missing compatible cable if needed. Bench current and voltage margin must still be measured.
+
+### Optional: two remote radio peers for reproducible tests
+
+If you do not already have compatible peers, add these to test both networks independently of local community coverage:
+
+| Additional qty | Component and purchase link | Purpose | Unit price | Line total |
+|---:|---|---|---:|---:|
+| 2 | [Same RAK4631 + RAK19007 Arduino US915 kit](https://store.rakwireless.com/products/wisblock-starter-kit?variant=41786685063366) | One remote Meshtastic peer and one remote MeshCore peer; includes their antennas and USB cables | $24.99 | $49.98 |
+| Up to 2 | [SparkFun 5 V / 2 A USB chargers](https://www.sparkfun.com/usb-wall-charger-5v-2a.html) | Remote-peer power if suitable supplies are not already available | $9.50 | $19.00 |
+
+These peers **do not need RAK13002 modules** for ordinary USB/BLE client testing. The optional full bench therefore has four radio kits total, but still only two IO adapters.
+
+### Budget summary
+
+| Scenario | Reference total |
+|---|---:|
+| Terminal parts and assembly accessories; reuse USB power and cables | **$155.77–$162.77** |
+| Terminal above + three new chargers + one extra USB cable | **$189.22–$196.22** |
+| Complete bench above + two remote kits + two more chargers | **$258.20–$265.20** |
+
+Totals assume the exact quantities above, the listed kit contents, and no missing headers. They exclude tools, mounting hardware beyond kit contents, a card reader, and any parts needed for future powered-off signal protection.
+
+If the RAK13002 ships without J5 headers, a conditional option is one [Adafruit 16-pin breakaway male-header pack, five strips, ID 400](https://www.adafruit.com/product/400), listed at **$3.00 per pack**. Cut two 8-position sections and confirm fit, contact length, and clearance before soldering; this extra-long header option is not automatically required or included in totals.
+
+**Before checkout:** confirm U1's Rev2 connector, choose RAK4631 Arduino rather than another core or RUI3, and retain the MeshCore UART firmware prerequisite in section 4. This list prices the proposed bench hardware; it does not certify a working assembly.
+
 ## 2. Controller ports and GPIO allocation
 
 ![Controller and RAK connector reference](images/connector-reference.svg)
