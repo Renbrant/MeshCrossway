@@ -6,6 +6,27 @@
 
 **Status: proposed wiring, not bench-tested.** No working central firmware or tested MeshCore UART build is supplied yet. This revision replaces the previous modular radio assembly and its IO adapters. Do not combine its old connector instructions with this guide.
 
+## V1 portable-power design — supersedes earlier bench USB supply arrangement
+
+**Selected for electrical validation, not yet approved for energizing the whole assembly:** the Waveshare onboard AXP2101 manages a protected LiPo 1S battery and USB-C charging. Power both LoRa nodes and the Uputronics MAX-M10S from the **Waveshare J8 3V3 / GND expansion rail**, after verifying the shipped revision and spare current. A separate BQ25185 charger and external buck-boost are **not part of the selected V1 BOM**.
+
+```mermaid
+flowchart LR
+ USB["Waveshare USB-C"] --> PMIC["AXP2101 + Waveshare power"]
+ BAT["Protected 1S LiPo candidate"] <--> PMIC
+ PMIC --> J8["J8 3V3 / GND"]
+ J8 --> BULK["Bulk + module decoupling (DNP pending review)"]
+ BULK -.-> A["Heltec-compatible LoRa A / Meshtastic"]
+ BULK -.-> B["Heltec-compatible LoRa B / MeshCore"]
+ BULK -.-> G["MAX-M10S 3 V GNSS"]
+```
+
+**Power connection is proposed, not bench-tested.** The Heltec family 3V3 pin and actual Aideepen boards' 3V3 reverse-current/USB path must be verified. Do not connect their USB and shared 3V3 simultaneously unless proven safe. UART and I2C lines can backpower unpowered modules; consider powered-off-safe isolation. The AXP2101 DCDC1 2 A datasheet limit is **not a documented J8 spare-current rating**. Refer to [complete power study and mandatory tests](power-architecture.md).
+
+**Capacitor footprints, initial DNP options:** 220–470 uF at the shared carrier input; each radio 47–100 uF + 10 uF + 100 nF; GNSS 10 uF + 100 nF. Verify output stability, inrush, ESR, actual rail source and thermal headroom prior to population. Capacitors cannot offset an undersized regulator during a LoRa packet.
+
+**Bench bring-up:** separate USB supplies still permitted while verifying UART firmware and actual board pinout. **Do not use the historical independent-USB test drawings as final shared-battery wiring instructions.**
+
 ## 1. Identify the purchased boards
 
 | Controller: selected Amazon listing | Radios: selected two-pack |
@@ -152,7 +173,7 @@ Use a separate host I2C bus on GPIO21/38, provisionally at 100 kHz. The u-blox M
 
 The selected external **active** Bingfu antenna must support the intended GNSS bands and the breakout's *actual antenna-bias voltage and current limit*. The 3 V board selection is not a claim that every 3 V or 5 V active antenna is compatible. Check RF connector gender/polarity (including standard vs reverse-polarity SMA), grounding, cable loss, strain relief and placement; route it away from the two LoRa antennas, their coax runs, and switching regulators.
 
-For the current bench prototype, supply U1, A and B independently over USB as before. Feed G1 only from U1's verified 3.3 V rail after a power measurement. Do not join board USB/5 V outputs or battery chargers. The planned future carrier board may integrate one Li-ion charging and power-path subsystem with individual switched rails, **pending current, protection and powered-off isolation design**.
+For **initial isolated bench bring-up only**, supply U1, A and B independently over USB while testing serial interfaces. After verifying pinouts, current headroom, and powered-off/USB backfeed behavior, the **V1 portable carrier candidate** supplies A, B and G1 from the Waveshare J8 3V3 rail with local decoupling. The Waveshare AXP2101 remains the only LiPo charger. Do not join radio USB power and the shared rail without verified isolation. See [power study](power-architecture.md).
 
 | Device | Power entry | Connections to other boards |
 |---|---|---|
