@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MeshCrossway UI Prototype v0</title>
+<style>
+:root{
+  --bg:#071018;--panel:#0d1a24;--panel2:#122331;--line:#284052;
+  --text:#f3f7fa;--muted:#91a7b7;--mt:#28d7c0;--mc:#ffad4a;
+  --ok:#69e27f;--warn:#ffd34d;--danger:#ff6b6b;--focus:#7fd7ff;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#03080d;color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;display:grid;place-items:center;padding:24px}
+.wrap{width:min(100%,900px)}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:0 auto 12px;max-width:760px;color:#a9bdca;font-size:13px}
+.device{width:min(100%,760px);margin:auto;background:#111820;border:1px solid #334653;border-radius:26px;padding:18px;box-shadow:0 26px 70px rgba(0,0,0,.45)}
+.screen{width:100%;aspect-ratio:3/2;min-height:320px;background:linear-gradient(145deg,#08131c,#0a1822 48%,#071018);border:1px solid #243747;border-radius:14px;overflow:hidden;position:relative;display:grid;grid-template-rows:38px 1fr 52px}
+.statusbar{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:12px;padding:0 14px;border-bottom:1px solid #203341;background:#091620}
+.brand{font-size:15px;font-weight:800;letter-spacing:.2px}
+.status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px rgba(105,226,127,.45)}
+.dot.warn{background:var(--warn)}
+main{overflow:hidden}
+.view{height:100%;display:none;padding:12px}
+.view.active{display:block}
+.home-grid{height:100%;display:grid;grid-template-columns:1.35fr .85fr;gap:10px}
+.card{background:rgba(13,26,36,.92);border:1px solid #203747;border-radius:12px;padding:10px;min-width:0}
+.card-title{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:800;margin-bottom:8px}
+.small{font-size:10px;color:var(--muted);font-weight:600}
+.networks{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px}
+.net{border:1px solid #294252;border-radius:10px;padding:8px;background:#0a1720}
+.net.mt{border-color:rgba(40,215,192,.42)}
+.net.mc{border-color:rgba(255,173,74,.42)}
+.net-head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:5px}
+.badge{font-size:9px;font-weight:900;border-radius:999px;padding:3px 6px;letter-spacing:.4px}
+.badge.mt{background:rgba(40,215,192,.12);color:var(--mt);border:1px solid rgba(40,215,192,.32)}
+.badge.mc{background:rgba(255,173,74,.12);color:var(--mc);border:1px solid rgba(255,173,74,.32)}
+.net-name{font-size:12px;font-weight:800}
+.net-sub{font-size:9px;color:var(--muted);display:flex;justify-content:space-between}
+.inbox{display:grid;gap:5px}
+.msg{display:grid;grid-template-columns:auto 1fr auto;gap:7px;align-items:center;padding:6px 7px;background:#0a1720;border:1px solid #1e3342;border-radius:8px;cursor:pointer}
+.msg:hover{border-color:#3a5d72}
+.msg .from{font-size:10px;font-weight:800}
+.msg .preview{font-size:9px;color:#afc0ca;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg .time{font-size:8px;color:#718897}
+.actions{height:100%;display:grid;grid-template-rows:auto 1fr auto;gap:8px}
+.primary{width:100%;border:0;border-radius:11px;padding:11px 10px;background:#eaf7ff;color:#06111a;font-weight:900;font-size:12px;cursor:pointer}
+.quick{display:grid;gap:7px}
+.qbtn{display:grid;grid-template-columns:34px 1fr;align-items:center;gap:8px;width:100%;padding:8px;border:1px solid #244052;background:#0a1720;border-radius:10px;color:var(--text);text-align:left;cursor:pointer}
+.qbtn:hover{border-color:#3e6a82}
+.qicon{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:#132a38;font-size:16px}
+.qtitle{font-size:10px;font-weight:900}
+.qsub{font-size:8px;color:var(--muted);margin-top:2px}
+.gpsbox{padding:8px;border-radius:10px;background:#0a1720;border:1px solid #203848}
+.gpsrow{display:flex;justify-content:space-between;font-size:9px;margin-top:4px}
+.gpsrow span:last-child{color:#bdd0da}
+nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid #203341;background:#08141d}
+.navbtn{border:0;background:transparent;color:#728b9a;font-size:9px;font-weight:800;display:grid;place-items:center;gap:2px;cursor:pointer;padding:4px 0}
+.navbtn .ico{font-size:15px;line-height:1}
+.navbtn.active{color:#f2f8fb;background:linear-gradient(to top,rgba(127,215,255,.09),transparent)}
+.navbtn.active::before{content:"";height:2px;width:30px;background:var(--focus);border-radius:2px;position:absolute;bottom:49px}
+.list-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.h1{font-size:15px;font-weight:900}
+.segment{display:flex;gap:4px;padding:3px;background:#08141d;border:1px solid #213747;border-radius:9px}
+.seg{border:0;background:transparent;color:#7f97a5;border-radius:6px;font-size:9px;font-weight:800;padding:5px 8px;cursor:pointer}
+.seg.active{background:#173143;color:#fff}
+.thread-list{display:grid;gap:6px;overflow:auto;max-height:220px;padding-right:2px}
+.thread{display:grid;grid-template-columns:36px 1fr auto;gap:8px;align-items:center;padding:8px;background:#0b1822;border:1px solid #203646;border-radius:10px;cursor:pointer}
+.avatar{width:34px;height:34px;border-radius:10px;background:#17303f;display:grid;place-items:center;font-size:11px;font-weight:900}
+.thread .title{font-size:10px;font-weight:900;display:flex;gap:6px;align-items:center}
+.thread .body{font-size:9px;color:#9fb2bd;margin-top:3px}
+.thread .r{font-size:8px;color:#6f8795;text-align:right}
+.position-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:9px;height:100%}
+.map{height:100%;border-radius:12px;border:1px solid #243c4c;background:
+linear-gradient(rgba(127,215,255,.055) 1px,transparent 1px),
+linear-gradient(90deg,rgba(127,215,255,.055) 1px,transparent 1px),
+radial-gradient(circle at 58% 46%,rgba(40,215,192,.18),transparent 8%),
+#0a1720;background-size:24px 24px,24px 24px,auto,auto;position:relative;overflow:hidden}
+.map::before{content:"";position:absolute;inset:-20%;background:linear-gradient(25deg,transparent 47%,rgba(89,122,143,.22) 48%,rgba(89,122,143,.22) 51%,transparent 52%);transform:rotate(-7deg)}
+.pin{position:absolute;left:56%;top:43%;width:16px;height:16px;background:#e9f7ff;border:4px solid #188faa;border-radius:50%;box-shadow:0 0 0 7px rgba(24,143,170,.14)}
+.peer{position:absolute;width:9px;height:9px;border-radius:50%;box-shadow:0 0 0 5px rgba(255,255,255,.05)}
+.peer.mt{background:var(--mt)}
+.peer.mc{background:var(--mc)}
+.peer.p1{left:32%;top:27%}.peer.p2{left:72%;top:65%}.peer.p3{left:42%;top:71%}
+.maplabel{position:absolute;left:10px;bottom:9px;font-size:9px;color:#b5c7d1;background:rgba(3,9,14,.72);padding:5px 7px;border-radius:7px}
+.stats{display:grid;gap:7px}
+.stat{padding:8px;border:1px solid #213747;border-radius:10px;background:#0a1720}
+.stat .k{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.stat .v{font-size:11px;font-weight:900;margin-top:3px}
+.radios{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.radio-card{padding:10px;border:1px solid #203747;background:#0a1720;border-radius:12px}
+.radio-card.mt{border-color:rgba(40,215,192,.35)}.radio-card.mc{border-color:rgba(255,173,74,.35)}
+.radio-top{display:flex;justify-content:space-between;align-items:center}
+.radio-name{font-size:12px;font-weight:900}
+.kv{display:grid;grid-template-columns:1fr auto;gap:4px;margin-top:8px;font-size:9px}
+.kv div:nth-child(odd){color:#8298a7}
+.good{color:var(--ok);font-weight:800}.amber{color:var(--warn);font-weight:800}
+.setup{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.setting{padding:10px;border:1px solid #203747;background:#0a1720;border-radius:10px;display:flex;justify-content:space-between;align-items:center}
+.setting .st{font-size:10px;font-weight:850}.setting .ss{font-size:8px;color:var(--muted);margin-top:3px}
+.toggle{width:34px;height:19px;border-radius:20px;background:#183040;border:1px solid #2c4b5e;position:relative}
+.toggle.on{background:#1b826f}.toggle::after{content:"";position:absolute;width:13px;height:13px;border-radius:50%;background:#dce9ef;left:3px;top:2px}.toggle.on::after{left:16px}
+.modal{position:absolute;inset:38px 0 52px;background:rgba(2,7,11,.78);display:none;align-items:center;justify-content:center;padding:12px;z-index:5}
+.modal.open{display:flex}
+.compose{width:min(92%,420px);background:#0d1a24;border:1px solid #345063;border-radius:14px;padding:11px}
+.compose-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.close{border:0;background:#17303f;color:#fff;border-radius:7px;width:26px;height:26px;cursor:pointer}
+.field{border:1px solid #274457;background:#08141d;border-radius:9px;padding:7px 8px;margin-top:6px}
+.field .label{font-size:8px;color:#78909f}
+.field .value{font-size:10px;font-weight:800;margin-top:2px}
+textarea{width:100%;height:58px;resize:none;border:0;outline:none;background:transparent;color:#fff;font:inherit;font-size:10px;margin-top:3px}
+.compose-actions{display:flex;gap:7px;margin-top:8px}
+.btn{flex:1;border:1px solid #2a4658;background:#122737;color:#fff;border-radius:9px;padding:8px;font-size:9px;font-weight:900;cursor:pointer}
+.btn.send{background:#eaf7ff;color:#071018;border-color:#eaf7ff}
+.demo-note{text-align:center;color:#6f8795;font-size:11px;margin-top:10px}
+@media(max-width:620px){
+  body{padding:8px}.device{padding:8px;border-radius:15px}.screen{min-height:0}
+  .statusbar{gap:6px;padding:0 8px}.status{font-size:9px}.brand{font-size:12px}
+  .view{padding:8px}.home-grid{gap:7px}.card{padding:7px}.qbtn{padding:6px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="meta"><strong>MeshCrossway UI prototype v0</strong><span>Target viewport: 480 × 320 • demo data only</span></div>
+  <div class="device">
+    <section class="screen" id="screen">
+      <header class="statusbar">
+        <div class="brand">MeshCrossway</div>
+        <div class="status"><span class="dot"></span>GNSS 3D</div>
+        <div class="status">14:37</div>
+        <div class="status">USB</div>
+      </header>
+
+      <main>
+        <section class="view active" data-view="home">
+          <div class="home-grid">
+            <div class="card">
+              <div class="card-title"><span>Unified inbox</span><span class="small">2 networks online</span></div>
+              <div class="networks">
+                <div class="net mt">
+                  <div class="net-head"><span class="net-name">Meshtastic</span><span class="badge mt">MT</span></div>
+                  <div class="net-sub"><span>US · LongFast</span><span>4 peers</span></div>
+                </div>
+                <div class="net mc">
+                  <div class="net-head"><span class="net-name">MeshCore</span><span class="badge mc">MC</span></div>
+                  <div class="net-sub"><span>Companion</span><span>3 contacts</span></div>
+                </div>
+              </div>
+              <div class="inbox">
+                <div class="msg" data-go="messages"><span class="badge mt">MT</span><div><div class="from">Trail Team</div><div class="preview">Reached checkpoint 3. All good.</div></div><span class="time">14:35</span></div>
+                <div class="msg" data-go="messages"><span class="badge mc">MC</span><div><div class="from">SAR Base</div><div class="preview">Weather moving in from the west.</div></div><span class="time">14:31</span></div>
+                <div class="msg" data-go="messages"><span class="badge mt">MT</span><div><div class="from">Alex / MT</div><div class="preview">Copy. Staying on channel.</div></div><span class="time">14:22</span></div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button class="primary" id="newMessage">＋ New message</button>
+              <div class="quick">
+                <button class="qbtn" data-go="position"><span class="qicon">⌖</span><span><div class="qtitle">Position</div><div class="qsub">Fix age 2 s</div></span></button>
+                <button class="qbtn" data-go="radios"><span class="qicon">⌁</span><span><div class="qtitle">Radio status</div><div class="qsub">MT + MC online</div></span></button>
+                <button class="qbtn" data-go="messages"><span class="qicon">☰</span><span><div class="qtitle">All messages</div><div class="qsub">12 stored locally</div></span></button>
+              </div>
+              <div class="gpsbox">
+                <div class="card-title" style="margin:0"><span>Local position</span><span class="small">LIVE</span></div>
+                <div class="gpsrow"><span>Lat</span><span>40.0000° N</span></div>
+                <div class="gpsrow"><span>Lon</span><span>105.0000° W</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" data-view="messages">
+          <div class="list-head">
+            <div><div class="h1">Messages</div><div class="small">Network identity stays visible</div></div>
+            <div class="segment"><button class="seg active">All</button><button class="seg">MT</button><button class="seg">MC</button></div>
+          </div>
+          <div class="thread-list">
+            <div class="thread"><div class="avatar">TT</div><div><div class="title">Trail Team <span class="badge mt">MT</span></div><div class="body">Reached checkpoint 3. All good.</div></div><div class="r">14:35<br><span class="good">ACK</span></div></div>
+            <div class="thread"><div class="avatar">SB</div><div><div class="title">SAR Base <span class="badge mc">MC</span></div><div class="body">Weather moving in from the west.</div></div><div class="r">14:31<br><span class="amber">NEW</span></div></div>
+            <div class="thread"><div class="avatar">A</div><div><div class="title">Alex <span class="badge mt">MT</span></div><div class="body">Copy. Staying on channel.</div></div><div class="r">14:22<br>stored</div></div>
+            <div class="thread"><div class="avatar">R2</div><div><div class="title">Rescue 2 <span class="badge mc">MC</span></div><div class="body">Moving to sector Bravo.</div></div><div class="r">13:58<br>sent</div></div>
+          </div>
+        </section>
+
+        <section class="view" data-view="position">
+          <div class="position-grid">
+            <div class="map">
+              <div class="pin"></div>
+              <div class="peer mt p1"></div><div class="peer mc p2"></div><div class="peer mt p3"></div>
+              <div class="maplabel">Demo map • offline map is a later milestone</div>
+            </div>
+            <div class="stats">
+              <div class="stat"><div class="k">GNSS fix</div><div class="v">3D · 12 sats</div><div class="small">Age: 2 s</div></div>
+              <div class="stat"><div class="k">Coordinates</div><div class="v">40.0000 N</div><div class="small">105.0000 W</div></div>
+              <div class="stat"><div class="k">Nearby</div><div class="v">7 peers</div><div class="small"><span style="color:var(--mt)">4 MT</span> · <span style="color:var(--mc)">3 MC</span></div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" data-view="radios">
+          <div class="list-head"><div><div class="h1">Radio status</div><div class="small">Adapters remain independent</div></div></div>
+          <div class="radios">
+            <div class="radio-card mt">
+              <div class="radio-top"><div class="radio-name">Meshtastic</div><span class="badge mt">ONLINE</span></div>
+              <div class="kv"><div>Interface</div><div>UART</div><div>Region</div><div>US</div><div>Channel</div><div>LongFast</div><div>Peers</div><div>4</div><div>Node link</div><div class="good">healthy</div><div>Last RX</div><div>2 s</div></div>
+            </div>
+            <div class="radio-card mc">
+              <div class="radio-top"><div class="radio-name">MeshCore</div><span class="badge mc">ONLINE</span></div>
+              <div class="kv"><div>Interface</div><div>UART</div><div>Mode</div><div>Companion</div><div>Contacts</div><div>3</div><div>Queue</div><div>0</div><div>Node link</div><div class="good">healthy</div><div>Last RX</div><div>6 s</div></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" data-view="setup">
+          <div class="list-head"><div><div class="h1">Device setup</div><div class="small">Prototype settings concept</div></div></div>
+          <div class="setup">
+            <div class="setting"><div><div class="st">Location sharing</div><div class="ss">Off until explicitly enabled</div></div><div class="toggle"></div></div>
+            <div class="setting"><div><div class="st">Store history</div><div class="ss">Local microSD retention</div></div><div class="toggle on"></div></div>
+            <div class="setting"><div><div class="st">Meshtastic adapter</div><div class="ss">Reconnect independently</div></div><div class="toggle on"></div></div>
+            <div class="setting"><div><div class="st">MeshCore adapter</div><div class="ss">Reconnect independently</div></div><div class="toggle on"></div></div>
+          </div>
+        </section>
+      </main>
+
+      <nav>
+        <button class="navbtn active" data-view-target="home"><span class="ico">⌂</span><span>Home</span></button>
+        <button class="navbtn" data-view-target="messages"><span class="ico">✉</span><span>Messages</span></button>
+        <button class="navbtn" data-view-target="position"><span class="ico">⌖</span><span>Position</span></button>
+        <button class="navbtn" data-view-target="radios"><span class="ico">⌁</span><span>Radios</span></button>
+        <button class="navbtn" data-view-target="setup"><span class="ico">⚙</span><span>Setup</span></button>
+      </nav>
+
+      <div class="modal" id="composeModal">
+        <div class="compose">
+          <div class="compose-head"><div><div class="h1">New message</div><div class="small">Choose the destination network explicitly</div></div><button class="close" id="closeCompose">×</button></div>
+          <div class="field"><div class="label">NETWORK</div><div class="value"><span class="badge mt">MT</span> Meshtastic · LongFast</div></div>
+          <div class="field"><div class="label">DESTINATION</div><div class="value">Trail Team</div></div>
+          <div class="field"><div class="label">MESSAGE</div><textarea>Checking in. Current position is available.</textarea></div>
+          <div class="compose-actions"><button class="btn">Preset</button><button class="btn">Attach position</button><button class="btn send" id="fakeSend">Queue message</button></div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="demo-note">Browser mockup only. It does not communicate with Meshtastic, MeshCore, GNSS, or hardware.</div>
+</div>
+<script>
+const views=[...document.querySelectorAll(".view")];
+const nav=[...document.querySelectorAll(".navbtn")];
+function show(name){
+  views.forEach(v=>v.classList.toggle("active",v.dataset.view===name));
+  nav.forEach(b=>b.classList.toggle("active",b.dataset.viewTarget===name));
+}
+nav.forEach(b=>b.addEventListener("click",()=>show(b.dataset.viewTarget)));
+document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>show(b.dataset.go)));
+const modal=document.getElementById("composeModal");
+document.getElementById("newMessage").addEventListener("click",()=>modal.classList.add("open"));
+document.getElementById("closeCompose").addEventListener("click",()=>modal.classList.remove("open"));
+document.getElementById("fakeSend").addEventListener("click",e=>{e.target.textContent="Queued ✓";setTimeout(()=>{e.target.textContent="Queue message";modal.classList.remove("open")},900)});
+document.querySelectorAll(".seg").forEach(s=>s.addEventListener("click",()=>{document.querySelectorAll(".seg").forEach(x=>x.classList.remove("active"));s.classList.add("active")}));
+document.querySelectorAll(".toggle").forEach(t=>t.addEventListener("click",()=>t.classList.toggle("on")));
+</script>
+</body>
+</html>
