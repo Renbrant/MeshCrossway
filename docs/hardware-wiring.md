@@ -215,3 +215,8 @@ Attach each supplied LoRa antenna through its pigtail to the radio's U.FL/IPEX L
 9. Record PCB revisions, firmware hashes, build flags, baud/framing, measured power and departures from this proposal.
 
 Still unverified: received-board authenticity/routing, soldered headers, Waveshare revision, central firmware, compiled MeshCore UART target, storage recovery, energy budget and RF coexistence. The browser simulator is not evidence of any of these functions working on hardware.
+
+
+## Firmware and processor responsibility
+
+The central Waveshare ESP32-S3 owns the UI, navigation, GNSS, microSD, position-sharing scheduler and any future Bluetooth bulk-transfer interface. The two LoRa V3 ESP32-S3 boards run their own Meshtastic and MeshCore stacks, not generic outsourced application tasks. Prefer official upstream firmware; a board-specific MeshCore Companion external-UART build may be needed. Do not assume stock USB/BLE firmware binds to physical UART pins. Verify both radio UART links on delivered hardware before finalizing this wiring. See [radio firmware strategy](radio-firmware-strategy.md).
