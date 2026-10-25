@@ -2,7 +2,7 @@
 
 [Back to README](../README.md)
 
-**Current selection:** Waveshare ESP32-S3-Touch-LCD-3.5 + two ESP32-S3/SX1262 LoRa V3 boards from the Aideepen two-pack + SparkFun SAM-M10Q Qwiic GNSS + onboard microSD.
+**Current selection:** Waveshare ESP32-S3-Touch-LCD-3.5 + two ESP32-S3/SX1262 LoRa V3 boards from the Aideepen two-pack + Uputronics MAX-M10S breakout (3 V variant) with external active GNSS antenna + onboard microSD.
 
 **Status: proposed wiring, not bench-tested.** No working central firmware or tested MeshCore UART build is supplied yet. This revision replaces the previous modular radio assembly and its IO adapters. Do not combine its old connector instructions with this guide.
 
@@ -19,7 +19,8 @@ These are original listing images. Product screens are vendor examples. [Image s
 | U1 | Waveshare ESP32-S3-Touch-LCD-3.5, standard/no camera | [Amazon B0F3WS2W5R](https://www.amazon.com/dp/B0F3WS2W5R) | Exact model, PCB revision, 32-pin expansion connector and GPIO labels; V2 preferred, not established by the listing |
 | A | LoRa V3 ESP32-S3FN8 + SX1262, 863–928 MHz | First board from [Aideepen two-pack B0DRSJV1ZL](https://www.amazon.com/dp/B0DRSJV1ZL), option **Lora-V3 2Pcs** | Identify revision and compare to Heltec V3 schematic before using its firmware target |
 | B | Same as A | Second board from the same pack | Same checks; will run MeshCore rather than Meshtastic |
-| G1 | SparkFun SAM-M10Q Qwiic breakout, GPS-21834 | [SparkFun](https://www.sparkfun.com/sparkfun-gps-breakout-chip-antenna-sam-m10q-qwiic.html) | Complete breakout, Qwiic connections and 3.3 V power |
+| G1 | Uputronics u-blox MAX-M10S breakout, **3 V variant** | [Wegmatt selection](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751) | Verify 3 V board, pin labels/orientation (SDA/SCL, TX/RX, VCC/GND), supply range and SMA antenna power capability |
+| ANT-G | External **active GNSS** antenna with SMA mate | Not selected yet | Verify L1 GNSS coverage, SMA polarity, bias voltage/current compatibility, cable length and position away from LoRa transmitters |
 | S1 | One microSD card | U1's onboard card slot | Format and driver support need validation |
 | ANT-A/B | LoRa antennas and pigtails shown in the two-pack | Use the supplied pair initially | Verify received contents and suitability for US915 |
 
@@ -35,15 +36,15 @@ The listing describes CP2102 in its detailed specifications, despite “CP2012�
 |---:|---|---|---:|---:|
 | 1 | [Waveshare touch controller](https://www.amazon.com/dp/B0F3WS2W5R) | ESP32-S3-Touch-LCD-3.5; 8 MB PSRAM / 16 MB flash | $35.99 | $35.99 |
 | 1 pack | [Aideepen LoRa V3 two-pack](https://www.amazon.com/dp/B0DRSJV1ZL) | **Lora-V3 2Pcs**, 863–928 MHz; two boards and antenna sets as pictured | $39.99 per pair | $39.99 |
-| 1 | [SAM-M10Q GNSS breakout](https://www.sparkfun.com/sparkfun-gps-breakout-chip-antenna-sam-m10q-qwiic.html) | GPS-21834 | $51.50 | $51.50 |
-| 1 | [Flexible Qwiic-to-male-jumper cable](https://www.sparkfun.com/flexible-qwiic-cable-breadboard-jumper-4-pin.html) | PRT-17912; 150 mm | $1.95 | $1.95 |
+| 1 | [Uputronics MAX-M10S breakout](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751) | **3 V version**, SMA socket | $36.00 | $36.00 |
+| 1 | External active GNSS antenna + cable/accessories as needed | Compatible SMA mate; exact part TBD | TBD | TBD |
 | 1 | [microSD 1 GB, Class 4](https://www.sparkfun.com/microsd-card-1gb-class-4.html) | COM-15107; economical messaging/logging candidate, not a map-storage commitment | $5.50 | $5.50 |
 | 1 pack | [Female/male jumpers, 20 × 150 mm](https://www.adafruit.com/product/1954) | Female ends for radio male headers; male ends for U1 sockets or breadboard | $1.95 | $1.95 |
 | 1 pack | [Male/male jumpers, 20 × 150 mm](https://www.adafruit.com/product/1957) | U1 socket to ground distribution; short breadboard links | $1.95 | $1.95 |
 | 1 | [400-point breadboard](https://www.adafruit.com/product/64) | Common-ground distribution and temporary connections | $4.95 | $4.95 |
-| | **Parts subtotal, reusing USB supplies/cables** | | | **$143.78** |
+| | **Parts subtotal, reusing USB supplies/cables** | | | **$126.33 + GNSS antenna/accessories (TBD)** |
 
-Use one suitable larger microSD instead if already available; do not buy both. No additional OLED, LoRa antennas, or pigtails are budgeted. Verify package contents before adding duplicates. The GNSS breakout has its own antenna.
+Use one suitable larger microSD instead if already available; do not buy both. No additional OLED, LoRa antennas, or pigtails are budgeted. Verify package contents before adding duplicates. The GNSS breakout **requires a separate compatible active external antenna**; none is assumed included.
 
 ### Power and test peers: buy only what is missing
 
@@ -60,8 +61,8 @@ USB cables are **not assumed included** in the Amazon two-pack. Deduct any suita
 | Scenario | Total before shipping/taxes |
 |---|---:|
 | Terminal components and assembly accessories, reuse USB power/cables | **$143.78** |
-| Same terminal + three new chargers and three new cables | **$187.13** |
-| Complete bench above + two remote peers, two new chargers and two new cables | **$256.02** |
+| Same terminal + three new chargers and three new cables | **$169.68 + GNSS antenna/accessories (TBD)** |
+| Complete bench above + two remote peers, two new chargers and two new cables | **$238.57 + GNSS antenna/accessories (TBD)** |
 
 The terminal contains **two radio boards**. The complete test bench contains four radio boards, bought as two two-packs. These totals assume usable supplied header strips; connector replacements, a card reader, and instruments are not included. A hardware purchase does not establish an operational firmware integration.
 
@@ -131,33 +132,36 @@ These are **build configuration requirements**, not an included compiled binary.
 
 Sources: [Meshtastic serial module](https://meshtastic.org/docs/configuration/module/serial/), [Heltec V3 hardware reference](https://meshtastic.org/docs/hardware/devices/heltec-automation/lora32/), [MeshCore Heltec V3 environments](https://github.com/meshcore-dev/MeshCore/blob/main/variants/heltec_v3/platformio.ini), [Companion UART implementation](https://github.com/meshcore-dev/MeshCore/blob/main/examples/companion_radio/main.cpp).
 
-## 5. GNSS and bench power
+## 5. MAX-M10S external-antenna GNSS and bench power
 
-![GNSS wiring and independent USB supplies](images/gnss-and-power.svg)
+**Hardware selection updated October 24, 2026.** G1 is now the [Uputronics MAX-M10S breakout, 3 V option](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751), not the SparkFun SAM-M10Q. The previously drawn GNSS diagram (`images/gnss-and-power.svg`) depicts the superseded Qwiic board and **must not be used as the wiring reference** until redrawn.
 
-| U1 signal | Listing photo position | Qwiic cable signal | Usual color |
-|---|---:|---|---|
-| 3V3 | 31 or 32 | 3.3 V | Red |
-| GND distribution | 29 or 30 | GND | Black |
-| GPIO21 | 5 | SDA | Blue |
-| GPIO38 | 7 | SCL | Yellow |
+The selected breakout exposes a row of through-holes labelled **SDA, SCL, TX, RX, TP, GND, VCC** (confirm physically on the delivered board). It has an SMA female connection intended for a suitable external **active GNSS antenna**. No Qwiic socket or onboard GNSS patch antenna should be assumed. The antenna is a **separate, not-yet-selected purchase**.
 
-Use either G1 Qwiic socket. Verify labels and continuity rather than relying only on wire colors. Use a dedicated second I2C controller on GPIO21/38, initially **100 kHz**, default 7-bit GNSS address **0x42**. Leave the board's onboard I2C initialization on GPIO8/7. G1 already includes pull-ups; do not add more by default. Leave PPS, UART, reset, SAFE and INT unwired.
+| U1 | G1 MAX-M10S breakout | Status |
+|---|---|---|
+| GPIO21 | SDA | Proposed I2C data connection; verify actual pinout and voltage |
+| GPIO38 | SCL | Proposed I2C clock connection; verify actual pinout and voltage |
+| GND | GND | Common reference |
+| 3V3 | VCC | **Only after** confirming G1 3 V variant's acceptable supply range and available host rail current |
+| Not connected initially | TX, RX, TP | Reserve UART and timepulse for future testing |
 
-Measure the U1 3V3 rail before connecting G1 and verify it remains stable under load. The complete power budget has not been measured. No USB 5 V may be applied to Qwiic or signal pins.
+Use a separate host I2C bus on GPIO21/38, provisionally at 100 kHz. The u-blox M10 default I2C address is commonly **0x42 (7-bit)**; verify actual device configuration before depending on this address. Inspect on-board I2C pull-ups before adding external ones. Keep the Waveshare onboard I2C peripheral on its own assigned pins.
+
+An external **active** antenna must support the intended GNSS bands and the breakout's *actual antenna-bias voltage and current limit*. The 3 V board selection is not a claim that every 3 V or 5 V active antenna is compatible. Check RF connector gender/polarity (including standard vs reverse-polarity SMA), grounding, cable loss, strain relief and placement; route it away from the two LoRa antennas, their coax runs, and switching regulators.
+
+For the current bench prototype, supply U1, A and B independently over USB as before. Feed G1 only from U1's verified 3.3 V rail after a power measurement. Do not join board USB/5 V outputs or battery chargers. The planned future carrier board may integrate one Li-ion charging and power-path subsystem with individual switched rails, **pending current, protection and powered-off isolation design**.
 
 | Device | Power entry | Connections to other boards |
 |---|---|---|
-| U1 | Its own USB-C supply | 3.3 V supply to G1 only |
+| U1 | Its own USB-C supply | Verified 3.3 V supply to G1 only |
 | A | Its own USB-C supply | UART and common ground only |
 | B | Its own USB-C supply | UART and common ground only |
-| G1 | U1 verified 3V3 rail | I2C and common ground |
+| G1 | U1 verified 3.3 V rail, subject to range/current check | I2C and common ground |
 
-Do not parallel board power outputs. All batteries remain disconnected for this bench. USB is used for power and individual programming; the host does not need a USB hub or USB-host radio drivers.
+**Power-off isolation:** a live UART can parasitically power an unpowered radio board. Isolate TX/RX during independent power-off bench tests; a future switchable carrier board needs powered-off-protected signal buffering or an equivalent validated solution.
 
-**Power-off isolation:** a live UART can parasitically power an unpowered board. Isolate the affected TX/RX wires before an independent power-off test; keep ground connected while signals remain connected. Robust live independent power switching requires powered-off-protected buffers or another validated isolation design, not supplied by these jumpers.
-
-Source: [SparkFun GNSS hookup guide](https://docs.sparkfun.com/SparkFun_u-blox_SAM-M10Q/hardware_overview/) and [schematic](https://docs.sparkfun.com/SparkFun_u-blox_SAM-M10Q/assets/board_files/SparkFun_u-blox_SAM-M10Q.pdf).
+Product reference: [Uputronics MAX-M10S breakout](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751). Manufacturer module family: [u-blox MAX-M10](https://www.u-blox.com/en/product/max-m10-series).
 
 ## 6. Display, touch, microSD and antennas
 
@@ -173,7 +177,7 @@ The display, touch and card slot are already wired on U1. Use the matching vendo
 
 The same GPIO number on two separate boards is not a shared electrical net. For example, U1 GPIO5 drives its LCD while **radio** GPIO5 is its proposed UART TX.
 
-Attach each supplied LoRa antenna through its pigtail to the radio's U.FL/IPEX LoRa port before transmission. The radio's small spring antenna serves Wi-Fi/BLE, not LoRa. Keep G1's integrated GNSS antenna clear of nearby transmitters and power wiring. Begin with approximately 1 m between radio antenna assemblies as a repeatable bench geometry; measure interference before reducing spacing. Configure lawful regional profiles before enabling RF.
+Attach each supplied LoRa antenna through its pigtail to the radio's U.FL/IPEX LoRa port before transmission. The radio's small spring antenna serves Wi-Fi/BLE, not LoRa. Place G1's **external active GNSS antenna** away from nearby transmitters and switching power wiring. Begin with approximately 1 m between radio antenna assemblies as a repeatable bench geometry; measure interference before reducing spacing. Configure lawful regional profiles before enabling RF.
 
 ## 7. Bring-up sequence and open items
 
@@ -182,7 +186,7 @@ Attach each supplied LoRa antenna through its pigtail to the radio's U.FL/IPEX L
 3. Power everything off. Connect ground, then A's TX/RX pair. Check for shorts and header offsets.
 4. Configure Meshtastic PROTO on RX4/TX5. Verify client identification and bidirectional messaging with a compatible remote peer.
 5. Compile B's MeshCore Companion UART target. Verify it on GPIO4/5, then add its host connection and test the second peer.
-6. Verify the 3V3 rail, add G1, detect 0x42, then confirm valid GNSS data. Detection alone is not a position fix.
+6. Confirm the G1 pinout and 3 V power specifications, verify the 3V3 rail, attach a compatible active SMA antenna, then add G1 and test GNSS communications (I2C address 0x42 if configured) and position fix. Detection alone is not a position fix.
 7. Operate both UARTs, display, touch, microSD and GNSS together. Measure supply margin, latency and cross-radio interference.
 8. Test recovery using signal isolation before power removal. The unaffected network and stored history should stay accessible.
 9. Record PCB revisions, firmware hashes, build flags, baud/framing, measured power and departures from this proposal.
