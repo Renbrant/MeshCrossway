@@ -2,7 +2,7 @@
 
 [Back to README](../README.md)
 
-**Current selection:** Waveshare ESP32-S3-Touch-LCD-3.5 + two ESP32-S3/SX1262 LoRa V3 boards from the Aideepen two-pack + Uputronics MAX-M10S breakout (3 V variant) with external active GNSS antenna + onboard microSD.
+**Current selection:** Waveshare ESP32-S3-Touch-LCD-3.5 + two ESP32-S3/SX1262 LoRa V3 boards from the Aideepen two-pack + Uputronics MAX-M10S breakout (3 V variant) with Bingfu 4-System active GNSS helix antenna (validation pending) + onboard microSD.
 
 **Status: proposed wiring, not bench-tested.** No working central firmware or tested MeshCore UART build is supplied yet. This revision replaces the previous modular radio assembly and its IO adapters. Do not combine its old connector instructions with this guide.
 
@@ -20,7 +20,7 @@ These are original listing images. Product screens are vendor examples. [Image s
 | A | LoRa V3 ESP32-S3FN8 + SX1262, 863–928 MHz | First board from [Aideepen two-pack B0DRSJV1ZL](https://www.amazon.com/dp/B0DRSJV1ZL), option **Lora-V3 2Pcs** | Identify revision and compare to Heltec V3 schematic before using its firmware target |
 | B | Same as A | Second board from the same pack | Same checks; will run MeshCore rather than Meshtastic |
 | G1 | Uputronics u-blox MAX-M10S breakout, **3 V variant** | [Wegmatt selection](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751) | Verify 3 V board, pin labels/orientation (SDA/SCL, TX/RX, VCC/GND), supply range and SMA antenna power capability |
-| ANT-G | External **active GNSS** antenna with SMA mate | Not selected yet | Verify L1 GNSS coverage, SMA polarity, bias voltage/current compatibility, cable length and position away from LoRa transmitters |
+| ANT-G | **Bingfu 4-System GNSS Helix active antenna** | [Amazon B0FL7PVF16](https://www.amazon.com/dp/B0FL7PVF16) | **Selected for test, not confirmed compatible**; seller advertises SMA male, 50 ohm, GNSS L1, 2.8–3.3 V LNA supply and up to 30 mA; verify specifications and antenna bias available at G1 SMA |
 | S1 | One microSD card | U1's onboard card slot | Format and driver support need validation |
 | ANT-A/B | LoRa antennas and pigtails shown in the two-pack | Use the supplied pair initially | Verify received contents and suitability for US915 |
 
@@ -37,14 +37,14 @@ The listing describes CP2102 in its detailed specifications, despite “CP2012�
 | 1 | [Waveshare touch controller](https://www.amazon.com/dp/B0F3WS2W5R) | ESP32-S3-Touch-LCD-3.5; 8 MB PSRAM / 16 MB flash | $35.99 | $35.99 |
 | 1 pack | [Aideepen LoRa V3 two-pack](https://www.amazon.com/dp/B0DRSJV1ZL) | **Lora-V3 2Pcs**, 863–928 MHz; two boards and antenna sets as pictured | $39.99 per pair | $39.99 |
 | 1 | [Uputronics MAX-M10S breakout](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751) | **3 V version**, SMA socket | $36.00 | $36.00 |
-| 1 | External active GNSS antenna + cable/accessories as needed | Compatible SMA mate; exact part TBD | TBD | TBD |
+| 1 | [Bingfu 4-System GNSS Helix active antenna](https://www.amazon.com/dp/B0FL7PVF16) | Candidate for prototype testing; direct SMA mounting or suitable coax support | $21.69 | $21.69 |
 | 1 | [microSD 1 GB, Class 4](https://www.sparkfun.com/microsd-card-1gb-class-4.html) | COM-15107; economical messaging/logging candidate, not a map-storage commitment | $5.50 | $5.50 |
 | 1 pack | [Female/male jumpers, 20 × 150 mm](https://www.adafruit.com/product/1954) | Female ends for radio male headers; male ends for U1 sockets or breadboard | $1.95 | $1.95 |
 | 1 pack | [Male/male jumpers, 20 × 150 mm](https://www.adafruit.com/product/1957) | U1 socket to ground distribution; short breadboard links | $1.95 | $1.95 |
 | 1 | [400-point breadboard](https://www.adafruit.com/product/64) | Common-ground distribution and temporary connections | $4.95 | $4.95 |
-| | **Parts subtotal, reusing USB supplies/cables** | | | **$126.33 + GNSS antenna/accessories (TBD)** |
+| | **Parts subtotal, reusing USB supplies/cables** | | | **$148.02 (RF accessories excluded)** |
 
-Use one suitable larger microSD instead if already available; do not buy both. No additional OLED, LoRa antennas, or pigtails are budgeted. Verify package contents before adding duplicates. The GNSS breakout **requires a separate compatible active external antenna**; none is assumed included.
+Use one suitable larger microSD instead if already available; do not buy both. No additional OLED, LoRa antennas, or pigtails are budgeted. Verify package contents before adding duplicates. The GNSS breakout **requires a separate active external antenna**. The Bingfu is budgeted, but electrical compatibility remains to be verified before connecting it.
 
 ### Power and test peers: buy only what is missing
 
@@ -60,9 +60,9 @@ USB cables are **not assumed included** in the Amazon two-pack. Deduct any suita
 
 | Scenario | Total before shipping/taxes |
 |---|---:|
-| Terminal components and assembly accessories, reuse USB power/cables | **$143.78** |
-| Same terminal + three new chargers and three new cables | **$169.68 + GNSS antenna/accessories (TBD)** |
-| Complete bench above + two remote peers, two new chargers and two new cables | **$238.57 + GNSS antenna/accessories (TBD)** |
+| Terminal components and assembly accessories, reuse USB power/cables | **$148.02 + optional RF accessories** |
+| Same terminal + three new chargers and three new cables | **$191.37 + optional RF accessories** |
+| Complete bench above + two remote peers, two new chargers and two new cables | **$260.26 + optional RF accessories** |
 
 The terminal contains **two radio boards**. The complete test bench contains four radio boards, bought as two two-packs. These totals assume usable supplied header strips; connector replacements, a card reader, and instruments are not included. A hardware purchase does not establish an operational firmware integration.
 
@@ -136,6 +136,8 @@ Sources: [Meshtastic serial module](https://meshtastic.org/docs/configuration/mo
 
 **Hardware selection updated October 24, 2026.** G1 is now the [Uputronics MAX-M10S breakout, 3 V option](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751), not the SparkFun SAM-M10Q. The previously drawn GNSS diagram (`images/gnss-and-power.svg`) depicts the superseded Qwiic board and **must not be used as the wiring reference** until redrawn.
 
+**Selected antenna for bench validation:** [Bingfu 4-System GNSS Helix, Amazon B0FL7PVF16](https://www.amazon.com/dp/B0FL7PVF16), screenshot price **$21.69**. Its seller advertises an SMA male connector, 50-ohm impedance, GPS L1 and other GNSS constellations, a 2.8–3.3 V active LNA and up to 30 mA supply current. These are seller claims and not measurements. The MAX-M10S chip's VCC_RF specifications **do not alone prove** that the assembled Uputronics breakout supplies the required voltage and current at its SMA socket. Confirm the breakout schematic or measure the antenna bias at the SMA center conductor (using appropriate RF-safe procedures) before connecting and powering the antenna. Confirm SMA gender and standard vs RP-SMA, and avoid mechanical stress from the antenna on the PCB connector. The MAX-M10S is single-frequency GNSS; the antenna's wider-frequency marketing does not make the receiver RTK-capable.
+
 The selected breakout exposes a row of through-holes labelled **SDA, SCL, TX, RX, TP, GND, VCC** (confirm physically on the delivered board). It has an SMA female connection intended for a suitable external **active GNSS antenna**. No Qwiic socket or onboard GNSS patch antenna should be assumed. The antenna is a **separate, not-yet-selected purchase**.
 
 | U1 | G1 MAX-M10S breakout | Status |
@@ -148,7 +150,7 @@ The selected breakout exposes a row of through-holes labelled **SDA, SCL, TX, RX
 
 Use a separate host I2C bus on GPIO21/38, provisionally at 100 kHz. The u-blox M10 default I2C address is commonly **0x42 (7-bit)**; verify actual device configuration before depending on this address. Inspect on-board I2C pull-ups before adding external ones. Keep the Waveshare onboard I2C peripheral on its own assigned pins.
 
-An external **active** antenna must support the intended GNSS bands and the breakout's *actual antenna-bias voltage and current limit*. The 3 V board selection is not a claim that every 3 V or 5 V active antenna is compatible. Check RF connector gender/polarity (including standard vs reverse-polarity SMA), grounding, cable loss, strain relief and placement; route it away from the two LoRa antennas, their coax runs, and switching regulators.
+The selected external **active** Bingfu antenna must support the intended GNSS bands and the breakout's *actual antenna-bias voltage and current limit*. The 3 V board selection is not a claim that every 3 V or 5 V active antenna is compatible. Check RF connector gender/polarity (including standard vs reverse-polarity SMA), grounding, cable loss, strain relief and placement; route it away from the two LoRa antennas, their coax runs, and switching regulators.
 
 For the current bench prototype, supply U1, A and B independently over USB as before. Feed G1 only from U1's verified 3.3 V rail after a power measurement. Do not join board USB/5 V outputs or battery chargers. The planned future carrier board may integrate one Li-ion charging and power-path subsystem with individual switched rails, **pending current, protection and powered-off isolation design**.
 
@@ -186,7 +188,7 @@ Attach each supplied LoRa antenna through its pigtail to the radio's U.FL/IPEX L
 3. Power everything off. Connect ground, then A's TX/RX pair. Check for shorts and header offsets.
 4. Configure Meshtastic PROTO on RX4/TX5. Verify client identification and bidirectional messaging with a compatible remote peer.
 5. Compile B's MeshCore Companion UART target. Verify it on GPIO4/5, then add its host connection and test the second peer.
-6. Confirm the G1 pinout and 3 V power specifications, verify the 3V3 rail, attach a compatible active SMA antenna, then add G1 and test GNSS communications (I2C address 0x42 if configured) and position fix. Detection alone is not a position fix.
+6. Confirm the G1 pinout and 3 V power specifications, verify the 3V3 rail, attach the Bingfu antenna **only after bias verification**, then add G1 and test GNSS communications (I2C address 0x42 if configured) and position fix. Detection alone is not a position fix.
 7. Operate both UARTs, display, touch, microSD and GNSS together. Measure supply margin, latency and cross-radio interference.
 8. Test recovery using signal isolation before power removal. The unaffected network and stored history should stay accessible.
 9. Record PCB revisions, firmware hashes, build flags, baud/framing, measured power and departures from this proposal.
