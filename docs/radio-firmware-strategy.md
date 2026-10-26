@@ -1,6 +1,6 @@
 # Radio firmware strategy and workload separation
 
-**Status: design decision, not bench validation.** The MeshCrossway prototype uses a Waveshare ESP32-S3 touchscreen controller and two independent ESP32-S3/SX1262 LoRa V3 radio boards. We favor upstream Meshtastic and MeshCore firmware and avoid maintaining forks unless a tested, essential capability cannot be exposed otherwise.
+**Status: design decision, not bench validation.** The MeshCrossway prototype uses a Waveshare ESP32-S3 touchscreen controller and two independent ESP32-S3/SX1262 XIAO ESP32-S3 + Wio-SX1262 kits. We favor upstream Meshtastic and MeshCore firmware and avoid maintaining forks unless a tested, essential capability cannot be exposed otherwise.
 
 ## Illustrated firmware boundaries
 
@@ -13,8 +13,8 @@ The central host handles UI, storage and application policy; each radio keeps it
 | Component | Owns | Does not own |
 |---|---|---|
 | Waveshare ESP32-S3 | LVGL/touch, GNSS, navigation, POIs, tracks/GPX, microSD, location-sharing policy/scheduler, BLE companion bulk-transfer service (future), UI state, independent radio adapters | Full Meshtastic/MeshCore radio stacks |
-| LoRa V3 #1 | Meshtastic radio stack, SX1262, network identity, native routing, packet queues/status as supported | Map rendering, GPX, app-level tracking schedule |
-| LoRa V3 #2 | MeshCore Companion radio stack, SX1262, native routing, contact and packet handling as supported | Map rendering, GPX, app-level tracking schedule |
+| XIAO/Wio kit A | Meshtastic radio stack, SX1262, network identity, native routing, packet queues/status as supported | Map rendering, GPX, app-level tracking schedule |
+| XIAO/Wio kit B | MeshCore Companion radio stack, SX1262, native routing, contact and packet handling as supported | Map rendering, GPX, app-level tracking schedule |
 
 The radio devices are **not general-purpose coprocessors** while running standalone upstream protocol firmware. Giving them unrelated application workloads would require firmware changes and create maintainability risks. A failure in either adapter should not block the other adapter, GNSS, UI or stored history.
 
@@ -88,3 +88,7 @@ See [Radio communication architecture and API compatibility](radio-communication
 - Radio APIs, telemetry, queued messages and incoming notifications must be serviced asynchronously with separate bounded queues, reconnect and version handling. Reports must differentiate queued, accepted, transmitted and remotely acknowledged where supported.
 - The central controller can schedule only application-originated transmissions reliably. Autonomous announcements, ACKs and retransmissions by both radios make RF coexistence and simultaneous transmissions an independent bench-validation concern.
 - Strict zero-hop tracking and truly equivalent group semantics are **not demonstrated**. Do not ship a direct-only guarantee until over-the-air tests prove it; a firmware patch is a last resort after a reproducible API limitation.
+
+## XIAO migration override (2026-10-26)
+
+The V1 uses two **Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kits**, not Aideepen/Heltec. External XIAO UART candidate: D7/GPIO44 RX, D6/GPIO43 TX; configure firmware explicitly and keep binary transport free from debug output. Wio SPI is internal to the kit. Meshtastic has a matching Seeed image, MeshCore lists Xiao S3 WIO but external Companion UART remains **unverified**. MeshCore initial programming may require a **merged image** for persistent settings. Do not treat the old radio GPIO4/5 external UART or Heltec target as valid. [Full hardware guide](hardware-wiring.md).
