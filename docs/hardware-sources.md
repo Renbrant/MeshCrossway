@@ -101,3 +101,19 @@ When documentation conflicts, use this order:
 6. reseller imagery or third-party descriptions.
 
 Any change to a physical pin assignment should update [pcb-rev-a-pin-allocation.md](pcb-rev-a-pin-allocation.md), [hardware-wiring.md](hardware-wiring.md), the affected diagrams, and the diagram generator in the same change.
+
+
+### Uputronics breakout datasheet — revision 2.0 (25 April 2025)
+
+- **Original PDF supplied for this design:** [uBLOX MAX Breakout for Active Antennas Datasheet](https://cdn.shopify.com/s/files/1/0835/7707/8094/files/uBLOX_MAX_Breakout_for_Active_Antennas_Datasheet.pdf?v=1745569009)
+- Manufacturer product reference: https://store.uputronics.com/products/ublox-max-m8q-breakout-for-active-antennas
+- This is the **breakout-board** document, not just the u-blox MAX-M10S IC datasheet. The original Shopify-hosted PDF could not be downloaded directly in this review; specifications were cross-checked against the indexed Rev 2.0 document text and the manufacturer's product listing. Verify physical pin order and dimensions against the actual purchased board before PCB release.
+- **3 V variant VCC:** 2.7–3.6 V; absolute maximum VCC 3.6 V. Do not connect 5 V to this variant. A separate 5 V variant exists (4.5–30 V VCC with onboard level conversion); do not mix its specs with the selected 3 V board.
+- Exposed header functions: **SCL, SDA, TX, RX, TP, VCC, GND**. **EN applies only to the 5 V version**, where it enables the level converter and is tied high by default.
+- **TP:** nominal 1 Hz timing pulse when position lock is acquired; routing to Waveshare GPIO21 via a removable 0-ohm link remains optional.
+- **UART default:** 9600 baud; Rev A uses I2C, not the breakout UART. Connector/header pitch: **2.54 mm**.
+- **Board current figures from the breakout datasheet:** acquisition **25 mA**, tracking **21 mA**, cyclic power-saving mode **6 mA**. These are operating figures, **not maximum input-current guarantees** and do not establish the separate active antenna's consumption.
+- **Antenna:** female SMA RF connector, specified nominal **2.7 V antenna bias**; check Bingfu antenna's required bias voltage/current, actual connector polarity/type, and available bias current before connecting.
+- **Mechanical/backup:** approximately **22 × 22 × 1.6 mm**, board weight up to **5 g**, **0.2 F supercapacitor** for backup and a PPS LED. The supercapacitor does not replace the main power source.
+- **Operating temperature:** −40 to +85 °C (datasheet).
+- Integration note: reserve local 100 nF and 10 µF capacitor footprints near the breakout as planned; avoid claiming these capacitors are required by the manufacturer without schematic verification.
