@@ -4,7 +4,7 @@
 
 ![MeshCrossway V1 concept: one custom PCB with Seeed XIAO/Wio dual radios, transparent enclosure and rear battery](docs/images/meshcrossway-hero.webp)
 
-*Temporary final-product concept: battery placed **behind the carrier PCB**. Parts are approximations, not exact supplier photos or dimensionally verified assembly CAD.*
+*Illustrative AI-generated concept only. It does not represent the final product, verified physical placement, exact supplier components, or production-ready PCB/enclosure design. The intended battery placement is behind the carrier PCB.*
 
 MeshCrossway is an **open-source, offline-first touchscreen communicator** designed to use **Meshtastic** and **MeshCore** through **two independent Seeed XIAO ESP32-S3 + Wio-SX1262 radio kits**. One interface brings together messaging, navigation, GNSS positioning, tracks and field diagnostics without requiring cellular coverage or the internet.
 
