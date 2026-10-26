@@ -134,3 +134,21 @@ The complete source registry is maintained in [hardware-sources.md](hardware-sou
 - [Seeed XIAO ESP32-S3 Sense V1.51 schematic PDF](https://files.seeedstudio.com/wiki/SeeedStudio-XIAO-ESP32S3/new-res/202003753_XIAO%20ESP32S3%20Sense_V1.51_SCH_260611.pdf)
 
 The Sense schematic is a supporting ESP32-S3/XIAO power and pin-reference document; the exact XIAO PCB revision shipped with the Wio kit must still be confirmed before fabrication.
+
+
+## MAX-M10S breakout-specific electrical reference
+
+**Manufacturer breakout datasheet:** [Uputronics uBLOX MAX Breakout for Active Antennas, Rev 2.0 (25 April 2025)](https://cdn.shopify.com/s/files/1/0835/7707/8094/files/uBLOX_MAX_Breakout_for_Active_Antennas_Datasheet.pdf?v=1745569009). The 3 V board is selected; never apply 5 V to its VCC (**2.7–3.6 V operating, 3.6 V absolute maximum**). The separately sold 5 V version has different supply and level-converter circuitry.
+
+| Breakout signal | Carrier Rev A connection | Explanation |
+|---|---|---|
+| VCC | Waveshare J8-31/32, 3V3 | Verify loaded rail ≤3.6 V and no backfeed |
+| GND | Common GND | Required return |
+| SDA | J8-28 / GPIO8 | I2C data; verify pull-ups |
+| SCL | J8-26 / GPIO7 | I2C clock; verify pull-ups |
+| TP | J8-5 / GPIO21 via R5 0 Ω | Optional 1 Hz time pulse after fix |
+| TX, RX | Not connected | Breakout UART is an alternative interface; default 9600 baud |
+| EN | Not present for selected 3 V variant | Only the 5 V breakout uses EN for its level converter |
+
+**Measured values are still required:** breakout datasheet lists **25 mA acquisition, 21 mA tracking and 6 mA cyclic power-save**; do not use the chip-only low-power figure as the complete breakout budget. Add active-antenna current separately; nominal antenna bias is **2.7 V** through the breakout's **SMA female** port, so verify antenna compatibility. Board footprint is approximately **22 × 22 mm**, 2.54 mm header pitch, 1.6 mm PCB; check orientation, height and clearance against the received part. A **0.2 F supercapacitor** preserves backup state and an LED indicates PPS. These features do not eliminate the need for continuous regulated supply and local decoupling.
+
