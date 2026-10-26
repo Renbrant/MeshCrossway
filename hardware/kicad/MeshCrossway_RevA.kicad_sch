@@ -863,7 +863,7 @@
 					)
 				)
 			)
-			(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x07_P2.54mm_Vertical"
+			(property "Footprint" "MeshCrossway:Module_Uputronics_MAX_M10S_3V_MECH_APPROX"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -6934,7 +6934,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x07_P2.54mm_Vertical"
+		(property "Footprint" "MeshCrossway:Module_Uputronics_MAX_M10S_3V_MECH_APPROX"
 			(at 57.15 132.08 0)
 			(hide yes)
 			(show_name no)
