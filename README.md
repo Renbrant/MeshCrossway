@@ -107,6 +107,7 @@ The illustrated electrical design is a **proposal**; it is not a production-read
 | Topic | Detailed documentation |
 |---|---|
 | **Hardware, shopping, UART pinout and wiring** | [XIAO/Wio V1 hardware guide](docs/hardware-wiring.md) |
+| **PCB layout baseline** | [Rev A 4-layer floorplan, routing and fabrication gates](docs/pcb-layout-rev-a.md) |
 | **Manufacturer hardware sources** | [Official source registry](docs/hardware-sources.md) |
 | **Power and charging** | [5 V/VBUS source selection and validation gates](docs/power-architecture.md) |
 | **Radio APIs and transport** | [Meshtastic PROTO, MeshCore Companion and interoperability](docs/radio-communication-architecture.md) |
