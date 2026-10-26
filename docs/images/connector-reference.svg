@@ -1,1 +1,74 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720"><rect width="1280" height="720" fill="#0b1525"/><text x="55" y="76" fill="#f8fafc" font-family="Arial" font-size="35" font-weight="bold">MeshCrossway V1 | Dual XIAO / Wio-SX1262</text><text x="55" y="111" fill="#94a3b8" font-family="Arial" font-size="19">Proposed UART map — verify target firmware, physical pinout and 3.3 V power before fabrication</text><rect x="60" y="185" width="425" height="355" rx="22" fill="#172940" stroke="#38bdf8" stroke-width="3"/><text x="86" y="236" fill="#ffffff" font-family="Arial" font-size="27" font-weight="bold">Waveshare ESP32-S3</text><text x="86" y="269" fill="#a8d5ed" font-family="Arial" font-size="19">3.5-inch touchscreen / host</text><text x="86" y="332" fill="#e2e8f0" font-family="Arial" font-size="22">UART1 TX: GPIO39</text><text x="86" y="365" fill="#e2e8f0" font-family="Arial" font-size="22">UART1 RX: GPIO40</text><text x="86" y="430" fill="#e2e8f0" font-family="Arial" font-size="22">UART2 TX: GPIO17</text><text x="86" y="463" fill="#e2e8f0" font-family="Arial" font-size="22">UART2 RX: GPIO18</text><rect x="765" y="170" width="455" height="185" rx="22" fill="#173b3b" stroke="#34d399" stroke-width="3"/><text x="793" y="219" fill="#ffffff" font-family="Arial" font-size="25" font-weight="bold">XIAO + Wio-SX1262 A</text><text x="793" y="249" fill="#b6f2d4" font-family="Arial" font-size="22">Meshtastic / Serial PROTO</text><text x="793" y="285" fill="#e2e8f0" font-family="Arial" font-size="20">RX: D3 / GPIO4</text><text x="793" y="314" fill="#e2e8f0" font-family="Arial" font-size="20">TX: D2 / GPIO3</text><rect x="765" y="390" width="455" height="185" rx="22" fill="#3a294e" stroke="#c084fc" stroke-width="3"/><text x="793" y="439" fill="#ffffff" font-family="Arial" font-size="25" font-weight="bold">XIAO + Wio-SX1262 B</text><text x="793" y="469" fill="#ead5ff" font-family="Arial" font-size="22">MeshCore / Serial Companion</text><text x="793" y="505" fill="#e2e8f0" font-family="Arial" font-size="20">RX: D7 / GPIO44</text><text x="793" y="534" fill="#e2e8f0" font-family="Arial" font-size="20">TX: D6 / GPIO43</text><g fill="none" stroke-width="4"><path d="M485 325H660V284H765" stroke="#34d399"/><path d="M485 361H680V315H765" stroke="#6ee7b7"/><path d="M485 424H660V503H765" stroke="#c084fc"/><path d="M485 460H680V533H765" stroke="#e9d5ff"/></g><text x="55" y="628" fill="#cbd5e1" font-family="Arial" font-size="21">Both links: 115200 8N1 | 3.3 V logic | common ground | TX crossed to RX</text><text x="55" y="668" fill="#fbbf24" font-family="Arial" font-size="19">Power: Waveshare AXP2101 / J8 3V3 remains conditional on measured spare current and safe XIAO input path.</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Connector reference">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#051325"/><stop offset="1" stop-color="#112a45"/></linearGradient><linearGradient id="glass" x1="0" x2="1"><stop offset="0" stop-color="#d9efff" stop-opacity="0.21"/><stop offset="1" stop-color="#8bd0f5" stop-opacity="0.07"/></linearGradient><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#85dbff"/></marker><marker id="arr2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#ffba65"/></marker></defs>
+<rect x="0" y="0" width="1280" height="720" rx="0" fill="url(#bg)" stroke="none" stroke-width="1"/>
+<rect x="14" y="14" width="1252" height="692" rx="22" fill="none" stroke="#244260" stroke-width="2"/>
+<text x="40" y="62" font-family="DejaVu Sans,Arial,sans-serif" font-size="34" fill="#36c8f4" font-weight="bold">MeshCrossway</text>
+<text x="325" y="61" font-family="DejaVu Sans,Arial,sans-serif" font-size="28" fill="#edf5ff" font-weight="bold">| Connector reference</text>
+<text x="40" y="91" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#a6bfd4" font-weight="normal">Physical signal identity only: do not infer J8 position numbering from marketing photos</text>
+<rect x="30" y="669" width="1220" height="27" rx="8" fill="#162a40" stroke="#253f57" stroke-width="1"/>
+<text x="44" y="688" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#f4bc58" font-weight="normal">Use actual PCB revision/schematic. Meshtastic D2/D3 and MeshCore D6/D7 need confirmed free GPIOs.</text>
+<rect x="50" y="185" width="530" height="415" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
+<text x="68" y="217" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Waveshare host expansion (J8)</text>
+<text x="68" y="238" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Board revision and pin numbering must be inspected</text>
+<text x="77" y="277" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO39   →  UART1 TX → Meshtastic RX</text>
+<text x="77" y="319" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO40   ←  UART1 RX ← Meshtastic TX</text>
+<text x="77" y="361" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO17   →  UART2 TX → MeshCore RX</text>
+<text x="77" y="403" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO18   ←  UART2 RX ← MeshCore TX</text>
+<text x="77" y="445" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO21   ↔  GNSS SDA (proposed)</text>
+<text x="77" y="487" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO38   ↔  GNSS SCL (proposed)</text>
+<text x="77" y="529" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">3V3/GND: POWER PENDING CURRENT TEST</text>
+<rect x="625" y="185" width="604" height="183" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
+<text x="643" y="217" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Radio A  •  Meshtastic</text>
+<text x="643" y="238" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">XIAO D3 / GPIO4 RX      XIAO D2 / GPIO3 TX</text>
+<rect x="669" y="256" width="112.5" height="67.5" rx="7" fill="#07121c" stroke="#36c8f4" stroke-width="2"/>
+<rect x="677.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="677.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="692.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="692.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="707.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="707.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="722.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="722.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="737.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="737.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="752.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="752.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="767.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="767.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="681.75" y="265.75" width="64.5" height="41.25" rx="5" fill="#c4d3dc" stroke="#7e99aa" stroke-width="1"/>
+<text x="714.0" y="283.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="8.25" fill="#122939" font-weight="bold" text-anchor="middle">Wio-SX1262</text>
+<text x="714.0" y="294.25" font-family="DejaVu Sans,Arial,sans-serif" font-size="6.75" fill="#34465a" font-weight="normal" text-anchor="middle">LoRa RF</text>
+<rect x="755.25" y="272.5" width="17.25" height="33.0" rx="2" fill="#224259" stroke="#86b4d1" stroke-width="1"/>
+<text x="763.5" y="292.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="7.5" fill="#edf5ff" font-weight="bold" text-anchor="middle">X</text>
+<text x="725.25" y="338.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="9.0" fill="#36c8f4" font-weight="bold" text-anchor="middle">XIAO + Wio-SX1262</text>
+<text x="867" y="280" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Serial PROTO</text>
+<text x="867" y="308" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">115200 baud (verify)</text>
+<text x="867" y="336" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Shared GND</text>
+<rect x="625" y="402" width="604" height="198" rx="14" fill="#11243a" stroke="#ffba65" stroke-width="1.7"/>
+<text x="643" y="434" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Radio B  •  MeshCore</text>
+<text x="643" y="455" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">XIAO D7 / GPIO44 RX     XIAO D6 / GPIO43 TX</text>
+<rect x="670" y="480" width="112.5" height="67.5" rx="7" fill="#07121c" stroke="#ffba65" stroke-width="2"/>
+<rect x="678.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="678.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="693.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="693.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="708.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="708.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="723.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="723.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="738.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="738.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="753.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="753.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="768.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="768.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="682.75" y="489.75" width="64.5" height="41.25" rx="5" fill="#c4d3dc" stroke="#7e99aa" stroke-width="1"/>
+<text x="715.0" y="507.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="8.25" fill="#122939" font-weight="bold" text-anchor="middle">Wio-SX1262</text>
+<text x="715.0" y="518.25" font-family="DejaVu Sans,Arial,sans-serif" font-size="6.75" fill="#34465a" font-weight="normal" text-anchor="middle">LoRa RF</text>
+<rect x="756.25" y="496.5" width="17.25" height="33.0" rx="2" fill="#224259" stroke="#86b4d1" stroke-width="1"/>
+<text x="764.5" y="516.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="7.5" fill="#edf5ff" font-weight="bold" text-anchor="middle">X</text>
+<text x="726.25" y="562.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="9.0" fill="#ffba65" font-weight="bold" text-anchor="middle">XIAO + Wio-SX1262</text>
+<text x="868" y="503" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Companion Serial</text>
+<text x="868" y="530" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">115200 baud (verify)</text>
+<text x="868" y="557" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Shared GND</text>
+</svg>

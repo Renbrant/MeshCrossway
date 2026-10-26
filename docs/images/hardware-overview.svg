@@ -1,1 +1,84 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720"><rect width="1280" height="720" fill="#0b1525"/><text x="55" y="76" fill="#f8fafc" font-family="Arial" font-size="35" font-weight="bold">MeshCrossway V1 | Dual XIAO / Wio-SX1262</text><text x="55" y="111" fill="#94a3b8" font-family="Arial" font-size="19">V1 hardware configuration and provisional UART map — verify target firmware, physical pinout and 3.3 V power before fabrication</text><rect x="60" y="185" width="425" height="355" rx="22" fill="#172940" stroke="#38bdf8" stroke-width="3"/><text x="86" y="236" fill="#ffffff" font-family="Arial" font-size="27" font-weight="bold">Waveshare ESP32-S3</text><text x="86" y="269" fill="#a8d5ed" font-family="Arial" font-size="19">3.5-inch touchscreen / host</text><text x="86" y="332" fill="#e2e8f0" font-family="Arial" font-size="22">UART1 TX: GPIO39</text><text x="86" y="365" fill="#e2e8f0" font-family="Arial" font-size="22">UART1 RX: GPIO40</text><text x="86" y="430" fill="#e2e8f0" font-family="Arial" font-size="22">UART2 TX: GPIO17</text><text x="86" y="463" fill="#e2e8f0" font-family="Arial" font-size="22">UART2 RX: GPIO18</text><rect x="765" y="170" width="455" height="185" rx="22" fill="#173b3b" stroke="#34d399" stroke-width="3"/><text x="793" y="219" fill="#ffffff" font-family="Arial" font-size="25" font-weight="bold">XIAO + Wio-SX1262 A</text><text x="793" y="249" fill="#b6f2d4" font-family="Arial" font-size="22">Meshtastic / Serial PROTO</text><text x="793" y="285" fill="#e2e8f0" font-family="Arial" font-size="20">RX: D3 / GPIO4</text><text x="793" y="314" fill="#e2e8f0" font-family="Arial" font-size="20">TX: D2 / GPIO3</text><rect x="765" y="390" width="455" height="185" rx="22" fill="#3a294e" stroke="#c084fc" stroke-width="3"/><text x="793" y="439" fill="#ffffff" font-family="Arial" font-size="25" font-weight="bold">XIAO + Wio-SX1262 B</text><text x="793" y="469" fill="#ead5ff" font-family="Arial" font-size="22">MeshCore / Serial Companion</text><text x="793" y="505" fill="#e2e8f0" font-family="Arial" font-size="20">RX: D7 / GPIO44</text><text x="793" y="534" fill="#e2e8f0" font-family="Arial" font-size="20">TX: D6 / GPIO43</text><g fill="none" stroke-width="4"><path d="M485 325H660V284H765" stroke="#34d399"/><path d="M485 361H680V315H765" stroke="#6ee7b7"/><path d="M485 424H660V503H765" stroke="#c084fc"/><path d="M485 460H680V533H765" stroke="#e9d5ff"/></g><text x="55" y="628" fill="#cbd5e1" font-family="Arial" font-size="21">Both links: 115200 8N1 | 3.3 V logic | common ground | TX crossed to RX</text><text x="55" y="668" fill="#fbbf24" font-family="Arial" font-size="19">Power: Waveshare AXP2101 / J8 3V3 remains conditional on measured spare current and safe XIAO input path.</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Integrated PCB + transparent case">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#051325"/><stop offset="1" stop-color="#112a45"/></linearGradient><linearGradient id="glass" x1="0" x2="1"><stop offset="0" stop-color="#d9efff" stop-opacity="0.21"/><stop offset="1" stop-color="#8bd0f5" stop-opacity="0.07"/></linearGradient><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#85dbff"/></marker><marker id="arr2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#ffba65"/></marker></defs>
+<rect x="0" y="0" width="1280" height="720" rx="0" fill="url(#bg)" stroke="none" stroke-width="1"/>
+<rect x="14" y="14" width="1252" height="692" rx="22" fill="none" stroke="#244260" stroke-width="2"/>
+<text x="40" y="62" font-family="DejaVu Sans,Arial,sans-serif" font-size="34" fill="#36c8f4" font-weight="bold">MeshCrossway</text>
+<text x="325" y="61" font-family="DejaVu Sans,Arial,sans-serif" font-size="28" fill="#edf5ff" font-weight="bold">| Integrated PCB + transparent case</text>
+<text x="40" y="91" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#a6bfd4" font-weight="normal">Layered mechanical concept; an exploded illustration, not dimensional CAD</text>
+<rect x="30" y="669" width="1220" height="27" rx="8" fill="#162a40" stroke="#253f57" stroke-width="1"/>
+<text x="44" y="688" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#f4bc58" font-weight="normal">Mechanical clearances, battery thickness, antenna mounts and USB access must be measured on physical parts.</text>
+<rect x="50" y="193" width="355" height="408" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
+<text x="68" y="225" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">01  Transparent front shell</text>
+<text x="68" y="246" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Almost invisible protective polycarbonate</text>
+<rect x="81" y="276" width="289" height="226" rx="26" fill="url(#glass)" stroke="#a8d4f6" stroke-width="4"/>
+<rect x="106" y="311" width="239" height="165" rx="10" fill="#0c233b" stroke="#437f9e" stroke-width="2"/>
+<text x="226" y="375" font-family="DejaVu Sans,Arial,sans-serif" font-size="30" fill="#edf5ff" font-weight="bold" text-anchor="middle">3.5-inch</text>
+<text x="226" y="409" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#a6bfd4" font-weight="normal" text-anchor="middle">touch display</text>
+<circle cx="92" cy="290" r="7" fill="#99c8e0" stroke="none" stroke-width="1"/>
+<circle cx="355" cy="488" r="7" fill="#99c8e0" stroke="none" stroke-width="1"/>
+<rect x="445" y="193" width="425" height="408" rx="14" fill="#11243a" stroke="#34d4ba" stroke-width="1.7"/>
+<text x="463" y="225" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">02  One custom carrier PCB</text>
+<text x="463" y="246" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Both LoRa modules removable for service</text>
+<rect x="471" y="262" width="371" height="262" rx="14" fill="#071e27" stroke="#34d4ba" stroke-width="3"/>
+<rect x="496" y="293" width="135.0" height="81.0" rx="7" fill="#07121c" stroke="#36c8f4" stroke-width="2"/>
+<rect x="505.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="505.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="523.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="523.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="541.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="541.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="559.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="559.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="577.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="577.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="595.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="595.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="613.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="613.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="511.3" y="304.7" width="77.4" height="49.5" rx="5" fill="#c4d3dc" stroke="#7e99aa" stroke-width="1"/>
+<text x="550.0" y="325.4" font-family="DejaVu Sans,Arial,sans-serif" font-size="9.9" fill="#122939" font-weight="bold" text-anchor="middle">Wio-SX1262</text>
+<text x="550.0" y="338.9" font-family="DejaVu Sans,Arial,sans-serif" font-size="8.1" fill="#34465a" font-weight="normal" text-anchor="middle">LoRa RF</text>
+<rect x="599.5" y="312.8" width="20.7" height="39.6" rx="2" fill="#224259" stroke="#86b4d1" stroke-width="1"/>
+<text x="609.4" y="336.2" font-family="DejaVu Sans,Arial,sans-serif" font-size="9.0" fill="#edf5ff" font-weight="bold" text-anchor="middle">X</text>
+<text x="563.5" y="392.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="10.8" fill="#36c8f4" font-weight="bold" text-anchor="middle">XIAO + Wio-SX1262</text>
+<rect x="690" y="293" width="135.0" height="81.0" rx="7" fill="#07121c" stroke="#ffba65" stroke-width="2"/>
+<rect x="699.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="699.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="717.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="717.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="735.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="735.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="753.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="753.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="771.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="771.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="789.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="789.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="807.9" y="289.4" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="807.9" y="373.1" width="7.2" height="4.5" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="705.3" y="304.7" width="77.4" height="49.5" rx="5" fill="#c4d3dc" stroke="#7e99aa" stroke-width="1"/>
+<text x="744.0" y="325.4" font-family="DejaVu Sans,Arial,sans-serif" font-size="9.9" fill="#122939" font-weight="bold" text-anchor="middle">Wio-SX1262</text>
+<text x="744.0" y="338.9" font-family="DejaVu Sans,Arial,sans-serif" font-size="8.1" fill="#34465a" font-weight="normal" text-anchor="middle">LoRa RF</text>
+<rect x="793.5" y="312.8" width="20.7" height="39.6" rx="2" fill="#224259" stroke="#86b4d1" stroke-width="1"/>
+<text x="803.4" y="336.2" font-family="DejaVu Sans,Arial,sans-serif" font-size="9.0" fill="#edf5ff" font-weight="bold" text-anchor="middle">X</text>
+<text x="757.5" y="392.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="10.8" fill="#ffba65" font-weight="bold" text-anchor="middle">XIAO + Wio-SX1262</text>
+<rect x="555" y="442" width="130" height="49" rx="8" fill="#112e3b" stroke="#36c8f4" stroke-width="1"/>
+<text x="620" y="464" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" fill="#edf5ff" font-weight="bold" text-anchor="middle">Waveshare</text>
+<text x="620" y="482" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#a6bfd4" font-weight="normal" text-anchor="middle">3.5-inch host</text>
+<rect x="700" y="441" width="116" height="47" rx="7" fill="#193e40" stroke="#34d4ba" stroke-width="1"/>
+<text x="758" y="462" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#edf5ff" font-weight="bold" text-anchor="middle">MAX-M10S</text>
+<text x="758" y="480" font-family="DejaVu Sans,Arial,sans-serif" font-size="11" fill="#a6bfd4" font-weight="normal" text-anchor="middle">GNSS</text>
+<text x="652" y="559" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal" text-anchor="middle">MicroSD uses Waveshare onboard slot</text>
+<rect x="912" y="193" width="317" height="408" rx="14" fill="#11243a" stroke="#ffba65" stroke-width="1.7"/>
+<text x="930" y="225" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">03  Battery at rear</text>
+<text x="930" y="246" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Behind the PCB, inside the back shell</text>
+<rect x="968" y="288" width="206" height="123" rx="14" fill="#d1d8d9" stroke="#e8b353" stroke-width="5"/>
+<rect x="976" y="293" width="190" height="113" rx="8" fill="#cfd8d8" stroke="none" stroke-width="1"/>
+<text x="1071.0" y="328" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#293746" font-weight="bold" text-anchor="middle">REAR BATTERY</text>
+<text x="1071.0" y="351" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#293746" font-weight="normal" text-anchor="middle">1S LiPo candidate</text>
+<text x="1071.0" y="370" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#293746" font-weight="normal" text-anchor="middle">10,000 mAh</text>
+<text x="1072" y="464" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#edf5ff" font-weight="bold" text-anchor="middle">Clear rear enclosure</text>
+<text x="952" y="496" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" fill="#edf5ff" font-weight="normal">• LiPo protection required</text>
+<text x="952" y="523" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" fill="#edf5ff" font-weight="normal">• Charger managed by Waveshare</text>
+<text x="952" y="550" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" fill="#edf5ff" font-weight="normal">• Battery dimensions unverified</text>
+</svg>

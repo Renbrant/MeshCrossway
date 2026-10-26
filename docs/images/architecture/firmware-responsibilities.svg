@@ -1,1 +1,55 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 460" role="img" aria-label="Firmware Responsibility Split"><rect width="1440" height="460" fill="#ffffff"/><text x="720" y="64" text-anchor="middle" font-size="40" font-weight="700" font-family="Arial,sans-serif" fill="#111c39">Firmware Responsibility Split</text><text x="720" y="96" text-anchor="middle" font-size="20" font-family="Arial,sans-serif" fill="#4a6084">MeshCrossway · Conceptual architecture — not bench validated</text><rect x="38" y="160" width="244" height="136" rx="15" fill="#d9f5e7" stroke="#356495" stroke-width="2"/><foreignObject x="48" y="180" width="224" height="95"><div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;color:#122344;text-align:center;display:flex;justify-content:center;align-items:center;font-size:19px;font-weight:bold;height:100%;overflow-wrap:anywhere">Host: LVGL · maps · GPX</div></foreignObject><path d="M 286 226 L 302 226" stroke="#236fba" stroke-width="5"/><path d="M 302 226 l -12 -8 v 16 z" fill="#236fba"/><rect x="318" y="160" width="244" height="136" rx="15" fill="#e9f1ff" stroke="#356495" stroke-width="2"/><foreignObject x="328" y="180" width="224" height="95"><div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;color:#122344;text-align:center;display:flex;justify-content:center;align-items:center;font-size:19px;font-weight:bold;height:100%;overflow-wrap:anywhere">Host: GNSS / logging</div></foreignObject><path d="M 566 226 L 582 226" stroke="#236fba" stroke-width="5"/><path d="M 582 226 l -12 -8 v 16 z" fill="#236fba"/><rect x="598" y="160" width="244" height="136" rx="15" fill="#e6efff" stroke="#356495" stroke-width="2"/><foreignObject x="608" y="180" width="224" height="95"><div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;color:#122344;text-align:center;display:flex;justify-content:center;align-items:center;font-size:19px;font-weight:bold;height:100%;overflow-wrap:anywhere">ESP32-S3 host adapters</div></foreignObject><path d="M 846 226 L 862 226" stroke="#236fba" stroke-width="5"/><path d="M 862 226 l -12 -8 v 16 z" fill="#236fba"/><rect x="878" y="160" width="244" height="136" rx="15" fill="#f2e5ff" stroke="#356495" stroke-width="2"/><foreignObject x="888" y="180" width="224" height="95"><div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;color:#122344;text-align:center;display:flex;justify-content:center;align-items:center;font-size:19px;font-weight:bold;height:100%;overflow-wrap:anywhere">Meshtastic: routing / SX1262</div></foreignObject><path d="M 1126 226 L 1142 226" stroke="#236fba" stroke-width="5"/><path d="M 1142 226 l -12 -8 v 16 z" fill="#236fba"/><rect x="1158" y="160" width="244" height="136" rx="15" fill="#e2f5eb" stroke="#356495" stroke-width="2"/><foreignObject x="1168" y="180" width="224" height="95"><div xmlns="http://www.w3.org/1999/xhtml" style="font-family:Arial,sans-serif;color:#122344;text-align:center;display:flex;justify-content:center;align-items:center;font-size:19px;font-weight:bold;height:100%;overflow-wrap:anywhere">MeshCore: routing / SX1262</div></foreignObject><rect x="70" y="345" width="1300" height="74" rx="12" fill="#f1f6fe" stroke="#aac2e7"/><text x="720" y="390" text-anchor="middle" font-size="20" font-family="Arial,sans-serif" fill="#213e65">Upstream → configurable build → minimal patch only if a blocker is proven</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Firmware responsibilities">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#051325"/><stop offset="1" stop-color="#112a45"/></linearGradient><linearGradient id="glass" x1="0" x2="1"><stop offset="0" stop-color="#d9efff" stop-opacity="0.21"/><stop offset="1" stop-color="#8bd0f5" stop-opacity="0.07"/></linearGradient><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#85dbff"/></marker><marker id="arr2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#ffba65"/></marker></defs>
+<rect x="0" y="0" width="1280" height="720" rx="0" fill="url(#bg)" stroke="none" stroke-width="1"/>
+<rect x="14" y="14" width="1252" height="692" rx="22" fill="none" stroke="#244260" stroke-width="2"/>
+<text x="40" y="62" font-family="DejaVu Sans,Arial,sans-serif" font-size="34" fill="#36c8f4" font-weight="bold">MeshCrossway</text>
+<text x="325" y="61" font-family="DejaVu Sans,Arial,sans-serif" font-size="28" fill="#edf5ff" font-weight="bold">| Firmware responsibilities</text>
+<text x="40" y="91" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#a6bfd4" font-weight="normal">Native firmware on each XIAO; application behavior belongs on the Waveshare host</text>
+<rect x="30" y="669" width="1220" height="27" rx="8" fill="#162a40" stroke="#253f57" stroke-width="1"/>
+<text x="44" y="688" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#f4bc58" font-weight="normal">Design principle: unify the user experience, not the radio networking protocols.</text>
+<rect x="41" y="173" width="388" height="438" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
+<text x="59" y="205" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#edf5ff" font-weight="bold">Waveshare host</text>
+<text x="59" y="226" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">LVGL + MeshCrossway application</text>
+<circle cx="63" cy="273" r="4" fill="#36c8f4" stroke="none" stroke-width="1"/>
+<text x="80" y="279" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">480 × 320 touchscreen UI</text>
+<circle cx="63" cy="321" r="4" fill="#36c8f4" stroke="none" stroke-width="1"/>
+<text x="80" y="327" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Map / GPX / waypoint tools</text>
+<circle cx="63" cy="369" r="4" fill="#36c8f4" stroke="none" stroke-width="1"/>
+<text x="80" y="375" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Local message history and microSD</text>
+<circle cx="63" cy="417" r="4" fill="#36c8f4" stroke="none" stroke-width="1"/>
+<text x="80" y="423" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">GNSS integration, status and policy</text>
+<circle cx="63" cy="465" r="4" fill="#36c8f4" stroke="none" stroke-width="1"/>
+<text x="80" y="471" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Two native serial protocol adapters</text>
+<circle cx="63" cy="513" r="4" fill="#36c8f4" stroke="none" stroke-width="1"/>
+<text x="80" y="519" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Battery and dual-radio status</text>
+<rect x="450" y="173" width="383" height="438" rx="14" fill="#11243a" stroke="#34d4ba" stroke-width="1.7"/>
+<text x="468" y="205" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#edf5ff" font-weight="bold">XIAO A • Meshtastic</text>
+<text x="468" y="226" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">ESP32-S3 + SX1262 native firmware</text>
+<circle cx="472" cy="273" r="4" fill="#34d4ba" stroke="none" stroke-width="1"/>
+<text x="489" y="279" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Meshtastic protocol, radio settings</text>
+<circle cx="472" cy="321" r="4" fill="#34d4ba" stroke="none" stroke-width="1"/>
+<text x="489" y="327" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Node / channel data and messages</text>
+<circle cx="472" cy="369" r="4" fill="#34d4ba" stroke="none" stroke-width="1"/>
+<text x="489" y="375" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Protobuf serial PROTO API</text>
+<circle cx="472" cy="417" r="4" fill="#34d4ba" stroke="none" stroke-width="1"/>
+<text x="489" y="423" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Radio telemetry as supported</text>
+<circle cx="472" cy="465" r="4" fill="#34d4ba" stroke="none" stroke-width="1"/>
+<text x="489" y="471" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">TX state and ACK as supported</text>
+<circle cx="472" cy="513" r="4" fill="#34d4ba" stroke="none" stroke-width="1"/>
+<text x="489" y="519" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Own native mesh forwarding</text>
+<rect x="854" y="173" width="384" height="438" rx="14" fill="#11243a" stroke="#ffba65" stroke-width="1.7"/>
+<text x="872" y="205" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#edf5ff" font-weight="bold">XIAO B • MeshCore</text>
+<text x="872" y="226" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">ESP32-S3 + SX1262 native firmware</text>
+<circle cx="876" cy="273" r="4" fill="#ffba65" stroke="none" stroke-width="1"/>
+<text x="893" y="279" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">MeshCore Companion firmware</text>
+<circle cx="876" cy="321" r="4" fill="#ffba65" stroke="none" stroke-width="1"/>
+<text x="893" y="327" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Contacts and encrypted messages</text>
+<circle cx="876" cy="369" r="4" fill="#ffba65" stroke="none" stroke-width="1"/>
+<text x="893" y="375" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Companion binary UART API</text>
+<circle cx="876" cy="417" r="4" fill="#ffba65" stroke="none" stroke-width="1"/>
+<text x="893" y="423" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Network-specific discovery/trace</text>
+<circle cx="876" cy="465" r="4" fill="#ffba65" stroke="none" stroke-width="1"/>
+<text x="893" y="471" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Own native path and relay model</text>
+<circle cx="876" cy="513" r="4" fill="#ffba65" stroke="none" stroke-width="1"/>
+<text x="893" y="519" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Independent radio recovery</text>
+</svg>
