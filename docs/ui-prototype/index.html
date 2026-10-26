@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MeshCrossway UI v2 — Field Console</title>
+<title>MeshCrossway UI v4 — Side Console</title>
 <style>
 *{box-sizing:border-box}body{background:#030b12;color:#f1f8fd;font-family:system-ui,Arial;margin:0;min-height:100vh;display:flex;align-items:center;flex-direction:column;padding:14px}
 h1{font-size:20px;margin:8px}.intro{font-size:13px;color:#a5bccd;text-align:center;margin:5px 0 15px}.device{background:#142533;border:2px solid #42596b;border-radius:18px;padding:12px;max-width:100%}.screen{width:480px;height:320px;max-width:100%;background:#091723;border:1px solid #3a5365;border-radius:9px;position:relative;overflow:hidden}
@@ -22,10 +22,58 @@ footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:cente
 /* Field Console v3 extensions */
 :root{--accent:#69d6ff}.screen.light{background:#e8f2f6;color:#08202d}.screen.light main{background:#e8f2f6;color:#08202d}.screen.light .card,.screen.light .rowitem{background:#fff;color:#08202d;border-color:#a5bfcb}.screen.light .sub,.screen.light .metric{color:#395e71}.screen.light nav{background:#d2e4eb}.screen.light nav button{color:#284c61}.screen.light nav button.active{background:#b2d8ea;color:#071923;border-top-color:var(--accent)}.screen.light header{background:#b9d9e8;color:#092434}.screen.light .overlay{background:#eef7fa;color:#092434}.screen.light .heading{color:#092434}.screen.light .pill,.screen.light .chip{color:#effaff}.screen{border-top-color:var(--accent)}
 .field-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:9px}.field-tile{border:1px solid #3f6277;border-radius:9px;background:#153548;color:#f6fbff;padding:9px 7px;text-align:left;min-height:57px;cursor:pointer}.field-tile strong{font-size:14px;display:block}.field-tile small{color:#bdd2df;font-size:11px}.field-tile:focus-visible,button:focus-visible{outline:3px solid #faca59}.sky{height:105px;width:105px;border-radius:50%;border:2px solid #4c7489;background:radial-gradient(circle,transparent 27%,#4a738b88 28%,transparent 30%,transparent 60%,#4a738b88 61%,transparent 63%),linear-gradient(90deg,transparent 49%,#527e91 50%,transparent 51%),linear-gradient(transparent 49%,#527e91 50%,transparent 51%),#102c3e;position:relative;flex:none}.sat{position:absolute;font-size:10px;font-weight:900;color:#081c23;background:#77e7b0;border-radius:50%;width:20px;height:20px;text-align:center;line-height:20px}.track-head{font-size:12px;color:#a9c6d8;margin:6px 0}.action-row{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}.demo-caption{font-size:11px;color:#b1c9d8;margin:8px 0}
-.map-dropdown{position:absolute;top:75px;right:9px;width:250px;max-height:193px;overflow-y:auto;background:#183447;border:1px solid #6a90a6;border-radius:10px;padding:5px;z-index:2;box-shadow:0 8px 20px #0009}.map-dropdown[hidden]{display:none}.map-dropdown button{display:block;width:100%;font-size:14px;text-align:left;color:#f3fcff;background:transparent;border:0;border-bottom:1px solid #426074;padding:9px 7px;min-height:38px}.map-dropdown button:last-child{border-bottom:0}.map-dropdown button:active{background:#2e5870}</style></head><body>
-<h1>MeshCrossway · Field Console v2</h1><p class="intro">Meshtastic + MeshCore · touchscreen prototype · 480 × 320</p>
+.map-dropdown{position:absolute;top:75px;right:9px;width:250px;max-height:193px;overflow-y:auto;background:#183447;border:1px solid #6a90a6;border-radius:10px;padding:5px;z-index:2;box-shadow:0 8px 20px #0009}.map-dropdown[hidden]{display:none}.map-dropdown button{display:block;width:100%;font-size:14px;text-align:left;color:#f3fcff;background:transparent;border:0;border-bottom:1px solid #426074;padding:9px 7px;min-height:38px}.map-dropdown button:last-child{border-bottom:0}.map-dropdown button:active{background:#2e5870}
+/* v4: landscape side navigation, context actions and drop-down quick shade */
+.screen{display:grid;grid-template-columns:76px minmax(0,1fr) 128px;grid-template-rows:34px minmax(0,1fr);--railLeft:76px;--railRight:128px}
+.screen.left-collapsed{grid-template-columns:39px minmax(0,1fr) 128px;--railLeft:39px}
+.screen.right-collapsed{grid-template-columns:76px minmax(0,1fr) 33px;--railRight:33px}
+.screen.left-collapsed.right-collapsed{grid-template-columns:39px minmax(0,1fr) 33px}
+.top-status{grid-column:1/-1;grid-row:1;height:34px;min-width:0}
+.top-status button{background:none;color:inherit;border:0;font:inherit;text-align:left;padding:5px 8px;cursor:pointer;white-space:nowrap}
+.top-status small{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
+.shadeHint{color:#69d6ff;font-size:13px}
+.side-nav{grid-column:1;grid-row:2;height:auto;display:flex;flex-direction:column;gap:3px;padding:4px 3px;border-top:0;border-right:1px solid #355266;min-width:0;overflow:hidden}
+.side-nav .nav-top{display:flex;justify-content:flex-end;min-height:20px}
+.side-nav .nav-top button,.context-top button{min-width:22px;min-height:23px;color:#e6faff;background:#1c3b4d;border:1px solid #507083;border-radius:6px;cursor:pointer}
+.side-nav button[data-nav]{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:42px;flex:1;padding:2px 1px;font-size:10px;line-height:13px;border:1px solid #203b4d;border-radius:7px}
+.side-nav button[data-nav] span{font-size:19px;line-height:22px}
+.side-nav button[data-nav] em{font-style:normal}
+.side-nav button[data-nav].active{border:1px solid #56d8f5;border-top:1px solid #56d8f5}
+.left-collapsed .side-nav button[data-nav] em{display:none}
+.left-collapsed .side-nav button[data-nav] span{font-size:20px}
+main{grid-column:2;grid-row:2;height:auto;min-width:0;padding:7px;overflow:auto}
+.context-rail{grid-column:3;grid-row:2;min-width:0;background:#102537;border-left:1px solid #406075;display:flex;flex-direction:column;overflow:hidden;padding:3px}
+.context-top{min-height:30px;display:flex;align-items:center;gap:4px}
+.context-top strong{font-size:11px;line-height:13px}
+.context-actions{overflow-y:auto;min-height:0;scrollbar-width:thin;display:flex;flex-direction:column;gap:5px;padding:3px 0}
+.context-actions button{background:#193647;border:1px solid #416074;color:#f3fbff;text-align:left;border-radius:7px;padding:9px 5px;font-size:11px;font-weight:700;min-height:39px;cursor:pointer}
+.context-actions button:active{background:#2b5a70}
+.right-collapsed .context-top{flex-direction:column}.right-collapsed .context-top strong,.right-collapsed .context-actions{display:none}
+.right-collapsed #rightCollapse{transform:rotate(180deg)}
+.map-dropdown{position:static;width:100%;max-height:none;overflow:visible;box-shadow:none;background:transparent;border:0;padding:0}
+.map-dropdown button{border:1px solid #416074;border-radius:7px;background:#193647;padding:8px 4px;min-height:37px;font-size:11px;white-space:normal;margin:0 0 5px}
+.map-dropdown[hidden]{display:none}
+#mapMenuToggle{display:none}
+#map .map{height:172px}
+#maparea label{font-size:9px}
+.quick-shade{position:absolute;z-index:12;left:0;right:0;top:34px;min-height:174px;max-height:280px;overflow:auto;background:#102d3e;border:1px solid #6aa6c4;border-radius:0 0 12px 12px;padding:9px;box-shadow:0 8px 30px #000b}
+.quick-shade[hidden]{display:none}
+.shade-head{display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.shade-toggles{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:9px 0}
+.qs-toggle{min-height:42px;background:#23465a;color:white;border:1px solid #456b7c;border-radius:8px;font-size:11px}
+.qs-toggle.active{background:#135268;border-color:#66def0;color:#fff}
+.shade-bright{display:flex;align-items:center;gap:8px;font-size:12px}.shade-bright input{flex:1;min-width:0}
+.shade-detail{font-size:10px;color:#b6cddd;margin-top:8px}
+.overlay{inset:34px 0 0;z-index:7}
+.toast{bottom:8px;z-index:9}
+.screen.light .side-nav,.screen.light .context-rail{background:#d2e4eb;color:#08202d}
+.screen.light .context-actions button{color:#fff}
+</style></head><body>
+<h1>MeshCrossway · Field Console v4</h1><p class="intro">Meshtastic + MeshCore · touchscreen prototype · 480 × 320</p>
 <div class="device"><div class="screen">
-<header><span>MeshCrossway</span><small>● MT &nbsp; ● MC &nbsp; GPS 3D</small></header><main>
+<header class="top-status"><button id="quickShadeToggle" aria-expanded="false" aria-controls="quickShade" title="Open quick settings">MeshCrossway <span class="shadeHint">⌄</span></button><small>● MT &nbsp; ● MC &nbsp; GPS ▴ &nbsp; ▣ 78%</small></header>
+<nav id="sideNav" class="side-nav"><div class="nav-top"><button id="leftCollapse" aria-label="Collapse navigation" aria-expanded="true">‹</button></div><button class="active" data-nav="home"><span>⌂</span><em>Home</em></button><button data-nav="chat"><span>✉</span><em>Chats</em></button><button data-nav="map"><span>⌖</span><em>Map</em></button><button data-nav="tools"><span>⌁</span><em>Radios</em></button><button data-nav="more"><span>☷</span><em>More</em></button></nav>
+<main>
 <section class="page active" id="home">
 <div class="grid2"><div class="card"><div class="line"><strong class="mt">Meshtastic</strong><span class="tag mt">MT</span></div><div class="metric">● Online · 4 nodes</div></div><div class="card"><div class="line"><strong class="mc">MeshCore</strong><span class="tag mc">MC</span></div><div class="metric">● Online · 3 contacts</div></div></div>
 <div class="line" style="margin-top:11px"><span class="heading">Latest messages</span><button class="btn" data-compose>+ Message</button></div>
@@ -40,7 +88,7 @@ footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:cente
 <div class="rowitem conversation" data-net="MT" data-thread="Alex"><span class="tag mt">MT</span><div class="grow"><strong>Alex</strong><div class="sub">Copy · stored locally</div></div><span class="sub">14:22</span></div>
 </section>
 <section class="page" id="map">
-<div class="line" style="margin-bottom:6px"><span class="heading">Navigation</span><button class="btn dark" id="mapMenuToggle" aria-expanded="false" aria-controls="mapMenu">Tools ▾</button></div><div id="mapMenu" class="map-dropdown" hidden><button data-gps="pois">⌖ POIs & waypoints</button><button data-gps="tracks">↝ Saved tracks</button><button data-gps="record">● Record track</button><button id="liveShareOpen">◎ Live location</button><button data-gps="share">⇧ Share location / GPX</button><button data-feature="team">♙ Team positions</button><button data-feature="sky">✧ GNSS sky</button><button data-feature="paths">⌁ Saved paths</button><button data-feature="tracker">◉ Track details</button></div>
+<div class="line" style="margin-bottom:6px"><span class="heading">Navigation</span><button class="btn dark" id="mapMenuToggle" aria-expanded="false" aria-controls="mapMenu">Tools ▾</button></div><div id="mapMenu" class="map-dropdown"><button data-gps="pois">⌖ POIs & waypoints</button><button data-gps="tracks">↝ Saved tracks</button><button data-gps="record">● Record track</button><button id="liveShareOpen">◎ Live location</button><button data-gps="share">⇧ Share location / GPX</button><button data-feature="team">♙ Team positions</button><button data-feature="sky">✧ GNSS sky</button><button data-feature="paths">⌁ Saved paths</button><button data-feature="tracker">◉ Track details</button></div>
 <div class="map" id="maparea"><div class="pin"></div><div class="peer" style="left:30%;top:22%"></div><div class="peer mcpeer" style="left:76%;top:60%"></div><div class="peer" style="left:38%;top:75%"></div><label>Illustrative map · not real tiles</label></div>
 <div class="line" style="margin-top:8px"><span class="sub">GNSS 3D · demo fix age 2 s</span><button class="chip" id="zoom">Zoom +</button></div>
 </section>
@@ -62,7 +110,8 @@ footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:cente
 <div class="rowitem" id="sos"><div class="grow"><strong style="color:#ff9b92">Emergency message</strong><div class="sub">Confirm destination and network</div></div>›</div>
 <div class="rowitem" id="settings"><div class="grow"><strong>Settings & profiles</strong><div class="sub">Privacy · English · Traveler</div></div>›</div>
 </section></main>
-<nav><button class="active" data-nav="home"><span>⌂</span>Home</button><button data-nav="chat"><span>✉</span>Chats</button><button data-nav="map"><span>⌖</span>Map</button><button data-nav="tools"><span>⌁</span>Radios</button><button data-nav="more"><span>☷</span>More</button></nav>
+<aside id="contextRail" class="context-rail"><div class="context-top"><button id="rightCollapse" aria-label="Collapse tools" aria-expanded="true">‹</button><strong id="contextTitle">Home actions</strong></div><div id="contextActions" class="context-actions"></div></aside>
+<section id="quickShade" class="quick-shade" hidden><div class="shade-head"><strong>Quick settings · demo</strong><button id="shadeClose" class="chip">Close ×</button></div><div class="shade-toggles"><button class="qs-toggle active" data-toggle="GPS">⌖ GPS</button><button class="qs-toggle" data-toggle="Bluetooth">ᛒ Bluetooth</button><button class="qs-toggle" data-toggle="Wi-Fi">⌁ Wi-Fi</button><button class="qs-toggle active" data-toggle="Sound">♫ Sound</button></div><label class="shade-bright">☀ Brightness <input id="shadeBrightness" type="range" min="20" max="100" value="75"></label><div class="shade-detail">Changes affect the browser preview only. No physical hardware is controlled.</div></section>
 <div class="overlay" id="compose">
 <div class="line"><h2 id="composerTitle">New message</h2><button class="chip" data-close>Close ×</button></div>
 <div class="line"><div style="flex:1"><label for="network">Network</label><select id="network"><option>Meshtastic</option><option>MeshCore</option></select></div><div style="flex:1"><label for="destination">To</label><select id="destination"><option>Trail Team</option><option>Alex</option></select></div></div>
@@ -80,7 +129,8 @@ footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:cente
 <footer>Bench target: Waveshare 3.5-inch touch + 2 LoRa V3 ESP32-S3/SX1262 boards + SAM-M10Q. <a href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/hardware-wiring.md">Hardware &amp; wiring</a><br>Interactive browser simulator with demo data. No transmission, real positioning, diagnostics or emergency alert. Features are design targets, not implemented ESP32 functionality.</footer>
 <script>
 const pages=[...document.querySelectorAll('.page')], navs=[...document.querySelectorAll('[data-nav]')];
-function show(id){pages.forEach(x=>x.classList.toggle('active',x.id===id));navs.forEach(x=>x.classList.toggle('active',x.dataset.nav===id))}
+const screenEl=document.querySelector('.screen');
+function show(id){pages.forEach(x=>x.classList.toggle('active',x.id===id));navs.forEach(x=>x.classList.toggle('active',x.dataset.nav===id));if(typeof updateContext==='function')updateContext(id)}
 navs.forEach(x=>x.onclick=()=>show(x.dataset.nav));document.querySelectorAll('[data-open]').forEach(x=>x.onclick=()=>show(x.dataset.open));
 const overlays=[...document.querySelectorAll('.overlay')];const close=()=>overlays.forEach(x=>x.classList.remove('open'));function open(id){close();document.getElementById(id).classList.add('open')}
 document.querySelectorAll('[data-close]').forEach(x=>x.onclick=close);
@@ -169,5 +219,31 @@ function livePanel(){
  id('liveStop').onclick=()=>{liveState.active=false;liveState.paused=false;notice('Demo session stopped');livePanel()};
 }
 document.getElementById('liveShareOpen').onclick=livePanel;
-const mapToggle=document.getElementById('mapMenuToggle'),mapMenu=document.getElementById('mapMenu');function closeMapMenu(){mapMenu.hidden=true;mapToggle.setAttribute('aria-expanded','false')}mapToggle.addEventListener('click',()=>{mapMenu.hidden=!mapMenu.hidden;mapToggle.setAttribute('aria-expanded',String(!mapMenu.hidden))});mapMenu.querySelectorAll('button').forEach(b=>b.addEventListener('click',closeMapMenu));navs.forEach(b=>b.addEventListener('click',closeMapMenu));
+const mapMenu=document.getElementById('mapMenu'),contextActions=document.getElementById('contextActions'),contextTitle=document.getElementById('contextTitle');
+function updateContext(page){
+ const groups={home:['New message','Quick messages','Settings'],chat:['New message','Quick messages'],tools:['Meshtastic status','MeshCore status'],more:['Quick controls','Display settings'],map:[]};
+ const names={home:'Home actions',chat:'Chat actions',map:'Map tools',tools:'Radio tools',more:'Device settings'};
+ contextTitle.textContent=names[page]||'Tools';
+ contextActions.replaceChildren();
+ if(page==='map'){mapMenu.hidden=false;contextActions.append(mapMenu);return;}
+ (groups[page]||[]).forEach((label,i)=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>{
+  if(label==='New message'){open('compose');return;}
+  if(label==='Quick messages'){document.getElementById('quickOpen').click();return;}
+  if(label==='Settings'){document.getElementById('settings').click();return;}
+  if(label==='Quick controls'){feature('control');return;}
+  if(label==='Display settings'){feature('display');return;}
+  if(label.includes('status')){document.querySelectorAll('#tools .rowitem')[i]?.click();return;}
+ };contextActions.append(b)});
+}
+const leftCollapse=document.getElementById('leftCollapse'),rightCollapse=document.getElementById('rightCollapse');
+leftCollapse.onclick=()=>{const collapsed=screenEl.classList.toggle('left-collapsed');leftCollapse.textContent=collapsed?'›':'‹';leftCollapse.setAttribute('aria-expanded',String(!collapsed))};
+rightCollapse.onclick=()=>{const collapsed=screenEl.classList.toggle('right-collapsed');rightCollapse.setAttribute('aria-expanded',String(!collapsed))};
+const shade=document.getElementById('quickShade'),shadeToggle=document.getElementById('quickShadeToggle');
+function setShade(opened){shade.hidden=!opened;shadeToggle.setAttribute('aria-expanded',String(opened))}
+shadeToggle.onclick=()=>setShade(shade.hidden);document.getElementById('shadeClose').onclick=()=>setShade(false);
+document.querySelectorAll('.qs-toggle').forEach(b=>b.onclick=()=>{b.classList.toggle('active');notice(b.dataset.toggle+' preference changed in demo')});
+document.getElementById('shadeBrightness').oninput=e=>{screenEl.style.filter='brightness('+(.55+Number(e.target.value)/160)+')'};
+screenEl.addEventListener('touchstart',e=>{if(e.target.closest('header'))screenEl.dataset.shadeTouchY=String(e.touches[0].clientY)},{passive:true});
+screenEl.addEventListener('touchend',e=>{if(screenEl.dataset.shadeTouchY){const diff=e.changedTouches[0].clientY-Number(screenEl.dataset.shadeTouchY);if(diff>35)setShade(true);delete screenEl.dataset.shadeTouchY}},{passive:true});
+show('map');
 </script></body></html>
