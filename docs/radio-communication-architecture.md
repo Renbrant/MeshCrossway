@@ -13,8 +13,8 @@ The protocols use separate APIs even though both links are UART. The illustratio
 ## 1. Chosen topology
 
 - **Central:** Waveshare ESP32-S3-Touch-LCD-3.5 runs LVGL, application model, radio adapters, GNSS, storage and location/airtime policy.
-- **Radio A:** Aideepen/Heltec V3-compatible ESP32-S3/SX1262, **Meshtastic**, UART1 and binary Protobuf API.
-- **Radio B:** similar ESP32-S3/SX1262, **MeshCore Companion**, UART2 and Companion binary API.
+- **Radio A:** Seeed XIAO ESP32S3 + Wio-SX1262, **Meshtastic**, UART1 and binary Protobuf API.
+- **Radio B:** Seeed XIAO ESP32S3 + Wio-SX1262, **MeshCore Companion**, UART2 and Companion binary API.
 - **GNSS:** u-blox MAX-M10S module on host-side I2C. microSD resides on Waveshare.
 - No transparent Meshtastic↔MeshCore RF bridge, shared contact identity, shared encryption system or interchangeable mesh routing is presumed.
 
@@ -24,21 +24,21 @@ Each radio operates and recovers independently; the UI remains operational if a 
 
 | Host Waveshare | Direction | Radio | Radio pin | Protocol |
 |---|---|---|---|---|
-| GPIO39 / UART1 TX | host → A | Meshtastic | GPIO4 / RX | PROTO |
-| GPIO40 / UART1 RX | A → host | Meshtastic | GPIO5 / TX | PROTO |
-| GPIO17 / UART2 TX | host → B | MeshCore | GPIO4 / RX | Companion |
-| GPIO18 / UART2 RX | B → host | MeshCore | GPIO5 / TX | Companion |
+| GPIO39 / UART1 TX | host → A | Meshtastic | XIAO D3 / GPIO4 / RX | PROTO |
+| GPIO40 / UART1 RX | A → host | Meshtastic | XIAO D2 / GPIO3 / TX | PROTO |
+| GPIO17 / UART2 TX | host → B | MeshCore | XIAO D7 / GPIO44 / RX | Companion |
+| GPIO18 / UART2 RX | B → host | MeshCore | XIAO D6 / GPIO43 / TX | Companion |
 | GND | common reference | A and B | GND | logic ground |
 
 Use 3.3 V logic, never connect TTL UART directly to RS-232 or 5 V serial. Start bench tests with electrically independent USB power and shared signal ground; the proposed common 3.3 V supply must pass [power tests](power-architecture.md) before use. Do not connect independent USB power and a common 3.3 V rail without reverse-current analysis. Prevent unpowered-radio backfeeding through TX/RX (hardware isolation or proven safe power sequencing).
 
-These host GPIOs share optional camera functions: disable the camera and confirm there are no board-revision or peripheral conflicts. Verify actual shipped Aideepen V3.2 pins against board schematic and continuity, not seller imagery. Keep UART0 debug and native USB separate. Allow short traces, test pads, optional 22–100 Ω series-resistor footprints, individual reset controls and preferably independent switched power for recovery. Neither series resistors nor bulk capacitors replace correct voltage, regulator headroom or isolation.
+These host GPIOs share optional camera functions: disable the camera and confirm there are no board-revision or peripheral conflicts. Verify the actual XIAO/Wio assembled board and Wio pin occupancy against its current schematic and continuity. Keep UART0 debug and native USB separate. Allow short traces, test pads, optional 22–100 Ω series-resistor footprints, individual reset controls and preferably independent switched power for recovery. Neither series resistors nor bulk capacitors replace correct voltage, regulator headroom or isolation.
 
 **Serial baseline:** 115200 baud, 8N1, no hardware flow control, explicitly configured and read back on both sides. Do not assume 115200 is the default Meshtastic serial baud; check upstream defaults and build/release behavior.
 
 ## 3. Meshtastic serial integration
 
-Use official Meshtastic firmware, **Serial module enabled and mode PROTO**, with module RXD=4 and TXD=5 (subject to target-board support). The controller implements the serial framing:
+Use official Meshtastic firmware, **Serial module enabled and mode PROTO**, with module RXD=4 and TXD=3 (subject to target-board support). The controller implements the serial framing:
 
 `0x94 0xC3 | length_hi | length_lo | serialized protobuf`
 
@@ -54,7 +54,7 @@ Sources: [Serial module configuration](https://meshtastic.org/docs/configuration
 
 Run **MeshCore Companion**, not a repeater KISS/RS-232 transport. Companion exposes a separate command/response/event binary API with start/query, contacts, message synchronization, send private/channel text, advertising coordinates, statistics and trace/path diagnostics. Use the exact upstream Companion wire specification and its version/capability response, including framing, length encoding, sequence/timeout behavior, command/event codes, payload size and error codes. Do not use Meshtastic Protobuf on this link.
 
-**UART availability:** the official Companion source contains optional ESP32 `HardwareSerial` support guarded by build flags `SERIAL_RX` and `SERIAL_TX`. First try the official Heltec-V3-compatible build environment with `SERIAL_RX=4` and `SERIAL_TX=5`; inspect the current source, macros, GPIO conflicts and actual runtime output. This is a proposed upstream-source compilation, **not a verified compiled binary** or a proven capability of every stock USB/BLE firmware image.
+**UART availability:** the official Companion source contains optional ESP32 `HardwareSerial` support guarded by build flags `SERIAL_RX` and `SERIAL_TX`. Use the XIAO/Wio serial Companion build environment, provisionally with `SERIAL_RX=44` and `SERIAL_TX=43`; inspect the current source, macros, GPIO conflicts and actual runtime output. This is a proposed upstream-source compilation, **not a verified compiled binary** or a proven capability of every stock USB/BLE firmware image.
 
 **Direct-only blocker to verify:** explicit zero-hop send without stored path reuse, relay forwarding, or flooding fallback. Contact-directed delivery by itself is not proof of zero-hop. Native group/channel semantics may involve flooding; direct-only groups should remain unsupported or experimental until proven by RF captures. MeshCore custom payloads may be unintelligible to generic upstream clients.
 
@@ -146,5 +146,5 @@ Do not advertise full feature coverage or emergency reliability before these gat
 - Implement MeshCore Companion frame decoder, encoder and version-locked command/event mapping.
 - Add a host-side capability registry and self-test diagnostic screen.
 - Add serial capture/replay fixtures and wire-protocol regression tests.
-- Verify target-board MeshCore build flags and proposed GPIO4/5 physical pinout.
+- Verify target-board XIAO/Wio MeshCore serial Companion build flags and GPIO44 RX / GPIO43 TX physical mapping.
 - Design RF coexistence tests and individual radio power/reset control before PCB freeze.
