@@ -1,0 +1,60 @@
+#VRML V2.0 utf8
+# MeshCrossway mechanical approximation of Uputronics MAX-M10S 3V breakout
+# KiCad VRML units: 1 unit = 2.54 mm
+
+# PCB 22 x 22 x 1.6 mm, footprint local origin at x=0 left edge, y=0 center
+Transform {
+  translation 4.3307086614 0 0.3149606299
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.05 0.32 0.16 specularColor 0.08 0.08 0.08 shininess 0.12 } }
+      geometry Box { size 8.6614173228 8.6614173228 0.6299212598 }
+    }
+  ]
+}
+
+# MAX-M10S module ~10.1 x 9.7 x 2.5 mm
+Transform {
+  translation 3.7401574803 -0.3937007874 1.1220472441
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.72 0.72 0.72 specularColor 0.35 0.35 0.35 shininess 0.35 } }
+      geometry Box { size 3.9763779528 3.8188976378 0.9842519685 }
+    }
+  ]
+}
+
+# Supercapacitor mechanical envelope ~7.5 mm diameter x 2.8 mm high
+Transform {
+  translation 5.7086614173 2.3622047244 1.1811023622
+  rotation 1 0 0 1.5707963268
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.52 0.52 0.52 specularColor 0.5 0.5 0.5 shininess 0.45 } }
+      geometry Cylinder { radius 1.4763779528 height 1.1023622047 }
+    }
+  ]
+}
+
+# SMA edge-launch square base, partly on PCB
+Transform {
+  translation 8.2677165354 0 1.4370078740
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.78 0.55 0.10 specularColor 0.65 0.52 0.18 shininess 0.5 } }
+      geometry Box { size 2.3622047244 2.7559055118 1.5748031496 }
+    }
+  ]
+}
+
+# SMA external threaded barrel: approx 9.5 mm beyond PCB edge, 6.35 mm OD
+Transform {
+  translation 10.5314960630 0 1.4370078740
+  rotation 0 0 1 1.5707963268
+  children [
+    Shape {
+      appearance Appearance { material Material { diffuseColor 0.86 0.63 0.14 specularColor 0.75 0.62 0.22 shininess 0.65 } }
+      geometry Cylinder { radius 1.25 height 3.7401574803 }
+    }
+  ]
+}
