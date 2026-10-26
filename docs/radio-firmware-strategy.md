@@ -1,5 +1,8 @@
 # Radio firmware strategy and workload separation
 
+> **V1 hardware decision — 2026-10-26:** The two former Aideepen/Heltec-compatible LoRa V3 radios are **superseded** by **2 × Seeed Studio XIAO ESP32S3 + Wio-SX1262 kits** (one Meshtastic, one MeshCore). See [current XIAO/Wio wiring and acceptance tests](hardware-wiring.md). Historical V3 purchasing references below are retained only as superseded context; do not build using their pinouts, firmware targets, or costs.
+
+
 **Status: design decision, not bench validation.** The MeshCrossway prototype uses a Waveshare ESP32-S3 touchscreen controller and two independent ESP32-S3/SX1262 LoRa V3 radio boards. We favor upstream Meshtastic and MeshCore firmware and avoid maintaining forks unless a tested, essential capability cannot be exposed otherwise.
 
 ## Illustrated firmware boundaries
