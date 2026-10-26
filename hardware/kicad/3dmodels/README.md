@@ -33,14 +33,21 @@ No exact manufacturer STEP model has been frozen for the Uputronics MAX-M10S bre
 
 ## Current XIAO + Wio assembly transform
 
-The U2/U3 footprint now includes both vendor STEP models:
+The U2/U3 footprint includes both vendor STEP models:
 
 - `Wio-SX1262_for_XIAO.step`
 - `XIAO_ESP32S3.step`
 
-The XY alignment is derived from the official Seeed Wio PCB connector coordinates and the official XIAO footprint/model transform. The current **Z stack heights are provisional engineering values** used for 3D visualization only:
+The current transforms below were adjusted and visually validated in KiCad against the carrier socket footprint on 2026-10-26.
 
-- Wio model: +3.0 mm above the carrier reference
-- XIAO model: +11.5 mm above the carrier reference
+### Wio-SX1262
 
-Replace these Z values with measured socket/header stack heights before enclosure/fabrication sign-off.
+- Offset: X = -114.5 mm, Y = 120.5 mm, Z = 5.5 mm
+- Rotation: X = 0 deg, Y = 0 deg, Z = 0 deg
+
+### XIAO ESP32-S3
+
+- Offset: X = 6.222 mm, Y = -1.6722 mm, Z = 0.5 mm
+- Rotation: X = 90 deg, Y = 0 deg, Z = 90 deg
+
+These values are accepted as the **visual mechanical reference for Rev A floorplanning**. Before enclosure/fabrication sign-off, verify actual socket/header stack height and module orientation against the physical hardware.
