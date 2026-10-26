@@ -1,15 +1,12 @@
 # MeshCrossway V1 power architecture — Waveshare 3V3 shared rail
 
-**Radio update (2026-10-26):** Both radio nodes are now **Seeed XIAO ESP32S3 + Wio-SX1262 kits**. Prior Heltec/Aideepen current estimates are no longer a design basis; measure the assembled new modules. Do not parallel the XIAO charger or USB supply with the Waveshare battery/3V3 power system. The XIAO 3V3 external-feed path and J8 headroom require electrical verification. See [new radio wiring](hardware-wiring.md).
-
-
-**Physical packaging update (2026-10-26):** The protected 1S LiPo pack is placed **behind the single carrier PCB and display**, inside the nearly invisible rear enclosure. Its capacity, protection, electrical safety and actual dimensions still require verification.
-
-![GNSS and protected LiPo placement behind the carrier PCB](images/gnss-and-power.svg)
-
-**Decision (2026-10-24):** Prefer the Waveshare ESP32-S3-Touch-LCD-3.5 onboard AXP2101 battery charging and 3.3 V rail at its expansion connector J8 to power the two independent LoRa nodes and the MAX-M10S breakout. **This is a proposed architecture, not a validated current budget or a safe-to-build wiring approval.**
+**Decision (2026-10-24):** Prefer the Waveshare ESP32-S3-Touch-LCD-3.5 onboard AXP2101 battery charging and 3.3 V rail at its expansion connector J8 to power the two Seeed XIAO ESP32-S3 + Wio-SX1262 kits and the MAX-M10S breakout. **This is a proposed architecture, not a validated current budget or a safe-to-build wiring approval.**
 
 The previously selected **Adafruit BQ25185 #6092 is superseded**. Do not add a second LiPo charger, connect charger outputs together, or buy a separate buck-boost or power mux unless the bench tests show that the onboard rail is inadequate.
+
+**Packaging update (2026-10-26):** a protected 1S LiPo pack is intended to sit **behind the single carrier PCB/display** in the nearly invisible transparent rear enclosure. This is a mechanical concept only, not verification of the cell capacity, thermal limits, retention, dimensions, or safe charging connections.
+
+![GNSS I2C and protected rear LiPo placement](images/gnss-and-power.svg)
 
 ## Functional diagram
 
@@ -21,8 +18,8 @@ flowchart TD
   PMIC --> REG["Waveshare 3V3 supply (DCDC1 candidate; verify exact shipped schematic)"]
   REG --> J8["J8: 3V3 and GND expansion contacts"]
   J8 --> C["Carrier bulk and local decoupling; optional switched branches"]
-  C -.-> A["Radio A 3V3: Meshtastic"]
-  C -.-> B["Radio B 3V3: MeshCore"]
+  C -.-> A["XIAO/Wio A 3V3 candidate"]
+  C -.-> B["XIAO/Wio B 3V3 candidate"]
   C -.-> G["MAX-M10S 3V breakout + active antenna"]
 ```
 
@@ -33,9 +30,9 @@ Dashed module connections are unapproved until supply pinouts and rail headroom 
 - Waveshare includes an AXP2101 and routes a 3V3 supply to J8; verify shipped PCB revision, schematic net and voltage.
 - **AXP2101 DCDC1 is rated up to 2 A in its datasheet**, subject to the particular regulator mode, application circuit and operating conditions. **This is NOT a 2 A external-output specification for the Waveshare J8 pin.** Internal display/ESP32 loads consume part of the budget; connector/traces, thermal headroom and total PMIC input need verification.
 - There is no sufficiently trustworthy published measurement of total Waveshare consumption for our firmware, LCD brightness, Wi-Fi/BLE, card and battery conditions. Measure on actual hardware.
-- **No validated XIAO/Wio load budget yet.** Measure each kit in idle, RX, TX, Wi-Fi/BLE enabled/disabled and boot; do not reuse Heltec V3 or Aideepen measurements as module specifications.
+- **No validated XIAO+Wio current budget yet.** Historical Heltec V3 measurements must not be used as electrical input data for these Seeed kits; measure each target board's idle, receive, boot and transmit peaks from the intended supply rail.
 - GNSS chip typically uses about 10–15 mA in its operating modes; active antenna can add load (tentatively 10–30 mA) and startup/inrush can be higher. Verify the actual breakout/antenna.
-- **Former total-current figures are withdrawn** until Waveshare, both XIAO/Wio kits, GNSS, LCD and microSD have been measured together under worst-case transients.
+- Peripherals together: initial estimate ~200–220 mA receive/ordinary use; about ~505 mA for both radios TX plus GNSS antenna, with potentially higher transient/startup demands. Not validated, not a guaranteed worst case.
 - Protected 1S battery ETWOWUP 10000 mAh remains **candidate only**; no verified independent datasheet for max discharge, charge rate, thermistor, dimensions or connector polarity.
 
 ## Capacitors — test candidates, not a substitute for regulator current
@@ -50,7 +47,7 @@ Dashed module connections are unapproved until supply pinouts and rail headroom 
 
 1. [ ] Inspect actual Waveshare PCB revision and trace J8 3V3 back to its regulator on the matching schematic; review DCDC1 configuration and output caps/inductor.
 2. [ ] Confirm J8 3V3 pin current allowance and estimated **remaining** current after the LCD, ESP32 and peripherals; examine regulator, connector and copper constraints.
-3. [ ] Verify assembled XIAO/Wio kits' 3V3 input path (regulator reverse feed, USB plugging, diode/body-diode and 5V interaction). Do not combine external 3V3 with USB-powered radio outputs without validated isolation.
+3. [ ] Verify actual radio boards' 3V3 header input path (regulator reverse feed, USB plugging, diode/body-diode and 5V interaction). Do not combine external 3V3 with USB-powered radio outputs without validated isolation.
 4. [ ] Verify GNSS 3 V breakout's supply range, I2C levels, SMA bias voltage/current and active-antenna compatibility.
 5. [ ] Confirm battery protection, max discharge, charge profile, connector type **and polarity**, mechanical dimensions and cell thermal sensing arrangement.
 6. [ ] Measure with a current-limited bench supply/electronic load, scoped J8 voltage at each node, Waveshare consumption by brightness/state, radio idle/RX/TX, simultaneous TX, GNSS acquisition, microSD writes.
@@ -68,7 +65,7 @@ Start with the host alone, then GNSS alone, one radio RX, both RX, one radio TX,
 - [Waveshare product and electrical resources](https://docs.waveshare.com/ESP32-S3-Touch-LCD-3.5/Resources-And-Documents)
 - [Waveshare Rev2 schematic PDF](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-3.5/ESP32-S3-Touch-LCD-3.5_Rev2.0.pdf)
 - [AXP2101 PMIC reference](https://docs.waveshare.com/ESP32-S3-Touch-LCD-3.5)
-- [Heltec V3 hardware](https://heltec.org/project/wifi-lora-32-v3/)
+- [Seeed XIAO ESP32-S3 + Wio-SX1262 hardware](https://wiki.seeedstudio.com/xiao_esp32s3_%26_wio_SX1262_kit_for_meshtastic/)
 - [Uputronics MAX-M10S breakout](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751)
 - [Historical, now superseded: Adafruit BQ25185 #6092](https://www.adafruit.com/product/6092)
 
@@ -77,3 +74,7 @@ Start with the host alone, then GNSS alone, one radio RX, both RX, one radio TX,
 ![Proposed power architecture](images/architecture/power-architecture.svg)
 
 Illustrative only: J8 3V3 spare capacity, USB/battery isolation, startup surges and powered-off I/O require measurement before carrier PCB approval.
+
+## XIAO + Wio power migration / hold (2026-10-26)
+
+Radio A and B are now **Seeed XIAO ESP32-S3 + Wio-SX1262 kits**. Their XIAO USB-C charging, battery connector/pads and regulator topology differ from the earlier LoRa V3 boards. The 3V3 pins **must not be fed from Waveshare J8 until supported external supply operation, reverse-current paths, TX peaks, startup and USB backfeed are verified**. Do not parallel separate chargers or battery pads. Start serial testing with independent USB supplies and common signal GND, leaving 3V3 rails disconnected from each other. The prior J8 budget has not been validated and is not a current-safe specification. [Wiring](hardware-wiring.md).

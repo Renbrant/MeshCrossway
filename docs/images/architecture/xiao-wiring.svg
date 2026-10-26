@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="XIAO/Wio internal vs external links">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#051325"/><stop offset="1" stop-color="#112a45"/></linearGradient><linearGradient id="glass" x1="0" x2="1"><stop offset="0" stop-color="#d9efff" stop-opacity="0.21"/><stop offset="1" stop-color="#8bd0f5" stop-opacity="0.07"/></linearGradient><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#85dbff"/></marker><marker id="arr2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#ffba65"/></marker></defs>
+<rect x="0" y="0" width="1280" height="720" rx="0" fill="url(#bg)" stroke="none" stroke-width="1"/>
+<rect x="14" y="14" width="1252" height="692" rx="22" fill="none" stroke="#244260" stroke-width="2"/>
+<text x="40" y="62" font-family="DejaVu Sans,Arial,sans-serif" font-size="34" fill="#36c8f4" font-weight="bold">MeshCrossway</text>
+<text x="325" y="61" font-family="DejaVu Sans,Arial,sans-serif" font-size="28" fill="#edf5ff" font-weight="bold">| XIAO/Wio internal vs external links</text>
+<text x="40" y="91" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#a6bfd4" font-weight="normal">Never wire Waveshare to SX1262 SPI or DIO; the Seeed B2B module is managed by each XIAO MCU</text>
+<rect x="30" y="669" width="1220" height="27" rx="8" fill="#162a40" stroke="#253f57" stroke-width="1"/>
+<text x="44" y="688" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#f4bc58" font-weight="normal">Firmware pin availability: D6/TX GPIO43 and D7/RX GPIO44 remain proposed until tested with MT PROTO and MC Companion.</text>
+<rect x="40" y="188" width="288" height="385" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
+<text x="58" y="220" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Waveshare touch host</text>
+<text x="58" y="241" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">ESP32-S3 3.5-inch display</text>
+<text x="65" y="281" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">UART1 TX GPIO39</text>
+<text x="65" y="326" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">UART1 RX GPIO40</text>
+<text x="65" y="371" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">UART2 TX GPIO17</text>
+<text x="65" y="416" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">UART2 RX GPIO18</text>
+<text x="65" y="461" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Common GND</text>
+<rect x="402" y="175" width="322" height="183" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
+<text x="420" y="207" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#edf5ff" font-weight="bold">XIAO ESP32S3 • A / Meshtastic</text>
+<text x="420" y="228" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Seeed B2B kit • external UART</text>
+<text x="422" y="252" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" fill="#edf5ff" font-weight="normal">D7/GPIO44 = radio UART RX</text>
+<text x="422" y="280" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" fill="#edf5ff" font-weight="normal">D6/GPIO43 = radio UART TX</text>
+<text x="422" y="308" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" fill="#edf5ff" font-weight="normal">MCU manages SX1262 over B2B</text>
+<rect x="813" y="175" width="412" height="183" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
+<text x="831" y="207" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#edf5ff" font-weight="bold">Wio-SX1262 (internal)</text>
+<text x="831" y="228" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Radio daughterboard, NOT host UART</text>
+<text x="834" y="253" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">SX1262 connected to XIAO via B2B</text>
+<text x="834" y="280" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">SPI + DIO/RESET/BUSY per variant</text>
+<text x="834" y="307" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">LoRa U.FL → separate 900 MHz antenna</text>
+<path d="M 329 263 H 390" fill="none" stroke="#36c8f4" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arr)"/>
+<path d="M 725 263 H 806" fill="none" stroke="#36c8f4" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arr)"/>
+<rect x="728" y="289" width="83" height="24" rx="12" fill="#092439" stroke="#36c8f4" stroke-width="1"/>
+<text x="769.5" y="306" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#36c8f4" font-weight="bold" text-anchor="middle">B2B SPI</text>
+<rect x="402" y="386" width="322" height="183" rx="14" fill="#11243a" stroke="#ffba65" stroke-width="1.7"/>
+<text x="420" y="418" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#edf5ff" font-weight="bold">XIAO ESP32S3 • B / MeshCore</text>
+<text x="420" y="439" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Seeed B2B kit • external UART</text>
+<text x="422" y="463" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" fill="#edf5ff" font-weight="normal">D7/GPIO44 = radio UART RX</text>
+<text x="422" y="491" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" fill="#edf5ff" font-weight="normal">D6/GPIO43 = radio UART TX</text>
+<text x="422" y="519" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" fill="#edf5ff" font-weight="normal">MCU manages SX1262 over B2B</text>
+<rect x="813" y="386" width="412" height="183" rx="14" fill="#11243a" stroke="#ffba65" stroke-width="1.7"/>
+<text x="831" y="418" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#edf5ff" font-weight="bold">Wio-SX1262 (internal)</text>
+<text x="831" y="439" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Radio daughterboard, NOT host UART</text>
+<text x="834" y="464" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">SX1262 connected to XIAO via B2B</text>
+<text x="834" y="491" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">SPI + DIO/RESET/BUSY per variant</text>
+<text x="834" y="518" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">LoRa U.FL → separate 900 MHz antenna</text>
+<path d="M 329 474 H 390" fill="none" stroke="#ffba65" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arr)"/>
+<path d="M 725 474 H 806" fill="none" stroke="#ffba65" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arr)"/>
+<rect x="728" y="500" width="83" height="24" rx="12" fill="#092439" stroke="#ffba65" stroke-width="1"/>
+<text x="769.5" y="517" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#ffba65" font-weight="bold" text-anchor="middle">B2B SPI</text>
+</svg>

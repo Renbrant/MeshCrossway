@@ -1,293 +1,91 @@
-# MeshCrossway — Detailed project reference
+# MeshCrossway — V1 project reference
 
-> **V1 hardware decision — 2026-10-26:** The two former Aideepen/Heltec-compatible LoRa V3 radios are **superseded** by **2 × Seeed Studio XIAO ESP32S3 + Wio-SX1262 kits** (one Meshtastic, one MeshCore). See [current XIAO/Wio wiring and acceptance tests](hardware-wiring.md). Historical V3 purchasing references below are retained only as superseded context; do not build using their pinouts, firmware targets, or costs.
+> **Current baseline: October 26, 2026.** Replaces the older Heltec/Aideepen LoRa V3 two-pack selection and associated GPIO4/5 external UART wiring. These older designs are not valid build instructions. Project is in design and bench-prototype planning; UI simulator does not indicate a working hardware device.
 
+[README](../README.md)
 
-[Back to project README](../README.md)
+![Approved provisional MeshCrossway front render: one carrier board in the transparent shell](images/meshcrossway-hero.webp)
 
-This document preserves the detailed architecture, selected hardware references, design boundaries, software behavior, development roadmap, source links and planning notes previously maintained in the top-level README. Some details are provisional and may be superseded by the focused specifications.
+![Exploded mechanical concept: rear-mounted protected LiPo behind the integrated PCB](images/architecture/meshcrossway-exploded.webp)
 
-## Current V1 product design concept
+**Mechanical design intent:** one custom carrier PCB, Waveshare display, two independent Seeed XIAO/Wio modules, MAX-M10S GNSS, and protected 1S LiPo **behind** the electronics in the transparent rear shell. The images are conceptual; exact component shapes, mechanical clearance, battery thickness, RF separation, dimensions and power safety remain unverified. [Image inventory and limitations](images/README.md).
 
-![Approved provisional front view: integrated carrier PCB and almost-invisible transparent case](images/meshcrossway-hero.webp)
+![Current V1 system overview](images/architecture/system-overview.svg)
 
-![Provisional exploded design with 1S LiPo battery mounted at the rear](images/architecture/meshcrossway-exploded.webp)
+## Goal and audience
 
-The intended construction uses **one carrier PCB**, the Waveshare ESP32-S3-Touch-LCD-3.5, **two Seeed XIAO ESP32S3 + Wio-SX1262 radio kits**, u-blox MAX-M10S GNSS breakout, onboard microSD and **rear-mounted protected LiPo** in a transparent enclosure. These are AI-assisted **concept visuals**; exact physical modules, footprint, RF separation, battery dimensions, power safety and case design are not validated. [Image sources and limitations](images/README.md).
+MeshCrossway is an open-source offline-capable portable touchscreen communicator integrating **independent Meshtastic and MeshCore networks** in one interface. It targets hiking, travel, emergency preparedness and possible future field/rescue coordination, without claiming safety certification or guaranteed delivery. Native identities, encryption and routing remain separate. There is no default cross-protocol bridge.
 
-**Two mesh networks. One portable terminal.**
+## V1 selected hardware (authoritative)
 
-MeshCrossway is an open-source project to build an ESP32-based portable communicator with a touchscreen, dedicated LoRa radios for Meshtastic and MeshCore, GNSS positioning, and local message storage.
-
-The goal is to give travelers, outdoor users, and eventually search-and-rescue teams a single interface for communicating across multiple networks where internet access or cellular coverage may be unavailable.
-
-> **Project status: architecture and bench-prototype planning.** This repository currently contains project documentation and a license. A schematic-reviewed wiring proposal is available below. Application firmware, bench-validated assembly instructions, build commands, and test results are not yet available. Features described below are planned unless explicitly marked otherwise.
-
-## Interactive touchscreen UI preview
-
-[![Open the MeshCrossway live UI simulator](https://img.shields.io/badge/Launch-Interactive%20UI%20Simulator-007acc?style=for-the-badge)](https://renbrant.github.io/MeshCrossway/)
-
-[![MeshCrossway touchscreen UI concept: Home, messages, position, and independent radio status](ui-prototype/ui-overview.svg)](https://renbrant.github.io/MeshCrossway/)
-
-**[▶ Open the live, clickable MeshCrossway simulator](https://renbrant.github.io/MeshCrossway/)**
-
-Explore the planned 480 × 320 touchscreen experience: dual-network messaging, GNSS/peer positions, POIs and waypoints, track recording, route summaries, opt-in live position sharing for individuals or groups, radio diagnostics, quick replies, and field tools.
-
-> **UI concept only.** Screens contain simulated information; there is no real messaging, GPS tracking, RF diagnostics, or emergency alert. GitHub READMEs cannot embed executable interactive HTML, so the preview opens the simulator hosted on GitHub Pages. The image above is an earlier static screen overview; the linked simulator is the current interactive version.
-
-## Why MeshCrossway?
-
-Different groups may use different mesh ecosystems. Switching between separate devices and applications adds friction when users need to follow conversations and positions across those networks.
-
-MeshCrossway aims to bring those experiences into one standalone device while preserving each network's native identity, configuration, and security model.
-
-The first prototype will focus on:
-
-- Operating Meshtastic and MeshCore through two dedicated radio nodes.
-- Sending and receiving messages from a local touchscreen.
-- Showing which network, contact, and channel each message belongs to.
-- Recording messages and positions locally.
-- Sharing a GNSS source through protocol-specific adapters.
-- Remaining usable without a phone, cloud account, or internet connection.
-
-**A unified interface does not make the networks interoperable.** The initial design does not automatically forward messages between Meshtastic and MeshCore. Both radios are intended to remain active, but simultaneous availability and RF coexistence still require testing.
-
-## Documentation
-
-- [V1 power architecture: Waveshare AXP2101, shared J8 3V3 rail, capacitors and validation](power-architecture.md)
-- [Bench wiring guide: connectors, GPIOs, power, and connection diagrams](hardware-wiring.md) — provisional proposal; GNSS drawings and BOM require revalidation after the MAX-M10S selection.
-- [Meshtastic and MeshCore: concepts, differences, and official links](meshtastic-vs-meshcore.md)
-- [Navigation, POIs, tracks, GPX and live location sharing specification](navigation-and-sharing.md)
-- [Interactive touchscreen simulator and feature notes](ui-prototype/README.md)
-- [Radio firmware strategy, independent processors and validation plan](radio-firmware-strategy.md)
-
-## Architecture
-
-The ESP32 runs the user interface and coordinates two independent nodes. Each radio node runs its own mesh firmware.
-
-```mermaid
-flowchart TD
-    UI["Local touchscreen"] <--> HOST["ESP32-S3 controller"]
-    HOST <-->|UART| MT["Meshtastic node"]
-    HOST <-->|UART| MC["MeshCore node"]
-    GNSS["u-blox GNSS"] -->|I2C| HOST
-    HOST <--> SD["microSD storage"]
-    MT <-->|LoRa| MTNET["Meshtastic network"]
-    MC <-->|LoRa| MCNET["MeshCore network"]
-```
-
-| Component | Planned responsibility |
-|---|---|
-| ESP32-S3 controller | Touch interface, protocol adapters, queues, configuration, and local history |
-| Meshtastic node | Native Meshtastic communication and network behavior |
-| MeshCore node | Native MeshCore communication and network behavior |
-| GNSS receiver | Local position, fix validity, and positioning data |
-| microSD | Persistent messages, logs, and position history |
-| Optional phone or computer | Future configuration, export, or auxiliary interface |
-
-The phone is optional. Core messaging is intended to run directly on the terminal.
-
-Independent nodes also allow each mesh firmware to evolve without moving its complete radio stack into the central application. This does not eliminate shared failure points such as the controller, storage, or power supply.
-
-## Selected prototype hardware
-
-These are the selected purchase references. The [buying and wiring guide](hardware-wiring.md) records prices, quantities and validation requirements; no complete hardware assembly has been bench-tested.
-
-| Quantity | Component | Purpose and status |
-|---:|---|---|
-| 1 | [**Waveshare ESP32-S3-Touch-LCD-3.5**](https://www.amazon.com/dp/B0F3WS2W5R), standard/no camera | Selected touch controller; $35.99 in supplied screenshot; revision and 32-pin labels to verify |
-| 2 kits | [**Seeed XIAO ESP32S3 + Wio-SX1262**](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html) | One native Meshtastic node, one MeshCore Serial Companion; reference $10.99 each; validate pins and supply |
-| 1 | [**Uputronics u-blox MAX-M10S breakout (3 V variant)**](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751) | Selected GNSS board with SMA connector for an external active GNSS antenna; $36.00 reference price |
-| 1 | [**Bingfu 4-System GNSS Helix active antenna**](https://www.amazon.com/dp/B0FL7PVF16), Amazon B0FL7PVF16 | Selected for V1 bench testing, **not electrically validated**; SMA male, GNSS L1, advertised $21.69. Confirm antenna bias voltage/current delivered at Uputronics SMA before use |
-| 1 candidate | [**ETWOWUP 1S LiPo 10,000 mAh**](https://www.amazon.com/dp/B0H9H5CTGT) | Candidate pack only; verify discharge limit, polarity, protection, size and compatible charge settings |
-| 1 | microSD card | Local history and diagnostic logs; capacity and format to be defined |
-| As needed | Jumpers, USB-C cables, and regulated USB supplies | Verify exact radio antenna and RF pigtail contents of the two Seeed kits before purchasing extras |
-| 2 optional | Additional compatible radio nodes | One remote peer for each protocol during bench testing |
-
-**Historical radio references:** Aideepen/Heltec V3.2 product photos are kept only in the [listing archive](images/amazon/README.md), not as the selected V1 radio modules.
-
-The selected controller combines ESP32-S3, 3.5-inch touchscreen and microSD. The two **XIAO/Wio** radios use independent UARTs. Refer to the current [pin contract](hardware-wiring.md), not historical Aideepen references.
-
-For initial bench bring-up, separate USB supplies may still be used for the radio nodes. **Selected V1 power architecture for validation:** the Waveshare AXP2101 handles LiPo charging and battery status, and its **J8 3V3 output is proposed to power both LoRa nodes plus GNSS**, with local decoupling. AXP2101 DCDC1 has a nominal 2 A datasheet rating, **not 2 A of guaranteed spare current at J8**. Actual board current headroom, module backfeed, battery/USB operation, low-voltage behavior and capacitance stability must be checked **before using a shared rail**. The Adafruit BQ25185 and external buck-boost/power mux are **not selected** for V1. See [power architecture and acceptance tests](power-architecture.md).
-
-### Interface plan
-
-| Connection | Planned interface | Validation needed |
+| Item | Baseline hardware | Responsibilities |
 |---|---|---|
-| Controller to Meshtastic node | Dedicated UART using the serial client API in `PROTO` mode | Pin assignment, configuration, framing, and recovery |
-| Controller to MeshCore node | Separate UART Companion protocol | XIAO/Wio candidate TX GPIO43 / RX GPIO44, pending firmware and bench validation |
-| Controller to MAX-M10S breakout | I²C (provisional) | Verify breakout SDA/SCL labels, signal voltage, pin order, GNSS configuration and power budget |
-| Controller to storage | Onboard microSD interface | Concurrent operation with the display and other peripherals |
-| Controller to display and touch | Onboard connections | Driver integration and responsiveness |
+| Central UI | [Waveshare ESP32-S3-Touch-LCD-3.5](https://www.amazon.com/dp/B0F3WS2W5R) | LVGL touch UI, GNSS, storage, APIs, system scheduling |
+| Radio A | [Seeed XIAO ESP32-S3 & Wio-SX1262 kit](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html) | Meshtastic upstream radio and SX1262 |
+| Radio B | Second identical **XIAO ESP32-S3 + Wio-SX1262** kit | MeshCore Companion upstream radio and SX1262 |
+| Position | Uputronics **u-blox MAX-M10S**, 3 V breakout | GPS/GNSS and local tracking |
+| Position antenna | Bingfu active GNSS antenna candidate | Under SMA/bias/current verification |
+| Local memory | Waveshare onboard microSD | Logs, messages, GPX, offline data |
+| Power | Waveshare AXP2101 + 1S LiPo candidate | Distribution to the two XIAO kits **not yet electrically verified** |
 
-**MeshCore UART still requires a tested XIAO/Wio serial Companion build**, including verification of SERIAL_RX=44 and SERIAL_TX=43 before PCB sign-off.
+The Seeed radio kit combines XIAO ESP32-S3 and Wio-SX1262 via an **internal B2B connector**; do not run external wires from Waveshare to SX1262 SPI. Avoid purchasing the header-based Wio expansion made for a different XIAO target. Verify LoRa antenna suitability for the deployment region.
 
-The [current wiring guide](hardware-wiring.md) assigns host GPIO39/40 to Meshtastic XIAO D3/GPIO4 RX and D2/GPIO3 TX, and host GPIO17/18 to MeshCore XIAO D7/GPIO44 RX and D6/GPIO43 TX. Verify each firmware target and actual board revision.
+## Proposed communication pins
 
-**Cost note:** The previous $148.02 subtotal used the superseded radio choice and is withdrawn. Recalculate the complete BOM after validating Seeed radios, carrier PCB, battery, external RF connectors and the case.
+| Link | Waveshare host | External XIAO signals | Status |
+|---|---|---|---|
+| Meshtastic | TX GPIO39 / RX GPIO40 | RX D7/GPIO44 / TX D6/GPIO43 | candidate, must be verified in firmware |
+| MeshCore Companion | TX GPIO17 / RX GPIO18 | RX D7/GPIO44 / TX D6/GPIO43 | candidate; build/serial transport not yet proven |
+| GNSS I²C | SDA GPIO21 / SCL GPIO38 | Uputronics MAX-M10S SDA / SCL | verify revision and 3V breakout |
+| Logic reference | host GND | both XIAO GND and GNSS GND | required |
 
-## Planned software
+**No old LoRa V3 external UART GPIO4/GPIO5 wiring should be used on XIAO.** Serial baseline is 115200 8N1 if enabled on both endpoints; Meshtastic PROTO and MeshCore Companion are *different* binary APIs. The two radios can be developed initially on separate USB power supplies with shared logic GND. Shared external XIAO power from the host J8 rail is a design proposal only.
 
-The central firmware is intended to use C/C++ with an ESP32-compatible toolchain and **LVGL** for the touchscreen interface. The build framework and dependency versions have not yet been frozen.
+![Updated XIAO UART wiring](images/architecture/xiao-wiring.svg)
 
-The application will separate:
+## Firmware and design principles
 
-- A Meshtastic adapter that owns its radio connection.
-- A MeshCore adapter that owns its radio connection.
-- A GNSS service that tracks fix validity and position age.
-- Message queues and persistent storage.
-- The interface and device configuration.
+1. **Host firmware (own code):** LVGL UI, ESP-IDF/FreeRTOS, independent UART adapters, contact/message store, GNSS parser, local tracks, location scheduler, microSD and diagnostics.
+2. **Meshtastic radio A:** upstream XIAO ESP32-S3 Wio-SX1262 build using Serial `PROTO` with verified UART RX=44 / TX=43. Capture binary Protobuf frames, verify queue/ACK distinction and packet-specific hop behavior.
+3. **MeshCore radio B:** upstream **Xiao_S3_WIO Companion** build, with custom compilation flags if needed to expose Companion over GPIO44/43 external UART. Stock BLE/USB Companion is not proof of UART. On fresh installs, use the correct **merged firmware image** when release instructions require a partition layout for persistent settings.
+4. **Custom source patches only after proven blocker:** zero-hop route control, serial transport or critical missing host API; favor upstream changes rather than local long-term forks.
+5. **Radio RF coexistence:** both 900 MHz-class SX1262 modules may operate near one another; antenna separation, blocking, collisions and autonomous TX must be measured.
+6. **Power hold:** Waveshare J8 current budget and XIAO external 3V3 feed topology are not yet validated. Do not tie together chargers, 1S battery pads, USB and 3V3 rails without schematic review.
 
-A failure or reconnection in one adapter should leave the other network and stored history accessible. On an ESP32, these boundaries will be implemented within the firmware rather than as Linux services.
+![Firmware split](images/architecture/firmware-responsibilities.svg)
 
-### Interface scope
+## Feature scope
 
-The first interface will prioritize conversations, a virtual keyboard, predefined messages, radio status, GNSS coordinates, position age, and history.
+- Unified local inbox with network-specific identity, channels/groups, private messaging and radio health.
+- GPS location, POIs, local track recording, GPX export and map presentation.
+- Location sharing by user consent with timed expiry, movement trigger and strict traffic budget.
+- Direct Only tracking is **unverified** on real Meshtastic and MeshCore firmware; no silent repeat/flood fallback. Group Direct Only may not be natively possible.
+- Large files and offline map data use local SD and future authenticated BLE/Wi-Fi transfer rather than LoRa.
+- Reticulum is a **future study**, not part of the initial hardware selection.
 
-The [navigation and sharing specification](navigation-and-sharing.md) covers POIs, waypoints, track recording, GPX exchange, live location sharing to one person or a group, and configurable time/movement triggers. Large GPX files are planned for a future authenticated Bluetooth companion connection rather than direct LoRa transmission. All of these are product/design features; the browser simulator is not working firmware.
+## Validation gates before PCB freeze
 
-Detailed offline maps are a later milestone. They introduce additional storage, rendering, data-format, and licensing work.
+- Identify shipped Waveshare and Seeed PCB revisions, test GPIO continuity and B2B stack footprint.
+- Compile/flash both radios with correct XIAO targets; prove serial RX44/TX43 and UART framing separately.
+- Measure J8 headroom, XIAO transmit peaks and powered-off backfeed; evaluate per-radio reset/power isolation.
+- Demonstrate independent send/receive and power-cycle recovery of two serial links, messages and configs.
+- Confirm GNSS antenna bias/power and microSD access under display load.
+- Demonstrate per-packet zero-hop and RF coexistence with at least one test peer/repeater.
+- Validate consent, privacy, stale position suppression and regional radio compliance.
 
-### Message behavior
+## Definitive V1 documents
 
-Message state must reflect available evidence:
+| Area | Current document |
+|---|---|
+| Buying, hardware and GPIO wiring | [Hardware wiring/BOM](hardware-wiring.md) |
+| Power design and test requirements | [Power architecture](power-architecture.md) |
+| Firmware division and patch policy | [Radio firmware strategy](radio-firmware-strategy.md) |
+| UART wire protocols and API limitations | [Radio communication architecture](radio-communication-architecture.md) |
+| Navigation and sharing | [Navigation and sharing](navigation-and-sharing.md) |
+| Meshtastic vs MeshCore comparison | [Protocol comparison](meshtastic-vs-meshcore.md) |
+| Reticulum future option | [Future Reticulum](reticulum-future-integration.md) |
+| Visual UI prototype | [Simulator documentation](ui-prototype/README.md) |
 
-- Stored locally.
-- Queued for a radio.
-- Accepted by the node.
-- Transmission reported, when the protocol provides reliable evidence.
-- Acknowledged, with the meaning of that acknowledgment identified.
-- Failed, expired, or outcome unknown.
+## Historical note
 
-Acceptance into a queue is not proof of transmission. A protocol acknowledgment is not proof that a person read the message.
-
-After a connection failure, a message that may already have been accepted must not be blindly resent. Retry behavior and duplicate handling will be defined per protocol.
-
-Contacts will be keyed by protocol and native identity rather than display name. The same person may have separate identities on the two networks.
-
-### Position and storage behavior
-
-Positions should include their source, available quality information, and temporal validity. An old or invalid fix must not appear as a current location.
-
-The controller will maintain bounded local queues and history, with explicit policies for retention, storage exhaustion, and recovery. GNSS publication will use each protocol's actual capabilities and its own privacy and rate settings.
-
-### Direct Tracking and network protection
-
-**Proposed default for real-time positions: Direct Only (one-hop / no repeater forwarding).** Tracking sends compact, rate-limited updates only to nearby compatible peers without silently escalating to multi-hop forwarding. Ordinary user messages can still use their normal mesh routes. A radio channel remains shared even in one-hop mode, so **Direct Only lowers forwarding load but cannot eliminate congestion or guarantee delivery**.
-
-- **Direct Only:** no repeater forwarding and no automatic flooding fallback; stale/out-of-range peers show their last fix with timestamp, not a live location.
-- **Adaptive (future):** mesh fallback only after explicit user approval.
-- **Mesh Network (future):** routed location sharing with a separate, conservative airtime budget.
-- **Traffic protection:** minimum transmission gap, GNSS quality and movement filtering, per-radio airtime budget, backoff under congestion, bounded retries, deduplication, recipient caps and priority for user messages.
-- **Initial experimental cadence:** stationary no faster than 5 min; walking no faster than 60 s or 100 m (plus a mandatory minimum gap); any faster updates require RF measurements. Session duration is bounded and sharing remains OFF by default.
-- **Compatibility limitations:** Meshtastic zero-hop requires outgoing packet hop limit 0. MeshCore direct routing can still involve repeaters and group channels normally flood; verify true zero-hop behavior and disable route/flood fallback before enabling this mode.
-- **Range:** no fixed guaranteed radius. Portable 915 MHz LoRa range can vary from very short obstructed links to multiple kilometers with favorable line of sight; actual performance needs field tests.
-
-**[Full Direct Tracking, position sharing and anti-congestion design](navigation-and-sharing.md#direct-tracking-local-one-hop-location-sharing-design-proposal)**. The simulator does not implement RF transmissions or enforce these budgets.
-
-### Radio firmware maintenance policy
-
-**Upstream-first architecture:** the Waveshare controller runs MeshCrossway applications (LVGL, GPS/navigation, POIs/tracks, location scheduler, microSD and future Bluetooth companion exchange). Each ESP32-S3/SX1262 radio runs its own protocol firmware and is **not** treated as a general-purpose processing coprocessor. Use **Meshtastic official firmware with serial `PROTO` configuration** and **MeshCore upstream Companion**, possibly requiring a board-specific UART build. Avoid source-level forks unless a tested essential feature (such as strict zero-hop Direct Tracking) truly cannot be implemented through available APIs.
-
-The preferred progression is **(1) official image + settings → (2) upstream-based custom build with UART pin/flags → (3) minimal upstream-proposed source patch only as a last resort**. Firmware versions, build flags, pins and binary checksums must remain reproducible. See [radio firmware strategy](radio-firmware-strategy.md) for responsibilities, FreeRTOS boundaries and acceptance gates.
-
-## Development roadmap
-
-- [x] Define a standalone ESP32 touchscreen architecture.
-- [x] Select the initial controller and display.
-- [x] Identify candidate radio nodes and GNSS hardware.
-- [ ] Validate the controller board revision and complete GPIO allocation.
-- [ ] Prove the Meshtastic UART connection.
-- [ ] Record reproducible upstream firmware targets, versions, UART settings and binary build manifests for both radios.
-- [ ] Build and validate the MeshCore Companion UART configuration.
-- [ ] Send and receive messages through both adapters.
-- [ ] Keep one adapter working while the other node is disconnected.
-- [ ] Add the touch interface, message composition, and accurate status reporting.
-- [ ] Add GNSS, persistent history, and restart recovery.
-- [ ] Implement local POI/waypoint management, track recording and GPX import/export.
-- [ ] Validate opt-in live position sharing to a person or group with time, movement and auto-stop settings.
-- [ ] Validate Direct Only packet routing (zero repeater hops) independently for Meshtastic and MeshCore, with no implicit mesh fallback.
-- [ ] Measure airtime, collision and delivery impact; implement per-radio budgets, adaptive backoff, minimum gaps and GNSS jitter filtering.
-- [ ] Prototype an authenticated Bluetooth companion channel for bulk GPX transfers.
-- [ ] Show peer positions with network identity, last-update age and stale-fix warnings.
-- [ ] Measure RF coexistence and power consumption.
-- [ ] Run sustained offline and fault-recovery tests.
-- [ ] Design a modular carrier PCB with central display, radios toward opposite edges, externally mounted GNSS antenna, and a rear battery/power section.
-- [x] Adopt the Waveshare AXP2101 charger and J8 3V3 rail as the V1 power architecture **candidate**; remove the separate BQ25185 charger.
-- [ ] Verify the shipped Waveshare 3V3 source and **available external current** under full display load.
-- [ ] Validate combined loads, bulk/local capacitor values, radio USB/backfeed behavior, battery and charging operation.
-- [ ] Evaluate a portable enclosure and battery system.
-- [ ] Consider a custom PCB after the bench design is reproducible.
-
-### First milestone
-
-**Send and receive messages on both networks from the touchscreen, with independent adapter recovery.**
-
-Before miniaturization, testing must establish how much one nearby transmitter degrades the other receiver. Two dedicated radios do not guarantee uninterrupted reception when placed together.
-
-Tests will cover both interference directions, GNSS behavior during transmission, antenna spacing, power settings, USB or serial interruptions, full storage, and controlled restarts. The host can schedule its own requests, but native firmware may also transmit acknowledgments, announcements, or relayed traffic.
-
-## Operating boundaries
-
-MeshCrossway is being designed for offline use, but messaging still requires compatible peers, matching radio settings, and a usable RF path. It does not create cellular or satellite coverage.
-
-Regional frequency, power, antenna, and channel-access requirements must be checked before transmitting. A US915 bench configuration is not a universal international profile. Region selection must account for autonomous transmissions from the radio firmware as well as host-requested messages.
-
-Search-and-rescue is a target use case for future development. **The prototype is not a qualified emergency communication device and must not be relied on as the sole means of requesting assistance.** Field readiness will require operational testing, power continuity, environmental validation, and procedures developed with users.
-
-## Security and privacy goals
-
-- Preserve each protocol's native security mechanisms.
-- Keep network identity and message provenance visible.
-- Make location publication and remote administration explicit choices.
-- Keep cloud uploads and public telemetry disabled by default.
-- Protect stored history and exclude credentials from exported diagnostics.
-- Define update and recovery procedures before field deployment.
-
-The central terminal will receive application data from both nodes and becomes part of the security boundary. Separate networks do not automatically provide end-to-end encryption across protocols.
-
-Automatic cross-network bridging is outside the first prototype's scope. Any future bridge will need explicit forwarding rules, loop prevention, identity mapping, and a clear explanation of its privacy consequences.
-
-## Possible future extensions
-
-After the core prototype is validated, potential extensions include offline maps, phone access over Wi-Fi or BLE, additional adapters such as Reticulum/LXMF, cellular or satellite backhaul, and CoT/ATAK integration.
-
-These are exploration areas, not implemented features. Some will require additional radios, service plans, backend infrastructure, or protocol-specific hardware.
-
-## Getting involved
-
-There is no flashable MeshCrossway firmware or reproducible build procedure yet.
-
-Useful early contributions include:
-
-- Reviewing schematics and GPIO allocation.
-- Validating Companion UART support on the selected MeshCore target.
-- Developing embedded protocol adapters and LVGL screens.
-- Designing RF coexistence, storage-recovery, and power tests.
-- Documenting reproducible hardware and firmware configurations.
-
-Use [GitHub Issues](https://github.com/Renbrant/MeshCrossway/issues) to discuss a proposed change or report findings. Include board revisions, firmware versions, configuration, and relevant logs, with keys and private location data removed.
-
-## References
-
-- [Waveshare ESP32-S3-Touch-LCD-3.5](https://www.waveshare.com/esp32-s3-touch-lcd-3.5.htm)
-- [Selected Seeed XIAO ESP32S3 + Wio-SX1262 kit](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html)
-- [Historical LoRa V3 two-pack, no longer selected](https://www.amazon.com/dp/B0DRSJV1ZL)
-- [MeshCore ESP32 Companion UART source](https://github.com/meshcore-dev/MeshCore/blob/main/examples/companion_radio/main.cpp)
-- [Bingfu 4-System GNSS Helix antenna, selected for V1 testing](https://www.amazon.com/dp/B0FL7PVF16)
-- [Selected Uputronics MAX-M10S breakout (3 V variant)](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751)
-- [u-blox MAX-M10S product documentation](https://www.u-blox.com/en/product/max-m10-series)
-- [Meshtastic firmware](https://github.com/meshtastic/firmware)
-- [Meshtastic serial module documentation](https://meshtastic.org/docs/configuration/module/serial/)
-- [MeshCore firmware](https://github.com/meshcore-dev/MeshCore)
-- [LVGL](https://github.com/lvgl/lvgl)
-- [ESP-IDF](https://github.com/espressif/esp-idf)
-
-## License
-
-Original MeshCrossway code and documentation in this repository are licensed under the [MIT License](../LICENSE).
-
-Amazon listing photos are third-party materials credited in [image sources and rights](images/README.md); they are not covered by the MeshCrossway MIT license. Third-party firmware, libraries, hardware designs, and assets retain their respective licenses. This repository's MIT license does not relicense those components; integration and distribution must respect their applicable terms.
-
-MeshCrossway is an independent project and is not affiliated with or endorsed by the manufacturers or upstream projects referenced here.
-
+The October 24, 2026 Aideepen/Heltec-style LoRa V3 hardware selection, Amazon radio pack, **GPIO4/GPIO5 external UART assignments**, associated package-price totals and photos were part of an earlier, superseded prototype proposal. They may still exist in older git commits and image-asset archives, but **are not accepted for current purchasing, assembly or PCB design**. The present baseline is exactly **two Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kits**.

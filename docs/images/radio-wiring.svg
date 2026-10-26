@@ -19,12 +19,12 @@
 <rect x="85" y="321" width="166" height="24" rx="12" fill="#092439" stroke="#36c8f4" stroke-width="1"/>
 <text x="168.0" y="338" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#36c8f4" font-weight="bold" text-anchor="middle">GPIO39</text>
 <rect x="402" y="321" width="166" height="24" rx="12" fill="#092439" stroke="#36c8f4" stroke-width="1"/>
-<text x="485.0" y="338" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#36c8f4" font-weight="bold" text-anchor="middle">D3 / GPIO4</text>
+<text x="485.0" y="338" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#36c8f4" font-weight="bold" text-anchor="middle">D7 / GPIO44</text>
 <line x1="274" y1="333" x2="380" y2="333" stroke="#36c8f4" stroke-width="2.5" marker-end="url(#arr)"/>
 <rect x="85" y="374" width="166" height="24" rx="12" fill="#092439" stroke="#36c8f4" stroke-width="1"/>
 <text x="168.0" y="391" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#36c8f4" font-weight="bold" text-anchor="middle">GPIO40</text>
 <rect x="402" y="374" width="166" height="24" rx="12" fill="#092439" stroke="#36c8f4" stroke-width="1"/>
-<text x="485.0" y="391" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#36c8f4" font-weight="bold" text-anchor="middle">D2 / GPIO3</text>
+<text x="485.0" y="391" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#36c8f4" font-weight="bold" text-anchor="middle">D6 / GPIO43</text>
 <line x1="274" y1="386" x2="380" y2="386" stroke="#36c8f4" stroke-width="2.5"/>
 <path d="M 380 392 H 274" fill="none" stroke="#36c8f4" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arr)"/>
 <rect x="85" y="427" width="166" height="24" rx="12" fill="#092439" stroke="#36c8f4" stroke-width="1"/>
@@ -32,8 +32,8 @@
 <rect x="402" y="427" width="166" height="24" rx="12" fill="#092439" stroke="#36c8f4" stroke-width="1"/>
 <text x="485.0" y="444" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#36c8f4" font-weight="bold" text-anchor="middle">GND</text>
 <line x1="274" y1="439" x2="380" y2="439" stroke="#36c8f4" stroke-width="2.5" marker-end="url(#arr)"/>
-<text x="82" y="511" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Host GPIO39 TX  →  XIAO D3 / GPIO4 RX</text>
-<text x="82" y="539" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Host GPIO40 RX  ←  XIAO D2 / GPIO3 TX</text>
+<text x="82" y="511" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Host GPIO39 TX  →  XIAO D7 / GPIO44 RX</text>
+<text x="82" y="539" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Host GPIO40 RX  ←  XIAO D6 / GPIO43 TX</text>
 <text x="82" y="567" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">GND                 ↔  GND</text>
 <rect x="252" y="567" width="157" height="24" rx="12" fill="#092439" stroke="#36c8f4" stroke-width="1"/>
 <text x="330.5" y="584" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#36c8f4" font-weight="bold" text-anchor="middle">115200 • 8N1</text>

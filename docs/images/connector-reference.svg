@@ -6,7 +6,7 @@
 <text x="325" y="61" font-family="DejaVu Sans,Arial,sans-serif" font-size="28" fill="#edf5ff" font-weight="bold">| Connector reference</text>
 <text x="40" y="91" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#a6bfd4" font-weight="normal">Physical signal identity only: do not infer J8 position numbering from marketing photos</text>
 <rect x="30" y="669" width="1220" height="27" rx="8" fill="#162a40" stroke="#253f57" stroke-width="1"/>
-<text x="44" y="688" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#f4bc58" font-weight="normal">Use actual PCB revision/schematic. Meshtastic D2/D3 and MeshCore D6/D7 need confirmed free GPIOs.</text>
+<text x="44" y="688" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#f4bc58" font-weight="normal">Use actual PCB revision/schematic. Meshtastic D6/D7 and MeshCore D6/D7 need confirmed free GPIOs.</text>
 <rect x="50" y="185" width="530" height="415" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
 <text x="68" y="217" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Waveshare host expansion (J8)</text>
 <text x="68" y="238" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Board revision and pin numbering must be inspected</text>
@@ -19,7 +19,7 @@
 <text x="77" y="529" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">3V3/GND: POWER PENDING CURRENT TEST</text>
 <rect x="625" y="185" width="604" height="183" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
 <text x="643" y="217" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Radio A  •  Meshtastic</text>
-<text x="643" y="238" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">XIAO D3 / GPIO4 RX      XIAO D2 / GPIO3 TX</text>
+<text x="643" y="238" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">XIAO D7 / GPIO44 RX      XIAO D6 / GPIO43 TX</text>
 <rect x="669" y="256" width="112.5" height="67.5" rx="7" fill="#07121c" stroke="#36c8f4" stroke-width="2"/>
 <rect x="677.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
 <rect x="677.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>

@@ -20,7 +20,7 @@
 <text x="78" y="466" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">XIAO ESP32S3 + Wio-SX1262</text>
 <text x="78" y="502" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Native Meshtastic routing and channel model</text>
 <text x="78" y="538" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">LoRa RF → Meshtastic network</text>
-<text x="78" y="574" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Host GPIO39/40 ↔ XIAO GPIO4/3</text>
+<text x="78" y="574" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Host GPIO39/40 ↔ XIAO GPIO44/43</text>
 <rect x="677" y="388" width="547" height="240" rx="14" fill="#11243a" stroke="#ffba65" stroke-width="1.7"/>
 <text x="695" y="420" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">MeshCore path  /  UART2</text>
 <text x="695" y="441" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Companion binary command / response / events</text>

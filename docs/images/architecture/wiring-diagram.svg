@@ -21,8 +21,8 @@
 <rect x="537" y="175" width="698" height="140" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
 <text x="555" y="207" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Radio A  /  Meshtastic</text>
 <text x="555" y="228" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Seeed XIAO ESP32S3 + Wio-SX1262</text>
-<text x="563" y="243" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#edf5ff" font-weight="normal">RX  D3/GPIO4 ← Host GPIO39 TX</text>
-<text x="563" y="265" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#edf5ff" font-weight="normal">TX  D2/GPIO3 → Host GPIO40 RX</text>
+<text x="563" y="243" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#edf5ff" font-weight="normal">RX  D7/GPIO44 ← Host GPIO39 TX</text>
+<text x="563" y="265" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#edf5ff" font-weight="normal">TX  D6/GPIO43 → Host GPIO40 RX</text>
 <text x="563" y="287" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#edf5ff" font-weight="normal">GND ↔ Host GND  •  PROTO 115200</text>
 <rect x="537" y="331" width="698" height="140" rx="14" fill="#11243a" stroke="#ffba65" stroke-width="1.7"/>
 <text x="555" y="363" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Radio B  /  MeshCore</text>

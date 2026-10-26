@@ -165,7 +165,7 @@ These are options for evaluation, not selected components. An external pilot is 
 
 **A third LoRa radio is unnecessary for the initial Wi-Fi trial.** Independent LoRa access can be evaluated later. Stock MT, MC and ordinary RNode firmware should not be assumed to run concurrently on one transceiver. Reflashing a test board replaces its previous role while that firmware is running.
 
-The initial MeshCrossway V1 uses **two Seeed XIAO ESP32S3 + Wio-SX1262 kits**, not the previously considered Heltec-compatible boards. The Reticulum/RNode support list would need checking for the **exact XIAO/Wio radio kit** in any future integration: compatibility is **not established** by historical official support for Heltec LoRa32 V3. [Supported hardware][RNS-hardware]
+Official RNode support includes **Heltec LoRa32 V3**. The former Aideepen boards were superseded by **two Seeed XIAO ESP32-S3 + Wio-SX1262 kits** in V1. RNode availability for the exact XIAO/Wio hardware is **not confirmed**; a future Reticulum implementation requires a separate firmware/host evaluation and must not assume a Heltec RNode image is compatible. [Supported hardware][RNS-hardware]
 
 USB, BLE or TCP connectivity on a supported build does not establish that the intended external UART pins expose the required interface. Similarly, an embedded transport build is not automatically a ready-made UART messaging coprocessor. Validate the chosen firmware's serial framing, logging, commands and recovery behavior before designing the adapter. [RNode interfaces][RNS-interfaces], [microReticulum transport firmware][MICRO-FIRMWARE]
 

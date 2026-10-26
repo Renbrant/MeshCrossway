@@ -1,103 +1,119 @@
-# MeshCrossway V1 — XIAO ESP32S3 + Wio-SX1262 wiring and BOM
+# MeshCrossway V1 — Seeed XIAO ESP32-S3 + Wio-SX1262 hardware and wiring
 
-[Project README](../README.md) · [Radio software interfaces](radio-communication-architecture.md) · [Power validation](power-architecture.md)
+[README](../README.md) · [Power design](power-architecture.md) · [Serial APIs](radio-communication-architecture.md)
 
-> **Decision: 2026-10-26. Proposed, not electrically tested.** Two identical Seeed Studio XIAO ESP32S3 + Wio-SX1262 kits replace the earlier Aideepen/Heltec V3 two-pack. Prior Heltec pin assignments, headers, images, and pricing are **obsolete** for V1. The SVG wiring illustrations are now revised for XIAO/Wio but are **provisional bench diagrams**, not fabrication-ready schematics. Review the actual board schematic, pin exposure, and firmware variant before fabrication.
+> **Current V1 hardware selection (2026-10-26):** two **Seeed Studio XIAO ESP32-S3 & Wio-SX1262 kits**, one running Meshtastic and one MeshCore Companion. The older Aideepen/Heltec V3.2 radio pair and its GPIO4/5 external-UART wiring are **superseded**. No soldered prototype or PCB has been electrically validated.
 
-## Physical construction: one carrier PCB and rear battery
+## Physical assembly concept — one carrier PCB, rear battery
 
-![Physical layout concept: transparent shell, carrier PCB and rear battery](images/hardware-overview.svg)
+![Hardware and almost-invisible transparent enclosure layers](images/hardware-overview.svg)
 
-![Approved temporary exploded view of the MeshCrossway assembly](images/architecture/meshcrossway-exploded.webp)
+![Approved temporary exploded enclosure render with protected 1S LiPo battery mounted behind the carrier PCB](images/architecture/meshcrossway-exploded.webp)
 
-The two XIAO/Wio radios and MAX-M10S breakout are planned to mount on a **single carrier PCB** around the Waveshare display. The protected 1S LiPo is mounted **behind the carrier**, inside the almost-invisible transparent rear cover, not beside the screen. Rendered parts are illustrative, not dimensionally identical to their commercial boards. The Waveshare onboard microSD remains the storage interface.
+This assembly concept places the two Seeed XIAO/Wio kits and MAX-M10S breakout on **one custom carrier PCB** around the Waveshare display. The protected 1S LiPo pack is **behind the PCB**, not mounted next to the screen. These AI-assisted renders are approximate and **not exact supplier photos or mechanical CAD**. Verify real footprints, B2B stack height, charging safety and antenna clearances before layout approval.
 
-## Illustrated system wiring
+![Revised external UART versus internal B2B wiring](images/architecture/xiao-wiring.svg)
 
-![Proposed controller, two-radio and GNSS pin map](images/architecture/wiring-diagram.svg)
+![Proposed complete controller-radio-GNSS wiring](images/architecture/wiring-diagram.svg)
 
-```mermaid
-flowchart LR
-  W["Waveshare ESP32-S3 3.5-inch touch / LVGL"] -->|UART1: TX GPIO39 to RX GPIO4; RX GPIO40 from TX GPIO3| MT["XIAO ESP32S3 + Wio-SX1262\nMeshtastic PROTO"]
-  W -->|UART2: TX GPIO17 to RX GPIO44; RX GPIO18 from TX GPIO43| MC["XIAO ESP32S3 + Wio-SX1262\nMeshCore Companion"]
-  GNSS["u-blox MAX-M10S GNSS"] -->|I2C proposed GPIO21/38| W
-  W --- SD["Onboard microSD"]
-  MT --> ANT1["915 MHz-class LoRa antenna A"]
-  MC --> ANT2["915 MHz-class LoRa antenna B"]
+## 1. Hardware inventory and buying links
+
+| ID | Part | Quantity | Purpose |
+|---|---|---:|---|
+| U1 | [Waveshare ESP32-S3-Touch-LCD-3.5](https://www.amazon.com/dp/B0F3WS2W5R) | 1 | 480 × 320 display, touchscreen, ESP32-S3 host, microSD and PMIC |
+| A | [Seeed XIAO ESP32-S3 & Wio-SX1262 kit](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html) | 1 | dedicated Meshtastic radio |
+| B | [Seeed XIAO ESP32-S3 & Wio-SX1262 kit](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html) | 1 | dedicated MeshCore Companion radio |
+| G1 | [Uputronics MAX-M10S breakout, 3 V variant](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751) | 1 | host-side u-blox GNSS over I²C |
+| ANT-G | [Bingfu active GNSS antenna](https://www.amazon.com/dp/B0FL7PVF16) | 1 | candidate active GNSS antenna, bias/connector validation required |
+| S1 | microSD for Waveshare onboard slot | 1 | storage, logs and future map assets |
+| BAT | protected 1S LiPo compatible with Waveshare requirements | 1 | proposed portable power; verify protection, connector, current, enclosure |
+
+The XIAO ESP32-S3 kit contains a 2.4 GHz Wi-Fi/BLE MCU with **8 MB flash and 8 MB PSRAM** plus a SX1262 operating across supported sub-GHz bands. It uses a **board-to-board (B2B)** connection between the XIAO and Wio daughterboard. A Wio module supplied for a **XIAO nRF52840** or an alternative **header-board variant** may use *different* wiring; do not substitute it based on its name. The SX1262 antenna uses a U.FL/IPEX connector; confirm antenna/pigtail suitability for the selected regional frequency and final enclosure.
+
+Pricing: previous **$39.99 Aideepen two-pack** and the old **$148.02 BOM** are obsolete. Recalculate the whole BOM with two current Seeed kits, shipping, antenna/pigtail needs, carrier board, battery and accessories before publishing a new total. Do not represent outdated prices as current.
+
+Manufacturer: [Seeed XIAO + Wio getting started](https://wiki.seeedstudio.com/xiao_esp32s3_%26_wio_SX1262_kit_for_meshtastic/) · [Meshtastic Seeed Wio support](https://github.com/meshtastic/meshtastic/blob/master/docs/hardware/devices/seeed-studio/wio-series/wio-sx1262.mdx).
+
+## 2. Interfaces: DO NOT transplant the old radio pinout
+
+Each kit contains two internally connected devices: a **XIAO ESP32-S3 MCU** and a **Wio SX1262 radio module**. The MCU controls the SX1262 via **internal SPI and GPIOs on the B2B connector**. The Waveshare communicates only with the **XIAO MCU** via a *separate* external UART API. Do not wire Waveshare GPIOs to the SX1262 SPI signals or DIO1/BUSY lines.
+
+### Proposed host-to-XIAO serial connectivity
+
+![UART crossing on two identical XIAO pin pairs](images/radio-wiring.svg)
+
+![Host GPIO identities and XIAO connector candidates](images/connector-reference.svg)
+
+| Function | Waveshare U1 | XIAO A (Meshtastic) | XIAO B (MeshCore) | Status |
+|---|---|---|---|---|
+| Host UART1 TX → radio A RX | GPIO39 | **D7 / GPIO44 (RX)** | — | proposed, firmware configuration required |
+| Radio A TX → host UART1 RX | GPIO40 | **D6 / GPIO43 (TX)** | — | proposed, firmware configuration required |
+| Host UART2 TX → radio B RX | GPIO17 | — | **D7 / GPIO44 (RX)** | proposed, firmware configuration required |
+| Radio B TX → host UART2 RX | GPIO18 | — | **D6 / GPIO43 (TX)** | proposed, firmware configuration required |
+| Common logic reference | GND | GND | GND | mandatory |
+| Central GNSS SDA / SCL | GPIO21 / GPIO38 | — | — | G1 SDA/SCL; verify host revision |
+| Supplies | Waveshare J8 3V3 | XIAO 3V3 candidate | XIAO 3V3 candidate | **not electrically approved** |
+
+**GPIO43/44** are the XIAO external UART TX/RX signals, not the old **GPIO5/4** used on Heltec. They may also be used for serial boot diagnostics and USB/debug workflows; verify that the exact Meshtastic serial module and MeshCore Companion build can bind the API to these pins without startup logging corrupting the binary stream. Wire **TX ↔ RX**, never TX ↔ TX. Baseline link target: **115200 baud, 8N1**, explicitly configured (the Meshtastic serial default is not necessarily 115200).
+
+XIAO pins labeled **D6/D7** are board-pin names; the numbers **GPIO43/44** are ESP32-S3 native GPIO numbers. Do not confuse either with pins on the Wio SX1262 radio module.
+
+### SX1262 internal B2B hardware (reference, NOT external host wiring)
+
+The official XIAO ESP32-S3 Wio build has been reported with SX1262 SPI SCK=GPIO36, MISO=GPIO37, MOSI=GPIO35, NSS=GPIO7, RESET=GPIO4, DIO1=GPIO1, BUSY=GPIO2 and module enable=GPIO5. **These definitions are for the exact B2B kit only and must be checked against the firmware variant and schematic before using them in any custom build.** Alternative Wio header variants have different mappings. These GPIOs must not be reused as host UART pins. A complete source/board manifest must lock TCXO configuration and RF-switch control as well.
+
+Reference discussion: [Meshtastic XIAO S3 RadioLib SPI pin details](https://github.com/meshtastic/firmware/discussions/6744). See [Seeed kit schematics](https://wiki.seeedstudio.com/xiao_esp32s3_%26_wio_SX1262_kit_for_meshtastic/).
+
+## 3. Bench wiring
+
+```text
+                  Waveshare ESP32-S3-Touch-LCD-3.5
+                    UART1 TX GPIO39  ----->  A XIAO D7 / GPIO44 RX
+                    UART1 RX GPIO40  <-----  A XIAO D6 / GPIO43 TX
+                    UART2 TX GPIO17  ----->  B XIAO D7 / GPIO44 RX
+                    UART2 RX GPIO18  <-----  B XIAO D6 / GPIO43 TX
+                    GND              ------- A GND / B GND / GNSS GND
+
+                    I2C SDA GPIO21  <----->  MAX-M10S SDA
+                    I2C SCL GPIO38  <----->  MAX-M10S SCL
+
+        XIAO A --(internal B2B SPI)--> Wio SX1262 A -- antenna
+        XIAO B --(internal B2B SPI)--> Wio SX1262 B -- antenna
 ```
 
-## Selected hardware (purchase reference, not a certified assembled design)
+The Waveshare GPIO39/40 and GPIO17/18 assignments assume the **camera is absent and disabled**. The board listing and Waveshare revision-specific J8 drawings disagree on pin numbering: locate contacts by printed **GPIO signal** and verified continuity, not by picture-position numbers. Reserve GPIO43/44 **on the Waveshare** for diagnostics; the same native numbers **on each XIAO** serve a different physical MCU and may be used for its external UART.
 
-| Ref | Quantity | Selected component | Action |
-|---|---:|---|---|
-| U1 | 1 | Waveshare ESP32-S3-Touch-LCD-3.5 (no camera) | Retain |
-| A, B | **2 kits** | [Seeed XIAO ESP32S3 + Wio-SX1262](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html) | **New V1 radio design**: A Meshtastic, B MeshCore |
-| G1 | 1 | u-blox MAX-M10S breakout, selected 3 V variant | Retain, verify I2C and active-antenna bias |
-| ANT-G | 1 | Bingfu GNSS active antenna candidate | Retain pending antenna-bias testing |
-| ANT-A, ANT-B | 2 | Region-appropriate 50-ohm LoRa antenna and compatible RF cable/connector | Verify kit contents, U.FL attachment, antenna placement and US915 match |
-| SD | 1 | microSD in Waveshare | Retain |
-| PWR | 1 | Waveshare AXP2101 battery management + protected 1S battery | Conditional on J8 3V3 spare-current testing |
-| CARRIER | 1 | Removable XIAO sockets / serviceable mounts, RF strain relief, UART test pads, per-radio isolation options | New mechanical/electrical layout |
+## 4. Firmware bring-up
 
-At the previously discussed **US$10.99 per kit**, two radio kits total **US$21.98 before shipping/tax** (indicative listing price; check checkout). Remove the earlier US$39.99 Aideepen two-pack from the active BOM. XIAO board footprint is about 21 × 17.8 mm; the assembled Wio add-on, mating stack, antenna connector, clearance and enclosure footprint must be measured separately. Never substitute XIAO-only dimensions for assembled module envelope.
+1. Identify the exact Wio B2B kit and XIAO PCB revision. Test each separately via its own USB-C interface and an antenna connected.
+2. Flash a **Seeed XIAO ESP32-S3 + Wio SX1262** Meshtastic image for A; enable the Serial module in `PROTO` mode using XIAO RX=44, TX=43 if that release supports that mapping. Validate actual framing, reboot and incoming messages; **do not use a Heltec V3 image**.
+3. Flash a **Xiao_S3_WIO Companion** MeshCore variant for B, not repeater firmware. For external UART, verify the exact release source has `SERIAL_RX`/`SERIAL_TX` transport enabled and build with RX=44, TX=43 where feasible. USB/BLE Companion support **does not prove external hardware UART support**.
+4. MeshCore's release/partition layout may require a **complete merged firmware image** on first flash to retain configuration. Check release instructions and verify region/name/settings survive a cold power cycle; do not blindly flash an app-only image to a blank target.
+5. Capture UART framing with each kit alone; then connect both to Waveshare and test concurrency, reconnect and isolation. Preserve both separate USB ports for maintenance.
 
-## UART wiring — provisional pin-level contract
+Upstream MeshCore FAQ explicitly lists **Xiao S3 WIO** as supported; [Seeed's MeshCore guide](https://wiki.seeedstudio.com/pt-br/get_started_with_esp32s3_meshcore/) discusses merged images and persistent settings. The exact external-UART mode is **a design gate, not yet verified on this board**.
 
-![Meshtastic and MeshCore radio UART wiring](images/radio-wiring.svg)
+## 5. Power / RF / mechanical gates
 
-![Waveshare and XIAO connector reference](images/connector-reference.svg)
+![GNSS and battery at the rear of the carrier](images/gnss-and-power.svg)
 
+![Conditional AXP2101 and J8 power distribution](images/architecture/power-architecture.svg)
 
-| Link | Waveshare controller | XIAO board | Direction |
-|---|---|---|---|
-| Meshtastic host TX | UART1 GPIO39 | **D3 / GPIO4, RX** | host → A |
-| Meshtastic host RX | UART1 GPIO40 | **D2 / GPIO3, TX** | A → host |
-| MeshCore host TX | UART2 GPIO17 | **D7 / GPIO44, RX** | host → B |
-| MeshCore host RX | UART2 GPIO18 | **D6 / GPIO43, TX** | B → host |
-| Both links | GND | GND | common 0 V reference |
+Power distribution via Waveshare AXP2101 and J8 3V3 remains a **candidate**, not an electrical recommendation that is safe to energize. The Seeed XIAO has its own regulator, LiPo charger and USB circuitry; determine whether feeding its **3V3** rail externally is supported and isolated, and test reverse-current paths if USB or battery is connected. Never tie two chargers or their battery pads together. Use independent USB supplies for initial tests plus signal GND common. Check 3V3 load margin, radio TX current pulses, rail startup, powered-off I/O injection and local decoupling. See [power study](power-architecture.md).
 
-**Important:** D2/D3 are **proposed configurable** pins for Meshtastic Serial PROTO; do not assume that the stock binary has UART on these pins. D6/D7 are the XIAO's labeled hardware UART pins and **proposed** for MeshCore Serial Companion, contingent on the actual firmware variant and successful serial validation. Check current Meshtastic Serial Module RXD/TXD GPIO restrictions and firmware pin maps. Confirm that the Wio-SX1262 expansion uses none of these pins on the installed hardware. Both links: **3.3 V UART, 115200 8N1, crossed TX/RX, common ground**, no 5 V TTL. Keep camera disabled on the Waveshare; GPIO39/40 and GPIO17/18 remain reserved for the two host UARTs, pending revision-specific verification.
+The XIAO's smaller footprint does not reduce the electrical separation needed by two simultaneous nearby RF transmitters. Mount the antennas apart, verify suitable 915 MHz antennas for US deployment, and characterize desensitization during simultaneous TX/RX.
 
-### Meshtastic A
+For carrier PCB: use footprints matching the **specific XIAO + Wio B2B kit stacking geometry**; leave USB-C accessible for firmware service, reserve UART test pads, and consider controlled reset and switched power **only after verifying available pins and safe shutdown behavior**. No final mechanical clearance, stack height, antenna pigtail path or footprint is approved yet.
 
-Flash the **Seeed XIAO ESP32S3 / Wio-SX1262** *supported target*, not Heltec V3. Enable Meshtastic **Serial Module** in **PROTO** mode: `serial.enabled=true`, `serial.mode=PROTO`, `serial.rxd=4`, `serial.txd=3`; choose and verify **115200 baud** on the specific firmware release. Confirm actual pins with a loopback/logic analyzer and Meshtastic Protobuf ToRadio/FromRadio frames before connecting the host. Avoid using GPIO43/44 for Meshtastic until the target's Serial Module pin validation is checked.
+## 6. Required validations
 
-### MeshCore B
+- Board ID and pinout with actual hardware (all external UART and internal SX1262 pin reservations)
+- Meshtastic PROTO on external XIAO UART at configured baud, without debug contamination
+- MeshCore Companion on external XIAO UART with persisted settings
+- Two simultaneous independent UARTs, power-cycle and queue recovery
+- J8 spare-current, 3V3 topology, charging/backfeed, brownout and RF TX-current measurement
+- RF coexistence and antenna placement
+- GNSS antenna bias/current and I²C compatibility
+- Prove route behavior separately for both firmware releases; zero-hop remains unverified
 
-Use the **XIAO ESP32S3 + Wio-SX1262 MeshCore Companion radio** firmware variant that explicitly supports **serial UART**, not a BLE-only or USB-only Companion build and not a repeater image. Candidate UART mapping: `SERIAL_RX=44`, `SERIAL_TX=43`, 115200 baud; **build flags and actual firmware pin selections must be confirmed upstream**. The controller must implement MeshCore's binary Companion protocol, not Meshtastic Protobuf.
-
-## Power architecture and safety gates
-
-![GNSS and rear-mounted battery arrangement](images/gnss-and-power.svg)
-
-![Proposed and not yet approved power architecture](images/architecture/power-architecture.svg)
-
-
-The selected V1 power design remains the **Waveshare AXP2101 charger/power management and a conditional shared J8 3V3 rail**. The integrated XIAO battery/charge functionality must **not** be wired in parallel to the Waveshare charger or used as an additional system charger. With the assembled XIAO + Wio kits, inspect whether the XIAO **3V3 pin accepts external regulated supply without backfeeding the onboard regulator or USB path**. Until independently verified, use separately isolated/current-limited test power, common signal ground, and avoid simultaneously attaching host 3V3 and radio USB. Prevent UART back-powering when either radio is off. Do not infer available J8 current from the AXP2101 2 A DCDC1 datasheet figure. Measure XIAO/Wio idle, RX, TX, dual-TX, Wi-Fi/BLE off/on as applicable, GNSS and LCD/microSD peaks **before** committing power wiring.
-
-## RF coexistence and mechanical requirements
-
-- Two SX1262 transmitters in the same US915-band enclosure can cause receiver desensitization, even though each radio runs an independent protocol. Prefer separated external antennas, high-quality U.FL-to-panel-SMA pigtails, cable strain relief, and RF isolation testing; coordinate TX if necessary.
-- Use antenna appropriate to **configured regional LoRa settings**, not only to the hardware's supported frequency range; adhere to applicable FCC/regional RF rules.
-- Place both XIAO/Wio kits on accessible, removable mounts; check assembled module height, ground copper keepouts, U.FL cable bend radius, touch/display clearance and GNSS noise.
-- Do not transmit with an unmatched or disconnected antenna. The two RF outputs must not be electrically tied together.
-
-## Mandatory acceptance checklist
-
-- [ ] Confirm shipped XIAO ESP32S3 and Wio-SX1262 board revisions, exact combined footprint, connector mating, antenna RF path, accessible pins and Wio GPIO occupancy.
-- [ ] Confirm Meshtastic official XIAO/Wio firmware target, Serial PROTO on GPIO3 TX / GPIO4 RX, readback and binary framing.
-- [ ] Confirm MeshCore XIAO/Wio **serial Companion** image/build flags, UART GPIO43 TX / GPIO44 RX, command-response and async event framing.
-- [ ] Confirm Waveshare expansion pin labels / J8 numbering against received revision; UART GPIO39/40, GPIO17/18 with camera disabled and GNSS I2C GPIO21/38 without LCD, touch or microSD conflicts.
-- [ ] Verify 3V3 supply **input path** and power isolation for each assembled kit, plus powered-off UART states.
-- [ ] Measure all operating currents and regulator/transient headroom; only then approve J8 shared-3V3 architecture or choose an external regulated branch.
-- [ ] Test independent radio reboot/recovery, simultaneous radio receive/transmit, RF desense and antenna separation.
-- [x] Update conceptual drawings for the chosen V1 hardware (still **not electrically verified**).
-- [ ] Create actual mechanical CAD and PCB layout from measured parts, then bench-test before any production claims.
-
-## Primary references
-
-- [Seeed Wio-SX1262 + XIAO ESP32S3 kit](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html)
-- [Seeed XIAO ESP32S3 documentation](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)
-- [Meshtastic Serial Module](https://meshtastic.org/docs/configuration/module/serial/)
-- [Meshtastic official firmware](https://github.com/meshtastic/firmware)
-- [MeshCore upstream](https://github.com/meshcore-dev/MeshCore)
+**Design decision:** two XIAO ESP32-S3 + Wio SX1262 kits are selected for V1 documentation and bench evaluation; PCB release awaits the gates above.

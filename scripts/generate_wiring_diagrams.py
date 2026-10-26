@@ -85,14 +85,14 @@ s.save('hardware-overview.svg')
 # 3. Radio UART wiring
 s=Art('Radio UART wiring','Both radios are 3.3 V serial peers; host TX must cross to radio RX','Candidate GPIO assignments require firmware-target and physical pinout verification on delivered boards.')
 for x,title,sub,edge,rows in [
- (48,'A  Meshtastic','Serial Module: PROTO',C['cyan'],['Host GPIO39 TX  →  XIAO D3 / GPIO4 RX','Host GPIO40 RX  ←  XIAO D2 / GPIO3 TX','GND                 ↔  GND']),
+ (48,'A  Meshtastic','Serial Module: PROTO',C['cyan'],['Host GPIO39 TX  →  XIAO D7 / GPIO44 RX','Host GPIO40 RX  ←  XIAO D6 / GPIO43 TX','GND                 ↔  GND']),
  (667,'B  MeshCore','Serial Companion binary protocol',C['amber'],['Host GPIO17 TX  →  XIAO D7 / GPIO44 RX','Host GPIO18 RX  ←  XIAO D6 / GPIO43 TX','GND                 ↔  GND'])]:
  s.card(x,181,565,414,title,sub,edge,22)
  s.card(x+22,258,204,206,'Waveshare host','ESP32-S3 3.5-inch',edge,17)
  s.card(x+337,258,204,206,'XIAO / Wio','SX1262 radio module',edge,17)
  for i,row in enumerate(rows):
   yy=321+53*i
-  src,dst=(('GPIO39','D3 / GPIO4'),('GPIO40','D2 / GPIO3'),('GND','GND'))[i] if x==48 else (('GPIO17','D7 / GPIO44'),('GPIO18','D6 / GPIO43'),('GND','GND'))[i]
+  src,dst=(('GPIO39','D7 / GPIO44'),('GPIO40','D6 / GPIO43'),('GND','GND'))[i] if x==48 else (('GPIO17','D7 / GPIO44'),('GPIO18','D6 / GPIO43'),('GND','GND'))[i]
   s.chip(x+37,yy,166,src,edge);s.chip(x+354,yy,166,dst,edge)
   s.line(x+226,yy+12,x+332,yy+12,edge,2.5,i!=1)
   if i==1:s.path(f'M {x+332} {yy+18} H {x+226}',edge,2.5,True)
@@ -101,10 +101,10 @@ for x,title,sub,edge,rows in [
 s.save('radio-wiring.svg')
 
 # 4. Connector reference
-s=Art('Connector reference','Physical signal identity only: do not infer J8 position numbering from marketing photos','Use actual PCB revision/schematic. Meshtastic D2/D3 and MeshCore D6/D7 need confirmed free GPIOs.')
+s=Art('Connector reference','Physical signal identity only: do not infer J8 position numbering from marketing photos','Use actual PCB revision/schematic. Meshtastic D6/D7 and MeshCore D6/D7 need confirmed free GPIOs.')
 s.card(50,185,530,415,'Waveshare host expansion (J8)','Board revision and pin numbering must be inspected',C['cyan'])
 s.lines(77,277,['GPIO39   →  UART1 TX → Meshtastic RX','GPIO40   ←  UART1 RX ← Meshtastic TX','GPIO17   →  UART2 TX → MeshCore RX','GPIO18   ←  UART2 RX ← MeshCore TX','GPIO21   ↔  GNSS SDA (proposed)','GPIO38   ↔  GNSS SCL (proposed)','3V3/GND: POWER PENDING CURRENT TEST'],42,17)
-s.card(625,185,604,183,'Radio A  •  Meshtastic','XIAO D3 / GPIO4 RX      XIAO D2 / GPIO3 TX',C['cyan']);s.xiao(669,256,.75,'MT');s.lines(867,280,['Serial PROTO','115200 baud (verify)','Shared GND'],28,15)
+s.card(625,185,604,183,'Radio A  •  Meshtastic','XIAO D7 / GPIO44 RX      XIAO D6 / GPIO43 TX',C['cyan']);s.xiao(669,256,.75,'MT');s.lines(867,280,['Serial PROTO','115200 baud (verify)','Shared GND'],28,15)
 s.card(625,402,604,198,'Radio B  •  MeshCore','XIAO D7 / GPIO44 RX     XIAO D6 / GPIO43 TX',C['amber']);s.xiao(670,480,.75,'MC');s.lines(868,503,['Companion Serial','115200 baud (verify)','Shared GND'],27,15)
 s.save('connector-reference.svg')
 
@@ -113,7 +113,7 @@ s=Art('Wiring diagram','UART, GNSS I2C and grounds — a proposed bench pin cont
 s.card(45,175,337,437,'Waveshare ESP32-S3 host','No camera; two UARTs + GNSS I2C',C['cyan'])
 s.lines(63,260,['GPIO39  •  UART1 TX','GPIO40  •  UART1 RX','GPIO17  •  UART2 TX','GPIO18  •  UART2 RX','GPIO21  •  GNSS SDA','GPIO38  •  GNSS SCL','GND  •  common reference','3V3  •  conditional only'],42,17)
 s.card(537,175,698,140,'Radio A  /  Meshtastic','Seeed XIAO ESP32S3 + Wio-SX1262',C['cyan'])
-s.lines(563,243,['RX  D3/GPIO4 ← Host GPIO39 TX','TX  D2/GPIO3 → Host GPIO40 RX','GND ↔ Host GND  •  PROTO 115200'],22,16)
+s.lines(563,243,['RX  D7/GPIO44 ← Host GPIO39 TX','TX  D6/GPIO43 → Host GPIO40 RX','GND ↔ Host GND  •  PROTO 115200'],22,16)
 s.card(537,331,698,140,'Radio B  /  MeshCore','Seeed XIAO ESP32S3 + Wio-SX1262',C['amber'])
 s.lines(563,400,['RX  D7/GPIO44 ← Host GPIO17 TX','TX  D6/GPIO43 → Host GPIO18 RX','GND ↔ Host GND  •  Companion 115200'],22,16)
 s.card(537,487,698,125,'G1  /  u-blox MAX-M10S','Selected 3 V breakout with active GNSS antenna (bias to verify)',C['teal'])
@@ -140,7 +140,7 @@ s.save('architecture/power-architecture.svg')
 # 8. Communication stack
 s=Art('Communication stack','One shared UI; two independent native mesh protocols','Never silently bridge Meshtastic to MeshCore, share keys or imply inter-protocol routing.')
 s.card(314,130,652,92,'Touchscreen application','Waveshare LVGL: chat / map / contacts / settings',C['cyan']);s.card(314,250,652,96,'Core host services','Message history • GNSS • protocol adapters • queues',C['purple']);s.line(640,222,640,245,C['cyan'],3,True)
-s.card(54,388,547,240,'Meshtastic path  /  UART1','PROTO binary frames, ToRadio / FromRadio',C['cyan']);s.lines(78,466,['XIAO ESP32S3 + Wio-SX1262','Native Meshtastic routing and channel model','LoRa RF → Meshtastic network','Host GPIO39/40 ↔ XIAO GPIO4/3'],36,17)
+s.card(54,388,547,240,'Meshtastic path  /  UART1','PROTO binary frames, ToRadio / FromRadio',C['cyan']);s.lines(78,466,['XIAO ESP32S3 + Wio-SX1262','Native Meshtastic routing and channel model','LoRa RF → Meshtastic network','Host GPIO39/40 ↔ XIAO GPIO44/43'],36,17)
 s.card(677,388,547,240,'MeshCore path  /  UART2','Companion binary command / response / events',C['amber']);s.lines(705,466,['XIAO ESP32S3 + Wio-SX1262','Native MeshCore contacts and path model','LoRa RF → MeshCore network','Host GPIO17/18 ↔ XIAO GPIO44/43'],36,17)
 s.path('M 539 346 V 369 H 329 V 383',C['cyan'],2.5,True);s.path('M 744 346 V 369 H 950 V 383',C['amber'],2.5,True)
 s.save('architecture/communication-stack.svg')
@@ -169,13 +169,27 @@ for x,title,sub,col,direct in [(47,'Standard mesh forwarding','Depending on netw
  else:s.lines(x+46,491,['Repeater transmits when network config allows','Route and flood behavior are protocol-specific','A direct message may traverse repeaters'],31,16)
 s.save('architecture/direct-tracking-modes.svg')
 
+# 11. XIAO board-to-board radio wiring (host UART versus internal SX1262 SPI)
+s=Art('XIAO/Wio internal vs external links','Never wire Waveshare to SX1262 SPI or DIO; the Seeed B2B module is managed by each XIAO MCU','Firmware pin availability: D6/TX GPIO43 and D7/RX GPIO44 remain proposed until tested with MT PROTO and MC Companion.')
+s.card(40,188,288,385,'Waveshare touch host','ESP32-S3 3.5-inch display',C['cyan'])
+s.lines(65,281,['UART1 TX GPIO39','UART1 RX GPIO40','UART2 TX GPIO17','UART2 RX GPIO18','Common GND'],45,17)
+for y,name,col,num in [(175,'A / Meshtastic',C['cyan'],1),(386,'B / MeshCore',C['amber'],2)]:
+ s.card(402,y,322,183,'XIAO ESP32S3 • '+name,'Seeed B2B kit • external UART',col,16)
+ s.lines(422,y+77,['D7/GPIO44 = radio UART RX','D6/GPIO43 = radio UART TX','MCU manages SX1262 over B2B'],28,14)
+ s.card(813,y,412,183,'Wio-SX1262 (internal)','Radio daughterboard, NOT host UART',col,19)
+ s.lines(834,y+78,['SX1262 connected to XIAO via B2B','SPI + DIO/RESET/BUSY per variant','LoRa U.FL → separate 900 MHz antenna'],27,15)
+ s.path(f'M 329 {y+88} H 390',col,2.5,True)
+ s.path(f'M 725 {y+88} H 806',col,2.5,True)
+ s.chip(728,y+114,83,'B2B SPI',col)
+s.save('architecture/xiao-wiring.svg')
+
 print("Generated hardware SVGs:")
 for p in sorted(OUT.rglob("*.svg")):
  if p.name not in {
   "system-overview.svg", "hardware-overview.svg", "wiring-diagram.svg",
   "radio-wiring.svg", "connector-reference.svg", "gnss-and-power.svg",
   "power-architecture.svg", "communication-stack.svg", "firmware-responsibilities.svg",
-  "direct-tracking-modes.svg"
+  "direct-tracking-modes.svg", "xiao-wiring.svg"
  }: continue
  ElementTree.parse(str(p))
  print(p.relative_to(OUT))
