@@ -3,6 +3,10 @@
 **Radio update (2026-10-26):** Both radio nodes are now **Seeed XIAO ESP32S3 + Wio-SX1262 kits**. Prior Heltec/Aideepen current estimates are no longer a design basis; measure the assembled new modules. Do not parallel the XIAO charger or USB supply with the Waveshare battery/3V3 power system. The XIAO 3V3 external-feed path and J8 headroom require electrical verification. See [new radio wiring](hardware-wiring.md).
 
 
+**Physical packaging update (2026-10-26):** The protected 1S LiPo pack is placed **behind the single carrier PCB and display**, inside the nearly invisible rear enclosure. Its capacity, protection, electrical safety and actual dimensions still require verification.
+
+![GNSS and protected LiPo placement behind the carrier PCB](images/gnss-and-power.svg)
+
 **Decision (2026-10-24):** Prefer the Waveshare ESP32-S3-Touch-LCD-3.5 onboard AXP2101 battery charging and 3.3 V rail at its expansion connector J8 to power the two independent LoRa nodes and the MAX-M10S breakout. **This is a proposed architecture, not a validated current budget or a safe-to-build wiring approval.**
 
 The previously selected **Adafruit BQ25185 #6092 is superseded**. Do not add a second LiPo charger, connect charger outputs together, or buy a separate buck-boost or power mux unless the bench tests show that the onboard rail is inadequate.

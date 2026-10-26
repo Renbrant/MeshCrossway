@@ -2,7 +2,9 @@
 
 **V1 hardware (selected 2026-10-26):** Waveshare ESP32-S3 3.5-inch touchscreen + **2 × Seeed XIAO ESP32S3 / Wio-SX1262** (Meshtastic and MeshCore) + u-blox MAX-M10S GNSS. **[Current BOM and wiring](docs/hardware-wiring.md)**. Former LoRa V3 boards are superseded.
 
-![MeshCrossway portable communicator concept](docs/images/meshcrossway-hero.webp)
+![MeshCrossway concept: one carrier PCB with two XIAO/Wio radios inside a nearly invisible transparent enclosure](docs/images/meshcrossway-hero.webp)
+
+*Temporary product visualization. The protected 1S LiPo battery is mounted **behind the PCB**. Exact component geometry, module footprints and enclosure CAD remain unverified; the render is not a fabrication drawing.*
 
 **Two mesh networks. One portable terminal.**
 
@@ -87,6 +89,12 @@ Separate health information for Meshtastic and MeshCore, with planned diagnostic
 
 Centralized preferences for display appearance, device controls, local storage and privacy—separate from the navigation tools.
 
+## Integrated PCB and transparent case
+
+![Exploded view concept: both Seeed radio modules and GNSS mounted to one carrier PCB with protected LiPo behind the assembly](docs/images/architecture/meshcrossway-exploded.webp)
+
+The planned device has **one custom carrier PCB**, hosting the Waveshare display assembly, two independent XIAO ESP32S3 + Wio-SX1262 radio kits and MAX-M10S GNSS breakout. The **battery goes behind the carrier**, enclosed by a nearly invisible transparent rear shell. The illustration is a conceptual visualization, not verified physical fit or CAD. [See current wiring and assembly illustrations](docs/hardware-wiring.md).
+
 ## Illustrated system architecture
 
 ![System overview](docs/images/architecture/system-overview.svg)
@@ -134,7 +142,7 @@ Contributions and technical discussions are welcome in [GitHub Issues](https://g
 
 ## License
 
-Original project code and documentation: [MIT License](LICENSE). Third-party software, hardware documentation and product images retain their respective licenses. See [photo sources and rights](docs/images/amazon/README.md).
+Original project code and documentation: [MIT License](LICENSE). Third-party software, hardware documentation and product images retain their respective licenses. See [image sources and limitations](docs/images/README.md).
 
 MeshCrossway is an independent project and is not affiliated with or endorsed by the manufacturers or upstream projects referenced here.
 

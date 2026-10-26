@@ -4,7 +4,7 @@
 
 [Project README](../../../README.md) · [Wiring guide](../../hardware-wiring.md)
 
-Original JPEG files retrieved on October 25, 2026 from the product listings selected by the project owner. Images are stored unmodified for component identification and connector reference. Screenshots containing account or delivery information are not included.
+Original JPEG files retrieved on October 25, 2026 from the product listings selected by the project owner. Images are stored unmodified for **historical** identification only. The LoRa V3 photos no longer represent V1 hardware or authoritative connector instructions. Screenshots containing account or delivery information are not included.
 
 | Local image | Subject | Product listing | Original image URL |
 |---|---|---|---|
@@ -22,4 +22,4 @@ Copyright and other rights remain with their respective owners. These third-part
 
 Photos document the advertised product, not a completed MeshCrossway assembly. Vendor display examples and marketing claims are not project implementation evidence. Prices are recorded separately in the buying guide; images do not guarantee current prices, package contents, revision, or stock.
 
-The numbered Waveshare image and the Rev2 schematic use different connector numbering. The wiring guide records that discrepancy and uses GPIO names as the electrical reference. The LoRa image labels GPIO4 as J3.15 and GPIO5 as J3.16; UART RX/TX roles are project configuration choices.
+The numbered Waveshare image and the Rev2 schematic use different connector numbering. The wiring guide records that discrepancy and uses GPIO names as the electrical reference. The historical LoRa V3 image labels GPIO4 as J3.15 and GPIO5 as J3.16; UART RX/TX roles are project configuration choices.

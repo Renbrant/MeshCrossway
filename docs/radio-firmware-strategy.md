@@ -3,9 +3,11 @@
 > **V1 hardware decision — 2026-10-26:** The two former Aideepen/Heltec-compatible LoRa V3 radios are **superseded** by **2 × Seeed Studio XIAO ESP32S3 + Wio-SX1262 kits** (one Meshtastic, one MeshCore). See [current XIAO/Wio wiring and acceptance tests](hardware-wiring.md). Historical V3 purchasing references below are retained only as superseded context; do not build using their pinouts, firmware targets, or costs.
 
 
-**Status: design decision, not bench validation.** The MeshCrossway prototype uses a Waveshare ESP32-S3 touchscreen controller and two independent ESP32-S3/SX1262 LoRa V3 radio boards. We favor upstream Meshtastic and MeshCore firmware and avoid maintaining forks unless a tested, essential capability cannot be exposed otherwise.
+**Status: design decision, not bench validation.** The MeshCrossway prototype uses a Waveshare ESP32-S3 touchscreen controller and two independent Seeed XIAO ESP32S3 + Wio-SX1262 radio kits. We favor upstream Meshtastic and MeshCore firmware and avoid maintaining forks unless a tested, essential capability cannot be exposed otherwise.
 
 ## Illustrated firmware boundaries
+
+**V1 hardware:** a shared carrier PCB carries both independently programmable XIAO/Wio radios. The display/controller firmware stays on the Waveshare; each radio keeps its separate native mesh stack.
 
 ![Firmware responsibilities](images/architecture/firmware-responsibilities.svg)
 
@@ -16,8 +18,8 @@ The central host handles UI, storage and application policy; each radio keeps it
 | Component | Owns | Does not own |
 |---|---|---|
 | Waveshare ESP32-S3 | LVGL/touch, GNSS, navigation, POIs, tracks/GPX, microSD, location-sharing policy/scheduler, BLE companion bulk-transfer service (future), UI state, independent radio adapters | Full Meshtastic/MeshCore radio stacks |
-| LoRa V3 #1 | Meshtastic radio stack, SX1262, network identity, native routing, packet queues/status as supported | Map rendering, GPX, app-level tracking schedule |
-| LoRa V3 #2 | MeshCore Companion radio stack, SX1262, native routing, contact and packet handling as supported | Map rendering, GPX, app-level tracking schedule |
+| XIAO/Wio A (Meshtastic) | Meshtastic radio stack, SX1262, network identity, native routing, packet queues/status as supported | Map rendering, GPX, app-level tracking schedule |
+| XIAO/Wio B (MeshCore) | MeshCore Companion radio stack, SX1262, native routing, contact and packet handling as supported | Map rendering, GPX, app-level tracking schedule |
 
 The radio devices are **not general-purpose coprocessors** while running standalone upstream protocol firmware. Giving them unrelated application workloads would require firmware changes and create maintainability risks. A failure in either adapter should not block the other adapter, GNSS, UI or stored history.
 

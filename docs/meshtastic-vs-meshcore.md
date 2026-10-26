@@ -429,7 +429,7 @@ flowchart TD
     MC --> MCNET["MeshCore peers"]
 ```
 
-The dedicated MT node is planned to use the [serial PROTO client API][MT-serial]. The MC node uses the [Companion interface][MC-api]. The selected LoRa V3 boards still need firmware-target and external-UART validation; stock USB or BLE availability does not prove the intended pin-level connection. The upstream ESP32 implementation exposes build-time UART choices, but the build must be checked on the delivered board. [Companion entry point][MC-main], [hardware and wiring](hardware-wiring.md)
+The dedicated MT node is planned to use the [serial PROTO client API][MT-serial]. The MC node uses the [Companion interface][MC-api]. The two selected **Seeed XIAO ESP32S3 + Wio-SX1262 kits** still need firmware-target and external-UART validation; stock USB or BLE availability does not prove the intended pin-level connection. The upstream ESP32 implementation exposes build-time UART choices, but the build must be checked on the delivered board. [Companion entry point][MC-main], [hardware and wiring](hardware-wiring.md)
 
 This arrangement supports an interface that can show both ecosystems while preserving their differences:
 

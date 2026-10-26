@@ -2,9 +2,19 @@
 
 [Project README](../README.md) · [Radio software interfaces](radio-communication-architecture.md) · [Power validation](power-architecture.md)
 
-> **Decision: 2026-10-26. Proposed, not electrically tested.** Two identical Seeed Studio XIAO ESP32S3 + Wio-SX1262 kits replace the earlier Aideepen/Heltec V3 two-pack. Prior Heltec pin assignments, headers, images, and pricing are **obsolete** for V1. Do not use earlier wiring SVGs as assembly instructions until revised. Review the actual board schematic, pin exposure, and firmware variant before fabrication.
+> **Decision: 2026-10-26. Proposed, not electrically tested.** Two identical Seeed Studio XIAO ESP32S3 + Wio-SX1262 kits replace the earlier Aideepen/Heltec V3 two-pack. Prior Heltec pin assignments, headers, images, and pricing are **obsolete** for V1. The SVG wiring illustrations are now revised for XIAO/Wio but are **provisional bench diagrams**, not fabrication-ready schematics. Review the actual board schematic, pin exposure, and firmware variant before fabrication.
 
-## Illustrated system
+## Physical construction: one carrier PCB and rear battery
+
+![Physical layout concept: transparent shell, carrier PCB and rear battery](images/hardware-overview.svg)
+
+![Approved temporary exploded view of the MeshCrossway assembly](images/architecture/meshcrossway-exploded.webp)
+
+The two XIAO/Wio radios and MAX-M10S breakout are planned to mount on a **single carrier PCB** around the Waveshare display. The protected 1S LiPo is mounted **behind the carrier**, inside the almost-invisible transparent rear cover, not beside the screen. Rendered parts are illustrative, not dimensionally identical to their commercial boards. The Waveshare onboard microSD remains the storage interface.
+
+## Illustrated system wiring
+
+![Proposed controller, two-radio and GNSS pin map](images/architecture/wiring-diagram.svg)
 
 ```mermaid
 flowchart LR
@@ -33,6 +43,11 @@ At the previously discussed **US$10.99 per kit**, two radio kits total **US$21.9
 
 ## UART wiring — provisional pin-level contract
 
+![Meshtastic and MeshCore radio UART wiring](images/radio-wiring.svg)
+
+![Waveshare and XIAO connector reference](images/connector-reference.svg)
+
+
 | Link | Waveshare controller | XIAO board | Direction |
 |---|---|---|---|
 | Meshtastic host TX | UART1 GPIO39 | **D3 / GPIO4, RX** | host → A |
@@ -53,6 +68,11 @@ Use the **XIAO ESP32S3 + Wio-SX1262 MeshCore Companion radio** firmware variant 
 
 ## Power architecture and safety gates
 
+![GNSS and rear-mounted battery arrangement](images/gnss-and-power.svg)
+
+![Proposed and not yet approved power architecture](images/architecture/power-architecture.svg)
+
+
 The selected V1 power design remains the **Waveshare AXP2101 charger/power management and a conditional shared J8 3V3 rail**. The integrated XIAO battery/charge functionality must **not** be wired in parallel to the Waveshare charger or used as an additional system charger. With the assembled XIAO + Wio kits, inspect whether the XIAO **3V3 pin accepts external regulated supply without backfeeding the onboard regulator or USB path**. Until independently verified, use separately isolated/current-limited test power, common signal ground, and avoid simultaneously attaching host 3V3 and radio USB. Prevent UART back-powering when either radio is off. Do not infer available J8 current from the AXP2101 2 A DCDC1 datasheet figure. Measure XIAO/Wio idle, RX, TX, dual-TX, Wi-Fi/BLE off/on as applicable, GNSS and LCD/microSD peaks **before** committing power wiring.
 
 ## RF coexistence and mechanical requirements
@@ -71,7 +91,8 @@ The selected V1 power design remains the **Waveshare AXP2101 charger/power manag
 - [ ] Verify 3V3 supply **input path** and power isolation for each assembled kit, plus powered-off UART states.
 - [ ] Measure all operating currents and regulator/transient headroom; only then approve J8 shared-3V3 architecture or choose an external regulated branch.
 - [ ] Test independent radio reboot/recovery, simultaneous radio receive/transmit, RF desense and antenna separation.
-- [ ] Regenerate/check all mechanical diagrams and PCB from this contract; bench-test before any production claims.
+- [x] Update conceptual drawings for the chosen V1 hardware (still **not electrically verified**).
+- [ ] Create actual mechanical CAD and PCB layout from measured parts, then bench-test before any production claims.
 
 ## Primary references
 

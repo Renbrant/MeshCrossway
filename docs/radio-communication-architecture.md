@@ -6,6 +6,8 @@
 
 ## Illustrated communication layers
 
+The diagram reflects the selected **two Seeed XIAO ESP32S3 + Wio-SX1262 kits**, connected over separate UARTs to a single Waveshare host. Neither radio is a transparent bridge into the other network.
+
 ![Radio communication stack](images/architecture/communication-stack.svg)
 
 The protocols use separate APIs even though both links are UART. The illustration is explanatory and does not assert native interoperability.

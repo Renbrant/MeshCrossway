@@ -51,7 +51,7 @@ The prototype deliberately avoids claiming that queued messages were transmitted
 
 ## Selected bench hardware
 
-The concept now targets a Waveshare ESP32-S3-Touch-LCD-3.5, two ESP32-S3/SX1262 LoRa V3 boards from the Aideepen two-pack (one per network), a Uputronics u-blox MAX-M10S (3 V variant) GNSS breakout with external antenna, and onboard microSD. The radio-side UART proposal is RX GPIO4 / TX GPIO5, separate from programming USB. Headers, board routing, central firmware and the MeshCore UART build remain unverified. See the [wiring and shopping guide](../hardware-wiring.md). This simulator does not connect to or validate those boards.
+The V1 hardware concept now uses a Waveshare ESP32-S3-Touch-LCD-3.5, **two Seeed XIAO ESP32S3 + Wio-SX1262 radio kits** (one per native network), a u-blox MAX-M10S GNSS breakout, and the Waveshare onboard microSD. Both radios and GNSS are carried on **one custom PCB**. The protected LiPo battery is mounted **at the back**, in a nearly invisible transparent enclosure. Proposed UART assignments are Meshtastic GPIO3 TX / GPIO4 RX and MeshCore GPIO43 TX / GPIO44 RX, pending build and bench verification. See [hardware and wiring](../hardware-wiring.md). The browser simulator does not control physical devices.
 
 
 ## Navigation and sharing concept
