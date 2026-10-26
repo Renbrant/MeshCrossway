@@ -1,5 +1,8 @@
 # MeshCrossway — Detailed project reference
 
+> **V1 hardware decision — 2026-10-26:** The two former Aideepen/Heltec-compatible LoRa V3 radios are **superseded** by **2 × Seeed Studio XIAO ESP32S3 + Wio-SX1262 kits** (one Meshtastic, one MeshCore). See [current XIAO/Wio wiring and acceptance tests](hardware-wiring.md). Historical V3 purchasing references below are retained only as superseded context; do not build using their pinouts, firmware targets, or costs.
+
+
 [Back to project README](../README.md)
 
 This document preserves the detailed architecture, selected hardware references, design boundaries, software behavior, development roadmap, source links and planning notes previously maintained in the top-level README. Some details are provisional and may be superseded by the focused specifications.
@@ -10,8 +13,8 @@ This document preserves the detailed architecture, selected hardware references,
 
 | Touchscreen controller | Two independent radio nodes |
 |:---:|:---:|
-| [![Waveshare ESP32-S3-Touch-LCD-3.5 from the selected Amazon listing](docs/images/amazon/waveshare-product.jpg)](https://www.amazon.com/dp/B0F3WS2W5R) | [![Aideepen LoRa V3 two-pack with boards, antennas, pigtails and loose headers](docs/images/amazon/lora-v3-two-pack.jpg)](https://www.amazon.com/dp/B0DRSJV1ZL) |
-| **Waveshare ESP32-S3-Touch-LCD-3.5** | **LoRa V3 ESP32-S3 + SX1262, two-pack** |
+| [![Waveshare ESP32-S3-Touch-LCD-3.5 from the selected Amazon listing](docs/images/amazon/waveshare-product.jpg)](https://www.amazon.com/dp/B0F3WS2W5R) | [Seeed XIAO ESP32S3 + Wio-SX1262, **two kits**](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html) |
+| **Waveshare ESP32-S3-Touch-LCD-3.5** | **2 × Seeed XIAO ESP32S3 + Wio-SX1262** |
 
 Original product photos from the selected Amazon listings. Displays and firmware shown are vendor examples, not working MeshCrossway firmware. [Photo sources and rights](docs/images/amazon/README.md).
 
@@ -96,7 +99,7 @@ These are the selected purchase references. The [buying and wiring guide](docs/h
 | Quantity | Component | Purpose and status |
 |---:|---|---|
 | 1 | [**Waveshare ESP32-S3-Touch-LCD-3.5**](https://www.amazon.com/dp/B0F3WS2W5R), standard/no camera | Selected touch controller; $35.99 in supplied screenshot; revision and 32-pin labels to verify |
-| 1 two-pack | [**Aideepen LoRa V3 ESP32-S3 + SX1262, 863–928 MHz**](https://www.amazon.com/dp/B0DRSJV1ZL), option **Lora-V3 2Pcs** | Two boards: one Meshtastic, one MeshCore; $39.99 per pair in supplied screenshot; headers and Heltec V3-compatible routing to verify |
+| 2 kits | [**Seeed XIAO ESP32S3 + Wio-SX1262**](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html) | One native Meshtastic node, one MeshCore Serial Companion; reference $10.99 each; validate pins and supply |
 | 1 | [**Uputronics u-blox MAX-M10S breakout (3 V variant)**](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751) | Selected GNSS board with SMA connector for an external active GNSS antenna; $36.00 reference price |
 | 1 | [**Bingfu 4-System GNSS Helix active antenna**](https://www.amazon.com/dp/B0FL7PVF16), Amazon B0FL7PVF16 | Selected for V1 bench testing, **not electrically validated**; SMA male, GNSS L1, advertised $21.69. Confirm antenna bias voltage/current delivered at Uputronics SMA before use |
 | 1 candidate | [**ETWOWUP 1S LiPo 10,000 mAh**](https://www.amazon.com/dp/B0H9H5CTGT) | Candidate pack only; verify discharge limit, polarity, protection, size and compatible charge settings |
@@ -106,9 +109,9 @@ These are the selected purchase references. The [buying and wiring guide](docs/h
 
 [![LoRa V3 board close-up from the Amazon listing](docs/images/amazon/lora-v3-board.jpg)](https://www.amazon.com/dp/B0DRSJV1ZL)
 
-The listing's close-up shows a **V3.2** marking; the package photo shows **loose header strips**. Soldering the headers is part of the planned bench assembly. Confirm the delivered revision and GPIO routing before using the wiring tables.
+**Superseded historical note:** Aideepen V3.2 header/pinout observations describe the prior choice, not the selected XIAO/Wio design.
 
-The selected controller combines an ESP32-S3, a 3.5-inch touch display, PSRAM, flash, and a microSD slot. The proposed wiring is documented, but the actual board revisions and shared GPIOs must be checked before assembly. The radio listing is branded Aideepen and does not establish original Heltec manufacture or pre-soldered headers. No separate radio base or IO adapter is required. The former modular radio selection is superseded.
+The selected controller combines ESP32-S3, 3.5-inch touchscreen and microSD. The two **XIAO/Wio** radios use independent UARTs. Refer to the current [pin contract](docs/hardware-wiring.md), not historical Aideepen references.
 
 For initial bench bring-up, separate USB supplies may still be used for the radio nodes. **Selected V1 power architecture for validation:** the Waveshare AXP2101 handles LiPo charging and battery status, and its **J8 3V3 output is proposed to power both LoRa nodes plus GNSS**, with local decoupling. AXP2101 DCDC1 has a nominal 2 A datasheet rating, **not 2 A of guaranteed spare current at J8**. Actual board current headroom, module backfeed, battery/USB operation, low-voltage behavior and capacitance stability must be checked **before using a shared rail**. The Adafruit BQ25185 and external buck-boost/power mux are **not selected** for V1. See [power architecture and acceptance tests](docs/power-architecture.md).
 
@@ -117,14 +120,14 @@ For initial bench bring-up, separate USB supplies may still be used for the radi
 | Connection | Planned interface | Validation needed |
 |---|---|---|
 | Controller to Meshtastic node | Dedicated UART using the serial client API in `PROTO` mode | Pin assignment, configuration, framing, and recovery |
-| Controller to MeshCore node | Separate UART using the Companion protocol | Heltec V3-compatible target, build flags, and physical GPIO routing |
+| Controller to MeshCore node | Separate UART Companion protocol | XIAO/Wio candidate TX GPIO43 / RX GPIO44, pending firmware and bench validation |
 | Controller to MAX-M10S breakout | I²C (provisional) | Verify breakout SDA/SCL labels, signal voltage, pin order, GNSS configuration and power budget |
 | Controller to storage | Onboard microSD interface | Concurrent operation with the display and other peripherals |
 | Controller to display and touch | Onboard connections | Driver integration and responsiveness |
 
-**MeshCore UART integration still needs a compiled and tested build.** The reviewed upstream ESP32 Companion source includes a hardware UART interface selected by `SERIAL_RX` / `SERIAL_TX`. The proposed radio assignment is RX GPIO4 / TX GPIO5 at 115200 baud. A stock USB/BLE binary must not be assumed to enable it.
+**MeshCore UART still requires a tested XIAO/Wio serial Companion build**, including verification of SERIAL_RX=44 and SERIAL_TX=43 before PCB sign-off.
 
-The [bench wiring proposal](docs/hardware-wiring.md) assigns Meshtastic to GPIO39/40, MeshCore to GPIO17/18, and GNSS I²C provisionally to GPIO21/38. Each radio uses proposed RX GPIO4 / TX GPIO5. The guide explicitly distinguishes the 32-pin Waveshare listing-photo numbering from Rev2 PDF J8 numbering: the two positions in each row are reversed. Use GPIO identities and confirm the actual PCB labels before wiring. This allocation still requires validation with the display, touch, microSD, GNSS, and both radio links active.
+The [current wiring guide](docs/hardware-wiring.md) assigns host GPIO39/40 to Meshtastic XIAO D3/GPIO4 RX and D2/GPIO3 TX, and host GPIO17/18 to MeshCore XIAO D7/GPIO44 RX and D6/GPIO43 TX. Verify each firmware target and actual board revision.
 
 Previous bench-only parts subtotal: **$148.02**, including the Bingfu antenna at its screenshot reference price of $21.69, but **excluding the candidate battery, carrier PCB, capacitors, any needed RF adapters, shipping and taxes**, when reusing USB supplies/cables. This is a parts estimate, not a complete assembled-device cost; see the [bill of materials](docs/hardware-wiring.md#2-shopping-list-and-budget).
 
