@@ -51,7 +51,7 @@ Each kit contains two internally connected devices: a **XIAO ESP32-S3 MCU** and 
 | Host UART2 TX → radio B RX | GPIO17 | — | **D7 / GPIO44 (RX)** | proposed, firmware configuration required |
 | Radio B TX → host UART2 RX | GPIO18 | — | **D6 / GPIO43 (TX)** | proposed, firmware configuration required |
 | Common logic reference | GND | GND | GND | mandatory |
-| Central GNSS SDA / SCL | **GPIO8 / GPIO7** | — | — | J8 SDA(GPIO8) / SCL(GPIO7); intended expansion I²C, verify pull-ups/addressing |
+| Central GNSS SDA / SCL | **J8 expansion I²C (GPIO mapping TBD)** | — | — | verify actual shipped Waveshare revision, pull-ups and continuity before PCB freeze |
 | Supplies | Waveshare J8 3V3 | XIAO 3V3 candidate | XIAO 3V3 candidate | **not electrically approved** |
 
 **GPIO43/44** are the candidate XIAO external UART TX/RX signals. They may also be used for serial boot diagnostics and USB/debug workflows; verify that the exact Meshtastic serial module and MeshCore Companion build can bind the API to these pins without startup logging corrupting the binary stream. Wire **TX ↔ RX**, never TX ↔ TX. Baseline link target: **115200 baud, 8N1**, explicitly configured (the Meshtastic serial default is not necessarily 115200).
@@ -74,15 +74,15 @@ Sources: [Seeed kit schematic/resources](https://wiki.seeedstudio.com/xiao_esp32
                     UART2 RX GPIO18  <-----  B XIAO D6 / GPIO43 TX
                     GND              ------- A GND / B GND / GNSS GND
 
-                    I2C SDA GPIO8   <----->  MAX-M10S SDA
-                    I2C SCL GPIO7   <----->  MAX-M10S SCL
-                    GNSS PPS GPIO21 <-----   MAX-M10S TP/PPS (candidate)
+                    I2C SDA J8/TBD  <----->  MAX-M10S SDA
+                    I2C SCL J8/TBD  <----->  MAX-M10S SCL
+                    GNSS PPS TBD    <-----   MAX-M10S TP/PPS (candidate)
 
         XIAO A --(internal B2B SPI)--> Wio SX1262 A -- antenna
         XIAO B --(internal B2B SPI)--> Wio SX1262 B -- antenna
 ```
 
-The Waveshare GPIO39/40 and GPIO17/18 assignments assume the **camera is absent and disabled**. On the current official J8 pinout these appear as GPIO39 pin 9, GPIO40 pin 11, GPIO17 pin 16 and GPIO18 pin 18. The intended expansion I²C is J8 SCL(GPIO7) pin 26 and SDA(GPIO8) pin 28; use this bus for MAX-M10S. Reserve host GPIO43/44 (J8 RXD/TXD pins 25/27) for diagnostics/service. Always verify the actual shipped PCB revision and continuity before fabrication.
+The Waveshare GPIO39/40 and GPIO17/18 assignments assume the **camera is absent and disabled**. Use the J8 expansion I²C nets for MAX-M10S, but do not freeze their native GPIO numbers until the actual shipped Waveshare PCB revision and header continuity are verified. Reserve the host's exposed debug UART for service where practical. Locate all carrier connections by verified signal name/continuity, not seller imagery or header-position inference.
 
 ## 4. Firmware bring-up
 
