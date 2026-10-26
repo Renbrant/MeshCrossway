@@ -32,7 +32,7 @@ Each radio operates and recovers independently; the UI remains operational if a 
 
 Use 3.3 V logic, never connect TTL UART directly to RS-232 or 5 V serial. Start bench tests with electrically independent USB power and shared signal ground; the proposed common 3.3 V supply must pass [power tests](power-architecture.md) before use. Do not connect independent USB power and a common 3.3 V rail without reverse-current analysis. Prevent unpowered-radio backfeeding through TX/RX (hardware isolation or proven safe power sequencing).
 
-These host GPIOs share optional camera functions: disable the camera and confirm there are no board-revision or peripheral conflicts. Verify actual shipped Aideepen V3.2 pins against board schematic and continuity, not seller imagery. Keep UART0 debug and native USB separate. Allow short traces, test pads, optional 22–100 Ω series-resistor footprints, individual reset controls and preferably independent switched power for recovery. Neither series resistors nor bulk capacitors replace correct voltage, regulator headroom or isolation.
+These host GPIOs share optional camera functions: disable the camera and confirm there are no board-revision or peripheral conflicts. Verify actual shipped Seeed XIAO ESP32-S3 and Wio-SX1262 B2B kit pins against manufacturer schematic and continuity, not seller imagery. Keep UART0 debug and native USB separate. Allow short traces, test pads, optional 22–100 Ω series-resistor footprints, individual reset controls and preferably independent switched power for recovery. Neither series resistors nor bulk capacitors replace correct voltage, regulator headroom or isolation.
 
 **Serial baseline:** 115200 baud, 8N1, no hardware flow control, explicitly configured and read back on both sides. Do not assume 115200 is the default Meshtastic serial baud; check upstream defaults and build/release behavior.
 
@@ -146,7 +146,7 @@ Do not advertise full feature coverage or emergency reliability before these gat
 - Implement MeshCore Companion frame decoder, encoder and version-locked command/event mapping.
 - Add a host-side capability registry and self-test diagnostic screen.
 - Add serial capture/replay fixtures and wire-protocol regression tests.
-- Verify target-board MeshCore build flags and proposed GPIO4/5 physical pinout.
+- Verify target-board MeshCore build flags and proposed XIAO D7/GPIO44 RX and D6/GPIO43 TX external UART pinout.
 - Design RF coexistence tests and individual radio power/reset control before PCB freeze.
 
 ## XIAO interface migration override (2026-10-26)
