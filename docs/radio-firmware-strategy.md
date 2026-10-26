@@ -64,4 +64,10 @@ The S3's external PSRAM improves available working space but does not eliminate 
 
 No feature should be advertised as implemented or field-safe until hardware tests confirm it. Do not use the prototype as the sole emergency communications device.
 
+## Future candidate: Reticulum
+
+Reticulum is a possible later extension, described in the separate [Reticulum concepts and integration study](reticulum-future-integration.md). The initial design continues to use the dedicated MT and MC radios defined above.
+
+An ordinary RNode supplies a radio interface; a selected host or embedded implementation must also run the Reticulum network and messaging layers. A later integration therefore needs its own API, resource, recovery and interoperability validation. The study starts with an external experiment and does not select a third radio, change the controller workload or commit a release milestone.
+
 Related: [navigation and sharing](navigation-and-sharing.md), [bench wiring](hardware-wiring.md), [UI simulator](https://renbrant.github.io/MeshCrossway/).

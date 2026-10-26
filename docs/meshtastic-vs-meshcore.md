@@ -2,6 +2,8 @@
 
 [Back to MeshCrossway](../README.md) · [Maps and regional checks](mesh-maps-and-regional-check.md) · [Radio integration](radio-firmware-strategy.md)
 
+[Future exploration: Reticulum](reticulum-future-integration.md) has a separate guide covering its architecture and a possible later integration.
+
 **Meshtastic (MT) and MeshCore (MC) let small radios exchange short messages without cellular service or an Internet connection between the radios.** The useful choice depends on the people you want to reach, the places you use the equipment and the features you need. [Meshtastic introduction][MT-intro] · [MeshCore overview][MC-project]
 
 This guide starts with everyday questions, then looks at real experiences, and finishes with the engineering details. You can read it in order or jump to the level you need.

@@ -109,6 +109,7 @@ The central controller handles the UI, GNSS, navigation, storage and sharing pol
 | **Firmware architecture** | [Radio firmware policy, processing responsibilities and tests](docs/radio-firmware-strategy.md) |
 | **Navigation & sharing** | [GPS, POIs, GPX, group tracking, Direct Only and congestion controls](docs/navigation-and-sharing.md) |
 | **MT vs MC** | [Illustrated introduction, user experiences and complete technical comparison](docs/meshtastic-vs-meshcore.md) |
+| **Future: Reticulum** | [Concepts, integration options and evaluation plan](docs/reticulum-future-integration.md) — a future candidate beyond the initial MT + MC design |
 | **Maps & local coverage** | [Map directory, data limitations and regional field checks](docs/mesh-maps-and-regional-check.md) |
 | **UI prototype** | [Simulator features, status and limitations](docs/ui-prototype/README.md) |
 | **Technical reference** | [Detailed project decisions, roadmap, equipment and supporting references](docs/project-reference.md) |
