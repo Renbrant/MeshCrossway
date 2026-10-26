@@ -1,8 +1,8 @@
 # MeshCrossway
 
-![MeshCrossway portable communicator concept](docs/images/meshcrossway-hero.webp)
+![MeshCrossway proposed V1 architecture using XIAO ESP32-S3 and Wio-SX1262](docs/images/architecture/system-overview.svg)
 
-**Two mesh networks. One portable terminal.**
+**Two mesh networks. One portable terminal. Two Seeed XIAO ESP32-S3 + Wio-SX1262 radio kits.**
 
 MeshCrossway is an open-source, standalone touchscreen communicator being designed to access **Meshtastic** and **MeshCore** through separate LoRa radios. The goal is simple: communication, positioning and navigation in one portable device, even without cellular service or internet.
 
@@ -91,18 +91,22 @@ Centralized preferences for display appearance, device controls, local storage a
 
 The two radios remain independent. For exact electrical wiring and integration details, see the [wiring diagram](docs/hardware-wiring.md) and [API architecture](docs/radio-communication-architecture.md).
 
+## Current V1 hardware (October 26, 2026)
+
+- **Main host:** Waveshare ESP32-S3-Touch-LCD-3.5 (display, LVGL, GNSS service, microSD and power management).
+- **Radio A:** [Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kit](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html) running Meshtastic.
+- **Radio B:** second identical XIAO + Wio kit, running MeshCore Companion.
+- **Position:** Uputronics u-blox MAX-M10S (3 V variant), connected to host I²C; active antenna under validation.
+- **External serial links:** Waveshare UART1 TX39/RX40 ↔ XIAO A RX44/TX43 and UART2 TX17/RX18 ↔ XIAO B RX44/TX43. These are **proposed, not bench verified**.
+- **Power:** shared Waveshare J8 3V3 supply is **not yet approved for XIAO kits** until current and reverse-current tests pass.
+
+The former Heltec-compatible/Aideepen LoRa V3.2 two-pack, its prices and GPIO4/5 external-UART wiring are **superseded**. Consult the [authoritative updated BOM and wiring](docs/hardware-wiring.md); do not reuse older photos or pinout drawings for assembly.
+
 ## System overview
 
-```mermaid
-flowchart TD
-    UI["Touchscreen & MeshCrossway firmware"] --> HOST["ESP32-S3 controller"]
-    GPS["u-blox GNSS"] --> HOST
-    SD["Onboard microSD"] <--> HOST
-    HOST <-->|UART| MT["Meshtastic radio"]
-    HOST <-->|UART| MC["MeshCore radio"]
-    MT <--> A["Meshtastic network"]
-    MC <--> B["MeshCore network"]
-```
+![Two XIAO/Wio radios connected to the Waveshare host](docs/images/architecture/xiao-wiring.svg)
+
+
 
 The central controller handles the UI, GNSS, navigation, storage and sharing policy. Each radio runs its own upstream protocol firmware, with board-specific configuration or compilation where required. Source patches are a last resort.
 
