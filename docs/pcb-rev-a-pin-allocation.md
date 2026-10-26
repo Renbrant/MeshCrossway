@@ -79,6 +79,32 @@ For each UART signal:
 
 Reserve independent radio reset/recovery control only where a safe accessible XIAO reset/power-control node is confirmed.
 
+
+## XIAO carrier interface — official Seeed add-on footprint
+
+Rev A treats each **XIAO ESP32-S3 + Wio-SX1262** assembly as a plug-in module. The carrier does not reproduce the internal XIAO/Wio circuitry; it only exposes the external XIAO edge-pin interface and the required support circuitry.
+
+Use the official Seeed Studio carrier-side symbol/footprint convention:
+
+- schematic interface: **XIAO-Add-On**;
+- carrier footprint: **XIAO-14P-Add-On**;
+- physical pin numbering: 1 through 14 exactly as defined by Seeed.
+
+Important pins for MeshCrossway:
+
+- pin 7 = **D6 / TX / GPIO43**;
+- pin 8 = **D7 / RX / GPIO44**;
+- pin 12 = **3V3_OUT** (regulated output, not the normal carrier power input);
+- pin 13 = **GND**;
+- pin 14 = **VBUS / 5V**.
+
+The Wio-SX1262 remains connected to the XIAO through its internal B2B interface. The carrier must not route the SX1262 SPI or RF path. Unused XIAO edge pins should remain physically present in the footprint and may be left electrically NC in Rev A.
+
+The schematic presentation should contain both:
+
+1. a functional block diagram showing host, power, Radio A, Radio B and GNSS; and
+2. a detailed carrier interconnect section showing the actual module connectors, jumpers, decoupling, UART series resistors and test points.
+
 ## 6. Local decoupling and bulk capacitance
 
 The Rev A carrier shall include local decoupling footprints close to each powered module.
