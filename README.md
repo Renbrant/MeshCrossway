@@ -1,5 +1,7 @@
 # MeshCrossway
 
+**V1 hardware (selected 2026-10-26):** Waveshare ESP32-S3 3.5-inch touchscreen + **2 × Seeed XIAO ESP32S3 / Wio-SX1262** (Meshtastic and MeshCore) + u-blox MAX-M10S GNSS. **[Current BOM and wiring](docs/hardware-wiring.md)**. Former LoRa V3 boards are superseded.
+
 ![MeshCrossway portable communicator concept](docs/images/meshcrossway-hero.webp)
 
 **Two mesh networks. One portable terminal.**
