@@ -26,7 +26,7 @@ Dashed module connections are unapproved until supply pinouts and rail headroom 
 - Waveshare includes an AXP2101 and routes a 3V3 supply to J8; verify shipped PCB revision, schematic net and voltage.
 - **AXP2101 DCDC1 is rated up to 2 A in its datasheet**, subject to the particular regulator mode, application circuit and operating conditions. **This is NOT a 2 A external-output specification for the Waveshare J8 pin.** Internal display/ESP32 loads consume part of the budget; connector/traces, thermal headroom and total PMIC input need verification.
 - There is no sufficiently trustworthy published measurement of total Waveshare consumption for our firmware, LCD brightness, Wi-Fi/BLE, card and battery conditions. Measure on actual hardware.
-- Candidate planning values for radio nodes: ~90 mA per node in receive and ~230 mA per node in LoRa transmit according to Heltec V3 family measurements under specific USB-powered conditions. These are **not guaranteed 3V3-input values for the Aideepen boards**.
+- **No validated XIAO+Wio current budget yet.** Historical Heltec V3 measurements must not be used as electrical input data for these Seeed kits; measure each target board's idle, receive, boot and transmit peaks from the intended supply rail.
 - GNSS chip typically uses about 10–15 mA in its operating modes; active antenna can add load (tentatively 10–30 mA) and startup/inrush can be higher. Verify the actual breakout/antenna.
 - Peripherals together: initial estimate ~200–220 mA receive/ordinary use; about ~505 mA for both radios TX plus GNSS antenna, with potentially higher transient/startup demands. Not validated, not a guaranteed worst case.
 - Protected 1S battery ETWOWUP 10000 mAh remains **candidate only**; no verified independent datasheet for max discharge, charge rate, thermistor, dimensions or connector polarity.
@@ -61,7 +61,7 @@ Start with the host alone, then GNSS alone, one radio RX, both RX, one radio TX,
 - [Waveshare product and electrical resources](https://docs.waveshare.com/ESP32-S3-Touch-LCD-3.5/Resources-And-Documents)
 - [Waveshare Rev2 schematic PDF](https://files.waveshare.com/wiki/ESP32-S3-Touch-LCD-3.5/ESP32-S3-Touch-LCD-3.5_Rev2.0.pdf)
 - [AXP2101 PMIC reference](https://docs.waveshare.com/ESP32-S3-Touch-LCD-3.5)
-- [Heltec V3 hardware](https://heltec.org/project/wifi-lora-32-v3/)
+- [Seeed XIAO ESP32-S3 + Wio-SX1262 hardware](https://wiki.seeedstudio.com/xiao_esp32s3_%26_wio_SX1262_kit_for_meshtastic/)
 - [Uputronics MAX-M10S breakout](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751)
 - [Historical, now superseded: Adafruit BQ25185 #6092](https://www.adafruit.com/product/6092)
 
