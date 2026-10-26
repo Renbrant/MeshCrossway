@@ -54,7 +54,7 @@ Therefore D6/GPIO43 and D7/GPIO44 remain the intended external UART pins.
 
 ## 4. GNSS allocation
 
-Use the Waveshare expansion I2C interface exposed at J8 for the MAX-M10S breakout. The exact host GPIO mapping must be copied from the **actual shipped Waveshare revision / verified J8 pinout** before the PCB is frozen; do not infer header position from photographs.
+Use the Waveshare expansion I2C interface exposed at J8 for the MAX-M10S breakout. The Waveshare pin-definition drawing identifies **J8 pin 26 = SCL/GPIO7** and **J8 pin 28 = SDA/GPIO8**. Treat those as the Rev A signal allocation, with continuity verification on the actual board before fabrication.
 
 Required GNSS nets:
 
@@ -62,7 +62,7 @@ Required GNSS nets:
 - GNSS_SCL
 - GNSS_GND
 - GNSS_3V3
-- GNSS_PPS — optional/candidate, routed to an otherwise-free host GPIO/test point if supported by the chosen breakout
+- GNSS_PPS — optional/candidate; route to **GPIO21 / J8 pin 5** through a removable link/test point if the chosen breakout exposes PPS
 - GNSS_RF stays on the breakout/SMA path; no RF trace on the carrier in Rev A
 
 Add footprints for optional I2C pull-ups but mark DNP until the breakout and host pull-ups are confirmed.
@@ -145,3 +145,29 @@ Place these notes directly on the schematic:
 - GNSS breakout supply, active-antenna bias and PPS availability confirmed;
 - RF coexistence and antenna placement tested.
 
+
+
+## 11. Waveshare J8 reference pinout
+
+Based on the supplied Waveshare pin-definition drawing:
+
+| J8 pin | Signal | J8 pin | Signal |
+|---:|---|---:|---|
+| 1 | BAT | 2 | 5V |
+| 3 | GND | 4 | GND |
+| 5 | GPIO21 | 6 | DN / GPIO19 |
+| 7 | GPIO38 | 8 | DP / GPIO20 |
+| 9 | GPIO39 | 10 | GPIO11 |
+| 11 | GPIO40 | 12 | GPIO10 |
+| 13 | GPIO41 | 14 | GPIO9 |
+| 15 | GPIO42 | 16 | GPIO17 |
+| 17 | GPIO45 | 18 | GPIO18 |
+| 19 | GPIO46 | 20 | BOOT / GPIO0 |
+| 21 | GPIO47 | 22 | RST |
+| 23 | GPIO48 | 24 | PWR |
+| 25 | RXD / GPIO43 | 26 | SCL / GPIO7 |
+| 27 | TXD / GPIO44 | 28 | SDA / GPIO8 |
+| 29 | GND | 30 | GND |
+| 31 | 3V3 | 32 | 3V3 |
+
+Mechanical reference from the supplied Waveshare drawing: display outline approximately **92.44 mm x 61.00 mm**, PCB mounting-hole span shown as **72.00 mm** horizontally and **48.50 mm** vertically; use the official mechanical drawing/actual board for footprint generation rather than these summary values alone.
