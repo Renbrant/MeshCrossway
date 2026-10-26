@@ -64,3 +64,9 @@ Start with the host alone, then GNSS alone, one radio RX, both RX, one radio TX,
 - [Heltec V3 hardware](https://heltec.org/project/wifi-lora-32-v3/)
 - [Uputronics MAX-M10S breakout](https://shop.wegmatt.com/products/uputronics-ublox-max-breakout-for-active-antennas?variant=44060220489751)
 - [Historical, now superseded: Adafruit BQ25185 #6092](https://www.adafruit.com/product/6092)
+
+## Illustrated power distribution
+
+![Proposed power architecture](images/architecture/power-architecture.svg)
+
+Illustrative only: J8 3V3 spare capacity, USB/battery isolation, startup surges and powered-off I/O require measurement before carrier PCB approval.
