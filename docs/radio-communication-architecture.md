@@ -4,6 +4,12 @@
 
 [Project overview](../README.md) · [Hardware & wiring](hardware-wiring.md) · [Radio firmware strategy](radio-firmware-strategy.md) · [Navigation & tracking](navigation-and-sharing.md)
 
+## Illustrated communication layers
+
+![Radio communication stack](images/architecture/communication-stack.svg)
+
+The protocols use separate APIs even though both links are UART. The illustration is explanatory and does not assert native interoperability.
+
 ## 1. Chosen topology
 
 - **Central:** Waveshare ESP32-S3-Touch-LCD-3.5 runs LVGL, application model, radio adapters, GNSS, storage and location/airtime policy.
