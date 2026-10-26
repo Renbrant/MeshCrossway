@@ -1,215 +1,33 @@
 # MeshCrossway PCB Rev A — pin allocation and schematic plan
 
-> Status: high-level schematic freeze candidate, 2026-10-26. This document is intended to drive the first KiCad 10 single-sheet A3 schematic. It is not fabrication approval.
+> Status: engineering schematic baseline, 2026-10-26. Pin/net assignments below are the source of truth for the Rev A carrier schematic. This is not yet fabrication approval; the listed validation gates still apply.
 
 ## 1. Schematic format
 
 - One schematic sheet only.
-- Paper: **A3 landscape**.
-- No hierarchical sheets.
-- Arrange left-to-right by functional flow: **power -> host/controller -> radios/RF**.
-- Put GNSS and service/debug blocks below the host.
+- Paper: **A4 landscape**.
+- No hierarchical sheets and no separate functional block diagram on the schematic sheet.
+- Treat the Waveshare host, each XIAO + Wio radio assembly, and the Uputronics GNSS board as **plug-in modules / black boxes**.
+- Show only the real carrier-board interconnects and support circuitry: mating connectors, UART resistors, power-source jumpers, Schottky isolation, current links, decoupling, optional pull-ups, debug header, and test points.
 - Use short local wires and net labels for long-distance signals.
-- Keep all unresolved power paths explicitly marked **TBD / DNP / VALIDATE BEFORE POPULATING**.
+- Keep the lower-right KiCad title-block area clear.
 
-## 2. Major assemblies
+## 2. Major assemblies and carrier references
 
 | Ref | Assembly | Role |
 |---|---|---|
-| U1 | Waveshare ESP32-S3-Touch-LCD-3.5 | central UI/application host, display/touch, microSD, PMIC |
+| J1 | Waveshare ESP32-S3-Touch-LCD-3.5 J8 mating connector | central host interface |
+| U1 | Local 5 V source, exact regulator/module TBD | alternate radio power source for Rev A testing |
 | U2 | Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kit | Meshtastic radio |
 | U3 | Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kit | MeshCore Companion radio |
 | U4 | Uputronics u-blox MAX-M10S 3 V breakout | GNSS receiver |
-| BAT1 | Protected 1S LiPo | portable power source; exact cell still candidate |
+| J2 | 1x4 host debug header | host service UART / 3V3 reference |
 
-The Wio-SX1262 is treated as part of each XIAO/Wio assembly. The carrier does **not** route the SX1262 SPI bus.
+The Wio-SX1262 is part of each XIAO/Wio plug-in assembly. The carrier does **not** route SX1262 SPI, control, or RF signals.
 
-## 3. Host-to-radio UART allocation
+## 3. Authoritative Waveshare J8 pinout
 
-| Net | Waveshare host | Radio endpoint | Direction | Status |
-|---|---|---|---|---|
-| MT_UART_TX | GPIO39 | U2 D7 / GPIO44 RX | host -> Meshtastic | candidate; bench validate |
-| MT_UART_RX | GPIO40 | U2 D6 / GPIO43 TX | Meshtastic -> host | candidate; bench validate |
-| MC_UART_TX | GPIO17 | U3 D7 / GPIO44 RX | host -> MeshCore | candidate; bench validate |
-| MC_UART_RX | GPIO18 | U3 D6 / GPIO43 TX | MeshCore -> host | candidate; bench validate |
-| GND | GND | U2/U3 GND | reference | required |
-
-Target serial configuration for both links: **115200 8N1, no hardware flow control**, explicitly configured by firmware.
-
-### XIAO/Wio internal radio resources — do not reuse on the carrier
-
-Current upstream Meshtastic and MeshCore XIAO_S3_WIO definitions agree on:
-
-- SX1262 SCK = GPIO7
-- SX1262 MISO = GPIO8
-- SX1262 MOSI = GPIO9
-- SX1262 NSS = GPIO41
-- SX1262 RESET = GPIO42
-- SX1262 DIO1 = GPIO39
-- SX1262 BUSY = GPIO40
-- RF RX enable / switch = GPIO38
-- TCXO = 1.8 V configuration
-
-Therefore D6/GPIO43 and D7/GPIO44 remain the intended external UART pins.
-
-## 4. GNSS allocation
-
-Use the Waveshare expansion I2C interface exposed at J8 for the MAX-M10S breakout. The Waveshare pin-definition drawing identifies **J8 pin 26 = SCL/GPIO7** and **J8 pin 28 = SDA/GPIO8**. Treat those as the Rev A signal allocation, with continuity verification on the actual board before fabrication.
-
-Required GNSS nets:
-
-- GNSS_SDA
-- GNSS_SCL
-- GNSS_GND
-- GNSS_3V3
-- GNSS_PPS — optional/candidate; route to **GPIO21 / J8 pin 5** through a removable link/test point if the chosen breakout exposes PPS
-- GNSS_RF stays on the breakout/SMA path; no RF trace on the carrier in Rev A
-
-Add footprints for optional I2C pull-ups but mark DNP until the breakout and host pull-ups are confirmed.
-
-## 5. UART protection / debug provisions
-
-For each UART signal:
-
-- reserve 22–100 ohm series resistor footprint near the transmitting source;
-- default value TBD after bench testing;
-- add test point for MT_UART_TX, MT_UART_RX, MC_UART_TX, MC_UART_RX;
-- keep traces short and away from RF antenna zones;
-- do not add level shifting: all endpoints are intended to use 3.3 V logic.
-
-Reserve independent radio reset/recovery control only where a safe accessible XIAO reset/power-control node is confirmed.
-
-
-## XIAO carrier interface — official Seeed add-on footprint
-
-Rev A treats each **XIAO ESP32-S3 + Wio-SX1262** assembly as a plug-in module. The carrier does not reproduce the internal XIAO/Wio circuitry; it only exposes the external XIAO edge-pin interface and the required support circuitry.
-
-Use the official Seeed Studio carrier-side symbol/footprint convention:
-
-- schematic interface: **XIAO-Add-On**;
-- carrier footprint: **XIAO-14P-Add-On**;
-- physical pin numbering: 1 through 14 exactly as defined by Seeed.
-
-Important pins for MeshCrossway:
-
-- pin 7 = **D6 / TX / GPIO43**;
-- pin 8 = **D7 / RX / GPIO44**;
-- pin 12 = **3V3_OUT** (regulated output, not the normal carrier power input);
-- pin 13 = **GND**;
-- pin 14 = **VBUS / 5V**.
-
-The Wio-SX1262 remains connected to the XIAO through its internal B2B interface. The carrier must not route the SX1262 SPI or RF path. Unused XIAO edge pins should remain physically present in the footprint and may be left electrically NC in Rev A.
-
-The schematic presentation should contain both:
-
-1. a functional block diagram showing host, power, Radio A, Radio B and GNSS; and
-2. a detailed carrier interconnect section showing the actual module connectors, jumpers, decoupling, UART series resistors and test points.
-
-## 6. Local decoupling and bulk capacitance
-
-The Rev A carrier shall include local decoupling footprints close to each powered module.
-
-### Radio A and Radio B
-
-For each XIAO + Wio assembly, reserve:
-
-- **100 nF ceramic** directly at the radio supply entry;
-- **10 uF ceramic** directly at the radio supply entry;
-- **47 uF bulk** footprint, initially DNP;
-- **100 uF bulk** footprint, initially DNP;
-- test point on the radio-side 3V3 rail and a nearby GND test point.
-
-The 100 nF and 10 uF parts are intended as normal local decoupling. The 47 uF and 100 uF footprints are experimental bulk-capacitance options for Rev A so TX/load-step behavior can be characterized without redesigning the PCB.
-
-Do not populate every bulk option blindly. Validate regulator stability, inrush current, startup behavior and effective capacitance under DC bias before choosing the production configuration.
-
-### GNSS
-
-Reserve near the MAX-M10S breakout supply entry:
-
-- **100 nF ceramic**;
-- **10 uF ceramic**;
-- optional additional bulk footprint if bench measurements show a need.
-
-### Carrier 3V3 entry
-
-Reserve a larger carrier-entry bulk capacitor footprint in the **220–470 uF** range, initially DNP, to support power-distribution testing. This capacitor is not a substitute for adequate regulator current capability.
-
-### Placement rule
-
-Place decoupling capacitors electrically and physically close to the corresponding module power/GND pins with short, wide connections and a direct low-impedance ground return. Do not place the capacitors far away merely for schematic neatness.
-
-## 6. Power architecture — intentionally not frozen
-
-Current proposal:
-
-Waveshare AXP2101 / system 3V3 -> carrier distribution -> optional radio A branch + optional radio B branch + GNSS branch.
-
-This is **not yet approved electrically**.
-
-Rev A schematic shall therefore include:
-
-- one carrier 3V3 entry net from Waveshare J8;
-- bulk capacitor footprint at carrier entry: 220–470 uF, DNP initially;
-- each radio branch through a **3-pin 2.54 mm power-source selector jumper**: center pin to RADIO_x_3V3, one side to Waveshare J8 3V3, the other side to the local regulated 3V3 source;
-- per-radio 100 nF + 10 uF local decoupling, plus optional 47 uF and 100 uF bulk footprints;
-- GNSS 10 uF + 100 nF local decoupling footprints;
-- test points on source 3V3 and each branch, with nearby GND points;
-- clear warning note: **DO NOT POPULATE SHARED RADIO POWER UNTIL J8 CURRENT BUDGET AND XIAO 3V3 REVERSE-FEED PATH ARE VERIFIED**.
-
-Initial firmware/UART bring-up remains with each XIAO powered from its own USB-C and only logic GND shared.
-
-## 7. RF / antenna handling
-
-- No SX1262 RF traces on the carrier.
-- Preserve each Wio-SX1262 U.FL/IPEX connector.
-- Keep antenna pigtail keep-out zones around both radios.
-- Place the two radio modules on opposite sides of the display/carrier where practical.
-- Keep GNSS antenna path physically separated from both LoRa antennas.
-- Validate 915 MHz antenna selection for US use and region-appropriate antennas elsewhere.
-
-## 8. Suggested schematic placement on A3
-
-```text
-+-----------------------------------------------------------------------------------+
-| POWER / BATTERY          HOST / UI                         RADIO A — MESHTASTIC     |
-| Waveshare PMIC           Waveshare ESP32-S3                XIAO + Wio-SX1262       |
-| shared-rail TBD          Touch / display / SD              UART + power isolation  |
-|                                                                                   |
-| TEST / POWER             GNSS                               RADIO B — MESHCORE      |
-| branch TPs / DNP         MAX-M10S + active antenna         XIAO + Wio-SX1262       |
-| options                  I2C / PPS candidate               UART + power isolation  |
-+-----------------------------------------------------------------------------------+
-```
-
-## 9. Rev A schematic design notes
-
-Place these notes directly on the schematic:
-
-1. **SINGLE-SHEET A3 — MESHCROSSWAY REV A**
-2. **POWER DISTRIBUTION TO XIAO MODULES IS A VALIDATION GATE, NOT YET APPROVED**
-3. **DO NOT CONNECT WAVESHARE DIRECTLY TO SX1262 SPI; HOST TALKS TO EACH XIAO OVER UART**
-4. **D6/GPIO43 = XIAO TX; D7/GPIO44 = XIAO RX**
-5. **VERIFY ACTUAL WAVESHARE J8 PINOUT AND PCB REVISION BY CONTINUITY BEFORE FABRICATION**
-6. **RADIO ANTENNAS MUST BE CONNECTED BEFORE RF TRANSMIT TESTS**
-
-## 10. Validation gates before layout/fabrication
-
-- actual Waveshare V1/V2 board revision identified;
-- J8 signal/power pinout continuity verified;
-- Meshtastic PROTO proven on XIAO D6/D7;
-- MeshCore `Xiao_S3_WIO_companion_radio_serial` proven on D6/D7;
-- simultaneous two-UART operation proven;
-- XIAO external power/reverse-current behavior measured;
-- Waveshare J8 3V3 load headroom measured under LCD/SD/radio load;
-- GNSS breakout supply, active-antenna bias and PPS availability confirmed;
-- RF coexistence and antenna placement tested.
-
-
-
-## 11. Waveshare J8 reference pinout
-
-Based on the supplied Waveshare pin-definition drawing:
+Based on the manufacturer pin-definition drawing supplied for the Waveshare board:
 
 | J8 pin | Signal | J8 pin | Signal |
 |---:|---|---:|---|
@@ -230,4 +48,190 @@ Based on the supplied Waveshare pin-definition drawing:
 | 29 | GND | 30 | GND |
 | 31 | 3V3 | 32 | 3V3 |
 
-Mechanical reference from the supplied Waveshare drawing: display outline approximately **92.44 mm x 61.00 mm**, PCB mounting-hole span shown as **72.00 mm** horizontally and **48.50 mm** vertically; use the official mechanical drawing/actual board for footprint generation rather than these summary values alone.
+Carrier footprint candidate for J1: **2x16, 2.54 mm vertical male pin header**, mating with the Waveshare female J8 socket. Final mechanical location/orientation must be checked against the actual board and official mechanical drawing before PCB fabrication.
+
+## 4. Host-to-radio UART allocation
+
+The carrier uses XIAO **D6/GPIO43 as radio TX** and **D7/GPIO44 as radio RX**. The host-side GPIO allocation is independent for the two radios.
+
+| Carrier net | Waveshare J8 / host | XIAO endpoint | Direction |
+|---|---|---|---|
+| `MT_HOST_TX` -> R1 -> `MT_RADIO_RX` | J8-9 / GPIO39 | U2 pin 8, D7 / GPIO44 / RX | host -> Meshtastic |
+| `MT_RADIO_TX` -> R2 -> `MT_HOST_RX` | J8-11 / GPIO40 | U2 pin 7, D6 / GPIO43 / TX | Meshtastic -> host |
+| `MC_HOST_TX` -> R3 -> `MC_RADIO_RX` | J8-16 / GPIO17 | U3 pin 8, D7 / GPIO44 / RX | host -> MeshCore |
+| `MC_RADIO_TX` -> R4 -> `MC_HOST_RX` | J8-18 / GPIO18 | U3 pin 7, D6 / GPIO43 / TX | MeshCore -> host |
+
+R1-R4 are **47 ohm series damping resistors** in Rev A. They are not substitutes for dedicated ESD protection.
+
+Target serial configuration remains **115200 8N1, no hardware flow control**, subject to bench validation with the selected firmware versions.
+
+### XIAO/Wio internal resources — do not route on the carrier
+
+Current XIAO_S3_WIO firmware definitions use the Wio radio internally. The carrier must leave the Wio SPI/control/RF implementation inside the plug-in module. In particular, the carrier uses only the XIAO edge pins needed for UART/power/test.
+
+MeshCore upstream provides `Xiao_S3_WIO_companion_radio_serial` with:
+
+- `SERIAL_TX=D6`
+- `SERIAL_RX=D7`
+
+## 5. XIAO carrier interface
+
+Use the official Seeed carrier-side convention:
+
+- symbol concept: **XIAO-Add-On**;
+- carrier footprint: **XIAO-14P-Add-On**;
+- physical pin numbering 1-14 exactly as Seeed defines it.
+
+Important carrier pins:
+
+| XIAO pin | Signal | Rev A use |
+|---:|---|---|
+| 7 | D6 / TX / GPIO43 | radio -> host UART TX |
+| 8 | D7 / RX / GPIO44 | host -> radio UART RX |
+| 12 | 3V3_OUT | output/test only; **not normal carrier power input** |
+| 13 | GND | common ground |
+| 14 | VBUS / 5V | normal carrier power input |
+
+Pins 1-6 and 9-11 remain physically present in the footprint and are NC on the Rev A carrier.
+
+## 6. Radio power architecture — Rev A testable topology
+
+The normal carrier injection point is **XIAO pin 14 / VBUS / 5V**, not `3V3_OUT`.
+
+Each radio has an independent 3-pin, 2.54 mm source selector:
+
+```text
+J8_5V ----- pin 1
+               \
+                pin 2 COMMON -> Schottky -> removable current link -> RADIO_x_5V -> XIAO VBUS
+               /
+LOCAL_5V -- pin 3
+```
+
+- JP1 = Radio A source selector.
+- JP3 = Radio B source selector.
+- D1/D2 = Schottky isolation between selected external source and XIAO VBUS, retained because Seeed specifies diode isolation when feeding XIAO 5V externally.
+- JP2/JP4 = removable 1x2 current-measurement links. Remove the shunt and insert an ammeter for characterization.
+- U1 = alternate `LOCAL_5V` source placeholder; exact regulator/module is still TBD.
+
+U1 logical pinout:
+
+- pin 1 `VIN_BAT` -> `BAT`
+- pin 2 `GND` -> `GND`
+- pin 3 `VOUT_5V` -> `LOCAL_5V`
+
+Do not connect XIAO USB and external carrier power simultaneously until backfeed/power-path behavior has been verified on the actual XIAO revision.
+
+## 7. Radio decoupling / bulk footprints
+
+On each `RADIO_x_5V` rail, close to the corresponding XIAO socket, reserve:
+
+- 100 nF ceramic, populated;
+- 10 uF ceramic, populated;
+- 47 uF bulk footprint, DNP initially;
+- 100 uF bulk footprint, DNP initially.
+
+Also expose test points for `RADIO_A_5V`, `RADIO_B_5V`, `A_3V3_OUT`, and `B_3V3_OUT`.
+
+The optional bulk parts are for TX/load-step testing; validate inrush, startup, regulator stability, and effective capacitance under DC bias before selecting a production population.
+
+## 8. GNSS — Uputronics MAX-M10S 3 V breakout
+
+Treat the 3 V Uputronics board as a **7-pin, 2.54 mm plug-in module**. Carrier numbering follows the physical header order used for the Rev A socket:
+
+| U4 pin | Breakout signal | Carrier connection |
+|---:|---|---|
+| 1 | SDA | `GNSS_SDA` -> J8-28 / GPIO8 |
+| 2 | SCL | `GNSS_SCL` -> J8-26 / GPIO7 |
+| 3 | TXD | NC in Rev A |
+| 4 | RXD | NC in Rev A |
+| 5 | TP / PPS | `GNSS_PPS_RAW` -> R5 0R -> `GNSS_PPS` -> J8-5 / GPIO21 |
+| 6 | GND | GND |
+| 7 | VCC | `J8_3V3` |
+
+The Uputronics 3 V board supply range is 2.7-3.6 V. RF remains on the breakout/SMA path; the carrier does not route GNSS RF.
+
+### I2C pull-ups
+
+Reserve optional hardware pull-ups:
+
+- R6 = 4.7k, DNP, `J8_3V3` -> `GNSS_SDA`
+- R7 = 4.7k, DNP, `J8_3V3` -> `GNSS_SCL`
+
+Populate only if measurements show that the existing host/breakout pull-ups are insufficient.
+
+GNSS local decoupling:
+
+- 100 nF populated;
+- 10 uF populated.
+
+## 9. Host debug header
+
+J2 is a 1x4, 2.54 mm service header:
+
+| J2 pin | Net |
+|---:|---|
+| 1 | `J8_3V3` reference |
+| 2 | GND |
+| 3 | `HOST_RXD` from J8-25 / GPIO43 |
+| 4 | `HOST_TXD` from J8-27 / GPIO44 |
+
+The 3V3 pin is a voltage reference/supply pin only; use a 3.3 V logic UART adapter and verify adapter power behavior before connecting.
+
+## 10. Rev A test points
+
+Provide at minimum:
+
+- `J8_5V`
+- `LOCAL_5V`
+- `RADIO_A_5V`
+- `RADIO_B_5V`
+- `MT_HOST_TX`
+- `MT_HOST_RX`
+- `MC_HOST_TX`
+- `MC_HOST_RX`
+- `A_3V3_OUT`
+- `B_3V3_OUT`
+
+## 11. RF / antenna handling
+
+- No SX1262 RF traces on the carrier.
+- Preserve each Wio-SX1262 U.FL/IPEX connector and antenna keep-out.
+- Put the two radio modules on opposite sides of the display/carrier where practical.
+- Keep GNSS antenna/coax path separated from the LoRa antenna regions.
+- Antennas must be connected before RF transmit testing.
+
+## 12. A4 schematic placement
+
+```text
++--------------------------------------------------------------------------+
+| POWER            HOST / WAVESHARE J8               RADIO A / MESHTASTIC |
+| U1 local 5V      J1 2x16 mating header             UART + power select  |
+|                                                     XIAO + Wio module     |
+|                                                                          |
+| GNSS             DEBUG / TEST                      RADIO B / MESHCORE    |
+| U4 MAX-M10S      J2 + test points                  UART + power select  |
+| I2C + PPS                                           XIAO + Wio module     |
+|                                                     decoupling            |
+|                                                [title block kept clear]  |
++--------------------------------------------------------------------------+
+```
+
+## 13. Validation gates before layout/fabrication
+
+- identify the actual Waveshare V1/V2 PCB revision;
+- continuity-check J8 signal and power pins on the physical board;
+- prove Meshtastic serial operation on XIAO D6/D7;
+- prove MeshCore `Xiao_S3_WIO_companion_radio_serial` on D6/D7;
+- prove simultaneous two-UART operation;
+- measure XIAO external-5V / USB backfeed behavior;
+- measure J8 5V source capability and voltage droop under the intended host load;
+- select/validate the local 5V regulator architecture;
+- verify the exact Uputronics 3V header orientation before PCB placement;
+- verify GNSS I2C pull-up requirement;
+- validate RF coexistence and antenna placement;
+- run native KiCad ERC and PCB DRC before fabrication.
+
+## 14. Schematic audit rule
+
+For generated/edited carrier schematics, verify connectivity by **physical pin number -> expected net**, not by the apparent vertical location of a pin in the drawing. This rule was added after a coordinate-orientation error was found in an early Rev A draft.
