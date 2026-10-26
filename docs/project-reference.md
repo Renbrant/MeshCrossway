@@ -285,7 +285,7 @@ Use [GitHub Issues](https://github.com/Renbrant/MeshCrossway/issues) to discuss 
 
 ## License
 
-Original MeshCrossway code and documentation in this repository are licensed under the [MIT License](LICENSE).
+Original MeshCrossway code and documentation in this repository are licensed under the [MIT License](../LICENSE).
 
 Amazon listing photos are third-party materials credited in [image sources and rights](images/README.md); they are not covered by the MeshCrossway MIT license. Third-party firmware, libraries, hardware designs, and assets retain their respective licenses. This repository's MIT license does not relicense those components; integration and distribution must respect their applicable terms.
 
