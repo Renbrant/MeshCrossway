@@ -12,16 +12,16 @@
 <text x="76" y="240" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Host charger and power management</text>
 <text x="81" y="291" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">USB-C 5 V → internal power path</text>
 <text x="81" y="334" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Protected 1S LiPo → BAT port</text>
-<text x="81" y="377" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Host GNSS SDA: GPIO21</text>
-<text x="81" y="420" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Host GNSS SCL: GPIO38</text>
-<text x="81" y="463" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Ground: common reference</text>
+<text x="81" y="377" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Host GNSS SDA: GPIO8 / J8-28</text>
+<text x="81" y="420" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Host GNSS SCL: GPIO7 / J8-26</text>
+<text x="81" y="463" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GNSS PPS: GPIO21 / J8-5</text>
 <rect x="454" y="187" width="332" height="420" rx="14" fill="#11243a" stroke="#34d4ba" stroke-width="1.7"/>
 <text x="472" y="219" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">u-blox MAX-M10S</text>
 <text x="472" y="240" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Breakout with active GNSS antenna</text>
 <rect x="551" y="288" width="135" height="135" rx="15" fill="#d1e1df" stroke="#34d4ba" stroke-width="4"/>
 <text x="619" y="343" font-family="DejaVu Sans,Arial,sans-serif" font-size="21" fill="#15344d" font-weight="bold" text-anchor="middle">u-blox</text>
 <text x="619" y="373" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#15344d" font-weight="normal" text-anchor="middle">MAX-M10S</text>
-<text x="476" y="480" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">I2C: SDA / SCL at 3.3 V</text>
+<text x="476" y="480" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">I2C GPIO8/7 • PPS GPIO21 • GND</text>
 <text x="476" y="507" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Antenna bias: MUST VERIFY</text>
 <text x="476" y="534" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Separate from LoRa antenna feeds</text>
 <rect x="845" y="187" width="379" height="420" rx="14" fill="#11243a" stroke="#ffba65" stroke-width="1.7"/>
@@ -35,7 +35,7 @@
 <text x="868" y="469" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">3.7 V nominal protected cell</text>
 <text x="868" y="498" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Do not parallel XIAO charger systems</text>
 <text x="868" y="527" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Battery thickness and safety checks</text>
-<text x="868" y="556" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">J8 3.3 V power still CONDITIONAL</text>
+<text x="868" y="556" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Radio VBUS: J8 5V / LOCAL_5V selectable</text>
 <line x1="400" y1="360" x2="448" y2="360" stroke="#34d4ba" stroke-width="3" marker-end="url(#arr)"/>
 <path d="M 784 420 H 824 V 448 H 844" fill="none" stroke="#ffba65" stroke-width="2" stroke-linejoin="round" marker-end="url(#arr)"/>
 </svg>

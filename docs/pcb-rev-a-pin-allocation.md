@@ -1,6 +1,8 @@
 # MeshCrossway PCB Rev A — pin allocation and schematic plan
 
 > Status: engineering schematic baseline, 2026-10-26. Pin/net assignments below are the source of truth for the Rev A carrier schematic. This is not yet fabrication approval; the listed validation gates still apply.
+>
+> Primary manufacturer references: [official hardware source registry](hardware-sources.md).
 
 ## 1. Schematic format
 
@@ -235,3 +237,17 @@ Provide at minimum:
 ## 14. Schematic audit rule
 
 For generated/edited carrier schematics, verify connectivity by **physical pin number -> expected net**, not by the apparent vertical location of a pin in the drawing. This rule was added after a coordinate-orientation error was found in an early Rev A draft.
+
+
+## 15. Primary manufacturer references
+
+The Rev A pin/power audit uses these manufacturer sources supplied during the design review:
+
+- [Waveshare ESP32-S3-Touch-LCD-3.5 GitHub repository](https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.5/tree/main)
+- [Seeed Wio-SX1262 with XIAO ESP32-S3 product page](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html)
+- [Seeed Wio-SX1262 official schematic PDF](https://files.seeedstudio.com/products/SenseCAP/Wio_SX1262/Schematic_Diagram_Wio-SX1262_for_XIAO.pdf)
+- [Seeed XIAO ESP32-S3 getting started](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)
+- [Seeed XIAO ESP32-S3 resources](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/#resources)
+- [Seeed XIAO ESP32-S3 Sense V1.51 schematic PDF](https://files.seeedstudio.com/wiki/SeeedStudio-XIAO-ESP32S3/new-res/202003753_XIAO%20ESP32S3%20Sense_V1.51_SCH_260611.pdf)
+
+See [hardware-sources.md](hardware-sources.md) for scope and source hierarchy.

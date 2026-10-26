@@ -92,7 +92,7 @@
 <rect x="55" y="528" width="250" height="103" rx="14" fill="#11243a" stroke="#34d4ba" stroke-width="1.7"/>
 <text x="73" y="560" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">u-blox MAX-M10S</text>
 <text x="73" y="581" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">GNSS breakout + active antenna</text>
-<text x="74" y="599" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" fill="#edf5ff" font-weight="normal">Proposed I2C GPIO21 / GPIO38</text>
+<text x="74" y="599" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" fill="#edf5ff" font-weight="normal">I2C GPIO8/7 • PPS GPIO21</text>
 <rect x="428" y="528" width="406" height="103" rx="14" fill="#11243a" stroke="#34d4ba" stroke-width="1.7"/>
 <text x="446" y="560" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">ONE custom carrier PCB</text>
 <text x="446" y="581" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Display + both radios + GNSS + service connectors</text>

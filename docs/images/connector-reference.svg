@@ -14,9 +14,9 @@
 <text x="77" y="319" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO40   ←  UART1 RX ← Meshtastic TX</text>
 <text x="77" y="361" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO17   →  UART2 TX → MeshCore RX</text>
 <text x="77" y="403" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO18   ←  UART2 RX ← MeshCore TX</text>
-<text x="77" y="445" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO21   ↔  GNSS SDA (proposed)</text>
-<text x="77" y="487" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO38   ↔  GNSS SCL (proposed)</text>
-<text x="77" y="529" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">3V3/GND: POWER PENDING CURRENT TEST</text>
+<text x="77" y="445" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO8 ↔ GNSS SDA • GPIO7 ↔ SCL</text>
+<text x="77" y="487" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO21 ← GNSS PPS/TP via 0R</text>
+<text x="77" y="529" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Radio power: J8 5V / LOCAL_5V → VBUS</text>
 <rect x="625" y="185" width="604" height="183" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
 <text x="643" y="217" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Radio A  •  Meshtastic</text>
 <text x="643" y="238" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">XIAO D7 / GPIO44 RX      XIAO D6 / GPIO43 TX</text>

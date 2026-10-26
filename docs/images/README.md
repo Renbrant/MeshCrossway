@@ -22,14 +22,14 @@ These are **AI-generated concept illustrations**, not actual supplier photograph
 | Radio UART wiring | [radio-wiring.svg](radio-wiring.svg) | Meshtastic/MC TX↔RX pairs |
 | Connector GPIO guide | [connector-reference.svg](connector-reference.svg) | Host GPIO and XIAO pin identification |
 | GNSS and battery | [gnss-and-power.svg](gnss-and-power.svg) | GNSS and rear-battery relationship |
-| Power architecture | [architecture/power-architecture.svg](architecture/power-architecture.svg) | Conditional J8 3V3 supply |
+| Power architecture | [architecture/power-architecture.svg](architecture/power-architecture.svg) | Independent J8/local 5 V selection into XIAO VBUS |
 | Communication stack | [architecture/communication-stack.svg](architecture/communication-stack.svg) | Native protocol boundaries |
 | Firmware ownership | [architecture/firmware-responsibilities.svg](architecture/firmware-responsibilities.svg) | Host/radio responsibilities |
 | Tracking mode concept | [architecture/direct-tracking-modes.svg](architecture/direct-tracking-modes.svg) | Planned zero-hop behavior |
 
 The selected radio serial candidate pins are **D6/GPIO43 TX, D7/GPIO44 RX for both XIAO kits**, subject to Meshtastic PROTO and MeshCore Companion firmware tests. Never connect the Waveshare UART directly to Wio SX1262 SPI.
 
-SVG diagrams are maintained by [scripts/generate_wiring_diagrams.py](../../scripts/generate_wiring_diagrams.py). They are editable source graphics, but **not validated schematics, mechanical drawings or firmware tests**. UART module pins, 3.3 V spare current, antenna isolation, battery dimensions and the combined PCB design require bench verification before manufacturing.
+SVG diagrams are maintained by [scripts/generate_wiring_diagrams.py](../../scripts/generate_wiring_diagrams.py). They are editable source graphics, but **not validated schematics, mechanical drawings or firmware tests**. UART operation, J8 5 V current headroom, the `LOCAL_5V` regulator, USB/VBUS backfeed, antenna isolation, battery dimensions and the combined PCB design require bench verification before manufacturing. Primary manufacturer references are cataloged in [hardware-sources.md](../hardware-sources.md).
 
 ## Images that remain intentionally separate
 

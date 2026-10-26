@@ -4,9 +4,9 @@
 <rect x="14" y="14" width="1252" height="692" rx="22" fill="none" stroke="#244260" stroke-width="2"/>
 <text x="40" y="62" font-family="DejaVu Sans,Arial,sans-serif" font-size="34" fill="#36c8f4" font-weight="bold">MeshCrossway</text>
 <text x="325" y="61" font-family="DejaVu Sans,Arial,sans-serif" font-size="28" fill="#edf5ff" font-weight="bold">| Wiring diagram</text>
-<text x="40" y="91" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#a6bfd4" font-weight="normal">UART, GNSS I2C and grounds — a proposed bench pin contract, NOT a fabrication schematic</text>
+<text x="40" y="91" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#a6bfd4" font-weight="normal">UART, GNSS I2C/PPS and grounds — Rev A carrier pin contract, NOT a fabrication schematic</text>
 <rect x="30" y="669" width="1220" height="27" rx="8" fill="#162a40" stroke="#253f57" stroke-width="1"/>
-<text x="44" y="688" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#f4bc58" font-weight="normal">No 3.3 V source connection is approved until Waveshare J8 and XIAO external-feed checks pass.</text>
+<text x="44" y="688" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#f4bc58" font-weight="normal">Radio power uses selectable J8/local 5 V into XIAO VBUS; current/backfeed remain bench gates.</text>
 <rect x="45" y="175" width="337" height="437" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
 <text x="63" y="207" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Waveshare ESP32-S3 host</text>
 <text x="63" y="228" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">No camera; two UARTs + GNSS I2C</text>
@@ -14,10 +14,10 @@
 <text x="63" y="302" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO40  •  UART1 RX</text>
 <text x="63" y="344" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO17  •  UART2 TX</text>
 <text x="63" y="386" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO18  •  UART2 RX</text>
-<text x="63" y="428" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO21  •  GNSS SDA</text>
-<text x="63" y="470" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO38  •  GNSS SCL</text>
-<text x="63" y="512" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GND  •  common reference</text>
-<text x="63" y="554" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">3V3  •  conditional only</text>
+<text x="63" y="428" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO8   •  GNSS SDA</text>
+<text x="63" y="470" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO7   •  GNSS SCL</text>
+<text x="63" y="512" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO21  •  GNSS PPS</text>
+<text x="63" y="554" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GND common • GNSS on J8 3V3 • radios on selectable 5V</text>
 <rect x="537" y="175" width="698" height="140" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
 <text x="555" y="207" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Radio A  /  Meshtastic</text>
 <text x="555" y="228" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Seeed XIAO ESP32S3 + Wio-SX1262</text>
@@ -33,7 +33,7 @@
 <rect x="537" y="487" width="698" height="125" rx="14" fill="#11243a" stroke="#34d4ba" stroke-width="1.7"/>
 <text x="555" y="519" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">G1  /  u-blox MAX-M10S</text>
 <text x="555" y="540" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Selected 3 V breakout with active GNSS antenna (bias to verify)</text>
-<text x="563" y="557" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">SDA ↔ Host GPIO21   |   SCL ↔ Host GPIO38   |   GND ↔ Host GND</text>
+<text x="563" y="557" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">SDA ↔ GPIO8  |  SCL ↔ GPIO7  |  PPS → GPIO21  |  GND</text>
 <path d="M 382 259 H 500 V 244 H 530" fill="none" stroke="#36c8f4" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arr)"/>
 <path d="M 382 416 H 500 V 401 H 530" fill="none" stroke="#ffba65" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arr)"/>
 <path d="M 382 554 H 500 V 539 H 530" fill="none" stroke="#34d4ba" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#arr)"/>
