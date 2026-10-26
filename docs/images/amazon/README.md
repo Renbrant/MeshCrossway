@@ -1,3 +1,5 @@
+> **Deprecated radio imagery:** The Aideepen/Heltec V3 product photos below document the former hardware decision only. **Current V1 radio choice: two [Seeed XIAO ESP32S3 + Wio-SX1262](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html) kits.** Do not treat the V3 photos or pinouts as V1 instructions.
+
 # Amazon listing images: sources and rights
 
 [Project README](../../../README.md) · [Wiring guide](../../hardware-wiring.md)
