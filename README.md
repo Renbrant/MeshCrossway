@@ -85,6 +85,12 @@ Separate health information for Meshtastic and MeshCore, with planned diagnostic
 
 Centralized preferences for display appearance, device controls, local storage and privacy—separate from the navigation tools.
 
+## Illustrated system architecture
+
+![System overview](docs/images/architecture/system-overview.svg)
+
+The two radios remain independent. For exact electrical wiring and integration details, see the [wiring diagram](docs/hardware-wiring.md) and [API architecture](docs/radio-communication-architecture.md).
+
 ## System overview
 
 ```mermaid
