@@ -11,3 +11,6 @@ _autosave-*
 # OS/editor noise
 Thumbs.db
 .DS_Store
+
+# Downloaded vendor CAD (use fetch_vendor_3d.ps1)
+3dmodels/vendor/
