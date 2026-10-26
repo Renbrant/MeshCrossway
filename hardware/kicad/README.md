@@ -99,3 +99,17 @@ For rear-side floorplanning, the project includes a mechanical-only footprint an
 - Intended placement: **back side of the carrier PCB**
 
 This is a **mechanical planning model**, based on the supplied product dimensions, not an official manufacturer CAD file. Verify the production battery dimensions, cable exit, connector polarity, swelling allowance, adhesive/foam thickness, and enclosure clearances before fabrication.
+
+
+## Uputronics MAX-M10S mechanical model
+
+The project includes an approximate 3D/mechanical model for the Uputronics u-blox MAX-M10S 3V breakout used in Rev A:
+
+- Footprint: `MeshCrossway:Module_Uputronics_MAX_M10S_3V_MECH_APPROX`
+- 3D model: `${KIPRJMOD}/3dmodels/generated/Uputronics_MAX-M10S_3V_MECH_APPROX.wrl`
+- Published breakout PCB size: approximately **22 x 22 x 1.6 mm**
+- Published header pitch: **2.54 mm**
+- Published antenna connector: **SMA female**
+- The model includes a simplified MAX-M10S, supercapacitor and edge-launch SMA.
+
+The SMA barrel intentionally extends beyond the 22 mm PCB edge so the carrier PCB can be floorplanned with the GNSS antenna connector exposed at the enclosure/carrier edge. The exact SMA overhang and component placement are **mechanical approximations** because Uputronics does not publish a dimensioned CAD drawing for the complete assembled breakout. Verify against the physical module before fabrication.
