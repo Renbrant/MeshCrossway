@@ -1,27 +1,85 @@
-# MeshCrossway Rev A - KiCad engineering layout baseline
+# MeshCrossway Rev A — KiCad project
 
-This folder contains project-local footprints and layout notes for the MeshCrossway Rev A carrier.
+This folder is the canonical home for the MeshCrossway Rev A KiCad design files and project-local footprint library.
 
-## Board baseline
+## Current layout strategy
 
-- 160 x 94 mm engineering carrier.
-- 4 copper layers: F.Cu / In1.Cu / In2.Cu / B.Cu.
-- In1.Cu continuous GND reference plane.
-- B.Cu GND pour plus perimeter/subsystem stitching vias.
-- In2.Cu main power trunks.
-- Radio A on left edge, Radio B on right edge, GNSS top center.
-- Tall headers/jumpers/regulator placeholder outside the Waveshare mechanical envelope.
+The Rev A schematic is shared by multiple PCB layout alternatives.
+
+- **Layout A** — preserved alternative based on the earlier 4-layer engineering floorplan.
+- **Layout B** — **active layout**, restarted from a blank PCB and targeting a **2-layer board**.
+  - F.Cu: components, power and most signal routing.
+  - B.Cu: keep as a nearly continuous GND reference plane; use bottom routing only when necessary and avoid cuts under RF modules or critical signals.
+
+The schematic and footprints are common to both layouts. Do not duplicate or fork the schematic just to create a new PCB floorplan.
+
+## Recommended project structure
+
+```text
+hardware/kicad/
+├── MeshCrossway_RevA.kicad_pro
+├── MeshCrossway_RevA.kicad_sch
+├── fp-lib-table
+├── MeshCrossway.pretty/
+│   ├── Waveshare_J8_Mating_2x16_P2.54mm.kicad_mod
+│   ├── Module_XIAO_ESP32S3_WioSX1262_Socket.kicad_mod
+│   ├── Module_LOCAL_5V_3Pin_Prototype.kicad_mod
+│   └── Module_Uputronics_MAX_M10S_3V_MECH_APPROX.kicad_mod
+└── layouts/
+    ├── README.md
+    ├── MeshCrossway_RevA_LAYOUT_A.kicad_pcb
+    └── MeshCrossway_RevA_LAYOUT_B.kicad_pcb
+```
+
+The `layouts/*.kicad_pcb` files are alternatives. The schematic remains the electrical source of truth.
+
+## Project-local footprint library
+
+`fp-lib-table` registers:
+
+```text
+MeshCrossway -> ${KIPRJMOD}/MeshCrossway.pretty
+```
+
+When the project is opened from this folder, symbols that reference `MeshCrossway:<footprint>` resolve without any global KiCad-library configuration.
+
+Current custom footprints:
+
+- `Waveshare_J8_Mating_2x16_P2.54mm`
+- `Module_XIAO_ESP32S3_WioSX1262_Socket`
+- `Module_LOCAL_5V_3Pin_Prototype`
+- `Module_Uputronics_MAX_M10S_3V_MECH_APPROX`
+
+## Starting Layout B from scratch
+
+1. Open `MeshCrossway_RevA.kicad_pro` from this directory.
+2. Open the schematic and verify the project-local footprint library loads.
+3. Create a blank PCB and save it as `layouts/MeshCrossway_RevA_LAYOUT_B.kicad_pcb`.
+4. Configure the board as 2 copper layers: F.Cu / B.Cu.
+5. Use **Tools -> Update PCB from Schematic (F8)**.
+6. Confirm zero footprint-library errors before applying the update.
+7. Start with mechanical floorplanning only: J1, U2, U3 and U4. Do not route until the module positions and board outline are accepted.
 
 ## Fabrication gates
 
 Before ordering a PCB, verify:
 
-1. Waveshare J8 exact X/Y/orientation and mounting holes.
-2. Waveshare mounting-hole drill diameter.
-3. Uputronics MAX-M10S header offset/orientation.
-4. Exact LOCAL_5V regulator/module and footprint.
-5. XIAO/Wio stack height, USB-C access, U.FL pigtail bend radius and enclosure clearance.
+1. Waveshare J8 exact X/Y/orientation relative to the display PCB and mounting holes.
+2. Waveshare mounting-hole drill diameter and exact mechanical coordinates.
+3. Uputronics MAX-M10S header offset/orientation; the current module envelope is marked `MECH_APPROX`.
+4. Exact `LOCAL_5V` regulator/module and final footprint.
+5. XIAO/Wio stack height, USB-C access, U.FL pigtail bend radius, antenna keep-out and enclosure clearance.
 6. Native KiCad ERC/DRC and zone refill.
-7. Final 4-layer fab stackup.
+7. For Layout B, preserve a nearly continuous B.Cu GND plane and review every bottom-layer trace for return-path disruption.
 
-The generated .kicad_pcb and matching schematic are being reviewed locally before they are treated as fabrication files.
+## Source control rules
+
+Commit the actual design sources:
+
+- `*.kicad_pro`
+- `*.kicad_sch`
+- `*.kicad_pcb`
+- `*.kicad_mod`
+- `fp-lib-table`
+
+Do not commit editor locks, personal settings, autosaves or automatic backup folders. See `.gitignore` in this directory.
