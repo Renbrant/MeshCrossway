@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MeshCrossway UI v4 — Side Console</title>
+<title>MeshCrossway UI v5 — Field Console</title>
 <style>
 *{box-sizing:border-box}body{background:#030b12;color:#f1f8fd;font-family:system-ui,Arial;margin:0;min-height:100vh;display:flex;align-items:center;flex-direction:column;padding:14px}
 h1{font-size:20px;margin:8px}.intro{font-size:13px;color:#a5bccd;text-align:center;margin:5px 0 15px}.device{background:#142533;border:2px solid #42596b;border-radius:18px;padding:12px;max-width:100%}.screen{width:480px;height:320px;max-width:100%;background:#091723;border:1px solid #3a5365;border-radius:9px;position:relative;overflow:hidden}
@@ -68,11 +68,69 @@ main{grid-column:2;grid-row:2;height:auto;min-width:0;padding:7px;overflow:auto}
 .toast{bottom:8px;z-index:9}
 .screen.light .side-nav,.screen.light .context-rail{background:#d2e4eb;color:#08202d}
 .screen.light .context-actions button{color:#fff}
+
+/* MeshCrossway field aesthetic v5: vector icons, colorful contextual tools, edge pull-tabs */
+body{background:radial-gradient(ellipse at 50% -30%,#1d4359 0%,#051019 64%);color:#f3faff}
+.device{background:linear-gradient(135deg,#213849,#101f2d);border:1px solid #58839a;box-shadow:0 16px 48px #0009,0 0 0 1px #0e2333 inset;padding:9px}
+.screen{border:1px solid #527991;box-shadow:inset 0 0 0 1px #193e4c;border-radius:10px;--accent:#29d9ee}
+.top-status{background:linear-gradient(90deg,#152f41,#091925);border-bottom:1px solid #315668}
+.top-status button{font-size:14px;letter-spacing:-.25px;color:#f5fbff;text-shadow:0 1px 8px #0005}
+.top-status button:first-letter{color:#60e5f5}
+.top-status small{color:#8df1bf;letter-spacing:.15px}
+.side-nav,.context-rail{background:linear-gradient(165deg,#142b3c,#0b1b29);border-color:#456d83}
+.side-nav{padding:5px 3px 5px 4px;gap:4px;overflow:visible}
+.side-nav .nav-top{min-height:0;height:0}
+.side-nav button[data-nav]{min-height:39px;border:1px solid #29475b;border-radius:9px;background:linear-gradient(135deg,#142b3b,#0c1e2c);color:#d4e7f4;box-shadow:inset 0 1px #ffffff0b;gap:1px}
+.side-nav button[data-nav] span{display:flex;align-items:center;justify-content:center;line-height:1}
+.side-nav button[data-nav] .ui-icon{width:23px;height:23px;stroke-width:1.95}
+.side-nav button[data-nav="home"] .ui-icon{color:#daedff}
+.side-nav button[data-nav="chat"] .ui-icon{color:#65dcff}
+.side-nav button[data-nav="map"] .ui-icon{color:#2de1eb}
+.side-nav button[data-nav="tools"] .ui-icon{color:#f5b75e}
+.side-nav button[data-nav="more"] .ui-icon{color:#c4a5fd}
+.side-nav button[data-nav].active{border:1.5px solid #22e8fa;background:linear-gradient(130deg,#11374c,#0b4f64);color:#fff;box-shadow:0 0 13px #19bed424,inset 0 0 13px #2bd0f51b}
+.side-nav button[data-nav].active .ui-icon{filter:drop-shadow(0 0 4px #31cfff88)}
+.context-rail{padding:4px 4px 4px 6px;overflow:visible}
+.context-top{justify-content:center;min-height:33px;border-bottom:1px solid #335b72;margin-bottom:3px;padding-left:2px}
+.context-top strong{font-size:12px;color:#e9f7ff;white-space:normal;line-height:1.2}
+.context-actions{padding:3px 1px;overflow-y:auto}
+.context-actions button,.map-dropdown button{display:flex;align-items:center;gap:7px;min-height:44px;background:linear-gradient(130deg,#172f40,#0b1c2a);border:1px solid #35556a;border-radius:8px;color:#f2f8ff;font-size:11px;font-weight:750;padding:7px 5px;line-height:1.2;box-shadow:inset 0 1px #ffffff10}
+.context-actions button:hover,.map-dropdown button:hover{border-color:#4aabc8;background:#194058}
+.map-dropdown{display:flex;flex-direction:column;gap:5px}
+.map-dropdown button{width:100%;margin:0;text-align:left}
+.map-dropdown .ui-icon{flex-shrink:0;width:21px;height:21px}
+.map-dropdown button[data-gps="pois"] .ui-icon{color:#ffb24e}
+.map-dropdown button[data-gps="tracks"] .ui-icon,.map-dropdown button[data-feature="paths"] .ui-icon{color:#c788fb}
+.map-dropdown button[data-gps="record"] .ui-icon{color:#ff7373}
+.map-dropdown button#liveShareOpen .ui-icon{color:#48ef9c}
+.map-dropdown button[data-feature="team"] .ui-icon{color:#4bbaff}
+.map-dropdown button[data-feature="sky"] .ui-icon{color:#38dce7}
+.map-dropdown button[data-gps="share"] .ui-icon{color:#cde5ff}
+.map-dropdown button[data-feature="tracker"] .ui-icon{color:#ffc96b}
+#leftCollapse,#rightCollapse{position:absolute;z-index:6;top:47%;height:45px;width:23px;border:1.5px solid #5e8a9f;border-radius:9px;color:#eaf9ff;background:linear-gradient(#25475c,#102637);box-shadow:0 2px 8px #000b;font-size:23px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+#leftCollapse{left:calc(var(--railLeft) - 1px);border-radius:0 11px 11px 0}
+#rightCollapse{right:calc(var(--railRight) - 1px);border-radius:11px 0 0 11px}
+.right-collapsed #rightCollapse{transform:rotate(180deg)}
+.side-nav .nav-top button{min-width:0}
+.context-top button{min-width:0}
+.left-collapsed .side-nav button[data-nav]{min-height:39px}
+.left-collapsed .side-nav button[data-nav] .ui-icon{width:23px;height:23px}
+main{background:#0b202d;padding:6px;scrollbar-color:#385d70 transparent}
+#map .heading{font-size:14px}
+#map .map{border:1px solid #456a82;background:radial-gradient(ellipse at 65% 20%,#24504088,transparent 43%),radial-gradient(ellipse at 15% 86%,#214c4588,transparent 37%),repeating-radial-gradient(ellipse at 50% 50%,transparent 0px,transparent 15px,#45736d27 16px,transparent 17px),linear-gradient(133deg,#122934,#162c37 60%,#0d2530);background-size:auto;box-shadow:inset 0 0 24px #020b1288}
+#map .map::before{background:#39749a77;border-radius:60%;height:9px;transform:rotate(-18deg);top:68%;width:150%}
+#maparea .pin{box-shadow:0 0 0 9px #1ca9ff24,0 0 10px #37cfffaa;z-index:1}
+#maparea .peer{box-shadow:0 0 0 3px #06192366}
+#maparea label{background:#081a25d8;color:#c9dfeb;border:1px solid #436175}
+#map .sub{font-size:10px}
+.chip{border-color:#467188;background:#15384b}
+.quick-shade{background:linear-gradient(155deg,#1b4253,#0d2331);border-color:#50abc7}
+.qs-toggle.active{background:#12596b;border-color:#44dbe9}
 </style></head><body>
-<h1>MeshCrossway · Field Console v4</h1><p class="intro">Meshtastic + MeshCore · touchscreen prototype · 480 × 320</p>
+<h1>MeshCrossway · Field Console v5</h1><p class="intro">Meshtastic + MeshCore · touchscreen prototype · 480 × 320</p>
 <div class="device"><div class="screen">
 <header class="top-status"><button id="quickShadeToggle" aria-expanded="false" aria-controls="quickShade" title="Open quick settings">MeshCrossway <span class="shadeHint">⌄</span></button><small>● MT &nbsp; ● MC &nbsp; GPS ▴ &nbsp; ▣ 78%</small></header>
-<nav id="sideNav" class="side-nav"><div class="nav-top"><button id="leftCollapse" aria-label="Collapse navigation" aria-expanded="true">‹</button></div><button class="active" data-nav="home"><span>⌂</span><em>Home</em></button><button data-nav="chat"><span>✉</span><em>Chats</em></button><button data-nav="map"><span>⌖</span><em>Map</em></button><button data-nav="tools"><span>⌁</span><em>Radios</em></button><button data-nav="more"><span>☷</span><em>More</em></button></nav>
+<nav id="sideNav" class="side-nav"><div class="nav-top"><button id="leftCollapse" class="drawer-handle" aria-label="Collapse navigation" aria-expanded="true">‹</button></div><button class="active" data-nav="home"><span><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10H4V10"/><path d="M9 20v-7h6v7"/></svg></span><em>Home</em></button><button data-nav="chat"><span><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z"/></svg></span><em>Chats</em></button><button data-nav="map"><span><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 5 6-2 6 3 6-3v16l-6 3-6-3-6 2z"/><path d="M9 3v16M15 6v16"/></svg></span><em>Map</em></button><button data-nav="tools"><span><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="5" width="10" height="16" rx="2"/><path d="M10 5V2h4v3M10 10h4M12 15h.01"/></svg></span><em>Radios</em></button><button data-nav="more"><span><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span><em>More</em></button></nav>
 <main>
 <section class="page active" id="home">
 <div class="grid2"><div class="card"><div class="line"><strong class="mt">Meshtastic</strong><span class="tag mt">MT</span></div><div class="metric">● Online · 4 nodes</div></div><div class="card"><div class="line"><strong class="mc">MeshCore</strong><span class="tag mc">MC</span></div><div class="metric">● Online · 3 contacts</div></div></div>
@@ -88,7 +146,7 @@ main{grid-column:2;grid-row:2;height:auto;min-width:0;padding:7px;overflow:auto}
 <div class="rowitem conversation" data-net="MT" data-thread="Alex"><span class="tag mt">MT</span><div class="grow"><strong>Alex</strong><div class="sub">Copy · stored locally</div></div><span class="sub">14:22</span></div>
 </section>
 <section class="page" id="map">
-<div class="line" style="margin-bottom:6px"><span class="heading">Navigation</span><button class="btn dark" id="mapMenuToggle" aria-expanded="false" aria-controls="mapMenu">Tools ▾</button></div><div id="mapMenu" class="map-dropdown"><button data-gps="pois">⌖ POIs & waypoints</button><button data-gps="tracks">↝ Saved tracks</button><button data-gps="record">● Record track</button><button id="liveShareOpen">◎ Live location</button><button data-gps="share">⇧ Share location / GPX</button><button data-feature="team">♙ Team positions</button><button data-feature="sky">✧ GNSS sky</button><button data-feature="paths">⌁ Saved paths</button><button data-feature="tracker">◉ Track details</button></div>
+<div class="line" style="margin-bottom:6px"><span class="heading">Navigation</span><button class="btn dark" id="mapMenuToggle" aria-expanded="false" aria-controls="mapMenu">Tools ▾</button></div><div id="mapMenu" class="map-dropdown"><button data-gps="pois"><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="2.5"/></svg> </button><button data-gps="tracks"><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M7 19h6a4 4 0 0 0 0-8h-2a4 4 0 0 1 0-8h6"/></svg> </button><button data-gps="record"><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5" fill="currentColor" stroke="none"/></svg> </button><button id="liveShareOpen"><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.3"/><circle cx="6" cy="12" r="2.3"/><circle cx="18" cy="19" r="2.3"/><path d="m8 11 8-5M8 13l8 5"/></svg> </button><button data-gps="share"><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4"/></svg> </button><button data-feature="team"><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 5a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 5"/></svg> </button><button data-feature="sky"><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 4 4M14 6l4 4M5 19l4-4 6-6 4-4M3 21l3-3M17 2a6 6 0 0 1 5 5"/></svg> </button><button data-feature="paths"><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M7 19h6a4 4 0 0 0 0-8h-2a4 4 0 0 1 0-8h6"/></svg> </button><button data-feature="tracker"><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="19" r="2"/><circle cx="19" cy="5" r="2"/><path d="M7 19h6a4 4 0 0 0 0-8h-2a4 4 0 0 1 0-8h6"/></svg> </button></div>
 <div class="map" id="maparea"><div class="pin"></div><div class="peer" style="left:30%;top:22%"></div><div class="peer mcpeer" style="left:76%;top:60%"></div><div class="peer" style="left:38%;top:75%"></div><label>Illustrative map · not real tiles</label></div>
 <div class="line" style="margin-top:8px"><span class="sub">GNSS 3D · demo fix age 2 s</span><button class="chip" id="zoom">Zoom +</button></div>
 </section>
@@ -110,7 +168,7 @@ main{grid-column:2;grid-row:2;height:auto;min-width:0;padding:7px;overflow:auto}
 <div class="rowitem" id="sos"><div class="grow"><strong style="color:#ff9b92">Emergency message</strong><div class="sub">Confirm destination and network</div></div>›</div>
 <div class="rowitem" id="settings"><div class="grow"><strong>Settings & profiles</strong><div class="sub">Privacy · English · Traveler</div></div>›</div>
 </section></main>
-<aside id="contextRail" class="context-rail"><div class="context-top"><button id="rightCollapse" aria-label="Collapse tools" aria-expanded="true">‹</button><strong id="contextTitle">Home actions</strong></div><div id="contextActions" class="context-actions"></div></aside>
+<aside id="contextRail" class="context-rail"><div class="context-top"><button id="rightCollapse" class="drawer-handle" aria-label="Collapse tools" aria-expanded="true">›</button><strong id="contextTitle">Home actions</strong></div><div id="contextActions" class="context-actions"></div></aside>
 <section id="quickShade" class="quick-shade" hidden><div class="shade-head"><strong>Quick settings · demo</strong><button id="shadeClose" class="chip">Close ×</button></div><div class="shade-toggles"><button class="qs-toggle active" data-toggle="GPS">⌖ GPS</button><button class="qs-toggle" data-toggle="Bluetooth">ᛒ Bluetooth</button><button class="qs-toggle" data-toggle="Wi-Fi">⌁ Wi-Fi</button><button class="qs-toggle active" data-toggle="Sound">♫ Sound</button></div><label class="shade-bright">☀ Brightness <input id="shadeBrightness" type="range" min="20" max="100" value="75"></label><div class="shade-detail">Changes affect the browser preview only. No physical hardware is controlled.</div></section>
 <div class="overlay" id="compose">
 <div class="line"><h2 id="composerTitle">New message</h2><button class="chip" data-close>Close ×</button></div>
