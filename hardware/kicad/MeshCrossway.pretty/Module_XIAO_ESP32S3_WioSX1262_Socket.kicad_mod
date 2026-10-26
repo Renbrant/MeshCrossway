@@ -22,13 +22,13 @@
   (pad "9" thru_hole circle (at 7.62 5.08) (size 1.8 1.8) (drill 1) (layers "*.Cu" "*.Mask"))
   (pad "8" thru_hole circle (at 7.62 7.62) (size 1.8 1.8) (drill 1) (layers "*.Cu" "*.Mask"))
   (model "${KIPRJMOD}/3dmodels/vendor/Wio-SX1262_for_XIAO.step"
-    (offset (xyz -114.401598 -120.903490 3.0))
+    (offset (xyz -114.5 120.5 5.5))
     (scale (xyz 1 1 1))
     (rotate (xyz 0 0 0))
   )
   (model "${KIPRJMOD}/3dmodels/vendor/XIAO_ESP32S3.step"
-    (offset (xyz -1.778 -6.1722 11.5))
+    (offset (xyz 6.222 -1.6722 0.5))
     (scale (xyz 1 1 1))
-    (rotate (xyz -90 0 0))
+    (rotate (xyz 90 0 90))
   )
 )
