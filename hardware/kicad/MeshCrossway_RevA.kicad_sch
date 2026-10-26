@@ -595,6 +595,77 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "MeshCrossway:BATTERY_JST_PH2"
+			(exclude_from_sim yes)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "J"
+				(at 0 6.35 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects (font (size 1.27 1.27)))
+			)
+			(property "Value" "BATTERY JST-PH 2.0"
+				(at 0 8.89 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects (font (size 1.27 1.27)))
+			)
+			(property "Footprint" "Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects (font (size 1.27 1.27)))
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects (font (size 1.27 1.27)))
+			)
+			(property "Description" "Battery input connector matching 2-pin JST-PH 2.0 mm battery plug; verify physical polarity before assembly"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects (font (size 1.27 1.27)))
+			)
+			(symbol "BATTERY_JST_PH2_0_1"
+				(rectangle
+					(start -5.08 5.08)
+					(end 5.08 -5.08)
+					(stroke (width 0.254) (type default))
+					(fill (type background))
+				)
+			)
+			(symbol "BATTERY_JST_PH2_1_1"
+				(pin passive line
+					(at 7.62 3.81 180)
+					(length 2.54)
+					(name "BAT+"
+						(effects (font (size 0.95 0.95)))
+					)
+					(number "1"
+						(effects (font (size 0.9 0.9)))
+					)
+				)
+				(pin passive line
+					(at 7.62 -3.81 180)
+					(length 2.54)
+					(name "GND"
+						(effects (font (size 0.95 0.95)))
+					)
+					(number "2"
+						(effects (font (size 0.9 0.9)))
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "MeshCrossway:JUMPER2"
 			(exclude_from_sim yes)
 			(in_bom yes)
@@ -7312,6 +7383,66 @@
 			)
 		)
 	)
+	(symbol
+		(lib_id "MeshCrossway:BATTERY_JST_PH2")
+		(at 14.59 88.9 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "8c719f84-3c4a-4e15-921e-cff7abcfb201")
+		(property "Reference" "J5"
+			(at 14.59 81.28 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects (font (size 1 1) (bold yes)))
+		)
+		(property "Value" "BATTERY JST-PH 2.0"
+			(at 14.59 78.74 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects (font (size 0.86 0.86)))
+		)
+		(property "Footprint" "Connector_JST:JST_PH_B2B-PH-K_1x02_P2.00mm_Vertical"
+			(at 14.59 88.9 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects (font (size 1 1)))
+		)
+		(property "Datasheet" ""
+			(at 14.59 88.9 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects (font (size 1 1)))
+		)
+		(property "Description" "Battery input: 2-pin JST-PH 2.0 mm; pin 1 BAT+, pin 2 GND. Verify mating battery polarity before assembly."
+			(at 14.59 88.9 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects (font (size 1 1)))
+		)
+		(pin "1"
+			(uuid "e1c3f1aa-37cd-4a27-97ab-a2893156df81")
+		)
+		(pin "2"
+			(uuid "c59cbcc5-6ea8-4932-bf4d-28ad7ca93ad2")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "J5")
+					(unit 1)
+				)
+			)
+		)
+	)
+
 	(symbol
 		(lib_id "MeshCrossway:REG_TBD")
 		(at 44.45 88.9 0)
