@@ -1,6 +1,6 @@
 #VRML V2.0 utf8
 Transform {
-  translation 0 0 6
+  translation 0 0 2.3622047244
   children [
     Shape {
       appearance Appearance {
@@ -11,7 +11,7 @@ Transform {
         }
       }
       geometry Box {
-        size 110 60 12
+        size 43.3070866142 23.6220472441 4.7244094488
       }
     }
   ]
