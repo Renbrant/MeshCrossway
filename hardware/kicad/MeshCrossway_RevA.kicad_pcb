@@ -357,14 +357,14 @@
 	)
 	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
 		(layer "F.Cu")
-		(uuid "238d6c53-7abb-47e7-a25c-46138fa717fb")
-		(at 262.625 73.025)
+		(uuid "3015c5f9-a8dd-4a84-be69-4c8ac3b9edd8")
+		(at 149.525 157.025)
 		(descr "SMD pad as test Point, diameter 2.0mm")
 		(tags "test point SMD pad")
-		(property "Reference" "Rb3v3out1"
+		(property "Reference" "TP1"
 			(at 0 -1.998 0)
 			(layer "F.SilkS")
-			(uuid "114f2d1c-c3d1-4da5-af12-12dd0cc625af")
+			(uuid "8942a214-8070-4262-ae74-05da9f82b3e7")
 			(effects
 				(font
 					(size 1 1)
@@ -372,10 +372,10 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint"
+		(property "Value" "J8_5V"
 			(at 0 2.05 0)
 			(layer "F.Fab")
-			(uuid "ed46a390-eea0-4d2c-b371-1760caef9482")
+			(uuid "bb711d08-f925-4749-931b-fd1f76de5cc1")
 			(effects
 				(font
 					(size 1 1)
@@ -388,7 +388,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "62503e6a-74f0-4081-b54f-de05b6eb6598")
+			(uuid "c1c4f2c3-f7fc-4be1-9b28-e6fdf97bfe18")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -401,7 +401,115 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "68f0fc02-b441-4e4c-a136-5db20b95b097")
+			(uuid "48b86df7-d0b0-4967-bbda-bef3e8735763")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(path "/86a089ed-b330-4dbc-a32e-172d596bff61")
+		(sheetname "/")
+		(sheetfile "MeshCrossway_RevA.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1")
+			)
+		)
+		(duplicate_pad_numbers_are_jumpers no)
+		(fp_circle
+			(center 0 0)
+			(end 0 1.2)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.SilkS")
+			(uuid "3557dc10-34e3-454f-ac6e-9e00c265c609")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 1.5 0)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.CrtYd")
+			(uuid "cb0e63e4-a0d4-4045-a817-18c0dee3b620")
+		)
+		(fp_text user "${REFERENCE}"
+			(at 0 -2 0)
+			(layer "F.Fab")
+			(uuid "402caa5c-a184-4ce6-9738-9eee515fd181")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(pad "1" smd circle
+			(at 0 0)
+			(size 2 2)
+			(layers "F.Cu" "F.Mask")
+			(net "/J8_5V")
+			(pinfunction "TP_1")
+			(pintype "passive")
+			(uuid "8da11e5a-6d09-4a47-835e-1aa509e0cc18")
+		)
+		(embedded_fonts no)
+	)
+	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
+		(layer "F.Cu")
+		(uuid "31ea56ec-4fd8-40dc-a090-647c66109c5c")
+		(at 157.625 165.125)
+		(descr "SMD pad as test Point, diameter 2.0mm")
+		(tags "test point SMD pad")
+		(property "Reference" "TP10"
+			(at 0 -1.998 0)
+			(layer "F.SilkS")
+			(uuid "78083219-d0c7-4b57-b1d0-abd29a9029cb")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Value" "B_3V3_OUT"
+			(at 0 2.05 0)
+			(layer "F.Fab")
+			(uuid "4a5e860b-c886-4dee-890f-cfef2aa8dd5d")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "e840c55b-5367-4338-8fb0-aa927e4839d7")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "aed51fc1-f37d-4baa-bd8c-708f3c8245fa")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -428,7 +536,7 @@
 			)
 			(fill no)
 			(layer "F.SilkS")
-			(uuid "ce2ec37b-1651-4e4e-a32f-bc587dc3dddd")
+			(uuid "d640b9de-04e0-4353-aa46-97f94e1fc33b")
 		)
 		(fp_circle
 			(center 0 0)
@@ -439,12 +547,12 @@
 			)
 			(fill no)
 			(layer "F.CrtYd")
-			(uuid "1e17a466-07c1-4993-a189-2ca8849b92ab")
+			(uuid "56e9b0ad-88b6-464a-ac08-a5e8a391245f")
 		)
 		(fp_text user "${REFERENCE}"
 			(at 0 -2 0)
 			(layer "F.Fab")
-			(uuid "de96483a-ac4c-467f-9902-dd614478a6b6")
+			(uuid "2e69b332-ed1c-489d-867b-8c16433fe24e")
 			(effects
 				(font
 					(size 1 1)
@@ -459,20 +567,20 @@
 			(net "/B_3V3_OUT")
 			(pinfunction "TP_1")
 			(pintype "passive")
-			(uuid "bdbcdd1a-71ec-4f1c-aea9-5ee590a5d5c0")
+			(uuid "57225c74-036d-4efe-b1f8-3f44b8bb6d05")
 		)
 		(embedded_fonts no)
 	)
 	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
 		(layer "F.Cu")
-		(uuid "3773236c-4793-4920-83ac-6e4bebec76f9")
-		(at 258.575 73.025)
+		(uuid "496c1878-ece6-4534-8989-5e04d7d09d26")
+		(at 153.575 161.075)
 		(descr "SMD pad as test Point, diameter 2.0mm")
 		(tags "test point SMD pad")
-		(property "Reference" "Ra3v3out1"
+		(property "Reference" "TP5"
 			(at 0 -1.998 0)
 			(layer "F.SilkS")
-			(uuid "dc417e3f-d305-4fcd-9c2c-d237f99fd5b3")
+			(uuid "71519f00-b6c4-4dd2-a55f-8a186196c32c")
 			(effects
 				(font
 					(size 1 1)
@@ -480,10 +588,10 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint"
+		(property "Value" "MT_HOST_TX"
 			(at 0 2.05 0)
 			(layer "F.Fab")
-			(uuid "2bf969e5-23b7-4c67-a13c-8965600f989b")
+			(uuid "fafc700c-c735-4b50-b2ab-5ae7b3132a72")
 			(effects
 				(font
 					(size 1 1)
@@ -496,7 +604,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "a3e046ff-2673-4ad2-8091-db376218e144")
+			(uuid "a931d587-1a6a-44e9-a2d0-a6fbd04b680d")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -504,12 +612,12 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Test point for MT_HOST_TX"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "8d9618e9-65f8-47d4-b0f1-1399cd00a452")
+			(uuid "29016e03-12dc-4923-9ace-a41079463274")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -517,7 +625,7 @@
 				)
 			)
 		)
-		(path "/3ef319c7-549d-452e-90b2-ac4f31d034a2")
+		(path "/13f4eb07-7ce1-45fb-a58d-d1b56bcb9b15")
 		(sheetname "/")
 		(sheetfile "MeshCrossway_RevA.kicad_sch")
 		(units
@@ -536,7 +644,7 @@
 			)
 			(fill no)
 			(layer "F.SilkS")
-			(uuid "bc9257f0-03d1-4ef5-a562-06d6564d8e04")
+			(uuid "e19f45da-1eee-4227-8837-b8cc76834200")
 		)
 		(fp_circle
 			(center 0 0)
@@ -547,12 +655,12 @@
 			)
 			(fill no)
 			(layer "F.CrtYd")
-			(uuid "0e5fc62b-8c5f-4486-818a-f743045ffa7d")
+			(uuid "e303b39a-56ff-4cf2-80d3-6c1879ada335")
 		)
 		(fp_text user "${REFERENCE}"
 			(at 0 -2 0)
 			(layer "F.Fab")
-			(uuid "9dd85dfe-17f5-4fa6-9ab2-7c0e052ab50a")
+			(uuid "18cb7844-b8ec-41f2-8aa3-53d5b818b451")
 			(effects
 				(font
 					(size 1 1)
@@ -564,226 +672,10 @@
 			(at 0 0)
 			(size 2 2)
 			(layers "F.Cu" "F.Mask")
-			(net "/A_3V3_OUT")
+			(net "/MT_HOST_TX")
 			(pinfunction "TP_1")
 			(pintype "passive")
-			(uuid "6be0f83d-c426-417e-9edc-f9da0009d950")
-		)
-		(embedded_fonts no)
-	)
-	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
-		(layer "F.Cu")
-		(uuid "389a96af-e4d5-4d99-acca-b79ead7c625d")
-		(at 262.625 77.075)
-		(descr "SMD pad as test Point, diameter 2.0mm")
-		(tags "test point SMD pad")
-		(property "Reference" "Rb5Vin1"
-			(at 0 -1.998 0)
-			(layer "F.SilkS")
-			(uuid "47de1208-e9d0-4372-b7c8-7846808e3b30")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Value" "TestPoint"
-			(at 0 2.05 0)
-			(layer "F.Fab")
-			(uuid "e2494234-c9ed-4a8c-b201-8202e4313562")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "67a5d150-e4b5-4a7d-b0e7-f715268a1ab2")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "528ecdd0-b7c1-4e6d-8e7c-af4f4726e027")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(path "/253260e9-38d1-4297-ad64-f245ead9b278")
-		(sheetname "/")
-		(sheetfile "MeshCrossway_RevA.kicad_sch")
-		(units
-			(unit
-				(name "A")
-				(pins "1")
-			)
-		)
-		(duplicate_pad_numbers_are_jumpers no)
-		(fp_circle
-			(center 0 0)
-			(end 0 1.2)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(fill no)
-			(layer "F.SilkS")
-			(uuid "2efc912b-61ae-4a2d-ba0b-8bcee691a853")
-		)
-		(fp_circle
-			(center 0 0)
-			(end 1.5 0)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(fill no)
-			(layer "F.CrtYd")
-			(uuid "7241ab2d-f251-421c-8e2a-84b45c8ccc8d")
-		)
-		(fp_text user "${REFERENCE}"
-			(at 0 -2 0)
-			(layer "F.Fab")
-			(uuid "43deb273-a365-4e5c-b71c-85d8910a43c6")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(pad "1" smd circle
-			(at 0 0)
-			(size 2 2)
-			(layers "F.Cu" "F.Mask")
-			(net "/RADIO_B_5V")
-			(pinfunction "TP_1")
-			(pintype "passive")
-			(uuid "f05ede39-1712-45c5-ae3d-db9140193e5d")
-		)
-		(embedded_fonts no)
-	)
-	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
-		(layer "F.Cu")
-		(uuid "551339e3-268e-4e0d-aa1a-0233c1e9612f")
-		(at 258.575 77.075)
-		(descr "SMD pad as test Point, diameter 2.0mm")
-		(tags "test point SMD pad")
-		(property "Reference" "Ra5Vin1"
-			(at 0 -1.998 0)
-			(layer "F.SilkS")
-			(uuid "bdd35b63-715c-49e6-8a02-4aef8c1a0edc")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Value" "TestPoint"
-			(at 0 2.05 0)
-			(layer "F.Fab")
-			(uuid "fc02bcbb-f45a-4314-89d6-3e6a452edb74")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "018fe0a3-3c46-4241-b9c9-57ec5c33740a")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "e75689ed-e39f-46d8-b532-e62c42f3ce5e")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(path "/de5a73ec-a812-44c4-9367-7a113ef61207")
-		(sheetname "/")
-		(sheetfile "MeshCrossway_RevA.kicad_sch")
-		(units
-			(unit
-				(name "A")
-				(pins "1")
-			)
-		)
-		(duplicate_pad_numbers_are_jumpers no)
-		(fp_circle
-			(center 0 0)
-			(end 0 1.2)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(fill no)
-			(layer "F.SilkS")
-			(uuid "ee833cab-e20d-4ef9-a830-fd59ad61cba2")
-		)
-		(fp_circle
-			(center 0 0)
-			(end 1.5 0)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(fill no)
-			(layer "F.CrtYd")
-			(uuid "c9b3c7d3-76d0-4feb-93f5-ea704a72a7d4")
-		)
-		(fp_text user "${REFERENCE}"
-			(at 0 -2 0)
-			(layer "F.Fab")
-			(uuid "bab78f0a-e80c-4bb6-8c5e-342c085d5971")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(pad "1" smd circle
-			(at 0 0)
-			(size 2 2)
-			(layers "F.Cu" "F.Mask")
-			(net "/RADIO_A_5V")
-			(pinfunction "TP_1")
-			(pintype "passive")
-			(uuid "ded37202-6111-4d39-8da7-1a55cf71eb01")
+			(uuid "538872ed-3355-4a26-a965-81c5f68fa0d8")
 		)
 		(embedded_fonts no)
 	)
@@ -1017,14 +909,14 @@
 	)
 	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
 		(layer "F.Cu")
-		(uuid "5e58a2d4-624f-4aae-a5bf-c450e875a8d3")
-		(at 254.525 77.075)
+		(uuid "76ed6b5d-1fbf-4dee-aed9-0e31c001a801")
+		(at 149.525 165.125)
 		(descr "SMD pad as test Point, diameter 2.0mm")
 		(tags "test point SMD pad")
-		(property "Reference" "JB-5v1"
+		(property "Reference" "TP3"
 			(at 0 -1.998 0)
 			(layer "F.SilkS")
-			(uuid "6f17c783-be4e-42ef-af35-fe19784a911e")
+			(uuid "521d4fa7-ca13-460c-b2a1-4144ac7dd134")
 			(effects
 				(font
 					(size 1 1)
@@ -1032,10 +924,10 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint"
+		(property "Value" "RADIO_A_5V"
 			(at 0 2.05 0)
 			(layer "F.Fab")
-			(uuid "dff8c8af-e9fd-401e-a620-afbba271c361")
+			(uuid "f60e4952-73f8-48e8-9656-7a807a86ce17")
 			(effects
 				(font
 					(size 1 1)
@@ -1048,7 +940,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "ba7e35fe-2425-490c-8964-9cef5330ad83")
+			(uuid "3f0922db-bed6-4014-9248-f1812f9af986")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1061,7 +953,7 @@
 			(unlocked yes)
 			(layer "F.Fab")
 			(hide yes)
-			(uuid "f8b59da7-53fd-4a15-ba1f-4745c215e6cc")
+			(uuid "64dbaf67-cdd5-4ecb-b6d2-ef50728ac639")
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -1069,6 +961,7 @@
 				)
 			)
 		)
+		(path "/de5a73ec-a812-44c4-9367-7a113ef61207")
 		(sheetname "/")
 		(sheetfile "MeshCrossway_RevA.kicad_sch")
 		(units
@@ -1087,7 +980,7 @@
 			)
 			(fill no)
 			(layer "F.SilkS")
-			(uuid "63b1edc3-5d51-49ea-acb7-97d23c34eb7b")
+			(uuid "67a1b105-9d7e-4311-9caf-ef97fc0abb03")
 		)
 		(fp_circle
 			(center 0 0)
@@ -1098,12 +991,12 @@
 			)
 			(fill no)
 			(layer "F.CrtYd")
-			(uuid "09680d84-08e3-4bb6-b3ff-e9efbd70f536")
+			(uuid "5e80db56-1fb8-4880-9a7b-a97e85603d7d")
 		)
 		(fp_text user "${REFERENCE}"
 			(at 0 -2 0)
 			(layer "F.Fab")
-			(uuid "1d0a1e17-9551-48df-9b4a-b945c296e6c2")
+			(uuid "42fdb293-fdb0-4843-bd23-71b0926738d8")
 			(effects
 				(font
 					(size 1 1)
@@ -1115,118 +1008,10 @@
 			(at 0 0)
 			(size 2 2)
 			(layers "F.Cu" "F.Mask")
-			(net "/J8_5V")
+			(net "/RADIO_A_5V")
 			(pinfunction "TP_1")
 			(pintype "passive")
-			(uuid "6c5794a0-ebc4-41c1-a440-bff4f4f61ecd")
-		)
-		(embedded_fonts no)
-	)
-	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
-		(layer "F.Cu")
-		(uuid "6b734156-5906-4189-bda6-c68a0dbe7344")
-		(at 254.525 73.025)
-		(descr "SMD pad as test Point, diameter 2.0mm")
-		(tags "test point SMD pad")
-		(property "Reference" "5v1"
-			(at 0 -1.998 0)
-			(layer "F.SilkS")
-			(uuid "f54af2aa-5391-42e6-983d-22bbdd0b9310")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Value" "TestPoint"
-			(at 0 2.05 0)
-			(layer "F.Fab")
-			(uuid "7796f0c5-6827-4411-8983-f1bdafc8de8c")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "7e3d2bc2-3311-470c-91a9-f289123f1a3e")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(unlocked yes)
-			(layer "F.Fab")
-			(hide yes)
-			(uuid "25b6b771-9119-4184-9c82-e3556f994f9b")
-			(effects
-				(font
-					(size 1.27 1.27)
-					(thickness 0.15)
-				)
-			)
-		)
-		(path "/2955e6c1-0961-44ab-8386-1dc564aed7b8")
-		(sheetname "/")
-		(sheetfile "MeshCrossway_RevA.kicad_sch")
-		(units
-			(unit
-				(name "A")
-				(pins "1")
-			)
-		)
-		(duplicate_pad_numbers_are_jumpers no)
-		(fp_circle
-			(center 0 0)
-			(end 0 1.2)
-			(stroke
-				(width 0.12)
-				(type solid)
-			)
-			(fill no)
-			(layer "F.SilkS")
-			(uuid "fdda77a9-db00-4d30-b806-18d365f115b8")
-		)
-		(fp_circle
-			(center 0 0)
-			(end 1.5 0)
-			(stroke
-				(width 0.05)
-				(type solid)
-			)
-			(fill no)
-			(layer "F.CrtYd")
-			(uuid "98b05ccd-3d9b-4e72-a5da-cb0d2740345b")
-		)
-		(fp_text user "${REFERENCE}"
-			(at 0 -2 0)
-			(layer "F.Fab")
-			(uuid "6f7a80c1-3b37-4589-8b6a-51d4e5568d6b")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-			)
-		)
-		(pad "1" smd circle
-			(at 0 0)
-			(size 2 2)
-			(layers "F.Cu" "F.Mask")
-			(net "/LOCAL_5V")
-			(pinfunction "TP_1")
-			(pintype "passive")
-			(uuid "bde5c5d3-c730-43aa-8502-aad4144f9105")
+			(uuid "3fcba0f2-d091-4214-ab4d-3f2dd66be2c0")
 		)
 		(embedded_fonts no)
 	)
@@ -1707,6 +1492,114 @@
 				(xyz 0 0 0)
 			)
 		)
+	)
+	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
+		(layer "F.Cu")
+		(uuid "88bd3630-aeff-4bef-977b-67eb8a6b7190")
+		(at 153.575 157.025)
+		(descr "SMD pad as test Point, diameter 2.0mm")
+		(tags "test point SMD pad")
+		(property "Reference" "TP4"
+			(at 0 -1.998 0)
+			(layer "F.SilkS")
+			(uuid "5dfb95bc-8bfb-4bcb-aafa-c76767bfc037")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Value" "RADIO_B_5V"
+			(at 0 2.05 0)
+			(layer "F.Fab")
+			(uuid "5b5fda68-879f-45ca-9a7f-7c1d01d0b699")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6e217cc9-c5ec-42ea-bb00-fbc27f480c15")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "abc33292-1107-4270-a213-2ba2b5423db9")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(path "/253260e9-38d1-4297-ad64-f245ead9b278")
+		(sheetname "/")
+		(sheetfile "MeshCrossway_RevA.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1")
+			)
+		)
+		(duplicate_pad_numbers_are_jumpers no)
+		(fp_circle
+			(center 0 0)
+			(end 0 1.2)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.SilkS")
+			(uuid "56145fea-4658-47bb-9ce1-2d1fc9d91219")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 1.5 0)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.CrtYd")
+			(uuid "b65961d5-50de-4b2b-a425-e9d2dcc7c64b")
+		)
+		(fp_text user "${REFERENCE}"
+			(at 0 -2 0)
+			(layer "F.Fab")
+			(uuid "244b7afc-23f7-46fd-8c18-e2747beae3a9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(pad "1" smd circle
+			(at 0 0)
+			(size 2 2)
+			(layers "F.Cu" "F.Mask")
+			(net "/RADIO_B_5V")
+			(pinfunction "TP_1")
+			(pintype "passive")
+			(uuid "9ffea6c9-63a7-44d4-87f4-0d5d723e29fa")
+		)
+		(embedded_fonts no)
 	)
 	(footprint "MeshCrossway:Module_XIAO_ESP32S3_WioSX1262_Socket"
 		(layer "F.Cu")
@@ -2227,6 +2120,114 @@
 				(xyz 0 0 0)
 			)
 		)
+	)
+	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
+		(layer "F.Cu")
+		(uuid "97c47c6e-207d-4991-a451-acb4064e073b")
+		(at 149.525 161.075)
+		(descr "SMD pad as test Point, diameter 2.0mm")
+		(tags "test point SMD pad")
+		(property "Reference" "TP2"
+			(at 0 -1.998 0)
+			(layer "F.SilkS")
+			(uuid "420483b7-67b2-42c9-9d3a-573fcc3700f4")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Value" "LOCAL_5V"
+			(at 0 2.05 0)
+			(layer "F.Fab")
+			(uuid "622708a4-e7bd-4fa2-a612-d8bda8a8e768")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "d01b17ca-d757-4089-b584-b037680c6bbe")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "9bef32c9-2a77-412a-a88e-b9b8e2577b22")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(path "/2955e6c1-0961-44ab-8386-1dc564aed7b8")
+		(sheetname "/")
+		(sheetfile "MeshCrossway_RevA.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1")
+			)
+		)
+		(duplicate_pad_numbers_are_jumpers no)
+		(fp_circle
+			(center 0 0)
+			(end 0 1.2)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.SilkS")
+			(uuid "43de5fe1-703d-42b0-a113-e41e341eec3c")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 1.5 0)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.CrtYd")
+			(uuid "b54384e8-3d7e-4c18-bd6e-9d3d60f96e16")
+		)
+		(fp_text user "${REFERENCE}"
+			(at 0 -2 0)
+			(layer "F.Fab")
+			(uuid "4de25831-9ea3-4b09-b10b-9803a36f0321")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(pad "1" smd circle
+			(at 0 0)
+			(size 2 2)
+			(layers "F.Cu" "F.Mask")
+			(net "/LOCAL_5V")
+			(pinfunction "TP_1")
+			(pintype "passive")
+			(uuid "800d1692-54ea-45ed-a600-a75edd3597b3")
+		)
+		(embedded_fonts no)
 	)
 	(footprint "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
 		(layer "F.Cu")
@@ -3056,6 +3057,222 @@
 	)
 	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
 		(layer "F.Cu")
+		(uuid "b3d0458b-1f8c-41b9-b441-10051fd8f180")
+		(at 157.625 157.025)
+		(descr "SMD pad as test Point, diameter 2.0mm")
+		(tags "test point SMD pad")
+		(property "Reference" "TP7"
+			(at 0 -1.998 0)
+			(layer "F.SilkS")
+			(uuid "db9428e0-2398-49bc-a6ef-f87646c836f8")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Value" "MC_HOST_TX"
+			(at 0 2.05 0)
+			(layer "F.Fab")
+			(uuid "926857b0-d580-4062-ac91-79854dcbf92c")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "834c288c-fb7d-4ba6-ae5a-412aa592cb98")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Description" "Test point for MC_HOST_TX"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "8062d21b-111e-41f5-aeaa-1bb789cadc8d")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(path "/f119e209-b3f0-44f5-b766-2a352e20da86")
+		(sheetname "/")
+		(sheetfile "MeshCrossway_RevA.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1")
+			)
+		)
+		(duplicate_pad_numbers_are_jumpers no)
+		(fp_circle
+			(center 0 0)
+			(end 0 1.2)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.SilkS")
+			(uuid "1ae2ce7c-40b0-4e9d-9698-ce4e292ccab3")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 1.5 0)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.CrtYd")
+			(uuid "d6c5c123-67c0-4b57-809d-7c8f35908ba0")
+		)
+		(fp_text user "${REFERENCE}"
+			(at 0 -2 0)
+			(layer "F.Fab")
+			(uuid "37d8648b-1783-489d-9487-cdb07c05bf98")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(pad "1" smd circle
+			(at 0 0)
+			(size 2 2)
+			(layers "F.Cu" "F.Mask")
+			(net "/MC_HOST_TX")
+			(pinfunction "TP_1")
+			(pintype "passive")
+			(uuid "cd57b582-5650-4348-b230-cb67dd041de9")
+		)
+		(embedded_fonts no)
+	)
+	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
+		(layer "F.Cu")
+		(uuid "c9b1f59c-52bd-43e5-bc21-f944eb8fb5d5")
+		(at 157.625 161.075)
+		(descr "SMD pad as test Point, diameter 2.0mm")
+		(tags "test point SMD pad")
+		(property "Reference" "TP9"
+			(at 0 -1.998 0)
+			(layer "F.SilkS")
+			(uuid "b7136408-0416-4826-8bb4-96ee887f6e35")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Value" "A_3V3_OUT"
+			(at 0 2.05 0)
+			(layer "F.Fab")
+			(uuid "83c9d881-6b5d-4f7d-86c9-e2706bdd944f")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4ac6f4e9-3b18-4e77-b26e-a6695b2aa895")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "4e34cdec-eb2f-44f6-973b-2e74297354e7")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(path "/3ef319c7-549d-452e-90b2-ac4f31d034a2")
+		(sheetname "/")
+		(sheetfile "MeshCrossway_RevA.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1")
+			)
+		)
+		(duplicate_pad_numbers_are_jumpers no)
+		(fp_circle
+			(center 0 0)
+			(end 0 1.2)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.SilkS")
+			(uuid "7b792ccb-0423-4885-a288-c85f7fa54e81")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 1.5 0)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.CrtYd")
+			(uuid "71139439-9d02-452a-bdc0-631c43275549")
+		)
+		(fp_text user "${REFERENCE}"
+			(at 0 -2 0)
+			(layer "F.Fab")
+			(uuid "ebe7998c-4410-4c7b-9bed-79df290a57ea")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(pad "1" smd circle
+			(at 0 0)
+			(size 2 2)
+			(layers "F.Cu" "F.Mask")
+			(net "/A_3V3_OUT")
+			(pinfunction "TP_1")
+			(pintype "passive")
+			(uuid "c5e2ba30-b9f1-491d-8216-09000be5efea")
+		)
+		(embedded_fonts no)
+	)
+	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
+		(layer "F.Cu")
 		(uuid "e572520a-1a31-4427-9d4d-2d3425cb109f")
 		(at 201 64.5)
 		(descr "SMD pad as test Point, diameter 2.0mm")
@@ -3071,7 +3288,7 @@
 				)
 			)
 		)
-		(property "Value" "TestPoint"
+		(property "Value" "MC_HOST_RX"
 			(at 0 2.05 0)
 			(layer "F.Fab")
 			(uuid "9908ced3-7b59-4ad8-814d-2f2debfacdf9")
@@ -3095,7 +3312,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Test point for MC_HOST_RX"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -3108,6 +3325,7 @@
 				)
 			)
 		)
+		(path "/f5cc6cc9-f74a-4dd1-b77d-e249ca175694")
 		(sheetname "/")
 		(sheetfile "MeshCrossway_RevA.kicad_sch")
 		(units
@@ -3461,6 +3679,114 @@
 				(xyz 0 0 0)
 			)
 		)
+	)
+	(footprint "TestPoint:TestPoint_Pad_D2.0mm"
+		(layer "F.Cu")
+		(uuid "ff92f82a-47c7-404a-bf0e-1182023d87d4")
+		(at 153.575 165.125)
+		(descr "SMD pad as test Point, diameter 2.0mm")
+		(tags "test point SMD pad")
+		(property "Reference" "TP6"
+			(at 0 -1.998 0)
+			(layer "F.SilkS")
+			(uuid "ebf013b6-f693-4ce1-a726-f18d94cb68d1")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Value" "MT_HOST_RX"
+			(at 0 2.05 0)
+			(layer "F.Fab")
+			(uuid "b2212795-edc1-43d3-98cd-69e32f31dbe2")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "c16bcdf9-a926-4378-a0da-2d1f8662a2bd")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "Description" "Test point for MT_HOST_RX"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "6af4a24b-fb73-4141-96ec-d3b6b9590ef8")
+			(effects
+				(font
+					(size 1.27 1.27)
+					(thickness 0.15)
+				)
+			)
+		)
+		(path "/703ad44c-78bd-45b6-827c-f15a57e881be")
+		(sheetname "/")
+		(sheetfile "MeshCrossway_RevA.kicad_sch")
+		(units
+			(unit
+				(name "A")
+				(pins "1")
+			)
+		)
+		(duplicate_pad_numbers_are_jumpers no)
+		(fp_circle
+			(center 0 0)
+			(end 0 1.2)
+			(stroke
+				(width 0.12)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.SilkS")
+			(uuid "8b905e90-ba60-418f-bcc5-c7d5990a2edb")
+		)
+		(fp_circle
+			(center 0 0)
+			(end 1.5 0)
+			(stroke
+				(width 0.05)
+				(type solid)
+			)
+			(fill no)
+			(layer "F.CrtYd")
+			(uuid "993ba1fd-a0b6-428c-9ca6-8a77083ff81a")
+		)
+		(fp_text user "${REFERENCE}"
+			(at 0 -2 0)
+			(layer "F.Fab")
+			(uuid "ddadd657-cea0-4b03-9438-c6aa80b5668a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(pad "1" smd circle
+			(at 0 0)
+			(size 2 2)
+			(layers "F.Cu" "F.Mask")
+			(net "/MT_HOST_RX")
+			(pinfunction "TP_1")
+			(pintype "passive")
+			(uuid "8cb1b819-57fb-4f95-9e57-7c607ce0a6ce")
+		)
+		(embedded_fonts no)
 	)
 	(footprint "Resistor_SMD:R_0603_1608Metric"
 		(layer "B.Cu")
@@ -5277,6 +5603,7 @@
 				(justify mirror)
 			)
 		)
+		(path "/8c719f84-3c4a-4e15-921e-cff7abcfb201")
 		(sheetname "/")
 		(sheetfile "MeshCrossway_RevA.kicad_sch")
 		(units

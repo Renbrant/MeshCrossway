@@ -2838,6 +2838,16 @@
 	)
 	(wire
 		(pts
+			(xy 108.38 186.8) (xy 112.38 186.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "0f14a991-d4b3-4984-92c2-3cfbb26f5856")
+	)
+	(wire
+		(pts
 			(xy 165.99 97.19) (xy 170.99 97.19)
 		)
 		(stroke
@@ -2928,6 +2938,16 @@
 	)
 	(wire
 		(pts
+			(xy 88.38 186.8) (xy 92.38 186.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "23a6acd3-7bf0-4528-b35b-3b50bf9aec11")
+	)
+	(wire
+		(pts
 			(xy 236.22 52.07) (xy 233.68 52.07)
 		)
 		(stroke
@@ -2998,7 +3018,7 @@
 	)
 	(wire
 		(pts
-			(xy 119.37 190.5) (xy 115.37 190.5)
+			(xy 111.75 180.34) (xy 107.75 180.34)
 		)
 		(stroke
 			(width 0)
@@ -3168,7 +3188,7 @@
 	)
 	(wire
 		(pts
-			(xy 59.37 190.5) (xy 55.37 190.5)
+			(xy 51.75 180.34) (xy 47.75 180.34)
 		)
 		(stroke
 			(width 0)
@@ -3258,7 +3278,7 @@
 	)
 	(wire
 		(pts
-			(xy 137.47 190.61) (xy 133.47 190.61)
+			(xy 129.85 180.45) (xy 125.85 180.45)
 		)
 		(stroke
 			(width 0)
@@ -3298,7 +3318,7 @@
 	)
 	(wire
 		(pts
-			(xy 99.37 190.5) (xy 95.37 190.5)
+			(xy 91.75 180.34) (xy 87.75 180.34)
 		)
 		(stroke
 			(width 0)
@@ -3348,6 +3368,16 @@
 	)
 	(wire
 		(pts
+			(xy 68.38 186.8) (xy 72.38 186.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "90f31cb4-3ac2-4fb5-96bf-28bf62f37ed0")
+	)
+	(wire
+		(pts
 			(xy 55.96 156.21) (xy 60.96 156.21)
 		)
 		(stroke
@@ -3368,7 +3398,7 @@
 	)
 	(wire
 		(pts
-			(xy 79.37 190.5) (xy 75.37 190.5)
+			(xy 71.75 180.34) (xy 67.75 180.34)
 		)
 		(stroke
 			(width 0)
@@ -3385,6 +3415,16 @@
 			(type default)
 		)
 		(uuid "9939bcb5-eaf4-4061-b728-3f36189f61a0")
+	)
+	(wire
+		(pts
+			(xy 48.38 186.8) (xy 52.38 186.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9a72e027-27a7-4ebc-a1fa-9e7ad44c2ccb")
 	)
 	(wire
 		(pts
@@ -3628,7 +3668,7 @@
 	)
 	(wire
 		(pts
-			(xy 39.37 190.5) (xy 35.37 190.5)
+			(xy 31.75 180.34) (xy 27.75 180.34)
 		)
 		(stroke
 			(width 0)
@@ -3857,7 +3897,7 @@
 		(uuid "18bb1c9e-2887-4158-9d42-e944300ef963")
 	)
 	(label "RADIO_B_5V"
-		(at 95.37 190.5 180)
+		(at 87.75 180.34 180)
 		(effects
 			(font
 				(size 0.72 0.72)
@@ -3947,7 +3987,7 @@
 		(uuid "23370848-f5fa-4202-9b28-5d3230a438d5")
 	)
 	(label "RADIO_A_5V"
-		(at 75.37 190.5 180)
+		(at 67.75 180.34 180)
 		(effects
 			(font
 				(size 0.72 0.72)
@@ -4057,7 +4097,7 @@
 		(uuid "590800f7-44c4-41d8-83fe-76f142b7b809")
 	)
 	(label "LOCAL_5V"
-		(at 55.37 190.5 180)
+		(at 47.75 180.34 180)
 		(effects
 			(font
 				(size 0.72 0.72)
@@ -4095,6 +4135,16 @@
 			(justify left bottom)
 		)
 		(uuid "6367fd69-de99-464a-aeaa-bd5c50349477")
+	)
+	(label "MT_HOST_RX"
+		(at 68.38 186.8 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "6a568a34-ab04-4aca-89f7-1d40797b36a2")
 	)
 	(label "GND"
 		(at 269.88 95.57 0)
@@ -4157,7 +4207,7 @@
 		(uuid "7bef1796-ef7c-4647-8988-fca64db6ab9e")
 	)
 	(label "J8_5V"
-		(at 35.37 190.5 180)
+		(at 27.75 180.34 180)
 		(effects
 			(font
 				(size 0.72 0.72)
@@ -4247,7 +4297,7 @@
 		(uuid "a3a1d73d-278f-47d5-93e6-7eed20a1b8ed")
 	)
 	(label "B_3V3_OUT"
-		(at 133.47 190.61 180)
+		(at 125.85 180.45 180)
 		(effects
 			(font
 				(size 0.72 0.72)
@@ -4366,8 +4416,18 @@
 		)
 		(uuid "cc2f252e-e3c7-4856-aa6e-c154aecc383e")
 	)
+	(label "MC_HOST_RX"
+		(at 108.38 186.8 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "ce044c86-9448-4f69-ac45-4c9d38555fd2")
+	)
 	(label "A_3V3_OUT"
-		(at 115.37 190.5 180)
+		(at 107.75 180.34 180)
 		(effects
 			(font
 				(size 0.72 0.72)
@@ -4375,6 +4435,26 @@
 			(justify right bottom)
 		)
 		(uuid "ce7a8042-4f60-42b2-9b63-e5490aaec6dc")
+	)
+	(label "MC_HOST_TX"
+		(at 88.38 186.8 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "d228f3df-c725-47d7-a108-8d7531802df6")
+	)
+	(label "MT_HOST_TX"
+		(at 48.38 186.8 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "d3142f0b-6d9b-48f1-b012-fb18a0b870d1")
 	)
 	(label "GND"
 		(at 135.31 68.58 0)
@@ -4910,6 +4990,83 @@
 		)
 	)
 	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 54.92 186.8 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "13f4eb07-7ce1-45fb-a58d-d1b56bcb9b15")
+		(property "Reference" "TP5"
+			(at 54.92 183.6 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "MT_HOST_TX"
+			(at 54.92 190 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 54.92 186.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 54.92 186.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" "Test point for MT_HOST_TX"
+			(at 54.92 186.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "71140bde-9163-4d31-9934-96e82df1ca39")
+		)
+		(instances
+			(project "MeshCrossway_RevA"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "MeshCrossway:XIAO_ADDON")
 		(at 252.18 103.19 0)
 		(unit 1)
@@ -5027,7 +5184,7 @@
 	)
 	(symbol
 		(lib_id "MeshCrossway:TP")
-		(at 101.91 190.5 0)
+		(at 94.29 180.34 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -5037,7 +5194,7 @@
 		(dnp no)
 		(uuid "253260e9-38d1-4297-ad64-f245ead9b278")
 		(property "Reference" "TP4"
-			(at 101.91 187.3 0)
+			(at 94.29 177.14 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -5048,7 +5205,7 @@
 			)
 		)
 		(property "Value" "RADIO_B_5V"
-			(at 101.91 193.7 0)
+			(at 94.29 183.54 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5059,7 +5216,7 @@
 			)
 		)
 		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
-			(at 101.91 190.5 0)
+			(at 94.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5070,7 +5227,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 101.91 190.5 0)
+			(at 94.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5081,7 +5238,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 101.91 190.5 0)
+			(at 94.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5105,7 +5262,7 @@
 	)
 	(symbol
 		(lib_id "MeshCrossway:TP")
-		(at 61.91 190.5 0)
+		(at 54.29 180.34 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -5115,7 +5272,7 @@
 		(dnp no)
 		(uuid "2955e6c1-0961-44ab-8386-1dc564aed7b8")
 		(property "Reference" "TP2"
-			(at 61.91 187.3 0)
+			(at 54.29 177.14 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -5126,7 +5283,7 @@
 			)
 		)
 		(property "Value" "LOCAL_5V"
-			(at 61.91 193.7 0)
+			(at 54.29 183.54 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5137,7 +5294,7 @@
 			)
 		)
 		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
-			(at 61.91 190.5 0)
+			(at 54.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5148,7 +5305,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 61.91 190.5 0)
+			(at 54.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5159,7 +5316,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 61.91 190.5 0)
+			(at 54.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5263,7 +5420,7 @@
 	)
 	(symbol
 		(lib_id "MeshCrossway:TP")
-		(at 121.91 190.5 0)
+		(at 114.29 180.34 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -5273,7 +5430,7 @@
 		(dnp no)
 		(uuid "3ef319c7-549d-452e-90b2-ac4f31d034a2")
 		(property "Reference" "TP9"
-			(at 121.91 187.3 0)
+			(at 114.29 177.14 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -5284,7 +5441,7 @@
 			)
 		)
 		(property "Value" "A_3V3_OUT"
-			(at 121.91 193.7 0)
+			(at 114.29 183.54 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5295,7 +5452,7 @@
 			)
 		)
 		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
-			(at 121.91 190.5 0)
+			(at 114.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5306,7 +5463,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 121.91 190.5 0)
+			(at 114.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5317,7 +5474,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 121.91 190.5 0)
+			(at 114.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5909,6 +6066,83 @@
 		)
 	)
 	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 74.92 186.8 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "703ad44c-78bd-45b6-827c-f15a57e881be")
+		(property "Reference" "TP6"
+			(at 74.92 183.6 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "MT_HOST_RX"
+			(at 74.92 190 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 74.92 186.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 74.92 186.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" "Test point for MT_HOST_RX"
+			(at 74.92 186.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "40eb101a-59cb-45c7-bf5a-40d0c8f9b188")
+		)
+		(instances
+			(project "MeshCrossway_RevA"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "MeshCrossway:R")
 		(at 111.68 124.46 0)
 		(unit 1)
@@ -6070,7 +6304,7 @@
 	)
 	(symbol
 		(lib_id "MeshCrossway:TP")
-		(at 41.91 190.5 0)
+		(at 34.29 180.34 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -6080,7 +6314,7 @@
 		(dnp no)
 		(uuid "86a089ed-b330-4dbc-a32e-172d596bff61")
 		(property "Reference" "TP1"
-			(at 41.91 187.3 0)
+			(at 34.29 177.14 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6091,7 +6325,7 @@
 			)
 		)
 		(property "Value" "J8_5V"
-			(at 41.91 193.7 0)
+			(at 34.29 183.54 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6102,7 +6336,7 @@
 			)
 		)
 		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
-			(at 41.91 190.5 0)
+			(at 34.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6113,7 +6347,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 41.91 190.5 0)
+			(at 34.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6124,7 +6358,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 41.91 190.5 0)
+			(at 34.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6708,7 +6942,7 @@
 	)
 	(symbol
 		(lib_id "MeshCrossway:TP")
-		(at 140.01 190.61 0)
+		(at 132.39 180.45 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -6718,7 +6952,7 @@
 		(dnp no)
 		(uuid "cbfe3b04-c93e-484b-b9a1-81d66d1dece5")
 		(property "Reference" "TP10"
-			(at 140.01 187.41 0)
+			(at 132.39 177.25 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -6729,7 +6963,7 @@
 			)
 		)
 		(property "Value" "B_3V3_OUT"
-			(at 140.01 193.81 0)
+			(at 132.39 183.65 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6740,7 +6974,7 @@
 			)
 		)
 		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
-			(at 140.01 190.61 0)
+			(at 132.39 180.45 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6751,7 +6985,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 140.01 190.61 0)
+			(at 132.39 180.45 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6762,7 +6996,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 140.01 190.61 0)
+			(at 132.39 180.45 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7041,7 +7275,7 @@
 	)
 	(symbol
 		(lib_id "MeshCrossway:TP")
-		(at 81.91 190.5 0)
+		(at 74.29 180.34 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -7051,7 +7285,7 @@
 		(dnp no)
 		(uuid "de5a73ec-a812-44c4-9367-7a113ef61207")
 		(property "Reference" "TP3"
-			(at 81.91 187.3 0)
+			(at 74.29 177.14 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -7062,7 +7296,7 @@
 			)
 		)
 		(property "Value" "RADIO_A_5V"
-			(at 81.91 193.7 0)
+			(at 74.29 183.54 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7073,7 +7307,7 @@
 			)
 		)
 		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
-			(at 81.91 190.5 0)
+			(at 74.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7084,7 +7318,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 81.91 190.5 0)
+			(at 74.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7095,7 +7329,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 81.91 190.5 0)
+			(at 74.29 180.34 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -7197,177 +7431,9 @@
 			)
 		)
 	)
-	(wire
-		(pts
-			(xy 155.37 190.5) (xy 159.37 190.5)
-		)
-		(stroke (width 0) (type default))
-		(uuid "9a72e027-27a7-4ebc-a1fa-9e7ad44c2ccb")
-	)
-	(label "MT_HOST_TX"
-		(at 155.37 190.5 180)
-		(effects
-			(font (size 0.8 0.8))
-			(justify right bottom)
-		)
-		(uuid "d3142f0b-6d9b-48f1-b012-fb18a0b870d1")
-	)
-	(wire
-		(pts
-			(xy 175.37 190.5) (xy 179.37 190.5)
-		)
-		(stroke (width 0) (type default))
-		(uuid "90f31cb4-3ac2-4fb5-96bf-28bf62f37ed0")
-	)
-	(label "MT_HOST_RX"
-		(at 175.37 190.5 180)
-		(effects
-			(font (size 0.8 0.8))
-			(justify right bottom)
-		)
-		(uuid "6a568a34-ab04-4aca-89f7-1d40797b36a2")
-	)
-	(wire
-		(pts
-			(xy 195.37 190.5) (xy 199.37 190.5)
-		)
-		(stroke (width 0) (type default))
-		(uuid "23a6acd3-7bf0-4528-b35b-3b50bf9aec11")
-	)
-	(label "MC_HOST_TX"
-		(at 195.37 190.5 180)
-		(effects
-			(font (size 0.8 0.8))
-			(justify right bottom)
-		)
-		(uuid "d228f3df-c725-47d7-a108-8d7531802df6")
-	)
-	(wire
-		(pts
-			(xy 215.37 190.5) (xy 219.37 190.5)
-		)
-		(stroke (width 0) (type default))
-		(uuid "0f14a991-d4b3-4984-92c2-3cfbb26f5856")
-	)
-	(label "MC_HOST_RX"
-		(at 215.37 190.5 180)
-		(effects
-			(font (size 0.8 0.8))
-			(justify right bottom)
-		)
-		(uuid "ce044c86-9448-4f69-ac45-4c9d38555fd2")
-	)
 	(symbol
 		(lib_id "MeshCrossway:TP")
-		(at 161.91 190.5 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "13f4eb07-7ce1-45fb-a58d-d1b56bcb9b15")
-		(property "Reference" "TP5"
-			(at 161.91 187.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 1 1) (bold yes)))
-		)
-		(property "Value" "MT_HOST_TX"
-			(at 161.91 193.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 0.86 0.86)))
-		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
-			(at 161.91 190.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 1 1)))
-		)
-		(property "Datasheet" ""
-			(at 161.91 190.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 1 1)))
-		)
-		(property "Description" "Test point for MT_HOST_TX"
-			(at 161.91 190.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 1 1)))
-		)
-		(pin "1" (uuid "71140bde-9163-4d31-9934-96e82df1ca39"))
-		(instances
-			(project "MeshCrossway_RevA"
-				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
-					(reference "TP5")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "MeshCrossway:TP")
-		(at 181.91 190.5 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "703ad44c-78bd-45b6-827c-f15a57e881be")
-		(property "Reference" "TP6"
-			(at 181.91 187.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 1 1) (bold yes)))
-		)
-		(property "Value" "MT_HOST_RX"
-			(at 181.91 193.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 0.86 0.86)))
-		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
-			(at 181.91 190.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 1 1)))
-		)
-		(property "Datasheet" ""
-			(at 181.91 190.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 1 1)))
-		)
-		(property "Description" "Test point for MT_HOST_RX"
-			(at 181.91 190.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 1 1)))
-		)
-		(pin "1" (uuid "40eb101a-59cb-45c7-bf5a-40d0c8f9b188"))
-		(instances
-			(project "MeshCrossway_RevA"
-				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
-					(reference "TP6")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "MeshCrossway:TP")
-		(at 201.91 190.5 0)
+		(at 94.92 186.8 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -7377,39 +7443,62 @@
 		(dnp no)
 		(uuid "f119e209-b3f0-44f5-b766-2a352e20da86")
 		(property "Reference" "TP7"
-			(at 201.91 187.3 0)
+			(at 94.92 183.6 0)
 			(show_name no)
 			(do_not_autoplace no)
-			(effects (font (size 1 1) (bold yes)))
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
 		)
 		(property "Value" "MC_HOST_TX"
-			(at 201.91 193.7 0)
+			(at 94.92 190 0)
 			(show_name no)
 			(do_not_autoplace no)
-			(effects (font (size 0.86 0.86)))
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
 		)
 		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
-			(at 201.91 190.5 0)
+			(at 94.92 186.8 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
-			(effects (font (size 1 1)))
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
 		)
 		(property "Datasheet" ""
-			(at 201.91 190.5 0)
+			(at 94.92 186.8 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
-			(effects (font (size 1 1)))
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
 		)
 		(property "Description" "Test point for MC_HOST_TX"
-			(at 201.91 190.5 0)
+			(at 94.92 186.8 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
-			(effects (font (size 1 1)))
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
 		)
-		(pin "1" (uuid "0a3a0f0b-136f-4baa-bd11-c8d0176f23b0"))
+		(pin "1"
+			(uuid "0a3a0f0b-136f-4baa-bd11-c8d0176f23b0")
+		)
 		(instances
 			(project "MeshCrossway_RevA"
 				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
@@ -7419,61 +7508,6 @@
 			)
 		)
 	)
-	(symbol
-		(lib_id "MeshCrossway:TP")
-		(at 221.91 190.5 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "f5cc6cc9-f74a-4dd1-b77d-e249ca175694")
-		(property "Reference" "TP8"
-			(at 221.91 187.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 1 1) (bold yes)))
-		)
-		(property "Value" "MC_HOST_RX"
-			(at 221.91 193.7 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 0.86 0.86)))
-		)
-		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
-			(at 221.91 190.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 1 1)))
-		)
-		(property "Datasheet" ""
-			(at 221.91 190.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 1 1)))
-		)
-		(property "Description" "Test point for MC_HOST_RX"
-			(at 221.91 190.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects (font (size 1 1)))
-		)
-		(pin "1" (uuid "89dcf8fb-558f-49cc-a85d-94483f687766"))
-		(instances
-			(project "MeshCrossway_RevA"
-				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
-					(reference "TP8")
-					(unit 1)
-				)
-			)
-		)
-	)
-
 	(symbol
 		(lib_id "MeshCrossway:REG_TBD")
 		(at 60.96 95.25 0)
@@ -7552,6 +7586,83 @@
 			(project "MeshCrossway_RevA"
 				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
 					(reference "U1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 114.92 186.8 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "f5cc6cc9-f74a-4dd1-b77d-e249ca175694")
+		(property "Reference" "TP8"
+			(at 114.92 183.6 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "MC_HOST_RX"
+			(at 114.92 190 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 114.92 186.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 114.92 186.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" "Test point for MC_HOST_RX"
+			(at 114.92 186.8 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "89dcf8fb-558f-49cc-a85d-94483f687766")
+		)
+		(instances
+			(project "MeshCrossway_RevA"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP8")
 					(unit 1)
 				)
 			)
