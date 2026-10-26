@@ -1,3 +1,6 @@
+# Historical LoRa-V3 figure generator — superseded 2026-10-26.
+# Do NOT regenerate current V1 build diagrams from this script.
+# Active wiring contract: docs/hardware-wiring.md (2 x Seeed XIAO ESP32S3 + Wio-SX1262).
 """Generate original, dependency-free SVGs for the proposed LoRa V3 bench.
 
 Run from any directory. Labels use GPIO identities; photo positions are not
