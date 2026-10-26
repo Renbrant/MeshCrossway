@@ -2,9 +2,9 @@
 
 This folder contains a browser-based UI concept for the 3.5-inch MeshCrossway touchscreen.
 
-## Landscape UI v4 — dual collapsible sidebars
+## Landscape UI v5 — dual collapsible sidebars
 
-The current interactive simulator targets the **480 × 320 landscape screen**:
+The current interactive simulator targets the **480 × 320 landscape screen**. The v5 visual language takes the approved MeshCrossway field-console concept as its reference: **high-contrast dark slate surfaces, individually colored vector action icons, cyan active-state accents, topographic-inspired map styling and protruding edge handles** for both collapsible panels.
 
 - **Left sidebar:** global Home, Chats, Map, Radios and More navigation. The edge chevron collapses the sidebar to icons to reclaim map/content width.
 - **Center:** the current workspace, with more usable vertical area because the bottom navigation bar has been removed.
