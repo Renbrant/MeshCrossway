@@ -79,6 +79,40 @@ For each UART signal:
 
 Reserve independent radio reset/recovery control only where a safe accessible XIAO reset/power-control node is confirmed.
 
+## 6. Local decoupling and bulk capacitance
+
+The Rev A carrier shall include local decoupling footprints close to each powered module.
+
+### Radio A and Radio B
+
+For each XIAO + Wio assembly, reserve:
+
+- **100 nF ceramic** directly at the radio supply entry;
+- **10 uF ceramic** directly at the radio supply entry;
+- **47 uF bulk** footprint, initially DNP;
+- **100 uF bulk** footprint, initially DNP;
+- test point on the radio-side 3V3 rail and a nearby GND test point.
+
+The 100 nF and 10 uF parts are intended as normal local decoupling. The 47 uF and 100 uF footprints are experimental bulk-capacitance options for Rev A so TX/load-step behavior can be characterized without redesigning the PCB.
+
+Do not populate every bulk option blindly. Validate regulator stability, inrush current, startup behavior and effective capacitance under DC bias before choosing the production configuration.
+
+### GNSS
+
+Reserve near the MAX-M10S breakout supply entry:
+
+- **100 nF ceramic**;
+- **10 uF ceramic**;
+- optional additional bulk footprint if bench measurements show a need.
+
+### Carrier 3V3 entry
+
+Reserve a larger carrier-entry bulk capacitor footprint in the **220–470 uF** range, initially DNP, to support power-distribution testing. This capacitor is not a substitute for adequate regulator current capability.
+
+### Placement rule
+
+Place decoupling capacitors electrically and physically close to the corresponding module power/GND pins with short, wide connections and a direct low-impedance ground return. Do not place the capacitors far away merely for schematic neatness.
+
 ## 6. Power architecture — intentionally not frozen
 
 Current proposal:
@@ -91,10 +125,10 @@ Rev A schematic shall therefore include:
 
 - one carrier 3V3 entry net from Waveshare J8;
 - bulk capacitor footprint at carrier entry: 220–470 uF, DNP initially;
-- each radio branch through an isolatable link / 0 ohm or load-switch placeholder;
-- per-radio optional 47–100 uF bulk + 10 uF + 100 nF footprints;
+- each radio branch through a **3-pin 2.54 mm power-source selector jumper**: center pin to RADIO_x_3V3, one side to Waveshare J8 3V3, the other side to the local regulated 3V3 source;
+- per-radio 100 nF + 10 uF local decoupling, plus optional 47 uF and 100 uF bulk footprints;
 - GNSS 10 uF + 100 nF local decoupling footprints;
-- test points on source 3V3 and each branch;
+- test points on source 3V3 and each branch, with nearby GND points;
 - clear warning note: **DO NOT POPULATE SHARED RADIO POWER UNTIL J8 CURRENT BUDGET AND XIAO 3V3 REVERSE-FEED PATH ARE VERIFIED**.
 
 Initial firmware/UART bring-up remains with each XIAO powered from its own USB-C and only logic GND shared.
