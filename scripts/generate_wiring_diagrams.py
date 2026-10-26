@@ -1,83 +1,195 @@
-"""Generate original, dependency-free SVGs for the proposed LoRa V3 bench.
-
-Run from any directory. Labels use GPIO identities; photo positions are not
-interchangeable with Rev2 schematic numbers. See docs/hardware-wiring.md.
-"""
 from pathlib import Path
 from html import escape
+from xml.etree import ElementTree
+OUT=Path(__file__).resolve().parents[1] / "docs" / "images"
+OUT.mkdir(parents=True,exist_ok=True)
+C=dict(bg='#071628',panel='#11243a',panel2='#0b2034',cyan='#36c8f4',teal='#34d4ba',amber='#ffba65',purple='#9a9afc',white='#edf5ff',muted='#a6bfd4',line='#38516d',warn='#f4bc58',red='#fa7171',blue='#328bef')
+class Art:
+ def __init__(self,title,subtitle,footer):
+  self.a=['<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="'+escape(title,quote=True)+'">','<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#051325"/><stop offset="1" stop-color="#112a45"/></linearGradient><linearGradient id="glass" x1="0" x2="1"><stop offset="0" stop-color="#d9efff" stop-opacity="0.21"/><stop offset="1" stop-color="#8bd0f5" stop-opacity="0.07"/></linearGradient><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#85dbff"/></marker><marker id="arr2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#ffba65"/></marker></defs>']
+  self.rect(0,0,1280,720,fill='url(#bg)')
+  self.rect(14,14,1252,692,rx=22,fill='none',stroke='#244260',sw=2)
+  self.text(40,62,'MeshCrossway',34,C['cyan'],weight='bold')
+  self.text(325,61,'| '+title,28,C['white'],weight='bold')
+  self.text(40,91,subtitle,15,C['muted'])
+  self.rect(30,669,1220,27,rx=8,fill='#162a40',stroke='#253f57')
+  self.text(44,688,footer,13,C['warn'])
+ def attr(self,d):return ' '.join(f'{k.replace("_","-")}="{escape(str(v),quote=True)}"' for k,v in d.items() if v is not None)
+ def rect(self,x,y,w,h,rx=0,fill=None,stroke=None,sw=1,opacity=None):self.a.append('<rect '+self.attr(dict(x=x,y=y,width=w,height=h,rx=rx,fill=fill or 'none',stroke=stroke or 'none',stroke_width=sw,opacity=opacity))+'/>')
+ def text(self,x,y,t,size=18,color=None,weight='normal',anchor=None,opacity=None):self.a.append('<text '+self.attr(dict(x=x,y=y,font_family='DejaVu Sans,Arial,sans-serif',font_size=size,fill=color or C['white'],font_weight=weight,text_anchor=anchor,opacity=opacity))+'>'+escape(t)+'</text>')
+ def line(self,x1,y1,x2,y2,color=None,sw=2,arrow=False,dash=None):self.a.append('<line '+self.attr(dict(x1=x1,y1=y1,x2=x2,y2=y2,stroke=color or C['cyan'],stroke_width=sw,stroke_dasharray=dash,marker_end='url(#arr)' if arrow else None))+'/>')
+ def path(self,d,color=None,sw=2,arrow=False,dash=None):self.a.append('<path '+self.attr(dict(d=d,fill='none',stroke=color or C['cyan'],stroke_width=sw,stroke_dasharray=dash,stroke_linejoin='round',marker_end='url(#arr)' if arrow else None))+'/>')
+ def circ(self,x,y,r,fill=None,stroke=None,sw=1):self.a.append('<circle '+self.attr(dict(cx=x,cy=y,r=r,fill=fill or 'none',stroke=stroke or 'none',stroke_width=sw))+'/>')
+ def card(self,x,y,w,h,title,sub='',edge=None,fs=20):
+  edge=edge or C['cyan'];self.rect(x,y,w,h,rx=14,fill=C['panel'],stroke=edge,sw=1.7)
+  self.text(x+18,y+32,title,fs,C['white'],'bold')
+  if sub:self.text(x+18,y+53,sub,13,C['muted'])
+ def lines(self,x,y,rows,step=25,size=15,color=None):
+  for i,row in enumerate(rows):self.text(x,y+i*step,row,size,color or C['white'])
+ def chip(self,x,y,w,txt,edge=None):
+  edge=edge or C['cyan'];self.rect(x,y,w,24,rx=12,fill='#092439',stroke=edge);self.text(x+w/2,y+17,txt,12,edge,'bold','middle')
+ def xiao(self,x,y,scale=1,kind='MT'):
+  w=150*scale;h=90*scale;clr=C['cyan'] if kind=='MT' else C['amber']
+  self.rect(x,y,w,h,rx=7,fill='#07121c',stroke=clr,sw=2)
+  for i in range(7):
+   bx=x+(11+i*20)*scale;self.rect(bx,y-4*scale,8*scale,5*scale,rx=1,fill='#d7b86a');self.rect(bx,y+h-1*scale,8*scale,5*scale,rx=1,fill='#d7b86a')
+  self.rect(x+17*scale,y+13*scale,86*scale,55*scale,rx=5,fill='#c4d3dc',stroke='#7e99aa')
+  self.text(x+60*scale,y+36*scale,'Wio-SX1262',11*scale,'#122939','bold','middle')
+  self.text(x+60*scale,y+51*scale,'LoRa RF',9*scale,'#34465a',anchor='middle')
+  self.rect(x+115*scale,y+22*scale,23*scale,44*scale,rx=2,fill='#224259',stroke='#86b4d1')
+  self.text(x+126*scale,y+48*scale,'X',10*scale,C['white'],'bold','middle')
+  self.text(x+w/2,y+h+20*scale,'XIAO + Wio-SX1262',12*scale,clr,'bold','middle')
+ def display(self,x,y,w=370,h=225):
+  self.rect(x-10,y-10,w+20,h+20,rx=17,fill='url(#glass)',stroke='#bdd9ea',sw=3)
+  self.rect(x,y,w,h,rx=8,fill='#061423',stroke='#456277',sw=3)
+  self.rect(x+12,y+12,w-24,27,rx=5,fill='#0c2d46')
+  self.text(x+22,y+30,'MeshCrossway',15,C['cyan'],'bold')
+  self.text(x+w-16,y+29,'MT   MC   GNSS',11,C['teal'],anchor='end')
+  self.rect(x+14,y+48,w*.52,h-65,rx=4,fill='#1b525d')
+  for j in range(4):self.path(f'M {x+20} {y+75+j*29} q 44 -24 93 0 t 93 0',color='#6ba2a3',sw=1)
+  for dx,dy,clr in [(45,76,C['cyan']),(120,129,C['teal']),(165,83,C['amber'])]:self.circ(x+dx,y+dy,6,fill=clr,stroke='#edf5ff',sw=2)
+  self.rect(x+20+w*.52,y+48,w*.43,h-65,rx=5,fill='#101e30')
+  for j in range(3):
+   yy=y+74+j*42;self.circ(x+34+w*.52,yy,7,fill=[C['cyan'],C['teal'],C['amber']][j]);self.line(x+48+w*.52,yy-3,x+w-29,yy-3,color='#527289',sw=3);self.line(x+48+w*.52,yy+7,x+w-50,yy+7,color='#395975',sw=2)
+  self.text(x+w/2,y+h+36,'Waveshare ESP32-S3-Touch-LCD-3.5',13,C['muted'],anchor='middle')
+ def battery(self,x,y,w=180,h=104):
+  self.rect(x,y,w,h,rx=14,fill='#d1d8d9',stroke='#e8b353',sw=5)
+  self.rect(x+8,y+5,w-16,h-10,rx=8,fill='#cfd8d8')
+  self.text(x+w/2,y+40,'REAR BATTERY',16,'#293746','bold','middle')
+  self.text(x+w/2,y+63,'1S LiPo candidate',13,'#293746',anchor='middle')
+  self.text(x+w/2,y+82,'10,000 mAh',12,'#293746',anchor='middle')
+ def save(self,path):
+  self.a.append('</svg>');p=OUT/path;p.parent.mkdir(parents=True,exist_ok=True);p.write_text('\n'.join(self.a),encoding='utf8')
+  return p
 
-ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / 'docs' / 'images'
-OUT.mkdir(parents=True, exist_ok=True)
-INK='#182b42'; MUTED='#53657a'; BLUE='#1768b5'; GREEN='#087f68'; PURPLE='#8553b5'; RED='#c43c36'; GRAY='#596775'
+# 1. System overview
+s=Art('System architecture','V1: one shared carrier PCB, two independent XIAO/Wio radios and a rear LiPo','Conceptual only. Actual board placement, antenna isolation and firmware integration remain unvalidated.')
+s.card(45,194,255,265,'Radio A: Meshtastic','XIAO ESP32S3 + Wio-SX1262',C['cyan']);s.xiao(86,275,.95,'MT');s.chip(101,422,140,'LoRa • independent',C['cyan'])
+s.display(453,217,366,230)
+s.card(980,194,255,265,'Radio B: MeshCore','XIAO ESP32S3 + Wio-SX1262',C['amber']);s.xiao(1018,275,.95,'MC');s.chip(1039,422,142,'LoRa • independent',C['amber'])
+s.line(300,334,446,334,C['cyan'],3,True);s.chip(327,294,95,'UART1',C['cyan']);s.line(832,334,974,334,C['amber'],3,True);s.chip(861,294,95,'UART2',C['amber'])
+s.card(55,528,250,103,'u-blox MAX-M10S','GNSS breakout + active antenna',C['teal']);s.lines(74,599,['Proposed I2C GPIO21 / GPIO38'],24,14)
+s.card(428,528,406,103,'ONE custom carrier PCB','Display + both radios + GNSS + service connectors',C['teal']);s.lines(450,598,['Battery mounted on the rear of the carrier'],23,14)
+s.card(969,528,265,103,'Rear 1S LiPo battery','Protected cell + Waveshare AXP2101',C['amber']);s.lines(987,598,['Capacity / power path: unverified'],23,13)
+s.path('M 287 528 V 491 H 520 V 468',C['teal'],2,True)
+s.path('M 1110 528 V 494 H 759 V 467',C['amber'],2,True)
+s.save('architecture/system-overview.svg')
 
-def text(x,y,s,size=18,color=INK,bold=False,anchor='start'):
-    return f'<text x="{x}" y="{y}" font-family="DejaVu Sans,Arial,sans-serif" font-size="{size}" fill="{color}" font-weight="{700 if bold else 400}" text-anchor="{anchor}">{escape(s)}</text>'
+# 2. Hardware overview
+s=Art('Integrated PCB + transparent case','Layered mechanical concept; an exploded illustration, not dimensional CAD','Mechanical clearances, battery thickness, antenna mounts and USB access must be measured on physical parts.')
+s.card(50,193,355,408,'01  Transparent front shell','Almost invisible protective polycarbonate',C['cyan']);s.rect(81,276,289,226,rx=26,fill='url(#glass)',stroke='#a8d4f6',sw=4);s.rect(106,311,239,165,rx=10,fill='#0c233b',stroke='#437f9e',sw=2);s.text(226,375,'3.5-inch',30,C['white'],'bold','middle');s.text(226,409,'touch display',18,C['muted'],anchor='middle');s.circ(92,290,7,fill='#99c8e0');s.circ(355,488,7,fill='#99c8e0')
+s.card(445,193,425,408,'02  One custom carrier PCB','Both LoRa modules removable for service',C['teal']);s.rect(471,262,371,262,rx=14,fill='#071e27',stroke=C['teal'],sw=3);s.xiao(496,293,.9,'MT');s.xiao(690,293,.9,'MC');s.rect(555,442,130,49,rx=8,fill='#112e3b',stroke=C['cyan']);s.text(620,464,'Waveshare',14,C['white'],'bold','middle');s.text(620,482,'3.5-inch host',12,C['muted'],anchor='middle');s.rect(700,441,116,47,rx=7,fill='#193e40',stroke=C['teal']);s.text(758,462,'MAX-M10S',12,C['white'],'bold','middle');s.text(758,480,'GNSS',11,C['muted'],anchor='middle');s.text(652,559,'MicroSD uses Waveshare onboard slot',13,C['muted'],anchor='middle')
+s.card(912,193,317,408,'03  Battery at rear','Behind the PCB, inside the back shell',C['amber']);s.battery(968,288,206,123);s.text(1072,464,'Clear rear enclosure',16,C['white'],'bold','middle');s.lines(952,496,['• LiPo protection required','• Charger managed by Waveshare','• Battery dimensions unverified'],27,14)
+s.save('hardware-overview.svg')
 
-def start(w,h,title,sub):
-    return [f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}" role="img" aria-labelledby="title desc">',f'<title id="title">{escape(title)}</title><desc id="desc">{escape(sub)}</desc>',f'<rect width="{w}" height="{h}" fill="#f3f6fa"/>', '<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse"><path d="M0 0L8 4L0 8Z" fill="context-stroke"/></marker></defs>',text(40,50,title,28,INK,True),text(40,82,sub,16,MUTED)]
+# 3. Radio UART wiring
+s=Art('Radio UART wiring','Both radios are 3.3 V serial peers; host TX must cross to radio RX','Candidate GPIO assignments require firmware-target and physical pinout verification on delivered boards.')
+for x,title,sub,edge,rows in [
+ (48,'A  Meshtastic','Serial Module: PROTO',C['cyan'],['Host GPIO39 TX  →  XIAO D7 / GPIO44 RX','Host GPIO40 RX  ←  XIAO D6 / GPIO43 TX','GND                 ↔  GND']),
+ (667,'B  MeshCore','Serial Companion binary protocol',C['amber'],['Host GPIO17 TX  →  XIAO D7 / GPIO44 RX','Host GPIO18 RX  ←  XIAO D6 / GPIO43 TX','GND                 ↔  GND'])]:
+ s.card(x,181,565,414,title,sub,edge,22)
+ s.card(x+22,258,204,206,'Waveshare host','ESP32-S3 3.5-inch',edge,17)
+ s.card(x+337,258,204,206,'XIAO / Wio','SX1262 radio module',edge,17)
+ for i,row in enumerate(rows):
+  yy=321+53*i
+  src,dst=(('GPIO39','D7 / GPIO44'),('GPIO40','D6 / GPIO43'),('GND','GND'))[i] if x==48 else (('GPIO17','D7 / GPIO44'),('GPIO18','D6 / GPIO43'),('GND','GND'))[i]
+  s.chip(x+37,yy,166,src,edge);s.chip(x+354,yy,166,dst,edge)
+  s.line(x+226,yy+12,x+332,yy+12,edge,2.5,i!=1)
+  if i==1:s.path(f'M {x+332} {yy+18} H {x+226}',edge,2.5,True)
+ s.lines(x+34,511,rows,28,15)
+ s.chip(x+204,567,157,'115200 • 8N1',edge)
+s.save('radio-wiring.svg')
 
-def box(x,y,w,h,title,color=BLUE):
-    return [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>',f'<path d="M{x+16} {y}H{x+w-16}Q{x+w} {y} {x+w} {y+16}V{y+52}H{x}V{y+16}Q{x} {y} {x+16} {y}" fill="{color}"/>',text(x+20,y+34,title,20,'white',True)]
+# 4. Connector reference
+s=Art('Connector reference','Physical signal identity only: do not infer J8 position numbering from marketing photos','Use actual PCB revision/schematic. Meshtastic D6/D7 and MeshCore D6/D7 need confirmed free GPIOs.')
+s.card(50,185,530,415,'Waveshare host expansion (J8)','Board revision and pin numbering must be inspected',C['cyan'])
+s.lines(77,277,['GPIO39   →  UART1 TX → Meshtastic RX','GPIO40   ←  UART1 RX ← Meshtastic TX','GPIO17   →  UART2 TX → MeshCore RX','GPIO18   ←  UART2 RX ← MeshCore TX','GPIO21   ↔  GNSS SDA (proposed)','GPIO38   ↔  GNSS SCL (proposed)','3V3/GND: POWER PENDING CURRENT TEST'],42,17)
+s.card(625,185,604,183,'Radio A  •  Meshtastic','XIAO D7 / GPIO44 RX      XIAO D6 / GPIO43 TX',C['cyan']);s.xiao(669,256,.75,'MT');s.lines(867,280,['Serial PROTO','115200 baud (verify)','Shared GND'],28,15)
+s.card(625,402,604,198,'Radio B  •  MeshCore','XIAO D7 / GPIO44 RX     XIAO D6 / GPIO43 TX',C['amber']);s.xiao(670,480,.75,'MC');s.lines(868,503,['Companion Serial','115200 baud (verify)','Shared GND'],27,15)
+s.save('connector-reference.svg')
 
-def wire(x1,y1,x2,y2,color=BLUE,arrow=True):
-    return f'<path d="M{x1} {y1}L{x2} {y2}" fill="none" stroke="{color}" stroke-width="3"'+(' marker-end="url(#arrow)"' if arrow else '')+'/>'
+# 5. Full wiring
+s=Art('Wiring diagram','UART, GNSS I2C and grounds — a proposed bench pin contract, NOT a fabrication schematic','No 3.3 V source connection is approved until Waveshare J8 and XIAO external-feed checks pass.')
+s.card(45,175,337,437,'Waveshare ESP32-S3 host','No camera; two UARTs + GNSS I2C',C['cyan'])
+s.lines(63,260,['GPIO39  •  UART1 TX','GPIO40  •  UART1 RX','GPIO17  •  UART2 TX','GPIO18  •  UART2 RX','GPIO21  •  GNSS SDA','GPIO38  •  GNSS SCL','GND  •  common reference','3V3  •  conditional only'],42,17)
+s.card(537,175,698,140,'Radio A  /  Meshtastic','Seeed XIAO ESP32S3 + Wio-SX1262',C['cyan'])
+s.lines(563,243,['RX  D7/GPIO44 ← Host GPIO39 TX','TX  D6/GPIO43 → Host GPIO40 RX','GND ↔ Host GND  •  PROTO 115200'],22,16)
+s.card(537,331,698,140,'Radio B  /  MeshCore','Seeed XIAO ESP32S3 + Wio-SX1262',C['amber'])
+s.lines(563,400,['RX  D7/GPIO44 ← Host GPIO17 TX','TX  D6/GPIO43 → Host GPIO18 RX','GND ↔ Host GND  •  Companion 115200'],22,16)
+s.card(537,487,698,125,'G1  /  u-blox MAX-M10S','Selected 3 V breakout with active GNSS antenna (bias to verify)',C['teal'])
+s.lines(563,557,['SDA ↔ Host GPIO21   |   SCL ↔ Host GPIO38   |   GND ↔ Host GND'],24,15)
+for y,cl in [(259,C['cyan']),(416,C['amber']),(554,C['teal'])]:s.path(f'M 382 {y} H 500 V {y-15} H 530',cl,2.5,True)
+s.save('architecture/wiring-diagram.svg')
 
-def save(name,s):
-    (OUT/name).write_text('\n'.join(s+['</svg>']))
+# 6. GNSS and power
+s=Art('GNSS + battery layout','MAX-M10S I2C remains central; battery moves behind the carrier and screen','Confirm GNSS antenna bias, LiPo protection/connector polarity, battery fit, and power-source isolation.')
+s.card(58,187,342,420,'Waveshare / AXP2101','Host charger and power management',C['cyan'])
+s.lines(81,291,['USB-C 5 V → internal power path','Protected 1S LiPo → BAT port','Host GNSS SDA: GPIO21','Host GNSS SCL: GPIO38','Ground: common reference'],43,17)
+s.card(454,187,332,420,'u-blox MAX-M10S','Breakout with active GNSS antenna',C['teal']);s.rect(551,288,135,135,rx=15,fill='#d1e1df',stroke=C['teal'],sw=4);s.text(619,343,'u-blox',21,'#15344d','bold','middle');s.text(619,373,'MAX-M10S',15,'#15344d',anchor='middle');s.lines(476,480,['I2C: SDA / SCL at 3.3 V','Antenna bias: MUST VERIFY','Separate from LoRa antenna feeds'],27,15)
+s.card(845,187,379,420,'Rear mounted LiPo','Physically behind the screen/carrier',C['amber']);s.battery(923,295,215,124);s.lines(868,469,['3.7 V nominal protected cell','Do not parallel XIAO charger systems','Battery thickness and safety checks','J8 3.3 V power still CONDITIONAL'],29,15)
+s.line(400,360,448,360,C['teal'],3,True);s.path('M 784 420 H 824 V 448 H 844',C['amber'],2,True)
+s.save('gnss-and-power.svg')
 
-s=start(1280,950,'MeshCrossway | LoRa V3 radio wiring','Proposed, not bench-tested. U1 photo numbers follow the Amazon illustration. Check actual PCB GPIO labels.')
-s+=box(40,120,480,650,'Waveshare ESP32-S3 controller')
-s+=box(770,120,470,290,'Radio A | Meshtastic',BLUE)
-s+=box(770,450,470,290,'Radio B | MeshCore',PURPLE)
-for y,left,right,col,rev in [(230,'Photo 9 / GPIO39 / TX','GPIO4 / RX / J3.15',BLUE,False),(300,'Photo 11 / GPIO40 / RX','GPIO5 / TX / J3.16',GREEN,True),(560,'Photo 16 / GPIO17 / TX','GPIO4 / RX / J3.15',PURPLE,False),(630,'Photo 18 / GPIO18 / RX','GPIO5 / TX / J3.16',GREEN,True)]:
-    s += [text(65,y-12,left,19,INK,True),text(795,y-12,right,19,INK,True),wire(770 if rev else 520,y,520 if rev else 770,y,col)]
-s += [text(795,195,'LoRa V3: ESP32-S3 + SX1262',17),text(795,370,'PROTO: RX4 / TX5, 115200 8N1',17),text(795,525,'Second board from the two-pack',17),text(795,700,'Build flags: SERIAL_RX=4 / SERIAL_TX=5',16,PURPLE,True),text(65,710,'UART0 GPIO43/44 reserved for diagnostics',17,MUTED),text(65,745,'Camera absent; camera driver disabled',17,MUTED)]
-s+=box(40,795,1200,110,'3.3 V signals + common ground + separate USB power',GRAY)
-s += [text(65,877,'U1 GND -> A GND + B GND. No shared 3V3, 5V or battery power outputs.',19),text(40,932,'Radio GPIO4/5 routing must match the Heltec V3 reference. Isolate UART wires before independent power-off.',16,MUTED)]
-save('radio-wiring.svg',s)
+# 7. Power architecture
+s=Art('Power architecture','The Waveshare AXP2101 remains the intended single charger/power controller','HOLD: external 3.3 V feed, J8 spare current, transient loads and UART backfeeding are NOT verified.')
+s.card(44,187,225,128,'USB-C input','5 V source into Waveshare',C['cyan']);s.card(44,368,225,131,'Protected 1S LiPo','Battery behind carrier PCB',C['amber']);s.card(360,219,357,283,'Waveshare / AXP2101','Battery charge + host rail',C['cyan']);s.lines(387,322,['Display and ESP32-S3 load','J8 3V3 rail: no rated spare output','XIAO external-3V3 input: check','Independent UART power sequencing'],42,17)
+s.card(860,173,366,135,'Radio A + Radio B','2 × XIAO ESP32S3 + Wio-SX1262',C['amber']);s.card(860,354,366,127,'u-blox MAX-M10S','3 V breakout + active GNSS antenna',C['teal']);s.chip(929,533,217,'J8 3V3 • ON HOLD',C['warn'])
+s.line(269,249,351,249,C['cyan'],2.5,True);s.path('M 270 433 H 324 V 441 H 353',C['amber'],2.5,True);s.path('M 718 325 H 802 V 240 H 855',C['amber'],2.5,True);s.path('M 718 399 H 802 V 422 H 855',C['teal'],2.5,True)
+s.save('architecture/power-architecture.svg')
 
-s=start(1500,1080,'MeshCrossway | Connector and GPIO reference','Left: numbering from the supplied listing photo. Verify orientation and signals; not Rev2 PDF J8 numbering.')
-s+=box(40,120,810,880,'Waveshare | 32-pin listing illustration',BLUE)
-left=['BAT - unused','GND','GNSS SDA / GPIO21','GNSS SCL / GPIO38','MT TX / GPIO39','MT RX / GPIO40','GPIO41','GPIO42','GPIO45','GPIO46','GPIO47','GPIO48','GPIO43 - reserved','GPIO44 - reserved','GND (used)','3.3 V -> GNSS']
-right=['5V - unused','GND','USB D- / GPIO19','USB D+ / GPIO20','SD CLK / GPIO11','SD CMD / GPIO10','SD D0 / GPIO9','MC TX / GPIO17','MC RX / GPIO18','BOOT / GPIO0','RESET','PWR','Onboard SCL / GPIO7','Onboard SDA / GPIO8','GND','3.3 V (unused)']
-used={5:GREEN,7:GREEN,9:BLUE,11:BLUE,16:PURPLE,18:PURPLE,29:GRAY,31:RED}
-for row,(a,b) in enumerate(zip(left,right)):
-    y=214+46*row
-    for num,cx,label,lx,anch in [(row*2+1,405,a,380,'end'),(row*2+2,475,b,500,'start')]:
-        c=used.get(num,'#cdd6e2')
-        s += [f'<circle cx="{cx}" cy="{y-6}" r="16" fill="{c}"/>',text(cx,y-1,str(num),13,'white' if num in used else INK,True,'middle'),text(lx,y,label,17,used.get(num,INK),num in used,anch)]
-s+=box(890,120,570,415,'Each radio | connect by GPIO label',PURPLE)
-for i,label in enumerate(['GPIO4 / J3.15 = RX from U1','GPIO5 / J3.16 = TX to U1','GND / J3.1 or J2.1 = common ground','USB-C = independent power','GPIO43/44 = reserve for USB UART','3V3 / 5V = no jumper to U1','Other GPIOs = leave disconnected']):
-    s.append(text(915,212+i*44,label,18))
-s+=box(890,570,570,430,'Numbering correction',GRAY)
-for i,line in enumerate(['MT = Meshtastic; MC = MeshCore.','U1 GPIO39: photo 9 / PDF J8.10','U1 GPIO40: photo 11 / PDF J8.12','U1 GPIO17: photo 16 / PDF J8.15','U1 GPIO18: photo 18 / PDF J8.17','U1 GPIO21: photo 5 / PDF J8.6','U1 GPIO38: photo 7 / PDF J8.8','Do not substitute one numbering','system for the other. Check the PCB.']):
-    s.append(text(915,660+i*34,line,18))
-s.append(text(40,1044,'Aideepen listing does not establish Heltec originality, exact routing or pre-soldered headers. No camera in this build.',18,MUTED))
-save('connector-reference.svg',s)
+# 8. Communication stack
+s=Art('Communication stack','One shared UI; two independent native mesh protocols','Never silently bridge Meshtastic to MeshCore, share keys or imply inter-protocol routing.')
+s.card(314,130,652,92,'Touchscreen application','Waveshare LVGL: chat / map / contacts / settings',C['cyan']);s.card(314,250,652,96,'Core host services','Message history • GNSS • protocol adapters • queues',C['purple']);s.line(640,222,640,245,C['cyan'],3,True)
+s.card(54,388,547,240,'Meshtastic path  /  UART1','PROTO binary frames, ToRadio / FromRadio',C['cyan']);s.lines(78,466,['XIAO ESP32S3 + Wio-SX1262','Native Meshtastic routing and channel model','LoRa RF → Meshtastic network','Host GPIO39/40 ↔ XIAO GPIO44/43'],36,17)
+s.card(677,388,547,240,'MeshCore path  /  UART2','Companion binary command / response / events',C['amber']);s.lines(705,466,['XIAO ESP32S3 + Wio-SX1262','Native MeshCore contacts and path model','LoRa RF → MeshCore network','Host GPIO17/18 ↔ XIAO GPIO44/43'],36,17)
+s.path('M 539 346 V 369 H 329 V 383',C['cyan'],2.5,True);s.path('M 744 346 V 369 H 950 V 383',C['amber'],2.5,True)
+s.save('architecture/communication-stack.svg')
 
-s=start(1280,920,'MeshCrossway | GNSS and bench power','All positions below follow the supplied listing photo. GPIO names identify the electrical connections.')
-s+=box(40,120,480,320,'Waveshare expansion connector',BLUE)
-s+=box(770,120,470,320,'SparkFun SAM-M10Q | Qwiic',GREEN)
-rows=[(225,'Photo 31 / 3V3','3.3 V / red',RED),(280,'Photo 29 / GND','GND / black',GRAY),(335,'Photo 5 / GPIO21','SDA / blue',BLUE),(390,'Photo 7 / GPIO38','SCL / yellow','#9a7800')]
-for y,a,b,c in rows:
-    s += [text(65,y,a,20,INK,True),text(795,y,b,20,INK,True),wire(520,y-7,770,y-7,c,False)]
-s += [text(40,485,'Qwiic-to-male-jumper cable. Verify signal names and continuity; do not use only cable colors.',18),text(40,518,'Dedicated I2C bus: SDA21 / SCL38, initially 100 kHz. Default 7-bit address: 0x42.',18),text(40,551,'Keep onboard I2C on GPIO8/7. Verify the 3.3 V rail and its available load margin.',18)]
-s+=box(40,590,1200,265,'Three independent USB power branches',GRAY)
-for x,title,sub in [(70,'USB 5 V branch 1','Waveshare USB-C'),(465,'USB 5 V branch 2','LoRa V3 A USB-C'),(860,'USB 5 V branch 3','LoRa V3 B USB-C')]:
-    s += [text(x,695,title,21,INK,True),wire(x+135,718,x+135,755,RED),text(x,790,sub,20)]
-s += [text(65,833,'No batteries. Do not parallel board power outputs. All UART grounds are common.',17),text(40,892,'Power and signal proposal only; firmware, load margin and complete assembly remain untested.',17,MUTED)]
-save('gnss-and-power.svg',s)
+# 9. Firmware responsibilities
+s=Art('Firmware responsibilities','Native firmware on each XIAO; application behavior belongs on the Waveshare host','Design principle: unify the user experience, not the radio networking protocols.')
+for x,w,title,sub,color,rows in [
+(41,388,'Waveshare host','LVGL + MeshCrossway application',C['cyan'],['480 × 320 touchscreen UI','Map / GPX / waypoint tools','Local message history and microSD','GNSS integration, status and policy','Two native serial protocol adapters','Battery and dual-radio status']),
+(450,383,'XIAO A • Meshtastic','ESP32-S3 + SX1262 native firmware',C['teal'],['Meshtastic protocol, radio settings','Node / channel data and messages','Protobuf serial PROTO API','Radio telemetry as supported','TX state and ACK as supported','Own native mesh forwarding']),
+(854,384,'XIAO B • MeshCore','ESP32-S3 + SX1262 native firmware',C['amber'],['MeshCore Companion firmware','Contacts and encrypted messages','Companion binary UART API','Network-specific discovery/trace','Own native path and relay model','Independent radio recovery'])]:
+ s.card(x,173,w,438,title,sub,color,19)
+ for i,row in enumerate(rows):s.circ(x+22,273+i*48,4,fill=color);s.text(x+39,279+i*48,row,15,C['white'])
+s.save('architecture/firmware-responsibilities.svg')
 
-s=start(1280,780,'MeshCrossway | Standalone bench prototype','Waveshare touch controller + two LoRa V3 radios + u-blox GNSS. Proposed hardware; not a working product photograph.')
-s+=box(40,120,520,380,'Waveshare ESP32-S3-Touch-LCD-3.5',BLUE)
-s += [f'<rect x="75" y="195" width="450" height="160" rx="12" fill="{INK}"/>',text(105,240,'MeshCrossway',27,'white',True),text(105,282,'Meshtastic  |  MeshCore',22,'#91e4ef'),text(105,320,'Touch UI + queues + local history',19,'white'),text(75,402,'3.5 inch touch | 8 MB PSRAM | 16 MB flash',19),text(75,447,'Onboard microSD slot | independent USB power',18)]
-for y,title,col,detail in [(120,'LoRa V3 A | Meshtastic',BLUE,'UART PROTO on configured RX4 / TX5'),(330,'LoRa V3 B | MeshCore',PURPLE,'Companion UART build: RX4 / TX5')]:
-    s+=box(720,y,520,170,title,col)
-    s += [text(745,y+91,'ESP32-S3 + SX1262 + OLED + USB-C',19),text(745,y+131,detail,18),wire(560,y+110,720,y+110,col)]
-s+=box(40,550,520,150,'u-blox GNSS | SparkFun SAM-M10Q',GREEN)
-s += [text(65,640,'Position + fix validity | Qwiic I2C | 3.3 V',19),wire(300,550,300,500,GREEN)]
-s+=box(720,550,520,150,'Purchases and integration',GRAY)
-s += [text(745,632,'One Aideepen two-pack supplies A and B.',18),text(745,666,'No separate radio base or IO adapters.',18),text(40,746,'The seller board revision, GPIO routing and header assembly must be checked. The UI simulator uses demo data.',17,MUTED)]
-save('hardware-overview.svg',s)
-print('Generated four SVG diagrams.')
+# 10. Tracking modes
+s=Art('Direct Tracking modes','Two protocol-specific forwarding policies, still unverified on selected firmware','Zero-hop behavior must be tested separately for MT and MC with a third relay and RF packet capture.')
+for x,title,sub,col,direct in [(47,'Standard mesh forwarding','Depending on network routes and hop policy',C['amber'],False),(664,'Proposed direct-only tracking','One-hop update, intended zero relay forwarding',C['teal'],True)]:
+ s.card(x,181,568,432,title,sub,col,19)
+ for xx,name,role in [(x+40,'Device A','TX'),(x+224,'Repeater','RELAY'),(x+409,'Device B','RX')]:
+  s.card(xx,311,118,91,name,role,C['line'],16)
+ s.line(x+158,355,x+217,355,col,2,True);s.line(x+341,355,x+401,355,col,2,True)
+ if direct:
+  s.rect(x+224,311,118,91,rx=14,fill='#182a38',stroke=C['red'],sw=2)
+  s.text(x+282,342,'Repeater',16,C['white'],'bold','middle');s.text(x+282,370,'NO RE-TX',14,C['red'],'bold','middle');s.line(x+201,421,x+365,291,C['red'],3)
+  s.lines(x+46,491,['Individual position packet with zero forwarding','No repeater transmission intended','Requires native MT and MC capability tests'],31,16)
+ else:s.lines(x+46,491,['Repeater transmits when network config allows','Route and flood behavior are protocol-specific','A direct message may traverse repeaters'],31,16)
+s.save('architecture/direct-tracking-modes.svg')
+
+# 11. XIAO board-to-board radio wiring (host UART versus internal SX1262 SPI)
+s=Art('XIAO/Wio internal vs external links','Never wire Waveshare to SX1262 SPI or DIO; the Seeed B2B module is managed by each XIAO MCU','Firmware pin availability: D6/TX GPIO43 and D7/RX GPIO44 remain proposed until tested with MT PROTO and MC Companion.')
+s.card(40,188,288,385,'Waveshare touch host','ESP32-S3 3.5-inch display',C['cyan'])
+s.lines(65,281,['UART1 TX GPIO39','UART1 RX GPIO40','UART2 TX GPIO17','UART2 RX GPIO18','Common GND'],45,17)
+for y,name,col,num in [(175,'A / Meshtastic',C['cyan'],1),(386,'B / MeshCore',C['amber'],2)]:
+ s.card(402,y,322,183,'XIAO ESP32S3 • '+name,'Seeed B2B kit • external UART',col,16)
+ s.lines(422,y+77,['D7/GPIO44 = radio UART RX','D6/GPIO43 = radio UART TX','MCU manages SX1262 over B2B'],28,14)
+ s.card(813,y,412,183,'Wio-SX1262 (internal)','Radio daughterboard, NOT host UART',col,19)
+ s.lines(834,y+78,['SX1262 connected to XIAO via B2B','SPI + DIO/RESET/BUSY per variant','LoRa U.FL → separate 900 MHz antenna'],27,15)
+ s.path(f'M 329 {y+88} H 390',col,2.5,True)
+ s.path(f'M 725 {y+88} H 806',col,2.5,True)
+ s.chip(728,y+114,83,'B2B SPI',col)
+s.save('architecture/xiao-wiring.svg')
+
+print("Generated hardware SVGs:")
+for p in sorted(OUT.rglob("*.svg")):
+ if p.name not in {
+  "system-overview.svg", "hardware-overview.svg", "wiring-diagram.svg",
+  "radio-wiring.svg", "connector-reference.svg", "gnss-and-power.svg",
+  "power-architecture.svg", "communication-stack.svg", "firmware-responsibilities.svg",
+  "direct-tracking-modes.svg", "xiao-wiring.svg"
+ }: continue
+ ElementTree.parse(str(p))
+ print(p.relative_to(OUT))

@@ -2,7 +2,9 @@
 
 **Two mesh networks. One portable terminal.**
 
-![MeshCrossway V1 system architecture](docs/images/architecture/system-overview.svg)
+![MeshCrossway V1 concept: one custom PCB with Seeed XIAO/Wio dual radios, transparent enclosure and rear battery](docs/images/meshcrossway-hero.webp)
+
+*Temporary final-product concept: battery placed **behind the carrier PCB**. Parts are approximations, not exact supplier photos or dimensionally verified assembly CAD.*
 
 MeshCrossway is an **open-source, offline-first touchscreen communicator** designed to use **Meshtastic** and **MeshCore** through **two independent Seeed XIAO ESP32-S3 + Wio-SX1262 radio kits**. One interface brings together messaging, navigation, GNSS positioning, tracks and field diagnostics without requiring cellular coverage or the internet.
 
@@ -20,7 +22,13 @@ The UI prototype explores **horizontal-screen navigation**, collapsible left nav
 
 ## V1 hardware selection
 
-![Proposed XIAO/Wio wiring and UART connections](docs/images/architecture/xiao-wiring.svg)
+![Approved exploded hardware concept showing the single carrier PCB and battery in the transparent rear shell](docs/images/architecture/meshcrossway-exploded.webp)
+
+The planned physical packaging uses **one integrated custom carrier PCB** for the two XIAO/Wio radios and GNSS with the Waveshare display, plus the protected **rear-mounted 1S LiPo**, all inside an almost invisible transparent case. Actual component geometry, antenna routing, RF isolation, battery thickness and retention are **unverified**.
+
+![Independent XIAO/Wio B2B and external UART interface illustration](docs/images/architecture/xiao-wiring.svg)
+
+![Proposed overall system architecture](docs/images/architecture/system-overview.svg)
 
 | Role | Selected component | Function |
 |---|---|---|
@@ -124,4 +132,4 @@ The illustrated electrical design is a **proposal**; it is not a production-read
 
 Open an [issue](https://github.com/Renbrant/MeshCrossway/issues) with board revision, firmware version and reproducible details. Do not post private keys or personal location histories.
 
-MeshCrossway original code and documentation are provided under the [MIT License](LICENSE). Third-party product imagery, upstream firmware and documentation retain their separate licenses; see [image credits](docs/images/amazon/README.md). MeshCrossway is independent of the suppliers and protocol projects referenced here.
+MeshCrossway original code and documentation are provided under the [MIT License](LICENSE). Third-party product imagery, upstream firmware and documentation retain their separate licenses; see [image credits and technical-diagram sources](docs/images/README.md). MeshCrossway is independent of the suppliers and protocol projects referenced here.

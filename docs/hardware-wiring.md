@@ -4,7 +4,17 @@
 
 > **Current V1 hardware selection (2026-10-26):** two **Seeed Studio XIAO ESP32-S3 & Wio-SX1262 kits**, one running Meshtastic and one MeshCore Companion. The older Aideepen/Heltec V3.2 radio pair and its GPIO4/5 external-UART wiring are **superseded**. No soldered prototype or PCB has been electrically validated.
 
-![Revised conceptual wiring](images/architecture/xiao-wiring.svg)
+## Physical assembly concept — one carrier PCB, rear battery
+
+![Hardware and almost-invisible transparent enclosure layers](images/hardware-overview.svg)
+
+![Approved temporary exploded enclosure render with protected 1S LiPo battery mounted behind the carrier PCB](images/architecture/meshcrossway-exploded.webp)
+
+This assembly concept places the two Seeed XIAO/Wio kits and MAX-M10S breakout on **one custom carrier PCB** around the Waveshare display. The protected 1S LiPo pack is **behind the PCB**, not mounted next to the screen. These AI-assisted renders are approximate and **not exact supplier photos or mechanical CAD**. Verify real footprints, B2B stack height, charging safety and antenna clearances before layout approval.
+
+![Revised external UART versus internal B2B wiring](images/architecture/xiao-wiring.svg)
+
+![Proposed complete controller-radio-GNSS wiring](images/architecture/wiring-diagram.svg)
 
 ## 1. Hardware inventory and buying links
 
@@ -29,6 +39,10 @@ Manufacturer: [Seeed XIAO + Wio getting started](https://wiki.seeedstudio.com/xi
 Each kit contains two internally connected devices: a **XIAO ESP32-S3 MCU** and a **Wio SX1262 radio module**. The MCU controls the SX1262 via **internal SPI and GPIOs on the B2B connector**. The Waveshare communicates only with the **XIAO MCU** via a *separate* external UART API. Do not wire Waveshare GPIOs to the SX1262 SPI signals or DIO1/BUSY lines.
 
 ### Proposed host-to-XIAO serial connectivity
+
+![UART crossing on two identical XIAO pin pairs](images/radio-wiring.svg)
+
+![Host GPIO identities and XIAO connector candidates](images/connector-reference.svg)
 
 | Function | Waveshare U1 | XIAO A (Meshtastic) | XIAO B (MeshCore) | Status |
 |---|---|---|---|---|
@@ -80,6 +94,10 @@ The Waveshare GPIO39/40 and GPIO17/18 assignments assume the **camera is absent 
 Upstream MeshCore FAQ explicitly lists **Xiao S3 WIO** as supported; [Seeed's MeshCore guide](https://wiki.seeedstudio.com/pt-br/get_started_with_esp32s3_meshcore/) discusses merged images and persistent settings. The exact external-UART mode is **a design gate, not yet verified on this board**.
 
 ## 5. Power / RF / mechanical gates
+
+![GNSS and battery at the rear of the carrier](images/gnss-and-power.svg)
+
+![Conditional AXP2101 and J8 power distribution](images/architecture/power-architecture.svg)
 
 Power distribution via Waveshare AXP2101 and J8 3V3 remains a **candidate**, not an electrical recommendation that is safe to energize. The Seeed XIAO has its own regulator, LiPo charger and USB circuitry; determine whether feeding its **3V3** rail externally is supported and isolated, and test reverse-current paths if USB or battery is connected. Never tie two chargers or their battery pads together. Use independent USB supplies for initial tests plus signal GND common. Check 3V3 load margin, radio TX current pulses, rail startup, powered-off I/O injection and local decoupling. See [power study](power-architecture.md).
 

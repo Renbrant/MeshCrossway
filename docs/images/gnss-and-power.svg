@@ -1,42 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="920" viewBox="0 0 1280 920" role="img" aria-labelledby="title desc">
-<title id="title">MeshCrossway | GNSS and bench power</title><desc id="desc">All positions below follow the supplied listing photo. GPIO names identify the electrical connections.</desc>
-<rect width="1280" height="920" fill="#f3f6fa"/>
-<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse"><path d="M0 0L8 4L0 8Z" fill="context-stroke"/></marker></defs>
-<text x="40" y="50" font-family="DejaVu Sans,Arial,sans-serif" font-size="28" fill="#182b42" font-weight="700" text-anchor="start">MeshCrossway | GNSS and bench power</text>
-<text x="40" y="82" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#53657a" font-weight="400" text-anchor="start">All positions below follow the supplied listing photo. GPIO names identify the electrical connections.</text>
-<rect x="40" y="120" width="480" height="320" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
-<path d="M56 120H504Q520 120 520 136V172H40V136Q40 120 56 120" fill="#1768b5"/>
-<text x="60" y="154" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">Waveshare expansion connector</text>
-<rect x="770" y="120" width="470" height="320" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
-<path d="M786 120H1224Q1240 120 1240 136V172H770V136Q770 120 786 120" fill="#087f68"/>
-<text x="790" y="154" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">SparkFun SAM-M10Q | Qwiic</text>
-<text x="65" y="225" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">Photo 31 / 3V3</text>
-<text x="795" y="225" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">3.3 V / red</text>
-<path d="M520 218L770 218" fill="none" stroke="#c43c36" stroke-width="3"/>
-<text x="65" y="280" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">Photo 29 / GND</text>
-<text x="795" y="280" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">GND / black</text>
-<path d="M520 273L770 273" fill="none" stroke="#596775" stroke-width="3"/>
-<text x="65" y="335" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">Photo 5 / GPIO21</text>
-<text x="795" y="335" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">SDA / blue</text>
-<path d="M520 328L770 328" fill="none" stroke="#1768b5" stroke-width="3"/>
-<text x="65" y="390" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">Photo 7 / GPIO38</text>
-<text x="795" y="390" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="700" text-anchor="start">SCL / yellow</text>
-<path d="M520 383L770 383" fill="none" stroke="#9a7800" stroke-width="3"/>
-<text x="40" y="485" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">Qwiic-to-male-jumper cable. Verify signal names and continuity; do not use only cable colors.</text>
-<text x="40" y="518" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">Dedicated I2C bus: SDA21 / SCL38, initially 100 kHz. Default 7-bit address: 0x42.</text>
-<text x="40" y="551" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">Keep onboard I2C on GPIO8/7. Verify the 3.3 V rail and its available load margin.</text>
-<rect x="40" y="590" width="1200" height="265" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
-<path d="M56 590H1224Q1240 590 1240 606V642H40V606Q40 590 56 590" fill="#596775"/>
-<text x="60" y="624" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">Three independent USB power branches</text>
-<text x="70" y="695" font-family="DejaVu Sans,Arial,sans-serif" font-size="21" fill="#182b42" font-weight="700" text-anchor="start">USB 5 V branch 1</text>
-<path d="M205 718L205 755" fill="none" stroke="#c43c36" stroke-width="3" marker-end="url(#arrow)"/>
-<text x="70" y="790" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="400" text-anchor="start">Waveshare USB-C</text>
-<text x="465" y="695" font-family="DejaVu Sans,Arial,sans-serif" font-size="21" fill="#182b42" font-weight="700" text-anchor="start">USB 5 V branch 2</text>
-<path d="M600 718L600 755" fill="none" stroke="#c43c36" stroke-width="3" marker-end="url(#arrow)"/>
-<text x="465" y="790" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="400" text-anchor="start">LoRa V3 A USB-C</text>
-<text x="860" y="695" font-family="DejaVu Sans,Arial,sans-serif" font-size="21" fill="#182b42" font-weight="700" text-anchor="start">USB 5 V branch 3</text>
-<path d="M995 718L995 755" fill="none" stroke="#c43c36" stroke-width="3" marker-end="url(#arrow)"/>
-<text x="860" y="790" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#182b42" font-weight="400" text-anchor="start">LoRa V3 B USB-C</text>
-<text x="65" y="833" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">No batteries. Do not parallel board power outputs. All UART grounds are common.</text>
-<text x="40" y="892" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#53657a" font-weight="400" text-anchor="start">Power and signal proposal only; firmware, load margin and complete assembly remain untested.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="GNSS + battery layout">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#051325"/><stop offset="1" stop-color="#112a45"/></linearGradient><linearGradient id="glass" x1="0" x2="1"><stop offset="0" stop-color="#d9efff" stop-opacity="0.21"/><stop offset="1" stop-color="#8bd0f5" stop-opacity="0.07"/></linearGradient><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#85dbff"/></marker><marker id="arr2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#ffba65"/></marker></defs>
+<rect x="0" y="0" width="1280" height="720" rx="0" fill="url(#bg)" stroke="none" stroke-width="1"/>
+<rect x="14" y="14" width="1252" height="692" rx="22" fill="none" stroke="#244260" stroke-width="2"/>
+<text x="40" y="62" font-family="DejaVu Sans,Arial,sans-serif" font-size="34" fill="#36c8f4" font-weight="bold">MeshCrossway</text>
+<text x="325" y="61" font-family="DejaVu Sans,Arial,sans-serif" font-size="28" fill="#edf5ff" font-weight="bold">| GNSS + battery layout</text>
+<text x="40" y="91" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#a6bfd4" font-weight="normal">MAX-M10S I2C remains central; battery moves behind the carrier and screen</text>
+<rect x="30" y="669" width="1220" height="27" rx="8" fill="#162a40" stroke="#253f57" stroke-width="1"/>
+<text x="44" y="688" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#f4bc58" font-weight="normal">Confirm GNSS antenna bias, LiPo protection/connector polarity, battery fit, and power-source isolation.</text>
+<rect x="58" y="187" width="342" height="420" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
+<text x="76" y="219" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Waveshare / AXP2101</text>
+<text x="76" y="240" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Host charger and power management</text>
+<text x="81" y="291" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">USB-C 5 V → internal power path</text>
+<text x="81" y="334" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Protected 1S LiPo → BAT port</text>
+<text x="81" y="377" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Host GNSS SDA: GPIO21</text>
+<text x="81" y="420" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Host GNSS SCL: GPIO38</text>
+<text x="81" y="463" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">Ground: common reference</text>
+<rect x="454" y="187" width="332" height="420" rx="14" fill="#11243a" stroke="#34d4ba" stroke-width="1.7"/>
+<text x="472" y="219" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">u-blox MAX-M10S</text>
+<text x="472" y="240" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Breakout with active GNSS antenna</text>
+<rect x="551" y="288" width="135" height="135" rx="15" fill="#d1e1df" stroke="#34d4ba" stroke-width="4"/>
+<text x="619" y="343" font-family="DejaVu Sans,Arial,sans-serif" font-size="21" fill="#15344d" font-weight="bold" text-anchor="middle">u-blox</text>
+<text x="619" y="373" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#15344d" font-weight="normal" text-anchor="middle">MAX-M10S</text>
+<text x="476" y="480" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">I2C: SDA / SCL at 3.3 V</text>
+<text x="476" y="507" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Antenna bias: MUST VERIFY</text>
+<text x="476" y="534" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Separate from LoRa antenna feeds</text>
+<rect x="845" y="187" width="379" height="420" rx="14" fill="#11243a" stroke="#ffba65" stroke-width="1.7"/>
+<text x="863" y="219" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Rear mounted LiPo</text>
+<text x="863" y="240" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Physically behind the screen/carrier</text>
+<rect x="923" y="295" width="215" height="124" rx="14" fill="#d1d8d9" stroke="#e8b353" stroke-width="5"/>
+<rect x="931" y="300" width="199" height="114" rx="8" fill="#cfd8d8" stroke="none" stroke-width="1"/>
+<text x="1030.5" y="335" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#293746" font-weight="bold" text-anchor="middle">REAR BATTERY</text>
+<text x="1030.5" y="358" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#293746" font-weight="normal" text-anchor="middle">1S LiPo candidate</text>
+<text x="1030.5" y="377" font-family="DejaVu Sans,Arial,sans-serif" font-size="12" fill="#293746" font-weight="normal" text-anchor="middle">10,000 mAh</text>
+<text x="868" y="469" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">3.7 V nominal protected cell</text>
+<text x="868" y="498" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Do not parallel XIAO charger systems</text>
+<text x="868" y="527" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Battery thickness and safety checks</text>
+<text x="868" y="556" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">J8 3.3 V power still CONDITIONAL</text>
+<line x1="400" y1="360" x2="448" y2="360" stroke="#34d4ba" stroke-width="3" marker-end="url(#arr)"/>
+<path d="M 784 420 H 824 V 448 H 844" fill="none" stroke="#ffba65" stroke-width="2" stroke-linejoin="round" marker-end="url(#arr)"/>
 </svg>

@@ -1,129 +1,74 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1080" viewBox="0 0 1500 1080" role="img" aria-labelledby="title desc">
-<title id="title">MeshCrossway | Connector and GPIO reference</title><desc id="desc">Left: numbering from the supplied listing photo. Verify orientation and signals; not Rev2 PDF J8 numbering.</desc>
-<rect width="1500" height="1080" fill="#f3f6fa"/>
-<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto-start-reverse"><path d="M0 0L8 4L0 8Z" fill="context-stroke"/></marker></defs>
-<text x="40" y="50" font-family="DejaVu Sans,Arial,sans-serif" font-size="28" fill="#182b42" font-weight="700" text-anchor="start">MeshCrossway | Connector and GPIO reference</text>
-<text x="40" y="82" font-family="DejaVu Sans,Arial,sans-serif" font-size="16" fill="#53657a" font-weight="400" text-anchor="start">Left: numbering from the supplied listing photo. Verify orientation and signals; not Rev2 PDF J8 numbering.</text>
-<rect x="40" y="120" width="810" height="880" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
-<path d="M56 120H834Q850 120 850 136V172H40V136Q40 120 56 120" fill="#1768b5"/>
-<text x="60" y="154" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">Waveshare | 32-pin listing illustration</text>
-<circle cx="405" cy="208" r="16" fill="#cdd6e2"/>
-<text x="405" y="213" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">1</text>
-<text x="380" y="214" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="end">BAT - unused</text>
-<circle cx="475" cy="208" r="16" fill="#cdd6e2"/>
-<text x="475" y="213" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">2</text>
-<text x="500" y="214" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">5V - unused</text>
-<circle cx="405" cy="254" r="16" fill="#cdd6e2"/>
-<text x="405" y="259" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">3</text>
-<text x="380" y="260" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="end">GND</text>
-<circle cx="475" cy="254" r="16" fill="#cdd6e2"/>
-<text x="475" y="259" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">4</text>
-<text x="500" y="260" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">GND</text>
-<circle cx="405" cy="300" r="16" fill="#087f68"/>
-<text x="405" y="305" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="white" font-weight="700" text-anchor="middle">5</text>
-<text x="380" y="306" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#087f68" font-weight="700" text-anchor="end">GNSS SDA / GPIO21</text>
-<circle cx="475" cy="300" r="16" fill="#cdd6e2"/>
-<text x="475" y="305" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">6</text>
-<text x="500" y="306" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">USB D- / GPIO19</text>
-<circle cx="405" cy="346" r="16" fill="#087f68"/>
-<text x="405" y="351" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="white" font-weight="700" text-anchor="middle">7</text>
-<text x="380" y="352" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#087f68" font-weight="700" text-anchor="end">GNSS SCL / GPIO38</text>
-<circle cx="475" cy="346" r="16" fill="#cdd6e2"/>
-<text x="475" y="351" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">8</text>
-<text x="500" y="352" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">USB D+ / GPIO20</text>
-<circle cx="405" cy="392" r="16" fill="#1768b5"/>
-<text x="405" y="397" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="white" font-weight="700" text-anchor="middle">9</text>
-<text x="380" y="398" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#1768b5" font-weight="700" text-anchor="end">MT TX / GPIO39</text>
-<circle cx="475" cy="392" r="16" fill="#cdd6e2"/>
-<text x="475" y="397" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">10</text>
-<text x="500" y="398" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">SD CLK / GPIO11</text>
-<circle cx="405" cy="438" r="16" fill="#1768b5"/>
-<text x="405" y="443" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="white" font-weight="700" text-anchor="middle">11</text>
-<text x="380" y="444" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#1768b5" font-weight="700" text-anchor="end">MT RX / GPIO40</text>
-<circle cx="475" cy="438" r="16" fill="#cdd6e2"/>
-<text x="475" y="443" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">12</text>
-<text x="500" y="444" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">SD CMD / GPIO10</text>
-<circle cx="405" cy="484" r="16" fill="#cdd6e2"/>
-<text x="405" y="489" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">13</text>
-<text x="380" y="490" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="end">GPIO41</text>
-<circle cx="475" cy="484" r="16" fill="#cdd6e2"/>
-<text x="475" y="489" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">14</text>
-<text x="500" y="490" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">SD D0 / GPIO9</text>
-<circle cx="405" cy="530" r="16" fill="#cdd6e2"/>
-<text x="405" y="535" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">15</text>
-<text x="380" y="536" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="end">GPIO42</text>
-<circle cx="475" cy="530" r="16" fill="#8553b5"/>
-<text x="475" y="535" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="white" font-weight="700" text-anchor="middle">16</text>
-<text x="500" y="536" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#8553b5" font-weight="700" text-anchor="start">MC TX / GPIO17</text>
-<circle cx="405" cy="576" r="16" fill="#cdd6e2"/>
-<text x="405" y="581" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">17</text>
-<text x="380" y="582" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="end">GPIO45</text>
-<circle cx="475" cy="576" r="16" fill="#8553b5"/>
-<text x="475" y="581" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="white" font-weight="700" text-anchor="middle">18</text>
-<text x="500" y="582" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#8553b5" font-weight="700" text-anchor="start">MC RX / GPIO18</text>
-<circle cx="405" cy="622" r="16" fill="#cdd6e2"/>
-<text x="405" y="627" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">19</text>
-<text x="380" y="628" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="end">GPIO46</text>
-<circle cx="475" cy="622" r="16" fill="#cdd6e2"/>
-<text x="475" y="627" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">20</text>
-<text x="500" y="628" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">BOOT / GPIO0</text>
-<circle cx="405" cy="668" r="16" fill="#cdd6e2"/>
-<text x="405" y="673" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">21</text>
-<text x="380" y="674" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="end">GPIO47</text>
-<circle cx="475" cy="668" r="16" fill="#cdd6e2"/>
-<text x="475" y="673" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">22</text>
-<text x="500" y="674" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">RESET</text>
-<circle cx="405" cy="714" r="16" fill="#cdd6e2"/>
-<text x="405" y="719" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">23</text>
-<text x="380" y="720" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="end">GPIO48</text>
-<circle cx="475" cy="714" r="16" fill="#cdd6e2"/>
-<text x="475" y="719" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">24</text>
-<text x="500" y="720" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">PWR</text>
-<circle cx="405" cy="760" r="16" fill="#cdd6e2"/>
-<text x="405" y="765" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">25</text>
-<text x="380" y="766" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="end">GPIO43 - reserved</text>
-<circle cx="475" cy="760" r="16" fill="#cdd6e2"/>
-<text x="475" y="765" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">26</text>
-<text x="500" y="766" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">Onboard SCL / GPIO7</text>
-<circle cx="405" cy="806" r="16" fill="#cdd6e2"/>
-<text x="405" y="811" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">27</text>
-<text x="380" y="812" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="end">GPIO44 - reserved</text>
-<circle cx="475" cy="806" r="16" fill="#cdd6e2"/>
-<text x="475" y="811" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">28</text>
-<text x="500" y="812" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">Onboard SDA / GPIO8</text>
-<circle cx="405" cy="852" r="16" fill="#596775"/>
-<text x="405" y="857" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="white" font-weight="700" text-anchor="middle">29</text>
-<text x="380" y="858" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#596775" font-weight="700" text-anchor="end">GND (used)</text>
-<circle cx="475" cy="852" r="16" fill="#cdd6e2"/>
-<text x="475" y="857" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">30</text>
-<text x="500" y="858" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">GND</text>
-<circle cx="405" cy="898" r="16" fill="#c43c36"/>
-<text x="405" y="903" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="white" font-weight="700" text-anchor="middle">31</text>
-<text x="380" y="904" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#c43c36" font-weight="700" text-anchor="end">3.3 V -&gt; GNSS</text>
-<circle cx="475" cy="898" r="16" fill="#cdd6e2"/>
-<text x="475" y="903" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#182b42" font-weight="700" text-anchor="middle">32</text>
-<text x="500" y="904" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#182b42" font-weight="400" text-anchor="start">3.3 V (unused)</text>
-<rect x="890" y="120" width="570" height="415" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
-<path d="M906 120H1444Q1460 120 1460 136V172H890V136Q890 120 906 120" fill="#8553b5"/>
-<text x="910" y="154" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">Each radio | connect by GPIO label</text>
-<text x="915" y="212" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">GPIO4 / J3.15 = RX from U1</text>
-<text x="915" y="256" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">GPIO5 / J3.16 = TX to U1</text>
-<text x="915" y="300" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">GND / J3.1 or J2.1 = common ground</text>
-<text x="915" y="344" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">USB-C = independent power</text>
-<text x="915" y="388" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">GPIO43/44 = reserve for USB UART</text>
-<text x="915" y="432" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">3V3 / 5V = no jumper to U1</text>
-<text x="915" y="476" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">Other GPIOs = leave disconnected</text>
-<rect x="890" y="570" width="570" height="430" rx="16" fill="white" stroke="#ced8e4" stroke-width="2"/>
-<path d="M906 570H1444Q1460 570 1460 586V622H890V586Q890 570 906 570" fill="#596775"/>
-<text x="910" y="604" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="white" font-weight="700" text-anchor="start">Numbering correction</text>
-<text x="915" y="660" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">MT = Meshtastic; MC = MeshCore.</text>
-<text x="915" y="694" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">U1 GPIO39: photo 9 / PDF J8.10</text>
-<text x="915" y="728" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">U1 GPIO40: photo 11 / PDF J8.12</text>
-<text x="915" y="762" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">U1 GPIO17: photo 16 / PDF J8.15</text>
-<text x="915" y="796" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">U1 GPIO18: photo 18 / PDF J8.17</text>
-<text x="915" y="830" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">U1 GPIO21: photo 5 / PDF J8.6</text>
-<text x="915" y="864" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">U1 GPIO38: photo 7 / PDF J8.8</text>
-<text x="915" y="898" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">Do not substitute one numbering</text>
-<text x="915" y="932" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#182b42" font-weight="400" text-anchor="start">system for the other. Check the PCB.</text>
-<text x="40" y="1044" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" fill="#53657a" font-weight="400" text-anchor="start">Aideepen listing does not establish Heltec originality, exact routing or pre-soldered headers. No camera in this build.</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Connector reference">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#051325"/><stop offset="1" stop-color="#112a45"/></linearGradient><linearGradient id="glass" x1="0" x2="1"><stop offset="0" stop-color="#d9efff" stop-opacity="0.21"/><stop offset="1" stop-color="#8bd0f5" stop-opacity="0.07"/></linearGradient><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#85dbff"/></marker><marker id="arr2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth"><path d="M0 0 L7 3.5 L0 7 z" fill="#ffba65"/></marker></defs>
+<rect x="0" y="0" width="1280" height="720" rx="0" fill="url(#bg)" stroke="none" stroke-width="1"/>
+<rect x="14" y="14" width="1252" height="692" rx="22" fill="none" stroke="#244260" stroke-width="2"/>
+<text x="40" y="62" font-family="DejaVu Sans,Arial,sans-serif" font-size="34" fill="#36c8f4" font-weight="bold">MeshCrossway</text>
+<text x="325" y="61" font-family="DejaVu Sans,Arial,sans-serif" font-size="28" fill="#edf5ff" font-weight="bold">| Connector reference</text>
+<text x="40" y="91" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#a6bfd4" font-weight="normal">Physical signal identity only: do not infer J8 position numbering from marketing photos</text>
+<rect x="30" y="669" width="1220" height="27" rx="8" fill="#162a40" stroke="#253f57" stroke-width="1"/>
+<text x="44" y="688" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#f4bc58" font-weight="normal">Use actual PCB revision/schematic. Meshtastic D6/D7 and MeshCore D6/D7 need confirmed free GPIOs.</text>
+<rect x="50" y="185" width="530" height="415" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
+<text x="68" y="217" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Waveshare host expansion (J8)</text>
+<text x="68" y="238" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">Board revision and pin numbering must be inspected</text>
+<text x="77" y="277" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO39   →  UART1 TX → Meshtastic RX</text>
+<text x="77" y="319" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO40   ←  UART1 RX ← Meshtastic TX</text>
+<text x="77" y="361" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO17   →  UART2 TX → MeshCore RX</text>
+<text x="77" y="403" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO18   ←  UART2 RX ← MeshCore TX</text>
+<text x="77" y="445" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO21   ↔  GNSS SDA (proposed)</text>
+<text x="77" y="487" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">GPIO38   ↔  GNSS SCL (proposed)</text>
+<text x="77" y="529" font-family="DejaVu Sans,Arial,sans-serif" font-size="17" fill="#edf5ff" font-weight="normal">3V3/GND: POWER PENDING CURRENT TEST</text>
+<rect x="625" y="185" width="604" height="183" rx="14" fill="#11243a" stroke="#36c8f4" stroke-width="1.7"/>
+<text x="643" y="217" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Radio A  •  Meshtastic</text>
+<text x="643" y="238" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">XIAO D7 / GPIO44 RX      XIAO D6 / GPIO43 TX</text>
+<rect x="669" y="256" width="112.5" height="67.5" rx="7" fill="#07121c" stroke="#36c8f4" stroke-width="2"/>
+<rect x="677.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="677.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="692.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="692.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="707.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="707.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="722.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="722.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="737.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="737.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="752.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="752.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="767.25" y="253.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="767.25" y="322.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="681.75" y="265.75" width="64.5" height="41.25" rx="5" fill="#c4d3dc" stroke="#7e99aa" stroke-width="1"/>
+<text x="714.0" y="283.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="8.25" fill="#122939" font-weight="bold" text-anchor="middle">Wio-SX1262</text>
+<text x="714.0" y="294.25" font-family="DejaVu Sans,Arial,sans-serif" font-size="6.75" fill="#34465a" font-weight="normal" text-anchor="middle">LoRa RF</text>
+<rect x="755.25" y="272.5" width="17.25" height="33.0" rx="2" fill="#224259" stroke="#86b4d1" stroke-width="1"/>
+<text x="763.5" y="292.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="7.5" fill="#edf5ff" font-weight="bold" text-anchor="middle">X</text>
+<text x="725.25" y="338.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="9.0" fill="#36c8f4" font-weight="bold" text-anchor="middle">XIAO + Wio-SX1262</text>
+<text x="867" y="280" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Serial PROTO</text>
+<text x="867" y="308" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">115200 baud (verify)</text>
+<text x="867" y="336" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Shared GND</text>
+<rect x="625" y="402" width="604" height="198" rx="14" fill="#11243a" stroke="#ffba65" stroke-width="1.7"/>
+<text x="643" y="434" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" fill="#edf5ff" font-weight="bold">Radio B  •  MeshCore</text>
+<text x="643" y="455" font-family="DejaVu Sans,Arial,sans-serif" font-size="13" fill="#a6bfd4" font-weight="normal">XIAO D7 / GPIO44 RX     XIAO D6 / GPIO43 TX</text>
+<rect x="670" y="480" width="112.5" height="67.5" rx="7" fill="#07121c" stroke="#ffba65" stroke-width="2"/>
+<rect x="678.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="678.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="693.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="693.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="708.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="708.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="723.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="723.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="738.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="738.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="753.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="753.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="768.25" y="477.0" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="768.25" y="546.75" width="6.0" height="3.75" rx="1" fill="#d7b86a" stroke="none" stroke-width="1"/>
+<rect x="682.75" y="489.75" width="64.5" height="41.25" rx="5" fill="#c4d3dc" stroke="#7e99aa" stroke-width="1"/>
+<text x="715.0" y="507.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="8.25" fill="#122939" font-weight="bold" text-anchor="middle">Wio-SX1262</text>
+<text x="715.0" y="518.25" font-family="DejaVu Sans,Arial,sans-serif" font-size="6.75" fill="#34465a" font-weight="normal" text-anchor="middle">LoRa RF</text>
+<rect x="756.25" y="496.5" width="17.25" height="33.0" rx="2" fill="#224259" stroke="#86b4d1" stroke-width="1"/>
+<text x="764.5" y="516.0" font-family="DejaVu Sans,Arial,sans-serif" font-size="7.5" fill="#edf5ff" font-weight="bold" text-anchor="middle">X</text>
+<text x="726.25" y="562.5" font-family="DejaVu Sans,Arial,sans-serif" font-size="9.0" fill="#ffba65" font-weight="bold" text-anchor="middle">XIAO + Wio-SX1262</text>
+<text x="868" y="503" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Companion Serial</text>
+<text x="868" y="530" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">115200 baud (verify)</text>
+<text x="868" y="557" font-family="DejaVu Sans,Arial,sans-serif" font-size="15" fill="#edf5ff" font-weight="normal">Shared GND</text>
 </svg>

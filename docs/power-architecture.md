@@ -4,6 +4,10 @@
 
 The previously selected **Adafruit BQ25185 #6092 is superseded**. Do not add a second LiPo charger, connect charger outputs together, or buy a separate buck-boost or power mux unless the bench tests show that the onboard rail is inadequate.
 
+**Packaging update (2026-10-26):** a protected 1S LiPo pack is intended to sit **behind the single carrier PCB/display** in the nearly invisible transparent rear enclosure. This is a mechanical concept only, not verification of the cell capacity, thermal limits, retention, dimensions, or safe charging connections.
+
+![GNSS I2C and protected rear LiPo placement](images/gnss-and-power.svg)
+
 ## Functional diagram
 
 ```mermaid
