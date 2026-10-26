@@ -17,7 +17,8 @@ These are **AI-generated concept illustrations**, not actual supplier photograph
 |---|---|---|
 | System architecture | [architecture/system-overview.svg](architecture/system-overview.svg) | Unified host, separate radios, rear power |
 | Hardware/carrier enclosure | [hardware-overview.svg](hardware-overview.svg) | One PCB and transparent front/rear layers |
-| XIAO/Wio B2B and host UART | [architecture/xiao-wiring.svg](architecture/xiao-wiring.svg) | XIAO internal SX1262 SPI versus external UART |\n| Wiring map | [architecture/wiring-diagram.svg](architecture/wiring-diagram.svg) | UART + GNSS proposed signals |
+| XIAO/Wio B2B and host UART | [architecture/xiao-wiring.svg](architecture/xiao-wiring.svg) | XIAO internal SX1262 SPI versus external UART |
+| Wiring map | [architecture/wiring-diagram.svg](architecture/wiring-diagram.svg) | UART + GNSS proposed signals |
 | Radio UART wiring | [radio-wiring.svg](radio-wiring.svg) | Meshtastic/MC TX↔RX pairs |
 | Connector GPIO guide | [connector-reference.svg](connector-reference.svg) | Host GPIO and XIAO pin identification |
 | GNSS and battery | [gnss-and-power.svg](gnss-and-power.svg) | GNSS and rear-battery relationship |
@@ -26,12 +27,14 @@ These are **AI-generated concept illustrations**, not actual supplier photograph
 | Firmware ownership | [architecture/firmware-responsibilities.svg](architecture/firmware-responsibilities.svg) | Host/radio responsibilities |
 | Tracking mode concept | [architecture/direct-tracking-modes.svg](architecture/direct-tracking-modes.svg) | Planned zero-hop behavior |
 
-The selected radio serial candidate pins are **D6/GPIO43 TX, D7/GPIO44 RX for both XIAO kits**, subject to Meshtastic PROTO and MeshCore Companion firmware tests. Never connect the Waveshare UART directly to Wio SX1262 SPI.\n\nSVG diagrams are maintained by [scripts/generate_wiring_diagrams.py](../../scripts/generate_wiring_diagrams.py). They are editable source graphics, but **not validated schematics, mechanical drawings or firmware tests**. UART module pins, 3.3 V spare current, antenna isolation, battery dimensions and the combined PCB design require bench verification before manufacturing.
+The selected radio serial candidate pins are **D6/GPIO43 TX, D7/GPIO44 RX for both XIAO kits**, subject to Meshtastic PROTO and MeshCore Companion firmware tests. Never connect the Waveshare UART directly to Wio SX1262 SPI.
+
+SVG diagrams are maintained by [scripts/generate_wiring_diagrams.py](../../scripts/generate_wiring_diagrams.py). They are editable source graphics, but **not validated schematics, mechanical drawings or firmware tests**. UART module pins, 3.3 V spare current, antenna isolation, battery dimensions and the combined PCB design require bench verification before manufacturing.
 
 ## Images that remain intentionally separate
 
 - [UI simulator illustrations](../ui-prototype/README.md): simulated UI examples, not physical-hardware images.
 - [Protocol comparison figures](../meshtastic-vs-meshcore.md): conceptual packet routing and coverage; no selected radio model is implied.
-- [Third-party Amazon listing photo archive](amazon/README.md): credit and source links. Aideepen/Heltec V3 photos are superseded, never the active V1 BOM.
+- [Waveshare product photo references](amazon/README.md): the selected display module's original listing images and attribution.
 
 Third-party product images are not relicensed by the project. Use official Seeed, Waveshare and u-blox datasheets and PCB CAD for any actual placement or manufacturing work.

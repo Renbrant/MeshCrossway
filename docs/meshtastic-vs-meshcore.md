@@ -110,7 +110,7 @@ In its published description, the creator says he consulted active MC communitie
 
 #### Colorado: finding people matters as much as choosing software
 
-**AJ Quick, August 22, 2026**, describes running two Heltec V4 radios and preferring MC after finding an active network locally. During his MT trial, contacts disappeared after a radio-setting change that nearby users had not all adopted. He acknowledges that his MT trial was short and that coordination contributed to the result. [Read the firsthand account][USER-colorado]
+**AJ Quick, August 22, 2026**, describes running two LoRa radios and preferring MC after finding an active network locally. During his MT trial, contacts disappeared after a radio-setting change that nearby users had not all adopted. He acknowledges that his MT trial was short and that coordination contributed to the result. [Read the firsthand account][USER-colorado]
 
 **Practical lesson:** ask the local group for its current settings before concluding that a radio or network is broken. Two compatible devices can stop hearing each other when they use different radio configurations. This report supports checking local activity and coordination; it does not establish that MC always reaches farther or has a particular advantage in user numbers.
 
@@ -128,7 +128,7 @@ In an August 2026 discussion, **u/Snoo_22440** reports using both systems in Pit
 
 #### A two-site test: receiving a message does not prove you can reply
 
-A user testing EU868 settings with **four Heltec V3 devices at two sites 2.7 km apart** reported MC messages working in one direction more successfully than the other, while MT worked in both directions in that setup. The discussion describes trying different radio settings and antennas, and investigating different levels of background radio noise. The linked updates did not establish a final cause. [User's update][USER-asymmetric], [follow-up][USER-asymmetric-followup]
+A user testing EU868 settings with **four LoRa devices at two sites 2.7 km apart** reported MC messages working in one direction more successfully than the other, while MT worked in both directions in that setup. The discussion describes trying different radio settings and antennas, and investigating different levels of background radio noise. The linked updates did not establish a final cause. [User's update][USER-asymmetric], [follow-up][USER-asymmetric-followup]
 
 **Practical lesson:** ask someone to reply from the place you need to reach. Seeing their device or receiving one of their transmissions is only part of a working conversation. This report is useful because it documents a disappointing outcome as well as attempts to investigate it. It does not prove an inherent difference in radio sensitivity between the two protocols.
 
@@ -239,7 +239,7 @@ Sources: [MT routing][MT-routing], [MT next-hop source][MT-next-hop], [MT roles]
 | Standalone operation | Supported on suitable device/UI builds | Supported on suitable device/UI builds; feature availability differs |
 | Phone/computer clients | Android, Apple, web and developer tools | Native, web and community clients; check platform and transport support |
 | Host/controller API | Protobuf client API; serial PROTO is planned for MeshCrossway | Companion protocol; custom UART exposure still needs board/build validation |
-| BLE, USB and network links | Availability depends on board and build | Interface variants; 1.18 adds BLE+Wi-Fi on selected boards, including Heltec V3 |
+| BLE, USB and network links | Availability depends on board and build | Interface variants; 1.18 adds BLE+Wi-Fi on selected boards, on supported hardware |
 | MQTT/online integration | Built-in module and supported client proxy configurations | Observer/upload/bridge projects; behavior depends on the integration |
 | TAK and other integrations | Published integrations including ATAK and CalTopo/SARTopo | Assess the specific third-party integration; do not assume native feature parity |
 
@@ -429,7 +429,7 @@ flowchart TD
     MC --> MCNET["MeshCore peers"]
 ```
 
-The dedicated MT node is planned to use the [serial PROTO client API][MT-serial]. The MC node uses the [Companion interface][MC-api]. The selected **Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kits** still need external-UART validation: proposed XIAO D7/GPIO44 RX and D6/GPIO43 TX; stock USB or BLE availability does not prove the intended pin-level API connection. Never reuse the superseded LoRa V3 GPIO4/5 UART pinout. The upstream ESP32 implementation exposes build-time UART choices, but the build must be checked on the delivered board. [Companion entry point][MC-main], [hardware and wiring](hardware-wiring.md)
+The dedicated MT node is planned to use the [serial PROTO client API][MT-serial]. The MC node uses the [Companion interface][MC-api]. The selected **Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kits** still need external-UART validation: proposed XIAO D7/GPIO44 RX and D6/GPIO43 TX; stock USB or BLE availability does not prove the intended pin-level API connection. The upstream ESP32 implementation exposes build-time UART choices, but the build must be checked on the delivered board. [Companion entry point][MC-main], [hardware and wiring](hardware-wiring.md)
 
 This arrangement supports an interface that can show both ecosystems while preserving their differences:
 

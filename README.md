@@ -41,7 +41,7 @@ The planned physical packaging uses **one integrated custom carrier PCB** for th
 
 **Radio kit:** [Seeed Studio XIAO ESP32-S3 & Wio-SX1262](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html). The SX1262 connects internally to each XIAO through the kit's B2B connector; the Waveshare talks to the two XIAO MCUs over independent UARTs.
 
-**Important:** the earlier Aideepen/Heltec LoRa V3 boards, external UART GPIO4/5 instructions and previous BOM totals are **superseded**. Current proposed external XIAO UART signals are **D7/GPIO44 RX and D6/GPIO43 TX** (to be proven with both firmware builds). The Waveshare J8 3V3 supply for both kits is **not electrically approved** until current and reverse-power measurements are complete. See [current wiring, shopping and pinout](docs/hardware-wiring.md).
+**Radio interface:** The external XIAO UART candidates are **D7/GPIO44 RX and D6/GPIO43 TX** on both Seeed kits (pending validation with both firmware builds). The Waveshare J8 3V3 supply for both kits is **not electrically approved** until current and reverse-power measurements are complete. See [current wiring, shopping and pinout](docs/hardware-wiring.md).
 
 ## What MeshCrossway is designed to do
 

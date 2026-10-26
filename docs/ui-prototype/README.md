@@ -51,7 +51,7 @@ The prototype deliberately avoids claiming that queued messages were transmitted
 
 ## Selected bench hardware
 
-The current V1 hardware proposal is Waveshare ESP32-S3-Touch-LCD-3.5, **two Seeed XIAO ESP32-S3 + Wio-SX1262 B2B radio kits** (Meshtastic and MeshCore Companion), a Uputronics u-blox MAX-M10S (3 V variant) GNSS breakout and onboard microSD. The external XIAO UART pins are provisionally **D7/GPIO44 RX and D6/GPIO43 TX**, not the superseded LoRa V3 GPIO4/5. Actual firmware UART support, shared 3V3 power, PCB layout and end-to-end operation remain unverified. See the [current hardware wiring and BOM](../hardware-wiring.md). This simulator does not connect to the boards.
+The current V1 hardware proposal is Waveshare ESP32-S3-Touch-LCD-3.5, **two Seeed XIAO ESP32-S3 + Wio-SX1262 B2B radio kits** (Meshtastic and MeshCore Companion), a Uputronics u-blox MAX-M10S (3 V variant) GNSS breakout and onboard microSD. The external XIAO UART pins are provisionally **D7/GPIO44 RX and D6/GPIO43 TX**. Actual firmware UART support, shared 3V3 power, PCB layout and end-to-end operation remain unverified. See the [current hardware wiring and BOM](../hardware-wiring.md). This simulator does not connect to the boards.
 
 
 ## Navigation and sharing concept

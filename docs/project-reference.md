@@ -1,6 +1,6 @@
 # MeshCrossway — V1 project reference
 
-> **Current baseline: October 26, 2026.** Replaces the older Heltec/Aideepen LoRa V3 two-pack selection and associated GPIO4/5 external UART wiring. These older designs are not valid build instructions. Project is in design and bench-prototype planning; UI simulator does not indicate a working hardware device.
+> **Current baseline: October 26, 2026.** The V1 design uses two Seeed XIAO ESP32-S3 + Wio-SX1262 B2B radio kits, a Waveshare ESP32-S3 touchscreen and MAX-M10S GNSS. Project is in design and bench-prototype planning; the simulator is not operating hardware.
 
 [README](../README.md)
 
@@ -39,7 +39,7 @@ The Seeed radio kit combines XIAO ESP32-S3 and Wio-SX1262 via an **internal B2B 
 | GNSS I²C | SDA GPIO21 / SCL GPIO38 | Uputronics MAX-M10S SDA / SCL | verify revision and 3V breakout |
 | Logic reference | host GND | both XIAO GND and GNSS GND | required |
 
-**No old LoRa V3 external UART GPIO4/GPIO5 wiring should be used on XIAO.** Serial baseline is 115200 8N1 if enabled on both endpoints; Meshtastic PROTO and MeshCore Companion are *different* binary APIs. The two radios can be developed initially on separate USB power supplies with shared logic GND. Shared external XIAO power from the host J8 rail is a design proposal only.
+Serial baseline is 115200 8N1 if enabled on both endpoints; Meshtastic PROTO and MeshCore Companion are *different* binary APIs. The two radios can be developed initially on separate USB power supplies with shared logic GND. Shared external XIAO power from the host J8 rail is a design proposal only.
 
 ![Updated XIAO UART wiring](images/architecture/xiao-wiring.svg)
 
@@ -86,6 +86,3 @@ The Seeed radio kit combines XIAO ESP32-S3 and Wio-SX1262 via an **internal B2B 
 | Reticulum future option | [Future Reticulum](reticulum-future-integration.md) |
 | Visual UI prototype | [Simulator documentation](ui-prototype/README.md) |
 
-## Historical note
-
-The October 24, 2026 Aideepen/Heltec-style LoRa V3 hardware selection, Amazon radio pack, **GPIO4/GPIO5 external UART assignments**, associated package-price totals and photos were part of an earlier, superseded prototype proposal. They may still exist in older git commits and image-asset archives, but **are not accepted for current purchasing, assembly or PCB design**. The present baseline is exactly **two Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kits**.

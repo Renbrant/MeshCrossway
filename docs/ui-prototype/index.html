@@ -185,7 +185,7 @@ main{background:#0b202d;padding:6px;scrollbar-color:#385d70 transparent}
 <div class="overlay" id="gpsPanel"><div class="line"><h2 id="gpsTitle">Navigation</h2><button class="chip" data-close>Close ×</button></div><div id="gpsBody"></div></div>
 <div class="toast" id="toast"></div>
 </div></div>
-<footer>Bench target: Waveshare 3.5-inch touch + 2 LoRa V3 ESP32-S3/SX1262 boards + SAM-M10Q. <a href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/hardware-wiring.md">Hardware &amp; wiring</a><br>Interactive browser simulator with demo data. No transmission, real positioning, diagnostics or emergency alert. Features are design targets, not implemented ESP32 functionality.</footer>
+<footer>Hardware concept: Waveshare 3.5-inch touch + two Seeed XIAO ESP32-S3/Wio-SX1262 kits + u-blox MAX-M10S. <a href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/hardware-wiring.md">Hardware &amp; wiring</a><br>Interactive browser simulator with demo data. No transmission, real positioning, diagnostics or emergency alert. Features are design targets, not implemented ESP32 functionality.</footer>
 <script>
 const pages=[...document.querySelectorAll('.page')], navs=[...document.querySelectorAll('[data-nav]')];
 const screenEl=document.querySelector('.screen');
@@ -206,7 +206,7 @@ document.querySelectorAll('.conversation').forEach(c=>c.onclick=()=>{document.ge
 document.getElementById('reply').onclick=()=>{document.getElementById('composerTitle').textContent='Reply';open('compose')};
 document.getElementById('quickOpen').onclick=()=>{draft.value='Checking in';open('compose')};
 document.getElementById('sos').onclick=()=>{draft.value='NEED ASSISTANCE. My last known position: 40.0000 N, 105.0000 W (DEMO ONLY)';open('compose');notice('DEMO ONLY: no emergency communication')};
-document.getElementById('settings').onclick=()=>{document.getElementById('toolTitle').textContent='Settings';document.getElementById('toolContent').textContent='Bench target: Waveshare 3.5-inch + 2 LoRa V3 (ESP32-S3/SX1262) + SAM-M10Q. Radio UART: RX4 / TX5 (proposed). Profile: Traveler · Location sharing: OFF · History: local · DEMO ONLY';open('toolPanel')};
+document.getElementById('settings').onclick=()=>{document.getElementById('toolTitle').textContent='Settings';document.getElementById('toolContent').textContent='Hardware concept: Waveshare 3.5-inch + two XIAO ESP32-S3/Wio-SX1262 kits + u-blox MAX-M10S. Candidate radio UART: XIAO RX GPIO44 / TX GPIO43. Profile: Traveler · Location sharing: OFF · History: local · DEMO ONLY';open('toolPanel')};
 document.querySelectorAll('[data-tool]').forEach(x=>x.onclick=()=>{document.getElementById('toolTitle').textContent=x.dataset.tool;document.getElementById('toolContent').textContent=({'Signal scan':'Demo RSSI: -89 dBm | SNR: +6 dB (illustrative)','Trace route':'Demo path: Node A → Node B → Base','Packet log':'14:35 MT RX · 14:31 MC RX · 14:22 MT RX','Repeaters':'Example repeater: Ridge Node · last heard 3 min'})[x.dataset.tool];open('toolPanel')});
 document.getElementById('discover').onclick=()=>notice('Discovery simulation only; no radio commands sent');
 let z=1;document.getElementById('zoom').onclick=()=>{z=z===3?1:z+1;document.querySelector('.map').style.backgroundSize=(24*z)+'px '+(24*z)+'px';document.getElementById('zoom').textContent='Zoom '+z+'×'};
