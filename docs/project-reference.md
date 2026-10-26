@@ -26,27 +26,27 @@ MeshCrossway is an open-source offline-capable portable touchscreen communicator
 | Position | Uputronics **u-blox MAX-M10S**, 3 V breakout | GPS/GNSS and local tracking |
 | Position antenna | Bingfu active GNSS antenna candidate | Under SMA/bias/current verification |
 | Local memory | Waveshare onboard microSD | Logs, messages, GPX, offline data |
-| Power | Waveshare AXP2101 + 1S LiPo candidate | Distribution to the two XIAO kits **not yet electrically verified** |
+| Power | Waveshare AXP2101 + protected 1S LiPo candidate | Rev A uses independent J8_5V / LOCAL_5V selectors into XIAO VBUS; **not yet electrically verified** |
 
 The Seeed radio kit combines XIAO ESP32-S3 and Wio-SX1262 via an **internal B2B connector**; do not run external wires from Waveshare to SX1262 SPI. Avoid purchasing the header-based Wio expansion made for a different XIAO target. Verify LoRa antenna suitability for the deployment region.
 
-## Proposed communication pins
+## Rev A communication pins
 
 | Link | Waveshare host | External XIAO signals | Status |
 |---|---|---|---|
-| Meshtastic | TX GPIO39 / RX GPIO40 | RX D7/GPIO44 / TX D6/GPIO43 | candidate, must be verified in firmware |
-| MeshCore Companion | TX GPIO17 / RX GPIO18 | RX D7/GPIO44 / TX D6/GPIO43 | candidate; build/serial transport not yet proven |
+| Meshtastic | TX GPIO39 / RX GPIO40 | RX D7/GPIO44 / TX D6/GPIO43 | Rev A selected; Serial PROTO binding/bench validation required |
+| MeshCore Companion | TX GPIO17 / RX GPIO18 | RX D7/GPIO44 / TX D6/GPIO43 | Rev A selected; upstream serial target confirmed, bench validation required |
 | GNSS I²C | **SDA GPIO8 / SCL GPIO7** | Uputronics MAX-M10S SDA / SCL | J8 pins 28/26; verify actual-board continuity before fabrication |
 | Logic reference | host GND | both XIAO GND and GNSS GND | required |
 
-Serial baseline is 115200 8N1 if enabled on both endpoints; Meshtastic PROTO and MeshCore Companion are *different* binary APIs. The two radios can be developed initially on separate USB power supplies with shared logic GND. Shared external XIAO power from the host J8 rail is a design proposal only.
+Serial baseline is 115200 8N1 if enabled on both endpoints; Meshtastic PROTO and MeshCore Companion are *different* binary APIs. The two radios can be developed initially on separate USB power supplies with shared logic GND. Rev A carrier power uses independent **J8_5V / LOCAL_5V selectors -> Schottky -> current link -> XIAO VBUS**; this power path is selected architecturally but still requires bench validation.
 
 ![Updated XIAO UART wiring](images/architecture/xiao-wiring.svg)
 
 ## Firmware and design principles
 
 1. **Host firmware (own code):** LVGL UI, ESP-IDF/FreeRTOS, independent UART adapters, contact/message store, GNSS parser, local tracks, location scheduler, microSD and diagnostics.
-2. **Meshtastic radio A:** upstream XIAO ESP32-S3 Wio-SX1262 build using Serial `PROTO` on candidate external UART RX=44 / TX=43. Current board definitions confirm the Wio radio itself occupies GPIO7/8/9/38/39/40/41/42 internally, leaving GPIO43/44 free; bench validation of serial framing remains required.
+2. **Meshtastic radio A:** upstream XIAO ESP32-S3 Wio-SX1262 build using Serial `PROTO` on the Rev A external UART RX=44 / TX=43. Current board definitions confirm the Wio radio itself occupies GPIO7/8/9/38/39/40/41/42 internally, leaving GPIO43/44 free; bench validation of serial framing remains required.
 3. **MeshCore radio B:** upstream **`Xiao_S3_WIO_companion_radio_serial`** environment, which currently sets `SERIAL_RX=D7` and `SERIAL_TX=D6` (GPIO44/43). Bench validation is still required; on fresh installs, use the correct **merged firmware image** when release instructions require a partition layout for persistent settings.
 4. **Custom source patches only after proven blocker:** zero-hop route control, serial transport or critical missing host API; favor upstream changes rather than local long-term forks.
 5. **Radio RF coexistence:** both 900 MHz-class SX1262 modules may operate near one another; antenna separation, blocking, collisions and autonomous TX must be measured.

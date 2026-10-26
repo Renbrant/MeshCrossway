@@ -146,7 +146,7 @@ Do not advertise full feature coverage or emergency reliability before these gat
 - Implement MeshCore Companion frame decoder, encoder and version-locked command/event mapping.
 - Add a host-side capability registry and self-test diagnostic screen.
 - Add serial capture/replay fixtures and wire-protocol regression tests.
-- Verify target-board MeshCore build flags and proposed XIAO D7/GPIO44 RX and D6/GPIO43 TX external UART pinout.
+- Verify the selected Rev A XIAO D7/GPIO44 RX and D6/GPIO43 TX external UART pinout on actual hardware and capture startup/traffic behavior.
 - Design RF coexistence tests and individual radio power/reset control before PCB freeze.
 
 ## Selected XIAO/Wio external UART interface

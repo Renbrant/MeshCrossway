@@ -14,7 +14,7 @@ This assembly concept places the two Seeed XIAO/Wio kits and MAX-M10S breakout o
 
 ![Revised external UART versus internal B2B wiring](images/architecture/xiao-wiring.svg)
 
-![Proposed complete controller-radio-GNSS wiring](images/architecture/wiring-diagram.svg)
+![Rev A controller-radio-GNSS wiring](images/architecture/wiring-diagram.svg)
 
 ## 1. Hardware inventory and buying links
 
@@ -38,7 +38,7 @@ Manufacturer references used for Rev A: [Seeed Wio-SX1262 + XIAO product](https:
 
 Each kit contains two internally connected devices: a **XIAO ESP32-S3 MCU** and a **Wio SX1262 radio module**. The MCU controls the SX1262 via **internal SPI and GPIOs on the B2B connector**. The Waveshare communicates only with the **XIAO MCU** via a *separate* external UART API. Do not wire Waveshare GPIOs to the SX1262 SPI signals or DIO1/BUSY lines.
 
-### Proposed host-to-XIAO serial connectivity
+### Rev A host-to-XIAO serial connectivity
 
 ![UART crossing on two identical XIAO pin pairs](images/radio-wiring.svg)
 
@@ -46,17 +46,17 @@ Each kit contains two internally connected devices: a **XIAO ESP32-S3 MCU** and 
 
 | Function | Waveshare U1 | XIAO A (Meshtastic) | XIAO B (MeshCore) | Status |
 |---|---|---|---|---|
-| Host UART1 TX → radio A RX | GPIO39 | **D7 / GPIO44 (RX)** | — | proposed, firmware configuration required |
-| Radio A TX → host UART1 RX | GPIO40 | **D6 / GPIO43 (TX)** | — | proposed, firmware configuration required |
-| Host UART2 TX → radio B RX | GPIO17 | — | **D7 / GPIO44 (RX)** | proposed, firmware configuration required |
-| Radio B TX → host UART2 RX | GPIO18 | — | **D6 / GPIO43 (TX)** | proposed, firmware configuration required |
+| Host UART1 TX → radio A RX | GPIO39 | **D7 / GPIO44 (RX)** | — | Rev A selected; firmware/bench validation required |
+| Radio A TX → host UART1 RX | GPIO40 | **D6 / GPIO43 (TX)** | — | Rev A selected; firmware/bench validation required |
+| Host UART2 TX → radio B RX | GPIO17 | — | **D7 / GPIO44 (RX)** | Rev A selected; firmware/bench validation required |
+| Radio B TX → host UART2 RX | GPIO18 | — | **D6 / GPIO43 (TX)** | Rev A selected; firmware/bench validation required |
 | Common logic reference | GND | GND | GND | mandatory |
 | Central GNSS SDA / SCL | **SDA GPIO8 / SCL GPIO7** | — | — | J8 pin 28 SDA / pin 26 SCL; verify actual board continuity before fabrication |
 | Central GNSS PPS | **GPIO21** | — | — | J8 pin 5 <- MAX-M10S TP/PPS through R5 0R |
 | Radio power | **J8 pin 2 / 5V** or alternate `LOCAL_5V` | **pin 14 VBUS/5V** | **pin 14 VBUS/5V** | independent 1x3 selector -> Schottky -> current link; bench validate |
 | GNSS power | **J8 pins 31/32 / 3V3** | — | — | MAX-M10S 3 V breakout VCC; 100 nF + 10 uF local decoupling |
 
-**GPIO43/44** are the candidate XIAO external UART TX/RX signals. They may also be used for serial boot diagnostics and USB/debug workflows; verify that the exact Meshtastic serial module and MeshCore Companion build can bind the API to these pins without startup logging corrupting the binary stream. Wire **TX ↔ RX**, never TX ↔ TX. Baseline link target: **115200 baud, 8N1**, explicitly configured (the Meshtastic serial default is not necessarily 115200).
+**GPIO43/44** are the Rev A XIAO external UART TX/RX signals. They may also be used for serial boot diagnostics and USB/debug workflows; verify that the exact Meshtastic serial module and MeshCore Companion build can bind the API to these pins without startup logging corrupting the binary stream. Wire **TX ↔ RX**, never TX ↔ TX. Baseline link target: **115200 baud, 8N1**, explicitly configured (the Meshtastic serial default is not necessarily 115200).
 
 XIAO pins labeled **D6/D7** are board-pin names; the numbers **GPIO43/44** are ESP32-S3 native GPIO numbers. Do not confuse either with pins on the Wio SX1262 radio module.
 
