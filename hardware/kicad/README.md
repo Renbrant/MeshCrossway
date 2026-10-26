@@ -4,7 +4,7 @@ This folder is the canonical home for the MeshCrossway Rev A KiCad design files 
 
 ## Current layout strategy
 
-The Rev A schematic is shared by multiple PCB layout alternatives.
+The Rev A schematic is shared by multiple PCB layout alternatives. The file `MeshCrossway_RevA.kicad_pcb` in this directory is the **active Layout B** and is intentionally blank/2-layer at the start so footprints can be pulled from the schematic with F8.
 
 - **Layout A** — preserved alternative based on the earlier 4-layer engineering floorplan.
 - **Layout B** — **active layout**, restarted from a blank PCB and targeting a **2-layer board**.
@@ -19,6 +19,7 @@ The schematic and footprints are common to both layouts. Do not duplicate or for
 hardware/kicad/
 ├── MeshCrossway_RevA.kicad_pro
 ├── MeshCrossway_RevA.kicad_sch
+├── MeshCrossway_RevA.kicad_pcb   # active Layout B
 ├── fp-lib-table
 ├── MeshCrossway.pretty/
 │   ├── Waveshare_J8_Mating_2x16_P2.54mm.kicad_mod
@@ -55,7 +56,7 @@ Current custom footprints:
 1. Open `MeshCrossway_RevA.kicad_pro` from this directory.
 2. Open the schematic and verify the project-local footprint library loads.
 3. Create a blank PCB and save it as `layouts/MeshCrossway_RevA_LAYOUT_B.kicad_pcb`.
-4. Configure the board as 2 copper layers: F.Cu / B.Cu.
+4. Open the existing blank `MeshCrossway_RevA.kicad_pcb` (already configured as a 2-layer starting board) or use `layouts/MeshCrossway_RevA_LAYOUT_B.kicad_pcb` as an untouched copy.
 5. Use **Tools -> Update PCB from Schematic (F8)**.
 6. Confirm zero footprint-library errors before applying the update.
 7. Start with mechanical floorplanning only: J1, U2, U3 and U4. Do not route until the module positions and board outline are accepted.
