@@ -130,3 +130,7 @@ Original project code and documentation: [MIT License](LICENSE). Third-party sof
 
 MeshCrossway is an independent project and is not affiliated with or endorsed by the manufacturers or upstream projects referenced here.
 
+
+## Radio interfaces and protocol integration
+
+See the [radio communication architecture and API compatibility study](docs/radio-communication-architecture.md) for the UART wiring, Meshtastic Protobuf framing, MeshCore Companion API, firmware build policy, radio capability negotiation, RF coexistence, failure handling and acceptance tests. This is a design and source-review document, **not** a verified hardware integration.
