@@ -1,6 +1,17 @@
-# MeshCrossway UI Prototype — Field Console
+# MeshCrossway UI Prototype — Landscape Side Console
 
 This folder contains a browser-based UI concept for the 3.5-inch MeshCrossway touchscreen.
+
+## Landscape UI v4 — dual collapsible sidebars
+
+The current interactive simulator targets the **480 × 320 landscape screen**:
+
+- **Left sidebar:** global Home, Chats, Map, Radios and More navigation. The edge chevron collapses the sidebar to icons to reclaim map/content width.
+- **Center:** the current workspace, with more usable vertical area because the bottom navigation bar has been removed.
+- **Right sidebar:** context-sensitive actions. The Map page displays the full suite of POI, track, GNSS and sharing functions. Other pages display relevant controls; its chevron collapses the pane for a larger workspace.
+- **Top quick-settings shade:** tap the top status bar (or swipe down from the header on a touch device) to expand demo toggles for GPS, Bluetooth, Wi-Fi, sound and brightness. Tap Close to retract it.
+
+**Simulation only:** quick-setting switches alter the browser preview, not real hardware radios, GNSS or peripherals. The side panels, drawer and touch targets need physical touchscreen usability validation.
 
 ## Goals
 
