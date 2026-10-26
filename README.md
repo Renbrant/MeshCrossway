@@ -8,6 +8,17 @@ MeshCrossway is an open-source, standalone touchscreen communicator being design
 
 > **Project status: design and bench-prototype planning.** The interactive UI is a simulator with sample data. Firmware, radio integration, hardware wiring and field performance are **not yet validated**. This is not a certified emergency communications device.
 
+## Meshtastic or MeshCore?
+
+**[Read the complete Meshtastic vs MeshCore guide →](docs/meshtastic-vs-meshcore.md)**
+
+Understand how both networks work and choose for your own region and use case. The guide covers routing, repeaters, range, congestion, security, location, apps and hardware, with version-specific details and linked operator experiences.
+
+- [Full comparison table](docs/meshtastic-vs-meshcore.md#complete-comparison-table)
+- [Which network fits your needs?](docs/meshtastic-vs-meshcore.md#which-should-you-choose)
+- [User experiences and the community video](docs/meshtastic-vs-meshcore.md#what-users-report)
+- [Find maps and check your region](docs/mesh-maps-and-regional-check.md), including LetsMesh, Meshtastic maps and Denver/Colorado coverage resources
+
 ## Explore the interface
 
 [![Launch the MeshCrossway UI simulator](https://img.shields.io/badge/OPEN-INTERACTIVE%20UI%20SIMULATOR-007acc?style=for-the-badge)](https://renbrant.github.io/MeshCrossway/)
@@ -97,7 +108,8 @@ The central controller handles the UI, GNSS, navigation, storage and sharing pol
 | **Power** | [Battery charging, 3.3 V architecture and electrical verification](docs/power-architecture.md) |
 | **Firmware architecture** | [Radio firmware policy, processing responsibilities and tests](docs/radio-firmware-strategy.md) |
 | **Navigation & sharing** | [GPS, POIs, GPX, group tracking, Direct Only and congestion controls](docs/navigation-and-sharing.md) |
-| **Protocols** | [Meshtastic and MeshCore overview](docs/meshtastic-vs-meshcore.md) |
+| **MT vs MC** | [Complete technical comparison, decision guide and operator experiences](docs/meshtastic-vs-meshcore.md) |
+| **Maps & local coverage** | [Map directory, data limitations and regional field checks](docs/mesh-maps-and-regional-check.md) |
 | **UI prototype** | [Simulator features, status and limitations](docs/ui-prototype/README.md) |
 | **Technical reference** | [Detailed project decisions, roadmap, equipment and supporting references](docs/project-reference.md) |
 
@@ -116,3 +128,4 @@ Contributions and technical discussions are welcome in [GitHub Issues](https://g
 Original project code and documentation: [MIT License](LICENSE). Third-party software, hardware documentation and product images retain their respective licenses. See [photo sources and rights](docs/images/amazon/README.md).
 
 MeshCrossway is an independent project and is not affiliated with or endorsed by the manufacturers or upstream projects referenced here.
+
