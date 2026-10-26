@@ -1,0 +1,8 @@
+(footprint "Module_LOCAL_5V_3Pin_Prototype" (version 20221018) (generator pcbnew) (layer "F.Cu") (attr through_hole)
+  (fp_text reference "REF**" (at 0 -3) (layer "F.SilkS") (effects (font (size 1 1) (thickness 0.15))))
+  (fp_text value "LOCAL 5V MODULE TBD" (at 0 3) (layer "F.Fab") (effects (font (size 0.8 0.8) (thickness 0.12))))
+  (fp_rect (start -6 -4) (end 6 4) (stroke (width 0.2) (type default)) (fill none) (layer "F.SilkS"))
+  (pad "1" thru_hole rect (at -2.54 0) (size 1.8 1.8) (drill 1) (layers "*.Cu" "*.Mask"))
+  (pad "2" thru_hole circle (at 0 0) (size 1.8 1.8) (drill 1) (layers "*.Cu" "*.Mask"))
+  (pad "3" thru_hole circle (at 2.54 0) (size 1.8 1.8) (drill 1) (layers "*.Cu" "*.Mask"))
+)
