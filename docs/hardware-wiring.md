@@ -27,6 +27,12 @@ flowchart LR
 
 **Bench bring-up:** separate USB supplies still permitted while verifying UART firmware and actual board pinout. **Do not use the historical independent-USB test drawings as final shared-battery wiring instructions.**
 
+## Illustrated V1 wiring
+
+![Proposed V1 wiring](images/architecture/wiring-diagram.svg)
+
+**Diagram is conceptual and not a validated electrical schematic.** Use the GPIO table below as the authoritative pin definition, and verify the actual PCB revision before connecting anything.
+
 ## 1. Identify the purchased boards
 
 | Controller: selected Amazon listing | Radios: selected two-pack |
