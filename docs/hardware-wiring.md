@@ -51,7 +51,7 @@ Each kit contains two internally connected devices: a **XIAO ESP32-S3 MCU** and 
 | Host UART2 TX → radio B RX | GPIO17 | — | **D7 / GPIO44 (RX)** | proposed, firmware configuration required |
 | Radio B TX → host UART2 RX | GPIO18 | — | **D6 / GPIO43 (TX)** | proposed, firmware configuration required |
 | Common logic reference | GND | GND | GND | mandatory |
-| Central GNSS SDA / SCL | GPIO21 / GPIO38 | — | — | G1 SDA/SCL; verify host revision |
+| Central GNSS SDA / SCL | **GPIO8 / GPIO7** | — | — | J8 SDA(GPIO8) / SCL(GPIO7); intended expansion I²C, verify pull-ups/addressing |
 | Supplies | Waveshare J8 3V3 | XIAO 3V3 candidate | XIAO 3V3 candidate | **not electrically approved** |
 
 **GPIO43/44** are the candidate XIAO external UART TX/RX signals. They may also be used for serial boot diagnostics and USB/debug workflows; verify that the exact Meshtastic serial module and MeshCore Companion build can bind the API to these pins without startup logging corrupting the binary stream. Wire **TX ↔ RX**, never TX ↔ TX. Baseline link target: **115200 baud, 8N1**, explicitly configured (the Meshtastic serial default is not necessarily 115200).
@@ -60,9 +60,9 @@ XIAO pins labeled **D6/D7** are board-pin names; the numbers **GPIO43/44** are E
 
 ### SX1262 internal B2B hardware (reference, NOT external host wiring)
 
-The official XIAO ESP32-S3 Wio build has been reported with SX1262 SPI SCK=GPIO36, MISO=GPIO37, MOSI=GPIO35, NSS=GPIO7, RESET=GPIO4, DIO1=GPIO1, BUSY=GPIO2 and module enable=GPIO5. **These definitions are for the exact B2B kit only and must be checked against the firmware variant and schematic before using them in any custom build.** Alternative Wio header variants have different mappings. These GPIOs must not be reused as host UART pins. A complete source/board manifest must lock TCXO configuration and RF-switch control as well.
+For the current **XIAO ESP32-S3 + Wio-SX1262 B2B kit**, the Seeed schematic and current upstream Meshtastic/MeshCore board definitions agree on the radio wiring: **SCK=GPIO7, MISO=GPIO8, MOSI=GPIO9, NSS=GPIO41, RESET=GPIO42, DIO1=GPIO39, BUSY=GPIO40 and RX-enable/RF switch=GPIO38**; TCXO is configured at 1.8 V. These are internal radio resources and must not be reused by the carrier. **D6/GPIO43 and D7/GPIO44 remain available for the external host UART.** Older pin lists using GPIO35/36/37 or GPIO1/2/4/5 do not describe the current selected B2B kit and must not be used for this design.
 
-Reference discussion: [Meshtastic XIAO S3 RadioLib SPI pin details](https://github.com/meshtastic/firmware/discussions/6744). See [Seeed kit schematics](https://wiki.seeedstudio.com/xiao_esp32s3_%26_wio_SX1262_kit_for_meshtastic/).
+Sources: [Seeed kit schematic/resources](https://wiki.seeedstudio.com/xiao_esp32s3_%26_wio_SX1262_kit_for_meshtastic/), [Meshtastic board definition](https://github.com/meshtastic/firmware/blob/master/variants/esp32s3/seeed_xiao_s3/variant.h), and [MeshCore Xiao_S3_WIO variant](https://github.com/meshcore-dev/MeshCore/blob/main/variants/xiao_s3_wio/platformio.ini).
 
 ## 3. Bench wiring
 
@@ -74,24 +74,25 @@ Reference discussion: [Meshtastic XIAO S3 RadioLib SPI pin details](https://gith
                     UART2 RX GPIO18  <-----  B XIAO D6 / GPIO43 TX
                     GND              ------- A GND / B GND / GNSS GND
 
-                    I2C SDA GPIO21  <----->  MAX-M10S SDA
-                    I2C SCL GPIO38  <----->  MAX-M10S SCL
+                    I2C SDA GPIO8   <----->  MAX-M10S SDA
+                    I2C SCL GPIO7   <----->  MAX-M10S SCL
+                    GNSS PPS GPIO21 <-----   MAX-M10S TP/PPS (candidate)
 
         XIAO A --(internal B2B SPI)--> Wio SX1262 A -- antenna
         XIAO B --(internal B2B SPI)--> Wio SX1262 B -- antenna
 ```
 
-The Waveshare GPIO39/40 and GPIO17/18 assignments assume the **camera is absent and disabled**. The board listing and Waveshare revision-specific J8 drawings disagree on pin numbering: locate contacts by printed **GPIO signal** and verified continuity, not by picture-position numbers. Reserve GPIO43/44 **on the Waveshare** for diagnostics; the same native numbers **on each XIAO** serve a different physical MCU and may be used for its external UART.
+The Waveshare GPIO39/40 and GPIO17/18 assignments assume the **camera is absent and disabled**. On the current official J8 pinout these appear as GPIO39 pin 9, GPIO40 pin 11, GPIO17 pin 16 and GPIO18 pin 18. The intended expansion I²C is J8 SCL(GPIO7) pin 26 and SDA(GPIO8) pin 28; use this bus for MAX-M10S. Reserve host GPIO43/44 (J8 RXD/TXD pins 25/27) for diagnostics/service. Always verify the actual shipped PCB revision and continuity before fabrication.
 
 ## 4. Firmware bring-up
 
 1. Identify the exact Wio B2B kit and XIAO PCB revision. Test each separately via its own USB-C interface and an antenna connected.
 2. Flash a **Seeed XIAO ESP32-S3 + Wio SX1262** Meshtastic image for A; enable the Serial module in `PROTO` mode using XIAO RX=44, TX=43 if that release supports that mapping. Validate actual framing, reboot and incoming messages; use the firmware target specifically built for the Seeed XIAO/Wio kit.
-3. Flash a **Xiao_S3_WIO Companion** MeshCore variant for B, not repeater firmware. For external UART, verify the exact release source has `SERIAL_RX`/`SERIAL_TX` transport enabled and build with RX=44, TX=43 where feasible. USB/BLE Companion support **does not prove external hardware UART support**.
+3. Flash/build **`Xiao_S3_WIO_companion_radio_serial`** for B, not repeater, USB, BLE or Wi-Fi Companion firmware. Current upstream source already sets `SERIAL_TX=D6` and `SERIAL_RX=D7`, corresponding to GPIO43/GPIO44 on XIAO ESP32-S3. The source path is now confirmed; bench operation, startup behavior and persistence still require validation.
 4. MeshCore's release/partition layout may require a **complete merged firmware image** on first flash to retain configuration. Check release instructions and verify region/name/settings survive a cold power cycle; do not blindly flash an app-only image to a blank target.
 5. Capture UART framing with each kit alone; then connect both to Waveshare and test concurrency, reconnect and isolation. Preserve both separate USB ports for maintenance.
 
-Upstream MeshCore FAQ explicitly lists **Xiao S3 WIO** as supported; [Seeed's MeshCore guide](https://wiki.seeedstudio.com/pt-br/get_started_with_esp32s3_meshcore/) discusses merged images and persistent settings. The exact external-UART mode is **a design gate, not yet verified on this board**.
+Upstream MeshCore includes a dedicated **Xiao_S3_WIO serial Companion** environment; [Seeed's MeshCore guide](https://wiki.seeedstudio.com/pt-br/get_started_with_esp32s3_meshcore/) also discusses merged images and persistent settings. The UART source configuration is confirmed, while the physical link and cold-boot behavior remain bench-validation gates.
 
 ## 5. Power / RF / mechanical gates
 
