@@ -123,3 +123,8 @@ See [hardware-sources.md](hardware-sources.md) for source purpose, scope and add
 ![Rev A selectable 5 V radio-power architecture](images/architecture/power-architecture.svg)
 
 The diagram is an engineering concept, not a measured current-budget guarantee.
+
+
+### GNSS breakout datasheet confirmation
+
+[Uputronics uBLOX MAX Breakout for Active Antennas — Rev 2.0, 25 April 2025](https://cdn.shopify.com/s/files/1/0835/7707/8094/files/uBLOX_MAX_Breakout_for_Active_Antennas_Datasheet.pdf?v=1745569009) specifies the **selected 3 V breakout** at **2.7–3.6 V VCC** (absolute maximum **3.6 V**). Its published operating current figures are **25 mA acquisition**, **21 mA tracking** and **6 mA cyclic power-saving**. These refer to the breakout use case and are not guaranteed TX-like peaks or a complete active-antenna power budget; account separately for antenna-bias current. The breakout has **nominal 2.7 V active-antenna bias**, a **0.2 F backup supercapacitor** and **TP/PPS** output. Confirm active antenna compatibility, rail noise and peak consumption on the actual assembly. The 5 V breakout is a distinct SKU and is *not* the Rev A selection.
