@@ -2,6 +2,12 @@
 
 **Status: design decision, not bench validation.** The MeshCrossway prototype uses a Waveshare ESP32-S3 touchscreen controller and two independent ESP32-S3/SX1262 LoRa V3 radio boards. We favor upstream Meshtastic and MeshCore firmware and avoid maintaining forks unless a tested, essential capability cannot be exposed otherwise.
 
+## Illustrated firmware boundaries
+
+![Firmware responsibilities](images/architecture/firmware-responsibilities.svg)
+
+The central host handles UI, storage and application policy; each radio keeps its native protocol stack.
+
 ## Ownership and responsibilities
 
 | Component | Owns | Does not own |
