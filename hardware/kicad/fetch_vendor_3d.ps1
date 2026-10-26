@@ -37,6 +37,30 @@ $waveDir = Join-Path $vendor "Waveshare_ESP32-S3-Touch-LCD-3.5"
 Remove-Item $waveDir -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $waveDir | Out-Null
 Expand-Archive -Path $waveZip -DestinationPath $waveDir -Force
+
+$waveSteps = @(Get-ChildItem $waveDir -Recurse -File | Where-Object { $_.Extension -match '^\.(step|stp)
+Write-Host ""
+Write-Host "Done. Vendor files are under:"
+Write-Host "  $vendor"
+Write-Host ""
+Write-Host "The XIAO footprint is already configured to use 3dmodels/vendor/XIAO_ESP32S3.step."
+Write-Host "Wio and Waveshare models are downloaded for mechanical review; their final KiCad offsets/orientations must be validated before fabrication."
+ })
+if ($waveSteps.Count -eq 1) {
+    Copy-Item $waveSteps[0].FullName (Join-Path $vendor "Waveshare_ESP32-S3-Touch-LCD-3.5.step") -Force
+    Write-Host "  Waveshare STEP normalized: $($waveSteps[0].Name)"
+} elseif ($waveSteps.Count -gt 1) {
+    $preferred = $waveSteps | Where-Object { $_.Name -match 'ESP32-S3-Touch-LCD-3\.5|3\.5' } | Select-Object -First 1
+    if ($preferred) {
+        Copy-Item $preferred.FullName (Join-Path $vendor "Waveshare_ESP32-S3-Touch-LCD-3.5.step") -Force
+        Write-Host "  Waveshare STEP normalized: $($preferred.Name)"
+    } else {
+        Write-Warning "Multiple Waveshare STEP files found. No unique preferred file selected."
+        $waveSteps | ForEach-Object { Write-Host "    $($_.FullName)" }
+    }
+} else {
+    Write-Warning "No STEP/STP file found in Waveshare package."
+}
 Write-Host "  Waveshare 2D/3D package: OK"
 
 Write-Host ""
