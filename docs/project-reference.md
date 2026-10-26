@@ -36,7 +36,7 @@ The Seeed radio kit combines XIAO ESP32-S3 and Wio-SX1262 via an **internal B2B 
 |---|---|---|---|
 | Meshtastic | TX GPIO39 / RX GPIO40 | RX D7/GPIO44 / TX D6/GPIO43 | candidate, must be verified in firmware |
 | MeshCore Companion | TX GPIO17 / RX GPIO18 | RX D7/GPIO44 / TX D6/GPIO43 | candidate; build/serial transport not yet proven |
-| GNSS I²C | **SDA GPIO8 / SCL GPIO7** | Uputronics MAX-M10S SDA / SCL | use Waveshare J8 expansion I²C; verify pull-ups and breakout revision |
+| GNSS I²C | **J8 expansion I²C (GPIO mapping TBD)** | Uputronics MAX-M10S SDA / SCL | verify actual shipped Waveshare revision, pull-ups and continuity |
 | Logic reference | host GND | both XIAO GND and GNSS GND | required |
 
 Serial baseline is 115200 8N1 if enabled on both endpoints; Meshtastic PROTO and MeshCore Companion are *different* binary APIs. The two radios can be developed initially on separate USB power supplies with shared logic GND. Shared external XIAO power from the host J8 rail is a design proposal only.
