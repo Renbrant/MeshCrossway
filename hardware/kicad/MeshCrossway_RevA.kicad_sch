@@ -1,0 +1,7758 @@
+(kicad_sch
+	(version 20260306)
+	(generator "eeschema")
+	(generator_version "10.0")
+	(uuid "625b3c66-94c9-41de-b2bc-9cf686ed83a7")
+	(paper "A4")
+	(title_block
+		(title "MeshCrossway Rev A Carrier")
+		(date "2026-10-26")
+		(rev "A1")
+		(company "MeshCrossway")
+	)
+	(lib_symbols
+		(symbol "MeshCrossway:BLOCK"
+			(exclude_from_sim yes)
+			(in_bom no)
+			(on_board no)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "#BLOCK"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(property "Value" "BLOCK"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(property "Description" "Functional block diagram annotation"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(symbol "BLOCK_0_1"
+				(rectangle
+					(start -22.86 10.16)
+					(end 22.86 -10.16)
+					(stroke
+						(width 0.35)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "MeshCrossway:C"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "C"
+				(at 2.54 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "C"
+				(at 3.81 -1.905 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Capacitor"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "C_0_1"
+				(polyline
+					(pts
+						(xy -1.27 0.635) (xy 1.27 0.635)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 -0.635) (xy 1.27 -0.635)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "C_1_1"
+				(pin passive line
+					(at 0 3.81 270)
+					(length 2.54)
+					(name "1"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -3.81 90)
+					(length 2.54)
+					(name "2"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "MeshCrossway:D_Schottky"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "D"
+				(at 0 2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(property "Value" "Schottky"
+				(at 0 -2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 0.9 0.9)
+					)
+				)
+			)
+			(property "Footprint" "Diode_SMD:D_SOD-123"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(property "Description" "Series Schottky isolation diode"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(symbol "D_Schottky_0_1"
+				(polyline
+					(pts
+						(xy -1.27 1.27) (xy 1.27 0) (xy -1.27 -1.27) (xy -1.27 1.27)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 1.27) (xy 1.27 -1.27)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "D_Schottky_1_1"
+				(pin passive line
+					(at -3.81 0 0)
+					(length 2.54)
+					(name "A"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 3.81 0 180)
+					(length 2.54)
+					(name "K"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "MeshCrossway:GND"
+			(power global)
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom no)
+			(on_board no)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "#PWR"
+				(at 0 -3.81 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(property "Value" "GND"
+				(at 0 -3.6 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 0.85 0.85)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(property "Description" "Ground"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(symbol "GND_0_1"
+				(polyline
+					(pts
+						(xy 0 0) (xy 0 -1.27) (xy 1.27 -1.27) (xy 0 -2.54) (xy -1.27 -1.27) (xy 0 -1.27)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "GND_1_1"
+				(pin power_in line
+					(at 0 0 270)
+					(length 0)
+					(name "~"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "MeshCrossway:HEADER4"
+			(exclude_from_sim yes)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "J"
+				(at 0 8.89 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Host Debug 1x4"
+				(at 0 11.43 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Host service UART"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "HEADER4_0_1"
+				(rectangle
+					(start -5.08 6.35)
+					(end 5.08 -6.35)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "HEADER4_1_1"
+				(pin passive line
+					(at -7.62 3.81 0)
+					(length 2.54)
+					(name "3V3"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -7.62 1.27 0)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -7.62 -1.27 0)
+					(length 2.54)
+					(name "HOST_RXD"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -7.62 -3.81 0)
+					(length 2.54)
+					(name "HOST_TXD"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "MeshCrossway:JUMPER2"
+			(exclude_from_sim yes)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "JP"
+				(at 0 6.35 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Current Link 1x2"
+				(at 0 8.89 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Removable current measurement shunt"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "JUMPER2_0_1"
+				(rectangle
+					(start -5.08 3.81)
+					(end 5.08 -3.81)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "JUMPER2_1_1"
+				(pin passive line
+					(at -7.62 0 0)
+					(length 2.54)
+					(name "IN"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 7.62 0 180)
+					(length 2.54)
+					(name "OUT"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "MeshCrossway:JUMPER3"
+			(exclude_from_sim yes)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "JP"
+				(at 0 6.985 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Source Select 1x3"
+				(at 0 9.525 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "2.54mm pin-header selector"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "JUMPER3_0_1"
+				(rectangle
+					(start -6.35 4.445)
+					(end 6.35 -4.445)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "JUMPER3_1_1"
+				(pin passive line
+					(at -8.89 2.54 0)
+					(length 2.54)
+					(name "SRC_A"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 8.89 0 180)
+					(length 2.54)
+					(name "COMMON"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -8.89 -2.54 0)
+					(length 2.54)
+					(name "SRC_B"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "MeshCrossway:MAX_M10S_BREAKOUT"
+			(exclude_from_sim yes)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "U"
+				(at 0 13.97 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Uputronics MAX-M10S 3V"
+				(at 0 16.51 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x07_P2.54mm_Vertical"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "https://store.uputronics.com/"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Uputronics MAX-M10S 3V breakout carrier socket; 7-pin 2.54mm interface"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "MAX_M10S_BREAKOUT_0_1"
+				(rectangle
+					(start -12.7 10.16)
+					(end 12.7 -10.16)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "MAX_M10S_BREAKOUT_1_1"
+				(pin bidirectional line
+					(at 15.24 7.62 180)
+					(length 2.54)
+					(name "SDA"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 15.24 3.81 180)
+					(length 2.54)
+					(name "SCL"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 15.24 0 180)
+					(length 2.54)
+					(name "TXD"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 15.24 -3.81 180)
+					(length 2.54)
+					(name "RXD"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at 15.24 -7.62 180)
+					(length 2.54)
+					(name "TP/PPS"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)					)
+				)
+				(pin power_in line
+					(at -15.24 -3.81 0)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at -15.24 3.81 0)
+					(length 2.54)
+					(name "VCC_3V3"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "MeshCrossway:R"
+			(pin_names
+				(offset 1.016)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "R"
+				(at -1.905 1.905 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "R"
+				(at 1.905 1.905 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Resistor"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "R_0_1"
+				(rectangle
+					(start -1.27 -0.508)
+					(end 1.27 0.508)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "R_1_1"
+				(pin passive line
+					(at -3.81 0 0)
+					(length 2.54)
+					(name "~"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 3.81 0 180)
+					(length 2.54)
+					(name "~"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "MeshCrossway:REG_TBD"
+			(exclude_from_sim yes)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "U"
+				(at 0 10.16 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "LOCAL 5V POWER MODULE / TBD"
+				(at 0 12.7 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Rev A local 5V source placeholder"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "REG_TBD_0_1"
+				(rectangle
+					(start -12.7 7.62)
+					(end 12.7 -7.62)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "REG_TBD_1_1"
+				(pin power_in line
+					(at -15.24 3.81 0)
+					(length 2.54)
+					(name "VIN_BAT"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at -15.24 -3.81 0)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin power_out line
+					(at 15.24 3.81 180)
+					(length 2.54)
+					(name "VOUT_5V"
+						(effects
+							(font
+								(size 0.95 0.95)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "MeshCrossway:TP"
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "TP"
+				(at 0 2.3 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 0.85 0.85)
+					)
+				)
+			)
+			(property "Value" "TestPoint"
+				(at 0 -2.3 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 0.8 0.8)
+					)
+				)
+			)
+			(property "Footprint" "TestPoint:TestPoint_Pad_D1.5mm"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(property "Description" "Test point"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1 1)
+					)
+				)
+			)
+			(symbol "TP_0_1"
+				(circle
+					(center 0 0)
+					(radius 1.27)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "TP_1_1"
+				(pin passive line
+					(at -2.54 0 0)
+					(length 1.27)
+					(name "TP"
+						(effects
+							(font
+								(size 0 0)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 0 0)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "MeshCrossway:WAVESHARE_J8"
+			(exclude_from_sim yes)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "J"
+				(at 0 24.13 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Waveshare ESP32-S3-Touch-LCD-3.5 J8"
+				(at 0 26.67 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_2x16_P2.54mm_Vertical"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Host module expansion connector"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "WAVESHARE_J8_0_1"
+				(rectangle
+					(start -20.32 21.59)
+					(end 20.32 -21.59)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "WAVESHARE_J8_1_1"
+				(pin passive line
+					(at -22.86 19.05 0)
+					(length 2.54)
+					(name "BAT"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 19.05 180)
+					(length 2.54)
+					(name "5V"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 16.51 0)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 16.51 180)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 13.97 0)
+					(length 2.54)
+					(name "GPIO21"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 13.97 180)
+					(length 2.54)
+					(name "DN/GPIO19"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 11.43 0)
+					(length 2.54)
+					(name "GPIO38"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 11.43 180)
+					(length 2.54)
+					(name "DP/GPIO20"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 8.89 0)
+					(length 2.54)
+					(name "GPIO39"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "9"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 8.89 180)
+					(length 2.54)
+					(name "GPIO11"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "10"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 6.35 0)
+					(length 2.54)
+					(name "GPIO40"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "11"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 6.35 180)
+					(length 2.54)
+					(name "GPIO10"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "12"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 3.81 0)
+					(length 2.54)
+					(name "GPIO41"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "13"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 3.81 180)
+					(length 2.54)
+					(name "GPIO9"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "14"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 1.27 0)
+					(length 2.54)
+					(name "GPIO42"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "15"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 1.27 180)
+					(length 2.54)
+					(name "GPIO17"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "16"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 -1.27 0)
+					(length 2.54)
+					(name "GPIO45"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "17"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 -1.27 180)
+					(length 2.54)
+					(name "GPIO18"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "18"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 -3.81 0)
+					(length 2.54)
+					(name "GPIO46"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "19"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 -3.81 180)
+					(length 2.54)
+					(name "BOOT/GPIO0"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "20"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 -6.35 0)
+					(length 2.54)
+					(name "GPIO47"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "21"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 -6.35 180)
+					(length 2.54)
+					(name "RST"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "22"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 -8.89 0)
+					(length 2.54)
+					(name "GPIO48"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "23"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 -8.89 180)
+					(length 2.54)
+					(name "PWR"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "24"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 -11.43 0)
+					(length 2.54)
+					(name "RXD/GPIO43"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "25"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 -11.43 180)
+					(length 2.54)
+					(name "SCL/GPIO7"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "26"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 -13.97 0)
+					(length 2.54)
+					(name "TXD/GPIO44"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "27"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 -13.97 180)
+					(length 2.54)
+					(name "SDA/GPIO8"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "28"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 -16.51 0)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "29"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 -16.51 180)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "30"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -22.86 -19.05 0)
+					(length 2.54)
+					(name "3V3"
+						(effects
+							(font								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "31"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 22.86 -19.05 180)
+					(length 2.54)
+					(name "3V3"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+					(number "32"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+		(symbol "MeshCrossway:XIAO_ADDON"
+			(exclude_from_sim yes)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "U"
+				(at 0 16.51 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "XIAO + Wio-SX1262"
+				(at 0 -16.51 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" "Seeed_Studio_XIAO_Series:XIAO-14P-Add-On"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Official Seeed XIAO 14-pin carrier interface; Wio-SX1262 treated as part of plug-in radio module"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "XIAO_ADDON_0_1"
+				(rectangle
+					(start -10.16 13.97)
+					(end 10.16 -13.97)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "XIAO_ADDON_1_1"
+				(pin passive line
+					(at -12.7 11.43 0)
+					(length 2.54)
+					(name "D0"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -12.7 7.62 0)
+					(length 2.54)
+					(name "D1"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -12.7 3.81 0)
+					(length 2.54)
+					(name "D2"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -12.7 0 0)
+					(length 2.54)
+					(name "D3"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -12.7 -3.81 0)
+					(length 2.54)
+					(name "D4"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at -12.7 -7.62 0)
+					(length 2.54)
+					(name "D5"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at -12.7 -11.43 0)
+					(length 2.54)
+					(name "D6/TX"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at 12.7 -11.43 180)
+					(length 2.54)
+					(name "D7/RX"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 12.7 -7.62 180)
+					(length 2.54)
+					(name "D8/SCK"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "9"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 12.7 -3.81 180)
+					(length 2.54)
+					(name "D9/MISO"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "10"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 12.7 0 180)
+					(length 2.54)
+					(name "D10/MOSI"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "11"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin power_out line
+					(at 12.7 3.81 180)
+					(length 2.54)
+					(name "3V3_OUT"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "12"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 7.62 180)
+					(length 2.54)
+					(name "GND"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "13"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at 12.7 11.43 180)
+					(length 2.54)
+					(name "VBUS/5V"
+						(effects
+							(font
+								(size 1 1)
+							)
+						)
+					)
+					(number "14"
+						(effects
+							(font
+								(size 0.9 0.9)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
+	)
+	(text "POWER"
+		(exclude_from_sim yes)
+		(at 32.766 75.692 0)
+		(effects
+			(font
+				(size 1.25 1.25)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "1fe9f913-0712-4bf3-8d28-597a25c31c8a")
+	)
+	(text "JP1: 1-2 J8_5V / 2-3 LOCAL_5V"
+		(exclude_from_sim yes)
+		(at 179.17 39.314 0)
+		(effects
+			(font
+				(size 0.68 0.68)
+			)
+			(justify left bottom)
+		)
+		(uuid "21079f80-1976-4b15-b6e3-92740d2798d1")
+	)
+	(text "RADIO A — MESHTASTIC"
+		(exclude_from_sim yes)
+		(at 158.97 16 0)
+		(effects
+			(font
+				(size 1.25 1.25)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "4632d129-a050-4e84-a6f2-f2074700a700")
+	)
+	(text "JP3: 1-2 J8_5V / 2-3 LOCAL_5V"
+		(exclude_from_sim yes)
+		(at 155.18 132.19 0)
+		(effects
+			(font
+				(size 0.68 0.68)
+			)
+			(justify left bottom)
+		)
+		(uuid "5475f88b-65d4-455f-8550-c62ca3a66e6e")
+	)
+	(text "DEBUG / TEST"
+		(exclude_from_sim yes)
+		(at 134.112 149.098 0)
+		(effects
+			(font
+				(size 1.15 1.15)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "680f885f-7bb4-46fb-81a7-6257a0531ac4")
+	)
+	(text "RADIO B — MESHCORE"
+		(exclude_from_sim yes)
+		(at 150.18 89.19 0)
+		(effects
+			(font
+				(size 1.25 1.25)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "a3c035ec-bab6-4d1b-b1c6-37c2d8c98204")
+	)
+	(text "HOST — WAVESHARE J8"
+		(exclude_from_sim yes)
+		(at 97.532 25.218 0)
+		(effects
+			(font
+				(size 1.25 1.25)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "aca6a6f8-cdca-49a7-a460-d4a614329318")
+	)
+	(text "GNSS — MAX-M10S"
+		(exclude_from_sim yes)
+		(at 69.596 115.062 0)
+		(effects
+			(font
+				(size 1.25 1.25)
+				(bold yes)
+			)
+			(justify left bottom)
+		)
+		(uuid "ada0c91a-2126-4a92-aef6-7bce37af9ac1")
+	)
+	(junction
+		(at 74.96 148.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "1d9a98df-9c2f-43c7-880b-6114597747bd")
+	)
+	(junction
+		(at 208.28 60.96)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "1dd46bbd-c44a-4817-86b5-243155663902")
+	)
+	(junction
+		(at 241.18 138.38)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "340b74c7-70d6-493e-bb53-5e8fc3c4a71e")
+	)
+	(junction
+		(at 253.18 146)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "35136df4-e403-4c71-8c7d-28cd4ddfeefc")
+	)
+	(junction
+		(at 229.18 138.38)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "3ddc1883-09db-44b5-97f5-1b2b7d9085a2")
+	)
+	(junction
+		(at 74.96 156.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "415cebc1-444c-467a-96cf-f90b581133c4")
+	)
+	(junction
+		(at 232.28 68.58)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "47076d53-52e8-44cc-82e5-9b078a1e363f")
+	)
+	(junction
+		(at 196.28 68.58)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "5b48e657-3084-40b4-ac61-475e61309267")
+	)
+	(junction
+		(at 220.28 68.58)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "6102d171-a829-4797-b0c2-7bb0f7e31df0")
+	)
+	(junction
+		(at 241.18 146)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "63cf2dfe-16a5-44bc-bd65-c8f17e6f049d")
+	)
+	(junction
+		(at 196.28 60.96)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "69a07581-4a61-45c0-8475-92595bd7a4b4")
+	)
+	(junction
+		(at 220.28 60.96)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "75f69908-c441-4358-b867-0ca4fe506fee")
+	)
+	(junction
+		(at 265.18 146)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "7e1bbaec-208e-4606-863b-416a5a20ba44")
+	)
+	(junction
+		(at 60.96 156.21)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "87c911b6-0493-4283-9398-0d6556767133")
+	)
+	(junction
+		(at 265.18 138.38)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "ac38ad20-5577-4249-a08e-060030fb3aa2")
+	)
+	(junction
+		(at 60.96 148.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "b9255ab1-1897-4469-aaed-c8192e1a37dc")
+	)
+	(junction
+		(at 208.28 68.58)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "c1dda3e9-d87b-4807-82b4-1da1aa9702b9")
+	)
+	(junction
+		(at 253.18 138.38)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "d56dab0a-e77d-4706-9e4f-cdd793154a20")
+	)
+	(junction
+		(at 229.18 146)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "fd88249f-3b24-4b6e-9b0b-cfb350bf81aa")
+	)
+	(junction
+		(at 232.28 60.96)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "fde5c987-b39e-4e8c-8a0d-148a1b4232a9")
+	)
+	(no_connect
+		(at 85.09 48.26)
+		(uuid "134a26ab-ff79-449e-9fd7-aa7dd206d4a9")
+	)
+	(no_connect
+		(at 85.09 53.34)
+		(uuid "2060e4fb-3bc6-4b4e-8532-88c14eb9f8b7")
+	)
+	(no_connect
+		(at 130.81 40.64)
+		(uuid "22b856c3-c47b-4562-bb62-1ef401d7b98c")
+	)
+	(no_connect
+		(at 236.22 40.64)
+		(uuid "320a460b-208d-450e-837f-199bb5ce05d2")
+	)
+	(no_connect
+		(at 130.81 43.18)
+		(uuid "34b30be2-7e64-4aa4-9edd-46a2551f4556")
+	)
+	(no_connect
+		(at 239.48 107)
+		(uuid "399bf582-fc7e-4650-8f69-1573cdd164f5")
+	)
+	(no_connect
+		(at 236.22 44.45)
+		(uuid "52628a4a-09e9-4be5-9da7-cc9d40584f2b")
+	)
+	(no_connect
+		(at 130.81 60.96)
+		(uuid "531351b2-d1cd-43c8-8ad6-d56e12c641e3")
+	)
+	(no_connect
+		(at 239.48 103.19)
+		(uuid "5ace5f6b-e797-4d10-a8ce-0c517412b469")
+	)
+	(no_connect
+		(at 236.22 48.26)
+		(uuid "5d93cc82-6514-4228-9ffe-d64471b7df86")
+	)
+	(no_connect
+		(at 264.88 103.19)
+		(uuid "5f196ea2-4290-4e3c-93be-ceefd92bc448")
+	)
+	(no_connect
+		(at 85.09 60.96)
+		(uuid "5f3a5096-894e-442c-8c99-bbc9a15e8ef5")
+	)
+	(no_connect
+		(at 72.39 132.08)
+		(uuid "61eaca5c-420d-4762-b3aa-69cbaa6dc2b4")
+	)
+	(no_connect
+		(at 264.88 110.81)
+		(uuid "68f9cdd6-e150-48da-81f1-151665c4a078")
+	)
+	(no_connect
+		(at 236.22 36.83)
+		(uuid "7082a283-fe69-4d2c-abe3-a11c3e9d98ab")
+	)
+	(no_connect
+		(at 264.88 107)
+		(uuid "7282df08-3825-4bff-a309-1c9400f6b809")
+	)
+	(no_connect
+		(at 85.09 40.64)
+		(uuid "75799c86-6eb3-400a-bf5c-34fec1eff7dd")
+	)
+	(no_connect
+		(at 85.09 50.8)
+		(uuid "7d8ac8bf-c715-4931-9d96-ebb336359c4a")
+	)
+	(no_connect
+		(at 130.81 58.42)
+		(uuid "7e77a7e4-28f0-492e-85b6-4bfad497b5dc")
+	)
+	(no_connect
+		(at 72.39 135.89)
+		(uuid "84e32c1a-454d-4437-a2e6-ef3e2de0812f")
+	)
+	(no_connect
+		(at 261.62 48.26)
+		(uuid "946bfcab-47d4-4c32-a836-5c4869480724")
+	)
+	(no_connect
+		(at 239.48 99.38)
+		(uuid "9a030268-8527-46bc-b750-0950e8239d0b")
+	)
+	(no_connect
+		(at 239.48 110.81)
+		(uuid "9ba9e7dd-3e16-4c0a-9a4a-9c93a5b0ac94")
+	)
+	(no_connect
+		(at 239.48 95.57)
+		(uuid "a23f3205-1579-4925-9685-54c9c89517b2")
+	)
+	(no_connect
+		(at 261.62 40.64)
+		(uuid "a2402159-55c0-48aa-bd37-9614de349b53")
+	)
+	(no_connect
+		(at 130.81 38.1)
+		(uuid "a78edb81-471d-4181-a25f-e5ec763f1670")
+	)
+	(no_connect
+		(at 239.48 91.76)
+		(uuid "b44d1495-e68c-455c-b8b7-b1f055be0cac")
+	)
+	(no_connect
+		(at 130.81 48.26)
+		(uuid "b76f194e-9a84-49f5-bec8-4f627cdc8bfc")
+	)
+	(no_connect
+		(at 130.81 55.88)
+		(uuid "b7dd9022-d6c7-462a-a7c8-0009455dc593")
+	)
+	(no_connect
+		(at 236.22 29.21)
+		(uuid "dc9ebe66-cd14-4dbb-92ae-3adfd2936a09")
+	)
+	(no_connect
+		(at 236.22 33.02)
+		(uuid "dd79c7bf-f2f4-4857-b464-1f4e44ccb8dc")
+	)
+	(no_connect
+		(at 85.09 58.42)
+		(uuid "e4e4bb9e-106b-4eeb-8456-9ad44ca3d32c")
+	)
+	(no_connect
+		(at 130.81 45.72)
+		(uuid "ee03bffa-036b-4a3a-9bf7-3c7aad184626")
+	)
+	(no_connect
+		(at 261.62 44.45)
+		(uuid "f7e61db6-7d15-46b4-be52-a9c2c9d9ce7c")
+	)
+	(no_connect
+		(at 85.09 55.88)
+		(uuid "fe2abfc7-a045-4a83-9b9f-1362933643db")
+	)
+	(wire
+		(pts
+			(xy 130.81 68.58) (xy 135.31 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "05afd2d7-86cc-4f28-a4f4-15714fc6a70a")
+	)
+	(wire
+		(pts
+			(xy 165.99 97.19) (xy 170.99 97.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "12e6a538-0e15-4be5-b8d4-2ebac34e3a02")
+	)
+	(wire
+		(pts
+			(xy 60.96 156.21) (xy 74.96 156.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1325758c-8ef1-4d19-a86b-98b4c214a4e9")
+	)
+	(wire
+		(pts
+			(xy 221.08 46.99) (xy 224.8 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "146b0f91-18f8-410b-a06f-7412f03bdcfd")
+	)
+	(wire
+		(pts
+			(xy 264.88 91.76) (xy 269.88 91.76)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "14c78198-ef02-44d6-89cb-ca394ca77e70")
+	)
+	(wire
+		(pts
+			(xy 130.81 33.02) (xy 135.31 33.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "169fb870-8122-4301-913f-24477eee3a99")
+	)
+	(wire
+		(pts
+			(xy 220.28 60.96) (xy 232.28 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "193936ad-b63c-403e-8d93-25ed3d16481b")
+	)
+	(wire
+		(pts
+			(xy 167.64 24.13) (xy 162.64 24.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "19ba72c5-2429-4fdc-afbe-a39641d444f3")
+	)
+	(wire
+		(pts
+			(xy 72.39 139.7) (xy 93.34 139.7)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1a50c0dc-8279-409e-8230-1d5cf4ffb88c")
+	)
+	(wire
+		(pts
+			(xy 130.81 53.34) (xy 135.31 53.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "23729600-0eb3-40b1-b161-c01dd6e66347")
+	)
+	(wire
+		(pts
+			(xy 236.22 52.07) (xy 233.68 52.07)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "28373a6e-cb21-4f95-ac82-2cd413e780a0")
+	)
+	(wire
+		(pts
+			(xy 100.96 139.7) (xy 105.96 139.7)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2eec9706-0ee9-466e-8bdb-164aa6e16b75")
+	)
+	(wire
+		(pts
+			(xy 85.09 43.18) (xy 80.59 43.18)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2fdbbf65-e7ca-4097-9d42-2a9eef116471")
+	)
+	(wire
+		(pts
+			(xy 182.98 46.68) (xy 182.98 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2fe7546a-f4bd-4327-847e-c9d5215041e2")
+	)
+	(wire
+		(pts
+			(xy 85.09 71.12) (xy 80.59 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3086dc09-8a5d-4ba8-b81d-b202c21c9367")
+	)
+	(wire
+		(pts
+			(xy 53.98 189.23) (xy 49.98 189.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "331bdd77-4c24-4996-99b2-99a0579b2073")
+	)
+	(wire
+		(pts
+			(xy 161.29 44.45) (xy 156.29 44.45)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "36c0cb84-4562-4b37-bfae-95082f2ff67f")
+	)
+	(wire
+		(pts
+			(xy 85.09 63.5) (xy 80.59 63.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "37771d0f-1b7e-4e9f-a651-6c3397e85064")
+	)
+	(wire
+		(pts
+			(xy 113.98 180.23) (xy 109.98 180.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "37fb15aa-ad45-4195-889a-16c441e7d62f")
+	)
+	(wire
+		(pts
+			(xy 196.99 123.19) (xy 204.56 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "39a4a8fe-7557-4399-8911-849ce121973c")
+	)
+	(wire
+		(pts
+			(xy 85.09 38.1) (xy 80.59 38.1)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3ddf8a44-4a4e-43b5-a981-f980dce69cae")
+	)
+	(wire
+		(pts
+			(xy 182.98 46.99) (xy 179.07 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "40080385-b05f-4d92-a294-e510a496fbb6")
+	)
+	(wire
+		(pts
+			(xy 72.39 128.27) (xy 77.39 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4131e8d3-fb29-4ec3-aeb1-c43012a3dceb")
+	)
+	(wire
+		(pts
+			(xy 59.69 85.09) (xy 66.69 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "42d1e770-53f7-4de7-84e9-fed78fc1b5d4")
+	)
+	(wire
+		(pts
+			(xy 265.18 146) (xy 270.18 146)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "51a8f1ac-e38d-4f65-9f4e-d8d850f3cba3")
+	)
+	(wire
+		(pts
+			(xy 85.09 66.04) (xy 80.59 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "51cc03d3-915d-4ab2-b767-1f4085b1f3dc")
+	)
+	(wire
+		(pts
+			(xy 261.62 52.07) (xy 266.62 52.07)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "521f9b49-5080-494f-ac57-1e145b235fda")
+	)
+	(wire
+		(pts
+			(xy 190.6 46.68) (xy 200.76 46.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5c2ed9f7-1fc2-4ad1-ae9a-c253e16e8004")
+	)
+	(wire
+		(pts
+			(xy 165.99 107.19) (xy 170.99 107.19)
+		)		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5c4f776d-4175-42d6-9f09-759752755b53")
+	)
+	(wire
+		(pts
+			(xy 33.98 189.23) (xy 29.98 189.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5eac1913-ffaf-45c3-90e9-ad4a7e5687e4")
+	)
+	(wire
+		(pts
+			(xy 221.08 46.68) (xy 221.08 46.99)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5f88a104-2e85-432f-93c9-95e795e65aea")
+	)
+	(wire
+		(pts
+			(xy 107.87 131.46) (xy 102.87 131.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "601e2681-d1d4-4983-a2c8-e940a705d272")
+	)
+	(wire
+		(pts
+			(xy 29.21 85.09) (xy 22.21 85.09)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "60ef40cc-ec3d-4ca1-8086-c7528d7253ae")
+	)
+	(wire
+		(pts
+			(xy 41.91 135.89) (xy 36.91 135.89)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "644e0ad0-c569-40c8-bada-f20df69cdf34")
+	)
+	(wire
+		(pts
+			(xy 196.28 60.96) (xy 208.28 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "69819086-eb91-47ad-8407-57ed4103d128")
+	)
+	(wire
+		(pts
+			(xy 29.21 92.71) (xy 22.21 92.71)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6e62ae87-fed8-45c1-ad0e-9748ce7160d7")
+	)
+	(wire
+		(pts
+			(xy 53.98 180.23) (xy 49.98 180.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6e879e57-e079-4239-ac80-c1ff8b00a05a")
+	)
+	(wire
+		(pts
+			(xy 261.62 36.83) (xy 266.62 36.83)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6e8b11b9-8cad-49fc-b37e-703451389525")
+	)
+	(wire
+		(pts
+			(xy 253.18 146) (xy 265.18 146)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "73103671-0791-494d-99bf-e2af539254f9")
+	)
+	(wire
+		(pts
+			(xy 134.62 165.1) (xy 129.62 165.1)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "73f748a4-13ca-4ad1-ad41-e1788e94c285")
+	)
+	(wire
+		(pts
+			(xy 175.26 34.13) (xy 180.26 34.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "756f23e9-224f-40f3-99f7-84c9153c123b")
+	)
+	(wire
+		(pts
+			(xy 232.28 68.58) (xy 237.28 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "76568a3b-b010-46a2-8ce5-80eefaa6bd9d")
+	)
+	(wire
+		(pts
+			(xy 264.88 95.57) (xy 269.88 95.57)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "76edf103-31b8-4588-8a28-c64e0a01de0d")
+	)
+	(wire
+		(pts
+			(xy 85.09 45.72) (xy 80.59 45.72)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7816e009-34e6-46c6-916a-c70c3afbb7f7")
+	)
+	(wire
+		(pts
+			(xy 219.8 123.19) (xy 224.8 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "79e114db-85a3-4627-8aba-56311d0950ad")
+	)
+	(wire
+		(pts
+			(xy 113.98 189.23) (xy 109.98 189.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7c48b8e3-eb79-4d1d-ac10-fa65d75232eb")
+	)
+	(wire
+		(pts
+			(xy 175.26 24.13) (xy 180.26 24.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7d727d93-7b43-4270-965d-f111e57246ce")
+	)
+	(wire
+		(pts
+			(xy 241.18 146) (xy 253.18 146)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "85b2e3fc-7192-47c9-baf5-545f9d624c5f")
+	)
+	(wire
+		(pts
+			(xy 229.18 138.38) (xy 241.18 138.38)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "85fbbaf3-51d7-4695-a0ca-c9f77bea08f3")
+	)
+	(wire
+		(pts
+			(xy 93.98 180.23) (xy 89.98 180.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "867b8d99-cc37-4dd4-85e1-a78cc0245580")
+	)
+	(wire
+		(pts
+			(xy 115.49 131.46) (xy 120.49 131.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "88e552d1-9ffd-4f71-9c6d-98d16e43a0b3")
+	)
+	(wire
+		(pts
+			(xy 60.96 148.59) (xy 74.96 148.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8cd8685c-5383-431e-b3fa-7b827838086a")
+	)
+	(wire
+		(pts
+			(xy 196.28 68.58) (xy 208.28 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8d602d34-b179-4439-8413-adabc919b2ee")
+	)
+	(wire
+		(pts
+			(xy 130.81 50.8) (xy 135.31 50.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8eeeacf0-0630-4964-98ff-be7d68086099")
+	)
+	(wire
+		(pts
+			(xy 55.96 156.21) (xy 60.96 156.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "987fc5b9-9771-4397-9d71-8180d1d6e3f8")
+	)
+	(wire
+		(pts
+			(xy 115.49 124.46) (xy 120.49 124.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "99237193-8ae6-4489-8208-50ebe33259bc")
+	)
+	(wire
+		(pts
+			(xy 73.98 180.23) (xy 69.98 180.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "992788ee-c0b2-4b84-bc27-3641c39d8a9a")
+	)
+	(wire
+		(pts
+			(xy 74.96 156.21) (xy 79.96 156.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9939bcb5-eaf4-4061-b728-3f36189f61a0")
+	)
+	(wire
+		(pts
+			(xy 261.62 33.02) (xy 266.62 33.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9e857a60-4484-4752-9ea2-d14152d4bf30")
+	)
+	(wire
+		(pts
+			(xy 85.09 68.58) (xy 80.59 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9f22ecda-fc40-4ef3-9021-d2fdaf9b47f0")
+	)
+	(wire
+		(pts
+			(xy 55.96 148.59) (xy 60.96 148.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9f604454-971d-4695-ae8d-261478edfbfe")
+	)
+	(wire
+		(pts
+			(xy 134.62 162.56) (xy 129.62 162.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a02b6bc9-c526-4942-96a1-a75a628e77ed")
+	)
+	(wire
+		(pts
+			(xy 253.18 138.38) (xy 265.18 138.38)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a086d384-ef35-430d-b3c0-cc43f4ed462c")
+	)
+	(wire
+		(pts
+			(xy 264.88 99.38) (xy 269.88 99.38)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a1228167-423b-47cf-b68c-15cb6b2e3b14")
+	)
+	(wire
+		(pts
+			(xy 161.29 49.53) (xy 156.29 49.53)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a30bc2e3-dd3b-446f-b02c-38ae1dd49356")
+	)
+	(wire
+		(pts
+			(xy 232.28 60.96) (xy 237.28 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a386b0cf-692b-4775-9cc1-bc00d6f70d56")
+	)
+	(wire
+		(pts
+			(xy 224.18 138.38) (xy 229.18 138.38)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a67b7bf4-f50d-45e8-97b9-0333de2c98a9")
+	)
+	(wire
+		(pts
+			(xy 130.81 66.04) (xy 135.31 66.04)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a94419f9-dd71-4f52-ac45-f6b9fc60e92d")
+	)
+	(wire
+		(pts
+			(xy 41.91 128.27) (xy 36.91 128.27)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a94dfe39-5204-44e3-9602-3e61217fa6a8")
+	)
+	(wire
+		(pts
+			(xy 130.81 63.5) (xy 135.31 63.5)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "abb1e51a-0daf-42cc-b39b-f069af7ecf45")
+	)
+	(wire
+		(pts
+			(xy 261.62 29.21) (xy 266.62 29.21)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b2fcc9a6-ddc9-4d7c-81d4-bf8dc18a8dae")
+	)
+	(wire
+		(pts
+			(xy 134.62 160.02) (xy 129.62 160.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b38f31ed-86a2-4aa4-8c53-e7fbdbfd36de")
+	)
+	(wire
+		(pts
+			(xy 265.18 138.38) (xy 270.18 138.38)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b516501b-8a06-488a-b499-d72dbe4810ae")
+	)
+	(wire
+		(pts
+			(xy 264.88 114.62) (xy 269.88 114.62)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b5ae4ce9-f0e1-4fbd-a733-c524e9d477c9")
+	)
+	(wire
+		(pts
+			(xy 161.29 125.73) (xy 156.29 125.73)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b670106b-8135-4284-ad4e-56dcb82ddedc")
+	)
+	(wire
+		(pts
+			(xy 85.09 33.02) (xy 80.59 33.02)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b67f8f13-1582-4011-96df-57fd0418e470")
+	)
+	(wire
+		(pts
+			(xy 74.96 148.59) (xy 79.96 148.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bbd1ae3d-85ab-44f7-b9e7-02216a2fafe9")
+	)
+	(wire
+		(pts
+			(xy 130.81 71.12) (xy 135.31 71.12)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "be1ac4a2-aa3c-4f7f-a482-3bef8c3b253a")
+	)
+	(wire
+		(pts
+			(xy 72.39 124.46) (xy 77.39 124.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "be46336d-6e86-4ebb-bf79-88d76d94ace2")
+	)
+	(wire
+		(pts
+			(xy 134.62 157.48) (xy 129.62 157.48)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c1d7a18a-2777-436a-99ec-6a278cc267ba")
+	)
+	(wire
+		(pts
+			(xy 224.18 146) (xy 229.18 146)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c60a57a3-6108-4763-a22c-37f9627829d5")
+	)
+	(wire
+		(pts
+			(xy 85.09 35.56) (xy 80.59 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c7641046-e5aa-498a-9391-4e459cae3bd5")
+	)
+	(wire
+		(pts
+			(xy 33.98 180.23) (xy 29.98 180.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c97b5e1a-42ce-46a7-bca9-6b4199229bc1")
+	)
+	(wire
+		(pts
+			(xy 167.64 34.13) (xy 162.64 34.13)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cbf7466b-857f-4d7c-9f35-3f744db2a9e5")
+	)
+	(wire
+		(pts
+			(xy 158.37 97.19) (xy 153.37 97.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cda080d3-9442-4827-ae02-30eb2ea235ea")
+	)
+	(wire
+		(pts
+			(xy 93.98 189.23) (xy 89.98 189.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cf2ee409-1d21-4e93-837c-60e6657f500f")
+	)
+	(wire
+		(pts
+			(xy 241.18 138.38) (xy 253.18 138.38)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cff73bcc-0a1c-47d9-946d-f2be87abc993")
+	)
+	(wire
+		(pts
+			(xy 220.28 68.58) (xy 232.28 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d004b4c0-8bc3-497f-b494-835e0ea5b140")
+	)
+	(wire
+		(pts
+			(xy 208.28 60.96) (xy 220.28 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e066cd2c-18e2-47c7-b132-8cfbf24c4079")
+	)
+	(wire
+		(pts
+			(xy 130.81 35.56) (xy 135.31 35.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e074726a-c0f2-4b64-ab3f-1e72286dc27e")
+	)
+	(wire
+		(pts
+			(xy 191.28 68.58) (xy 196.28 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e2238143-bebf-48e1-b953-707a9b873f23")
+	)
+	(wire
+		(pts
+			(xy 107.87 124.46) (xy 102.87 124.46)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e6df4a35-dcd4-4cd5-8885-e5ec3d4ad97e")
+	)
+	(wire
+		(pts
+			(xy 208.28 68.58) (xy 220.28 68.58)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e9c9926e-58fc-45f8-82fb-d2bc79f3980a")
+	)
+	(wire
+		(pts
+			(xy 191.28 60.96) (xy 196.28 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "eeef03e0-9077-40db-9061-5753aec935cc")
+	)
+	(wire
+		(pts
+			(xy 216 46.68) (xy 221.08 46.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f43521b4-16c2-4e95-b8f9-6a029c71af07")
+	)
+	(wire
+		(pts
+			(xy 158.37 107.19) (xy 153.37 107.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f6bce434-d5d1-4a73-866a-14e72f6968cb")
+	)
+	(wire
+		(pts
+			(xy 73.98 189.23) (xy 69.98 189.23)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f9d66c0e-3498-4fe8-9a3b-291b71ec12fc")
+	)
+	(wire
+		(pts
+			(xy 239.48 114.62) (xy 234.48 114.62)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fb1c79a7-4dd6-4727-91d3-c610b18a1b7f")
+	)
+	(wire
+		(pts
+			(xy 179.07 123.19) (xy 189.37 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fda5ddaf-dab9-4c77-a035-77629b3790bb")
+	)
+	(wire
+		(pts
+			(xy 161.29 120.65) (xy 156.29 120.65)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fe3bb791-30ad-478f-898c-85fb1b8c3d87")
+	)
+	(wire
+		(pts
+			(xy 229.18 146) (xy 241.18 146)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ffe370a7-3aca-44f1-9cb0-b24ad58a1934")
+	)
+	(label "MC_HOST_TX"
+		(at 153.37 97.19 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "04b3d859-cba4-4e92-83f4-37386e12b732")
+	)
+	(label "MT_RADIO_RX"
+		(at 266.62 52.07 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "07174a51-1b7f-4842-88b3-bf78d4b50572")
+	)
+	(label "RADIO_B_5V"
+		(at 269.88 91.76 0)
+		(effects
+			(font
+				(size 0.78 0.78)
+			)
+			(justify left bottom)
+		)
+		(uuid "08732757-034e-42f2-9d78-b4e6bbfcf017")
+	)
+	(label "MT_HOST_RX"
+		(at 80.59 45.72 180)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify right bottom)
+		)
+		(uuid "09c643aa-bf2f-4d82-b98d-5dd45320b889")
+	)
+	(label "GND"
+		(at 36.91 135.89 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "110bc235-fd1c-40f2-82ab-832fa35e6733")
+	)
+	(label "J8_5V"
+		(at 156.29 120.65 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "18bb1c9e-2887-4158-9d42-e944300ef963")
+	)
+	(label "RADIO_B_5V"
+		(at 89.98 180.23 180)
+		(effects
+			(font
+				(size 0.72 0.72)
+			)
+			(justify right bottom)
+		)
+		(uuid "1a2d8401-3eb8-409b-8e90-7681bf6aad2a")
+	)
+	(label "MC_HOST_RX"
+		(at 89.98 189.23 180)
+		(effects
+			(font
+				(size 0.72 0.72)
+			)
+			(justify right bottom)
+		)
+		(uuid "1a7db86f-af48-4e02-9c69-5b4dc61bf35f")
+	)
+	(label "RADIO_A_5V"
+		(at 221.08 46.99 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "1a9b36f0-63d6-4003-a06a-5942db881b07")
+	)
+	(label "GNSS_PPS"
+		(at 80.59 38.1 180)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify right bottom)
+		)
+		(uuid "1af121f1-a2f8-49ba-b37d-4e435bbbf2a1")
+	)
+	(label "GND"
+		(at 270.18 146 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "1c237172-63c6-4e8a-84b3-ce387ac7cad0")
+	)
+	(label "MT_HOST_TX"
+		(at 80.59 43.18 180)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify right bottom)
+		)
+		(uuid "1e4b128b-2e08-47b6-80f2-68da63dae10c")
+	)
+	(label "J8_3V3"
+		(at 36.91 128.27 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "1eaa9363-d94b-4d04-951a-4b4b9099c00c")
+	)
+	(label "GND"
+		(at 79.96 156.21 0)
+		(effects
+			(font
+				(size 0.78 0.78)
+			)
+			(justify left bottom)
+		)
+		(uuid "20bf4717-4e48-417f-bab5-1be5a17239d4")
+	)
+	(label "GNSS_PPS_RAW"
+		(at 83.15 139.7 0)
+		(effects
+			(font
+				(size 0.78 0.78)
+			)
+			(justify left bottom)
+		)
+		(uuid "214c2fb9-19bf-46ea-9c7c-6145a3cb164c")
+	)
+	(label "MC_RADIO_RX"
+		(at 170.99 97.19 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "23370848-f5fa-4202-9b28-5d3230a438d5")
+	)
+	(label "RADIO_A_5V"
+		(at 69.98 180.23 180)
+		(effects
+			(font
+				(size 0.72 0.72)
+			)
+			(justify right bottom)
+		)
+		(uuid "2cafae16-806d-46e8-8817-9109b97ac82c")
+	)
+	(label "RADIO_A_5V"
+		(at 266.62 29.21 0)
+		(effects
+			(font
+				(size 0.78 0.78)
+			)
+			(justify left bottom)
+		)
+		(uuid "2ffcf676-6565-43e4-bbdb-f42c06c81e43")
+	)
+	(label "MC_HOST_TX"
+		(at 69.98 189.23 180)
+		(effects
+			(font
+				(size 0.72 0.72)
+			)
+			(justify right bottom)
+		)
+		(uuid "31504ed6-aab0-4f65-98fa-8503dff92bd4")
+	)
+	(label "B_3V3_OUT"
+		(at 269.88 99.38 0)
+		(effects
+			(font
+				(size 0.78 0.78)
+			)
+			(justify left bottom)
+		)
+		(uuid "31d0500f-a978-46d0-9c41-56cc645dd3e4")
+	)
+	(label "J8_3V3"
+		(at 80.59 71.12 180)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify right bottom)
+		)
+		(uuid "34221176-e41a-4554-8f67-5c14e688b8df")
+	)
+	(label "MC_RADIO_TX"
+		(at 153.37 107.19 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "399b82c8-010a-4611-8c65-3797d12dbb6c")
+	)
+	(label "GNSS_SCL"
+		(at 77.39 128.27 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "3abcc834-862f-4105-8e3b-041eea6a8b5b")
+	)
+	(label "GND"
+		(at 80.59 35.56 180)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify right bottom)
+		)
+		(uuid "45843da5-b199-4f53-87ce-0774a700c2c0")
+	)
+	(label "MC_RADIO_RX"
+		(at 269.88 114.62 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "484b8f21-ade1-4956-a666-98eb60c0df96")
+	)
+	(label "MT_RADIO_RX"
+		(at 180.26 24.13 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "487b3cce-16a4-4c0c-8c4d-b406c6281ef1")
+	)
+	(label "GND"
+		(at 237.28 68.58 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "5650cf41-2076-4b9e-91a2-630cb74b50c6")
+	)
+	(label "GNSS_SCL"
+		(at 135.31 63.5 0)
+		(effects
+			(font				(size 0.74 0.74)
+			)
+			(justify left bottom)
+		)
+		(uuid "590800f7-44c4-41d8-83fe-76f142b7b809")
+	)
+	(label "LOCAL_5V"
+		(at 49.98 180.23 180)
+		(effects
+			(font
+				(size 0.72 0.72)
+			)
+			(justify right bottom)
+		)
+		(uuid "5b8d6739-e521-47f3-bd8c-209584c314c7")
+	)
+	(label "BAT"
+		(at 80.59 33.02 180)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify right bottom)
+		)
+		(uuid "5d267b98-33f8-45d6-80ed-defab9e811e2")
+	)
+	(label "RADIO_A_5V"
+		(at 191.28 60.96 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "5ff4f56a-e38a-47eb-8c0d-3e118554e414")
+	)
+	(label "J8_3V3"
+		(at 135.31 71.12 0)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify left bottom)
+		)
+		(uuid "6367fd69-de99-464a-aeaa-bd5c50349477")
+	)
+	(label "GND"
+		(at 269.88 95.57 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "6c8eca1f-ea7c-4fe8-9718-7339cc2ac314")
+	)
+	(label "MC_RADIO_TX"
+		(at 234.48 114.62 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "6ec5a581-0276-454a-95df-7027f611b5b6")
+	)
+	(label "J8_3V3"
+		(at 55.96 148.59 180)
+		(effects
+			(font
+				(size 0.78 0.78)
+			)
+			(justify right bottom)
+		)
+		(uuid "702bc042-1026-4de4-b09e-3db222b03abe")
+	)
+	(label "MC_HOST_RX"
+		(at 135.31 53.34 0)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify left bottom)
+		)
+		(uuid "717596f4-f559-458b-b5b2-3fcae0203088")
+	)
+	(label "GNSS_SDA"
+		(at 135.31 66.04 0)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify left bottom)
+		)
+		(uuid "7738f8f1-2d10-4097-acb8-3155c42a7a49")
+	)
+	(label "A_3V3_OUT"
+		(at 266.62 36.83 0)
+		(effects
+			(font
+				(size 0.78 0.78)
+			)
+			(justify left bottom)
+		)
+		(uuid "7bef1796-ef7c-4647-8988-fca64db6ab9e")
+	)
+	(label "J8_5V"
+		(at 29.98 180.23 180)
+		(effects
+			(font
+				(size 0.72 0.72)
+			)
+			(justify right bottom)
+		)
+		(uuid "836a191f-dd2d-4e2f-89e0-1f8eba84765a")
+	)
+	(label "HOST_RXD"
+		(at 129.62 162.56 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "8475731c-d253-4617-81d1-168cec6e9468")
+	)
+	(label "HOST_RXD"
+		(at 80.59 63.5 180)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify right bottom)
+		)
+		(uuid "87419d44-8af9-4534-9c2a-48aea6baf96f")
+	)
+	(label "MT_HOST_RX"
+		(at 180.26 34.13 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "88429851-af32-41bc-b479-e1e5e9e73845")
+	)
+	(label "J8_3V3"
+		(at 102.87 124.46 180)
+		(effects
+			(font
+				(size 0.78 0.78)
+			)
+			(justify right bottom)
+		)
+		(uuid "89c8cb4e-de38-4a45-bf6b-d0fd21efb67f")
+	)
+	(label "GND"
+		(at 266.62 33.02 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "91b256f9-69b3-4410-9144-954866fc55fa")
+	)
+	(label "MT_HOST_TX"
+		(at 29.98 189.23 180)
+		(effects
+			(font
+				(size 0.72 0.72)
+			)
+			(justify right bottom)
+		)
+		(uuid "92e50a24-6f37-434a-93f1-8626e8be04ae")
+	)
+	(label "J8_3V3"
+		(at 102.87 131.46 180)
+		(effects
+			(font
+				(size 0.78 0.78)
+			)
+			(justify right bottom)
+		)
+		(uuid "969a01d7-71ee-45ec-b2b5-4da9574ad72e")
+	)
+	(label "MT_RADIO_TX"
+		(at 162.64 34.13 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "9755a50d-1416-4ae6-a1d0-e7de6121e92d")
+	)
+	(label "MC_HOST_TX"
+		(at 135.31 50.8 0)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify left bottom)
+		)
+		(uuid "a3a1d73d-278f-47d5-93e6-7eed20a1b8ed")
+	)
+	(label "B_3V3_OUT"
+		(at 109.98 189.23 180)
+		(effects
+			(font
+				(size 0.72 0.72)
+			)
+			(justify right bottom)
+		)
+		(uuid "a69c1af4-9b3f-47c4-accc-ea9b6228d3b0")
+	)
+	(label "LOCAL_5V"
+		(at 156.29 49.53 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "a8220cb1-aa26-43d6-80eb-41259b8f2e0f")
+	)
+	(label "LOCAL_5V"
+		(at 66.69 85.09 0)
+		(effects
+			(font
+				(size 0.9 0.9)
+			)
+			(justify left bottom)
+		)
+		(uuid "abda2250-baca-4987-b6b5-a7a3af4fb3fd")
+	)
+	(label "HOST_TXD"
+		(at 80.59 66.04 180)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify right bottom)
+		)
+		(uuid "acc0cd8d-ba37-4e66-b50b-d9c4e6510b62")
+	)
+	(label "GNSS_SCL"
+		(at 120.49 131.46 0)
+		(effects
+			(font
+				(size 0.78 0.78)
+			)
+			(justify left bottom)
+		)
+		(uuid "ae60ce5d-e07e-4cd4-b18b-b15d22956d44")
+	)
+	(label "GNSS_SDA"
+		(at 120.49 124.46 0)
+		(effects
+			(font
+				(size 0.78 0.78)
+			)
+			(justify left bottom)
+		)
+		(uuid "b7b6eba9-6b74-46ac-bd8b-a9d7ad350f8c")
+	)
+	(label "J8_3V3"
+		(at 129.62 157.48 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "b80f8c8d-db5d-4bee-8271-fd4dd44a8d19")
+	)
+	(label "GND"
+		(at 22.21 92.71 180)
+		(effects
+			(font
+				(size 0.9 0.9)
+			)
+			(justify right bottom)
+		)
+		(uuid "c19fc7b5-477d-4142-872e-1deb87d0d863")
+	)
+	(label "J8_5V"
+		(at 156.29 44.45 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "c3908ec6-5765-4cd1-af08-4c1c1f539007")
+	)
+	(label "GND"
+		(at 135.31 35.56 0)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify left bottom)
+		)
+		(uuid "c3c0d9f0-06ea-4006-bb8b-adb909ef3a12")
+	)
+	(label "GND"
+		(at 129.62 160.02 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "c5a38932-1c94-4657-9dd4-45113a697d9b")
+	)
+	(label "MT_RADIO_TX"
+		(at 233.68 52.07 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "cc2f252e-e3c7-4856-aa6e-c154aecc383e")
+	)
+	(label "A_3V3_OUT"
+		(at 109.98 180.23 180)
+		(effects
+			(font
+				(size 0.72 0.72)
+			)
+			(justify right bottom)
+		)
+		(uuid "ce7a8042-4f60-42b2-9b63-e5490aaec6dc")
+	)
+	(label "GND"
+		(at 135.31 68.58 0)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify left bottom)
+		)
+		(uuid "db91f8a9-522d-47d2-96c2-e00806e32b44")
+	)
+	(label "BAT"
+		(at 22.21 85.09 180)
+		(effects
+			(font
+				(size 0.9 0.9)
+			)
+			(justify right bottom)
+		)
+		(uuid "dc653b38-ab6c-470e-bc9d-7899e302b3e0")
+	)
+	(label "MT_HOST_RX"
+		(at 49.98 189.23 180)
+		(effects
+			(font
+				(size 0.72 0.72)
+			)
+			(justify right bottom)
+		)
+		(uuid "dfd4c256-733c-4179-bbb2-b00326d02c6f")
+	)
+	(label "LOCAL_5V"
+		(at 156.29 125.73 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "e0682c67-181d-4ee1-a37f-15ea19f1483a")
+	)
+	(label "RADIO_B_5V"
+		(at 224.18 138.38 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "e3eadf9b-505d-4dc9-aa5b-e539abe2575f")
+	)
+	(label "GND"
+		(at 80.59 68.58 180)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify right bottom)
+		)
+		(uuid "e7183915-0a20-4bff-8145-39f8950f26f5")
+	)
+	(label "GNSS_SDA"
+		(at 77.39 124.46 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "eaf043b3-b696-46a4-b1f9-99da3aec582f")
+	)
+	(label "HOST_TXD"
+		(at 129.62 165.1 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "edfb2fb4-5a00-4585-b4e4-3177f1db76ec")
+	)
+	(label "MC_HOST_RX"
+		(at 170.99 107.19 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "ef9c5f6f-2295-4cda-be21-9f88ebf4ccde")
+	)
+	(label "RADIO_B_5V"
+		(at 224.8 123.19 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "f737b3d6-5dc1-4200-9391-140e121d361e")
+	)
+	(label "MT_HOST_TX"
+		(at 162.64 24.13 180)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify right bottom)
+		)
+		(uuid "f9301bf7-49c9-45a9-bcf7-1202459ace4f")
+	)
+	(label "GNSS_PPS"
+		(at 105.96 139.7 0)
+		(effects
+			(font
+				(size 0.8 0.8)
+			)
+			(justify left bottom)
+		)
+		(uuid "fa42a878-89a2-4468-a403-a5f906a65601")
+	)
+	(label "J8_5V"
+		(at 135.31 33.02 0)
+		(effects
+			(font
+				(size 0.74 0.74)
+			)
+			(justify left bottom)
+		)
+		(uuid "fc3ec76c-9e69-44a6-94ee-c85b12d51eb9")
+	)
+	(symbol
+		(lib_id "MeshCrossway:JUMPER3")
+		(at 170.18 123.19 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "00c796da-9e12-491f-a9fc-dd1f1d64c09b")
+		(property "Reference" "JP3"
+			(at 170.18 115.19 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "B POWER SELECT"
+			(at 170.18 117.69 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+			(at 170.18 123.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 170.18 123.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 170.18 123.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "9f6c16bc-710f-48e5-955b-fe55c7212156")
+		)
+		(pin "2"
+			(uuid "183ef8b9-3564-43f2-bb45-78e7401027c0")
+		)
+		(pin "3"
+			(uuid "b7f3e2b9-5725-4398-879a-e82f419ee6e4")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "JP3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:WAVESHARE_J8")
+		(at 107.95 52.07 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "01a3b41e-8b11-4730-9703-cbf8f4ebda4d")
+		(property "Reference" "J1"
+			(at 107.95 75.87 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "Waveshare ESP32-S3-Touch-LCD-3.5 — J8"
+			(at 107.95 78.57 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "MeshCrossway:Waveshare_J8_Mating_2x16_P2.54mm"
+			(at 107.95 52.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" "https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.5/"
+			(at 107.95 52.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" "Waveshare J8 mating header"
+			(at 107.95 52.07 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "1c299d8e-5a7d-4fd6-84fb-251005d77080")
+		)
+		(pin "2"
+			(uuid "e4f6a3c7-cb99-488c-9a82-623c3a46566a")
+		)
+		(pin "3"
+			(uuid "87ef693f-4b7e-4e51-a89c-18e3016b704c")
+		)
+		(pin "4"
+			(uuid "b8bd022f-085e-49b0-9c5e-1544f5d8941a")
+		)
+		(pin "5"
+			(uuid "30e8f4c2-1aa6-437d-9ee1-cc18418fd585")
+		)
+		(pin "6"
+			(uuid "08aa16a3-8581-480d-a349-9d7faf9f82d2")
+		)
+		(pin "7"
+			(uuid "d05c6656-4fab-4638-be61-b992ee5625cc")
+		)
+		(pin "8"
+			(uuid "6ba5c37b-3b0b-451c-975f-b97097bdeb56")
+		)
+		(pin "9"
+			(uuid "ccba3838-2506-402f-92d1-8c7f98c93752")
+		)
+		(pin "10"
+			(uuid "da934a20-e273-41ae-82df-01d43a39eb27")
+		)
+		(pin "11"
+			(uuid "bf9b6f61-2b00-41fc-9cd4-281c60d3c974")
+		)
+		(pin "12"
+			(uuid "867c89db-cd08-4803-a959-99a80e6c8fde")
+		)
+		(pin "13"
+			(uuid "81599d23-5912-481d-91ea-d9b913f61a94")
+		)
+		(pin "14"
+			(uuid "4e86e5d1-954f-4625-b0c7-173ae097229e")
+		)
+		(pin "15"
+			(uuid "56599336-00d5-4da7-9c25-24afecb3af5c")
+		)
+		(pin "16"
+			(uuid "fd036860-d4d9-4d2d-a844-2468eadbd046")
+		)
+		(pin "17"
+			(uuid "f04c9191-6ce6-42ce-b4a0-aeac9ac48f08")
+		)
+		(pin "18"
+			(uuid "6badff11-d410-4d7f-aecd-c75a798c98a8")
+		)
+		(pin "19"
+			(uuid "023fa70e-0355-442a-86be-016d53be439b")
+		)
+		(pin "20"
+			(uuid "521edced-ac3e-4037-b771-3e9830529d93")
+		)
+		(pin "21"
+			(uuid "db6c6e0f-1de6-44bc-aabd-0a0ef0ec04de")
+		)
+		(pin "22"
+			(uuid "bd5d1172-1b24-4f7c-9e50-582380acb50e")
+		)
+		(pin "23"
+			(uuid "8f68b52c-a240-4446-9870-965cbda357eb")
+		)
+		(pin "24"
+			(uuid "40705496-83a7-4c54-a36f-c0aee9c48747")
+		)
+		(pin "25"
+			(uuid "bf83bd6e-228a-4db7-ad86-17844f6413f5")
+		)
+		(pin "26"
+			(uuid "3a414139-3a33-4921-885e-c9cae92cb065")
+		)
+		(pin "27"
+			(uuid "68374974-d37d-49d9-983a-52e21760fdb8")
+		)
+		(pin "28"
+			(uuid "8874148d-27dd-4983-954b-7967e45dc85d")
+		)
+		(pin "29"
+			(uuid "986ee836-d995-4d5c-bc21-395de06e340a")
+		)
+		(pin "30"
+			(uuid "434e03bf-2977-4057-b930-c3dec3d984fb")
+		)
+		(pin "31"
+			(uuid "d81a56c9-e083-43be-9c49-6895a53f63e7")
+		)
+		(pin "32"
+			(uuid "2f5e5d60-dce4-47f3-b324-9172e2b4162a")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "J1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:C")
+		(at 208.28 64.77 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "02f8f02a-c9f0-400f-bbaa-68c2543a94df")
+		(property "Reference" "C2"
+			(at 206.78 58.27 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "10uF"
+			(at 205.98 71.47 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric"
+			(at 208.28 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 208.28 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 208.28 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "811860f0-b424-41ff-86a4-b44c4ca4a524")
+		)
+		(pin "2"
+			(uuid "0f9a7e02-d139-42f0-87fa-f4a8306461a6")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "C2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:C")
+		(at 265.18 142.19 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp yes)
+		(uuid "0ec3c61b-a072-40f0-b88e-dc03c676ea04")
+		(property "Reference" "C8"
+			(at 263.68 135.69 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "100uF DNP"
+			(at 262.88 148.89 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_1210_3225Metric"
+			(at 265.18 142.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 265.18 142.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 265.18 142.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e88151c6-4815-41cc-a6b5-d4ecd2fc88e3")
+		)
+		(pin "2"
+			(uuid "c9d8c26b-14f5-4930-88d5-64b8a33da05e")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "C8")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:XIAO_ADDON")
+		(at 252.18 103.19 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "17cdc689-7450-4191-a976-576bc9056cec")
+		(property "Reference" "U3"
+			(at 252.18 83.69 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "XIAO + Wio-SX1262"
+			(at 252.18 86.39 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "MeshCrossway:Module_XIAO_ESP32S3_WioSX1262_Socket"
+			(at 252.18 103.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" "https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/"
+			(at 252.18 103.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" "Radio B plug-in module; Wio internal circuitry omitted"
+			(at 252.18 103.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ca8831a3-d2d6-443c-b557-57e367a6841a")
+		)
+		(pin "2"
+			(uuid "4e4c9c17-f74e-4b99-85ea-2582ed7b99ae")
+		)
+		(pin "3"
+			(uuid "5fe4b043-f865-4917-9e11-f4221aea1f04")
+		)
+		(pin "4"
+			(uuid "7958f4d1-515f-4cfd-9af6-f050adf841ed")
+		)
+		(pin "5"
+			(uuid "82b7cac0-b0d4-4d42-af76-561422218c00")
+		)
+		(pin "6"
+			(uuid "e10e583c-c583-4bbe-bc8e-c070f6fdc785")
+		)
+		(pin "7"
+			(uuid "f2ca094a-639b-4783-a395-1cc6c21289e8")
+		)
+		(pin "8"
+			(uuid "845d634a-5740-4eb3-a3d7-8892baede436")
+		)
+		(pin "9"
+			(uuid "820e5769-9973-49b4-99b2-51a8216fdb74")
+		)
+		(pin "10"
+			(uuid "384a63e5-4ce4-4807-b933-df110dfc9e97")
+		)
+		(pin "11"
+			(uuid "e305dfe5-09c1-4ac1-aad4-3ea2a79a86e5")
+		)
+		(pin "12"
+			(uuid "58499caf-80de-48eb-bf4b-a3912f2e37c4")
+		)
+		(pin "13"
+			(uuid "7750f633-c509-43c1-acc3-8384c9361ff7")
+		)
+		(pin "14"
+			(uuid "7a4a6b82-f5d0-49d2-82b6-948692a47f83")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "U3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 96.52 180.23 0)
+		(unit 1)
+		(body_style 1)		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "253260e9-38d1-4297-ad64-f245ead9b278")
+		(property "Reference" "TP4"
+			(at 96.52 177.03 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 96.52 183.43 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 96.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 96.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 96.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ba002fd5-160c-4951-9960-3dd9af2614f8")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 56.52 180.23 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "2955e6c1-0961-44ab-8386-1dc564aed7b8")
+		(property "Reference" "TP2"
+			(at 56.52 177.03 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 56.52 183.43 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 56.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 56.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 56.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "b4903d7a-a32e-43e7-80f3-29a7c19daf0c")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:C")
+		(at 220.28 64.77 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp yes)
+		(uuid "3c94aa49-4367-4994-9859-bc662ea1779a")
+		(property "Reference" "C3"
+			(at 218.78 58.27 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "47uF DNP"
+			(at 217.98 71.47 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_1210_3225Metric"
+			(at 220.28 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 220.28 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 220.28 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "33812d53-ad6a-4e98-af5a-4d3dfcffe8b5")
+		)
+		(pin "2"
+			(uuid "69b12c65-f066-4065-af01-d39d906c045c")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "C3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 116.52 180.23 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "3ef319c7-549d-452e-90b2-ac4f31d034a2")
+		(property "Reference" "TP9"
+			(at 116.52 177.03 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 116.52 183.43 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 116.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 116.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 116.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "06a18027-c39b-4646-bc74-af6a088b434e")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP9")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:C")
+		(at 241.18 142.19 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "49f28e4a-d112-4334-a7ec-c3e491483581")
+		(property "Reference" "C6"
+			(at 239.68 135.69 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "10uF"
+			(at 238.88 148.89 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric"
+			(at 241.18 142.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 241.18 142.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 241.18 142.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "1d8a27f2-43cf-4110-808f-1f50de8fa2b3")
+		)
+		(pin "2"
+			(uuid "d8eb6925-aeee-432f-b3c8-3be90bb2f551")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "C6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:HEADER4")
+		(at 142.24 161.29 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "4a519443-349b-4c32-b376-5a8d81cc5204")
+		(property "Reference" "J2"
+			(at 142.24 151.79 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "HOST DEBUG"
+			(at 142.24 154.29 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical"
+			(at 142.24 161.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 142.24 161.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 142.24 161.29 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ed32763d-a1a7-4a02-9090-320df8949578")
+		)
+		(pin "2"
+			(uuid "5db8e4e4-5bef-4bed-8e23-254e000d51a2")
+		)
+		(pin "3"
+			(uuid "54a4664a-dc88-49cd-b6b8-ef51bdc4a902")
+		)
+		(pin "4"
+			(uuid "f28245e2-0935-434b-be2e-55861460b162")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "J2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 76.52 189.23 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "53bb6a8b-cdfe-43c9-b4fd-b58ffadff5a3")
+		(property "Reference" "TP7"
+			(at 76.52 186.03 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 76.52 192.43 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 76.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 76.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 76.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "8dde2cf3-2e0c-43c3-876c-4d8a22e8788a")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:C")
+		(at 60.96 152.4 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "56a94006-764a-499b-b17f-f1fffd4f6901")
+		(property "Reference" "C9"
+			(at 57.96 146.4 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "100nF"
+			(at 57.96 159.4 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+			(at 60.96 152.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 60.96 152.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 60.96 152.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "41f03a0f-d084-4009-915e-dd0ea7b0ce37")
+		)
+		(pin "2"
+			(uuid "06f8a773-db66-42c6-959d-4a1281699f00")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "C9")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:JUMPER3")
+		(at 170.18 46.99 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "5b19b655-727a-4806-bc84-dca40ce959ef")
+		(property "Reference" "JP1"
+			(at 170.18 38.99 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "A POWER SELECT"
+			(at 170.18 41.49 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical"
+			(at 170.18 46.99 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 170.18 46.99 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 170.18 46.99 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "50c57bb4-87ce-49bd-a64e-3eabaff551b9")
+		)
+		(pin "2"
+			(uuid "5e06b4df-1c1b-4851-b134-c82ecd9838bd")
+		)
+		(pin "3"
+			(uuid "c1b52d20-d456-421c-beab-1e48656f5863")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "JP1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:R")
+		(at 171.45 34.13 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "62dfea7c-9c3b-4d80-a9c8-1735d76068bc")
+		(property "Reference" "R2"
+			(at 168.45 31.43 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "47R"
+			(at 173.45 31.43 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 171.45 34.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 171.45 34.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 171.45 34.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "073a9211-d107-4ad8-89a2-c629269f1958")
+		)
+		(pin "2"
+			(uuid "8f975fd9-47bb-4b02-b3ce-178952196fb4")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "R2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:R")
+		(at 162.18 97.19 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "6472a64e-3d0f-4cca-916a-d5bf768d9a47")
+		(property "Reference" "R3"
+			(at 159.18 94.49 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "47R"
+			(at 164.18 94.49 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 162.18 97.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 162.18 97.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 162.18 97.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "6704988a-fb86-4b45-896c-4558fe8b6b2f")
+		)
+		(pin "2"
+			(uuid "1aaf4c0b-6722-450a-a555-7bae9c7f94c1")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "R3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:JUMPER2")
+		(at 212.18 123.19 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "683313ba-dfdc-4795-8b53-04b29b6c21aa")
+		(property "Reference" "JP4"
+			(at 212.18 115.19 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "B CURRENT LINK"
+			(at 212.18 117.69 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+			(at 212.18 123.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 212.18 123.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 212.18 123.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "01e4325d-cce7-4758-b6f3-072ce7fcc3f6")
+		)
+		(pin "2"
+			(uuid "5957cf15-0c16-410c-9096-97c8cd2180de")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "JP4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:R")
+		(at 111.68 124.46 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp yes)
+		(uuid "7140494c-ac8c-423b-b9d8-fdcacae58c7e")
+		(property "Reference" "R6"
+			(at 108.68 121.46 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "4.7k DNP"
+			(at 113.68 121.46 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 111.68 124.46 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""			(at 111.68 124.46 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 111.68 124.46 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "4d69a42d-3f2b-4189-bfdd-207e801c4617")
+		)
+		(pin "2"
+			(uuid "0be16be5-5161-4478-adbd-aab418accf09")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "R6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:JUMPER2")
+		(at 208.38 46.68 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "8423ebb6-4db8-4637-9558-44763518fb73")
+		(property "Reference" "JP2"
+			(at 208.38 38.68 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "A CURRENT LINK"
+			(at 208.38 41.18 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical"
+			(at 208.38 46.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 208.38 46.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 208.38 46.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "27c7d004-9a0c-4001-b774-b2e740d8a698")
+		)
+		(pin "2"
+			(uuid "2e3e1f9e-0cd0-4e79-b851-4a9fe3a9fb35")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "JP2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 36.52 180.23 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "86a089ed-b330-4dbc-a32e-172d596bff61")
+		(property "Reference" "TP1"
+			(at 36.52 177.03 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 36.52 183.43 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 36.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 36.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 36.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "a775a787-7de0-4f73-9c28-6ec945f6280b")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:C")
+		(at 74.96 152.4 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "950a2742-391f-4c8c-b311-954f4154fc85")
+		(property "Reference" "C10"
+			(at 71.96 146.4 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "10uF"
+			(at 71.96 159.4 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0805_2012Metric"
+			(at 74.96 152.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 74.96 152.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 74.96 152.4 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ea19fb09-4a21-4a7f-a552-0bf753f9e07a")
+		)
+		(pin "2"
+			(uuid "07dedc78-2cd1-4233-b1e4-1c508df424ac")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "C10")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:C")
+		(at 253.18 142.19 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp yes)
+		(uuid "978a55e8-353c-4d02-95f9-74dae6141500")
+		(property "Reference" "C7"
+			(at 251.68 135.69 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "47uF DNP"
+			(at 250.88 148.89 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_1210_3225Metric"
+			(at 253.18 142.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 253.18 142.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 253.18 142.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "c3038372-3c86-4d63-adc0-94b93c788eb7")
+		)
+		(pin "2"
+			(uuid "77be8113-85ec-45fb-a587-f1489cd360b7")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "C7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 36.52 189.23 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "b2fb2a95-1bc0-45f9-b6f7-91639016497b")
+		(property "Reference" "TP5"
+			(at 36.52 186.03 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 36.52 192.43 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 36.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 36.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 36.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "00179561-d4be-4220-ae0b-e705aed3ba13")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:R")
+		(at 97.15 139.7 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "b988a43b-c9fd-43d8-88f2-bfd932124079")
+		(property "Reference" "R5"
+			(at 94.15 136.7 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "0R"
+			(at 99.15 136.7 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 97.15 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 97.15 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 97.15 139.7 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "fa1e8b9c-786b-4267-9204-7dcf708b1aec")
+		)
+		(pin "2"
+			(uuid "9d690aa1-f5d6-4ca5-bfa9-82dd7dbe1185")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "R5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:C")
+		(at 232.28 64.77 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp yes)
+		(uuid "bbadc5bd-5049-4daa-8d8b-cc9d71078558")
+		(property "Reference" "C4"
+			(at 230.78 58.27 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "100uF DNP"
+			(at 229.98 71.47 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_1210_3225Metric"
+			(at 232.28 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 232.28 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 232.28 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "a39ab3fe-f8fe-4f2a-8e18-e20c5b8a6c5a")
+		)
+		(pin "2"
+			(uuid "aa4f9aea-3b3f-40af-be4b-734fdd586646")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "C4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:R")
+		(at 162.18 107.19 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "c193613b-2188-4e47-b375-2ffb5e8554d7")
+		(property "Reference" "R4"
+			(at 159.18 104.49 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "47R"
+			(at 164.18 104.49 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 162.18 107.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 162.18 107.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 162.18 107.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "93465913-5816-4494-b252-00cb1273c8bb")
+		)
+		(pin "2"
+			(uuid "39a0cbe6-c96d-4fbc-babd-88059c623de7")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "R4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:R")
+		(at 111.68 131.46 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp yes)
+		(uuid "c6532a21-8c4b-4e9a-b798-bb7465e2a22c")
+		(property "Reference" "R7"
+			(at 108.68 128.46 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "4.7k DNP"
+			(at 113.68 128.46 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 111.68 131.46 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 111.68 131.46 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 111.68 131.46 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "0fa62ac7-f084-49ed-ad74-91825f44eead")
+		)
+		(pin "2"
+			(uuid "f8a1f87c-33ce-4fa3-a32d-2adbc7175027")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "R7")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 116.52 189.23 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "cbfe3b04-c93e-484b-b9a1-81d66d1dece5")
+		(property "Reference" "TP10"
+			(at 116.52 186.03 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 116.52 192.43 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 116.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 116.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 116.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "939c2c9b-32d3-4544-bcb2-07b0b6c66393")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP10")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:C")
+		(at 229.18 142.19 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "cbfe6028-d8a2-4227-92c5-3caa4d65e27b")
+		(property "Reference" "C5"
+			(at 227.68 135.69 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "100nF"
+			(at 226.88 148.89 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+			(at 229.18 142.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 229.18 142.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 229.18 142.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "8526a50a-2999-4ba8-818e-b2e2ff201626")
+		)
+		(pin "2"
+			(uuid "94f88fad-dcde-4c43-a629-ebfd92198a7f")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "C5")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:MAX_M10S_BREAKOUT")
+		(at 57.15 132.08 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "cc6c9573-6f1e-4d4c-9baa-649ab9232cf4")
+		(property "Reference" "U4"
+			(at 57.15 118.08 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "Uputronics MAX-M10S 3V"
+			(at 57.15 120.88 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Connector_PinSocket_2.54mm:PinSocket_1x07_P2.54mm_Vertical"
+			(at 57.15 132.08 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" "https://store.uputronics.com/"
+			(at 57.15 132.08 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" "3V MAX-M10S breakout; active antenna RF remains on module"
+			(at 57.15 132.08 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "544d8356-d663-4bc8-8e1f-fb42e6e5fe7d")
+		)
+		(pin "2"
+			(uuid "dd3bdf75-2c3b-4100-9da5-f3a4341982b8")
+		)
+		(pin "3"
+			(uuid "f4d78a34-fb54-4878-8ca2-641f8190aab1")
+		)
+		(pin "4"
+			(uuid "52e0779c-c109-49bc-a5df-dd88bc9ca923")
+		)
+		(pin "5"
+			(uuid "507b1ff1-1937-44c9-a631-ff05a1866276")
+		)
+		(pin "6"
+			(uuid "39207794-64f1-4bd6-8d25-7b6f91885989")
+		)
+		(pin "7"
+			(uuid "4256f02c-15c3-4690-b0a5-c663ec515fbb")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "U4")					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:R")
+		(at 171.45 24.13 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "d9ece75a-d493-4b44-8866-6c615c1ab78d")
+		(property "Reference" "R1"
+			(at 168.45 21.43 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "47R"
+			(at 173.45 21.43 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 171.45 24.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 171.45 24.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 171.45 24.13 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "b787c0cc-cfcb-4b3e-a3d3-b78c5c447018")
+		)
+		(pin "2"
+			(uuid "ab0736dd-e8cb-475a-83f0-79046d46ffc9")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "R1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 76.52 180.23 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "de5a73ec-a812-44c4-9367-7a113ef61207")
+		(property "Reference" "TP3"
+			(at 76.52 177.03 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 76.52 183.43 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 76.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 76.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 76.52 180.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "94d41199-4cbc-44c8-9fa7-106c22592222")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 96.52 189.23 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "df42a8cc-a4c5-4502-a59d-d53e257624f5")
+		(property "Reference" "TP8"
+			(at 96.52 186.03 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 96.52 192.43 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 96.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 96.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 96.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "6cce9d3f-14e4-42b5-b0f0-523c08ee5a6f")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP8")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:D_Schottky")
+		(at 193.18 123.19 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "eb62568c-5eb5-4628-98c1-8d53b88bd219")
+		(property "Reference" "D2"
+			(at 193.18 118.19 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "Schottky"
+			(at 193.18 127.69 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Diode_SMD:D_SOD-123"
+			(at 193.18 123.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 193.18 123.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 193.18 123.19 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "f8bd34bb-2137-43b1-9788-68c4857f5cb1")
+		)
+		(pin "2"
+			(uuid "7bab9d03-a949-42be-be3c-41b5e1cb2616")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "D2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:REG_TBD")
+		(at 44.45 88.9 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "f1d738ea-6fd2-419b-8c0b-9e533234480d")
+		(property "Reference" "U1"
+			(at 44.45 77.4 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "LOCAL 5V SOURCE — TBD"
+			(at 44.45 80.1 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "MeshCrossway:Module_LOCAL_5V_3Pin_Prototype"
+			(at 44.45 88.9 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 44.45 88.9 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 44.45 88.9 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "58cde84c-0bca-4b14-b22e-96c65fd040cc")
+		)
+		(pin "2"
+			(uuid "5bfdf61d-bc4f-4605-9c5d-190748d8472b")
+		)
+		(pin "3"
+			(uuid "381ef028-0c81-479d-a2db-a16b54fd7e8a")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "U1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:D_Schottky")
+		(at 186.79 46.68 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "f7f2a94a-4195-4fa4-ab65-2656e4e6e12e")
+		(property "Reference" "D1"
+			(at 186.79 41.68 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "Schottky"
+			(at 186.79 51.18 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Diode_SMD:D_SOD-123"
+			(at 186.79 46.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 186.79 46.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 186.79 46.68 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "97e00496-8678-46ce-ae2d-bd566ac31b8f")
+		)
+		(pin "2"
+			(uuid "4357eac2-abf1-4eb7-a2ba-e2b38cd7b645")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "D1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:C")
+		(at 196.28 64.77 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "fc20c8f2-6a57-4614-b0ac-5f493070fed9")
+		(property "Reference" "C1"
+			(at 194.78 58.27 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "100nF"
+			(at 193.98 71.47 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+			(at 196.28 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 196.28 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 196.28 64.77 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "eb9f17fb-0fcc-4700-9068-f000e6930fb1")
+		)
+		(pin "2"
+			(uuid "9bf2731b-d352-4163-8d07-f58fd00aa089")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "C1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:XIAO_ADDON")
+		(at 248.92 40.64 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "fd7f2943-d4a9-4cf1-b3b7-2ed7e54d0463")
+		(property "Reference" "U2"
+			(at 248.92 21.14 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "XIAO + Wio-SX1262"
+			(at 248.92 23.84 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "MeshCrossway:Module_XIAO_ESP32S3_WioSX1262_Socket"
+			(at 248.92 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" "https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/"
+			(at 248.92 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" "Radio A plug-in module; Wio internal circuitry omitted"
+			(at 248.92 40.64 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e6fbf245-2771-469d-a2b9-ed1ed172c658")
+		)
+		(pin "2"
+			(uuid "e604ef32-5f62-4bfa-85de-355cb4a6f96d")
+		)
+		(pin "3"
+			(uuid "05ec5ca5-4239-4936-8ab9-d598d98083f1")
+		)
+		(pin "4"
+			(uuid "e82c40b8-3152-46b7-80f7-baaa2a065981")
+		)
+		(pin "5"
+			(uuid "3aa8fc35-3a63-467d-9553-d9d67e4ccba9")
+		)
+		(pin "6"
+			(uuid "abdc0f4b-b6ef-4076-8d66-2ba38dfe4d91")
+		)
+		(pin "7"
+			(uuid "f65c05d0-0b02-4ab5-8182-967457b18de6")
+		)
+		(pin "8"
+			(uuid "a99847c9-c654-4f30-ac8d-ed2197f96e15")
+		)
+		(pin "9"
+			(uuid "d13e30dc-ebe9-4497-bd98-160a62aa1ad1")
+		)
+		(pin "10"
+			(uuid "595ed091-4a88-4a97-93c2-c61f10315416")
+		)
+		(pin "11"
+			(uuid "d41dee60-4b05-43a2-9e86-a386de02298c")
+		)
+		(pin "12"
+			(uuid "e8d63925-1636-45ce-be07-bbc8635d88ae")
+		)
+		(pin "13"
+			(uuid "ea59be9e-3da3-45dc-9e82-bd375cb79841")
+		)
+		(pin "14"
+			(uuid "cb4d590d-7cf7-401b-800a-21c8d8152057")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "U2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "MeshCrossway:TP")
+		(at 56.52 189.23 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "fd9037c5-fdbb-4885-b611-624c3226ffab")
+		(property "Reference" "TP6"
+			(at 56.52 186.03 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+					(bold yes)
+				)
+			)
+		)
+		(property "Value" "TestPoint"
+			(at 56.52 192.43 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 0.86 0.86)
+				)
+			)
+		)
+		(property "Footprint" "TestPoint:TestPoint_Pad_D2.0mm"
+			(at 56.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 56.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 56.52 189.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1 1)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e477479e-dd3c-43f7-afe8-3db06bd340ca")
+		)
+		(instances
+			(project "MeshCrossway_v1"
+				(path "/625b3c66-94c9-41de-b2bc-9cf686ed83a7"
+					(reference "TP6")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)
