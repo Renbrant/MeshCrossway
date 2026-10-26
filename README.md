@@ -2,7 +2,7 @@
 
 **Two mesh networks. One portable terminal.**
 
-![MeshCrossway V1 concept: one custom PCB with Seeed XIAO/Wio dual radios, transparent enclosure and rear battery](docs/images/meshcrossway-hero.webp)
+![MeshCrossway V1 concept: one custom PCB with Seeed XIAO/Wio dual radios, transparent enclosure and rear battery](docs/images/meshcrossway_mountain_connectivity_concept.png)
 
 *Illustrative AI-generated concept only. It does not represent the final product, verified physical placement, exact supplier components, or production-ready PCB/enclosure design. The intended battery placement is behind the carrier PCB.*
 
