@@ -1,10 +1,10 @@
 # MeshCrossway V1 power architecture — Waveshare 3V3 shared rail
 
-**Decision (2026-10-24):** Prefer the Waveshare ESP32-S3-Touch-LCD-3.5 onboard AXP2101 battery charging and 3.3 V rail at its expansion connector J8 to power the two Seeed XIAO ESP32-S3 + Wio-SX1262 kits and the MAX-M10S breakout. **This is a proposed architecture, not a validated current budget or a safe-to-build wiring approval.**
+**V1 power architecture:** Use the Waveshare ESP32-S3-Touch-LCD-3.5 onboard AXP2101 battery charging and 3.3 V rail at its expansion connector J8 to power the two Seeed XIAO ESP32-S3 + Wio-SX1262 kits and the MAX-M10S breakout. **This is a proposed architecture, not a validated current budget or a safe-to-build wiring approval.**
 
 The **Waveshare AXP2101** is the candidate battery charger and power manager. Do not add a second LiPo charger, connect charger outputs together or buy a separate buck-boost/power mux unless electrical measurements justify an alternative.
 
-**Packaging update (2026-10-26):** a protected 1S LiPo pack is intended to sit **behind the single carrier PCB/display** in the nearly invisible transparent rear enclosure. This is a mechanical concept only, not verification of the cell capacity, thermal limits, retention, dimensions, or safe charging connections.
+**Mechanical arrangement:** A protected 1S LiPo pack is intended to sit **behind the single carrier PCB/display** in the nearly invisible transparent rear enclosure. This is a mechanical concept only, not verification of the cell capacity, thermal limits, retention, dimensions, or safe charging connections.
 
 ![GNSS I2C and protected rear LiPo placement](images/gnss-and-power.svg)
 

@@ -89,6 +89,6 @@ See [Radio communication architecture and API compatibility](radio-communication
 - The central controller can schedule only application-originated transmissions reliably. Autonomous announcements, ACKs and retransmissions by both radios make RF coexistence and simultaneous transmissions an independent bench-validation concern.
 - Strict zero-hop tracking and truly equivalent group semantics are **not demonstrated**. Do not ship a direct-only guarantee until over-the-air tests prove it; a firmware patch is a last resort after a reproducible API limitation.
 
-## XIAO migration override (2026-10-26)
+## Selected XIAO/Wio firmware integration
 
 The V1 uses two **Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kits**, with distinct Meshtastic and MeshCore firmware builds. External XIAO UART candidate: D7/GPIO44 RX, D6/GPIO43 TX; configure firmware explicitly and keep binary transport free from debug output. Wio SPI is internal to the kit. Meshtastic has a matching Seeed image, MeshCore lists Xiao S3 WIO but external Companion UART remains **unverified**. MeshCore initial programming may require a **merged image** for persistent settings. Use the exact Seeed XIAO/Wio B2B firmware target and confirm the external serial mapping on hardware. [Full hardware guide](hardware-wiring.md).

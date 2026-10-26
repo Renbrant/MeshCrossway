@@ -149,6 +149,6 @@ Do not advertise full feature coverage or emergency reliability before these gat
 - Verify target-board MeshCore build flags and proposed XIAO D7/GPIO44 RX and D6/GPIO43 TX external UART pinout.
 - Design RF coexistence tests and individual radio power/reset control before PCB freeze.
 
-## XIAO interface migration override (2026-10-26)
+## Selected XIAO/Wio external UART interface
 
 For both XIAO kits, use **external D7/GPIO44 RX and D6/GPIO43 TX** as candidate API-UART pins: U1 GPIO39 TX → A RX44, A TX43 → U1 GPIO40 RX; U1 GPIO17 TX → B RX44, B TX43 → U1 GPIO18 RX. Common GND, proposed 115200 8N1. **The Wio SX1262 SPI/GPIO on the internal B2B connector must not be wired to the Waveshare.** Confirm radio serial API binding and no debug contamination. MeshCore may need the full **merged firmware image** for persistent settings. Shared 3V3 is unapproved until power-path verification. See [authoritative wiring](hardware-wiring.md).
