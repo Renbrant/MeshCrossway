@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name "MeshCrossway")(type "KiCad")(uri "${KIPRJMOD}/MeshCrossway.pretty")(options "")(descr "MeshCrossway Rev A custom footprints"))
+)
