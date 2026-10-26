@@ -2,6 +2,12 @@
 
 **Status:** product requirements and interactive browser simulation. No live GNSS, LoRa location-sharing scheduler, file-transfer service or companion app has been implemented or bench-validated.
 
+## Illustrated location-sharing modes
+
+![Direct Tracking modes](images/architecture/direct-tracking-modes.svg)
+
+Direct Only, Adaptive and mesh forwarding are policy concepts; zero-hop guarantees and group behavior remain subject to packet-level verification.
+
 ## User experience
 
 The 480 × 320 touchscreen provides **Navigation** with a map/position view and large touch actions for **POIs**, **Tracks**, **Record**, **Share** and **Live share**. Map graphics and sample positions in the web simulator are illustrative, not geographic data. Detailed offline basemaps remain a future milestone.
