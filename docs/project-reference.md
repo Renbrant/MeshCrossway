@@ -36,7 +36,7 @@ The Seeed radio kit combines XIAO ESP32-S3 and Wio-SX1262 via an **internal B2B 
 |---|---|---|---|
 | Meshtastic | TX GPIO39 / RX GPIO40 | RX D7/GPIO44 / TX D6/GPIO43 | candidate, must be verified in firmware |
 | MeshCore Companion | TX GPIO17 / RX GPIO18 | RX D7/GPIO44 / TX D6/GPIO43 | candidate; build/serial transport not yet proven |
-| GNSS I²C | SDA GPIO21 / SCL GPIO38 | Uputronics MAX-M10S SDA / SCL | verify revision and 3V breakout |
+| GNSS I²C | **SDA GPIO8 / SCL GPIO7** | Uputronics MAX-M10S SDA / SCL | use Waveshare J8 expansion I²C; verify pull-ups and breakout revision |
 | Logic reference | host GND | both XIAO GND and GNSS GND | required |
 
 Serial baseline is 115200 8N1 if enabled on both endpoints; Meshtastic PROTO and MeshCore Companion are *different* binary APIs. The two radios can be developed initially on separate USB power supplies with shared logic GND. Shared external XIAO power from the host J8 rail is a design proposal only.
@@ -46,8 +46,8 @@ Serial baseline is 115200 8N1 if enabled on both endpoints; Meshtastic PROTO and
 ## Firmware and design principles
 
 1. **Host firmware (own code):** LVGL UI, ESP-IDF/FreeRTOS, independent UART adapters, contact/message store, GNSS parser, local tracks, location scheduler, microSD and diagnostics.
-2. **Meshtastic radio A:** upstream XIAO ESP32-S3 Wio-SX1262 build using Serial `PROTO` with verified UART RX=44 / TX=43. Capture binary Protobuf frames, verify queue/ACK distinction and packet-specific hop behavior.
-3. **MeshCore radio B:** upstream **Xiao_S3_WIO Companion** build, with custom compilation flags if needed to expose Companion over GPIO44/43 external UART. Stock BLE/USB Companion is not proof of UART. On fresh installs, use the correct **merged firmware image** when release instructions require a partition layout for persistent settings.
+2. **Meshtastic radio A:** upstream XIAO ESP32-S3 Wio-SX1262 build using Serial `PROTO` on candidate external UART RX=44 / TX=43. Current board definitions confirm the Wio radio itself occupies GPIO7/8/9/38/39/40/41/42 internally, leaving GPIO43/44 free; bench validation of serial framing remains required.
+3. **MeshCore radio B:** upstream **`Xiao_S3_WIO_companion_radio_serial`** environment, which currently sets `SERIAL_RX=D7` and `SERIAL_TX=D6` (GPIO44/43). Bench validation is still required; on fresh installs, use the correct **merged firmware image** when release instructions require a partition layout for persistent settings.
 4. **Custom source patches only after proven blocker:** zero-hop route control, serial transport or critical missing host API; favor upstream changes rather than local long-term forks.
 5. **Radio RF coexistence:** both 900 MHz-class SX1262 modules may operate near one another; antenna separation, blocking, collisions and autonomous TX must be measured.
 6. **Power hold:** Waveshare J8 current budget and XIAO external 3V3 feed topology are not yet validated. Do not tie together chargers, 1S battery pads, USB and 3V3 rails without schematic review.
