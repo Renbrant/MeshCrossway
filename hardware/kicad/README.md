@@ -84,3 +84,18 @@ Commit the actual design sources:
 - `fp-lib-table`
 
 Do not commit editor locks, personal settings, autosaves or automatic backup folders. See `.gitignore` in this directory.
+
+
+## Rev A battery mechanical envelope
+
+For rear-side floorplanning, the project includes a mechanical-only footprint and a simple 3D envelope for the currently selected 1S LiPo battery:
+
+- Footprint: `MeshCrossway:Battery_LiPo_10000mAh_110x60x12`
+- 3D model: `${KIPRJMOD}/3dmodels/generated/Battery_LiPo_110x60x12.step`
+- Nominal battery: 3.7 V, 10000 mAh, 37 Wh
+- Envelope used: **110 x 60 x 12 mm**
+- Advertised connector: **PH 2.0 mm**
+- Advertised wire length: approximately **100 mm**
+- Intended placement: **back side of the carrier PCB**
+
+This is a **mechanical planning model**, based on the supplied product dimensions, not an official manufacturer CAD file. Verify the production battery dimensions, cable exit, connector polarity, swelling allowance, adhesive/foam thickness, and enclosure clearances before fabrication.
