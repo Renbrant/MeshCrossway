@@ -29,3 +29,18 @@ The Wio-SX1262 and Waveshare packages are downloaded for mechanical alignment wo
 ## GNSS
 
 No exact manufacturer STEP model has been frozen for the Uputronics MAX-M10S breakout. The PCB footprint therefore carries the 22 x 22 mm mechanical envelope and an approximate SMA/header region. Verify the actual purchased module before fabrication.
+
+
+## Current XIAO + Wio assembly transform
+
+The U2/U3 footprint now includes both vendor STEP models:
+
+- `Wio-SX1262_for_XIAO.step`
+- `XIAO_ESP32S3.step`
+
+The XY alignment is derived from the official Seeed Wio PCB connector coordinates and the official XIAO footprint/model transform. The current **Z stack heights are provisional engineering values** used for 3D visualization only:
+
+- Wio model: +3.0 mm above the carrier reference
+- XIAO model: +11.5 mm above the carrier reference
+
+Replace these Z values with measured socket/header stack heights before enclosure/fabrication sign-off.
