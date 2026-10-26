@@ -220,3 +220,7 @@ Still unverified: received-board authenticity/routing, soldered headers, Wavesha
 ## Firmware and processor responsibility
 
 The central Waveshare ESP32-S3 owns the UI, navigation, GNSS, microSD, position-sharing scheduler and any future Bluetooth bulk-transfer interface. The two LoRa V3 ESP32-S3 boards run their own Meshtastic and MeshCore stacks, not generic outsourced application tasks. Prefer official upstream firmware; a board-specific MeshCore Companion external-UART build may be needed. Do not assume stock USB/BLE firmware binds to physical UART pins. Verify both radio UART links on delivered hardware before finalizing this wiring. See [radio firmware strategy](radio-firmware-strategy.md).
+
+## Protocol and hardware-interface verification
+
+For the complete serial wire protocol, per-radio API contracts, firmware customization criteria, recovery strategy and RF coexistence tests, see [Radio communication architecture](radio-communication-architecture.md). **TX/RX/GND is the logical serial wiring only**; radio power, reset, powered-off-safe I/O, and antenna isolation are independent design requirements. Reserve test pads for both UART links and consider optional per-radio reset/power gating. The proposed 115200 baud must be explicitly configured at both ends; do not assume it is Meshtastic's universal/default baud. Never connect an unverified USB-powered radio's 3V3 rail to the central 3V3 rail. The released PCB pinout remains conditional on inspection of the actual shipped board revisions.
