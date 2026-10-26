@@ -50,7 +50,7 @@ Serial baseline is 115200 8N1 if enabled on both endpoints; Meshtastic PROTO and
 3. **MeshCore radio B:** upstream **`Xiao_S3_WIO_companion_radio_serial`** environment, which currently sets `SERIAL_RX=D7` and `SERIAL_TX=D6` (GPIO44/43). Bench validation is still required; on fresh installs, use the correct **merged firmware image** when release instructions require a partition layout for persistent settings.
 4. **Custom source patches only after proven blocker:** zero-hop route control, serial transport or critical missing host API; favor upstream changes rather than local long-term forks.
 5. **Radio RF coexistence:** both 900 MHz-class SX1262 modules may operate near one another; antenna separation, blocking, collisions and autonomous TX must be measured.
-6. **Power hold:** Waveshare J8 current budget and XIAO external 3V3 feed topology are not yet validated. Do not tie together chargers, 1S battery pads, USB and 3V3 rails without schematic review.
+6. **Power validation gate:** Rev A feeds each XIAO at **pin 14 / VBUS / 5V** through an independent selector choosing `J8_5V` or `LOCAL_5V`, followed by Schottky isolation and a current-measurement link. J8 3V3 is reserved for GNSS/test use. J8 5 V headroom, the local regulator, Schottky drop and USB/VBUS backfeed remain unvalidated.
 
 ![Firmware split](images/architecture/firmware-responsibilities.svg)
 
@@ -67,7 +67,7 @@ Serial baseline is 115200 8N1 if enabled on both endpoints; Meshtastic PROTO and
 
 - Identify shipped Waveshare and Seeed PCB revisions, test GPIO continuity and B2B stack footprint.
 - Compile/flash both radios with correct XIAO targets; prove serial RX44/TX43 and UART framing separately.
-- Measure J8 headroom, XIAO transmit peaks and powered-off backfeed; evaluate per-radio reset/power isolation.
+- Measure J8 5 V headroom, `LOCAL_5V`, Schottky drop, XIAO transmit peaks and powered-off/USB backfeed; evaluate per-radio reset/power isolation.
 - Demonstrate independent send/receive and power-cycle recovery of two serial links, messages and configs.
 - Confirm GNSS antenna bias/power and microSD access under display load.
 - Demonstrate per-packet zero-hop and RF coexistence with at least one test peer/repeater.
@@ -78,6 +78,7 @@ Serial baseline is 115200 8N1 if enabled on both endpoints; Meshtastic PROTO and
 | Area | Current document |
 |---|---|
 | Buying, hardware and GPIO wiring | [Hardware wiring/BOM](hardware-wiring.md) |
+| Manufacturer electrical/mechanical sources | [Official hardware sources](hardware-sources.md) |
 | Power design and test requirements | [Power architecture](power-architecture.md) |
 | Firmware division and patch policy | [Radio firmware strategy](radio-firmware-strategy.md) |
 | UART wire protocols and API limitations | [Radio communication architecture](radio-communication-architecture.md) |

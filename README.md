@@ -8,7 +8,7 @@
 
 MeshCrossway is an **open-source, offline-first touchscreen communicator** designed to use **Meshtastic** and **MeshCore** through **two independent Seeed XIAO ESP32-S3 + Wio-SX1262 radio kits**. One interface brings together messaging, navigation, GNSS positioning, tracks and field diagnostics without requiring cellular coverage or the internet.
 
-> **Development status — October 26, 2026:** hardware architecture and documentation updated for XIAO/Wio; interactive UI is a **simulation with sample data**, not working radio hardware. UART integration, shared power, firmware images, RF coexistence and tracking are not bench validated. This is not a certified rescue/emergency device.
+> **Development status — October 26, 2026:** the Rev A carrier pin contract has been corrected against the manufacturer documentation for the Waveshare J8, XIAO ESP32-S3 and Wio-SX1262. The interactive UI is a **simulation with sample data**, not working radio hardware. UART integration, the selectable 5 V/VBUS radio-power path, local-regulator choice, RF coexistence and tracking are still bench-validation gates. This is not a certified rescue/emergency device.
 
 ## Try the interactive interface
 
@@ -41,7 +41,7 @@ The planned physical packaging uses **one integrated custom carrier PCB** for th
 
 **Radio kit:** [Seeed Studio XIAO ESP32-S3 & Wio-SX1262](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html). The SX1262 connects internally to each XIAO through the kit's B2B connector; the Waveshare talks to the two XIAO MCUs over independent UARTs.
 
-**Radio interface:** The external XIAO UART candidates are **D7/GPIO44 RX and D6/GPIO43 TX** on both Seeed kits (pending validation with both firmware builds). The Waveshare J8 3V3 supply for both kits is **not electrically approved** until current and reverse-power measurements are complete. See [current wiring, shopping and pinout](docs/hardware-wiring.md).
+**Radio interface:** Rev A uses **D7/GPIO44 RX and D6/GPIO43 TX** on both XIAO modules. Radio A is crossed to Waveshare J8 GPIO39/GPIO40; Radio B is crossed to GPIO17/GPIO18. Each radio is powered at **XIAO pin 14 / VBUS / 5V** through an independent 3-pin source selector (`J8_5V` or `LOCAL_5V`), Schottky isolation and a removable current-measurement link. XIAO `3V3_OUT` is treated as an output/test node, not the normal carrier power input. Bench validation of current headroom, USB backfeed and the final `LOCAL_5V` regulator is still required. See [current wiring, shopping and pinout](docs/hardware-wiring.md).
 
 ## What MeshCrossway is designed to do
 
@@ -107,7 +107,8 @@ The illustrated electrical design is a **proposal**; it is not a production-read
 | Topic | Detailed documentation |
 |---|---|
 | **Hardware, shopping, UART pinout and wiring** | [XIAO/Wio V1 hardware guide](docs/hardware-wiring.md) |
-| **Power and charging** | [3.3 V rail and validation gates](docs/power-architecture.md) |
+| **Manufacturer hardware sources** | [Official source registry](docs/hardware-sources.md) |
+| **Power and charging** | [5 V/VBUS source selection and validation gates](docs/power-architecture.md) |
 | **Radio APIs and transport** | [Meshtastic PROTO, MeshCore Companion and interoperability](docs/radio-communication-architecture.md) |
 | **Firmware responsibilities** | [Upstream firmware, custom builds and fallback strategy](docs/radio-firmware-strategy.md) |
 | **Navigation and live sharing** | [Positions, GPX, routing policies and airtime](docs/navigation-and-sharing.md) |
@@ -121,7 +122,7 @@ The illustrated electrical design is a **proposal**; it is not a production-read
 
 1. Check exact received **XIAO/Wio B2B kit** hardware revision, SX1262 RF configuration and external UART pin availability.
 2. Prove Meshtastic **PROTO** and MeshCore **Companion** over separate external UART links with real firmware.
-3. Measure Waveshare J8 spare 3.3 V current, XIAO USB/charger backfeed paths and SX1262 TX peaks before shared-power assembly.
+3. Measure Waveshare **J8 5 V** source capability, the alternate `LOCAL_5V` regulator, Schottky drop, XIAO USB/VBUS backfeed paths and SX1262 TX peaks before approving shared carrier power.
 4. Bring up two radios concurrently and test independent recovery, GNSS, microSD and a responsive LVGL interface.
 5. Validate zero-hop routing, channel congestion, close-proximity RF coexistence and privacy with actual peer/repeater devices.
 6. Finalize carrier PCB and enclosure only after the above electrical and protocol gates.

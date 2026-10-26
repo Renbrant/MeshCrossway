@@ -1,6 +1,6 @@
 # MeshCrossway V1 — Seeed XIAO ESP32-S3 + Wio-SX1262 hardware and wiring
 
-[README](../README.md) · [Power design](power-architecture.md) · [Serial APIs](radio-communication-architecture.md)
+[README](../README.md) · [Power design](power-architecture.md) · [Serial APIs](radio-communication-architecture.md) · [Official hardware sources](hardware-sources.md)
 
 > **Current V1 hardware selection (2026-10-26):** two **Seeed Studio XIAO ESP32-S3 & Wio-SX1262 kits**, one running Meshtastic and one MeshCore Companion. No soldered prototype or PCB has been electrically validated.
 
@@ -32,7 +32,7 @@ The XIAO ESP32-S3 kit contains a 2.4 GHz Wi-Fi/BLE MCU with **8 MB flash and 8 M
 
 **Cost planning:** Calculate the complete BOM using two Seeed kits, applicable taxes/shipping, RF pigtails and antennas, carrier PCB fabrication, battery and enclosure. Confirm purchase prices before publishing a total.
 
-Manufacturer: [Seeed XIAO + Wio getting started](https://wiki.seeedstudio.com/xiao_esp32s3_%26_wio_SX1262_kit_for_meshtastic/) · [Meshtastic Seeed Wio support](https://github.com/meshtastic/meshtastic/blob/master/docs/hardware/devices/seeed-studio/wio-series/wio-sx1262.mdx).
+Manufacturer references used for Rev A: [Seeed Wio-SX1262 + XIAO product](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html) · [official Wio-SX1262 schematic](https://files.seeedstudio.com/products/SenseCAP/Wio_SX1262/Schematic_Diagram_Wio-SX1262_for_XIAO.pdf) · [XIAO ESP32-S3 getting started](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/) · [XIAO resources](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/#resources). See the [official hardware source registry](hardware-sources.md) for the full list.
 
 ## 2. Interfaces: external UART versus internal SX1262 B2B bus
 
@@ -52,7 +52,9 @@ Each kit contains two internally connected devices: a **XIAO ESP32-S3 MCU** and 
 | Radio B TX → host UART2 RX | GPIO18 | — | **D6 / GPIO43 (TX)** | proposed, firmware configuration required |
 | Common logic reference | GND | GND | GND | mandatory |
 | Central GNSS SDA / SCL | **SDA GPIO8 / SCL GPIO7** | — | — | J8 pin 28 SDA / pin 26 SCL; verify actual board continuity before fabrication |
-| Supplies | Waveshare J8 3V3 | XIAO 3V3 candidate | XIAO 3V3 candidate | **not electrically approved** |
+| Central GNSS PPS | **GPIO21** | — | — | J8 pin 5 <- MAX-M10S TP/PPS through R5 0R |
+| Radio power | **J8 pin 2 / 5V** or alternate `LOCAL_5V` | **pin 14 VBUS/5V** | **pin 14 VBUS/5V** | independent 1x3 selector -> Schottky -> current link; bench validate |
+| GNSS power | **J8 pins 31/32 / 3V3** | — | — | MAX-M10S 3 V breakout VCC; 100 nF + 10 uF local decoupling |
 
 **GPIO43/44** are the candidate XIAO external UART TX/RX signals. They may also be used for serial boot diagnostics and USB/debug workflows; verify that the exact Meshtastic serial module and MeshCore Companion build can bind the API to these pins without startup logging corrupting the binary stream. Wire **TX ↔ RX**, never TX ↔ TX. Baseline link target: **115200 baud, 8N1**, explicitly configured (the Meshtastic serial default is not necessarily 115200).
 
@@ -100,7 +102,7 @@ Upstream MeshCore includes a dedicated **Xiao_S3_WIO serial Companion** environm
 
 ![Conditional AXP2101 and J8 power distribution](images/architecture/power-architecture.svg)
 
-Power distribution via Waveshare AXP2101 and J8 3V3 remains a **candidate**, not an electrical recommendation that is safe to energize. The Seeed XIAO has its own regulator, LiPo charger and USB circuitry; determine whether feeding its **3V3** rail externally is supported and isolated, and test reverse-current paths if USB or battery is connected. Never tie two chargers or their battery pads together. Use independent USB supplies for initial tests plus signal GND common. Check 3V3 load margin, radio TX current pulses, rail startup, powered-off I/O injection and local decoupling. See [power study](power-architecture.md).
+Rev A no longer proposes feeding the radios through XIAO `3V3`. Each radio is fed at **pin 14 / VBUS / 5V** from an independent source selector choosing `J8_5V` or the still-TBD `LOCAL_5V`, followed by Schottky isolation and a removable current-measurement link. This follows Seeed's external-5V guidance and keeps `3V3_OUT` as an output/test node. The exact J8 5 V current headroom, Schottky drop, local-regulator choice, USB/VBUS backfeed behavior and simultaneous TX transients still require bench measurement. The GNSS remains on J8 3V3. Never tie chargers or battery pads together. See [power study](power-architecture.md).
 
 The XIAO's smaller footprint does not reduce the electrical separation needed by two simultaneous nearby RF transmitters. Mount the antennas apart, verify suitable 915 MHz antennas for US deployment, and characterize desensitization during simultaneous TX/RX.
 
@@ -112,9 +114,23 @@ For carrier PCB: use footprints matching the **specific XIAO + Wio B2B kit stack
 - Meshtastic PROTO on external XIAO UART at configured baud, without debug contamination
 - MeshCore Companion on external XIAO UART with persisted settings
 - Two simultaneous independent UARTs, power-cycle and queue recovery
-- J8 spare-current, 3V3 topology, charging/backfeed, brownout and RF TX-current measurement
+- J8 5 V source capability, `LOCAL_5V` regulator choice, Schottky drop, USB/VBUS backfeed, brownout and RF TX-current measurement
 - RF coexistence and antenna placement
 - GNSS antenna bias/current and I²C compatibility
 - Prove route behavior separately for both firmware releases; zero-hop remains unverified
 
 **Design decision:** two XIAO ESP32-S3 + Wio SX1262 kits are selected for V1 documentation and bench evaluation; PCB release awaits the gates above.
+
+
+## 7. Official hardware sources used for Rev A
+
+The complete source registry is maintained in [hardware-sources.md](hardware-sources.md). The primary manufacturer references supplied for this design review are:
+
+- [Waveshare ESP32-S3-Touch-LCD-3.5 GitHub repository](https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.5/tree/main)
+- [Seeed Wio-SX1262 with XIAO ESP32-S3 product page](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html)
+- [Seeed Wio-SX1262 official schematic PDF](https://files.seeedstudio.com/products/SenseCAP/Wio_SX1262/Schematic_Diagram_Wio-SX1262_for_XIAO.pdf)
+- [Seeed XIAO ESP32-S3 getting started](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/)
+- [Seeed XIAO ESP32-S3 resources](https://wiki.seeedstudio.com/xiao_esp32s3_getting_started/#resources)
+- [Seeed XIAO ESP32-S3 Sense V1.51 schematic PDF](https://files.seeedstudio.com/wiki/SeeedStudio-XIAO-ESP32S3/new-res/202003753_XIAO%20ESP32S3%20Sense_V1.51_SCH_260611.pdf)
+
+The Sense schematic is a supporting ESP32-S3/XIAO power and pin-reference document; the exact XIAO PCB revision shipped with the Wio kit must still be confirmed before fabrication.
