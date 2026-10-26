@@ -21,4 +21,9 @@
   (pad "10" thru_hole circle (at 7.62 2.54) (size 1.8 1.8) (drill 1) (layers "*.Cu" "*.Mask"))
   (pad "9" thru_hole circle (at 7.62 5.08) (size 1.8 1.8) (drill 1) (layers "*.Cu" "*.Mask"))
   (pad "8" thru_hole circle (at 7.62 7.62) (size 1.8 1.8) (drill 1) (layers "*.Cu" "*.Mask"))
+  (model "${KIPRJMOD}/3dmodels/vendor/XIAO_ESP32S3.step"
+    (offset (xyz -1.778 -6.1722 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz -90 0 0))
+  )
 )
