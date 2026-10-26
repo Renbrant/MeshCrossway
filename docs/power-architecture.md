@@ -1,6 +1,6 @@
 # MeshCrossway V1 power architecture — Waveshare 3V3 shared rail
 
-**Decision (2026-10-24):** Prefer the Waveshare ESP32-S3-Touch-LCD-3.5 onboard AXP2101 battery charging and 3.3 V rail at its expansion connector J8 to power the two independent LoRa nodes and the MAX-M10S breakout. **This is a proposed architecture, not a validated current budget or a safe-to-build wiring approval.**
+**Decision (2026-10-24):** Prefer the Waveshare ESP32-S3-Touch-LCD-3.5 onboard AXP2101 battery charging and 3.3 V rail at its expansion connector J8 to power the two Seeed XIAO ESP32-S3 + Wio-SX1262 kits and the MAX-M10S breakout. **This is a proposed architecture, not a validated current budget or a safe-to-build wiring approval.**
 
 The previously selected **Adafruit BQ25185 #6092 is superseded**. Do not add a second LiPo charger, connect charger outputs together, or buy a separate buck-boost or power mux unless the bench tests show that the onboard rail is inadequate.
 
@@ -14,8 +14,8 @@ flowchart TD
   PMIC --> REG["Waveshare 3V3 supply (DCDC1 candidate; verify exact shipped schematic)"]
   REG --> J8["J8: 3V3 and GND expansion contacts"]
   J8 --> C["Carrier bulk and local decoupling; optional switched branches"]
-  C -.-> A["Radio A 3V3: Meshtastic"]
-  C -.-> B["Radio B 3V3: MeshCore"]
+  C -.-> A["XIAO/Wio A 3V3 candidate"]
+  C -.-> B["XIAO/Wio B 3V3 candidate"]
   C -.-> G["MAX-M10S 3V breakout + active antenna"]
 ```
 
@@ -70,3 +70,7 @@ Start with the host alone, then GNSS alone, one radio RX, both RX, one radio TX,
 ![Proposed power architecture](images/architecture/power-architecture.svg)
 
 Illustrative only: J8 3V3 spare capacity, USB/battery isolation, startup surges and powered-off I/O require measurement before carrier PCB approval.
+
+## XIAO + Wio power migration / hold (2026-10-26)
+
+Radio A and B are now **Seeed XIAO ESP32-S3 + Wio-SX1262 kits**. Their XIAO USB-C charging, battery connector/pads and regulator topology differ from the earlier LoRa V3 boards. The 3V3 pins **must not be fed from Waveshare J8 until supported external supply operation, reverse-current paths, TX peaks, startup and USB backfeed are verified**. Do not parallel separate chargers or battery pads. Start serial testing with independent USB supplies and common signal GND, leaving 3V3 rails disconnected from each other. The prior J8 budget has not been validated and is not a current-safe specification. [Wiring](hardware-wiring.md).
