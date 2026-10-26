@@ -12,11 +12,11 @@ MeshCrossway is an open-source, standalone touchscreen communicator being design
 
 **[Read the complete Meshtastic vs MeshCore guide →](docs/meshtastic-vs-meshcore.md)**
 
-Understand how both networks work and choose for your own region and use case. The guide covers routing, repeaters, range, congestion, security, location, apps and hardware, with version-specific details and linked operator experiences.
+Start with an illustrated introduction for newcomers, learn from real user experiences, then explore the technical details. The guide progresses from everyday choices and regional maps to routing, security, radio behavior and a complete 44-criterion comparison.
 
-- [Full comparison table](docs/meshtastic-vs-meshcore.md#complete-comparison-table)
-- [Which network fits your needs?](docs/meshtastic-vs-meshcore.md#which-should-you-choose)
-- [User experiences and the community video](docs/meshtastic-vs-meshcore.md#what-users-report)
+- [Part 1: Illustrated basics and choosing a network](docs/meshtastic-vs-meshcore.md#part-1-start-with-the-basics)
+- [Part 2: User experiences and the community video](docs/meshtastic-vs-meshcore.md#what-users-report)
+- [Part 3: Technical deep dive](docs/meshtastic-vs-meshcore.md#part-3-technical-deep-dive) and [full comparison table](docs/meshtastic-vs-meshcore.md#complete-comparison-table)
 - [Find maps and check your region](docs/mesh-maps-and-regional-check.md), including LetsMesh, Meshtastic maps and Denver/Colorado coverage resources
 
 ## Explore the interface
@@ -108,7 +108,7 @@ The central controller handles the UI, GNSS, navigation, storage and sharing pol
 | **Power** | [Battery charging, 3.3 V architecture and electrical verification](docs/power-architecture.md) |
 | **Firmware architecture** | [Radio firmware policy, processing responsibilities and tests](docs/radio-firmware-strategy.md) |
 | **Navigation & sharing** | [GPS, POIs, GPX, group tracking, Direct Only and congestion controls](docs/navigation-and-sharing.md) |
-| **MT vs MC** | [Complete technical comparison, decision guide and operator experiences](docs/meshtastic-vs-meshcore.md) |
+| **MT vs MC** | [Illustrated introduction, user experiences and complete technical comparison](docs/meshtastic-vs-meshcore.md) |
 | **Maps & local coverage** | [Map directory, data limitations and regional field checks](docs/mesh-maps-and-regional-check.md) |
 | **UI prototype** | [Simulator features, status and limitations](docs/ui-prototype/README.md) |
 | **Technical reference** | [Detailed project decisions, roadmap, equipment and supporting references](docs/project-reference.md) |

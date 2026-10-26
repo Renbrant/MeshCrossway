@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="784" viewBox="0 0 1120 784" role="img" aria-labelledby="title desc">
+<title id="title">Your message travels by radio</title><desc id="desc">Two schematic scenes apply to both Meshtastic and MeshCore. Nearby compatible radios exchange messages directly. A suitably placed elevated relay can receive and retransmit messages between users with an obstructed direct path. A phone is the interface; the radio provides the over-the-air link. These scenes are not coverage predictions.</desc>
+<defs>
+  <marker id="arrow-blue" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1,1 L7,4.5 L1,8" fill="none" stroke="#2867B2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1,1 L8,5 L1,9" fill="none" stroke="#087F76" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1,1 L8,5 L1,9" fill="none" stroke="#7548BD" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+<rect width="1120" height="784" rx="24" fill="#F3F6FA"/>
+<g font-family="DejaVu Sans, Arial, sans-serif" fill="#162D46">
+
+<text x="40" y="54" font-size="32" fill="#162D46" font-weight="700" text-anchor="start">Your message travels by radio</text>
+<text x="40" y="91" font-size="21" fill="#52677D" font-weight="400" text-anchor="start">Both Meshtastic and MeshCore can work without mobile service or the Internet.</text>
+<rect x="32" y="126" width="516" height="450" rx="18" fill="white" stroke="#D8E1EB" stroke-width="1.5"/>
+<rect x="572" y="126" width="516" height="450" rx="18" fill="white" stroke="#D8E1EB" stroke-width="1.5"/>
+<text x="56" y="166" font-size="25" fill="#162D46" font-weight="700" text-anchor="start">01  Nearby users</text>
+<text x="56" y="201" font-size="21" fill="#52677D" font-weight="400" text-anchor="start">A message can go straight from one</text>
+<text x="56" y="230" font-size="21" fill="#52677D" font-weight="400" text-anchor="start">compatible radio to the other.</text>
+<text x="596" y="166" font-size="25" fill="#162D46" font-weight="700" text-anchor="start">02  A relay extends the route</text>
+<text x="596" y="201" font-size="20" fill="#52677D" font-weight="400" text-anchor="start">A well-placed relay can pass a message</text>
+<text x="596" y="230" font-size="20" fill="#52677D" font-weight="400" text-anchor="start">between people who cannot connect directly.</text>
+<path d="M58 449 Q160 438 255 449 Q370 461 522 444" fill="none" stroke="#D8E1EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+<g transform="translate(117 346) scale(0.93)">
+<circle cx="0" cy="0" r="14" fill="#DFE9F3" stroke="#162D46" stroke-width="2.8"/>
+<path d="M-20 57 V35 Q-20 21 0 21 Q20 21 20 35 V57" fill="#EAF0F6" stroke="#162D46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+<path d="M-10 58 V80 M10 58 V80" fill="none" stroke="#162D46" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+</g>
+<g transform="translate(461 346) scale(0.93)">
+<circle cx="0" cy="0" r="14" fill="#DFE9F3" stroke="#162D46" stroke-width="2.8"/>
+<path d="M-20 57 V35 Q-20 21 0 21 Q20 21 20 35 V57" fill="#EAF0F6" stroke="#162D46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+<path d="M-10 58 V80 M10 58 V80" fill="none" stroke="#162D46" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+</g>
+<g transform="translate(162 338) scale(0.7)">
+<path d="M35 1 V28" fill="none" stroke="#2867B2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<rect x="0" y="27" width="48" height="72" rx="8" fill="white" stroke="#2867B2" stroke-width="3"/>
+<rect x="8" y="38" width="32" height="21" rx="3" fill="#E8F2FA" stroke="none" stroke-width="0"/>
+<path d="M12 67 H36 M12 75 H36 M12 83 H28" fill="none" stroke="#2867B2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="10" cy="32" r="2" fill="#2867B2" stroke="none" stroke-width="2"/>
+</g>
+<g transform="translate(384 338) scale(0.7)">
+<path d="M35 1 V28" fill="none" stroke="#2867B2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<rect x="0" y="27" width="48" height="72" rx="8" fill="white" stroke="#2867B2" stroke-width="3"/>
+<rect x="8" y="38" width="32" height="21" rx="3" fill="#E8F2FA" stroke="none" stroke-width="0"/>
+<path d="M12 67 H36 M12 75 H36 M12 83 H28" fill="none" stroke="#2867B2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="10" cy="32" r="2" fill="#2867B2" stroke="none" stroke-width="2"/>
+</g>
+<g transform="translate(64 364) scale(0.6)">
+<rect x="0" y="0" width="45" height="76" rx="8" fill="white" stroke="#162D46" stroke-width="3"/>
+<path d="M15 8 H30" fill="none" stroke="#162D46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+<rect x="7" y="21" width="31" height="22" rx="4" fill="#EAF2FA" stroke="none" stroke-width="0"/>
+<path d="M12 28 H31 M12 35 H25" fill="none" stroke="#2867B2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="22.5" cy="66" r="2.5" fill="#162D46" stroke="none" stroke-width="2"/>
+</g>
+<g transform="translate(497 364) scale(0.6)">
+<rect x="0" y="0" width="45" height="76" rx="8" fill="white" stroke="#162D46" stroke-width="3"/>
+<path d="M15 8 H30" fill="none" stroke="#162D46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+<rect x="7" y="21" width="31" height="22" rx="4" fill="#EAF2FA" stroke="none" stroke-width="0"/>
+<path d="M12 28 H31 M12 35 H25" fill="none" stroke="#2867B2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="22.5" cy="66" r="2.5" fill="#162D46" stroke="none" stroke-width="2"/>
+</g>
+<path d="M206 343 Q290 279 378 343" fill="none" stroke="#2867B2" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+<rect x="221" y="276" width="142" height="42" rx="11" fill="white" stroke="#2867B2" stroke-width="2"/>
+<text x="292.0" y="303.8" font-size="20" fill="#2867B2" font-weight="600" text-anchor="middle">Radio link</text>
+<text x="117" y="474" font-size="20" fill="#162D46" font-weight="600" text-anchor="middle">You</text>
+<text x="461" y="474" font-size="20" fill="#162D46" font-weight="600" text-anchor="middle">Your contact</text>
+<text x="56" y="518" font-size="21" fill="#52677D" font-weight="400" text-anchor="start">No relay is needed when both radios</text>
+<text x="56" y="547" font-size="21" fill="#52677D" font-weight="400" text-anchor="start">can hear and answer each other.</text>
+<path d="M596 452 L702 452 Q755 430 785 398 L831 386 L882 422 L946 452 L1064 452" fill="#EAF0F5" stroke="#D8E1EB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+<path d="M766 429 Q804 420 829 398 L858 417" fill="none" stroke="#D1DCE7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+<g transform="translate(830 310) scale(0.76)">
+<path d="M0 0 L-26 98 M0 0 L26 98 M-18 69 H18 M-9 34 H9 M-19 71 L12 44 M-12 44 L19 71 M-26 98 L18 69 M-18 69 L26 98" fill="none" stroke="#2867B2" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="0" cy="-5" r="5" fill="#2867B2" stroke="none" stroke-width="2"/>
+<path d="M-12 -18 Q-24 -5 -12 8 M12 -18 Q24 -5 12 8 M-22 -27 Q-42 -5 -22 17 M22 -27 Q42 -5 22 17" fill="none" stroke="#2867B2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+</g>
+<g transform="translate(647 384) scale(0.62)">
+<path d="M35 1 V28" fill="none" stroke="#2867B2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<rect x="0" y="27" width="48" height="72" rx="8" fill="white" stroke="#2867B2" stroke-width="3"/>
+<rect x="8" y="38" width="32" height="21" rx="3" fill="#E8F2FA" stroke="none" stroke-width="0"/>
+<path d="M12 67 H36 M12 75 H36 M12 83 H28" fill="none" stroke="#2867B2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="10" cy="32" r="2" fill="#2867B2" stroke="none" stroke-width="2"/>
+</g>
+<g transform="translate(983 384) scale(0.62)">
+<path d="M35 1 V28" fill="none" stroke="#2867B2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<rect x="0" y="27" width="48" height="72" rx="8" fill="white" stroke="#2867B2" stroke-width="3"/>
+<rect x="8" y="38" width="32" height="21" rx="3" fill="#E8F2FA" stroke="none" stroke-width="0"/>
+<path d="M12 67 H36 M12 75 H36 M12 83 H28" fill="none" stroke="#2867B2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="10" cy="32" r="2" fill="#2867B2" stroke="none" stroke-width="2"/>
+</g>
+<g transform="translate(620 394) scale(0.58)">
+<circle cx="0" cy="0" r="14" fill="#DFE9F3" stroke="#162D46" stroke-width="2.8"/>
+<path d="M-20 57 V35 Q-20 21 0 21 Q20 21 20 35 V57" fill="#EAF0F6" stroke="#162D46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+<path d="M-10 58 V80 M10 58 V80" fill="none" stroke="#162D46" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+</g>
+<g transform="translate(1051 394) scale(0.58)">
+<circle cx="0" cy="0" r="14" fill="#DFE9F3" stroke="#162D46" stroke-width="2.8"/>
+<path d="M-20 57 V35 Q-20 21 0 21 Q20 21 20 35 V57" fill="#EAF0F6" stroke="#162D46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+<path d="M-10 58 V80 M10 58 V80" fill="none" stroke="#162D46" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+</g>
+<path d="M680 386 L806 309" fill="none" stroke="#2867B2" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+<path d="M854 309 L986 386" fill="none" stroke="#2867B2" stroke-width="3.3" stroke-linecap="round" stroke-linejoin="round" marker-start="url(#arrow-blue)" marker-end="url(#arrow-blue)"/>
+<rect x="750" y="254" width="160" height="39" rx="11" fill="white" stroke="#2867B2" stroke-width="2"/>
+<text x="830.0" y="279.62" font-size="18" fill="#2867B2" font-weight="600" text-anchor="middle">Elevated relay</text>
+<path d="M691 433 H776 M883 433 H975" fill="none" stroke="#A1AFBF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="5 7"/>
+<text x="831" y="475" font-size="19" fill="#52677D" font-weight="400" text-anchor="middle">Obstructed direct path</text>
+<text x="596" y="518" font-size="20" fill="#52677D" font-weight="400" text-anchor="start">The relay receives and transmits onward.</text>
+<text x="596" y="547" font-size="20" fill="#52677D" font-weight="400" text-anchor="start">Height helps; it does not guarantee a link.</text>
+<rect x="32" y="598" width="1056" height="122" rx="18" fill="#E9F0F8" stroke="#D9E3EF" stroke-width="1.5"/>
+<g transform="translate(55 621) scale(0.85)">
+<rect x="0" y="0" width="45" height="76" rx="8" fill="white" stroke="#162D46" stroke-width="3"/>
+<path d="M15 8 H30" fill="none" stroke="#162D46" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+<rect x="7" y="21" width="31" height="22" rx="4" fill="#EAF2FA" stroke="none" stroke-width="0"/>
+<path d="M12 28 H31 M12 35 H25" fill="none" stroke="#2867B2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="22.5" cy="66" r="2.5" fill="#162D46" stroke="none" stroke-width="2"/>
+</g>
+<text x="112" y="636" font-size="23" fill="#162D46" font-weight="700" text-anchor="start">Phone or built-in screen</text>
+<text x="112" y="670" font-size="20" fill="#52677D" font-weight="400" text-anchor="start">The controls: type, read and configure.</text>
+<g transform="translate(587 610) scale(0.85)">
+<path d="M35 1 V28" fill="none" stroke="#2867B2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+<rect x="0" y="27" width="48" height="72" rx="8" fill="white" stroke="#2867B2" stroke-width="3"/>
+<rect x="8" y="38" width="32" height="21" rx="3" fill="#E8F2FA" stroke="none" stroke-width="0"/>
+<path d="M12 67 H36 M12 75 H36 M12 83 H28" fill="none" stroke="#2867B2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+<circle cx="10" cy="32" r="2" fill="#2867B2" stroke="none" stroke-width="2"/>
+</g>
+<text x="648" y="636" font-size="23" fill="#162D46" font-weight="700" text-anchor="start">LoRa radio</text>
+<text x="648" y="670" font-size="20" fill="#52677D" font-weight="400" text-anchor="start">The hardware that sends and receives.</text>
+<text x="40" y="756" font-size="18" fill="#52677D" font-weight="400" text-anchor="start">Schematic only. Use one ecosystem and matching settings. Relay behavior depends on configuration.</text>
+</g></svg>

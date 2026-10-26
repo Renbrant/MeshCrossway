@@ -1,46 +1,177 @@
-# Meshtastic vs MeshCore: a practical and technical comparison
+# Meshtastic vs MeshCore: from the basics to the technical details
 
 [Back to MeshCrossway](../README.md) · [Maps and regional checks](mesh-maps-and-regional-check.md) · [Radio integration](radio-firmware-strategy.md)
 
-**MT = Meshtastic. MC = MeshCore. Last technical review: October 26, 2026.**
+**Meshtastic (MT) and MeshCore (MC) let small radios exchange short messages without cellular service or an Internet connection between the radios.** The useful choice depends on the people you want to reach, the places you use the equipment and the features you need. [Meshtastic introduction][MT-intro] · [MeshCore overview][MC-project]
 
-Choose the network that reaches the people and places you need, with the features and operating procedures your group can maintain. Both projects support useful off-grid communication. Their differences in forwarding, configuration, applications and infrastructure can matter greatly, but neither name guarantees better coverage, battery life or delivery.
+This guide starts with everyday questions, then looks at real experiences, and finishes with the engineering details. You can read it in order or jump to the level you need.
 
-This guide combines **documented behavior**, **attributed operator experiences**, and **MeshCrossway engineering recommendations**. Community experiences are paraphrased and linked; they are not controlled benchmarks. MeshCrossway has not performed a comparative RF field test. Its touchscreen and dual-radio integration remain a design and simulator project.
+| Reading stage | What you will find |
+|---|---|
+| **[1. Start with the basics](#part-1-start-with-the-basics)** | How the equipment works, the practical differences, illustrations and maps to help you choose locally. |
+| **[2. Experiences from real users](#part-2-experiences-from-real-users)** | The supplied video, people who preferred each system, people who use both, and what their experiences can teach you. |
+| **[3. Technical deep dive](#part-3-technical-deep-dive)** | Firmware versions, the complete 44-criterion table, routing, radio settings, security, integrations and testing. |
 
-## Contents
+**Technical review: October 26, 2026.** Specific versions and evidence limits are explained in Part 3. MeshCrossway's own radio integration remains a design and simulator project.
 
-1. [Which should you choose?](#which-should-you-choose)
-2. [Version baseline](#version-baseline)
-3. [Shared radio foundations](#shared-radio-foundations)
-4. [Complete comparison table](#complete-comparison-table)
-5. [How forwarding actually works](#how-forwarding-actually-works)
-6. [Range, speed and congestion](#range-speed-and-congestion)
-7. [Security and privacy](#security-and-privacy)
-8. [Position, telemetry and message history](#position-telemetry-and-message-history)
-9. [What users report](#what-users-report)
-10. [Maps and choosing your local network](#maps-and-choosing-your-local-network)
-11. [Implications for MeshCrossway](#implications-for-meshcrossway)
-12. [A fair test before committing](#a-fair-test-before-committing)
-13. [Sources and maintenance](#sources-and-maintenance)
+## Part 1: Start with the basics
 
-## Which should you choose?
+### What you need to send a message
 
-The recommendations below are **engineering judgments based on the mechanisms explained in this guide**, not a ranking measured by MeshCrossway.
+Think of either system as a way to send a small text message over a radio link. A typical setup uses a phone as the keyboard and screen, connected to a nearby LoRa radio. **The radio carries the message over the air; the phone alone does not become a LoRa radio.** Some devices have their own screen and controls, so the phone is optional. [MT introduction][MT-intro], [MC project][MC-project]
 
-| Your actual need | Sensible starting point | What to verify |
+Four words make the rest easier to follow:
+
+- **Radio or node:** a device that sends and receives messages.
+- **Relay or repeater:** a radio that passes a message onward so it can reach somewhere the sender cannot reach directly.
+- **Mesh:** a network of radios that can use those intermediate links; the devices do not all need the same job.
+- **Channel:** a group conversation within a system. The radios also need compatible radio settings, even if the group name looks the same.
+
+Sources for the device roles and channel distinction: [MT roles][MT-roles], [MT channels][MT-channels], [MC FAQ][MC-faq], [MC channel configuration][MC-api].
+
+![A nearby conversation uses two radios; a more distant conversation can use an elevated relay. Phones provide the interface, while radios carry the messages.](images/comparison/01-radio-and-relays.svg)
+
+*Two ways a conversation can travel. These are explanatory scenes, not a coverage prediction. Each scene assumes compatible radios running the same system.*
+
+Two nearby users can communicate directly in **either** system when the radio link works. A relay becomes useful when there is no usable direct link. A well-placed relay can help a route reach farther, but a hill, a building or a poor antenna can still interrupt it. [MT routing][MT-routing], [MC routing][MC-mesh], [radio propagation factors][MT-radio]
+
+### The everyday differences
+
+The most noticeable difference is often **how people arrange the network**. MT allows ordinary portable radios to help pass messages along. MC normally gives that job to dedicated repeaters while users carry their own personal radios. Current MC versions also offer optional portable relaying in supported configurations. Neither description means that every device always forwards, or that MC needs a repeater for every conversation. [MT roles][MT-roles], [MC roles][MC-project], [MC portable relaying][MC-repeat]
+
+| Everyday question | Meshtastic (MT) | MeshCore (MC) |
 |---|---|---|
-| Contact people who already operate a reliable local mesh | Join their existing MT or MC network | Exact settings, recent activity and a working return path |
-| Carry a small group into an area without installed infrastructure | MT CLIENT relaying is a straightforward option; MC can also work directly or with supported off-grid Repeat Mode | Intermediate devices really forward, and every participant has matching settings |
-| Build a regional messaging backbone with maintained elevated sites | Evaluate MC's dedicated-repeater model and explicit DM paths; compare against a correctly configured modern MT deployment | Site availability, failure recovery, channel traffic and maintainer capacity |
-| Combine messaging, location, sensors and existing integrations | Examine MT's modules and integrations first, then check MC's current sensor/client capabilities | Support for your exact sensor, app and firmware |
-| Keep the radio silent except for deliberate communication | Evaluate forwarding roles, background broadcasts and telemetry policy in either system | Actual traffic capture, including firmware-generated transmissions |
-| Use a standalone screen and keyboard | Compare the specific device UI in both ecosystems | Configuration access, map workflow, accessibility and licensing |
-| Travel between different communities, or need contacts on both networks | Separate MT and MC radios can be useful | Two configurations, identities and RF paths; this is MeshCrossway's planned approach |
+| Can we exchange messages without cell service? | Yes, when a compatible radio path connects you. | Yes, when a compatible radio path connects you. |
+| Can our portable radios help one another? | Yes. Common user-radio configurations can pass messages along. | Yes in supported optional Repeat Mode; ordinary personal-radio mode does not pass other users' messages along. |
+| Can it reach people across a region? | Yes, where the network has usable links and suitable relay sites. | Yes, where the network has usable links and suitable relay sites. Dedicated repeaters are the usual foundation. |
+| Can I share location or sensor readings? | Yes, with a broad set of documented features. | Yes, with support depending on the device, software and app. |
+| Do I always need a phone? | No. Some supported devices have their own interface. | No. Some supported devices have their own interface. |
+| Can I retrieve posts sent while my radio was off? | An optional message-history service can recover some channel history, subject to its limits. | A Room Server can store posts. Ordinary channel chat does not automatically provide that history. |
+| Can I send a native message to the other system? | An MT radio talks to MT peers. | An MC radio talks to MC peers. |
 
-A private group can bring its own compatible radios. A public network adds value only where its infrastructure and users are reachable. One effective relay on a suitable site can matter more than many portable nodes behind terrain or buildings.
+These are simplified descriptions. Feature support, message-history limits and the exact forwarding rules are expanded in the [complete comparison table](#complete-comparison-table) and [technical sections](#part-3-technical-deep-dive). Sources: [MT modules][MT-telemetry], [MT history][MT-history], [MT software][MT-software], [MC sensors][MC-sensor], [MC Room Server][MC-room], [MC FAQ][MC-faq].
 
-## Version baseline
+**Using the same frequency band does not make MT and MC compatible.** Switching a supported radio between them normally means installing the other firmware—the software running on the radio—and setting it up for that network. MeshCrossway instead plans to use two separate radios. [Radio compatibility](#shared-radio-foundations) · [MeshCrossway architecture](#implications-for-meshcrossway)
+
+### Which should you choose?
+
+Start with **who you want to contact and where you will be**. The suggestions below are practical judgments based on the documented behavior, not results of a MeshCrossway field comparison.
+
+| Your situation | A useful starting point | The check that matters |
+|---|---|---|
+| Friends or a local community already use one system | Start with their system. | Exchange messages from the places you actually use. |
+| A few friends will travel together away from installed repeaters | MT is a straightforward option to evaluate; MC also supports nearby direct communication and optional portable relaying. | Confirm that the middle radios really forward when the group spreads out. |
+| You want to talk across town or a larger region | Compare the maintained networks in that area; MC's usual repeater arrangement is worth evaluating alongside MT. | Find an actual working route to your intended contacts. |
+| Location, sensors or an existing app are central to your plans | Check the feature on your exact device in both systems; MT's documented modules are a useful starting point. | Try the complete workflow, including what the receiving person sees. |
+| You want a device with its own screen | Compare the actual device interface. | Try sending, reading, configuring and sharing a location without the phone. |
+| You want to control when the radio transmits | Check both background messages and forwarding settings. | Verify what the device sends even when you are not typing. |
+| Home and travel contacts use different systems | Keeping access to both may be useful. | Accept that you will manage two networks and two sets of settings. |
+
+**For a hiking group**, everyone can bring compatible radios and start with nearby communication. If the group spreads beyond direct reach, intermediate radios must be configured to help. **For conversations across town**, the location and maintenance of relay sites may matter more than the number of devices shown online. These are reasons to test your intended use, rather than choose from a feature list alone.
+
+### Maps and choosing your local network
+
+Maps help you find nearby activity and communities to contact. Start with your home, regular routes and the people you want to reach.
+
+| Network or area | Useful map links |
+|---|---|
+| MeshCore activity | [LetsMesh — the supplied Colorado view](https://analyzer.letsmesh.net/map?lat=39.73477&long=-105.7708&zoom=6) · [Official MeshCore map](https://map.meshcore.io/) |
+| MeshCore sampled coverage | [MeshMapper worldwide](https://meshmapper.net/) · [Denver](https://den.meshmapper.net/) · [Colorado](https://co.meshmapper.net/) |
+| Meshtastic activity | [Official Meshtastic map](https://map.meshtastic.org/) · [MeshMap](https://meshmap.net/) · [Liam Cottle's map](https://meshtastic.liamcottle.net/) |
+| How to interpret the results | [Map directory, data sources and regional checks](mesh-maps-and-regional-check.md) |
+
+![Choose by combining the people you want to reach, a usable route in your area and a successful two-way test; map markers provide clues rather than guaranteed coverage.](images/comparison/02-local-network-choice.svg)
+
+*A useful local choice combines contacts, a workable radio path and your own test. The scene is illustrative; it does not display measured coverage.*
+
+A map marker may represent a device someone registered, a transmission someone heard or an old report. An empty area may simply have no reporting devices. **A dot on a map does not promise a working conversation from your house.** The [map guide](mesh-maps-and-regional-check.md) links each service's data source and explains the differences.
+
+Use the maps to find a local group, ask for its current radio settings, and arrange a few messages in **both directions**. Also try the app or screen you will carry. The experiences in Part 2 show why local activity, equipment and ease of use can lead sensible people to different choices.
+
+## Part 2: Experiences from real users
+
+### What users report
+
+People can make different choices after trying the same two systems. Their nearby users, available repeaters, equipment and everyday habits change the result. The accounts below show those differences in practice.
+
+**These are attributed summaries, not quotations or a controlled comparison.** A firsthand report tells us what happened in one setup. Official documentation and versioned source, discussed in Part 3, explain which behavior the software actually supports. Keep that distinction in mind when someone describes a network as better, easier or more reliable.
+
+#### The supplied video: why one community moved to MeshCore
+
+[**Why we're switching from Meshtastic to MeshCore — The Comms Channel**](https://www.youtube.com/watch?v=guDoKGs02Us), published December 6, 2025, is the video suggested for this guide.
+
+In its published description, the creator says he consulted active MC communities in Boston, Southern California, the Pacific Northwest, Austin and Omaha. He summarizes experiences favoring MC for regional messaging through installed repeaters, while recognizing MT use cases for smaller groups moving together. The description also promotes the TennMesh community.
+
+**What a newcomer can take from it:** if people maintain suitable repeater sites around your town, their network may be very useful for reaching friends across the area. Ask your own local operators what works for them and try those routes yourself.
+
+**What was verified:** this review accessed the published description and metadata, not the full video transcript or its YouTube comments. It does not attribute any unverified quotation, timestamp or individual comment to the video. The description collects selected migration experiences and predates several 2026 changes covered later in this guide.
+
+#### Colorado: finding people matters as much as choosing software
+
+**AJ Quick, August 22, 2026**, describes running two Heltec V4 radios and preferring MC after finding an active network locally. During his MT trial, contacts disappeared after a radio-setting change that nearby users had not all adopted. He acknowledges that his MT trial was short and that coordination contributed to the result. [Read the firsthand account][USER-colorado]
+
+**Practical lesson:** ask the local group for its current settings before concluding that a radio or network is broken. Two compatible devices can stop hearing each other when they use different radio configurations. This report supports checking local activity and coordination; it does not establish that MC always reaches farther or has a particular advantage in user numbers.
+
+#### Tennessee: the same video led to staying with Meshtastic
+
+An operator near Chattanooga describes being motivated by the same video to investigate MC and possible repeater sites. A later update says the Seeed solar node's MT interface better served the operator's needs, so the group would stay with MT for the time being. The page is organized under 2026. [Read the operator's account][USER-tennessee]
+
+**Practical lesson:** try the actual screen, app and configuration workflow you will use. A network can look attractive on paper while another setup makes your everyday tasks easier. This is one operator's experience with particular equipment and software at that time; it is not a verdict on every MC interface.
+
+#### Pittsburgh and Phoenix: useful reasons to keep both
+
+In an August 2026 discussion, **u/Snoo_22440** reports using both systems in Pittsburgh, with MT reaching the desired contacts more effectively at that time. **u/georged486** reports choosing MC around Phoenix and MT for trips where repeater infrastructure is inconsistent. [Pittsburgh comment][USER-pittsburgh], [Phoenix comment][USER-phoenix]
+
+**Practical lesson:** your home network and your travel network may be different. A well-served city, a hiking group and a trip away from maintained repeaters pose different questions. These reports explain why someone might keep both systems, as MeshCrossway plans to support. They do not show that one protocol is automatically suitable for every city or every trail.
+
+#### A two-site test: receiving a message does not prove you can reply
+
+A user testing EU868 settings with **four Heltec V3 devices at two sites 2.7 km apart** reported MC messages working in one direction more successfully than the other, while MT worked in both directions in that setup. The discussion describes trying different radio settings and antennas, and investigating different levels of background radio noise. The linked updates did not establish a final cause. [User's update][USER-asymmetric], [follow-up][USER-asymmetric-followup]
+
+**Practical lesson:** ask someone to reply from the place you need to reach. Seeing their device or receiving one of their transmissions is only part of a working conversation. This report is useful because it documents a disappointing outcome as well as attempts to investigate it. It does not prove an inherent difference in radio sensitivity between the two protocols.
+
+#### A manufacturer's field report: temporary MeshCore relaying
+
+**Seeed Studio, October 23, 2026**, describes a small test with three Wio Tracker L1 Pro devices using MC's optional Companion Repeat Mode. That mode allows a supported user radio to help pass messages onward after it has been configured. Moving the middle device to a higher, more open position improved delivery in the reported test; forwarding also continued after its phone connection was disconnected. [Read the field report][MC-repeat-test]
+
+**Practical lesson:** where you put the middle radio can change the result. It is also useful to know that recent MC versions offer temporary relaying on supported configurations. Part 3 explains the [Repeat Mode requirements](#the-2026-exception-companion-repeat-mode).
+
+**Evidence limit:** the hardware manufacturer authored this report, tested one arrangement and did not run a matched MT comparison. It demonstrates an available workflow and a placement lesson, not a general success rate or a protocol winner.
+
+#### Turn a testimonial into questions for your own test
+
+Before applying someone else's recommendation, ask:
+
+- **Who could they reach?** Were the people they wanted already using that network?
+- **What helped the message travel?** Were there maintained repeaters, temporary relay radios or only two nearby devices?
+- **What equipment and settings were used?** Record the antennas and software versions as well as the board name.
+- **Did both directions work?** Distinguish a radio's delivery confirmation from a person actually reading and replying.
+- **What failed?** Look for unsuccessful attempts and changes of location, not just the longest successful contact.
+
+Keep the report's place, date and setup attached to its conclusion. The next part explains the mechanisms behind these experiences and provides the detailed comparison table, so you can connect an operator's observation to a feature or limitation you can test.
+
+## Part 3: Technical deep dive
+
+This part explains the mechanisms behind the practical differences. It is intended for readers choosing firmware, planning relay sites, comparing security or integrating a radio with another device. The earlier sections remain usable without knowing these details.
+
+The guide distinguishes **documented behavior**, **attributed experiences** and **engineering recommendations**. It is not a controlled MT/MC benchmark. Features in the table belong to the upstream projects; they are not all implemented in MeshCrossway.
+
+Here, **DM** means a direct message addressed to one recipient, **ACK** means a protocol acknowledgment, and **RF** means radio frequency. A DM can still travel through relays; an ACK does not establish that a person read the text. [MT routing][MT-routing], [MC messaging implementation][MC-chat]
+
+### Technical contents
+
+1. [Version baseline](#version-baseline)
+2. [Shared radio foundations](#shared-radio-foundations)
+3. [Complete comparison table: 44 criteria](#complete-comparison-table)
+4. [How forwarding actually works](#how-forwarding-actually-works)
+5. [Range, speed and congestion](#range-speed-and-congestion)
+6. [Position, telemetry and message history](#position-telemetry-and-message-history)
+7. [Security and privacy](#security-and-privacy)
+8. [Implications for MeshCrossway](#implications-for-meshcrossway)
+9. [A fair test before committing](#a-fair-test-before-committing)
+10. [Sources and maintenance](#sources-and-maintenance)
+
+### Version baseline
 
 A comparison made in late 2025 can omit important 2026 changes. Firmware, mobile apps, standalone UIs and map services also have separate release cycles.
 
@@ -54,7 +185,7 @@ Sources: [MT releases][MT-releases], [MT 2.8.1][MT-alpha], [MC 1.18 release][MC-
 
 The MT documentation currently describes 2.8, while existing meshes may still run 2.7. Revoked MT 2.8.0 builds should not be treated as the baseline. MC's FAQ contains some older descriptions that do not cover newer Companion Repeat Mode and sensor features; dated release notes and versioned source take precedence where they conflict.
 
-## Shared radio foundations
+### Shared radio foundations
 
 **LoRa is the modulation; Meshtastic and MeshCore are different protocols using it.** Both can operate without cellular service or an Internet connection. A phone typically provides the interface to a nearby radio over Bluetooth or another local connection; the phone alone does not become a LoRa node. These systems also differ from LoRaWAN: an ordinary LoRaWAN gateway does not automatically relay their traffic. See the [MT introduction][MT-intro] and [MC project][MC-project].
 
@@ -68,11 +199,11 @@ A label such as “915 MHz” answers only part of the first question. Two devic
 
 Changing a preset is a community coordination decision. For example, the MT 2.8.1 release changed the default for **first-time US region selection through the device screen** to LongTurbo. It did not automatically move every existing installation. LongTurbo and LongFast cannot hear each other. That distinction is more useful to a newcomer than assuming a historic default is still universal. [MT release notice][MT-alpha]
 
-## Complete comparison table
+### Complete comparison table
 
-The table is divided by topic for readability. Its entries describe upstream capabilities, **not features already implemented in MeshCrossway**. Detailed qualifications and sources follow.
+The 44 criteria are divided into four tables for readability. Its entries describe upstream capabilities, **not features already implemented in MeshCrossway**. Detailed qualifications and sources follow.
 
-### Network architecture and routing
+#### Network architecture and routing
 
 | Criterion | Meshtastic (MT) | MeshCore (MC) |
 |---|---|---|
@@ -91,7 +222,7 @@ The table is divided by topic for readability. Its entries describe upstream cap
 
 Sources: [MT routing][MT-routing], [MT next-hop source][MT-next-hop], [MT roles][MT-roles], [MT zero-cost hops][MT-zero], [MC routing source][MC-mesh], [MC chat source][MC-chat], [MC Repeat Mode][MC-repeat], [MC packet format][MC-packet].
 
-### Messaging, applications and integration
+#### Messaging, applications and integration
 
 | Criterion | Meshtastic (MT) | MeshCore (MC) |
 |---|---|---|
@@ -112,7 +243,7 @@ Sources: [MT routing][MT-routing], [MT next-hop source][MT-next-hop], [MT roles]
 
 Sources: [MT software][MT-software], [MT client API][MT-api], [MT integrations][MT-integrations], [MT position][MT-position], [MT telemetry][MT-telemetry], [MT history][MT-history], [MT MQTT][MT-mqtt], [MC Companion API][MC-api], [MC text source][MC-chat-header], [MC sensor introduction][MC-sensor], [MC 1.18 notes][MC-release-notes], [MC Home Assistant integration][MC-ha].
 
-### Security and privacy
+#### Security and privacy at a glance
 
 | Criterion | Meshtastic (MT) | MeshCore (MC) |
 |---|---|---|
@@ -128,7 +259,7 @@ Sources: [MT software][MT-software], [MT client API][MT-api], [MT integrations][
 
 Sources: [MT encryption][MT-crypto], [MT limitations][MT-security-limits], [MT versioned crypto][MT-crypto-code], [MC identity][MC-identity], [MC crypto implementation][MC-utils], [MC payloads][MC-payloads], [MC room source][MC-room].
 
-### Hardware, operation and project fit
+#### Hardware, operation and project fit
 
 | Criterion | Meshtastic (MT) | MeshCore (MC) |
 |---|---|---|
@@ -144,9 +275,13 @@ Sources: [MT encryption][MT-crypto], [MT limitations][MT-security-limits], [MT v
 
 Sources: [MT hardware][MT-hardware], [MT firmware license][MT-license], [MC firmware license][MC-license], [MC FAQ on clients and optional features][MC-faq], [MT flasher][MT-flasher], [MC flasher][MC-flasher]. Range/capacity/energy rows are engineering implications, not measured winner claims.
 
-## How forwarding actually works
+### How forwarding actually works
 
-### Meshtastic: selective rebroadcasting and learned next hops
+![Meshtastic forwarding nodes learn the next hop for a direct message, while MeshCore can place a learned repeater path in the packet. Both systems use flooding for group messages and discovery when needed.](images/comparison/03-routing-models.svg)
+
+*Conceptual routes, not a packet capture or a performance ranking. The illustration shows successful learned DM routes; discovery, failure recovery and group messages are explained below.*
+
+#### Meshtastic: selective rebroadcasting and learned next hops
 
 For group broadcasts, eligible nodes wait before forwarding and can cancel a redundant transmission after hearing another relay. Role and reception conditions influence those decisions. “Every node repeats every message” is therefore a poor description of managed flooding. [Official algorithm][MT-routing]
 
@@ -156,7 +291,7 @@ A broadcast's implicit ACK means the sender heard another node retransmit it, ev
 
 Roles are operational choices. A handheld inside a building should not become a high-priority infrastructure router simply because the name sounds more powerful. CLIENT_BASE can help a household's weaker nodes; ROUTER and ROUTER_LATE have different infrastructure uses. REPEATER is a historical role, deprecated since 2.7.11. Follow the [role documentation][MT-roles] and [deployment guidance][MT-tips].
 
-### MeshCore: learned paths and deliberate relay roles
+#### MeshCore: learned paths and deliberate relay roles
 
 When a contact has no usable stored path, a DM can be flooded to find it. A return exchange supplies a path; later messages can embed the sequence of repeater identifiers. This is **source/path routing**. It avoids asking every available repeater to disseminate each successful targeted exchange, but it does not establish a globally optimal route. The path can stop working when a relay moves or fails. [Versioned chat implementation][MC-chat]
 
@@ -164,13 +299,13 @@ Group channels are a different case: public and private channel messages use flo
 
 The normal division between Companion and Repeater helps separate user endpoints from forwarding infrastructure. A Room Server is another service, for stored posts; it is not a requirement for a two-person chat. [Project applications][MC-project]
 
-### The 2026 exception: Companion Repeat Mode
+#### The 2026 exception: Companion Repeat Mode
 
 MC now has an optional mode for temporary off-grid relaying. The middle device can remain a Companion and forward after the setting is saved. Ordinary public-mesh Companion operation still defaults to no forwarding. Supported off-grid radio settings must be coordinated across the group; selecting a different frequency on a single radio also means leaving the previous public network. [Developer explanation][MC-repeat], [1.18 Companion implementation][MC-companion], [default preferences][MC-prefs]
 
-**Field report, not a comparison benchmark:** Seeed Studio's October 23, 2026 article describes three Wio Tracker L1 Pro devices. Moving the intermediate device to a higher, more open position improved delivery in its small test, and forwarding continued without the phone connection. The manufacturer authored the report, it tested only one setup, and it did not compare MT under matched conditions. It illustrates placement and supported behavior; it does not establish an expected success rate for other trips. [Read the report][MC-repeat-test]
+The [manufacturer field report in Part 2](#a-manufacturers-field-report-temporary-meshcore-relaying) illustrates this behavior. Its results describe one setup, not a matched MT/MC benchmark.
 
-### Why “7 hops versus 64 hops” is incomplete
+#### Why “7 hops versus 64 hops” is incomplete
 
 In MT, the hop field is bounded, but eligible **zero-cost hops** between deliberately configured infrastructure nodes can preserve its value. The counter is not a universal count of physical retransmitters. A zero-cost hop still consumes airtime and adds a point where a message may be lost. [Feature explanation][MT-zero], [versioned routing rules][MT-router]
 
@@ -178,9 +313,9 @@ MC allocates up to **64 path bytes**. Current encoding also has a six-bit path c
 
 A longer permissible route does not make every link reliable. Even a path that works well individually at each stage can suffer accumulated delay, retries and loss. Use observed end-to-end delivery and recovery behavior to judge a regional route.
 
-## Range, speed and congestion
+### Range, speed and congestion
 
-### Separate physical reach from network reach
+#### Separate physical reach from network reach
 
 **Physical reach** is whether one transmitter can reach one receiver. **Network reach** is whether a usable sequence of links reaches the destination. An operator reporting a very long regional conversation may have used multiple elevated repeaters; it is not evidence that a handheld reaches that distance directly.
 
@@ -196,11 +331,11 @@ Frequency, bandwidth, spreading factor, coding rate, antenna efficiency, height,
 
 Definitions and preset relationships: [official radio overview][MT-radio].
 
-**Operator experience:** a user testing EU868 settings with four Heltec V3 devices and two sites 2.7 km apart reported asymmetric MC delivery while MT worked in both directions. They tried other presets and antennas, investigated unequal noise floors and had no demonstrated final diagnosis in the linked discussion. That is a reason to test both directions, not proof of an inherent protocol sensitivity difference. [User's update][USER-asymmetric], [follow-up][USER-asymmetric-followup]
+The [two-site user report in Part 2](#a-two-site-test-receiving-a-message-does-not-prove-you-can-reply) illustrates why direction matters. Different antennas, settings and noise conditions must be investigated before attributing a result to the protocol.
 
 Increasing transmit power on your own node cannot, by itself, fix a weak return link from the other endpoint. Test replies and acknowledgments, not merely reception of a distant advertisement.
 
-### Airtime is the common bottleneck
+#### Airtime is the common bottleneck
 
 A packet occupies the channel while transmitted. Discovery, relays, acknowledgments, retries, adverts, positions and telemetry all spend that resource. A low message rate per person can still become a large combined load.
 
@@ -216,45 +351,15 @@ MC's reusable DM paths can reduce unnecessary distribution for targeted traffic.
 
 For a group deployment, first remove unnecessary automatic traffic, coordinate appropriate forwarding roles, and set conservative location intervals. Prefer movement thresholds and session expiry over continuous updates. Limit retries and keep ordinary messages usable. A private channel still shares RF airtime with other traffic using the same radio settings.
 
-### Energy follows the whole device
+#### Energy follows the whole device
 
 Neither protocol provides a fixed battery duration. An ESP32 with an illuminated touchscreen and continuous GNSS may have a different power budget from a sleeping nRF52 node even before routing matters. Wi-Fi, Bluetooth, power amplifiers, receive duty, retransmissions and battery conversion losses add further differences. Hardware selection and configuration therefore belong in any runtime comparison. [MT hardware overview][MT-hardware], [MC power-management documentation][MC-power]
 
 For MeshCrossway, measure the display controller, each radio and GNSS separately, then measure the assembled system. Default MC endpoint behavior can avoid forwarding work, but that alone cannot predict the dual-radio terminal's runtime.
 
-## Security and privacy
+### Position, telemetry and message history
 
-### Public, private and individually addressed are different
-
-Both ecosystems have published default channel keys. Treat their public channels as readable by strangers. A name-derived or widely distributed group key should not be presented as confidential. A private group needs a strong secret distributed through a trusted method; anyone holding it is inside that group's content boundary. [MT channels][MT-channels], [MC channel types][MC-api]
-
-DM encryption uses node identities and pairwise secrets. That does not automatically verify the person's real-world identity. Confirm important contacts through an independent trusted exchange, particularly before sending sensitive locations.
-
-### Meshtastic's version-dependent protections
-
-Modern MT DMs use X25519-derived AES-256-CCM. Conventional channel traffic uses shared-key AES-CTR; **2.8.1 Alpha** adds optional channel AEAD, with compatible configuration required on every participant that needs to read that channel. The 2.8 track also introduces broadcast signatures, subject to size, hardware and policy limitations. Headers remain visible. [Encryption overview][MT-crypto]
-
-The versioned implementation includes authenticated DM acknowledgment proof. This is stronger evidence of protocol receipt, but is not a human read receipt. Do not assume every 2.7 peer offers all 2.8 protections. [Crypto implementation][MT-crypto-code], [reliable routing][MT-reliable]
-
-Key compromise, first-contact trust and stored plaintext still matter. MT documents the absence of forward secrecy; a newly generated strong key does not retroactively protect recorded traffic encrypted under a compromised old key. [Forward-secrecy explanation][MT-crypto], [identity and key-trust limitations][MT-security-limits]
-
-### MeshCore's security model and tradeoffs
-
-MC uses public/private node identities, pairwise DM secrets and shared channel secrets. The reviewed 1.18 implementation applies AES-128 independently to 16-byte blocks (**ECB-style**), followed by **HMAC-SHA256 truncated to two bytes**, for standard encrypted payloads. Repeated identical plaintext blocks under the same key can therefore produce identical ciphertext blocks. The short integrity tag is a separate design tradeoff. This construction should not be equated with a modern messaging protocol's full authentication design simply because both use AES. [Identity code][MC-identity], [crypto code][MC-utils], [protocol constants][MC-constants]
-
-Adverts are signed but can expose name, public key and coordinates. Group sender names do not independently authenticate each human participant. A Room Server receives and processes posts, so its operator/device is part of the content trust boundary. An ordinary relay and a message-history server should not be treated as equivalent privacy roles. [Payload definitions][MC-payloads], [room-server implementation][MC-room]
-
-No complete security winner is claimed here. AES key length alone does not compare identity verification, integrity tags, metadata exposure, replay handling, forward secrecy, endpoint storage and update discipline. Neither ecosystem should be assumed to provide all properties of an audited modern private messenger.
-
-### The terminal also matters
-
-MeshCrossway's controller will receive application data from both radio nodes. Stored conversations, diagnostic exports, local access and key backups therefore matter in addition to radio encryption. Keep the selected audience visible, avoid putting coordinates into public diagnostics, and preserve protocol identity.
-
-Automatic bridging would decrypt and re-encrypt content at a trusted gateway. It would not create native MT-to-MC end-to-end encryption. Any future bridge would need explicit forwarding rules, identity mapping, duplicate and loop prevention, and handling of private messages and location audiences. The initial design does not automatically bridge networks.
-
-## Position, telemetry and message history
-
-### Location: receiving a fix is not publishing it
+#### Location: receiving a fix is not publishing it
 
 MT supports node- or phone-provided positions, fixed locations and movement-aware broadcasts. Position sampling, local display updates and radio publication are separate activities. Its supported fields can carry timing and quality-related information; configuration controls what is sent. [Position documentation][MT-position]
 
@@ -264,7 +369,7 @@ MT's telemetry modules cover a documented set of sensor types and metrics. MC pr
 
 **Direct Tracking in MeshCrossway remains a proposal.** “Direct” in either protocol can mean a routed DM. The project needs verified zero-repeater behavior, explicit recipient consent, bounded sessions and a radio budget before offering a strict Direct Only mode. Group transmission needs separate validation. See [navigation and sharing](navigation-and-sharing.md) and [firmware gates](radio-firmware-strategy.md).
 
-### Offline history: specify which component was online
+#### Offline history: specify which component was online
 
 MT has an optional Store & Forward server. The documented server requires suitable ESP32 hardware with PSRAM, can return heard text history, and has channel and request limits. It is not a promise that every private DM is retained while its recipient is off. Replaying history can also create a burst of radio traffic. [MT Store & Forward][MT-history]
 
@@ -272,64 +377,43 @@ MC's Room Server provides a different, BBS-like post/history service. It must be
 
 For either system, distinguish a phone disconnected from a still-powered radio from a radio that was fully switched off. Also distinguish history cached in a local client from history actually recoverable over RF. Those are different user experiences.
 
-### Internet services are optional additions
+#### Internet services are optional additions
 
 MT's MQTT module can connect radio traffic to online services under configured uplink/downlink policies. MC has observer, upload and bridge integrations, including an integration in its official GitHub organization. Their capabilities and traffic directions are not identical. [MT MQTT][MT-mqtt], [MC Home Assistant][MC-ha], [community MC MQTT bridge][MC-mqtt]
 
 An online map can keep showing yesterday's position during an Internet outage. Conversely, an offline private group can communicate successfully without ever appearing on a map. Online visibility and local radio delivery are separate questions.
 
-## What users report
+### Security and privacy
 
-### The supplied video: a useful migration perspective
+#### Public, private and individually addressed are different
 
-[**Why we're switching from Meshtastic to MeshCore — The Comms Channel**](https://www.youtube.com/watch?v=guDoKGs02Us), published December 6, 2025, is the reference suggested for this guide.
+Both ecosystems have published default channel keys. Treat their public channels as readable by strangers. A name-derived or widely distributed group key should not be presented as confidential. A private group needs a strong secret distributed through a trusted method; anyone holding it is inside that group's content boundary. [MT channels][MT-channels], [MC channel types][MC-api]
 
-In its published description, the creator says he consulted active MC communities in Boston, Southern California, the Pacific Northwest, Austin and Omaha. He summarizes reports favoring MC for regional, repeater-based messaging, while recognizing MT use cases for smaller mobile groups. The description also promotes the TennMesh community.
+DM encryption uses node identities and pairwise secrets. That does not automatically verify the person's real-world identity. Confirm important contacts through an independent trusted exchange, particularly before sending sensitive locations.
 
-**Evidence boundary:** this review accessed the video's published description and metadata, not its full transcript or YouTube comment thread. No quotation, timestamp or individual comment is presented as if verified from the video. Its selected migration experiences are valuable context, but do not constitute a randomized or matched comparison, and predate the newer features described above.
+#### Meshtastic's version-dependent protections
 
-### Colorado: local coordination can decide the outcome
+Modern MT DMs use X25519-derived AES-256-CCM. Conventional channel traffic uses shared-key AES-CTR; **2.8.1 Alpha** adds optional channel AEAD, with compatible configuration required on every participant that needs to read that channel. The 2.8 track also introduces broadcast signatures, subject to size, hardware and policy limitations. Headers remain visible. [Encryption overview][MT-crypto]
 
-**AJ Quick, August 22, 2026:** running two Heltec V4 radios, he found an active MC network and ultimately preferred it locally. His MT contacts disappeared after a preset change that was not shared by all nearby users. He explicitly acknowledges that his MT trial was short and that coordination contributed to the result.
+The versioned implementation includes authenticated DM acknowledgment proof. This is stronger evidence of protocol receipt, but is not a human read receipt. Do not assume every 2.7 peer offers all 2.8 protections. [Crypto implementation][MT-crypto-code], [reliable routing][MT-reliable]
 
-**How to use the report:** ask which settings nearby operators actually use. It does not establish a universal MC range advantage or a reliable regional user-count ratio. [Read AJ Quick's firsthand account][USER-colorado]
+Key compromise, first-contact trust and stored plaintext still matter. MT documents the absence of forward secrecy; a newly generated strong key does not retroactively protect recorded traffic encrypted under a compromised old key. [Forward-secrecy explanation][MT-crypto], [identity and key-trust limitations][MT-security-limits]
 
-### Tennessee: the same video led to a different choice
+#### MeshCore's security model and tradeoffs
 
-An operator near Chattanooga describes being motivated by the same video to investigate MC and repeater sites. The page's later update says the Seeed solar node's MT interface better served the operator's needs, so the group would stay with MT for the time being.
+MC uses public/private node identities, pairwise DM secrets and shared channel secrets. The reviewed 1.18 implementation applies AES-128 independently to 16-byte blocks (**ECB-style**), followed by **HMAC-SHA256 truncated to two bytes**, for standard encrypted payloads. Repeated identical plaintext blocks under the same key can therefore produce identical ciphertext blocks. The short integrity tag is a separate design tradeoff. This construction should not be equated with a modern messaging protocol's full authentication design simply because both use AES. [Identity code][MC-identity], [crypto code][MC-utils], [protocol constants][MC-constants]
 
-**How to use the report:** configuration and the actual device UI can outweigh an architectural preference. The page is organized under 2026; it is a dated personal experience, not a comparison of every current client. [Read the operator's account][USER-tennessee]
+Adverts are signed but can expose name, public key and coordinates. Group sender names do not independently authenticate each human participant. A Room Server receives and processes posts, so its operator/device is part of the content trust boundary. An ordinary relay and a message-history server should not be treated as equivalent privacy roles. [Payload definitions][MC-payloads], [room-server implementation][MC-room]
 
-### Pittsburgh and Phoenix: two useful reasons to keep both
+No complete security winner is claimed here. AES key length alone does not compare identity verification, integrity tags, metadata exposure, replay handling, forward secrecy, endpoint storage and update discipline. Neither ecosystem should be assumed to provide all properties of an audited modern private messenger.
 
-In an August 2026 discussion, **u/Snoo_22440** reports using both systems in Pittsburgh, with MT reaching the desired contacts more effectively at that time. **u/georged486** reports choosing MC around Phoenix and MT for trips where repeater infrastructure is inconsistent.
+#### The terminal also matters
 
-These are geographically specific preferences. They support evaluating **who is reachable and how the equipment will be used**, not declaring a national winner. They also illustrate the motivation for a terminal that can access both networks. [Pittsburgh comment][USER-pittsburgh], [Phoenix comment][USER-phoenix]
+MeshCrossway's controller will receive application data from both radio nodes. Stored conversations, diagnostic exports, local access and key backups therefore matter in addition to radio encryption. Keep the selected audience visible, avoid putting coordinates into public diagnostics, and preserve protocol identity.
 
-### How to interpret enthusiastic or frustrated comments
+Automatic bridging would decrypt and re-encrypt content at a trusted gateway. It would not create native MT-to-MC end-to-end encryption. Any future bridge would need explicit forwarding rules, identity mapping, duplicate and loop prevention, and handling of private messages and location audiences. The initial design does not automatically bridge networks.
 
-Treat “it just works here” as evidence about that person's setup, not as an unqualified protocol property. Ask:
-
-- Was the comparison made at the same locations with the same antennas and suitable settings?
-- Were both directions tested, and were ACKs distinguished from received/read messages?
-- Was there a maintained repeater network on one side but little infrastructure on the other?
-- Were firmware and app versions recorded, including later changes?
-- Did the author publish packet counts and failure cases, or just memorable successes?
-
-The asymmetric Heltec report above is another reminder that contrary experiences exist. Neither an enthusiastic migration story nor one unresolved failure is enough to predict your own route.
-
-## Maps and choosing your local network
-
-Start with the [**map directory and regional evaluation guide**](mesh-maps-and-regional-check.md). It includes:
-
-- [LetsMesh centered on the Colorado view supplied for this project](https://analyzer.letsmesh.net/map?lat=39.73477&long=-105.7708&zoom=6).
-- [Official MC map](https://map.meshcore.io/) and [official MT map](https://map.meshtastic.org/).
-- [MeshMapper worldwide](https://meshmapper.net/), [Denver](https://den.meshmapper.net/) and [Colorado](https://co.meshmapper.net/).
-- [MeshMap](https://meshmap.net/) and [Liam Cottle's MT map](https://meshtastic.liamcottle.net/).
-
-The companion guide explains the difference between a registered node, an observer report, a sampled coverage point and a calculated prediction. It also provides a local test log. Do not choose a system solely by counting map markers.
-
-## Implications for MeshCrossway
+### Implications for MeshCrossway
 
 The planned architecture keeps the upstream protocols on **separate radios**, with one controller providing a common interface:
 
@@ -357,7 +441,7 @@ This arrangement supports an interface that can show both ecosystems while prese
 
 These are project requirements and engineering judgments. No working cross-protocol bridge, tested zero-hop tracking or operational field coverage is claimed. See the [firmware strategy](radio-firmware-strategy.md).
 
-## A fair test before committing
+### A fair test before committing
 
 There are two different questions worth testing: **which existing network serves me better?** and **how do the protocols behave under comparable conditions?** The first includes local infrastructure as part of the result. The second must control it.
 
@@ -374,7 +458,7 @@ A 20-message trial can be a starting sample, not a guarantee of reliability. Spa
 
 For rescue or remote-field planning, evaluate the specific route, backup communications and operating procedure. Neither community map nor this unvalidated prototype establishes emergency-service availability. This follows the project's existing [operating boundaries](project-reference.md#operating-boundaries).
 
-## Sources and maintenance
+### Sources and maintenance
 
 Links throughout the guide point to official documentation, versioned source or the original operator report. The following are useful starting points:
 
@@ -454,5 +538,3 @@ MeshCrossway is independent of both upstream projects. Third-party code and docu
 [USER-phoenix]: https://www.reddit.com/r/meshcore/comments/1vsu15b/comment/p4o7vmw/
 [USER-asymmetric]: https://www.reddit.com/r/meshcore/comments/1r7yaa1/comment/o9mvl4a/
 [USER-asymmetric-followup]: https://www.reddit.com/r/meshcore/comments/1r7yaa1/comment/obzc4ep/
-
-

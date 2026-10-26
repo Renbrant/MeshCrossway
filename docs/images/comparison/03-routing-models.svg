@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1008" viewBox="0 0 1120 1008" role="img" aria-labelledby="title desc">
+<title id="title">How a learned direct-message route is used</title><desc id="desc">A side-by-side diagram compares Meshtastic learned next-hop routing with MeshCore source-path routing after route discovery. Both show a sender A reaching recipient B through two relays R1 and R2, while another listening node X does not retransmit in the illustrated exchange. Meshtastic forwarding nodes use local next-hop information. MeshCore carries repeater identifiers in the packet. Group messages use flooding in both; unknown or failed routes can trigger discovery or fallback depending on implementation and settings.</desc>
+<defs>
+  <marker id="arrow-blue" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M1,1 L7,4.5 L1,8" fill="none" stroke="#2867B2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="arrow-teal" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1,1 L8,5 L1,9" fill="none" stroke="#087F76" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="arrow-purple" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M1,1 L8,5 L1,9" fill="none" stroke="#7548BD" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+<rect width="1120" height="1008" rx="24" fill="#F3F6FA"/>
+<g font-family="DejaVu Sans, Arial, sans-serif" fill="#162D46">
+
+<text x="40" y="54" font-size="32" fill="#162D46" font-weight="700" text-anchor="start">How a learned direct-message route is used</text>
+<text x="40" y="91" font-size="21" fill="#52677D" font-weight="400" text-anchor="start">Same example route, different forwarding information. A “direct message” may use relays.</text>
+<rect x="32" y="127" width="512" height="579" rx="18" fill="white" stroke="#D8E1EB" stroke-width="1.5"/>
+<rect x="52" y="147" width="50" height="38" rx="10" fill="#EAF7F4" stroke="none" stroke-width="0"/>
+<text x="77" y="173" font-size="21" fill="#087F76" font-weight="700" text-anchor="middle">MT</text>
+<text x="115" y="175" font-size="28" fill="#087F76" font-weight="700" text-anchor="start">Meshtastic</text>
+<rect x="576" y="127" width="512" height="579" rx="18" fill="white" stroke="#D8E1EB" stroke-width="1.5"/>
+<rect x="596" y="147" width="50" height="38" rx="10" fill="#F3EFFA" stroke="none" stroke-width="0"/>
+<text x="621" y="173" font-size="21" fill="#7548BD" font-weight="700" text-anchor="middle">MC</text>
+<text x="659" y="175" font-size="28" fill="#7548BD" font-weight="700" text-anchor="start">MeshCore</text>
+<text x="56" y="217" font-size="22" fill="#162D46" font-weight="600" text-anchor="start">Each hop uses its own</text>
+<text x="56" y="246" font-size="22" fill="#162D46" font-weight="600" text-anchor="start">learned next-hop information.</text>
+<text x="600" y="217" font-size="22" fill="#162D46" font-weight="600" text-anchor="start">The packet carries a learned</text>
+<text x="600" y="246" font-size="22" fill="#162D46" font-weight="600" text-anchor="start">sequence of repeater identifiers.</text>
+<path d="M169.0 344.0 L400.0 344.0" fill="none" stroke="#087F76" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-teal)"/>
+<path d="M439.0 380.0 L439.0 481.0" fill="none" stroke="#087F76" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-teal)"/>
+<path d="M403.0 520.0 L172.0 520.0" fill="none" stroke="#087F76" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-teal)"/>
+<circle cx="133" cy="344" r="31" fill="white" stroke="#087F76" stroke-width="3"/>
+<text x="133" y="352" font-size="23" fill="#087F76" font-weight="700" text-anchor="middle">A</text>
+<circle cx="439" cy="344" r="31" fill="white" stroke="#087F76" stroke-width="3"/>
+<text x="439" y="352" font-size="23" fill="#087F76" font-weight="700" text-anchor="middle">R1</text>
+<circle cx="439" cy="520" r="31" fill="white" stroke="#087F76" stroke-width="3"/>
+<text x="439" y="528" font-size="23" fill="#087F76" font-weight="700" text-anchor="middle">R2</text>
+<circle cx="133" cy="520" r="31" fill="white" stroke="#087F76" stroke-width="3"/>
+<text x="133" y="528" font-size="23" fill="#087F76" font-weight="700" text-anchor="middle">B</text>
+<circle cx="286" cy="433" r="23" fill="#F5F7FA" stroke="#9EAFC0" stroke-width="2"/>
+<text x="286" y="440" font-size="21" fill="#52677D" font-weight="600" text-anchor="middle">X</text>
+<text x="286" y="487" font-size="18" fill="#52677D" font-weight="400" text-anchor="middle">No retransmission</text>
+<text x="286" y="510" font-size="18" fill="#52677D" font-weight="400" text-anchor="middle">in this exchange</text>
+<text x="133" y="402" font-size="19" fill="#52677D" font-weight="400" text-anchor="middle">Sender</text>
+<text x="133" y="578" font-size="19" fill="#52677D" font-weight="400" text-anchor="middle">Recipient</text>
+<rect x="65" y="271" width="136" height="34" rx="11" fill="white" stroke="#087F76" stroke-width="2"/>
+<text x="133.0" y="293.78" font-size="17" fill="#087F76" font-weight="600" text-anchor="middle">to B: use R1</text>
+<rect x="364" y="271" width="150" height="34" rx="11" fill="white" stroke="#087F76" stroke-width="2"/>
+<text x="439.0" y="293.78" font-size="17" fill="#087F76" font-weight="600" text-anchor="middle">to B: use R2</text>
+<rect x="362" y="563" width="151" height="34" rx="11" fill="white" stroke="#087F76" stroke-width="2"/>
+<text x="437.5" y="585.44" font-size="16" fill="#087F76" font-weight="600" text-anchor="middle">to B: send to B</text>
+<path d="M713.0 344.0 L944.0 344.0" fill="none" stroke="#7548BD" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-purple)"/>
+<path d="M983.0 380.0 L983.0 481.0" fill="none" stroke="#7548BD" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-purple)"/>
+<path d="M947.0 520.0 L716.0 520.0" fill="none" stroke="#7548BD" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" marker-end="url(#arrow-purple)"/>
+<circle cx="677" cy="344" r="31" fill="white" stroke="#7548BD" stroke-width="3"/>
+<text x="677" y="352" font-size="23" fill="#7548BD" font-weight="700" text-anchor="middle">A</text>
+<circle cx="983" cy="344" r="31" fill="white" stroke="#7548BD" stroke-width="3"/>
+<text x="983" y="352" font-size="23" fill="#7548BD" font-weight="700" text-anchor="middle">R1</text>
+<circle cx="983" cy="520" r="31" fill="white" stroke="#7548BD" stroke-width="3"/>
+<text x="983" y="528" font-size="23" fill="#7548BD" font-weight="700" text-anchor="middle">R2</text>
+<circle cx="677" cy="520" r="31" fill="white" stroke="#7548BD" stroke-width="3"/>
+<text x="677" y="528" font-size="23" fill="#7548BD" font-weight="700" text-anchor="middle">B</text>
+<circle cx="830" cy="433" r="23" fill="#F5F7FA" stroke="#9EAFC0" stroke-width="2"/>
+<text x="830" y="440" font-size="21" fill="#52677D" font-weight="600" text-anchor="middle">X</text>
+<text x="830" y="487" font-size="18" fill="#52677D" font-weight="400" text-anchor="middle">No retransmission</text>
+<text x="830" y="510" font-size="18" fill="#52677D" font-weight="400" text-anchor="middle">in this exchange</text>
+<text x="677" y="402" font-size="19" fill="#52677D" font-weight="400" text-anchor="middle">Sender</text>
+<text x="677" y="578" font-size="19" fill="#52677D" font-weight="400" text-anchor="middle">Recipient</text>
+<rect x="613" y="261" width="438" height="43" rx="11" fill="white" stroke="#7548BD" stroke-width="2"/>
+<text x="832.0" y="288.96" font-size="19" fill="#7548BD" font-weight="600" text-anchor="middle">Destination B   |   Path: R1 → R2</text>
+<text x="56" y="641" font-size="20" fill="#52677D" font-weight="400" text-anchor="start">Route knowledge is distributed</text>
+<text x="56" y="670" font-size="20" fill="#52677D" font-weight="400" text-anchor="start">across the forwarding nodes.</text>
+<text x="600" y="641" font-size="19" fill="#52677D" font-weight="400" text-anchor="start">The source selects a known path;</text>
+<text x="600" y="670" font-size="19" fill="#52677D" font-weight="400" text-anchor="start">this is not a globally optimal-route claim.</text>
+<rect x="32" y="730" width="1056" height="198" rx="18" fill="#E9F0F8" stroke="#D9E3EF" stroke-width="1.5"/>
+<text x="56" y="769" font-size="25" fill="#162D46" font-weight="700" text-anchor="start">Group messages and route discovery are different cases</text>
+<text x="56" y="807" font-size="21" fill="#52677D" font-weight="400" text-anchor="start">Both systems can use flooding to find or recover routes. Group messages use flood forwarding</text>
+<text x="56" y="836" font-size="21" fill="#52677D" font-weight="400" text-anchor="start">in both, with different suppression, role and scope rules. Hearing a packet does not mean</text>
+<text x="56" y="865" font-size="21" fill="#52677D" font-weight="400" text-anchor="start">every nearby node must retransmit it. The drawing shows one successful learned DM route.</text>
+<text x="56" y="909" font-size="18" fill="#52677D" font-weight="400" text-anchor="start">MC Companions normally do not forward; supported off-grid Repeat Mode is an optional exception.</text>
+<text x="40" y="961" font-size="17" fill="#52677D" font-weight="400" text-anchor="start">Simplified mechanism, not a packet capture. MT next-hop learning: 2.6 onward; MC source checked: 1.18.</text>
+<text x="40" y="986" font-size="17" fill="#52677D" font-weight="400" text-anchor="start">See the linked routing documentation and versioned implementations in the guide.</text>
+</g></svg>
