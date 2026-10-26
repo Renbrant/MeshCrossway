@@ -53,4 +53,9 @@
   (pad "30" thru_hole circle (at 16.51 1.27) (size 1.8 1.8) (drill 1.0) (layers "*.Cu" "*.Mask"))
   (pad "31" thru_hole circle (at 19.05 -1.27) (size 1.8 1.8) (drill 1.0) (layers "*.Cu" "*.Mask"))
   (pad "32" thru_hole circle (at 19.05 1.27) (size 1.8 1.8) (drill 1.0) (layers "*.Cu" "*.Mask"))
+  (model "${KIPRJMOD}/3dmodels/vendor/Waveshare_ESP32-S3-Touch-LCD-3.5.step"
+    (offset (xyz 0 0 0))
+    (scale (xyz 1 1 1))
+    (rotate (xyz 0 0 0))
+  )
 )
