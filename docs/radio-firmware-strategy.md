@@ -71,3 +71,14 @@ Reticulum is a possible later extension, described in the separate [Reticulum co
 An ordinary RNode supplies a radio interface; a selected host or embedded implementation must also run the Reticulum network and messaging layers. A later integration therefore needs its own API, resource, recovery and interoperability validation. The study starts with an external experiment and does not select a third radio, change the controller workload or commit a release milestone.
 
 Related: [navigation and sharing](navigation-and-sharing.md), [bench wiring](hardware-wiring.md), [UI simulator](https://renbrant.github.io/MeshCrossway/).
+
+## Detailed integration contract and source-review findings
+
+See [Radio communication architecture and API compatibility](radio-communication-architecture.md). In particular:
+
+- Meshtastic's serial `PROTO` mode transports length-framed Protobuf `ToRadio`/`FromRadio` objects. Its physical UART is not a text terminal. Explicitly configure and verify serial baud at both ends; do not assume 115200 is the upstream default.
+- MeshCore Companion uses its separate binary command/event protocol. The Companion source has an optional ESP32 hardware-UART transport selected by `SERIAL_RX` and `SERIAL_TX`, making a **build-only customization** a plausible first step; the exact release/target and pin conflicts must be checked before claiming success.
+- The UI must use per-radio capability discovery and must not assume Meshtastic and MeshCore share identity, group, path, acknowledgement or security semantics.
+- Radio APIs, telemetry, queued messages and incoming notifications must be serviced asynchronously with separate bounded queues, reconnect and version handling. Reports must differentiate queued, accepted, transmitted and remotely acknowledged where supported.
+- The central controller can schedule only application-originated transmissions reliably. Autonomous announcements, ACKs and retransmissions by both radios make RF coexistence and simultaneous transmissions an independent bench-validation concern.
+- Strict zero-hop tracking and truly equivalent group semantics are **not demonstrated**. Do not ship a direct-only guarantee until over-the-air tests prove it; a firmware patch is a last resort after a reproducible API limitation.
