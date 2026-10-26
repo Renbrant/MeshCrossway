@@ -1,3 +1,5 @@
+> **Archived image credits only:** the Aideepen LoRa V3 images below are from a superseded radio choice and are **not** current V1 pinout or shopping references.
+
 # Amazon listing images: sources and rights
 
 [Project README](../../../README.md) · [Wiring guide](../../hardware-wiring.md)
@@ -20,4 +22,4 @@ Copyright and other rights remain with their respective owners. These third-part
 
 Photos document the advertised product, not a completed MeshCrossway assembly. Vendor display examples and marketing claims are not project implementation evidence. Prices are recorded separately in the buying guide; images do not guarantee current prices, package contents, revision, or stock.
 
-The numbered Waveshare image and the Rev2 schematic use different connector numbering. The wiring guide records that discrepancy and uses GPIO names as the electrical reference. The LoRa image labels GPIO4 as J3.15 and GPIO5 as J3.16; UART RX/TX roles are project configuration choices.
+The numbered Waveshare image and the Rev2 schematic use different connector numbering. The wiring guide records that discrepancy and uses GPIO names as the electrical reference. The LoRa V3 image's GPIO4/GPIO5 pinout is historical and **MUST NOT be used** for the current Seeed XIAO ESP32-S3 + Wio-SX1262 V1 build. Current radio-side external UART candidate is XIAO D7/GPIO44 RX and D6/GPIO43 TX. See [current wiring](../../hardware-wiring.md).
