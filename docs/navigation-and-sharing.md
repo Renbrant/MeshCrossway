@@ -110,3 +110,7 @@ Plan map markers for participants with identity and network, last fix age, sourc
 The central ESP32-S3 will eventually run a GNSS service, track logger, POI storage, location scheduler, radio-specific adapters and a transport router. Prove on actual hardware: UART adapter capabilities, update/airtime limits, RF coexistence, radio acknowledgments, GNSS power/accuracy, storage resilience, privacy across restarts, Bluetooth throughput/security and degraded/no-fix behavior.
 
 See the [interactive simulator](https://renbrant.github.io/MeshCrossway/) and [UI prototype notes](ui-prototype/README.md). Demo interactions and settings are not proof of firmware feature completeness.
+
+## Protocol interoperability boundary
+
+For the actual Meshtastic/MeshCore serial API contracts, compatibility limits and firmware decision gate, see [Radio communication architecture](radio-communication-architecture.md). A normalized local `Position`/`Waypoint` model does **not** imply common over-the-air encoding. Prefer protocol-native positions for third-party compatibility; custom application payloads must be clearly identified as MeshCrossway-specific and may not render in normal upstream clients. Peer acknowledgement and packet acceptance are not evidence of a viewed position. Live-location consent must not be silently restored after restart; an expired or disabled session must never be replayed as a backlog of stale fixes.
