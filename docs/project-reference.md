@@ -10,8 +10,8 @@ This document preserves the detailed architecture, selected hardware references,
 
 | Touchscreen controller | Two independent radio nodes |
 |:---:|:---:|
-| [![Waveshare ESP32-S3-Touch-LCD-3.5 from the selected Amazon listing](docs/images/amazon/waveshare-product.jpg)](https://www.amazon.com/dp/B0F3WS2W5R) | [![Aideepen LoRa V3 two-pack with boards, antennas, pigtails and loose headers](docs/images/amazon/lora-v3-two-pack.jpg)](https://www.amazon.com/dp/B0DRSJV1ZL) |
-| **Waveshare ESP32-S3-Touch-LCD-3.5** | **LoRa V3 ESP32-S3 + SX1262, two-pack** |
+| [![Waveshare ESP32-S3-Touch-LCD-3.5 from the selected Amazon listing](docs/images/amazon/waveshare-product.jpg)](https://www.amazon.com/dp/B0F3WS2W5R) | [![legacy Aideepen LoRa V3 photo (superseded) with boards, antennas, pigtails and loose headers](docs/images/amazon/lora-v3-two-pack.jpg)](https://www.amazon.com/dp/B0DRSJV1ZL) |
+| **Waveshare ESP32-S3-Touch-LCD-3.5** | **2 × Seeed XIAO ESP32-S3 + Wio-SX1262 (V1)** |
 
 Original product photos from the selected Amazon listings. Displays and firmware shown are vendor examples, not working MeshCrossway firmware. [Photo sources and rights](docs/images/amazon/README.md).
 
@@ -293,3 +293,7 @@ Amazon listing photos are third-party materials credited in [photo sources and r
 
 MeshCrossway is an independent project and is not affiliated with or endorsed by the manufacturers or upstream projects referenced here.
 
+
+## Current V1 hardware decision supersedes historical planning (2026-10-26)
+
+Use **two Seeed Studio XIAO ESP32-S3 & Wio-SX1262 B2B kits**, [manufacturer link](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html), one per mesh protocol. Earlier references to the **Aideepen/Heltec V3 two-pack**, its Amazon listing, photo, old price/BOM totals, and external UART GPIO4/5 are **archival only, not valid procurement or assembly instructions**. For current authoritative design use [XIAO hardware and BOM](hardware-wiring.md), [power gates](power-architecture.md), [firmware](radio-firmware-strategy.md), and [communication APIs](radio-communication-architecture.md). External XIAO UART GPIO44 RX / GPIO43 TX is proposed, not tested on both upstream images.
