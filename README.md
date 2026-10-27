@@ -55,6 +55,7 @@ The planned physical packaging uses **one integrated custom carrier PCB** for th
 | Offline storage | Message history, configuration, GPX, local assets | Planned |
 | Future bulk transfer | Authenticated BLE/Wi-Fi for larger files and map assets | Future |
 | Future protocol option | Reticulum evaluation, separate from the two V1 radios | Research only |
+| Future ATAK interoperability | Evaluate ATAK-CIV gateway, CoT positions and controlled event sharing | Research only |
 
 No automatic cross-network bridging is performed. Each radio keeps native identities, security, channel models and routing rules.
 
@@ -116,6 +117,7 @@ The illustrated electrical design is a **proposal**; it is not a production-read
 | **Meshtastic versus MeshCore** | [Illustrated comparison and technical analysis](docs/meshtastic-vs-meshcore.md) |
 | **Maps and regional checks** | [Community coverage and map services](docs/mesh-maps-and-regional-check.md) |
 | **Future Reticulum** | [Future integration feasibility](docs/reticulum-future-integration.md) |
+| **Future ATAK / CoT** | [ATAK-CIV gateway and interoperability research](docs/atak-future-integration.md) |
 | **Interface simulator** | [UI documentation and limitations](docs/ui-prototype/README.md) |
 | **Project baseline** | [Current V1 technical reference](docs/project-reference.md) |
 
