@@ -6,7 +6,7 @@
 
 ![Approved provisional MeshCrossway front render: one carrier board in the transparent shell](images/meshcrossway-hero.webp)
 
-![Exploded mechanical concept: rear-mounted protected LiPo behind the integrated PCB](images/architecture/meshcrossway-exploded.webp)
+![Exploded mechanical concept: rear-mounted protected LiPo behind the integrated PCB](images/architecture/meshcrossway-exploded.jpg)
 
 **Mechanical design intent:** one custom carrier PCB, Waveshare display, two independent Seeed XIAO/Wio modules, MAX-M10S GNSS, and protected 1S LiPo **behind** the electronics in the transparent rear shell. The images are conceptual; exact component shapes, mechanical clearance, battery thickness, RF separation, dimensions and power safety remain unverified. [Image inventory and limitations](images/README.md).
 

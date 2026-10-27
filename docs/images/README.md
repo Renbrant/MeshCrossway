@@ -7,7 +7,7 @@
 The selected arrangement is **one custom carrier PCB** with a Waveshare ESP32-S3-Touch-LCD-3.5, **two Seeed XIAO ESP32S3 + Wio-SX1262 kits**, u-blox MAX-M10S GNSS breakout, onboard microSD and a protected **rear-mounted 1S LiPo battery**. Two LoRa antennas are independent; the enclosure is intended to be nearly invisible and transparent.
 
 - [Approved provisional hero image](meshcrossway-hero.webp)
-- [Approved provisional exploded view](architecture/meshcrossway-exploded.webp)
+- [Approved provisional exploded view](architecture/meshcrossway-exploded.jpg)
 
 These are **AI-generated concept illustrations**, not actual supplier photographs, mechanical CAD, electric schematics or proof that the components fit as shown. The physical appearance, component placement, silkscreen, connectors, antenna routing and proportions may differ from the finished boards. Never use these renders to identify exact part orientation, voltage or connector pinout.
 

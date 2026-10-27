@@ -24,7 +24,7 @@ The UI prototype explores **horizontal-screen navigation**, collapsible left nav
 
 ## V1 hardware selection
 
-![Approved exploded hardware concept showing the single carrier PCB and battery in the transparent rear shell](docs/images/architecture/meshcrossway-exploded.webp)
+![Approved exploded hardware concept showing the single carrier PCB and battery in the transparent rear shell](docs/images/architecture/meshcrossway-exploded.jpg)
 
 The planned physical packaging uses **one integrated custom carrier PCB** for the two XIAO/Wio radios and GNSS with the Waveshare display, plus the protected **rear-mounted 1S LiPo**, all inside an almost invisible transparent case. Actual component geometry, antenna routing, RF isolation, battery thickness and retention are **unverified**.
 

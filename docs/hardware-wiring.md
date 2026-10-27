@@ -8,7 +8,7 @@
 
 ![Hardware and almost-invisible transparent enclosure layers](images/hardware-overview.svg)
 
-![Approved temporary exploded enclosure render with protected 1S LiPo battery mounted behind the carrier PCB](images/architecture/meshcrossway-exploded.webp)
+![Approved temporary exploded enclosure render with protected 1S LiPo battery mounted behind the carrier PCB](images/architecture/meshcrossway-exploded.jpg)
 
 This assembly concept places the two Seeed XIAO/Wio kits and MAX-M10S breakout on **one custom carrier PCB** around the Waveshare display. The protected 1S LiPo pack is **behind the PCB**, not mounted next to the screen. These AI-assisted renders are approximate and **not exact supplier photos or mechanical CAD**. Verify real footprints, B2B stack height, charging safety and antenna clearances before layout approval.
 
