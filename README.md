@@ -1,6 +1,8 @@
 # MeshCrossway
 
-**Two mesh networks. One portable terminal.**
+**TWO MESH NETWORKS. ONE DEVICE. MORE REACH.**
+
+**Meshtastic + MeshCore — two independent LoRa radios operating simultaneously in one touchscreen device.**
 
 ![MeshCrossway V1 concept: one custom PCB with Seeed XIAO/Wio dual radios, transparent enclosure and rear battery](docs/images/meshcrossway_mountain_connectivity_concept.png)
 
