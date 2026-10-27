@@ -7787,7 +7787,7 @@
 	(segment
 		(start 95.02 133.58)
 		(end 164.12 133.58)
-		(width 1)
+		(width 0.25)
 		(layer "B.Cu")
 		(net "/GNSS_SCL")
 		(uuid "184959e0-f2ba-45c7-ba48-48294ec4a0e5")
@@ -7795,7 +7795,7 @@
 	(segment
 		(start 93.42 131.98)
 		(end 95.02 133.58)
-		(width 1)
+		(width 0.25)
 		(layer "B.Cu")
 		(net "/GNSS_SCL")
 		(uuid "63f9f1fd-5b37-4771-9bff-e8de6585d958")
@@ -7803,7 +7803,7 @@
 	(segment
 		(start 93.42 130.707208)
 		(end 93.42 131.98)
-		(width 1)
+		(width 0.25)
 		(layer "B.Cu")
 		(net "/GNSS_SCL")
 		(uuid "68debc96-a8e1-4519-b1fd-f1408b436ed9")
@@ -7811,7 +7811,7 @@
 	(segment
 		(start 164.12 133.58)
 		(end 168.43 129.27)
-		(width 1)
+		(width 0.25)
 		(layer "B.Cu")
 		(net "/GNSS_SCL")
 		(uuid "80c06a67-d0d8-4655-b624-26607567e7a3")
@@ -7819,7 +7819,7 @@
 	(segment
 		(start 104.135 125.396667)
 		(end 98.730541 125.396667)
-		(width 1)
+		(width 0.25)
 		(layer "B.Cu")
 		(net "/GNSS_SCL")
 		(uuid "8f169941-c50c-4b2b-ab58-43222001f6ba")
@@ -7827,7 +7827,7 @@
 	(segment
 		(start 98.730541 125.396667)
 		(end 93.42 130.707208)
-		(width 1)
+		(width 0.25)
 		(layer "B.Cu")
 		(net "/GNSS_SCL")
 		(uuid "9c9fe9bc-87d4-4aff-bd30-722ba321fd5b")
@@ -7835,7 +7835,7 @@
 	(segment
 		(start 93.68 134.78)
 		(end 165.46 134.78)
-		(width 1)
+		(width 0.25)
 		(layer "B.Cu")
 		(net "/GNSS_SDA")
 		(uuid "1a0b86a2-b09f-467c-b40c-13fb228d3918")
@@ -7843,7 +7843,7 @@
 	(segment
 		(start 104.135 123.48)
 		(end 96.46 123.48)
-		(width 1)
+		(width 0.25)
 		(layer "B.Cu")
 		(net "/GNSS_SDA")
 		(uuid "343506ad-6d3a-4822-aac9-698160832a22")
@@ -7851,7 +7851,7 @@
 	(segment
 		(start 165.46 134.78)
 		(end 170.97 129.27)
-		(width 1)
+		(width 0.25)
 		(layer "B.Cu")
 		(net "/GNSS_SDA")
 		(uuid "85ba77ce-9efa-4f47-ae5d-0f7d48324fdd")
@@ -7859,7 +7859,7 @@
 	(segment
 		(start 90.88 129.06)
 		(end 90.88 131.98)
-		(width 1)
+		(width 0.25)
 		(layer "B.Cu")
 		(net "/GNSS_SDA")
 		(uuid "cf1799e1-aff4-405d-9144-b4e4411b7353")
@@ -7867,7 +7867,7 @@
 	(segment
 		(start 96.46 123.48)
 		(end 90.88 129.06)
-		(width 1)
+		(width 0.25)
 		(layer "B.Cu")
 		(net "/GNSS_SDA")
 		(uuid "d3024286-2dcd-406f-a169-d60556541fbc")
@@ -7875,7 +7875,7 @@
 	(segment
 		(start 90.88 131.98)
 		(end 93.68 134.78)
-		(width 1)
+		(width 0.25)
 		(layer "B.Cu")
 		(net "/GNSS_SDA")
 		(uuid "e51833d4-3551-4e4f-a774-47c1cd32dcbd")
