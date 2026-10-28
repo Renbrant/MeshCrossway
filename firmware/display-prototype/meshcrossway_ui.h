@@ -139,8 +139,8 @@ static void draw(){
       tile(7,144,349,52,"LOCATION SHARING","Off / No data transmitted",nullptr);
       break;
     case 3:
-      tile(7,7,171,152,"RADIO A / MT","No UART link","RSSI: demo -87 dBm");
-      tile(185,7,171,152,"RADIO B / MC","No UART link","RSSI: demo -94 dBm");
+      tile(7,7,171,152,"RADIO A / MT","BLE not connected","RSSI: demo -87 dBm");
+      tile(185,7,171,152,"RADIO B / MC","BLE not connected","RSSI: demo -94 dBm");
       txt(body,"No packets sent - Simulation only",10,176,340,muted);
       break;
     default:{
