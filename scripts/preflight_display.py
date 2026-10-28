@@ -89,7 +89,8 @@ print("Preflight PASS: version, C++ source patterns, JS syntax, patcher syntax a
 if version in ("v0.5.7","v0.5.8","v0.5.9"):
     health=(FW/"meshcrossway_health.h").read_text()
     assert '#include "meshcrossway_health.h"' in ui
-    assert not any(token in health for token in ("lv_snapshot_take(","lvgl_port_lock(","lv_indev_drv_register(","/screen.raw","/touch"))
+    assert not any(token in health for token in ("lv_snapshot_take(","lvgl_port_lock(","lv_indev_drv_register(","/touch"))
+    if version!="v0.5.9":assert "/screen.raw" not in health
     assert health.count("httpd_register_uri_handler(")==(3 if version=="v0.5.9" else 2)
     js=health.split("<script>",1)[1].split("</script>",1)[0]
     subprocess.run(["node","--check","-"],input=js,text=True,check=True)
