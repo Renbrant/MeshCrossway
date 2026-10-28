@@ -34,3 +34,8 @@ The script patches the cloned upstream **example only**, sets rotation 90 degree
 
 Browser UI reference: https://renbrant.github.io/MeshCrossway/
 Vendor source: https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.5/tree/main/examples/esp-idf/02_lvgl_example
+
+
+## UI v0.2 — graphite and orange (October 28, 2026)
+
+The LVGL UI now uses the MeshCrossway graphite/orange visual language with a compact left navigation rail, 43px top status header, 35px bottom demo status, and clipped-safe cards. The reference is WADAMESH's field-focused touchscreen information hierarchy, but the UI is original and does not copy WADAMESH code/assets. All displayed radio/position values are clearly demo data. Hardware verified for v0.1 on Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0; **v0.2 still requires physical testing** after web-flashing. The GitHub Pages flasher build pipeline triggers automatically from changes in this folder. Before installing, confirm the Actions run succeeded and the displayed manifest version matches the latest commit.
