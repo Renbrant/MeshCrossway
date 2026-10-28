@@ -150,5 +150,5 @@ for archive in "$OUT"/versions/*; do
 done
 
 python3 "$ROOT/scripts/write_firmware_catalog.py" \
-  --root "$OUT" --latest "$LATEST_VERSION"
+  --root "$OUT" --latest "$LATEST_VERSION" --stable "$STABLE_VERSION"
 echo "Minimal firmware release line ready: stable $STABLE_VERSION, newest $LATEST_VERSION"
