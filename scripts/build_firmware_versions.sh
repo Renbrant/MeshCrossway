@@ -248,8 +248,45 @@ print("Preserved experimental v0.5.8 SD rollback image:",
 RESTORE_V058
 python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.8" --version v0.5.8 --ref 330c456149ac6bc23a8ef4621a83730565c11ce2
 
+# Preserve the physically tested v0.5.9 SD backup and NVS update firmware.
+# v0.5.9 has a split flasher manifest; all three parts must be retained.
+python3 - "$OUT/versions/v0.5.9" <<'RESTORE_V059'
+import hashlib
+import json
+import sys
+import urllib.request
+from pathlib import Path
+folder=Path(sys.argv[1])
+expected_prefix="fc1bd4683e02"
+compiled_ref="a24e5fde12ddecda343e6b633d37ffee5cae8ae7"
+base="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/v0.5.9/"
+files=("manifest.json","build-info.json","meshcrossway-display-dev.bin",
+       "bootloader.bin","partition-table.bin","application.bin")
+folder.mkdir(parents=True,exist_ok=True)
+def valid():
+    if not all((folder/name).is_file() for name in files):return False
+    image=(folder/"meshcrossway-display-dev.bin").read_bytes()
+    info=json.loads((folder/"build-info.json").read_text())
+    digest=hashlib.sha256(image).hexdigest()
+    return (digest.startswith(expected_prefix) and len(image)==1269824 and info["sha256"]==digest and
+            info["commit"]==compiled_ref and info["version"]=="v0.5.9")
+if not valid():
+    data={}
+    for name in files:
+        with urllib.request.urlopen(base+name,timeout=60) as response:
+            data[name]=response.read()
+    if not hashlib.sha256(data["meshcrossway-display-dev.bin"]).hexdigest().startswith(expected_prefix):
+        sys.exit("REJECT: published v0.5.9 differs from the reviewed binary")
+    for name,content in data.items():
+        (folder/name).write_bytes(content)
+if not valid():sys.exit("REJECT: v0.5.9 rollback metadata mismatch")
+print("Preserved experimental v0.5.9 SD rollback image:",
+      hashlib.sha256((folder/"meshcrossway-display-dev.bin").read_bytes()).hexdigest())
+RESTORE_V059
+python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.9" --version v0.5.9 --ref a24e5fde12ddecda343e6b633d37ffee5cae8ae7
+
 case "$LATEST_VERSION" in
-  v0.3.0|v0.4.0|v0.5.2|v0.5.4|v0.5.6|v0.5.7|v0.5.8) echo "Current version already available in historical archive" ;;
+  v0.3.0|v0.4.0|v0.5.2|v0.5.4|v0.5.6|v0.5.7|v0.5.8|v0.5.9) echo "Current version already available in historical archive" ;;
   *) build_version "$LATEST_VERSION" HEAD ;;
 esac
 python3 "$ROOT/scripts/write_firmware_catalog.py" \
