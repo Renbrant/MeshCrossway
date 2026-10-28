@@ -11,10 +11,3 @@ body{background:radial-gradient(circle at 75% 0,#352117 0,transparent 36%),#1010
 .heroimg{border-color:#57402f;background:#191719}
 .step:before{background:#432a18}
 a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #ffb052;outline-offset:3px}
-
-/* MeshCrossway standardized responsive identity */
-.brand{display:inline-flex;align-items:center;min-width:205px;line-height:1}
-.brand-logo{display:block;width:205px;height:55px;object-fit:contain;object-position:left center}
-.hero-brand{display:flex;justify-content:center;margin:36px auto 0;max-width:390px}
-.hero-brand img{display:block;width:min(100%,360px);height:auto;border-radius:12px}
-@media(max-width:600px){.brand{min-width:158px}.brand-logo{width:158px;height:45px}.hero-brand img{width:min(100%,280px)}}
