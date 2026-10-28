@@ -51,11 +51,12 @@ static lv_obj_t *tile(int x,int y,int w,int h,const char *title,const char *line
 static void draw();
 static void close_wifi_editor(){
   if(!wifi_editor)return;
-  // Detach before deferred deletion: keyboard callbacks may still be unwinding.
+  // LVGL marks active events invalid when their object/ancestor is deleted.
+  // Delete synchronously so closing the parent cannot leave a queued stale delete.
   lv_keyboard_set_textarea(wifi_keyboard,nullptr);
-  lv_obj_add_flag(wifi_editor,LV_OBJ_FLAG_HIDDEN);
-  lv_obj_del_async(wifi_editor);
+  lv_obj_t *editor=wifi_editor;
   wifi_editor=nullptr;wifi_edit_text=nullptr;wifi_edit_target=nullptr;wifi_keyboard=nullptr;
+  lv_obj_del(editor);
 }
 static void close_wifi(){
   close_wifi_editor();
@@ -143,6 +144,7 @@ static void on_wifi_field(lv_event_t *e){
   wifi_edit_text=lv_textarea_create(wifi_editor);
   lv_obj_set_pos(wifi_edit_text,6,42);lv_obj_set_size(wifi_edit_text,password?392:468,48);
   lv_textarea_set_one_line(wifi_edit_text,true);
+  lv_obj_set_height(wifi_edit_text,48);
   lv_textarea_set_max_length(wifi_edit_text,password?63:32);
   lv_textarea_set_password_mode(wifi_edit_text,password);
   lv_textarea_set_text(wifi_edit_text,lv_textarea_get_text(wifi_edit_target));
