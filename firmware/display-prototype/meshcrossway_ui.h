@@ -1,8 +1,9 @@
 #pragma once
-// MeshCrossway v0.6.2: adaptive field-console layout, no remote touch.
+// MeshCrossway v0.6.3: adaptive field-console layout, no remote touch.
 // All radio and GNSS values remain simulated.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
+#include "meshcrossway_ble.h"
 #include "esp_system.h"
 #include "esp_timer.h"
 #include <stdint.h>
@@ -251,6 +252,7 @@ static lv_obj_t *left_handle=nullptr,*right_handle=nullptr,*top_wifi=nullptr;
 static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
 static bool left_compact=false,right_compact=false,home_nav_open=false;
 static int nodes_filter=0,groups_filter=0,active_thread=-1,more_view=0;
+static uint32_t ble_generation=0;
 static lv_obj_t *tab_vectors[6]={};
 // Persistent selection is independent of Nodes/Groups filtering and page navigation.
 static const char *thread_names[]={"Alex","Jamie","LongFast","#public","Backcountry","SAR Room"};
@@ -268,7 +270,7 @@ enum Action {
   A_MAP_HOME,A_INBOX,A_NEW,A_POSITION,A_NETWORKS,A_WIFI,A_POIS,A_TRACKS,A_RECORD,A_SHARE,
   A_GNSS,A_TEAM,A_PATHS,A_SCANNER,A_PACKETS,A_REPEATERS,A_SETUP,A_DIAGNOSTIC,
   A_VIEW,A_PRIVACY,A_ABOUT,A_CHAT_MT,A_CHAT_MC,A_CHAT_ALL,A_QUICK,
-  A_NODES,A_GROUPS,A_CHAT_OPEN,A_RADIOS,A_GROUP_NEW,A_THREAD_INFO,A_NODE_DETAILS
+  A_NODES,A_GROUPS,A_CHAT_OPEN,A_RADIOS,A_GROUP_NEW,A_THREAD_INFO,A_NODE_DETAILS,A_BLE_SCAN,A_BLE_DISCONNECT
 };
 struct ActionInfo {const char *label;int id;lv_color_t color;};
 static const ActionInfo home_actions[]={
@@ -298,7 +300,7 @@ static const ActionInfo more_actions[]={
   {"Quick",A_QUICK,purple},{"Privacy",A_PRIVACY,orange}
 };
 static const ActionInfo radio_actions[]={
-  {"Device",A_SETUP,cyan},{"Discover",A_SCANNER,cyan},
+  {"Device",A_SETUP,cyan},{"BLE scan",A_BLE_SCAN,green},{"Disconnect",A_BLE_DISCONNECT,red},
   {"Packets",A_PACKETS,orange},{"Repeaters",A_REPEATERS,purple},
   {"Network",A_NETWORKS,green}
 };
@@ -401,6 +403,8 @@ static void notice(const char *title,const char *body_text){
 static void run_action(void *data){
   int id=(int)(intptr_t)data;
   if(id==A_WIFI){close_shade();wifi_setup(nullptr);return;}
+  if(id==A_BLE_SCAN){meshble::scan();page=5;more_view=1;draw();return;}
+  if(id==A_BLE_DISCONNECT){meshble::disconnect();page=5;more_view=1;draw();return;}
   if(id==A_NODES){page=1;draw();return;}
   if(id==A_GROUPS||id==A_INBOX){page=2;draw();return;}
   if(id==A_CHAT_OPEN){page=3;draw();return;}
@@ -474,7 +478,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Location sharing and radio transmission are off. SD Wi-Fi backup is plaintext; protect your SD card.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.6.2","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
+      notice("MESH CROSSWAY v0.6.3","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -504,6 +508,7 @@ static void on_thread(lv_event_t *e){lv_async_call(open_thread_now,lv_event_get_
 static void quick_action_run(void *value){
   int mode=(int)(intptr_t)value;
   if(mode==2){close_shade();wifi_setup(nullptr);return;}
+  if(mode==1){close_shade();page=5;more_view=1;draw();return;}
   const char *names[]={"GPS","Bluetooth","","Sound","Brightness"};
   char text[160];snprintf(text,sizeof(text),"%s is a UI preview only. No device setting was changed.",
                            names[mode]);
@@ -638,6 +643,8 @@ static void rebuild_context(){
     y+=41;
   }
 }
+static void ble_select_now(void *v){meshble::connect((int)(intptr_t)v);draw();}
+static void ble_select(lv_event_t *e){lv_async_call(ble_select_now,lv_event_get_user_data(e));}
 static void draw(){
   if(!body||!left_rail||!right_rail||!context_actions)return;
   const bool home_hidden=page==0&&!home_nav_open;
@@ -761,10 +768,29 @@ static void draw(){
     }
   } else {
     if(more_view==1){
-      show_center_heading("RADIO PODS","Independent BLE connections");
-      center_card(8,54,w-16,94,"MX-M / MESHTASTIC","BLE: NOT CONNECTED","Packets: 0 / RSSI: --",green);
-      center_card(8,157,w-16,94,"MX-C / MESHCORE","BLE: NOT CONNECTED","Packets: 0 / RSSI: --",purple);
-      single_label(body,"No packets or transmissions / DEMO",8,260,w-16,muted);
+      const meshble::Snapshot s=meshble::snapshot();
+      show_center_heading("BLE / RADIO PODS","Heltec V3 / service discovery");
+      const char *phase=s.phase==meshble::READY?"SECURE":s.phase==meshble::SCANNING?"SCANNING":s.phase==meshble::CONNECTING?"CONNECTING":s.phase==meshble::VERIFYING?"VERIFYING":s.phase==meshble::PAIRING?"PAIRING":s.phase==meshble::FAILED?"ERROR":"IDLE";
+      char detail[64];snprintf(detail,sizeof(detail),"%s / %s",phase,meshble::protocol_name(s.radio));
+      single_label(body,detail,8,53,w-16,s.phase==meshble::READY?green:orange);
+      single_label(body,s.status,8,76,w-16,muted);
+      if(s.phase==meshble::READY){
+        center_card(8,104,w-16,80,"CONNECTED",s.active_name,"No radio traffic yet",green);
+        action_button(body,"DISCONNECT",8,199,w-16,43,panel2,on_action,A_BLE_DISCONNECT);
+      }else if(s.phase==meshble::CONNECTING||s.phase==meshble::VERIFYING||s.phase==meshble::PAIRING){
+        single_label(body,"BLE handshake / PIN pairing",8,116,w-16,white);
+        action_button(body,"DISCONNECT",8,179,w-16,43,panel2,on_action,A_BLE_DISCONNECT);
+      }else{
+        action_button(body,"SCAN NEARBY BLE",8,105,w-16,40,orange,on_action,A_BLE_SCAN);
+        int y=155;
+        for(int k=0;k<s.count;k++){
+          char name[60];snprintf(name,sizeof(name),"%.22s / %d dBm",s.peers[k].name,s.peers[k].rssi);
+          lv_obj_t *b=action_button(body,"",8,y,w-16,52,panel,ble_select,k);
+          single_label(b,name,7,6,w-28,white);
+          single_label(b,meshble::protocol_name(s.peers[k].advertised),7,30,w-28,muted);
+          y+=56;
+        }
+      }
       return;
     }
     show_center_heading("DEVICE & SETTINGS","Local status / operational");
@@ -791,6 +817,8 @@ static void draw(){
 }
 static void refresh(lv_timer_t *){
   update_wifi_scan();
+  const meshble::Snapshot bs=meshble::snapshot();
+  if(bs.generation!=ble_generation){ble_generation=bs.generation;if(page==5&&more_view==1&&!wifi_dialog&&!info_dialog)draw();}
   if(wifi_sd_status){
     char detail[64],backup[88];
     meshbackup::describe(detail,sizeof(detail));
@@ -802,7 +830,7 @@ static void refresh(lv_timer_t *){
     char label[54];snprintf(label,sizeof(label),"Wi-Fi: %s",ip[0]?ip:state);
     if(strcmp(lv_label_get_text(top_wifi),label)!=0)lv_label_set_text(top_wifi,label);
   }
-  printf("[MCX-DIAG v0.6.2] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.6.3] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -822,7 +850,7 @@ static void refresh(lv_timer_t *){
     if(strcmp(lv_label_get_text(objects[i]),values[i]))lv_label_set_text(objects[i],values[i]);
 }
 static void init(){
-  printf("[MCX-DIAG v0.6.2] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.6.3] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -833,7 +861,7 @@ static void init(){
   color_label(top,"MESH",7,7,55,white);
   color_label(top,"CROSSWAY",59,7,120,orange);
   top_wifi=color_label(top,"Wi-Fi: waiting",209,7,167,green);
-  color_label(top,"DEV 0.6.2",390,7,88,orange);
+  color_label(top,"DEV 0.6.3",390,7,88,orange);
   left_rail=panel_at(screen,0,34,79,286,panel,0);
   right_rail=panel_at(screen,355,34,125,286,panel,0);
   left_handle=action_button(left_rail,"",47,4,29,30,panel2,toggle_left,0);
