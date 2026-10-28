@@ -17,12 +17,13 @@ if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+",latest):
 tested={
     "v0.5.6":("Owner confirmed usable wider QWERTY and normal Wi-Fi operation; remote screen/touch disabled", "Tested keyboard + Wi-Fi / rollback"),
     "v0.5.7":("Owner confirmed stable physical UI and status HTTP with live uptime/IP/heap; screenshot and remote touch disabled", "Tested HTTP status + Wi-Fi / rollback"),
+    "v0.5.9":("Owner verified 32GB FAT32 JSON Wi-Fi backup, successful reinstall without Erase and automatic Wi-Fi reconnect; remote capture disabled", "Tested SD backup + Wi-Fi / rollback"),
     "v0.5.4":("Owner confirmed Wi-Fi connection and normal operation; landscape UI", "Tested Wi-Fi / rollback"),
     "v0.3.0":("Tested on Rev2.0: LVGL, touchscreen and live ESP32 diagnostics","Display / touch baseline"),
     "v0.4.0":("Tested on Rev2.0: Wi-Fi access point, screenshot viewing and PNG capture","Recommended recovery"),
 }
 catalog=[]
-for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8",latest):
+for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8","v0.5.9",latest):
     if any(entry["version"]==version for entry in catalog):
         continue
     folder=root/"versions"/version
@@ -37,9 +38,9 @@ for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8",l
     if version in tested:
         summary,label=tested[version]
         status="hardware-tested"
-    elif version=="v0.5.9":
-        summary="Fix for FAT32 backup write failures: enable long filenames and report exact file operation/errno; status-only HTTP, no remote touch. Hardware test pending."
-        label="SD write fix / experimental"
+    elif version=="v0.5.10":
+        summary="Experimental one-shot PIN-protected read-only RGB565 screen capture; manual request every 5 s; remote touch disabled. Hardware stability not yet tested."
+        label="Manual screen viewer / experimental"
         status="experimental"
     elif version=="v0.5.8":
         summary="Plaintext Wi-Fi backup/restore on optional SD; split installer preserves internal settings without Erase. HTTP status only. Hardware test pending."
