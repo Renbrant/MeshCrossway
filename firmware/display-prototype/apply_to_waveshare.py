@@ -22,19 +22,21 @@ if '#include "meshcrossway_ui.h"' not in source:
     source = source.replace('#define EXAMPLE_DISPLAY_ROTATION 0',
                             '#define EXAMPLE_DISPLAY_ROTATION 90', 1)
     source = source.replace('#include "lvgl_ui.h"',
-                            '#include "lvgl_ui.h"\n#include "meshcrossway_ui.h"\n#include "meshcrossway_health.h"', 1)
-    source = source.replace('lv_demo_widgets();', 'meshcrossway::init();', 1)
+                            '#include "lvgl_ui.h"\n#include "meshcrossway_ui.h"\n#include "meshcrossway_health.h"\n#include "meshcrossway_capture.h"', 1)
+    source = source.replace('lv_demo_widgets();', 'meshcrossway::init();\n        meshcapture::init();', 1)
     source = source.replace(anchor,
                             '        lvgl_port_unlock();\n    }\n    meshnetwork::start();\n    meshhealth::start();\n}', 1)
     main.write_text(source)
 
 if 'meshremote::register_input();' in source or 'meshremote::start();' in source:
     sys.exit('Diagnostic firmware must not activate remote LVGL input or screenshot HTTP')
+if source.count('meshcapture::init();') != 1:
+    sys.exit('Missing or duplicate single-shot LVGL capture initialization')
 if source.count('meshhealth::start();') != 1:
     sys.exit('Missing or duplicate status-only HTTP initialization')
 if source.count('meshnetwork::start();') != 1:
     sys.exit('Missing or duplicate isolated Wi-Fi initialization')
-for name in ("meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",
+for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",
              "meshcrossway_remote_page.h", "meshcrossway_network.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)

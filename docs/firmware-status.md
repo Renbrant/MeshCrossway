@@ -96,3 +96,21 @@ On October 28, the owner reported **SD backup: saved** on v0.5.9 with a **32 GB 
 **Confirmed additionally on October 28:** the owner powered off the unit, removed the 32 GB FAT32 card and verified on Windows that root-level `meshcrossway-wifi.json` exists and contains a syntactically valid JSON object with keys `format` (value `1`), `ssid`, and `password`; the password was hidden in the shared evidence. **Still not validated:** a complete **Erase → SD restore with NVS empty** was not performed. Reconnection after normal reflashing can come from preserved internal NVS, not necessarily SD restoration. Do not mark full SD recovery as tested or suggest Erase until a valid external backup has been confirmed. The plaintext JSON holds the Wi-Fi password; do not request screenshots or contents.
 
 The v0.5.9 firmware remains HTTP status-only. The draft screen-viewer experiment PR #21 must be rebased and renumbered to **v0.5.10 or later** before merging to avoid version collisions.
+
+
+## v0.5.10 experiment C — manual read-only remote screen (hardware test pending)
+
+The v0.5.9 binary was physically validated with a 32 GB FAT32 microSD: the owner saw `SD backup: saved`, inspected the real `meshcrossway-wifi.json` (credentials hidden in shared evidence), then reinstalled without Erase and saw automatic home-Wi-Fi reconnection. This is **not** proof of full Erase → SD recovery; leave that as a separate test. The exact v0.5.9 split installer and merged firmware are archived for recovery.
+
+v0.5.10 introduces a deliberately narrow version of remote display viewing:
+
+- The original local `http://DEVICE_IP/` status page now has an optional **Capture screen** action. A manual click requests one 480 × 320 RGB565 frame; it is rendered in a browser canvas. There is no continuous screenshot polling or video stream.
+- The user must type the **8-digit View PIN** shown in **Settings** on the physical Waveshare. The PIN is regenerated at boot, passed only in a request header, and never sent via `/health`.
+- An HTTP request queues a one-shot capture. An LVGL timer—not the HTTP task—renders `lv_scr_act()` into a single allocated 307,200-byte PSRAM buffer using `lv_snapshot_take_to_buf`. No additional touch-input device or touch endpoint is registered.
+- Captures are serialized, limited to one every five seconds, and the HTTP request times out after four seconds. If a draw takes more than two seconds, capture is disabled for the remainder of that boot. Memory stats and capture timings remain available in `/health`.
+- The existing SD-backup reporting, FAT long-file-name configuration, current Wi-Fi NVS data, and 0.5.9 split manifest behavior remain intact.
+- **Security:** HTTP traffic is not encrypted. The screenshot can expose private information displayed physically. Use only on a trusted private LAN; never expose device port 80 to the Internet. The PIN is only a limited development access control.
+
+**Focused hardware test, only after automated CI + GitHub Pages deployment:** install v0.5.10 **without Erase** and keep microSD FAT32 inserted. Confirm `DEV 0.5.10` and Wi-Fi auto-connection. Check `SD backup: saved` and screen/touch stability before any capture. Open the local browser page via the device's assigned IP. Enter the PIN from the device's Settings and press **Capture screen** once, then repeat after five seconds while changing pages on the physical Waveshare. Confirm color/orientation, screenshot updating, responsive touch and uptime/heap. Test a wrong PIN (403) without changing the device. If there is any flicker, black screen, lockup or failed capture, **do not advance to remote touch**; roll back to the exact tested v0.5.9. A successful build is not physical proof of stability.
+
+The future step (experiment D) may consider bidirectional touch only after experiment C passes the physical test.
