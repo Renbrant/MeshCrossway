@@ -16,12 +16,13 @@ if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+",latest):
     p.error("Invalid latest version")
 tested={
     "v0.5.6":("Owner confirmed usable wider QWERTY and normal Wi-Fi operation; remote screen/touch disabled", "Tested keyboard + Wi-Fi / rollback"),
+    "v0.5.7":("Owner confirmed stable physical UI and status HTTP with live uptime/IP/heap; screenshot and remote touch disabled", "Tested HTTP status + Wi-Fi / rollback"),
     "v0.5.4":("Owner confirmed Wi-Fi connection and normal operation; landscape UI", "Tested Wi-Fi / rollback"),
     "v0.3.0":("Tested on Rev2.0: LVGL, touchscreen and live ESP32 diagnostics","Display / touch baseline"),
     "v0.4.0":("Tested on Rev2.0: Wi-Fi access point, screenshot viewing and PNG capture","Recommended recovery"),
 }
 catalog=[]
-for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6",latest):
+for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7",latest):
     if any(entry["version"]==version for entry in catalog):
         continue
     folder=root/"versions"/version
@@ -39,10 +40,6 @@ for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6",latest):
     elif version=="v0.5.8":
         summary="Plaintext Wi-Fi backup/restore on optional SD; split installer preserves internal settings without Erase. HTTP status only. Hardware test pending."
         label="SD Wi-Fi backup / experimental"
-        status="experimental"
-    elif version=="v0.5.7":
-        summary="Remote experiment B: HTTP status page and /health only; no screenshots, framebuffer allocation or remote touch. Hardware test pending."
-        label="HTTP status only / experimental"
         status="experimental"
     elif version=="v0.5.6":
         summary="Wider landscape QWERTY and one character per completed tap; automatic key repeat disabled. v0.5.5 froze during typing in one owner test; root cause unconfirmed. Hardware test pending."
