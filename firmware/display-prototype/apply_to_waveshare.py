@@ -34,7 +34,7 @@ if source.count('meshhealth::start();') != 1:
     sys.exit('Missing or duplicate status-only HTTP initialization')
 if source.count('meshnetwork::start();') != 1:
     sys.exit('Missing or duplicate isolated Wi-Fi initialization')
-for name in ("meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",
+for name in ("meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",
              "meshcrossway_remote_page.h", "meshcrossway_network.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)

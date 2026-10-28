@@ -4,6 +4,7 @@
 #include "esp_event.h"
 #include "esp_netif.h"
 #include "esp_wifi.h"
+#include "meshcrossway_backup.h"
 #include "freertos/FreeRTOS.h"
 #include <stdio.h>
 #include <string.h>
@@ -112,6 +113,8 @@ static void wifi_event(void *,esp_event_base_t base,int32_t event,void *data) {
     snprintf(ip,sizeof(ip),IPSTR,IP2STR(&event_data->ip_info.ip));
     retries=0;
     set_state("Connected to Wi-Fi",ip);
+    wifi_config_t saved={};
+    if(esp_wifi_get_config(WIFI_IF_STA,&saved)==ESP_OK)meshbackup::schedule(saved);
   }
 }
 static bool connect(const char *ssid,const char *password) {
@@ -148,8 +151,11 @@ static void start() {
   ap.ap.ssid_len=strlen((char*)ap.ap.ssid);
   ap.ap.channel=6;ap.ap.max_connection=2;ap.ap.authmode=WIFI_AUTH_WPA2_PSK;
   ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP,&ap));
+  meshbackup::start();
   wifi_config_t old={};
-  if(esp_wifi_get_config(WIFI_IF_STA,&old)==ESP_OK && old.sta.ssid[0]) {
+  if(esp_wifi_get_config(WIFI_IF_STA,&old)!=ESP_OK)old={};
+  if(!old.sta.ssid[0])(void)meshbackup::restore(old);
+  if(old.sta.ssid[0]) {
     portENTER_CRITICAL(&guard);
     memcpy(ssid_name,old.sta.ssid,32);ssid_name[32]='\0';
     wants_station=true;

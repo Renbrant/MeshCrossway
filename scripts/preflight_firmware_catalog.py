@@ -29,6 +29,9 @@ for file in ("write_firmware_catalog.py","write_firmware_version.py","verify_fir
     compile((root/"scripts"/file).read_text(),file,"exec")
 print("PASS: Web Flasher version selector JavaScript and build script syntax")
 
+if args.catalog is None:
+    subprocess.run([sys.executable,str(root/"scripts/test_firmware_install.py")],check=True)
+
 if args.catalog is not None:
     path=args.catalog.resolve()
     manifest=json.loads(path.read_text())
@@ -37,7 +40,7 @@ if args.catalog is not None:
     found={entry["version"] for entry in versions}
     current=(root/"firmware/display-prototype/VERSION").read_text().strip()
     assert manifest["latest"]==current,(manifest["latest"],current)
-    assert {"v0.3.0","v0.4.0","v0.5.2",current}.issubset(found),found
+    assert {"v0.3.0","v0.4.0","v0.5.2","v0.5.6","v0.5.7",current}.issubset(found),found
     for entry in versions:
         assert entry["status"] in ("hardware-tested","experimental","known-issue")
         assert entry["manifest"].startswith("/MeshCrossway/flasher/firmware/versions/")

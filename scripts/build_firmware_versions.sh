@@ -182,8 +182,37 @@ assert info["sha256"]==expected
 print("Preserved exact display-tested v0.5.6 recovery image:",expected)
 RESTORE_V056
 python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.6" --version v0.5.6 --ref 0d1193d427926529615e1bd24f60d5d34d267fa4
+# Preserve the exact hardware-tested v0.5.7 bytes, rather than recompiling rollback.
+python3 - "$OUT/versions/v0.5.7" <<'RESTORE_V057'
+import hashlib
+import json
+import sys
+import urllib.request
+from pathlib import Path
+folder=Path(sys.argv[1])
+expected_prefix="f1d811aea36a"
+base="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/v0.5.7/"
+folder.mkdir(parents=True,exist_ok=True)
+image=folder/"meshcrossway-display-dev.bin"
+files=("manifest.json","build-info.json",image.name)
+if not (all((folder/name).is_file() for name in files) and
+        hashlib.sha256(image.read_bytes()).hexdigest().startswith(expected_prefix)):
+    # Fetch all bytes before replacing anything; unavailable recovery aborts publication.
+    data={}
+    for name in files:
+        with urllib.request.urlopen(base+name,timeout=60) as response:
+            data[name]=response.read()
+    if not hashlib.sha256(data[image.name]).hexdigest().startswith(expected_prefix):
+        sys.exit("REJECT: published v0.5.7 differs from hardware-tested checksum")
+    for name,content in data.items():
+        (folder/name).write_bytes(content)
+info=json.loads((folder/"build-info.json").read_text())
+assert info["sha256"].startswith(expected_prefix) and info["size"]==1174384 and info["commit"]=="6715b3d314003d107ad24eb9fbfa6de5e753913d" and hashlib.sha256(image.read_bytes()).hexdigest()==info["sha256"]
+print("Preserved exact display-tested v0.5.7 recovery image:",info["sha256"])
+RESTORE_V057
+python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.7" --version v0.5.7 --ref 6715b3d314003d107ad24eb9fbfa6de5e753913d
 case "$LATEST_VERSION" in
-  v0.3.0|v0.4.0|v0.5.2|v0.5.4|v0.5.6) echo "Current version already available in historical archive" ;;
+  v0.3.0|v0.4.0|v0.5.2|v0.5.4|v0.5.6|v0.5.7) echo "Current version already available in historical archive" ;;
   *) build_version "$LATEST_VERSION" HEAD ;;
 esac
 python3 "$ROOT/scripts/write_firmware_catalog.py" \
