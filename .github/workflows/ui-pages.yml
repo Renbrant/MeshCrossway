@@ -14,10 +14,12 @@ on:
       - "scripts/write_firmware_*.py"
       - "scripts/verify_firmware_version.py"
       - "scripts/check_firmware_identity.py"
+      - "scripts/restore_reviewed_firmware.py"
       - ".github/workflows/ui-pages.yml"
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -65,6 +67,10 @@ jobs:
         with:
           path: _site/flasher/firmware/versions
           key: meshcrossway-current-${{ hashFiles('firmware/display-prototype/**', 'scripts/build_firmware_versions.sh', 'scripts/write_firmware_version.py') }}-idf532-bsp-d9ff7837-v2
+      - name: Reuse identical firmware approved by PR preflight
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/restore_reviewed_firmware.py
       - name: Compile missing firmware archives and current image
         run: bash scripts/build_firmware_versions.sh
       - name: Verify selectable manifests and binaries
