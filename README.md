@@ -1,10 +1,10 @@
-<p align="center"><img src="docs/site/assets/logo-vertical.svg" width="330" alt="MeshCrossway mountain and two-network logo"></p>
+<p align="center"><img src="docs/site/assets/logo-vertical.svg" width="330" alt="MeshCrossway official orange mountain logo"></p>
 
 # MeshCrossway
 
 **TWO MESH NETWORKS. THREE MODULAR DEVICES. ONE INTERFACE.**
 
-Brand identity: **MeshCrossway** (one word, capital M and C). The two rings represent distinct, independent networks: gray and orange. [Horizontal logo](docs/site/assets/logo-horizontal.svg) · [Symbol](docs/site/assets/logo-symbol.svg).
+**Official brand identity (October 28, 2026):** Orange twin-peak mountain symbol; **Mesh** in white and **Crossway** in orange, on one line, with technical wide-weight typography. [Branding guide](docs/branding.md) · [Horizontal logo](docs/site/assets/logo-horizontal.svg) · [Symbol](docs/site/assets/logo-symbol.svg) · [Stacked logo](docs/site/assets/logo-vertical.svg).
 
 **Meshtastic + MeshCore — two independent detachable LoRa radio Pods connected via Bluetooth Low Energy (BLE) to a dedicated touchscreen Core.**
 
