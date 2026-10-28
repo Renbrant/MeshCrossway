@@ -88,3 +88,11 @@ v0.5.9 (not physically tested) explicitly enables `CONFIG_FATFS_LFN_HEAP=y` in t
 Physical test: insert FAT32 card before boot; install **without Erase**; verify Settings' SD state; reconnect Wi-Fi (or await DHCP); confirm state **saved** and a valid `meshcrossway-wifi.json` at SD root. Remove/read the card only while device is powered down, and treat the plaintext password as sensitive. Only after verifying the backup should full Erase/recovery be tested. NVS-preservation on firmware updates is an independent issue; continue investigating if credentials still disappear despite installing without Erase. Preserve v0.5.7 and v0.5.8 binary rollbacks.
 
 **Release numbering:** v0.5.9 is reserved for the SD bug fix. The separate experimental read-only screen viewer PR #21 must be renumbered/rebased before future merge; do not publish two different firmwares with the same version.
+
+## v0.5.9 physical verification — FAT32 SD write and no-Erase Wi-Fi update
+
+On October 28, the owner reported **SD backup: saved** on v0.5.9 with a **32 GB FAT32 microSD**. The same device was then reinstalled with v0.5.9 and **automatically reconnected to the home Wi-Fi** after restarting. This physically validates successful backup-write reporting and Wi-Fi credential persistence across that reinstall. The v0.5.8 FAT32 write failure is no longer present in this test. Source-level cause was likely ESP-IDF FatFs long-filename support being disabled; a hardware errno trace from the failing v0.5.8 image was not captured, so avoid claiming conclusive syscall-level proof.
+
+**Still not validated:** the user has not independently inspected the root-level `meshcrossway-wifi.json` file, and a complete **Erase → SD restore with NVS empty** was not performed. Reconnection after normal reflashing can come from preserved internal NVS, not necessarily SD restoration. Do not mark full SD recovery as tested or suggest Erase until a valid external backup has been confirmed. The plaintext JSON holds the Wi-Fi password; do not request screenshots or contents.
+
+The v0.5.9 firmware remains HTTP status-only. The draft screen-viewer experiment PR #21 must be rebased and renumbered to **v0.5.10 or later** before merging to avoid version collisions.
