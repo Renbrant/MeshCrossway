@@ -1,6 +1,6 @@
 # MeshCrossway — image sources and V1 visual status
 
-> **Architecture update — 2026-10-28:** Current MeshCrossway development is **software-first, three independently powered detachable devices, two BLE links**. See [modular architecture](modular-architecture.md). The previous UART/single-carrier PCB content on this page is **archived integrated-variant reference**, not the current implementation. **All KiCad files remain untouched.**
+> **Architecture update — 2026-10-28:** Current MeshCrossway development is **software-first, three independently powered detachable devices, two BLE links**. See [modular architecture](../modular-architecture.md). The previous UART/single-carrier PCB content on this page is **archived integrated-variant reference**, not the current implementation. **All KiCad files remain untouched.**
 
 [Project README](../../README.md) · [Current BOM and pin-level proposal](../hardware-wiring.md)
 
@@ -40,3 +40,5 @@ SVG diagrams are maintained by [scripts/generate_wiring_diagrams.py](../../scrip
 - [Waveshare product photo references](amazon/README.md): the selected display module's original listing images and attribution.
 
 Third-party product images are not relicensed by the project. Use official Seeed, Waveshare and u-blox datasheets and PCB CAD for any actual placement or manufacturing work.
+
+For licensing scope and future asset imports, see the [licensing policy](../licensing.md) and [third-party notices](../../THIRD_PARTY_NOTICES.md).

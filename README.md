@@ -106,4 +106,6 @@ The **LilyGO T-Deck Plus** is being evaluated as an **optional portable replacem
 
 Open an [issue](https://github.com/Renbrant/MeshCrossway/issues) with board revision, firmware version and reproducible details. Do not post private keys or personal location histories.
 
-MeshCrossway original code and documentation are provided under the [MIT License](LICENSE). Third-party product imagery, upstream firmware and documentation retain their separate licenses; see [image credits and technical-diagram sources](docs/images/README.md). MeshCrossway is independent of the suppliers and protocol projects referenced here.
+MeshCrossway original code and documentation remain under the [MIT License](LICENSE). Compiled display firmware combines original code with Waveshare and other components under their own licenses; it must not be described as MIT-only. Native Radio Pod firmware, product imagery and vendor CAD retain their separate terms.
+
+See the [licensing policy](docs/licensing.md), [initial dependency review and outstanding release checks](docs/third-party-licenses.md), [third-party notices](THIRD_PARTY_NOTICES.md), [contribution guide](CONTRIBUTING.md) and [image credits](docs/images/README.md). This is an initial source-level review, not a complete audit of published binaries. MeshCrossway is independent of the suppliers and protocol projects referenced here.
