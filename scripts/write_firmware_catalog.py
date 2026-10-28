@@ -37,6 +37,10 @@ for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7",latest):
     if version in tested:
         summary,label=tested[version]
         status="hardware-tested"
+    elif version=="v0.5.9":
+        summary="Experimental one-shot read-only screen capture, 5s rate limit and PIN from physical Settings. No remote touch. Hardware stability untested."
+        label="Manual screen view / experimental"
+        status="experimental"
     elif version=="v0.5.8":
         summary="Plaintext Wi-Fi backup/restore on optional SD; split installer preserves internal settings without Erase. HTTP status only. Hardware test pending."
         label="SD Wi-Fi backup / experimental"
