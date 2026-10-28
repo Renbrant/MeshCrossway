@@ -1,12 +1,9 @@
 #!/usr/bin/env bash
-# Rebuild a selectable firmware archive from immutable, previously tested commits.
+# Build only the latest tested release and newer supported candidates.
 set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-V03_REF="b48145f07ef4d00895f7ccedbdfb240a322dd37a"
-V04_REF="5dfe3744ed7b062c629ea5d2811dc434928826b1"
-V052_REF="ce221fcf3d0ba1524ab2cea7e6296b584a97ff71"
 WAVESHARE_REF="d9ff7837148b47b33edadc4b87775c341cf35bbe"
 LATEST_VERSION="$(tr -d '\r\n' < firmware/display-prototype/VERSION)"
 if [[ ! "$LATEST_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -93,251 +90,65 @@ build_version() {
   echo "SUCCESS: $version $(wc -c < "$image_dir/meshcrossway-display-dev.bin") bytes"
 }
 
-build_version v0.3.0 "$V03_REF"
-build_version v0.4.0 "$V04_REF"
-# Preserve the exact hardware-tested v0.5.2 bytes, rather than recompiling rollback.
-python3 - "$OUT/versions/v0.5.2" <<'RESTORE_V052'
-import hashlib
-import json
-import sys
-import urllib.request
-from pathlib import Path
-folder=Path(sys.argv[1])
-expected="293c3a363b4aa686ce7e31d1fcb41576f2cd412501fade09c25b4b6287619bbf"
-base="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/v0.5.2/"
-folder.mkdir(parents=True,exist_ok=True)
-image=folder/"meshcrossway-display-dev.bin"
-files=("manifest.json","build-info.json",image.name)
-if not (all((folder/name).is_file() for name in files) and
-        hashlib.sha256(image.read_bytes()).hexdigest()==expected):
-    # Fetch all bytes before replacing anything; unavailable recovery aborts publication.
-    data={}
-    for name in files:
-        with urllib.request.urlopen(base+name,timeout=60) as response:
-            data[name]=response.read()
-    if hashlib.sha256(data[image.name]).hexdigest()!=expected:
-        sys.exit("REJECT: published v0.5.2 differs from hardware-tested checksum")
-    for name,content in data.items():
-        (folder/name).write_bytes(content)
-info=json.loads((folder/"build-info.json").read_text())
-assert info["sha256"]==expected
-print("Preserved exact display-tested v0.5.2 recovery image:",expected)
-RESTORE_V052
-python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.2" --version v0.5.2 --ref "$V052_REF"
-# Preserve the exact hardware-tested v0.5.4 bytes, rather than recompiling rollback.
-python3 - "$OUT/versions/v0.5.4" <<'RESTORE_V054'
-import hashlib
-import json
-import sys
-import urllib.request
-from pathlib import Path
-folder=Path(sys.argv[1])
-expected="da225e83bea590498069e408c793b3d633fa827678d197fb622ed0122dc6643c"
-base="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/v0.5.4/"
-folder.mkdir(parents=True,exist_ok=True)
-image=folder/"meshcrossway-display-dev.bin"
-files=("manifest.json","build-info.json",image.name)
-if not (all((folder/name).is_file() for name in files) and
-        hashlib.sha256(image.read_bytes()).hexdigest()==expected):
-    # Fetch all bytes before replacing anything; unavailable recovery aborts publication.
-    data={}
-    for name in files:
-        with urllib.request.urlopen(base+name,timeout=60) as response:
-            data[name]=response.read()
-    if hashlib.sha256(data[image.name]).hexdigest()!=expected:
-        sys.exit("REJECT: published v0.5.4 differs from hardware-tested checksum")
-    for name,content in data.items():
-        (folder/name).write_bytes(content)
-info=json.loads((folder/"build-info.json").read_text())
-assert info["sha256"]==expected
-print("Preserved exact display-tested v0.5.4 recovery image:",expected)
-RESTORE_V054
-python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.4" --version v0.5.4 --ref c7de2e97e0d63a3ca9a0e2094de1706cf02d599c
-# Preserve the exact hardware-tested v0.5.6 bytes, rather than recompiling rollback.
-python3 - "$OUT/versions/v0.5.6" <<'RESTORE_V056'
-import hashlib
-import json
-import sys
-import urllib.request
-from pathlib import Path
-folder=Path(sys.argv[1])
-expected="a52490616a960709b3f476fe1fae7b2d98e68a0d447c7980f10efe60d098967d"
-base="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/v0.5.6/"
-folder.mkdir(parents=True,exist_ok=True)
-image=folder/"meshcrossway-display-dev.bin"
-files=("manifest.json","build-info.json",image.name)
-if not (all((folder/name).is_file() for name in files) and
-        hashlib.sha256(image.read_bytes()).hexdigest()==expected):
-    # Fetch all bytes before replacing anything; unavailable recovery aborts publication.
-    data={}
-    for name in files:
-        with urllib.request.urlopen(base+name,timeout=60) as response:
-            data[name]=response.read()
-    if hashlib.sha256(data[image.name]).hexdigest()!=expected:
-        sys.exit("REJECT: published v0.5.6 differs from hardware-tested checksum")
-    for name,content in data.items():
-        (folder/name).write_bytes(content)
-info=json.loads((folder/"build-info.json").read_text())
-assert info["sha256"]==expected
-print("Preserved exact display-tested v0.5.6 recovery image:",expected)
-RESTORE_V056
-python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.6" --version v0.5.6 --ref 0d1193d427926529615e1bd24f60d5d34d267fa4
-# Preserve the exact hardware-tested v0.5.7 bytes, rather than recompiling rollback.
-python3 - "$OUT/versions/v0.5.7" <<'RESTORE_V057'
-import hashlib
-import json
-import sys
-import urllib.request
-from pathlib import Path
-folder=Path(sys.argv[1])
-expected_prefix="f1d811aea36a"
-base="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/v0.5.7/"
-folder.mkdir(parents=True,exist_ok=True)
-image=folder/"meshcrossway-display-dev.bin"
-files=("manifest.json","build-info.json",image.name)
-if not (all((folder/name).is_file() for name in files) and
-        hashlib.sha256(image.read_bytes()).hexdigest().startswith(expected_prefix)):
-    # Fetch all bytes before replacing anything; unavailable recovery aborts publication.
-    data={}
-    for name in files:
-        with urllib.request.urlopen(base+name,timeout=60) as response:
-            data[name]=response.read()
-    if not hashlib.sha256(data[image.name]).hexdigest().startswith(expected_prefix):
-        sys.exit("REJECT: published v0.5.7 differs from hardware-tested checksum")
-    for name,content in data.items():
-        (folder/name).write_bytes(content)
-info=json.loads((folder/"build-info.json").read_text())
-assert info["sha256"].startswith(expected_prefix) and info["size"]==1174384 and info["commit"]=="6715b3d314003d107ad24eb9fbfa6de5e753913d" and hashlib.sha256(image.read_bytes()).hexdigest()==info["sha256"]
-print("Preserved exact display-tested v0.5.7 recovery image:",info["sha256"])
-RESTORE_V057
-python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.7" --version v0.5.7 --ref 6715b3d314003d107ad24eb9fbfa6de5e753913d
-# Preserve the exact published v0.5.8 SD-backup build as an experimental rollback.
-# v0.5.8 has a split flasher manifest; all three parts must be retained.
-python3 - "$OUT/versions/v0.5.8" <<'RESTORE_V058'
-import hashlib
-import json
-import sys
-import urllib.request
-from pathlib import Path
-folder=Path(sys.argv[1])
-expected_prefix="a069f6d5108d"
-compiled_ref="330c456149ac6bc23a8ef4621a83730565c11ce2"
-base="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/v0.5.8/"
-files=("manifest.json","build-info.json","meshcrossway-display-dev.bin",
-       "bootloader.bin","partition-table.bin","application.bin")
-folder.mkdir(parents=True,exist_ok=True)
-def valid():
-    if not all((folder/name).is_file() for name in files):return False
-    image=(folder/"meshcrossway-display-dev.bin").read_bytes()
-    info=json.loads((folder/"build-info.json").read_text())
-    digest=hashlib.sha256(image).hexdigest()
-    return (digest.startswith(expected_prefix) and info["sha256"]==digest and
-            info["commit"]==compiled_ref and info["version"]=="v0.5.8")
-if not valid():
-    data={}
-    for name in files:
-        with urllib.request.urlopen(base+name,timeout=60) as response:
-            data[name]=response.read()
-    if not hashlib.sha256(data["meshcrossway-display-dev.bin"]).hexdigest().startswith(expected_prefix):
-        sys.exit("REJECT: published v0.5.8 differs from the reviewed binary")
-    for name,content in data.items():
-        (folder/name).write_bytes(content)
-if not valid():sys.exit("REJECT: v0.5.8 rollback metadata mismatch")
-print("Preserved experimental v0.5.8 SD rollback image:",
-      hashlib.sha256((folder/"meshcrossway-display-dev.bin").read_bytes()).hexdigest())
-RESTORE_V058
-python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.8" --version v0.5.8 --ref 330c456149ac6bc23a8ef4621a83730565c11ce2
+# Only one physical rollback and recent candidates are delivered in the Web Flasher.
+# Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
+# Update these two constants whenever the owner validates a newer hardware build.
+STABLE_VERSION="v0.6.2"
+STABLE_REF="a508c7d9a9eaf580061d2daca6838ecb78f89085"
+FIRST_EXPERIMENTAL="v0.6.4"
+FIRST_EXPERIMENTAL_REF="1620502f43b756581732cd58502ce171c49b1c60"
 
-# Preserve the physically tested v0.5.9 SD backup and NVS update firmware.
-# v0.5.9 has a split flasher manifest; all three parts must be retained.
-python3 - "$OUT/versions/v0.5.9" <<'RESTORE_V059'
-import hashlib
-import json
-import sys
-import urllib.request
-from pathlib import Path
-folder=Path(sys.argv[1])
-expected_prefix="fc1bd4683e02"
-compiled_ref="a24e5fde12ddecda343e6b633d37ffee5cae8ae7"
-base="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/v0.5.9/"
-files=("manifest.json","build-info.json","meshcrossway-display-dev.bin",
-       "bootloader.bin","partition-table.bin","application.bin")
-folder.mkdir(parents=True,exist_ok=True)
-def valid():
-    if not all((folder/name).is_file() for name in files):return False
-    image=(folder/"meshcrossway-display-dev.bin").read_bytes()
-    info=json.loads((folder/"build-info.json").read_text())
-    digest=hashlib.sha256(image).hexdigest()
-    return (digest.startswith(expected_prefix) and len(image)==1269824 and info["sha256"]==digest and
-            info["commit"]==compiled_ref and info["version"]=="v0.5.9")
-if not valid():
-    data={}
-    for name in files:
-        with urllib.request.urlopen(base+name,timeout=60) as response:
-            data[name]=response.read()
-    if not hashlib.sha256(data["meshcrossway-display-dev.bin"]).hexdigest().startswith(expected_prefix):
-        sys.exit("REJECT: published v0.5.9 differs from the reviewed binary")
-    for name,content in data.items():
-        (folder/name).write_bytes(content)
-if not valid():sys.exit("REJECT: v0.5.9 rollback metadata mismatch")
-print("Preserved experimental v0.5.9 SD rollback image:",
-      hashlib.sha256((folder/"meshcrossway-display-dev.bin").read_bytes()).hexdigest())
-RESTORE_V059
-python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.9" --version v0.5.9 --ref a24e5fde12ddecda343e6b633d37ffee5cae8ae7
+version_gte() {
+  # 0 = first argument is at least the second (GNU coreutils version sort).
+  [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | tail -n 1)" = "$1" ]
+}
 
-# Preserve the owner's tested v0.5.10 read-only remote capture + SD/Wi-Fi rollback.
-# v0.5.10 has a split flasher manifest; all three parts must be retained.
-python3 - "$OUT/versions/v0.5.10" <<'RESTORE_V0510'
-import hashlib
-import json
-import sys
-import urllib.request
-from pathlib import Path
-folder=Path(sys.argv[1])
-expected_prefix="861137c7c05a"
-compiled_ref="cd8502c1ae95fae04a95a5e0452d18089d0a402e"
-base="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/v0.5.10/"
-files=("manifest.json","build-info.json","meshcrossway-display-dev.bin",
-       "bootloader.bin","partition-table.bin","application.bin")
-folder.mkdir(parents=True,exist_ok=True)
-def valid():
-    if not all((folder/name).is_file() for name in files):return False
-    image=(folder/"meshcrossway-display-dev.bin").read_bytes()
-    info=json.loads((folder/"build-info.json").read_text())
-    digest=hashlib.sha256(image).hexdigest()
-    return (digest.startswith(expected_prefix) and len(image)==1277136 and info["sha256"]==digest and
-            info["commit"]==compiled_ref and info["version"]=="v0.5.10")
-if not valid():
-    data={}
-    for name in files:
-        with urllib.request.urlopen(base+name,timeout=60) as response:
-            data[name]=response.read()
-    if not hashlib.sha256(data["meshcrossway-display-dev.bin"]).hexdigest().startswith(expected_prefix):
-        sys.exit("REJECT: published v0.5.10 differs from the reviewed binary")
-    for name,content in data.items():
-        (folder/name).write_bytes(content)
-if not valid():sys.exit("REJECT: v0.5.10 rollback metadata mismatch")
-print("Preserved experimental v0.5.10 SD rollback image:",
-      hashlib.sha256((folder/"meshcrossway-display-dev.bin").read_bytes()).hexdigest())
-RESTORE_V0510
-python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.10" --version v0.5.10 --ref cd8502c1ae95fae04a95a5e0452d18089d0a402e
-
-# Archive the last pre-BLE field-console version for easy downgrade.
-# This immutable source commit is from the approved main history.
-if [ "$LATEST_VERSION" != "v0.6.2" ]; then
-  build_version v0.6.2 "a508c7d9a9eaf580061d2daca6838ecb78f89085"
+if ! version_gte "$LATEST_VERSION" "$STABLE_VERSION"; then
+  echo "::error::LATEST_VERSION is below the approved stable release."
+  exit 1
+fi
+if [ "$LATEST_VERSION" = "v0.6.3" ]; then
+  echo "::error::v0.6.3 is a known broken boot release and cannot be published."
+  exit 1
 fi
 
-# Retain the reproducible v0.6.3 known-broken image for diagnostics only.
-# Its known-issue flag blocks Web Flasher installation.
-if [ "$LATEST_VERSION" != "v0.6.3" ]; then
-  build_version v0.6.3 "1fb80b5933ff58ac81e23a6d977a70bd8b2ac60e"
+# Version pin for an owner-approved image. The file and SHA remain immutable.
+if [ "$LATEST_VERSION" != "$STABLE_VERSION" ]; then
+  build_version "$STABLE_VERSION" "$STABLE_REF"
 fi
 
-case "$LATEST_VERSION" in
-  v0.3.0|v0.4.0|v0.5.2|v0.5.4|v0.5.6|v0.5.7|v0.5.8|v0.5.9|v0.5.10) echo "Current version already available in historical archive" ;;
-  *) build_version "$LATEST_VERSION" HEAD ;;
-esac
+# Keep the initial, non-broken candidate as a test option when later candidates arrive,
+# only while it is newer than the latest tested release.
+if version_gte "$LATEST_VERSION" "$FIRST_EXPERIMENTAL" &&
+   version_gte "$FIRST_EXPERIMENTAL" "$STABLE_VERSION" &&
+   [ "$LATEST_VERSION" != "$FIRST_EXPERIMENTAL" ] &&
+   [ "$STABLE_VERSION" != "$FIRST_EXPERIMENTAL" ]; then
+  build_version "$FIRST_EXPERIMENTAL" "$FIRST_EXPERIMENTAL_REF"
+fi
+
+# Compile or reuse the latest image (may be stable or experimental).
+if [ "$LATEST_VERSION" = "$STABLE_VERSION" ]; then
+  build_version "$STABLE_VERSION" HEAD
+else
+  build_version "$LATEST_VERSION" HEAD
+fi
+
+# The Pages artifact must contain only the currently supported release line,
+# even when a broad Actions cache restored historical directories.
+for archive in "$OUT"/versions/*; do
+  [ -d "$archive" ] || continue
+  version="$(basename "$archive")"
+  if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$LATEST_VERSION" ]; then
+    continue
+  fi
+  if [ "$version" = "$FIRST_EXPERIMENTAL" ] &&
+     version_gte "$LATEST_VERSION" "$FIRST_EXPERIMENTAL" &&
+     version_gte "$FIRST_EXPERIMENTAL" "$STABLE_VERSION"; then
+    continue
+  fi
+  rm -rf -- "$archive"
+done
+
 python3 "$ROOT/scripts/write_firmware_catalog.py" \
   --root "$OUT" --latest "$LATEST_VERSION"
-echo "Firmware version catalog ready in $OUT"
+echo "Minimal firmware release line ready: stable $STABLE_VERSION, newest $LATEST_VERSION"
