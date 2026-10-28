@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.5.8: local Wi-Fi provisioning; remote UI disabled.
+// MeshCrossway v0.6.0: approved v5 side-console architecture on LVGL, no remote touch.
 // All radio and GNSS values remain simulated.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
@@ -243,67 +243,343 @@ static void wifi_setup(lv_event_t *){
   (void)meshnetwork::begin_scan();
 
 }
-static void draw(){
-  uptime_value=nullptr;heap_value=nullptr;network_value=nullptr;backup_value=nullptr;
-  static const char *names[]={"OVERVIEW","MESSAGES","NAVIGATION","RADIOS","SETTINGS"};
-  lv_label_set_text(heading,names[page]);
-  lv_obj_clean(body);
-  for(int i=0;i<5;i++){
-    fill(tabs[i],i==page?orange:panel2,8);
-    lv_obj_set_style_text_color(tabs[i],i==page?bg:white,0);
+// Field console v0.6: all geometry uses a real 480x320 landscape display.
+// Left navigation and contextual right drawer can be independently collapsed.
+// Keep Wi-Fi provisioning and the manual screen viewer independent of UI rebuilds.
+static lv_obj_t *left_rail=nullptr,*right_rail=nullptr,*context_actions=nullptr;
+static lv_obj_t *left_handle=nullptr,*right_handle=nullptr,*top_wifi=nullptr;
+static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
+static bool left_compact=false,right_compact=false;
+static int chat_filter=0;
+static const lv_color_t line_color=lv_color_hex(0x494039);
+static const lv_color_t purple=lv_color_hex(0xB99AFF);
+static const lv_color_t green=lv_color_hex(0x72D8A5);
+static const lv_color_t cyan=lv_color_hex(0x6CBDE6);
+static const lv_color_t red=lv_color_hex(0xFF7777);
+static const char *screen_names[5]={"HOME","CHATS","MAP","RADIOS","MORE"};
+static const char *tab_names[5]={"Home","Chats","Map","Radios","More"};
+static const char *tab_glyphs[5]={LV_SYMBOL_HOME,LV_SYMBOL_EDIT,LV_SYMBOL_GPS,LV_SYMBOL_BLUETOOTH,LV_SYMBOL_SETTINGS};
+enum Action {
+  A_INBOX,A_NEW,A_POSITION,A_NETWORKS,A_WIFI,A_POIS,A_TRACKS,A_RECORD,A_SHARE,
+  A_GNSS,A_TEAM,A_PATHS,A_SCANNER,A_PACKETS,A_REPEATERS,A_SETUP,A_DIAGNOSTIC,
+  A_VIEW,A_PRIVACY,A_ABOUT,A_CHAT_MT,A_CHAT_MC,A_CHAT_ALL,A_QUICK
+};
+struct ActionInfo {const char *label;int id;lv_color_t color;};
+static const ActionInfo home_actions[]={
+  {"Inbox",A_INBOX,orange},{"New msg",A_NEW,green},{"Position",A_POSITION,cyan},
+  {"Networks",A_NETWORKS,purple},{"Wi-Fi",A_WIFI,orange}
+};
+static const ActionInfo chat_actions[]={
+  {"All",A_CHAT_ALL,orange},{"Meshtastic",A_CHAT_MT,green},
+  {"MeshCore",A_CHAT_MC,purple},{"Compose",A_NEW,orange}
+};
+static const ActionInfo map_actions[]={
+  {"POIs",A_POIS,orange},{"Tracks",A_TRACKS,purple},{"Record",A_RECORD,red},
+  {"Live share",A_SHARE,green},{"GNSS",A_GNSS,cyan},{"Team",A_TEAM,orange}
+};
+static const ActionInfo radio_actions[]={
+  {"Discover",A_SCANNER,cyan},{"Packets",A_PACKETS,orange},
+  {"Repeaters",A_REPEATERS,purple},{"Network",A_NETWORKS,green}
+};
+static const ActionInfo more_actions[]={
+  {"Wi-Fi",A_WIFI,orange},{"Device",A_DIAGNOSTIC,cyan},
+  {"Remote",A_VIEW,green},{"Quick",A_QUICK,purple},{"Privacy",A_PRIVACY,orange}
+};
+
+static void draw(); // Forward-declared above Wi-Fi editor callbacks.
+static int content_width(){return 480-(left_compact?40:79)-(right_compact?29:125);}
+static lv_obj_t *panel_at(lv_obj_t *parent,int x,int y,int w,int h,lv_color_t color,int radius=8){
+  lv_obj_t *o=lv_obj_create(parent);fill(o,color,radius);
+  lv_obj_set_pos(o,x,y);lv_obj_set_size(o,w,h);
+  lv_obj_clear_flag(o,LV_OBJ_FLAG_SCROLLABLE);return o;
+}
+static lv_obj_t *color_label(lv_obj_t *parent,const char *value,int x,int y,int w,lv_color_t color){
+  return txt(parent,value,x,y,w,color);
+}
+static lv_obj_t *action_button(lv_obj_t *parent,const char *label,int x,int y,int w,int h,
+                               lv_color_t color,lv_event_cb_t callback,intptr_t data){
+  lv_obj_t *b=lv_btn_create(parent);fill(b,color,7);
+  lv_obj_set_pos(b,x,y);lv_obj_set_size(b,w,h);
+  lv_obj_add_event_cb(b,callback,LV_EVENT_CLICKED,(void*)data);
+  lv_obj_t *l=txt(b,label,6,(h-18)/2,w-12,color==orange?bg:white);
+  lv_obj_set_style_text_align(l,LV_TEXT_ALIGN_CENTER,0);
+  return b;
+}
+static void info_close(lv_event_t *){
+  if(!info_dialog)return;
+  lv_obj_t *old=info_dialog;info_dialog=nullptr;lv_obj_del(old);
+}
+static void close_shade(){
+  if(!shade)return;
+  lv_obj_t *old=shade;shade=nullptr;lv_obj_del(old);
+}
+static void shade_close(lv_event_t *){close_shade();}
+static void notice(const char *title,const char *body_text){
+  close_shade();
+  if(info_dialog)info_close(nullptr);
+  info_dialog=panel_at(lv_layer_top(),20,45,440,220,panel,10);
+  color_label(info_dialog,title,15,13,298,orange);
+  action_button(info_dialog,"CLOSE",327,7,103,38,panel2,info_close,0);
+  lv_obj_t *message=txt(info_dialog,body_text,15,65,410,white);
+  lv_label_set_long_mode(message,LV_LABEL_LONG_WRAP);
+  lv_obj_set_height(message,143);
+}
+static void on_action(lv_event_t *e){
+  int id=(int)(intptr_t)lv_event_get_user_data(e);
+  if(id==A_WIFI){close_shade();wifi_setup(nullptr);return;}
+  if(id==A_INBOX||id==A_CHAT_ALL||id==A_CHAT_MT||id==A_CHAT_MC){
+    if(id==A_CHAT_MT)chat_filter=1;
+    else if(id==A_CHAT_MC)chat_filter=2;
+    else chat_filter=0;
+    page=1;draw();return;
   }
-  switch(page){
-    case 0:
-      tile(7,7,171,91,"MESHTASTIC","Radio A / Standby","17 peers [DEMO]");
-      tile(185,7,171,91,"MESHCORE","Radio B / Standby","9 peers [DEMO]");
-      tile(7,105,171,91,"POSITION","No GNSS connected","Fix: demo only");
-      tile(185,105,171,91,"CROSSWAY","Dual radio design","Bridge: off");
+  if(id==A_POSITION||id==A_POIS||id==A_TRACKS||id==A_RECORD||id==A_SHARE||
+     id==A_GNSS||id==A_TEAM||id==A_PATHS){page=2;draw();}
+  if(id==A_NETWORKS||id==A_SCANNER||id==A_PACKETS||id==A_REPEATERS){page=3;draw();}
+  if(id==A_SETUP||id==A_DIAGNOSTIC||id==A_VIEW||id==A_PRIVACY||id==A_ABOUT){page=4;draw();}
+  char summary[320];
+  switch(id){
+    case A_NEW:
+      notice("NEW MESSAGE / DEMO","A unified composer will require real BLE radio connections. No message has been transmitted or queued.");
       break;
-    case 1:
-      tile(7,7,349,62,"MESHTASTIC / DEMO","Trail group: At checkpoint",nullptr);
-      tile(7,76,349,62,"MESHCORE / DEMO","Field team: Copy, all good",nullptr);
-      tile(7,145,349,51,"OFFLINE INBOX","Sample messages only",nullptr);
+    case A_POIS:
+      notice("POINTS OF INTEREST","POI list, categories, save and edit controls are planned. No live coordinates are available.");
       break;
-    case 2:
-      tile(7,7,349,130,"MAP / OFFLINE","No map tiles loaded","GNSS source: simulated");
-      tile(7,144,349,52,"LOCATION SHARING","Off / No data transmitted",nullptr);
+    case A_TRACKS:
+      notice("SAVED TRACKS","Track folders, GPX import and saved paths will use SD storage in a future milestone. Demo only.");
       break;
-    case 3:
-      tile(7,7,171,152,"RADIO A / MT","BLE not connected","RSSI: demo -87 dBm");
-      tile(185,7,171,152,"RADIO B / MC","BLE not connected","RSSI: demo -94 dBm");
-      txt(body,"No packets sent - Simulation only",10,176,340,muted);
+    case A_RECORD:
+      notice("TRACK RECORDING / OFF","GNSS is not connected. Recording cannot start. Nothing was written to SD.");
       break;
-    default:{
-      char uptime[40],memory[40],ip[16],wifi[30],address[50],pairing[48];
-      const uint64_t seconds=(uint64_t)(esp_timer_get_time()/1000000LL);
-      snprintf(uptime,sizeof(uptime),"Uptime: %lluh %02llum",
-               (unsigned long long)(seconds/3600),(unsigned long long)((seconds/60)%60));
-      snprintf(memory,sizeof(memory),"Free heap: %lu KB",
-               (unsigned long)(esp_get_free_heap_size()/1024));
-      meshnetwork::get_status(ip,sizeof(ip),wifi,sizeof(wifi));
-      snprintf(address,sizeof(address),"%s",ip[0]?ip:wifi);
-      char backup_detail[48];meshbackup::describe(backup_detail,sizeof(backup_detail));
-      snprintf(pairing,sizeof(pairing),"SD backup: %.36s",backup_detail);
-      lv_obj_t *device_card=tile(7,6,349,80,"DEVICE / LIVE",uptime,memory);
-      lv_obj_t *wifi_card=tile(7,93,349,82,"WIFI / SD BACKUP",address,pairing);
-      uptime_value=lv_obj_get_child(device_card,1);
-      heap_value=lv_obj_get_child(device_card,2);
-      network_value=lv_obj_get_child(wifi_card,1);
-      backup_value=lv_obj_get_child(wifi_card,2);
-      lv_obj_t *b=lv_btn_create(body);
-      fill(b,orange,8);lv_obj_set_pos(b,7,182);lv_obj_set_size(b,349,44);
-      txt(b,"CONNECT / CHANGE HOME WI-FI",28,11,325,bg);
-      lv_obj_add_event_cb(b,wifi_setup,LV_EVENT_CLICKED,nullptr);
-      char pin_label[64];
-      snprintf(pin_label,sizeof(pin_label),"VIEW PIN: %s  |  READ ONLY",meshcapture::pin());
-      txt(body,pin_label,10,227,347,orange);
+    case A_SHARE:
+      notice("LIVE LOCATION / OFF","Location sharing is disabled. GNSS fix, destination, consent and airtime checks are required before transmission.");
       break;
+    case A_GNSS:case A_POSITION:
+      notice("GNSS / NOT CONNECTED","Position, satellite sky, fix age, accuracy and altitude require the future MAX-M10S GNSS integration.");
+      break;
+    case A_TEAM:
+      notice("TEAM POSITIONS / DEMO","Peer positions require Meshtastic/MeshCore BLE feeds. Illustrative dots are not real locations.");
+      break;
+    case A_PATHS:
+      notice("PATHS / DEMO","Saved paths and routing are not yet available. The map shows no downloaded basemap tiles.");
+      break;
+    case A_SCANNER:
+      notice("RADIO DISCOVERY / NOT READY","Both radio pods are currently disconnected. BLE scanning is not implemented in this firmware.");
+      break;
+    case A_PACKETS:
+      notice("PACKET LOG / EMPTY","No live packets have been received. Radio data shown in the prototype is illustrative.");
+      break;
+    case A_REPEATERS:
+      notice("REPEATERS / NOT READY","Repeaters will appear when BLE connectivity and mesh data providers are integrated.");
+      break;
+    case A_NETWORKS:
+      notice("DUAL MESH / OFFLINE","MX-M Meshtastic and MX-C MeshCore are separate BLE peripherals. Neither is currently connected.");
+      break;
+    case A_DIAGNOSTIC:{
+      const unsigned long up=(unsigned long)(esp_timer_get_time()/1000000LL);
+      snprintf(summary,sizeof(summary),"Uptime: %lu s\nFree heap: %lu KB\nWi-Fi backup: %s\nRemote: manual read-only screen capture",
+               up,(unsigned long)(esp_get_free_heap_size()/1024),meshbackup::status());
+      notice("DEVICE / LIVE",summary);break;
     }
+    case A_VIEW:
+      snprintf(summary,sizeof(summary),"Open http://DEVICE_IP/ on your trusted local network.\nView PIN: %s\nManual screenshots only; remote touch disabled.",meshcapture::pin());
+      notice("REMOTE VIEW / READ ONLY",summary);break;
+    case A_PRIVACY:
+      notice("PRIVACY","Radio location sharing and transmission are disabled. SD Wi-Fi backup contains a plaintext password; protect the card.");
+      break;
+    case A_ABOUT:
+      notice("MESH CROSSWAY v0.6.0","Central Waveshare Rev2.0 field console.\nTwo future BLE radio pods; no operational mesh or GNSS yet.");
+      break;
+    case A_QUICK:
+      notice("QUICK SETTINGS","Use the top status bar to open the quick-settings panel. Wi-Fi setup is real; other controls are previews.");
+      break;
+    default:break;
   }
 }
 static void on_nav(lv_event_t *e){
   page=(int)(intptr_t)lv_event_get_user_data(e);
-  draw();
+  close_shade();draw();
+}
+static void toggle_left(lv_event_t *){left_compact=!left_compact;draw();}
+static void toggle_right(lv_event_t *){right_compact=!right_compact;draw();}
+static void on_filter(lv_event_t *e){
+  chat_filter=(int)(intptr_t)lv_event_get_user_data(e);draw();
+}
+static void quick_action(lv_event_t *e){
+  int mode=(int)(intptr_t)lv_event_get_user_data(e);
+  if(mode==2){close_shade();wifi_setup(nullptr);return;}
+  const char *names[]={"GPS","Bluetooth","","Sound","Brightness"};
+  char text[160];snprintf(text,sizeof(text),"%s is a UI preview only. No device setting was changed.",
+                           names[mode]);
+  notice("QUICK SETTINGS / DEMO",text);
+}
+static void open_shade(lv_event_t *){
+  if(shade){close_shade();return;}
+  if(wifi_dialog||info_dialog)return;
+  shade=panel_at(lv_layer_top(),0,34,480,211,panel,0);
+  color_label(shade,"QUICK SETTINGS  /  STATUS",12,8,330,orange);
+  action_button(shade,"CLOSE",382,4,90,34,panel2,shade_close,0);
+  action_button(shade,"GPS  --",10,52,110,49,panel2,quick_action,0);
+  action_button(shade,"BLE  --",127,52,110,49,panel2,quick_action,1);
+  action_button(shade,"WI-FI",244,52,110,49,orange,quick_action,2);
+  action_button(shade,"SOUND",361,52,109,49,panel2,quick_action,3);
+  color_label(shade,"Brightness: preview only; no hardware change.",13,114,450,muted);
+  action_button(shade,"DISPLAY / DEMO",11,146,226,48,panel2,quick_action,4);
+  action_button(shade,"DEVICE SETTINGS",247,146,223,48,orange,on_action,A_DIAGNOSTIC);
+}
+static void show_center_heading(const char *heading_text,const char *subtitle){
+  const int w=lv_obj_get_width(body);
+  color_label(body,heading_text,8,8,w-15,white);
+  if(subtitle)color_label(body,subtitle,8,30,w-15,muted);
+}
+static void center_card(int x,int y,int w,int h,const char *title,
+                        const char *first,const char *second,lv_color_t color){
+  lv_obj_t *card=panel_at(body,x,y,w,h,panel,8);
+  color_label(card,title,8,8,w-16,color);
+  if(first)color_label(card,first,8,32,w-16,white);
+  if(second)color_label(card,second,8,h-22,w-16,muted);
+}
+static void chat_row(int y,int w,const char *network,const char *who,const char *detail,lv_color_t color){
+  lv_obj_t *button=action_button(body,"",8,y,w-16,53,panel,on_action,A_NEW);
+  color_label(button,network,8,5,32,color);
+  color_label(button,who,47,6,w-61,white);
+  color_label(button,detail,47,30,w-61,muted);
+}
+static void map_preview(int w){
+  const int width=w-16;
+  lv_obj_t *map=panel_at(body,8,56,width,155,lv_color_hex(0x151B1B),6);
+  for(int i=1;i<5;i++){
+    lv_obj_t *vertical=lv_obj_create(map);fill(vertical,lv_color_hex(0x293B36),0);
+    lv_obj_set_pos(vertical,i*(width/5),0);lv_obj_set_size(vertical,1,155);
+  }
+  for(int j=1;j<4;j++){
+    lv_obj_t *horizontal=lv_obj_create(map);fill(horizontal,lv_color_hex(0x293B36),0);
+    lv_obj_set_pos(horizontal,0,j*38);lv_obj_set_size(horizontal,width,1);
+  }
+  // Topographic-style contours are illustrative, not terrain or loaded map tiles.
+  static lv_point_t topo_a[5]={{0,113},{50,92},{102,118},{160,83},{250,100}};
+  static lv_point_t topo_b[5]={{0,68},{45,54},{90,74},{158,38},{250,52}};
+  static lv_point_t topo_c[5]={{0,141},{45,125},{108,144},{178,117},{250,131}};
+  lv_obj_t *contours[3]={lv_line_create(map),lv_line_create(map),lv_line_create(map)};
+  lv_line_set_points(contours[0],topo_a,5);
+  lv_line_set_points(contours[1],topo_b,5);
+  lv_line_set_points(contours[2],topo_c,5);
+  for(int k=0;k<3;k++){
+    lv_obj_set_style_line_width(contours[k],2,0);
+    lv_obj_set_style_line_color(contours[k],lv_color_hex(0x5B6B4C),0);
+    lv_obj_set_pos(contours[k],0,0);
+  }
+  lv_obj_t *pin=lv_obj_create(map);
+  fill(pin,orange,11);lv_obj_set_pos(pin,width/2-5,73);lv_obj_set_size(pin,11,11);
+  lv_obj_set_style_border_color(pin,white,0);lv_obj_set_style_border_width(pin,2,0);
+  lv_obj_t *label=panel_at(map,7,124,width-14,24,panel,4);
+  color_label(label,"ILLUSTRATIVE / NO OFFLINE TILES",5,5,width-24,muted);
+}
+static void rebuild_context(){
+  static const char *titles[5]={"HOME ACTIONS","CHAT TOOLS","MAP TOOLS","RADIO TOOLS","DEVICE TOOLS"};
+  const ActionInfo *choices=home_actions;
+  size_t count=sizeof(home_actions)/sizeof(home_actions[0]);
+  if(page==1){choices=chat_actions;count=sizeof(chat_actions)/sizeof(chat_actions[0]);}
+  else if(page==2){choices=map_actions;count=sizeof(map_actions)/sizeof(map_actions[0]);}
+  else if(page==3){choices=radio_actions;count=sizeof(radio_actions)/sizeof(radio_actions[0]);}
+  else if(page==4){choices=more_actions;count=sizeof(more_actions)/sizeof(more_actions[0]);}
+  lv_obj_clean(context_actions);
+  if(right_compact)return;
+  color_label(context_actions,titles[page],6,5,106,orange);
+  int y=28;
+  for(size_t i=0;i<count;i++){
+    lv_obj_t *button=action_button(context_actions,choices[i].label,4,y,111,37,
+                                   panel2,on_action,(intptr_t)choices[i].id);
+    lv_obj_set_style_border_width(button,1,0);
+    lv_obj_set_style_border_color(button,choices[i].color,0);
+    y+=40;
+  }
+}
+static void draw(){
+  if(!body||!left_rail||!right_rail||!context_actions)return;
+  const int lw=left_compact?40:79,rw=right_compact?29:125,cw=480-lw-rw;
+  uptime_value=nullptr;heap_value=nullptr;network_value=nullptr;backup_value=nullptr;
+  lv_obj_set_pos(left_rail,0,34);lv_obj_set_size(left_rail,lw,286);
+  lv_obj_set_pos(body,lw,34);lv_obj_set_size(body,cw,286);
+  lv_obj_set_pos(right_rail,480-rw,34);lv_obj_set_size(right_rail,rw,286);
+  lv_obj_set_pos(context_actions,0,39);lv_obj_set_size(context_actions,rw,247);
+  lv_obj_set_pos(left_handle,lw-32,4);
+  lv_obj_t *ltext=lv_obj_get_child(left_handle,0);
+  lv_label_set_text(ltext,left_compact?LV_SYMBOL_RIGHT:LV_SYMBOL_LEFT);
+  lv_label_set_text(lv_obj_get_child(right_handle,0),right_compact?LV_SYMBOL_LEFT:LV_SYMBOL_RIGHT);
+  for(int i=0;i<5;i++){
+    lv_obj_set_pos(tabs[i],3,42+i*47);
+    lv_obj_set_size(tabs[i],lw-6,43);
+    lv_obj_set_style_bg_color(tabs[i],i==page?orange:panel2,0);
+    lv_obj_t *icon=lv_obj_get_child(tabs[i],0);
+    lv_label_set_text(icon,tab_glyphs[i]);
+    lv_obj_set_style_text_color(icon,i==page?bg:orange,0);
+    lv_obj_set_pos(icon,left_compact?7:27,left_compact?12:3);
+    lv_obj_t *caption=lv_obj_get_child(tabs[i],1);
+    lv_label_set_text(caption,left_compact?"":tab_names[i]);
+    lv_obj_set_pos(caption,3,24);lv_obj_set_width(caption,lw-12);
+    lv_obj_set_style_text_align(caption,LV_TEXT_ALIGN_CENTER,0);
+    lv_obj_set_style_text_color(caption,i==page?bg:white,0);
+  }
+  lv_obj_clean(body);
+  rebuild_context();
+  const int w=cw;
+  if(page==0){
+    show_center_heading("FIELD CONSOLE","Dual radio gateway / DEMO");
+    const int col=(w-24)/2;
+    center_card(8,54,col,95,"MESHTASTIC","MX-M / BLE OFF","No live packets",green);
+    center_card(col+16,54,col,95,"MESHCORE","MX-C / BLE OFF","No live packets",purple);
+    center_card(8,157,col,95,"POSITION","GNSS: OFFLINE","No valid fix",cyan);
+    center_card(col+16,157,col,95,"CROSSWAY","Bridge: OFF","Demo data only",orange);
+  } else if(page==1){
+    show_center_heading("CONVERSATIONS","Example messages / not live");
+    int third=(w-22)/3;
+    const char *filters[]={"ALL","MT","MC"};
+    for(int i=0;i<3;i++)action_button(body,filters[i],8+i*(third+3),52,third,38,
+                                       chat_filter==i?orange:panel2,on_filter,i);
+    int y=99;
+    if(chat_filter!=2){
+      chat_row(y,w,"MT","Trail Team","Checkpoint reached / DEMO",green);y+=58;
+    }
+    if(chat_filter!=1){
+      chat_row(y,w,"MC","SAR Base","Weather alert / DEMO",purple);y+=58;
+    }
+    if(chat_filter!=2&&y+53<283){
+      chat_row(y,w,"MT","Alex","Copy / local sample",green);
+    }
+    color_label(body,"Radio BLE not connected; nothing sent.",8,268,w-16,muted);
+  } else if(page==2){
+    show_center_heading("NAVIGATION","GNSS offline  /  map demo");
+    map_preview(w);
+    color_label(body,"Fix: NONE   Accuracy: --   Age: --",8,221,w-16,orange);
+    color_label(body,"Tools: POIs / Tracks / Record / Share",8,249,w-16,muted);
+  } else if(page==3){
+    show_center_heading("RADIO PODS","Independent BLE connections");
+    center_card(8,54,w-16,94,"MX-M / MESHTASTIC","BLE: NOT CONNECTED","Packets: 0  /  RSSI: --",green);
+    center_card(8,157,w-16,94,"MX-C / MESHCORE","BLE: NOT CONNECTED","Packets: 0  /  RSSI: --",purple);
+    color_label(body,"No connections and no transmissions.",8,261,w-16,muted);
+  } else {
+    show_center_heading("DEVICE & SETTINGS","Local status  /  operational");
+    char uptime[42],memory[42],ip[16],wifi[30],status[55],pin_label[40];
+    const uint64_t seconds=(uint64_t)(esp_timer_get_time()/1000000LL);
+    snprintf(uptime,sizeof(uptime),"Uptime: %lluh %02llum",
+             (unsigned long long)(seconds/3600),(unsigned long long)((seconds/60)%60));
+    snprintf(memory,sizeof(memory),"Heap: %lu KB",(unsigned long)(esp_get_free_heap_size()/1024));
+    meshnetwork::get_status(ip,sizeof(ip),wifi,sizeof(wifi));
+    char backup_detail[48];meshbackup::describe(backup_detail,sizeof(backup_detail));
+    snprintf(status,sizeof(status),"SD: %.42s",backup_detail);
+    lv_obj_t *device_card=panel_at(body,8,53,w-16,79,panel);
+    color_label(device_card,"DEVICE / LIVE",9,6,w-34,orange);
+    uptime_value=color_label(device_card,uptime,9,30,w-34,white);
+    heap_value=color_label(device_card,memory,9,53,w-34,muted);
+    lv_obj_t *wifi_card=panel_at(body,8,137,w-16,73,panel);
+    color_label(wifi_card,"WI-FI / SD BACKUP",9,4,w-34,orange);
+    network_value=color_label(wifi_card,ip[0]?ip:wifi,9,25,w-34,white);
+    backup_value=color_label(wifi_card,status,9,47,w-34,muted);
+    action_button(body,"CHANGE HOME WI-FI",8,217,w-16,40,orange,on_action,A_WIFI);
+    snprintf(pin_label,sizeof(pin_label),"VIEW PIN: %s  /  READ ONLY",meshcapture::pin());
+    color_label(body,pin_label,8,267,w-16,orange);
+  }
 }
 static void refresh(lv_timer_t *){
   update_wifi_scan();
@@ -313,59 +589,53 @@ static void refresh(lv_timer_t *){
     snprintf(backup,sizeof(backup),"SD backup: %s",detail);
     if(strcmp(lv_label_get_text(wifi_sd_status),backup))lv_label_set_text(wifi_sd_status,backup);
   }
-  printf("[MCX-DIAG v0.5.10] uptime_ms=%llu heap=%lu page=%d keys=%lu key_us=%llu key_max_us=%llu\n",
+  if(top_wifi){
+    char ip[16],state[30];meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
+    char label[54];snprintf(label,sizeof(label),"Wi-Fi: %s",ip[0]?ip:state);
+    if(strcmp(lv_label_get_text(top_wifi),label)!=0)lv_label_set_text(top_wifi,label);
+  }
+  printf("[MCX-DIAG v0.6.0] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
-         (unsigned long)esp_get_free_heap_size(),page,(unsigned long)editor_key_count,
-         (unsigned long long)editor_key_last_us,(unsigned long long)editor_key_max_us);
-  // Change only three existing labels. Destroying/rebuilding the full Settings
-  // subtree every 3 seconds invalidates the entire LVGL area and can visibly flash.
-  if(page!=4 || wifi_dialog || !uptime_value || !heap_value || !network_value || !backup_value)return;
-  char uptime[40],memory[40],ip[16],wifi[30];
-  const uint64_t sec=(uint64_t)(esp_timer_get_time()/1000000LL);
+         (unsigned long)esp_get_free_heap_size(),page,
+         (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
+  // Never destroy and rebuild LVGL settings cards in the periodic timer.
+  if(page!=4||wifi_dialog||!uptime_value||!heap_value||!network_value||!backup_value)return;
+  char uptime[42],memory[42],ip[16],wifi[30],sd[55],backup_detail[48];
+  const uint64_t seconds=(uint64_t)(esp_timer_get_time()/1000000LL);
   snprintf(uptime,sizeof(uptime),"Uptime: %lluh %02llum",
-           (unsigned long long)(sec/3600),(unsigned long long)((sec/60)%60));
-  snprintf(memory,sizeof(memory),"Free heap: %lu KB",
-           (unsigned long)(esp_get_free_heap_size()/1024));
+           (unsigned long long)(seconds/3600),(unsigned long long)((seconds/60)%60));
+  snprintf(memory,sizeof(memory),"Heap: %lu KB",(unsigned long)(esp_get_free_heap_size()/1024));
   meshnetwork::get_status(ip,sizeof(ip),wifi,sizeof(wifi));
-  const char *network=ip[0]?ip:wifi;
-  if(strcmp(lv_label_get_text(uptime_value),uptime)!=0)lv_label_set_text(uptime_value,uptime);
-  if(strcmp(lv_label_get_text(heap_value),memory)!=0)lv_label_set_text(heap_value,memory);
-  if(strcmp(lv_label_get_text(network_value),network)!=0)lv_label_set_text(network_value,network);
-  char backup_detail[48],backup_line[64];
   meshbackup::describe(backup_detail,sizeof(backup_detail));
-  snprintf(backup_line,sizeof(backup_line),"SD backup: %.36s",backup_detail);
-  if(strcmp(lv_label_get_text(backup_value),backup_line)!=0)
-    lv_label_set_text(backup_value,backup_line);
+  snprintf(sd,sizeof(sd),"SD: %.42s",backup_detail);
+  lv_obj_t *objects[]={uptime_value,heap_value,network_value,backup_value};
+  const char *values[]={uptime,memory,ip[0]?ip:wifi,sd};
+  for(int i=0;i<4;i++)
+    if(strcmp(lv_label_get_text(objects[i]),values[i]))lv_label_set_text(objects[i],values[i]);
 }
 static void init(){
-  printf("[MCX-DIAG v0.5.10] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE screen=ON touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.6.0] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_t *bar=lv_obj_create(screen);fill(bar,panel);
-  lv_obj_set_pos(bar,0,0);lv_obj_set_size(bar,480,43);
-  lv_obj_clear_flag(bar,LV_OBJ_FLAG_SCROLLABLE);
-  txt(bar,"MESH",10,11,49,white);
-  txt(bar,"CROSSWAY",59,11,104,orange);
-  heading=txt(bar,"OVERVIEW",185,11,170,white);
-  txt(bar,"DEV 0.5.10",386,12,90,orange);
-  lv_obj_t *rail=lv_obj_create(screen);fill(rail,bg);
-  lv_obj_set_pos(rail,0,43);lv_obj_set_size(rail,108,242);
-  lv_obj_clear_flag(rail,LV_OBJ_FLAG_SCROLLABLE);
-  static const char *names[]={"Home","Messages","Map","Radios","Settings"};
+  lv_obj_t *header=panel_at(screen,0,0,480,34,panel,0);
+  lv_obj_t *top=lv_btn_create(header);fill(top,panel,0);
+  lv_obj_set_pos(top,0,0);lv_obj_set_size(top,480,34);
+  lv_obj_add_event_cb(top,open_shade,LV_EVENT_CLICKED,nullptr);
+  color_label(top,"MESH",7,7,55,white);
+  color_label(top,"CROSSWAY",59,7,120,orange);
+  top_wifi=color_label(top,"Wi-Fi: waiting",209,7,167,green);
+  color_label(top,"v0.6.0",404,7,74,orange);
+  left_rail=panel_at(screen,0,34,79,286,panel,0);
+  right_rail=panel_at(screen,355,34,125,286,panel,0);
+  left_handle=action_button(left_rail,"",47,4,29,30,panel2,toggle_left,0);
+  right_handle=action_button(right_rail,LV_SYMBOL_RIGHT,2,5,25,30,panel2,toggle_right,0);
   for(int i=0;i<5;i++){
-    tabs[i]=lv_btn_create(rail);fill(tabs[i],panel2,8);
-    lv_obj_set_pos(tabs[i],5,5+i*47);lv_obj_set_size(tabs[i],98,42);
-    lv_obj_add_event_cb(tabs[i],on_nav,LV_EVENT_CLICKED,(void *)(intptr_t)i);
-    lv_obj_t *l=lv_label_create(tabs[i]);lv_label_set_text(l,names[i]);lv_obj_center(l);
+    tabs[i]=action_button(left_rail,"",3,42+i*47,73,43,panel2,on_nav,i);
+    color_label(tabs[i],tab_names[i],3,24,65,white);
   }
-  body=lv_obj_create(screen);fill(body,bg);
-  lv_obj_set_pos(body,108,43);lv_obj_set_size(body,372,242);
-  lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_t *bottom=lv_obj_create(screen);fill(bottom,panel);
-  lv_obj_set_pos(bottom,0,285);lv_obj_set_size(bottom,480,35);
-  lv_obj_clear_flag(bottom,LV_OBJ_FLAG_SCROLLABLE);
-  txt(bottom,"DEMO MODE  |  MT: --  MC: --  GPS: --",11,9,450,muted);
+  context_actions=panel_at(right_rail,0,39,125,247,panel,0);
+  body=panel_at(screen,79,34,276,286,bg,0);
   draw();
   lv_timer_create(refresh,3000,nullptr);
 }
