@@ -294,6 +294,9 @@ static void draw(){
       fill(b,orange,8);lv_obj_set_pos(b,7,182);lv_obj_set_size(b,349,44);
       txt(b,"CONNECT / CHANGE HOME WI-FI",28,11,325,bg);
       lv_obj_add_event_cb(b,wifi_setup,LV_EVENT_CLICKED,nullptr);
+      char pin_label[64];
+      snprintf(pin_label,sizeof(pin_label),"VIEW PIN: %s  |  READ ONLY",meshcapture::pin());
+      txt(body,pin_label,10,227,347,orange);
       break;
     }
   }
@@ -310,7 +313,7 @@ static void refresh(lv_timer_t *){
     snprintf(backup,sizeof(backup),"SD backup: %s",detail);
     if(strcmp(lv_label_get_text(wifi_sd_status),backup))lv_label_set_text(wifi_sd_status,backup);
   }
-  printf("[MCX-DIAG v0.5.9] uptime_ms=%llu heap=%lu page=%d keys=%lu key_us=%llu key_max_us=%llu\n",
+  printf("[MCX-DIAG v0.5.10] uptime_ms=%llu heap=%lu page=%d keys=%lu key_us=%llu key_max_us=%llu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,(unsigned long)editor_key_count,
          (unsigned long long)editor_key_last_us,(unsigned long long)editor_key_max_us);
@@ -335,7 +338,7 @@ static void refresh(lv_timer_t *){
     lv_label_set_text(backup_value,backup_line);
 }
 static void init(){
-  printf("[MCX-DIAG v0.5.9] boot reset_reason=%d heap=%lu http=STATUS_ONLY screen=OFF touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.5.10] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE screen=ON touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -345,7 +348,7 @@ static void init(){
   txt(bar,"MESH",10,11,49,white);
   txt(bar,"CROSSWAY",59,11,104,orange);
   heading=txt(bar,"OVERVIEW",185,11,170,white);
-  txt(bar,"DEV 0.5.9",386,12,90,orange);
+  txt(bar,"DEV 0.5.10",386,12,90,orange);
   lv_obj_t *rail=lv_obj_create(screen);fill(rail,bg);
   lv_obj_set_pos(rail,0,43);lv_obj_set_size(rail,108,242);
   lv_obj_clear_flag(rail,LV_OBJ_FLAG_SCROLLABLE);
