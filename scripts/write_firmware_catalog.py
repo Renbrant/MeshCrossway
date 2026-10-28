@@ -25,7 +25,7 @@ tested={
     "v0.4.0":("Tested on Rev2.0: Wi-Fi access point, screenshot viewing and PNG capture","Recommended recovery"),
 }
 catalog=[]
-for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8","v0.5.9","v0.5.10","v0.6.2",latest):
+for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8","v0.5.9","v0.5.10","v0.6.2","v0.6.3",latest):
     if any(entry["version"]==version for entry in catalog):
         continue
     folder=root/"versions"/version
@@ -40,6 +40,10 @@ for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8","
     if version in tested:
         summary,label=tested[version]
         status="hardware-tested"
+    elif version=="v0.6.4":
+        summary="EXPERIMENTAL, NOT TESTED: post-v0.6.3 recovery candidate. BLE remains OFF at startup to preserve Wi-Fi/touch; enable BLE manually in More > Radios. Wi-Fi / touch must be verified before enabling."
+        label="Safe boot + manual BLE enable / UNTESTED"
+        status="experimental"
     elif version=="v0.6.3":
         summary="KNOWN CRITICAL ISSUE: owner tested v0.6.3 twice and both boots froze: touch not responding and Wi-Fi stuck at waiting. Reinstall v0.6.2. Do NOT install v0.6.3."
         label="BROKEN BOOT / DO NOT INSTALL"
