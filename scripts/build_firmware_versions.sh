@@ -95,8 +95,6 @@ build_version() {
 # Update these two constants whenever the owner validates a newer hardware build.
 STABLE_VERSION="v0.6.2"
 STABLE_REF="a508c7d9a9eaf580061d2daca6838ecb78f89085"
-FIRST_EXPERIMENTAL="v0.6.4"
-FIRST_EXPERIMENTAL_REF="1620502f43b756581732cd58502ce171c49b1c60"
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).
@@ -107,23 +105,14 @@ if ! version_gte "$LATEST_VERSION" "$STABLE_VERSION"; then
   echo "::error::LATEST_VERSION is below the approved stable release."
   exit 1
 fi
-if [ "$LATEST_VERSION" = "v0.6.3" ]; then
-  echo "::error::v0.6.3 is a known broken boot release and cannot be published."
+if [ "$LATEST_VERSION" = "v0.6.3" ] || [ "$LATEST_VERSION" = "v0.6.4" ]; then
+  echo "::error::v0.6.3/v0.6.4 are known-broken BLE releases and cannot be published."
   exit 1
 fi
 
 # Version pin for an owner-approved image. The file and SHA remain immutable.
 if [ "$LATEST_VERSION" != "$STABLE_VERSION" ]; then
   build_version "$STABLE_VERSION" "$STABLE_REF"
-fi
-
-# Keep the initial, non-broken candidate as a test option when later candidates arrive,
-# only while it is newer than the latest tested release.
-if version_gte "$LATEST_VERSION" "$FIRST_EXPERIMENTAL" &&
-   version_gte "$FIRST_EXPERIMENTAL" "$STABLE_VERSION" &&
-   [ "$LATEST_VERSION" != "$FIRST_EXPERIMENTAL" ] &&
-   [ "$STABLE_VERSION" != "$FIRST_EXPERIMENTAL" ]; then
-  build_version "$FIRST_EXPERIMENTAL" "$FIRST_EXPERIMENTAL_REF"
 fi
 
 # Compile or reuse the latest image (may be stable or experimental).
@@ -139,11 +128,6 @@ for archive in "$OUT"/versions/*; do
   [ -d "$archive" ] || continue
   version="$(basename "$archive")"
   if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$LATEST_VERSION" ]; then
-    continue
-  fi
-  if [ "$version" = "$FIRST_EXPERIMENTAL" ] &&
-     version_gte "$LATEST_VERSION" "$FIRST_EXPERIMENTAL" &&
-     version_gte "$FIRST_EXPERIMENTAL" "$STABLE_VERSION"; then
     continue
   fi
   rm -rf -- "$archive"
