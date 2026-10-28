@@ -15,6 +15,43 @@ static char wifi_state[30]="Wi-Fi not configured";
 static char ssid_name[33]="";
 static bool wants_station=false;
 static unsigned retries=0;
+// Scan asynchronously so the touchscreen does not stop responding.
+static volatile bool scan_done=false;
+static bool scan_running=false;
+static char scan_ssids[12][33]={};
+static uint16_t scan_count=0;
+static bool begin_scan(){
+  if(scan_running)return false;
+  scan_done=false;
+  wifi_scan_config_t config={};
+  config.show_hidden=false;
+  if(esp_wifi_scan_start(&config,false)!=ESP_OK)return false;
+  scan_running=true;
+  return true;
+}
+static bool collect_scan(){
+  if(!scan_done)return false;
+  scan_done=false;
+  scan_running=false;
+  wifi_ap_record_t records[12]={};
+  uint16_t count=12;
+  if(esp_wifi_scan_get_ap_records(&count,records)!=ESP_OK){
+    scan_count=0;return true;
+  }
+  scan_count=0;
+  for(uint16_t i=0;i<count;i++){
+    char name[33]={};
+    memcpy(name,records[i].ssid,32);
+    if(!name[0])continue;
+    for(char *c=name;*c;c++)if(*c=='\n'||*c=='\r')*c=' ';
+    bool duplicate=false;
+    for(uint16_t j=0;j<scan_count;j++)
+      if(strcmp(scan_ssids[j],name)==0){duplicate=true;break;}
+    if(!duplicate)snprintf(scan_ssids[scan_count++],33,"%s",name);
+  }
+  return true;
+}
+
 
 static void set_state(const char *status,const char *ip=nullptr) {
   portENTER_CRITICAL(&guard);
@@ -29,7 +66,9 @@ static void get_status(char *ip,size_t ip_len,char *state,size_t state_len) {
   portEXIT_CRITICAL(&guard);
 }
 static void wifi_event(void *,esp_event_base_t base,int32_t event,void *data) {
-  if(base==WIFI_EVENT && event==WIFI_EVENT_STA_START) {
+  if(base==WIFI_EVENT && event==WIFI_EVENT_SCAN_DONE) {
+    scan_done=true;
+  } else if(base==WIFI_EVENT && event==WIFI_EVENT_STA_START) {
     if(wants_station)(void)esp_wifi_connect();
   } else if(base==WIFI_EVENT && event==WIFI_EVENT_STA_DISCONNECTED) {
     set_state("Reconnecting...","");
