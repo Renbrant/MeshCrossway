@@ -268,7 +268,7 @@ enum Action {
   A_MAP_HOME,A_INBOX,A_NEW,A_POSITION,A_NETWORKS,A_WIFI,A_POIS,A_TRACKS,A_RECORD,A_SHARE,
   A_GNSS,A_TEAM,A_PATHS,A_SCANNER,A_PACKETS,A_REPEATERS,A_SETUP,A_DIAGNOSTIC,
   A_VIEW,A_PRIVACY,A_ABOUT,A_CHAT_MT,A_CHAT_MC,A_CHAT_ALL,A_QUICK,
-  A_NODES,A_GROUPS,A_CHAT_OPEN,A_RADIOS,A_GROUP_NEW,A_THREAD_INFO
+  A_NODES,A_GROUPS,A_CHAT_OPEN,A_RADIOS,A_GROUP_NEW,A_THREAD_INFO,A_NODE_DETAILS
 };
 struct ActionInfo {const char *label;int id;lv_color_t color;};
 static const ActionInfo home_actions[]={
@@ -455,6 +455,8 @@ static void run_action(void *data){
       notice("DISCOVERY / OFFLINE","Radio pods are disconnected. These lists are samples; no BLE scan was started.");break;
     case A_PACKETS:
       notice("PACKET LOG / EMPTY","No live packets have been received.");break;
+    case A_NODE_DETAILS:
+      notice("NODE / REPEATER / DEMO","This entry is an illustrative relay, not a verified live contact. Repeater details, capabilities and last-heard time require a connected radio.");break;
     case A_REPEATERS:
       notice("REPEATERS / DEMO","A repeater relays packets, not a normal direct-message contact. Management is not enabled.");break;
     case A_NETWORKS:
@@ -547,7 +549,7 @@ static void demo_row(int y,int w,const char *network,const char *title,const cha
                      lv_color_t tint,int thread){
   lv_obj_t *b=action_button(body,"",8,y,w-16,57,panel,
                             thread>=0?on_thread:on_action,
-                            thread>=0?thread:A_REPEATERS);
+                            thread>=0?thread:A_NODE_DETAILS);
   single_label(b,network,8,5,45,tint);
   single_label(b,title,54,5,w-71,white);
   single_label(b,detail,54,29,w-71,muted);
