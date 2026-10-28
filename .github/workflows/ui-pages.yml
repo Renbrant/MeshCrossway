@@ -50,13 +50,16 @@ jobs:
           import json, os
           from pathlib import Path
           out=Path("_site/flasher/firmware")
+          release=(Path("firmware/display-prototype/VERSION").read_text().strip())
           manifest={
-            "name":"MeshCrossway Display Development",
-            "version":os.environ["GITHUB_SHA"][:8],
+            "name":"MeshCrossway Display "+release+" (Experimental)",
+            "version":release,
             "new_install_prompt_erase":True,
             "builds":[{"chipFamily":"ESP32-S3","parts":[{"path":"meshcrossway-display-dev.bin","offset":0}]}]
           }
           (out/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
+          metadata={"version":release,"commit":os.environ["GITHUB_SHA"][:8],"target":"Waveshare ESP32-S3-Touch-LCD-3.5 (non-B)","channel":"development","hardware_verified":False}
+          (out/"build-info.json").write_text(json.dumps(metadata,indent=2)+"\n")
           PY
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
