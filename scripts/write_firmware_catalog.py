@@ -22,7 +22,7 @@ tested={
     "v0.4.0":("Tested on Rev2.0: Wi-Fi access point, screenshot viewing and PNG capture","Recommended recovery"),
 }
 catalog=[]
-for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7",latest):
+for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8",latest):
     if any(entry["version"]==version for entry in catalog):
         continue
     folder=root/"versions"/version
