@@ -291,7 +291,7 @@ static void draw(); // Forward-declared above Wi-Fi editor callbacks.
 static int content_width(){return 480-(left_compact?40:79)-(right_compact?29:125);}
 // Keep labels one line high: wrapping formerly overlapped adjacent touch targets.
 static lv_obj_t *single_label(lv_obj_t *parent,const char *value,int x,int y,int w,lv_color_t color){
-  lv_obj_t *label=color_label(parent,value,x,y,w,color);
+  lv_obj_t *label=txt(parent,value,x,y,w,color);
   lv_obj_set_height(label,19);
   lv_label_set_long_mode(label,LV_LABEL_LONG_DOT);
   return label;
