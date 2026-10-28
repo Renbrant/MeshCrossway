@@ -15,7 +15,7 @@ static lv_obj_t *wifi_dialog=nullptr,*wifi_ssid=nullptr,*wifi_password=nullptr,*
 static lv_obj_t *wifi_editor=nullptr,*wifi_edit_text=nullptr,*wifi_edit_target=nullptr;
 static lv_obj_t *wifi_sd_status=nullptr;
 static int page=0;
-static lv_obj_t *uptime_value=nullptr,*heap_value=nullptr,*network_value=nullptr;
+static lv_obj_t *uptime_value=nullptr,*heap_value=nullptr,*network_value=nullptr,*backup_value=nullptr;
 static const lv_color_t bg=lv_color_hex(0x090C10);
 static const lv_color_t panel=lv_color_hex(0x181D24);
 static const lv_color_t panel2=lv_color_hex(0x242B34);
@@ -244,7 +244,7 @@ static void wifi_setup(lv_event_t *){
 
 }
 static void draw(){
-  uptime_value=nullptr;heap_value=nullptr;network_value=nullptr;
+  uptime_value=nullptr;heap_value=nullptr;network_value=nullptr;backup_value=nullptr;
   static const char *names[]={"OVERVIEW","MESSAGES","NAVIGATION","RADIOS","SETTINGS"};
   lv_label_set_text(heading,names[page]);
   lv_obj_clean(body);
@@ -282,12 +282,14 @@ static void draw(){
                (unsigned long)(esp_get_free_heap_size()/1024));
       meshnetwork::get_status(ip,sizeof(ip),wifi,sizeof(wifi));
       snprintf(address,sizeof(address),"%s",ip[0]?ip:wifi);
-      snprintf(pairing,sizeof(pairing),"%s",meshhealth::is_running()?"Remote: HTTP status only":"HTTP status server unavailable");
+      char backup_detail[48];meshbackup::describe(backup_detail,sizeof(backup_detail));
+      snprintf(pairing,sizeof(pairing),"SD backup: %.36s",backup_detail);
       lv_obj_t *device_card=tile(7,6,349,80,"DEVICE / LIVE",uptime,memory);
-      lv_obj_t *wifi_card=tile(7,93,349,82,"WIFI / REMOTE",address,pairing);
+      lv_obj_t *wifi_card=tile(7,93,349,82,"WIFI / SD BACKUP",address,pairing);
       uptime_value=lv_obj_get_child(device_card,1);
       heap_value=lv_obj_get_child(device_card,2);
       network_value=lv_obj_get_child(wifi_card,1);
+      backup_value=lv_obj_get_child(wifi_card,2);
       lv_obj_t *b=lv_btn_create(body);
       fill(b,orange,8);lv_obj_set_pos(b,7,182);lv_obj_set_size(b,349,44);
       txt(b,"CONNECT / CHANGE HOME WI-FI",28,11,325,bg);
@@ -314,7 +316,7 @@ static void refresh(lv_timer_t *){
          (unsigned long long)editor_key_last_us,(unsigned long long)editor_key_max_us);
   // Change only three existing labels. Destroying/rebuilding the full Settings
   // subtree every 3 seconds invalidates the entire LVGL area and can visibly flash.
-  if(page!=4 || wifi_dialog || !uptime_value || !heap_value || !network_value)return;
+  if(page!=4 || wifi_dialog || !uptime_value || !heap_value || !network_value || !backup_value)return;
   char uptime[40],memory[40],ip[16],wifi[30];
   const uint64_t sec=(uint64_t)(esp_timer_get_time()/1000000LL);
   snprintf(uptime,sizeof(uptime),"Uptime: %lluh %02llum",
@@ -326,6 +328,11 @@ static void refresh(lv_timer_t *){
   if(strcmp(lv_label_get_text(uptime_value),uptime)!=0)lv_label_set_text(uptime_value,uptime);
   if(strcmp(lv_label_get_text(heap_value),memory)!=0)lv_label_set_text(heap_value,memory);
   if(strcmp(lv_label_get_text(network_value),network)!=0)lv_label_set_text(network_value,network);
+  char backup_detail[48],backup_line[64];
+  meshbackup::describe(backup_detail,sizeof(backup_detail));
+  snprintf(backup_line,sizeof(backup_line),"SD backup: %.36s",backup_detail);
+  if(strcmp(lv_label_get_text(backup_value),backup_line)!=0)
+    lv_label_set_text(backup_value,backup_line);
 }
 static void init(){
   printf("[MCX-DIAG v0.5.9] boot reset_reason=%d heap=%lu http=STATUS_ONLY screen=OFF touch=OFF wifi=ON\n",
