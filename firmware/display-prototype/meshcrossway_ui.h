@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.5: local Wi-Fi provisioning + two-way remote UI.
+// MeshCrossway v0.5.3: local Wi-Fi provisioning; remote UI disabled.
 // All radio and GNSS values remain simulated.
 #include "lvgl.h"
 #include "meshcrossway_remote.h"
@@ -11,7 +11,7 @@
 
 namespace meshcrossway {
 static lv_obj_t *body=nullptr,*heading=nullptr,*tabs[5]={};
-static lv_obj_t *wifi_dialog=nullptr,*wifi_ssid=nullptr,*wifi_password=nullptr,*wifi_keyboard=nullptr,*wifi_notice=nullptr;
+static lv_obj_t *wifi_dialog=nullptr,*wifi_ssid=nullptr,*wifi_password=nullptr,*wifi_keyboard=nullptr,*wifi_notice=nullptr,*wifi_picker=nullptr;
 static int page=0;
 static lv_obj_t *uptime_value=nullptr,*heap_value=nullptr,*network_value=nullptr;
 static const lv_color_t bg=lv_color_hex(0x090C10);
@@ -51,7 +51,7 @@ static void draw();
 static void close_wifi(){
   if(wifi_dialog)lv_obj_del(wifi_dialog);
   wifi_dialog=nullptr;
-  wifi_ssid=nullptr;wifi_password=nullptr;wifi_keyboard=nullptr;wifi_notice=nullptr;
+  wifi_ssid=nullptr;wifi_password=nullptr;wifi_keyboard=nullptr;wifi_notice=nullptr;wifi_picker=nullptr;
 }
 static void on_cancel(lv_event_t *){close_wifi();}
 static void on_connect(lv_event_t *){
@@ -64,7 +64,7 @@ static void on_connect(lv_event_t *){
     return;
   }
   if(!meshnetwork::connect(ssid,password)){
-    lv_label_set_text(wifi_notice,"Could not initiate Wi-Fi connection.");
+    lv_label_set_text(wifi_notice,"Wait for scan, then retry CONNECT.");
     return;
   }
   // Keep the Wi-Fi credentials in ESP-IDF NVS, not in app source or LVGL fields.
@@ -72,6 +72,32 @@ static void on_connect(lv_event_t *){
   close_wifi();
   page=4;
   draw();
+}
+static void on_scan(lv_event_t *){
+  if(meshnetwork::begin_scan())lv_label_set_text(wifi_notice,"Scanning 2.4 GHz networks...");
+  else lv_label_set_text(wifi_notice,"Scan unavailable; enter SSID manually.");
+}
+static void on_network_selected(lv_event_t *){
+  if(!wifi_picker||!wifi_ssid)return;
+  uint16_t selected=lv_dropdown_get_selected(wifi_picker);
+  if(selected>0&&selected<=meshnetwork::scan_count)
+    lv_textarea_set_text(wifi_ssid,meshnetwork::scan_ssids[selected-1]);
+}
+static void update_wifi_scan(){
+  if(!meshnetwork::collect_scan())return;
+  if(!wifi_dialog||!wifi_picker)return;
+  char options[540]="Select network (or enter SSID)";
+  for(uint16_t i=0;i<meshnetwork::scan_count;i++){
+    if(strlen(options)+strlen(meshnetwork::scan_ssids[i])+2>=sizeof(options))break;
+    strcat(options,"\n");
+    strcat(options,meshnetwork::scan_ssids[i]);
+  }
+  // An open dropdown label points directly at the old options buffer.
+  // Close it before replacement so rendering cannot read freed option text.
+  lv_dropdown_close(wifi_picker);
+  lv_dropdown_set_options(wifi_picker,options);
+  lv_label_set_text(wifi_notice,meshnetwork::scan_count?
+                    "Select SSID, then enter password below.":"No networks found; enter SSID manually.");
 }
 static void on_wifi_field(lv_event_t *e){
   if(wifi_keyboard)lv_keyboard_set_textarea(wifi_keyboard,lv_event_get_target(e));
@@ -89,31 +115,44 @@ static void wifi_setup(lv_event_t *){
   txt(cancel,"CANCEL",14,7,72,white);
   lv_obj_add_event_cb(cancel,on_cancel,LV_EVENT_CLICKED,nullptr);
 
+  wifi_picker=lv_dropdown_create(wifi_dialog);
+  lv_obj_set_pos(wifi_picker,9,43);lv_obj_set_size(wifi_picker,352,37);
+  lv_dropdown_set_options(wifi_picker,"Select network (or enter SSID)");
+  lv_dropdown_set_dir(wifi_picker,LV_DIR_BOTTOM);
+  lv_obj_set_style_max_height(lv_dropdown_get_list(wifi_picker),200,0);
+  lv_obj_add_event_cb(wifi_picker,on_network_selected,LV_EVENT_VALUE_CHANGED,nullptr);
+  lv_obj_t *scan=lv_btn_create(wifi_dialog);
+  fill(scan,orange,6);lv_obj_set_pos(scan,369,43);lv_obj_set_size(scan,102,37);
+  txt(scan,"SCAN",21,9,80,bg);
+  lv_obj_add_event_cb(scan,on_scan,LV_EVENT_CLICKED,nullptr);
+
   wifi_ssid=lv_textarea_create(wifi_dialog);
-  lv_obj_set_pos(wifi_ssid,9,42);lv_obj_set_size(wifi_ssid,462,37);
+  lv_obj_set_pos(wifi_ssid,9,85);lv_obj_set_size(wifi_ssid,462,34);
   lv_textarea_set_one_line(wifi_ssid,true);
   lv_textarea_set_max_length(wifi_ssid,32);
-  lv_textarea_set_placeholder_text(wifi_ssid,"Wi-Fi SSID (network name)");
+  lv_textarea_set_placeholder_text(wifi_ssid,"Network name (SSID)");
   lv_obj_add_event_cb(wifi_ssid,on_wifi_field,LV_EVENT_CLICKED,nullptr);
 
   wifi_password=lv_textarea_create(wifi_dialog);
-  lv_obj_set_pos(wifi_password,9,86);lv_obj_set_size(wifi_password,462,37);
+  lv_obj_set_pos(wifi_password,9,123);lv_obj_set_size(wifi_password,337,36);
   lv_textarea_set_one_line(wifi_password,true);
   lv_textarea_set_max_length(wifi_password,63);
   lv_textarea_set_password_mode(wifi_password,true);
   lv_textarea_set_placeholder_text(wifi_password,"Wi-Fi password");
   lv_obj_add_event_cb(wifi_password,on_wifi_field,LV_EVENT_CLICKED,nullptr);
 
-  wifi_notice=txt(wifi_dialog,"WPA2/WPA3 home network; credentials saved locally.",10,133,320,muted);
   lv_obj_t *connect=lv_btn_create(wifi_dialog);
-  fill(connect,orange,7);lv_obj_set_pos(connect,350,126);lv_obj_set_size(connect,121,35);
-  txt(connect,"CONNECT",22,9,90,bg);
+  fill(connect,orange,7);lv_obj_set_pos(connect,351,123);lv_obj_set_size(connect,120,36);
+  txt(connect,"CONNECT",22,9,92,bg);
   lv_obj_add_event_cb(connect,on_connect,LV_EVENT_CLICKED,nullptr);
 
+  wifi_notice=txt(wifi_dialog,"Tap SCAN to find nearby Wi-Fi networks.",10,162,453,muted);
   wifi_keyboard=lv_keyboard_create(wifi_dialog);
-  lv_obj_set_pos(wifi_keyboard,4,167);lv_obj_set_size(wifi_keyboard,472,149);
-  lv_keyboard_set_textarea(wifi_keyboard,wifi_ssid);
+  lv_obj_set_pos(wifi_keyboard,4,185);lv_obj_set_size(wifi_keyboard,472,131);
+  lv_keyboard_set_textarea(wifi_keyboard,wifi_password);
   lv_obj_set_style_bg_color(wifi_keyboard,panel,0);
+  (void)meshnetwork::begin_scan();
+
 }
 static void draw(){
   uptime_value=nullptr;heap_value=nullptr;network_value=nullptr;
@@ -173,7 +212,8 @@ static void on_nav(lv_event_t *e){
   draw();
 }
 static void refresh(lv_timer_t *){
-  printf("[MCX-DIAG v0.5.2] uptime_ms=%llu heap=%lu page=%d\n",
+  update_wifi_scan();
+  printf("[MCX-DIAG v0.5.3] uptime_ms=%llu heap=%lu page=%d\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page);
   // Change only three existing labels. Destroying/rebuilding the full Settings
@@ -192,7 +232,7 @@ static void refresh(lv_timer_t *){
   if(strcmp(lv_label_get_text(network_value),network)!=0)lv_label_set_text(network_value,network);
 }
 static void init(){
-  printf("[MCX-DIAG v0.5.2] boot reset_reason=%d heap=%lu remote=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.5.3] boot reset_reason=%d heap=%lu remote=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -202,7 +242,7 @@ static void init(){
   txt(bar,"MESH",10,11,49,white);
   txt(bar,"CROSSWAY",59,11,104,orange);
   heading=txt(bar,"OVERVIEW",185,11,170,white);
-  txt(bar,"DEV 0.5.2",386,12,90,orange);
+  txt(bar,"DEV 0.5.3",386,12,90,orange);
   lv_obj_t *rail=lv_obj_create(screen);fill(rail,bg);
   lv_obj_set_pos(rail,0,43);lv_obj_set_size(rail,108,242);
   lv_obj_clear_flag(rail,LV_OBJ_FLAG_SCROLLABLE);

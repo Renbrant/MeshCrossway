@@ -6,6 +6,7 @@ cd "$ROOT"
 
 V03_REF="b48145f07ef4d00895f7ccedbdfb240a322dd37a"
 V04_REF="5dfe3744ed7b062c629ea5d2811dc434928826b1"
+V052_REF="ce221fcf3d0ba1524ab2cea7e6296b584a97ff71"
 WAVESHARE_REF="d9ff7837148b47b33edadc4b87775c341cf35bbe"
 LATEST_VERSION="$(tr -d '\r\n' < firmware/display-prototype/VERSION)"
 if [[ ! "$LATEST_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -94,8 +95,37 @@ build_version() {
 
 build_version v0.3.0 "$V03_REF"
 build_version v0.4.0 "$V04_REF"
+# Preserve the exact hardware-tested v0.5.2 bytes, rather than recompiling rollback.
+python3 - "$OUT/versions/v0.5.2" <<'RESTORE_V052'
+import hashlib
+import json
+import sys
+import urllib.request
+from pathlib import Path
+folder=Path(sys.argv[1])
+expected="293c3a363b4aa686ce7e31d1fcb41576f2cd412501fade09c25b4b6287619bbf"
+base="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/v0.5.2/"
+folder.mkdir(parents=True,exist_ok=True)
+image=folder/"meshcrossway-display-dev.bin"
+files=("manifest.json","build-info.json",image.name)
+if not (all((folder/name).is_file() for name in files) and
+        hashlib.sha256(image.read_bytes()).hexdigest()==expected):
+    # Fetch all bytes before replacing anything; unavailable recovery aborts publication.
+    data={}
+    for name in files:
+        with urllib.request.urlopen(base+name,timeout=60) as response:
+            data[name]=response.read()
+    if hashlib.sha256(data[image.name]).hexdigest()!=expected:
+        sys.exit("REJECT: published v0.5.2 differs from hardware-tested checksum")
+    for name,content in data.items():
+        (folder/name).write_bytes(content)
+info=json.loads((folder/"build-info.json").read_text())
+assert info["sha256"]==expected
+print("Preserved exact display-tested v0.5.2 recovery image:",expected)
+RESTORE_V052
+python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.2" --version v0.5.2 --ref "$V052_REF"
 case "$LATEST_VERSION" in
-  v0.3.0|v0.4.0) echo "Current version already available in historical archive" ;;
+  v0.3.0|v0.4.0|v0.5.2) echo "Current version already available in historical archive" ;;
   *) build_version "$LATEST_VERSION" HEAD ;;
 esac
 python3 "$ROOT/scripts/write_firmware_catalog.py" \

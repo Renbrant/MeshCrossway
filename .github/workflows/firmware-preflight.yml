@@ -8,6 +8,7 @@ on:
       - "firmware/display-prototype/**"
       - "scripts/preflight_display.py"
       - "scripts/preflight_firmware_catalog.py"
+      - "scripts/check_firmware_identity.py"
       - ".github/workflows/firmware-preflight.yml"
   pull_request:
     branches: [main]
@@ -20,6 +21,7 @@ on:
       - "scripts/write_firmware_*.py"
       - "scripts/verify_firmware_version.py"
       - "scripts/preflight_firmware_catalog.py"
+      - "scripts/check_firmware_identity.py"
       - ".github/workflows/ui-pages.yml"
   workflow_dispatch:
 
@@ -71,6 +73,8 @@ jobs:
         run: bash scripts/build_firmware_versions.sh
       - name: Verify compiled catalog and manifests
         run: python3 scripts/preflight_firmware_catalog.py --catalog _site/flasher/firmware/catalog.json
+      - name: Verify embedded firmware UI version
+        run: python3 scripts/check_firmware_identity.py
       - name: Retain test artifacts, never publish Pages
         uses: actions/upload-artifact@v4
         with:
