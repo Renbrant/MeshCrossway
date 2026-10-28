@@ -1,16 +1,4 @@
-# MeshCrossway
-
-**Official identity:** [Approved MeshCrossway logo (SVG)](docs/site/assets/meshcrossway-logo.svg) · [Brand guidelines](docs/branding.md). The original logo artwork is fixed; no substitute typography or redrawn symbol.
-
-**TWO MESH NETWORKS. ONE DEVICE. MORE REACH.**
-
-**Meshtastic + MeshCore — two independent LoRa radios operating simultaneously in one touchscreen device.**
-
-![MeshCrossway modular concept: Waveshare 3.5-inch touchscreen host and two independent Seeed XIAO ESP32S3 with Wio-SX1262 modules for Meshtastic and MeshCore, linked through BLE](docs/images/meshcrossway-modular-hero.jpg)
-
-*Conceptual promotional illustration of the three-device modular architecture. Not a verified product photograph or exact mechanical rendering.*
-
-*Illustrative AI-generated concept only. It does not represent the final product, verified physical placement, exact supplier components, or production-ready PCB/enclosure design. The intended battery placement is behind the carrier PCB.*
+![MeshCrossway — Meshtastic and MeshCore modular three-device system](docs/images/meshcrossway-modular-hero.jpg)
 
 MeshCrossway is an **open-source, offline-first touchscreen communicator** designed to use **Meshtastic** and **MeshCore** through **two independent Seeed XIAO ESP32-S3 + Wio-SX1262 radio kits**. One interface brings together messaging, navigation, GNSS positioning, tracks and field diagnostics without requiring cellular coverage or the internet.
 
