@@ -63,7 +63,7 @@ void app(){
                 errors.append("Patcher failed: " + p.stdout + p.stderr)
                 break
         output = main.read_text()
-        if version in ("v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7", "v0.5.8", "v0.5.9"):
+        if version in ("v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7", "v0.5.8", "v0.5.9", "v0.5.10"):
             if (output.count("meshnetwork::start();") != 1 or output.count("meshcrossway::init();") != 1 or "meshremote::start();" in output or "meshremote::register_input();" in output):
                 errors.append("Diagnostic patcher must start only Wi-Fi; no remote HTTP or LVGL input")
             if version in ("v0.5.7","v0.5.8","v0.5.9","v0.5.10") and output.count("meshhealth::start();")!=1:
@@ -93,7 +93,7 @@ if errors:
     sys.exit(1)
 print("Preflight PASS: version, C++ source patterns, JS syntax, patcher syntax and idempotence")
 
-if version in ("v0.5.7","v0.5.8","v0.5.9"):
+if version in ("v0.5.7","v0.5.8","v0.5.9","v0.5.10"):
     health=(FW/"meshcrossway_health.h").read_text()
     assert '#include "meshcrossway_health.h"' in ui
     assert not any(token in health for token in ("lv_snapshot_take(","lvgl_port_lock(","lv_indev_drv_register(","/touch"))
@@ -103,7 +103,7 @@ if version in ("v0.5.7","v0.5.8","v0.5.9"):
     subprocess.run(["node","--check","-"],input=js,text=True,check=True)
     print("PASS status HTTP isolation and browser JavaScript")
 
-if version=="v0.5.9":
+if version in ("v0.5.9","v0.5.10"):
     backup=(FW/"meshcrossway_backup.h").read_text()
     assert all(name in backup for name in ("/sdcard/meshcrossway-wifi.json", "/sdcard/meshcrossway-wifi.tmp", "write failed (", "failed(FailureStep"))
     assert "meshbackup::describe(" in ui
