@@ -9,7 +9,7 @@
 5. Once the owner confirms a candidate works on physical hardware, record the test conditions and update its catalog label/status to `hardware-tested`. The tested release then becomes the default without modifying the flasher's selection logic.
 6. The Web Flasher targets only the **Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0 non-B**. The MeshCore-enabled Heltec V3 runs its **own separate Companion Bluetooth firmware**, not a MeshCrossway display image.
 
-At policy creation, the latest explicitly confirmed hardware-tested build in the repository catalog was **v0.5.10** (Wi-Fi, SD backup and manual remote screenshots). The new v0.6.2 navigation and v0.6.3 MeshCore BLE candidate are selectable experiments until the owner provides an explicit physical pass. The pre-v0.5.0 v0.4.0 and v0.3.0 images remain emergency recovery options.
+After the owner tested v0.6.3 twice, the latest confirmed hardware-tested build is **v0.6.2** (Wi-Fi, SD backup and manual remote screenshots). v0.6.3 is confirmed broken at boot and its Web Flasher installation is blocked. v0.6.4 is the new experimental safe-boot candidate (BLE initially disabled). The pre-v0.5.0 v0.4.0 and v0.3.0 images remain emergency recovery options.
 
 ## MeshCore first-device acceptance test
 

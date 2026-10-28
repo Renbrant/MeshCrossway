@@ -25,7 +25,7 @@ if '#include "meshcrossway_ui.h"' not in source:
                             '#include "lvgl_ui.h"\n#include "meshcrossway_ui.h"\n#include "meshcrossway_health.h"\n#include "meshcrossway_capture.h"', 1)
     source = source.replace('lv_demo_widgets();', 'meshcrossway::init();\n        meshcapture::init();', 1)
     source = source.replace(anchor,
-                            '        lvgl_port_unlock();\n    }\n    meshnetwork::start();\n    meshhealth::start();\n    meshble::start();\n}', 1)
+                            '        lvgl_port_unlock();\n    }\n    meshnetwork::start();\n    meshhealth::start();\n}', 1)
     main.write_text(source)
 
 if '#include "meshcrossway_ble.h"' not in source:
@@ -37,8 +37,8 @@ if source.count('meshcapture::init();') != 1:
     sys.exit('Missing or duplicate single-shot LVGL capture initialization')
 if source.count('meshhealth::start();') != 1:
     sys.exit('Missing or duplicate status-only HTTP initialization')
-if source.count('meshble::start();') != 1:
-    sys.exit('Missing or duplicate BLE initialization')
+if 'meshble::start();' in source or 'meshble::request_start();' in source:
+    sys.exit('BLE must not start automatically at boot')
 if source.count('meshnetwork::start();') != 1:
     sys.exit('Missing or duplicate isolated Wi-Fi initialization')
 for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",

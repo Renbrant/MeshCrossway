@@ -328,6 +328,12 @@ if [ "$LATEST_VERSION" != "v0.6.2" ]; then
   build_version v0.6.2 "a508c7d9a9eaf580061d2daca6838ecb78f89085"
 fi
 
+# Retain the reproducible v0.6.3 known-broken image for diagnostics only.
+# Its known-issue flag blocks Web Flasher installation.
+if [ "$LATEST_VERSION" != "v0.6.3" ]; then
+  build_version v0.6.3 "1fb80b5933ff58ac81e23a6d977a70bd8b2ac60e"
+fi
+
 case "$LATEST_VERSION" in
   v0.3.0|v0.4.0|v0.5.2|v0.5.4|v0.5.6|v0.5.7|v0.5.8|v0.5.9|v0.5.10) echo "Current version already available in historical archive" ;;
   *) build_version "$LATEST_VERSION" HEAD ;;
