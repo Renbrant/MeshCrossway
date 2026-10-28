@@ -1,5 +1,7 @@
 # MeshCrossway — Official Brand Identity
 
+> **PRIMARY APPROVED VISUAL MASTER — 2026-10-28:** The owner supplied a specific 337 × 62 PNG crop of the MeshCrossway banner logo. This **exact raster artwork, including the lettering and both small taglines**, is the mandatory visual reference. The previously published SVGs in `docs/site/assets/logo-*.svg` are **approximate reconstructions only and NOT authorized final masters**. No guessed font family, substitute glyph design, altered mountain geometry, or omitted tagline should be described as matching the approved logo. Preserve the precise logo and typography from the owner's supplied image; vectorization requires tracing from the source rather than redrawing by eye. The raster source must be committed as a binary asset before updating website logo references to it.
+
 **Approved: 2026-10-28.** The visual direction is based on the three-device modular banner approved by the project owner.
 
 ## Official identity
