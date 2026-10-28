@@ -114,7 +114,7 @@
       warning.hidden=false;verifyRisk.hidden=entry.status==='known-issue';
       if(entry.status==='known-issue'){
         warningTitle.textContent='KNOWN CRITICAL BOOT FAILURE — DO NOT INSTALL.';
-        warningText.textContent='v0.6.3 freezes the touchscreen and leaves Wi-Fi at waiting. Return to the tested v0.6.2 release. Installation of this known-broken image is blocked.';
+        warningText.textContent=entry.description+' Installation of this known-broken image is blocked; use the tested release instead.';
       }else{
         warningTitle.textContent='EXPERIMENTAL / NOT HARDWARE TESTED.';
         warningText.textContent='This build may malfunction, freeze or require a rollback. It is not approved for critical communication. A tested version is available in the list.';
