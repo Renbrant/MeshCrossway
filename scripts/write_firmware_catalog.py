@@ -57,9 +57,9 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary,label=approved[version]
         status="hardware-tested"
     elif version=="v0.6.4":
-        summary="EXPERIMENTAL, NOT HARDWARE TESTED: safe boot with Bluetooth disabled by default; manual BLE enable in More > Radios. Keep the tested rollback available."
-        label="Manual BLE activation / EXPERIMENTAL"
-        status="experimental"
+        summary="KNOWN CRITICAL ISSUE: v0.6.4 boots but enabling Bluetooth freezes the touchscreen/device before radio discovery. Do not install; return to hardware-tested v0.6.2."
+        label="FREEZES ON BLE ENABLE / DO NOT INSTALL"
+        status="known-issue"
     else:
         summary="EXPERIMENTAL, NOT HARDWARE TESTED: development firmware. May freeze or require rollback to tested firmware."
         label="Newest candidate / EXPERIMENTAL"
