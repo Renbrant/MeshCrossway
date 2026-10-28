@@ -92,6 +92,9 @@ static void update_wifi_scan(){
     strcat(options,"\n");
     strcat(options,meshnetwork::scan_ssids[i]);
   }
+  // An open dropdown label points directly at the old options buffer.
+  // Close it before replacement so rendering cannot read freed option text.
+  lv_dropdown_close(wifi_picker);
   lv_dropdown_set_options(wifi_picker,options);
   lv_label_set_text(wifi_notice,meshnetwork::scan_count?
                     "Select SSID, then enter password below.":"No networks found; enter SSID manually.");
