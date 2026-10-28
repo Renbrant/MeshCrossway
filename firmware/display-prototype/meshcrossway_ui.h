@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway UI v0.3 — original graphite/orange design inspired by modern field consoles.
+// MeshCrossway UI v0.4 — original graphite/orange design inspired by modern field consoles.
 // LVGL 8.x; every radio/GNSS metric is simulated. No packets are transmitted.
 #include "lvgl.h"
 #include <stdint.h>
@@ -77,7 +77,7 @@ static void render() {
     snprintf(runtime,sizeof(runtime),"Uptime: %lluh %02llum",(unsigned long long)(sec/3600),(unsigned long long)((sec/60)%60));
     snprintf(memory,sizeof(memory),"Free heap: %lu KB",(unsigned long)(esp_get_free_heap_size()/1024));
     tile(7,7,349,91,"DEVICE  /  LIVE",runtime,memory);
-    tile(7,105,349,91,"FIRMWARE","MeshCrossway Dev v0.3","480x320  /  Touch enabled");
+    tile(7,105,349,91,"WIFI  /  DEV ACCESS","MeshCrossway-Dev","Open 192.168.4.1");
     break;
     }
     break;
@@ -99,7 +99,7 @@ static void init() {
   txt(bar,"MESH",10,11,49,white);
   txt(bar,"CROSSWAY",59,11,104,orange);
   heading=txt(bar,"OVERVIEW",185,11,170,white);
-  txt(bar,"DEV 0.3",395,12,80,orange);
+  txt(bar,"DEV 0.4",395,12,80,orange);
   lv_obj_t *rail=lv_obj_create(s);fill(rail,bg);
   lv_obj_set_pos(rail,0,43);lv_obj_set_size(rail,108,242);
   lv_obj_clear_flag(rail,LV_OBJ_FLAG_SCROLLABLE);
