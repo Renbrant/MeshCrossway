@@ -6,6 +6,7 @@ cd "$ROOT"
 
 V03_REF="b48145f07ef4d00895f7ccedbdfb240a322dd37a"
 V04_REF="5dfe3744ed7b062c629ea5d2811dc434928826b1"
+V052_REF="ce221fcf3d0ba1524ab2cea7e6296b584a97ff71"
 WAVESHARE_REF="d9ff7837148b47b33edadc4b87775c341cf35bbe"
 LATEST_VERSION="$(tr -d '\r\n' < firmware/display-prototype/VERSION)"
 if [[ ! "$LATEST_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
@@ -94,8 +95,9 @@ build_version() {
 
 build_version v0.3.0 "$V03_REF"
 build_version v0.4.0 "$V04_REF"
+build_version v0.5.2 "$V052_REF"
 case "$LATEST_VERSION" in
-  v0.3.0|v0.4.0) echo "Current version already available in historical archive" ;;
+  v0.3.0|v0.4.0|v0.5.2) echo "Current version already available in historical archive" ;;
   *) build_version "$LATEST_VERSION" HEAD ;;
 esac
 python3 "$ROOT/scripts/write_firmware_catalog.py" \

@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.5: local Wi-Fi provisioning + two-way remote UI.
+// MeshCrossway v0.5.3: local Wi-Fi provisioning; remote UI disabled.
 // All radio and GNSS values remain simulated.
 #include "lvgl.h"
 #include "meshcrossway_remote.h"
@@ -64,7 +64,7 @@ static void on_connect(lv_event_t *){
     return;
   }
   if(!meshnetwork::connect(ssid,password)){
-    lv_label_set_text(wifi_notice,"Could not initiate Wi-Fi connection.");
+    lv_label_set_text(wifi_notice,"Wait for scan, then retry CONNECT.");
     return;
   }
   // Keep the Wi-Fi credentials in ESP-IDF NVS, not in app source or LVGL fields.
@@ -116,6 +116,7 @@ static void wifi_setup(lv_event_t *){
   lv_obj_set_pos(wifi_picker,9,43);lv_obj_set_size(wifi_picker,352,37);
   lv_dropdown_set_options(wifi_picker,"Select network (or enter SSID)");
   lv_dropdown_set_dir(wifi_picker,LV_DIR_BOTTOM);
+  lv_obj_set_style_max_height(lv_dropdown_get_list(wifi_picker),200,0);
   lv_obj_add_event_cb(wifi_picker,on_network_selected,LV_EVENT_VALUE_CHANGED,nullptr);
   lv_obj_t *scan=lv_btn_create(wifi_dialog);
   fill(scan,orange,6);lv_obj_set_pos(scan,369,43);lv_obj_set_size(scan,102,37);
@@ -228,7 +229,7 @@ static void refresh(lv_timer_t *){
   if(strcmp(lv_label_get_text(network_value),network)!=0)lv_label_set_text(network_value,network);
 }
 static void init(){
-  printf("[MCX-DIAG v0.5.2] boot reset_reason=%d heap=%lu remote=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.5.3] boot reset_reason=%d heap=%lu remote=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);

@@ -19,7 +19,7 @@ tested={
     "v0.4.0":("Tested on Rev2.0: Wi-Fi access point, screenshot viewing and PNG capture","Recommended recovery"),
 }
 catalog=[]
-for version in ("v0.4.0","v0.3.0",latest):
+for version in ("v0.4.0","v0.3.0","v0.5.2",latest):
     if any(entry["version"]==version for entry in catalog):
         continue
     folder=root/"versions"/version
@@ -39,8 +39,8 @@ for version in ("v0.4.0","v0.3.0",latest):
         label="Wi-Fi setup / experimental"
         status="experimental"
     elif version=="v0.5.2":
-        summary="Diagnostic build: Wi-Fi AP+STA enabled; remote screen capture and touch disabled. Physical display stability NOT verified."
-        label="Diagnostic / hardware test required"
+        summary="Diagnostic build: Wi-Fi AP+STA enabled; remote screen capture and touch disabled. Display and menu navigation passed the owner test on October 28, 2026; Wi-Fi provisioning remains unverified."
+        label="Display-tested rollback / Wi-Fi unverified"
         status="experimental"
     elif version in ("v0.5.0","v0.5.1"):
 

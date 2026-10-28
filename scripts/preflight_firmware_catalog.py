@@ -37,7 +37,7 @@ if args.catalog is not None:
     found={entry["version"] for entry in versions}
     current=(root/"firmware/display-prototype/VERSION").read_text().strip()
     assert manifest["latest"]==current,(manifest["latest"],current)
-    assert {"v0.3.0","v0.4.0",current}.issubset(found),found
+    assert {"v0.3.0","v0.4.0","v0.5.2",current}.issubset(found),found
     for entry in versions:
         assert entry["status"] in ("hardware-tested","experimental","known-issue")
         assert entry["manifest"].startswith("/MeshCrossway/flasher/firmware/versions/")
