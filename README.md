@@ -6,7 +6,9 @@
 
 **Meshtastic + MeshCore — two independent LoRa radios operating simultaneously in one touchscreen device.**
 
-![MeshCrossway V1 concept: one custom PCB with Seeed XIAO/Wio dual radios, transparent enclosure and rear battery](docs/images/meshcrossway_mountain_connectivity_concept.png)
+![MeshCrossway modular concept: Waveshare 3.5-inch touchscreen host and two independent Seeed XIAO ESP32S3 with Wio-SX1262 modules for Meshtastic and MeshCore, linked through BLE](docs/images/meshcrossway-modular-hero.jpg)
+
+*Conceptual promotional illustration of the three-device modular architecture. Not a verified product photograph or exact mechanical rendering.*
 
 *Illustrative AI-generated concept only. It does not represent the final product, verified physical placement, exact supplier components, or production-ready PCB/enclosure design. The intended battery placement is behind the carrier PCB.*
 
