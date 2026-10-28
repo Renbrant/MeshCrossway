@@ -293,7 +293,7 @@ static void debug_memory(const char *phase){
   const uint32_t free_internal=(uint32_t)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   const uint32_t largest_internal=(uint32_t)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   const uint32_t free_dma=(uint32_t)heap_caps_get_free_size(MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-  printf("[MCX-MEM] %s core=%d internal=%lu largest=%lu dma=%lu all=%lu\\n",
+  printf("[MCX-MEM] %s core=%d internal=%lu largest=%lu dma=%lu all=%lu\n",
          phase,(int)xPortGetCoreID(),(unsigned long)free_internal,
          (unsigned long)largest_internal,(unsigned long)free_dma,
          (unsigned long)esp_get_free_heap_size());
