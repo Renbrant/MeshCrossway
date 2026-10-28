@@ -159,3 +159,17 @@ The approved visual reference has dark graphite and orange/amber as its primary 
 - Quick Settings is a bounded modal with a dim backdrop and explicit demo-only indicators.
 - Wi-Fi touchscreen provisioning, SD plaintext backup, manual PIN-protected view-only capture and disabled remote touch are unchanged.
 - Check all four independent rail combinations, 5 pages, map subviews and modal behavior on physical 480x320 LCD. Do not mark hardware-tested before owner confirmation.
+
+## v0.6.2 — six-tab field workflow (hardware test pending)
+
+- Navigation: Home, Nodes, Groups, Chats, Map, More (Radios has moved into More > Radios).
+- On Home, the left rail is hidden except for a 29px handle that reopens the six navigation buttons.
+- Nodes has independent All/MT/MC filters, with sample contacts and repeaters labeled **DEMO**, not live.
+- Groups has All/MT/MC filters, sample channels and a MeshCore room server. Unread counts are **DEMO**.
+- Selecting a sample contact/group opens Chats; the chosen conversation stays selected when navigating elsewhere.
+- Custom vector radio, two-person and conversation icons are rendered with LVGL shapes, not font emojis.
+- Wi-Fi settings, SD backup and PIN-protected read-only capture are unchanged. No BLE transmission or GNSS is implemented.
+
+**Hardware acceptance:** flash without Erase, inspect all six nav entries and Home's reopen handle, collapse/expand the rail, filter Nodes/Groups independently, open each sample thread then return to Chats, check More > Radios and More > Wi-Fi, and capture screenshots with the existing remote viewer. Verify no lockups after repeated navigation. Build success is not proof of hardware stability.
+
+See [workflow research](field-console-workflow.md).
