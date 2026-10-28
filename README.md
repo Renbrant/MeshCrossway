@@ -4,16 +4,6 @@ MeshCrossway is an **open-source, offline-first modular communication system** w
 
 > **Development status — October 28, 2026:** the **three-device, independent-battery BLE architecture** is the approved direction. The Waveshare touchscreen firmware **v0.4.0 is the stable physical UI baseline**, but the two-Pod BLE integration and real radio features are **not yet implemented**; the web UI still contains simulated data. Firmware v0.5.0/v0.5.1 has a known display regression and is **not recommended for installation**. The former integrated Rev A carrier/UART/one-battery design is archived as an alternative historical variant, **not the current build plan**. This is not a certified rescue/emergency device.
 
-## Try the interactive interface
-
-[![Open the MeshCrossway UI simulator](https://img.shields.io/badge/OPEN-INTERACTIVE%20UI%20SIMULATOR-0976b9?style=for-the-badge)](https://renbrant.github.io/MeshCrossway/)
-
-[![Current simulated touchscreen interface](docs/ui-prototype/ui-overview-current.svg)](https://renbrant.github.io/MeshCrossway/)
-
-**[Launch the interactive 480 × 320 UI →](https://renbrant.github.io/MeshCrossway/)**
-
-The UI prototype explores **horizontal-screen navigation**, collapsible left navigation and right contextual tools, a pull-down top settings area, messages, maps, sharing and diagnostics. It does not yet communicate with physical radios. [Interface documentation](docs/ui-prototype/README.md).
-
 ## Current hardware — three independent BLE devices
 
 ![Approved MeshCrossway modular topology: one Core and two autonomous Radio Pods, each with its own battery](docs/images/architecture/modular-ble-topology.svg)
@@ -53,38 +43,6 @@ The UI prototype explores **horizontal-screen navigation**, collapsible left nav
 | Future ATAK interoperability | Evaluate ATAK-CIV gateway, CoT positions and controlled event sharing | Research only |
 
 No automatic cross-network bridging is performed. Each radio keeps native identities, security, channel models and routing rules.
-
-## Explore the proposed screens
-
-These images show **simulated UI states**, not operational-device screenshots.
-
-### Messaging
-
-[![Dual-network conversations](docs/ui-prototype/readme/messaging.svg)](https://renbrant.github.io/MeshCrossway/)
-
-A single inbox preserves each message's original network and destination.
-
-### Navigation, tools and POIs
-
-[![Navigation tools](docs/ui-prototype/readme/navigation.svg)](https://renbrant.github.io/MeshCrossway/)
-
-[![Points of interest](docs/ui-prototype/readme/pois.svg)](https://renbrant.github.io/MeshCrossway/)
-
-The navigation interface groups location, POIs, saved tracks, recording and GNSS functions without sacrificing map space.
-
-### Tracks and live sharing
-
-[![Tracks and GPX](docs/ui-prototype/readme/tracks.svg)](https://renbrant.github.io/MeshCrossway/)
-
-[![Live location sharing](docs/ui-prototype/readme/live-location.svg)](https://renbrant.github.io/MeshCrossway/)
-
-Location updates require deliberate user consent and defined duration, movement threshold and airtime limits. Native zero-hop behavior remains unverified.
-
-### Diagnostics and device settings
-
-[![Independent radio diagnostics](docs/ui-prototype/readme/radios.svg)](https://renbrant.github.io/MeshCrossway/)
-
-[![Device settings](docs/ui-prototype/readme/settings.svg)](https://renbrant.github.io/MeshCrossway/)
 
 ## How the modular system works
 
@@ -129,7 +87,7 @@ The **LilyGO T-Deck Plus** is being evaluated as an **optional portable replacem
 | **Maps and regional checks** | [Community coverage and map services](docs/mesh-maps-and-regional-check.md) |
 | **Future Reticulum** | [Future integration feasibility](docs/reticulum-future-integration.md) |
 | **Future ATAK / CoT** | [ATAK-CIV gateway and interoperability research](docs/atak-future-integration.md) |
-| **Interface simulator** | [UI documentation and limitations](docs/ui-prototype/README.md) |
+| **Interface concepts and archived screenshots** | [UI documentation and historical gallery](docs/ui-prototype/README.md) |
 | **Project baseline** | [Current V1 technical reference](docs/project-reference.md) |
 
 ## Next validation milestones
