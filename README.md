@@ -33,7 +33,8 @@ MeshCrossway is an **open-source, offline-first modular communication system** w
 | Capability | Planned experience | Current state |
 |---|---|---|
 | Dual network messaging | Unified inbox; clear Meshtastic / MeshCore source and reply network | Simulated UI |
-| Navigation | GNSS map, POIs, waypoints, recorded tracks and GPX files | Simulated UI and specification |
+| Navigation / GPS | Local GNSS, POIs, manually drawn/imported courses, recorded tracks and GPX; automatic routing deferred | Simulated UI and specification |
+| Connected track library | wanderer API integration; separate instance account, direct website access and personal SD export | Selected direction; not implemented |
 | Live location sharing | Per-network audience, movement/time triggers, automatic expiry | Design only |
 | Direct Only tracking | Attempt zero-relay position updates without silently flooding | Requires firmware and RF tests |
 | Radio diagnostics | Independent connection, packet, status and route information | Simulated UI |
@@ -59,6 +60,16 @@ Each Pod should use a verified upstream BLE-enabled firmware target. In particul
 
 [Implementation specification](docs/modular-architecture.md) · [Native radio firmware strategy](docs/radio-firmware-strategy.md) · [Protocol documentation (legacy UART sections are historical)](docs/radio-communication-architecture.md)
 
+## GPS, tracks and wanderer
+
+[wanderer](https://wanderer.to/) is the selected open-source application/service base for the planned connected track library and sharing workflow. The Core will record locally to microSD; **automatic route calculation and recalculation are deferred**.
+
+Online synchronization and private library/sharing management require a **separate account on the chosen wanderer instance**. There is no assumed universal account at the official project site. Users will always have an option to open that instance's website directly, independently of the MeshCrossway interface. **Local GNSS and track recording require no wanderer account.**
+
+Planned personal SD export/backup preserves portable tracks and supported metadata; server-wide backups remain the hosting operator's responsibility. API integration, authentication, SD backup and restoration are **not yet implemented or validated**, and no formal partnership exists.
+
+[Read the selection study, account model, API boundary and backup requirements](docs/gps-wanderer-integration.md).
+
 ## Future integrations and collaborations
 
 Explore the [future integrations registry](docs/future-integrations/README.md), including [Colorado Mesh-Client](docs/future-integrations/colorado-mesh-client.md), MeshMapper, ATAK, Reticulum and upstream protocol projects. These are research opportunities, not committed features or partnerships.
@@ -82,6 +93,7 @@ The **LilyGO T-Deck Plus** is being evaluated as an **optional portable replacem
 | **Radio APIs and BLE transports** | [Meshtastic BLE PhoneAPI + MeshCore BLE Companion](docs/modular-architecture.md#ble-implementation) |
 | **Legacy UART transport research** | [Older PROTO/Companion serial design](docs/radio-communication-architecture.md) |
 | **Firmware responsibilities** | [Upstream firmware, custom builds and fallback strategy](docs/radio-firmware-strategy.md) |
+| **GPS / wanderer selection, accounts and SD backup** | [Integration study and requirements](docs/gps-wanderer-integration.md) |
 | **Navigation and live sharing** | [Positions, GPX, routing policies and airtime](docs/navigation-and-sharing.md) |
 | **Meshtastic versus MeshCore** | [Illustrated comparison and technical analysis](docs/meshtastic-vs-meshcore.md) |
 | **Maps and regional checks** | [Community coverage and map services](docs/mesh-maps-and-regional-check.md) |

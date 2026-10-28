@@ -6,6 +6,7 @@ This directory tracks **potential** integrations, interoperability work and comm
 
 | Initiative | Upstream repository / discovery link | Potential value | Status |
 |---|---|---|---|
+| [wanderer](https://github.com/open-wanderer/wanderer) | [Selection study](../gps-wanderer-integration.md) | Connected track library, documented API, direct web access and personal exports; separate instance account | Selected direction; implementation pending; no partnership |
 | [Colorado Mesh-Client](https://github.com/Colorado-Mesh/mesh-client) | [Source](https://github.com/Colorado-Mesh/mesh-client) | Desktop interoperability, Wi-Fi/TCP radio interfaces, diagnostics, TAK/CoT | Research; contact maintainers before proposing integration |
 | [MeshMapper](https://github.com/search?q=MeshMapper&type=repositories) | [Source](https://github.com/search?q=MeshMapper&type=repositories) | Coverage mapping, field tests and potential data collaboration | Research; confirm official repository/API and discuss partnership after hardware validation |
 | [ATAK / ATAK-CIV](https://github.com/deptofdefense/AndroidTacticalAssaultKit-CIV) | [Source](https://github.com/deptofdefense/AndroidTacticalAssaultKit-CIV) | CoT location sharing and tactical mapping | Future research; validate interface and licenses |
@@ -14,6 +15,8 @@ This directory tracks **potential** integrations, interoperability work and comm
 | [MeshCore](https://github.com/meshcore-dev/MeshCore) | [Source](https://github.com/meshcore-dev/MeshCore) | Upstream MeshCore firmware and companion API | V1 dependency; not a partnership |
 
 ## Existing research
+
+- [GPS/GNSS and wanderer integration](../gps-wanderer-integration.md) — selection rationale, no autorouting, separate account, direct website option and SD backup/restore requirements.
 
 - [MeshMapper investigation](../future-meshmapper-integration.md) — proposed community/API discussion after viable hardware exists.
 - [ATAK / CoT investigation](../atak-future-integration.md) — future interoperability research.

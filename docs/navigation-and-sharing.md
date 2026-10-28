@@ -4,6 +4,14 @@
 
 **Status:** product requirements and interactive browser simulation. No live GNSS, LoRa location-sharing scheduler, file-transfer service or companion app has been implemented or bench-validated.
 
+## Selected GPS application/service base
+
+See [GPS/GNSS and wanderer integration](gps-wanderer-integration.md) for the selection study and approved connected-library direction. **Automatic geographic routing/recalculation is deferred**; imported tracks and manually drawn courses remain in scope. LoRa packet routing below is a separate concern.
+
+wanderer will provide the planned connected library/sharing layer through its API. Users need a **separate account on their selected wanderer instance** for private server storage, synchronization and sharing management, and must always be offered direct access to that instance's website. The official project website is not a universal hosted-account service. Local GNSS, recording and GPX access remain available without an account.
+
+Personal SD export/backup, retained local originals and tested restoration are requirements. This integration and those backup functions are **not implemented**; the Core still needs its own logger, map renderer and radio adapters.
+
 ## Illustrated location-sharing modes
 
 ![Direct Tracking modes](images/architecture/direct-tracking-modes.svg)
