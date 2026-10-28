@@ -1,6 +1,6 @@
 # Radio communication architecture, APIs and interoperability
 
-> **SUPSERSEDED (2026-10-28):** The UART-integrated architecture below is historical bench reference, not the approved product. Current design: [three independently powered BLE-connected detachable modules](modular-architecture.md).
+> **SUPERSEDED (2026-10-28):** The UART-integrated architecture below is historical bench reference, not the approved product. Current design: [three independently powered BLE-connected detachable modules](modular-architecture.md).
 
 **Status:** source/design review, 2026-10-26. No PCB, firmware build, UART link, RF capture or field test has yet validated the implementation. This file defines expected interfaces and explicit acceptance gates rather than proven product capabilities.
 
