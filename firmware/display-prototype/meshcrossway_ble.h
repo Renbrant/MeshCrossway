@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.6.3 - ESP-IDF NimBLE central discovery, GATT identification,
+// MeshCrossway v0.6.4 - BLE remains OFF during boot; explicit staged initialization.
 // and PIN-authenticated pairing. No application frames are sent.
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
@@ -21,7 +21,7 @@
 extern "C" void ble_store_config_init(void);
 
 namespace meshble {
-enum Phase { OFF=0, IDLE, SCANNING, CONNECTING, VERIFYING, PAIRING, READY, FAILED };
+enum Phase { OFF=0, STARTING, IDLE, SCANNING, CONNECTING, VERIFYING, PAIRING, READY, FAILED };
 enum Radio { UNKNOWN=0, MESHTASTIC=1, MESHCORE=2 };
 struct Peer { ble_addr_t addr; char name[29]; int8_t rssi; Radio advertised; };
 struct Snapshot {
@@ -279,9 +279,11 @@ static int gap_event(struct ble_gap_event *event,void *){
     default:return 0;
   }
 }
-static void start(){
-  update(OFF,"Starting BLE...");
+static void start_internal(){
+  printf("[MCX-BLE] worker entered; heap=%lu\n",(unsigned long)esp_get_free_heap_size());
+  update(STARTING,"Initializing NimBLE in worker...");
   const esp_err_t err=nimble_port_init();
+  printf("[MCX-BLE] nimble_port_init result=%d heap=%lu\n",(int)err,(unsigned long)esp_get_free_heap_size());
   if(err!=ESP_OK){
     char msg[64];snprintf(msg,sizeof(msg),"NimBLE init failed: %d",(int)err);
     update(FAILED,msg);return;
@@ -296,5 +298,23 @@ static void start(){
   (void)ble_svc_gap_device_name_set("MeshCrossway");
   ble_store_config_init();
   nimble_port_freertos_init(host_task);
+  printf("[MCX-BLE] host created; awaiting sync\n");
+}
+static void init_task(void *){
+  // Never initialize controller/host in LVGL or the early app_main boot path.
+  // A short delay allows LVGL, the Wi-Fi AP/STA and HTTP to become responsive.
+  vTaskDelay(pdMS_TO_TICKS(500));
+  start_internal();
+  vTaskDelete(nullptr);
+}
+static bool request_start(){
+  if(snapshot().phase!=OFF)return false; // Do not repeat a partial or failed init.
+  update(STARTING,"BLE worker requested - standby...");
+  const BaseType_t created=xTaskCreate(init_task,"mcx_ble_init",6144,nullptr,tskIDLE_PRIORITY+1,nullptr);
+  if(created!=pdPASS){
+    update(FAILED,"No memory for BLE worker; restart");
+    return false;
+  }
+  return true;
 }
 } // namespace meshble
