@@ -15,6 +15,7 @@ latest=args.latest
 if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+",latest):
     p.error("Invalid latest version")
 tested={
+    "v0.6.2":("Owner tested v0.6.2 on Waveshare Rev2.0: touch, Wi-Fi and normal UI operate. v0.6.3 boot freezes; v0.6.2 is confirmed working rollback.", "Last working tested UI / recommended"),
     "v0.5.6":("Owner confirmed usable wider QWERTY and normal Wi-Fi operation; remote screen/touch disabled", "Tested keyboard + Wi-Fi / rollback"),
     "v0.5.7":("Owner confirmed stable physical UI and status HTTP with live uptime/IP/heap; screenshot and remote touch disabled", "Tested HTTP status + Wi-Fi / rollback"),
     "v0.5.9":("Owner verified 32GB FAT32 JSON Wi-Fi backup, successful reinstall without Erase and automatic Wi-Fi reconnect; remote capture disabled", "Tested SD backup + Wi-Fi / rollback"),
@@ -40,9 +41,9 @@ for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8","
         summary,label=tested[version]
         status="hardware-tested"
     elif version=="v0.6.3":
-        summary="EXPERIMENTAL / NOT HARDWARE TESTED: Heltec V3 MeshCore BLE discovery, GATT identification and PIN pairing candidate. No MeshCore application packets or messaging yet. Wi-Fi / read-only screen remains."
-        label="MeshCore BLE pairing / UNTESTED"
-        status="experimental"
+        summary="KNOWN CRITICAL ISSUE: owner tested v0.6.3 twice and both boots froze: touch not responding and Wi-Fi stuck at waiting. Reinstall v0.6.2. Do NOT install v0.6.3."
+        label="BROKEN BOOT / DO NOT INSTALL"
+        status="known-issue"
     elif version=="v0.6.2":
         summary="Six-tab navigation (Home, Nodes, Groups, Chats, Map, More), per-network filters and persistent selected demo chat; compact radio/group icons, hidden Home rail; radio and Wi-Fi preserved. Physical test pending."
         label="Nodes + groups + chats / experimental"
