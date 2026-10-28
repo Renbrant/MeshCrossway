@@ -36,6 +36,10 @@ for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6",latest):
     if version in tested:
         summary,label=tested[version]
         status="hardware-tested"
+    elif version=="v0.5.8":
+        summary="Plaintext Wi-Fi backup/restore on optional SD; split installer preserves internal settings without Erase. HTTP status only. Hardware test pending."
+        label="SD Wi-Fi backup / experimental"
+        status="experimental"
     elif version=="v0.5.7":
         summary="Remote experiment B: HTTP status page and /health only; no screenshots, framebuffer allocation or remote touch. Hardware test pending."
         label="HTTP status only / experimental"
@@ -86,6 +90,6 @@ catalog_info={
 
 # Backwards compatible paths for previously bookmarked ESP Web Tools links.
 current=root/"versions"/latest
-for filename in ("manifest.json","build-info.json","meshcrossway-display-dev.bin"):
+for filename in ("manifest.json","build-info.json","meshcrossway-display-dev.bin")+tuple(part["path"] for part in json.loads((current/"manifest.json").read_text())["builds"][0]["parts"] if part["path"]!="meshcrossway-display-dev.bin"):
     shutil.copy2(current/filename,root/filename)
 print("Firmware catalog:", ", ".join(v["version"] for v in catalog))

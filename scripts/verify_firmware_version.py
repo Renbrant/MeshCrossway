@@ -19,7 +19,19 @@ try:
     assert manifest["version"]==a.version
     assert info["version"]==a.version
     assert manifest["builds"][0]["chipFamily"]=="ESP32-S3"
-    assert manifest["builds"][0]["parts"]==[{"path":image.name,"offset":0}]
+    data=image.read_bytes()
+    if tuple(map(int,a.version[1:].split('.'))) >= (0,5,8):
+        expected=[("bootloader.bin",0,0x8000),("partition-table.bin",0x8000,0x9000),("application.bin",0x10000,len(data))]
+        assert manifest["builds"][0]["parts"]==[{"path":name,"offset":start} for name,start,end in expected]
+        assert manifest["new_install_prompt_erase"] is False
+        assert len(info["flash_parts"])==3
+        for metadata,(name,start,end) in zip(info["flash_parts"],expected):
+            content=(folder/name).read_bytes()
+            assert content==data[start:end] and len(content)==end-start
+            assert end<=0x9000 or start>=0x10000
+            assert metadata=={"path":name,"offset":start,"size":len(content),"sha256":hashlib.sha256(content).hexdigest()}
+    else:
+        assert manifest["builds"][0]["parts"]==[{"path":image.name,"offset":0}]
     if a.ref is not None:
         assert info["commit"]==a.ref
     assert image.is_file() and image.stat().st_size==info["size"]

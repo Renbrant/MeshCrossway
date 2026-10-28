@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.5.7: local Wi-Fi provisioning; remote UI disabled.
+// MeshCrossway v0.5.8: local Wi-Fi provisioning; remote UI disabled.
 // All radio and GNSS values remain simulated.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
@@ -13,6 +13,7 @@ namespace meshcrossway {
 static lv_obj_t *body=nullptr,*heading=nullptr,*tabs[5]={};
 static lv_obj_t *wifi_dialog=nullptr,*wifi_ssid=nullptr,*wifi_password=nullptr,*wifi_keyboard=nullptr,*wifi_notice=nullptr,*wifi_picker=nullptr;
 static lv_obj_t *wifi_editor=nullptr,*wifi_edit_text=nullptr,*wifi_edit_target=nullptr;
+static lv_obj_t *wifi_sd_status=nullptr;
 static int page=0;
 static lv_obj_t *uptime_value=nullptr,*heap_value=nullptr,*network_value=nullptr;
 static const lv_color_t bg=lv_color_hex(0x090C10);
@@ -61,7 +62,7 @@ static void close_wifi_editor(){
 static void close_wifi(){
   close_wifi_editor();
   if(wifi_dialog)lv_obj_del(wifi_dialog);
-  wifi_dialog=nullptr;
+  wifi_dialog=nullptr;wifi_sd_status=nullptr;
   wifi_ssid=nullptr;wifi_password=nullptr;wifi_keyboard=nullptr;wifi_notice=nullptr;wifi_picker=nullptr;
 }
 static void on_cancel(lv_event_t *){close_wifi();}
@@ -238,6 +239,7 @@ static void wifi_setup(lv_event_t *){
   wifi_notice=txt(wifi_dialog,"Tap SCAN to find nearby Wi-Fi networks.",10,162,453,muted);
   txt(wifi_dialog,"Tap the SSID or password field to edit.",10,207,453,white);
   txt(wifi_dialog,"Full-screen QWERTY / DONE returns here.",10,234,453,muted);
+  wifi_sd_status=txt(wifi_dialog,"SD backup: checking",10,270,453,muted);
   (void)meshnetwork::begin_scan();
 
 }
@@ -300,7 +302,11 @@ static void on_nav(lv_event_t *e){
 }
 static void refresh(lv_timer_t *){
   update_wifi_scan();
-  printf("[MCX-DIAG v0.5.7] uptime_ms=%llu heap=%lu page=%d keys=%lu key_us=%llu key_max_us=%llu\n",
+  if(wifi_sd_status){
+    char backup[64];snprintf(backup,sizeof(backup),"SD backup: %s",meshbackup::status());
+    if(strcmp(lv_label_get_text(wifi_sd_status),backup))lv_label_set_text(wifi_sd_status,backup);
+  }
+  printf("[MCX-DIAG v0.5.8] uptime_ms=%llu heap=%lu page=%d keys=%lu key_us=%llu key_max_us=%llu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,(unsigned long)editor_key_count,
          (unsigned long long)editor_key_last_us,(unsigned long long)editor_key_max_us);
@@ -320,7 +326,7 @@ static void refresh(lv_timer_t *){
   if(strcmp(lv_label_get_text(network_value),network)!=0)lv_label_set_text(network_value,network);
 }
 static void init(){
-  printf("[MCX-DIAG v0.5.7] boot reset_reason=%d heap=%lu http=STATUS_ONLY screen=OFF touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.5.8] boot reset_reason=%d heap=%lu http=STATUS_ONLY screen=OFF touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -330,7 +336,7 @@ static void init(){
   txt(bar,"MESH",10,11,49,white);
   txt(bar,"CROSSWAY",59,11,104,orange);
   heading=txt(bar,"OVERVIEW",185,11,170,white);
-  txt(bar,"DEV 0.5.7",386,12,90,orange);
+  txt(bar,"DEV 0.5.8",386,12,90,orange);
   lv_obj_t *rail=lv_obj_create(screen);fill(rail,bg);
   lv_obj_set_pos(rail,0,43);lv_obj_set_size(rail,108,242);
   lv_obj_clear_flag(rail,LV_OBJ_FLAG_SCROLLABLE);

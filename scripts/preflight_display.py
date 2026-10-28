@@ -17,7 +17,7 @@ ui=(FW / "meshcrossway_ui.h").read_text()
 if version=="v0.5.4":
     anchor=ui.index("lv_obj_set_align(wifi_keyboard,LV_ALIGN_TOP_LEFT)")
     assert anchor<ui.index("lv_obj_set_pos(wifi_keyboard,4,185)"), "Keyboard must use top-left coordinates"
-if version not in ("v0.5.1", "v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7"):
+if version not in ("v0.5.1", "v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7", "v0.5.8"):
     errors.append("Unexpected version: " + version)
 if "HTTPD_503_SERVICE_UNAVAILABLE" in remote:
     errors.append("Unsupported HTTPD_503_SERVICE_UNAVAILABLE token")
@@ -63,10 +63,10 @@ void app(){
                 errors.append("Patcher failed: " + p.stdout + p.stderr)
                 break
         output = main.read_text()
-        if version in ("v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7"):
+        if version in ("v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7", "v0.5.8"):
             if (output.count("meshnetwork::start();") != 1 or output.count("meshcrossway::init();") != 1 or "meshremote::start();" in output or "meshremote::register_input();" in output):
                 errors.append("Diagnostic patcher must start only Wi-Fi; no remote HTTP or LVGL input")
-            if version=="v0.5.7" and output.count("meshhealth::start();")!=1:
+            if version in ("v0.5.7","v0.5.8") and output.count("meshhealth::start();")!=1:
                 errors.append("Status HTTP must start once")
         elif (output.count("meshremote::start();") != 1 or output.count("meshcrossway::init();") != 1 or output.count("meshremote::register_input();") != 1):
             errors.append("Patcher not idempotent for main.cpp")
@@ -84,7 +84,7 @@ if errors:
     sys.exit(1)
 print("Preflight PASS: version, C++ source patterns, JS syntax, patcher syntax and idempotence")
 
-if version=="v0.5.7":
+if version in ("v0.5.7","v0.5.8"):
     health=(FW/"meshcrossway_health.h").read_text()
     assert '#include "meshcrossway_health.h"' in ui
     assert not any(token in health for token in ("lv_snapshot_take(","lvgl_port_lock(","lv_indev_drv_register(","/screen.raw","/touch"))

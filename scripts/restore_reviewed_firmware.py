@@ -50,7 +50,12 @@ def restore():
                     if subprocess.run(['git','diff','--quiet',sha,'HEAD','--',*INPUTS],cwd=ROOT).returncode:
                         print(f"Skip run {run['id']}: firmware build inputs differ");continue
                     folder=temp/'firmware'/prefix;folder.mkdir(parents=True)
-                    for name in ('manifest.json','build-info.json','meshcrossway-display-dev.bin'):
+                    names=['manifest.json','build-info.json','meshcrossway-display-dev.bin']
+                    for part in info.get('flash_parts',[]):
+                        if part['path'] not in ('bootloader.bin','partition-table.bin','application.bin'):
+                            raise ValueError('Unexpected installer component')
+                        names.append(part['path'])
+                    for name in names:
                         (folder/name).write_bytes(z.read(prefix+name))
                 subprocess.run(['python3',str(ROOT/'scripts/verify_firmware_version.py'),'--dir',str(folder),'--version',version,'--ref',sha],check=True)
                 subprocess.run(['python3',str(ROOT/'scripts/check_firmware_identity.py'),'--root',str(temp/'firmware')],cwd=ROOT,check=True)

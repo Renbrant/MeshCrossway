@@ -43,7 +43,7 @@
 <div class="step">Connect the Waveshare Rev2.0 display to your computer with a USB data cable. Leave the computer on its normal Wi-Fi network.</div>
 <div class="step">Choose <b>v0.4.0 — Recommended recovery</b> above, and select <b>Install</b>. v0.3.0 is another tested fallback.</div>
 <div class="step">If the USB serial port is unavailable because the new firmware keeps restarting, enter ESP32-S3 download mode using the board's <b>BOOT</b> and <b>RESET</b> controls, then retry connecting.</div>
-<div class="step">For a clean downgrade, you can choose <b>Erase device</b> in the installer. This will also erase saved Wi-Fi credentials and other settings.</div>
+<div class="step">From v0.5.8, installation without Erase preserves internal Wi-Fi/settings. Older merged installers can overwrite settings even without Erase. An SD Wi-Fi backup is plaintext and should be created before erasing. For a clean downgrade, you can choose <b>Erase device</b> in the installer. This will also erase saved Wi-Fi credentials and other settings.</div>
 </div>
 <div class="notice"><b>Target limitation:</b> these images are for the Waveshare ESP32-S3-Touch-LCD-3.5 <b>non-B, Rev2.0</b> display. Do not flash a XIAO radio module or a Waveshare 3.5B with this image. Firmware installation may overwrite data.</div>
 <h2>How versions are maintained</h2>
@@ -117,12 +117,19 @@
       const manifest=await manifestResponse.json();
       if(manifest.version!==entry.version ||
          !manifest.builds?.some(b=>b.chipFamily==='ESP32-S3' &&
-           b.parts?.some(part=>part.path==='meshcrossway-display-dev.bin' && part.offset===0)))
+           ((b.parts?.length===1 && b.parts[0].path==='meshcrossway-display-dev.bin' && b.parts[0].offset===0) ||
+            (b.parts?.length===3 && [['bootloader.bin',0],['partition-table.bin',32768],['application.bin',65536]].every(([path,offset])=>b.parts.some(p=>p.path===path&&p.offset===offset))))))
         throw Error('Firmware manifest does not match the selected version');
       const binaryResponse=await fetch(entry.binary,{method:'HEAD',cache:'no-store'});
       if(!binaryResponse.ok) throw Error('Compiled binary is missing');
+      const selectedBuild=manifest.builds.find(b=>b.chipFamily==='ESP32-S3');
+      await Promise.all(selectedBuild.parts.map(async part=>{
+        const url=new URL(part.path,new URL(entry.manifest,location.href));
+        const response=await fetch(url,{method:'HEAD',cache:'no-store'});
+        if(!response.ok)throw Error('Installer component missing');
+      }));
       if(ticket!==generation) return;
-      status.textContent=entry.status==='known-issue'?'KNOWN ISSUE — EXPERIMENTAL':'HARDWARE-TESTED BUILD AVAILABLE';
+      status.textContent=entry.status==='known-issue'?'KNOWN ISSUE — EXPERIMENTAL':entry.status==='hardware-tested'?'HARDWARE-TESTED BUILD AVAILABLE':'EXPERIMENTAL BUILD AVAILABLE';
       message.textContent='Ready to install '+entry.version+'. Make sure the USB port belongs to the Waveshare display.';
       makeInstaller(entry);
     } catch(e) {
