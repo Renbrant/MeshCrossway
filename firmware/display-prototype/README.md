@@ -39,3 +39,7 @@ Vendor source: https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.5/tree/main
 ## UI v0.2 — graphite and orange (October 28, 2026)
 
 The LVGL UI now uses the MeshCrossway graphite/orange visual language with a compact left navigation rail, 43px top status header, 35px bottom demo status, and clipped-safe cards. The reference is WADAMESH's field-focused touchscreen information hierarchy, but the UI is original and does not copy WADAMESH code/assets. All displayed radio/position values are clearly demo data. Hardware verified for v0.1 on Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0; **v0.2 still requires physical testing** after web-flashing. The GitHub Pages flasher build pipeline triggers automatically from changes in this folder. Before installing, confirm the Actions run succeeded and the displayed manifest version matches the latest commit.
+
+## UI v0.3 — real host diagnostics
+
+The Settings screen now displays actual ESP32-S3 uptime and free heap (refreshed every 5 seconds), while all radio and GNSS displays remain explicitly simulated. Also shortens the overview Crossway card text to prevent overlap. Palette and navigation remain unchanged. **Physical validation still required on Rev2.0**, including Settings update cadence, heap behavior and navigation stability. Screen brightness, SD and UART remain future milestones; no hardware driver or radio changes in this build.
