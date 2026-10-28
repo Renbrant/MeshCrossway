@@ -14,6 +14,8 @@
 #undef max
 #endif
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_system.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
