@@ -31,6 +31,34 @@ if '#include "meshcrossway_ui.h"' not in source:
 if '#include "meshcrossway_ble.h"' not in source:
     source=source.replace('#include "meshcrossway_ui.h"', '#include "meshcrossway_ui.h"\n#include "meshcrossway_ble.h"',1)
     main.write_text(source)
+# Keep the vendor's pinned BSP, but isolate the LCD refresh work from Wi-Fi
+# on CPU 0 and lower the peak SPI transfer pressure during BLE coexistence.
+# Both adjustments are experimental: they do not prove the root cause.
+lvgl_core_marker = 'lvgl_port_cfg_t port_cfg = ESP_LVGL_PORT_INIT_CONFIG();'
+if 'port_cfg.task_affinity = 1;' not in source:
+    if source.count(lvgl_core_marker) != 1:
+        sys.exit('Missing or duplicate upstream LVGL port config')
+    source = source.replace(lvgl_core_marker,
+                            lvgl_core_marker + '\\n    port_cfg.task_affinity = 1;'
+                            + '\\n    printf("[MCX-LCD] LVGL task pinned to CPU1\\\\n");',1)
+    main.write_text(source)
+
+lcd_driver = project / "components" / "esp_port" / "esp_3inch5_lcd_port.cpp"
+if not lcd_driver.is_file():
+    sys.exit(f'Missing pinned Waveshare LCD SPI driver: {lcd_driver}')
+lcd = lcd_driver.read_text()
+if '#define EXAMPLE_LCD_PIXEL_CLOCK_HZ (40 * 1000 * 1000)' not in lcd:
+    if lcd.count('#define EXAMPLE_LCD_PIXEL_CLOCK_HZ (80 * 1000 * 1000)') != 1:
+        sys.exit('Unexpected upstream LCD SPI clock')
+    lcd = lcd.replace('#define EXAMPLE_LCD_PIXEL_CLOCK_HZ (80 * 1000 * 1000)',
+                      '#define EXAMPLE_LCD_PIXEL_CLOCK_HZ (40 * 1000 * 1000)',1)
+if 'io_config.trans_queue_depth = 6;' not in lcd:
+    if lcd.count('io_config.trans_queue_depth = 10;') != 1:
+        sys.exit('Unexpected upstream SPI queue depth')
+    lcd = lcd.replace('io_config.trans_queue_depth = 10;',
+                      'io_config.trans_queue_depth = 6;',1)
+lcd_driver.write_text(lcd)
+
 if 'meshremote::register_input();' in source or 'meshremote::start();' in source:
     sys.exit('Diagnostic firmware must not activate remote LVGL input or screenshot HTTP')
 if source.count('meshcapture::init();') != 1:
@@ -54,7 +82,10 @@ defaults = sdk.read_text()
 needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_FATFS_LFN_HEAP=y",
         "CONFIG_BT_ENABLED=y","CONFIG_BT_NIMBLE_ENABLED=y",
         "CONFIG_BT_NIMBLE_ROLE_CENTRAL=y","CONFIG_BT_NIMBLE_MAX_CONNECTIONS=2",
-        "CONFIG_ESP_COEX_SW_COEXIST_ENABLE=y"]
+        "CONFIG_ESP_COEX_SW_COEXIST_ENABLE=y",
+        "CONFIG_ESP_WIFI_TASK_CORE_ID=0",
+        "CONFIG_BT_CTRL_PINNED_TO_CORE_1=y",
+        "CONFIG_BT_NIMBLE_PINNED_TO_CORE_1=y"]
 missing=[option for option in needed if option not in defaults.splitlines()]
 if missing:
     sdk.write_text(defaults.rstrip("\n")+"\n"+"\n".join(missing)+"\n")
