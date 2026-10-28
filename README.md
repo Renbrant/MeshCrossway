@@ -10,9 +10,11 @@ Brand identity: **MeshCrossway** (one word, capital M and C). The two rings repr
 
 > **Approved architecture — October 28, 2026:** MeshCrossway consists of **three individually powered, separable devices**. The Waveshare touchscreen/GNSS **Core** is BLE Central; the **MX-M Pod** runs Meshtastic BLE PhoneAPI and the **MX-C Pod** runs MeshCore BLE Companion, each on a Seeed XIAO ESP32-S3 + Wio-SX1262 kit. BLE is the primary data connection **even when docked**. The units can mechanically attach as one handheld or be carried apart (backpack, vest, helmet, or vehicle mount). The old single-carrier Rev A PCB and UART wiring are **superseded integration experiments, not the current production direction**. No physical prototype, BLE integration, enclosure, RF coexistence or vehicle safety qualification is complete. See [approved modular architecture](docs/modular-architecture.md).
 
-![Previous integrated industrial-design study — superseded as product architecture](docs/images/meshcrossway_mountain_connectivity_concept.png)
+![Current modular BLE architecture: touchscreen Core and two detachable LoRa Pods](docs/images/architecture/modular-ble-topology.svg)
 
-*Historical illustration only: shows an older integrated PCB concept, **not** the approved modular design. Replacement product renders are pending.*
+[Archived integrated design illustrations](docs/images/README.md)
+
+*This is an architecture diagram, not a measured mechanical design or completed hardware. Production enclosure renders remain pending.*
 
 MeshCrossway is an **open-source, offline-first touchscreen communicator** designed to use Meshtastic and MeshCore independently. One interface brings together messaging, navigation, GNSS positioning, tracks and field diagnostics without requiring cellular coverage or internet access. Radio Pods remain autonomous when the Core disconnects.
 
