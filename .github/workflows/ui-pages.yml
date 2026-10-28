@@ -8,6 +8,7 @@ on:
       - "docs/ui-prototype/**"
       - "docs/images/architecture/modular-ble-topology.svg"
       - "docs/images/meshcrossway_mountain_connectivity_concept.png"
+      - "docs/images/meshcrossway-modular-hero.jpg"
       - "firmware/display-prototype/**"
       - "scripts/build_firmware_versions.sh"
       - "scripts/write_firmware_*.py"
@@ -41,6 +42,7 @@ jobs:
           cp -R docs/site/. _site/
           cp -R docs/ui-prototype/. _site/ui/
           cp docs/images/meshcrossway_mountain_connectivity_concept.png _site/media/
+          cp docs/images/meshcrossway-modular-hero.jpg _site/media/
           cp docs/images/architecture/modular-ble-topology.svg _site/media/
       - name: Validate firmware archive scripts
         run: |
