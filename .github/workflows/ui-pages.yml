@@ -70,6 +70,8 @@ jobs:
           python3 scripts/verify_firmware_version.py --dir _site/flasher/firmware/versions/v0.3.0 --version v0.3.0 --ref b48145f07ef4d00895f7ccedbdfb240a322dd37a
           python3 scripts/verify_firmware_version.py --dir _site/flasher/firmware/versions/v0.4.0 --version v0.4.0 --ref 5dfe3744ed7b062c629ea5d2811dc434928826b1
           python3 scripts/verify_firmware_version.py --dir "_site/flasher/firmware/versions/$(cat firmware/display-prototype/VERSION)" --version "$(cat firmware/display-prototype/VERSION)"
+      - name: Verify embedded firmware version against Web Flasher catalog
+        run: python3 scripts/check_firmware_identity.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
