@@ -97,6 +97,10 @@ The Waveshare controller runs the main UI and separate radio adapters. **Meshtas
 
 The illustrated electrical design is a **proposal**; it is not a production-ready schematic.
 
+## Future integrations and collaborations
+
+Explore the [future integrations registry](docs/future-integrations/README.md), including [Colorado Mesh-Client](docs/future-integrations/colorado-mesh-client.md), MeshMapper, ATAK, Reticulum and upstream protocol projects. These are research opportunities, not committed features or partnerships.
+
 ## Design and documentation
 
 | Topic | Detailed documentation |
