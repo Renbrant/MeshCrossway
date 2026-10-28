@@ -1,6 +1,10 @@
+<p align="center"><img src="docs/site/assets/logo-vertical.svg" width="330" alt="MeshCrossway mountain and two-network logo"></p>
+
 # MeshCrossway
 
 **TWO MESH NETWORKS. ONE DEVICE. MORE REACH.**
+
+Brand identity: **MeshCrossway** (one word, capital M and C). The two rings represent distinct, independent networks: gray and orange. [Horizontal logo](docs/site/assets/logo-horizontal.svg) · [Symbol](docs/site/assets/logo-symbol.svg).
 
 **Meshtastic + MeshCore — two independent LoRa radios operating simultaneously in one touchscreen device.**
 
