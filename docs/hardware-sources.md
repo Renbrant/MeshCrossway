@@ -1,5 +1,7 @@
 # MeshCrossway — official hardware source registry
 
+> **Architecture update — 2026-10-28:** Current MeshCrossway development is **software-first, three independently powered detachable devices, two BLE links**. See [modular architecture](modular-architecture.md). The previous UART/single-carrier PCB content on this page is **archived integrated-variant reference**, not the current implementation. **All KiCad files remain untouched.**
+
 This page records the manufacturer/upstream sources used to define the Rev A carrier electrical interface. It exists so pin assignments, power decisions and footprints can be traced back to primary documentation rather than seller imagery or earlier project drafts.
 
 ## Waveshare host
