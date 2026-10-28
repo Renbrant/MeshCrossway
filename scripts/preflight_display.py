@@ -17,7 +17,7 @@ ui=(FW / "meshcrossway_ui.h").read_text()
 if version=="v0.5.4":
     anchor=ui.index("lv_obj_set_align(wifi_keyboard,LV_ALIGN_TOP_LEFT)")
     assert anchor<ui.index("lv_obj_set_pos(wifi_keyboard,4,185)"), "Keyboard must use top-left coordinates"
-if version not in ("v0.5.1", "v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5"):
+if version not in ("v0.5.1", "v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6"):
     errors.append("Unexpected version: " + version)
 if "HTTPD_503_SERVICE_UNAVAILABLE" in remote:
     errors.append("Unsupported HTTPD_503_SERVICE_UNAVAILABLE token")
@@ -63,7 +63,7 @@ void app(){
                 errors.append("Patcher failed: " + p.stdout + p.stderr)
                 break
         output = main.read_text()
-        if version in ("v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5"):
+        if version in ("v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6"):
             if (output.count("meshnetwork::start();") != 1 or output.count("meshcrossway::init();") != 1 or "meshremote::start();" in output or "meshremote::register_input();" in output):
                 errors.append("Diagnostic patcher must start only Wi-Fi; no remote HTTP or LVGL input")
         elif (output.count("meshremote::start();") != 1 or output.count("meshcrossway::init();") != 1 or output.count("meshremote::register_input();") != 1):

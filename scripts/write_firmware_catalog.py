@@ -35,6 +35,10 @@ for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4",latest):
     if version in tested:
         summary,label=tested[version]
         status="hardware-tested"
+    elif version=="v0.5.6":
+        summary="Wider landscape QWERTY and one character per completed tap; automatic key repeat disabled. v0.5.5 froze during typing in one owner test; root cause unconfirmed. Hardware test pending."
+        label="Wider keys / experimental"
+        status="experimental"
     elif version=="v0.5.5":
         summary="Larger full-screen landscape QWERTY editor for Wi-Fi credentials. Hardware test pending; remote display/touch disabled."
         label="Full-screen keyboard / experimental"

@@ -51,3 +51,9 @@ Pages first looks for an artifact from successful same-repository PR preflight. 
 ## v0.5.5 full-screen landscape QWERTY
 
 The agreed orientation remains landscape for every screen; portrait and ABC keyboard proposals are superseded. Tap the SSID/password field to open an editor with text at the top and the native QWERTY keyboard below. Keyboard area grows from 472 × 131 to 472 × 218 pixels. Native uppercase/numeric/symbol modes remain available. DONE (or keyboard checkmark) applies the edit; CANCEL (or keyboard close key) discards it. Password is masked on opening, with a SHOW/HIDE control. Connection still requires CONNECT on the provisioning screen. v0.5.5 requires hardware testing; exact owner-tested v0.5.4 bytes remain available as rollback.
+
+## v0.5.5 typing freeze / v0.5.6 controlled input change
+
+The owner reported one freeze **during typing** on v0.5.5, requiring restart; typing worked after reboot. Ergonomics improved but letter keys remained too narrow. Root cause is unconfirmed; do not mark v0.5.5 stable.
+
+v0.5.6 keeps the same editor, Wi-Fi driver, landscape orientation and disabled remote features. QWERTY letter rows give their width to letters; mode/backspace commands move to other rows. Lowercase, uppercase and all printable ASCII symbols remain available. Every key uses CLICK_TRIG and NO_REPEAT: insert on completed release, never repeat while held. This reduces repeated textarea updates but is **not a proven freeze fix**. Existing periodic diagnostics add key event count and last/maximum processing duration, with no key labels or input contents logged and no serial printing in the key callback. Test touch-down/hold/release, mode switching, long credentials, backspace, confirm/cancel and stability on hardware. Exact tested v0.5.4 remains rollback.
