@@ -1,62 +1,49 @@
-<p align="center"><img src="docs/site/assets/logo-vertical.svg" width="330" alt="MeshCrossway official orange mountain logo"></p>
-
 # MeshCrossway
 
-**TWO MESH NETWORKS. THREE MODULAR DEVICES. ONE INTERFACE.**
+**TWO MESH NETWORKS. ONE DEVICE. MORE REACH.**
 
-**Official brand identity (October 28, 2026):** Orange twin-peak mountain symbol; **Mesh** in white and **Crossway** in orange, on one line, with technical wide-weight typography. [Branding guide](docs/branding.md) · [Horizontal logo](docs/site/assets/logo-horizontal.svg) · [Symbol](docs/site/assets/logo-symbol.svg) · [Stacked logo](docs/site/assets/logo-vertical.svg).
+**Meshtastic + MeshCore — two independent LoRa radios operating simultaneously in one touchscreen device.**
 
-**Meshtastic + MeshCore — two independent detachable LoRa radio Pods connected via Bluetooth Low Energy (BLE) to a dedicated touchscreen Core.**
+![MeshCrossway V1 concept: one custom PCB with Seeed XIAO/Wio dual radios, transparent enclosure and rear battery](docs/images/meshcrossway_mountain_connectivity_concept.png)
 
-> **Approved architecture — October 28, 2026:** MeshCrossway consists of **three individually powered, separable devices**. The Waveshare touchscreen/GNSS **Core** is BLE Central; the **MX-M Pod** runs Meshtastic BLE PhoneAPI and the **MX-C Pod** runs MeshCore BLE Companion, each on a Seeed XIAO ESP32-S3 + Wio-SX1262 kit. BLE is the primary data connection **even when docked**. The units can mechanically attach as one handheld or be carried apart (backpack, vest, helmet, or vehicle mount). The old single-carrier Rev A PCB and UART wiring are **superseded integration experiments, not the current production direction**. No physical prototype, BLE integration, enclosure, RF coexistence or vehicle safety qualification is complete. See [approved modular architecture](docs/modular-architecture.md).
+*Illustrative AI-generated concept only. It does not represent the final product, verified physical placement, exact supplier components, or production-ready PCB/enclosure design. The intended battery placement is behind the carrier PCB.*
 
-![Current modular BLE architecture: touchscreen Core and two detachable LoRa Pods](docs/images/architecture/modular-ble-topology.svg)
+MeshCrossway is an **open-source, offline-first touchscreen communicator** designed to use **Meshtastic** and **MeshCore** through **two independent Seeed XIAO ESP32-S3 + Wio-SX1262 radio kits**. One interface brings together messaging, navigation, GNSS positioning, tracks and field diagnostics without requiring cellular coverage or the internet.
 
-[Archived integrated design illustrations](docs/images/README.md)
-
-*This is an architecture diagram, not a measured mechanical design or completed hardware. Production enclosure renders remain pending.*
-
-MeshCrossway is an **open-source, offline-first touchscreen communicator** designed to use Meshtastic and MeshCore independently. One interface brings together messaging, navigation, GNSS positioning, tracks and field diagnostics without requiring cellular coverage or internet access. Radio Pods remain autonomous when the Core disconnects.
+> **Development status — October 26, 2026:** the Rev A carrier pin contract has been corrected against the manufacturer documentation for the Waveshare J8, XIAO ESP32-S3 and Wio-SX1262. The interactive UI is a **simulation with sample data**, not working radio hardware. UART integration, the selectable 5 V/VBUS radio-power path, local-regulator choice, RF coexistence and tracking are still bench-validation gates. This is not a certified rescue/emergency device.
 
 ## Try the interactive interface
 
-[![Open the MeshCrossway UI simulator](https://img.shields.io/badge/OPEN-INTERACTIVE%20UI%20SIMULATOR-FF7A18?style=for-the-badge)](https://renbrant.github.io/MeshCrossway/)
+[![Open the MeshCrossway UI simulator](https://img.shields.io/badge/OPEN-INTERACTIVE%20UI%20SIMULATOR-0976b9?style=for-the-badge)](https://renbrant.github.io/MeshCrossway/)
 
 [![Current simulated touchscreen interface](docs/ui-prototype/ui-overview-current.svg)](https://renbrant.github.io/MeshCrossway/)
 
 **[Launch the interactive 480 × 320 UI →](https://renbrant.github.io/MeshCrossway/)**
 
-The UI prototype explores horizontal-screen navigation, contextual tools, settings, messages, maps and diagnostics. It does not yet communicate with physical radios. [Interface documentation](docs/ui-prototype/README.md).
+The UI prototype explores **horizontal-screen navigation**, collapsible left navigation and right contextual tools, a pull-down top settings area, messages, maps, sharing and diagnostics. It does not yet communicate with physical radios. [Interface documentation](docs/ui-prototype/README.md).
 
-## Approved hardware topology
+## V1 hardware selection
 
-```text
-                     MeshCrossway Core
-           Waveshare ESP32-S3 touchscreen
-               MAX-M10S GNSS + microSD
-                    BLE CENTRAL
-                    /         \
-                   BLE        BLE
-                  /             \
-          MX-M Radio Pod      MX-C Radio Pod
-          Meshtastic          MeshCore Companion
-          XIAO ESP32-S3       XIAO ESP32-S3
-          Wio-SX1262          Wio-SX1262
-          Own battery         Own battery
-          Own antenna         Own antenna
-```
+![Approved exploded hardware concept showing the single carrier PCB and battery in the transparent rear shell](docs/images/architecture/meshcrossway-exploded.jpg)
 
-| Unit | Selected hardware | Role |
+The planned physical packaging uses **one integrated custom carrier PCB** for the two XIAO/Wio radios and GNSS with the Waveshare display, plus the protected **rear-mounted 1S LiPo**, all inside an almost invisible transparent case. Actual component geometry, antenna routing, RF isolation, battery thickness and retention are **unverified**.
+
+![Independent XIAO/Wio B2B and external UART interface illustration](docs/images/architecture/xiao-wiring.svg)
+
+![Proposed overall system architecture](docs/images/architecture/system-overview.svg)
+
+| Role | Selected component | Function |
 |---|---|---|
-| MeshCrossway Core | Waveshare ESP32-S3-Touch-LCD-3.5 + MAX-M10S + microSD | UI, GNSS, storage and two BLE clients |
-| MX-M Pod | Seeed XIAO ESP32-S3 + Wio-SX1262 | Autonomous Meshtastic BLE node |
-| MX-C Pod | Seeed XIAO ESP32-S3 + Wio-SX1262 | Autonomous MeshCore BLE Companion |
-| Each unit | Individual protected battery and validated charging path | Untethered operation |
-| Dock | Mechanical latch, optional protected charging contacts | Handheld assembly; **BLE remains the main data transport** |
+| Main display/controller | **Waveshare ESP32-S3-Touch-LCD-3.5** | LVGL UI, navigation, local storage and coordination |
+| Radio A | **Seeed XIAO ESP32-S3 + Wio-SX1262** | Meshtastic |
+| Radio B | **Second Seeed XIAO ESP32-S3 + Wio-SX1262** | MeshCore Companion |
+| GNSS | **Uputronics u-blox MAX-M10S**, 3 V breakout | Position and time; active antenna under validation |
+| Storage | Waveshare onboard **microSD** | Messages, POIs, GPX and future offline map assets |
+| Portable power | **Waveshare AXP2101 + protected 1S LiPo (candidate)** | Charging and distribution, subject to electrical validation |
 
-Pods can be used on backpack/shoulder/helmet attachments; car-roof mounting is a potential accessory requiring vehicle-rated retention, weatherproofing, LiPo temperature qualification, BLE cabin-link tests, RF exposure and antenna separation. A magnetic holder alone is not considered adequate roof retention.
+**Radio kit:** [Seeed Studio XIAO ESP32-S3 & Wio-SX1262](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html). The SX1262 connects internally to each XIAO through the kit's B2B connector; the Waveshare talks to the two XIAO MCUs over independent UARTs.
 
-**Design rule:** the three units are independent. **Do not manufacture the old single shared carrier PCB as the final modular product.** [Modular architecture and engineering tests](docs/modular-architecture.md). Prior [integrated UART wiring](docs/hardware-wiring.md) and [power investigation](docs/power-architecture.md) remain historical bench references.
+**Radio interface:** Rev A uses **D7/GPIO44 RX and D6/GPIO43 TX** on both XIAO modules. Radio A is crossed to Waveshare J8 GPIO39/GPIO40; Radio B is crossed to GPIO17/GPIO18. Each radio is powered at **XIAO pin 14 / VBUS / 5V** through an independent 3-pin source selector (`J8_5V` or `LOCAL_5V`), Schottky isolation and a removable current-measurement link. XIAO `3V3_OUT` is treated as an output/test node, not the normal carrier power input. Bench validation of current headroom, USB backfeed and the final `LOCAL_5V` regulator is still required. See [current wiring, shopping and pinout](docs/hardware-wiring.md).
 
 ## What MeshCrossway is designed to do
 
