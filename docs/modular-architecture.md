@@ -78,3 +78,19 @@ Each unit has its own protected rechargeable battery. Final cells, protection IC
 - [Seeed XIAO ESP32-S3 + Wio-SX1262](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html)
 
 Related legacy/bench documents: [integrated wiring](hardware-wiring.md), [UART architecture](radio-communication-architecture.md), [old power prototype](power-architecture.md), [firmware strategy](radio-firmware-strategy.md).
+
+## Development priority decision — 2026-10-28: Software First
+
+**User decision:** Preserve all existing KiCad schematics, boards and associated PCB files **unchanged** as an archived, specific integrated-device variant. Do not edit, delete, migrate, reorganize or commit changes to those KiCad files. The modular three-device design does **not** require PCB work at this stage.
+
+**Immediate focus:** firmware/software and real BLE interoperability on the already selected, physically separate development hardware. No electrical wiring between the controller and either radio is required for these experiments; each unit can be powered separately by a suitable USB supply. Use genuine BLE transport, not UART, for the integration path.
+
+**Software-first milestones:**
+1. Identify exact shipped boards and compatible upstream firmware builds; flash Meshtastic BLE on MX-M and MeshCore BLE Companion on MX-C. Confirm BLE visibility and communication with native phone clients individually.
+2. Make the Waveshare ESP32-S3 Core scan, securely pair and maintain **two independent concurrent BLE central connections**. Capture device identity, disconnection/reconnection and telemetry without blocking LVGL.
+3. Implement two distinct protocol adapters (Meshtastic BLE PhoneAPI protobuf and MeshCore Companion BLE), with reusable transport/state abstractions and version-aware capability discovery.
+4. Attach real radio status, battery information (where supported), send/receive messages and link diagnostics to the existing dark/orange UI without replacing the established visual identity.
+5. Stress-test packet queues, pairing/re-pairing, independent radio reboot, loss of connection, power cycling, cold start and UI responsiveness; then RF coexistence in physically separated/docked arrangements.
+6. Defer Pod PCB/carrier design, dock charging, weatherproof packaging and production mechanics until software and RF findings justify those investments.
+
+The previous integrated KiCad design is **preserved as an alternate historical device version**, not a file set to refactor. Future software documentation must not inadvertently present the integrated PCB as the current required hardware.
