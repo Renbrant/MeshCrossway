@@ -22,7 +22,7 @@ tested={
     "v0.4.0":("Tested on Rev2.0: Wi-Fi access point, screenshot viewing and PNG capture","Recommended recovery"),
 }
 catalog=[]
-for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7",latest):
+for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8",latest):
     if any(entry["version"]==version for entry in catalog):
         continue
     folder=root/"versions"/version
@@ -37,6 +37,10 @@ for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7",latest):
     if version in tested:
         summary,label=tested[version]
         status="hardware-tested"
+    elif version=="v0.5.9":
+        summary="Fix for FAT32 backup write failures: enable long filenames and report exact file operation/errno; status-only HTTP, no remote touch. Hardware test pending."
+        label="SD write fix / experimental"
+        status="experimental"
     elif version=="v0.5.8":
         summary="Plaintext Wi-Fi backup/restore on optional SD; split installer preserves internal settings without Erase. HTTP status only. Hardware test pending."
         label="SD Wi-Fi backup / experimental"
