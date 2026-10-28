@@ -20,7 +20,7 @@
 <main id="flasher-app"><section class="pagehero"><div class="wrap prose">
 <div class="eyebrow" style="color:#ff993c">USB firmware installer</div>
 <h1>MeshCrossway Web Flasher.</h1>
-<p class="sectionintro">The newest firmware is selected automatically. You can choose any archived build for recovery before installing it to your Waveshare ESP32-S3 over USB.</p>
+<p class="sectionintro">The latest hardware-tested firmware is selected by default. Experimental releases remain available, but never install automatically.</p>
 <div class="flashbox">
 <span class="status" id="build-status">CHECKING VERSION ARCHIVE</span>
 <h2>Display / Host — Waveshare ESP32-S3-Touch-LCD-3.5</h2>
@@ -32,8 +32,8 @@
 <div id="firmware-description" class="version-description">Retrieving compiled and archived images.</div>
 <div id="firmware-commit" class="minor">Build information unavailable</div>
 </div>
-<div id="version-warning" class="warning-panel" hidden><b>Known hardware issue.</b> This build has caused screen flashing/flickering on the Waveshare Rev2.0. For recovery, select v0.4.0 or v0.3.0 instead.</div>
-<label id="verify-risk" hidden><input id="allow-unstable" type="checkbox">I understand this version is unstable and want to flash it anyway.</label>
+<div id="version-warning" class="warning-panel" hidden><b id="warning-title">EXPERIMENTAL / NOT TESTED.</b> <span id="warning-text">This firmware has not been physically validated. Use a tested version for normal operation.</span></div>
+<label id="verify-risk" hidden><input id="allow-unstable" type="checkbox">I understand this build is experimental or has known issues and want to install it anyway.</label>
 <p id="build-message" role="status">Checking available firmware versions...</p>
 <div id="installer" hidden></div>
 <p class="note" id="build-version"></p>
@@ -63,6 +63,8 @@
   const versionDetails=document.getElementById('build-version');
   const installer=document.getElementById('installer');
   const warning=document.getElementById('version-warning');
+  const warningTitle=document.getElementById('warning-title');
+  const warningText=document.getElementById('warning-text');
   const verifyRisk=document.getElementById('verify-risk');
   const allowUnstable=document.getElementById('allow-unstable');
   let versions=[],generation=0;
@@ -90,7 +92,7 @@
     component.append(button,unsupported,disallowed);
     installer.replaceChildren(component);
     installer.hidden=false;
-    const flagged=entry.status==='known-issue';
+    const flagged=entry.status!=='hardware-tested';
     button.disabled=flagged && !allowUnstable.checked;
     allowUnstable.onchange=()=>{button.disabled=flagged && !allowUnstable.checked;};
   }
@@ -106,8 +108,15 @@
     description.textContent=entry.description;
     commit.textContent='Source commit '+entry.commit+' · '+entry.label;
     versionDetails.textContent='ESP32-S3 • '+Math.round(entry.size/1024)+' KiB • SHA-256 '+entry.sha256.slice(0,16)+'…';
-    if(entry.status==='known-issue'){
+    if(entry.status!=='hardware-tested'){
       warning.hidden=false;verifyRisk.hidden=false;
+      if(entry.status==='known-issue'){
+        warningTitle.textContent='KNOWN HARDWARE ISSUE.';
+        warningText.textContent='This version has caused screen flickering or instability. Prefer the hardware-tested default.';
+      }else{
+        warningTitle.textContent='EXPERIMENTAL / NOT HARDWARE TESTED.';
+        warningText.textContent='This build may malfunction, freeze or require a rollback. It is not approved for critical communication. A tested version is available in the list.';
+      }
     }
     status.textContent='CHECKING '+entry.version;
     message.textContent='Checking version-specific manifest and compiled binary...';
@@ -152,10 +161,11 @@
       }
       select.disabled=false;
       select.onchange=()=>choose(select.value);
-      // Start on the most recently published firmware, but retain all recoveries.
-      // The catalog's "recommended" field intentionally still points to tested
-      // recovery v0.4.0; it is not the version preselected for daily upgrades.
-      select.value=find(catalog.latest)?.version || find(catalog.recommended)?.version || versions[0].version;
+      // Never select an experimental image by default.
+      const recommended=find(catalog.recommended);
+      if(!recommended || recommended.status!=='hardware-tested')
+        throw Error('No hardware-tested default available');
+      select.value=recommended.version;
       await choose(select.value);
     }catch(e){
       select.replaceChildren(new Option('Version archive unavailable',''));
