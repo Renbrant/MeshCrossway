@@ -1,5 +1,7 @@
 # MeshCrossway UI Prototype — Landscape Side Console
 
+> **Current architecture (2026-10-28):** The UI will connect via two concurrent BLE Central links to independent MX-M Meshtastic and MX-C MeshCore Radio Pods. Hardware remains separate; archived UART/PCB implementation references below are not current. [Approved design](../modular-architecture.md).
+
 This folder contains a browser-based UI concept for the 3.5-inch MeshCrossway touchscreen.
 
 ## Landscape UI v5 — dual collapsible sidebars
