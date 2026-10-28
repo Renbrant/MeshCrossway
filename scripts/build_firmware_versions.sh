@@ -285,8 +285,45 @@ print("Preserved experimental v0.5.9 SD rollback image:",
 RESTORE_V059
 python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.9" --version v0.5.9 --ref a24e5fde12ddecda343e6b633d37ffee5cae8ae7
 
+# Preserve the owner's tested v0.5.10 read-only remote capture + SD/Wi-Fi rollback.
+# v0.5.10 has a split flasher manifest; all three parts must be retained.
+python3 - "$OUT/versions/v0.5.10" <<'RESTORE_V0510'
+import hashlib
+import json
+import sys
+import urllib.request
+from pathlib import Path
+folder=Path(sys.argv[1])
+expected_prefix="861137c7c05a"
+compiled_ref="cd8502c1ae95fae04a95a5e0452d18089d0a402e"
+base="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/v0.5.10/"
+files=("manifest.json","build-info.json","meshcrossway-display-dev.bin",
+       "bootloader.bin","partition-table.bin","application.bin")
+folder.mkdir(parents=True,exist_ok=True)
+def valid():
+    if not all((folder/name).is_file() for name in files):return False
+    image=(folder/"meshcrossway-display-dev.bin").read_bytes()
+    info=json.loads((folder/"build-info.json").read_text())
+    digest=hashlib.sha256(image).hexdigest()
+    return (digest.startswith(expected_prefix) and len(image)==1277136 and info["sha256"]==digest and
+            info["commit"]==compiled_ref and info["version"]=="v0.5.10")
+if not valid():
+    data={}
+    for name in files:
+        with urllib.request.urlopen(base+name,timeout=60) as response:
+            data[name]=response.read()
+    if not hashlib.sha256(data["meshcrossway-display-dev.bin"]).hexdigest().startswith(expected_prefix):
+        sys.exit("REJECT: published v0.5.10 differs from the reviewed binary")
+    for name,content in data.items():
+        (folder/name).write_bytes(content)
+if not valid():sys.exit("REJECT: v0.5.10 rollback metadata mismatch")
+print("Preserved experimental v0.5.10 SD rollback image:",
+      hashlib.sha256((folder/"meshcrossway-display-dev.bin").read_bytes()).hexdigest())
+RESTORE_V0510
+python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.10" --version v0.5.10 --ref cd8502c1ae95fae04a95a5e0452d18089d0a402e
+
 case "$LATEST_VERSION" in
-  v0.3.0|v0.4.0|v0.5.2|v0.5.4|v0.5.6|v0.5.7|v0.5.8|v0.5.9) echo "Current version already available in historical archive" ;;
+  v0.3.0|v0.4.0|v0.5.2|v0.5.4|v0.5.6|v0.5.7|v0.5.8|v0.5.9|v0.5.10) echo "Current version already available in historical archive" ;;
   *) build_version "$LATEST_VERSION" HEAD ;;
 esac
 python3 "$ROOT/scripts/write_firmware_catalog.py" \
