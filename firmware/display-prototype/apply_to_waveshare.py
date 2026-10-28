@@ -23,14 +23,17 @@ if '#include "meshcrossway_ui.h"' not in source:
                             '#define EXAMPLE_DISPLAY_ROTATION 90', 1)
     source = source.replace('#include "lvgl_ui.h"',
                             '#include "lvgl_ui.h"\n#include "meshcrossway_ui.h"\n#include "meshcrossway_remote.h"', 1)
-    source = source.replace('lv_demo_widgets();', 'meshcrossway::init();', 1)
+    source = source.replace('lv_demo_widgets();', 'meshcrossway::init();\n        meshremote::register_input();', 1)
     source = source.replace(anchor,
                             '        lvgl_port_unlock();\n    }\n    meshremote::start();\n}', 1)
     main.write_text(source)
 
+if source.count('meshremote::register_input();') != 1:
+    sys.exit('Missing or duplicate remote LVGL pointer registration')
 if source.count('meshremote::start();') != 1:
     sys.exit("Missing or duplicate MeshCrossway Wi-Fi initialization")
-for name in ("meshcrossway_ui.h", "meshcrossway_remote.h"):
+for name in ("meshcrossway_ui.h", "meshcrossway_remote.h",
+             "meshcrossway_remote_page.h", "meshcrossway_network.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 
