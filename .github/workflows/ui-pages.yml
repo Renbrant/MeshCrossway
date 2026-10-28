@@ -6,6 +6,7 @@ on:
     paths:
       - "docs/site/**"
       - "docs/ui-prototype/**"
+      - "docs/images/architecture/modular-ble-topology.svg"
       - "docs/images/meshcrossway_mountain_connectivity_concept.png"
       - "firmware/display-prototype/**"
       - ".github/workflows/ui-pages.yml"
@@ -34,6 +35,7 @@ jobs:
           cp -R docs/site/. _site/
           cp -R docs/ui-prototype/. _site/ui/
           cp docs/images/meshcrossway_mountain_connectivity_concept.png _site/media/
+          cp docs/images/architecture/modular-ble-topology.svg _site/media/
       - name: Build Waveshare ESP32-S3 firmware with ESP-IDF
         run: |
           git clone --depth 1 --recurse-submodules https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.5.git vendor/ESP32-S3-Touch-LCD-3.5
