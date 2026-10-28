@@ -121,7 +121,9 @@ if version=="v0.5.10":
     assert "lvgl_port_lock(" not in capture
     assert "lv_indev_drv_register(" not in capture
     assert "meshcapture::screenshot" in health
-    assert 'uri="/touch"' not in health and 'meshremote::start();' not in patch
+    # Patcher contains a negative guard mentioning meshremote::start(); textually.
+    # The patched vendor main.cpp was already verified above to contain no remote touch/server call.
+    assert 'uri="/touch"' not in health
     assert 'X-MCX-Pin' in capture and 'VIEW PIN: %s' in ui
     assert '"sd_backup"' not in capture
     assert 'meshbackup::describe(' in ui
