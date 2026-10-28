@@ -159,7 +159,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3"):
                    "context_actions","open_shade","QUICK SETTINGS",
                    "A_POIS","A_TRACKS","A_RECORD","A_SHARE","A_GNSS",
                    "map_view","lv_obj_scroll_to_y(context_actions",
-                   "BLE: NOT CONNECTED","GNSS / OFFLINE","wifi_setup("):
+                   "BLE / RADIO PODS" if version=="v0.6.3" else "BLE: NOT CONNECTED","GNSS / OFFLINE","wifi_setup("):
         assert marker in ui, "v0.6.0 side-console element missing: "+marker
     assert 'DEV 0.5.10' not in ui
     assert version in ui
