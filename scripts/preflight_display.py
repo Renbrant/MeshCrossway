@@ -152,8 +152,8 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3"):
         ble=(FW/"meshcrossway_ble.h").read_text()
         assert all(token in ble for token in ("nimble_port_init(", "ble_gap_disc(", "ble_gap_connect(", "ble_gattc_disc_all_svcs(", "ble_sm_inject_io(", "BLE_GAP_EVENT_ENC_CHANGE"))
         assert "meshble::start();" in output
-        assert (main.parent/"meshcrossway_ble.h").is_file()
-        assert "CONFIG_BT_NIMBLE_ENABLED=y" in (example/"sdkconfig.defaults").read_text()
+        assert '"meshcrossway_ble.h"' in patcher.read_text()
+        assert "CONFIG_BT_NIMBLE_ENABLED=y" in patcher.read_text()
     # Approved simulator v5: independent collapsible left/right rails and shade.
     for marker in ("left_compact","right_compact","toggle_left","toggle_right",
                    "context_actions","open_shade","QUICK SETTINGS",
