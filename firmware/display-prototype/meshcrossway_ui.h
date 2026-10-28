@@ -154,7 +154,7 @@ static void draw(){
                (unsigned long)(esp_get_free_heap_size()/1024));
       meshnetwork::get_status(ip,sizeof(ip),wifi,sizeof(wifi));
       snprintf(address,sizeof(address),"%s",ip[0]?ip:wifi);
-      snprintf(pairing,sizeof(pairing),"Pairing PIN: %s",meshremote::pin());
+      snprintf(pairing,sizeof(pairing),"Remote control: disabled (diagnostic)");
       lv_obj_t *device_card=tile(7,6,349,80,"DEVICE / LIVE",uptime,memory);
       lv_obj_t *wifi_card=tile(7,93,349,82,"WIFI / REMOTE",address,pairing);
       uptime_value=lv_obj_get_child(device_card,1);
@@ -173,6 +173,9 @@ static void on_nav(lv_event_t *e){
   draw();
 }
 static void refresh(lv_timer_t *){
+  printf("[MCX-DIAG v0.5.2] uptime_ms=%llu heap=%lu page=%d\n",
+         (unsigned long long)(esp_timer_get_time()/1000),
+         (unsigned long)esp_get_free_heap_size(),page);
   // Change only three existing labels. Destroying/rebuilding the full Settings
   // subtree every 3 seconds invalidates the entire LVGL area and can visibly flash.
   if(page!=4 || wifi_dialog || !uptime_value || !heap_value || !network_value)return;
@@ -189,6 +192,8 @@ static void refresh(lv_timer_t *){
   if(strcmp(lv_label_get_text(network_value),network)!=0)lv_label_set_text(network_value,network);
 }
 static void init(){
+  printf("[MCX-DIAG v0.5.2] boot reset_reason=%d heap=%lu remote=OFF wifi=ON\n",
+         (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_t *bar=lv_obj_create(screen);fill(bar,panel);
@@ -197,7 +202,7 @@ static void init(){
   txt(bar,"MESH",10,11,49,white);
   txt(bar,"CROSSWAY",59,11,104,orange);
   heading=txt(bar,"OVERVIEW",185,11,170,white);
-  txt(bar,"DEV 0.5.1",386,12,90,orange);
+  txt(bar,"DEV 0.5.2",386,12,90,orange);
   lv_obj_t *rail=lv_obj_create(screen);fill(rail,bg);
   lv_obj_set_pos(rail,0,43);lv_obj_set_size(rail,108,242);
   lv_obj_clear_flag(rail,LV_OBJ_FLAG_SCROLLABLE);

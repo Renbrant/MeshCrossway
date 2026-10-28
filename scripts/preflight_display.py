@@ -13,7 +13,7 @@ patcher = FW / "apply_to_waveshare.py"
 version = (FW / "VERSION").read_text().strip()
 errors = []
 
-if version != "v0.5.1":
+if version not in ("v0.5.1", "v0.5.2"):
     errors.append("Unexpected version: " + version)
 if "HTTPD_503_SERVICE_UNAVAILABLE" in remote:
     errors.append("Unsupported HTTPD_503_SERVICE_UNAVAILABLE token")
@@ -59,7 +59,10 @@ void app(){
                 errors.append("Patcher failed: " + p.stdout + p.stderr)
                 break
         output = main.read_text()
-        if (output.count("meshremote::start();") != 1 or output.count("meshcrossway::init();") != 1 or output.count("meshremote::register_input();") != 1):
+        if version == "v0.5.2":
+            if (output.count("meshnetwork::start();") != 1 or output.count("meshcrossway::init();") != 1 or "meshremote::start();" in output or "meshremote::register_input();" in output):
+                errors.append("Diagnostic patcher must start only Wi-Fi; no remote HTTP or LVGL input")
+        elif (output.count("meshremote::start();") != 1 or output.count("meshcrossway::init();") != 1 or output.count("meshremote::register_input();") != 1):
             errors.append("Patcher not idempotent for main.cpp")
         if '#define EXAMPLE_DISPLAY_ROTATION 90' not in output:
             errors.append("Display rotation missing")
