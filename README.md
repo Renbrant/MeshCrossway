@@ -1,5 +1,7 @@
 # MeshCrossway
 
+**Official identity:** [Approved MeshCrossway logo (SVG)](docs/site/assets/meshcrossway-logo.svg) · [Brand guidelines](docs/branding.md). The original logo artwork is fixed; no substitute typography or redrawn symbol.
+
 **TWO MESH NETWORKS. ONE DEVICE. MORE REACH.**
 
 **Meshtastic + MeshCore — two independent LoRa radios operating simultaneously in one touchscreen device.**

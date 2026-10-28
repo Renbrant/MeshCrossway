@@ -11,3 +11,9 @@ body{background:radial-gradient(circle at 75% 0,#352117 0,transparent 36%),#1010
 .heroimg{border-color:#57402f;background:#191719}
 .step:before{background:#432a18}
 a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #ffb052;outline-offset:3px}
+
+/* Official approved brand lockup (2026-10-28): use the traced SVG, never re-typeset. */
+.brand{display:inline-flex;align-items:center;flex:0 1 auto;line-height:0}
+.brand img{display:block;width:clamp(170px,25vw,330px);height:auto}
+@media(max-width:1050px) and (min-width:801px){.navin{gap:14px}.links{gap:12px}.brand img{width:215px}}
+@media(max-width:800px){.navin{gap:12px}.brand img{width:min(52vw,215px)}.nav .cta{padding:9px 10px;font-size:13px;white-space:nowrap}}
