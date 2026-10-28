@@ -43,3 +43,11 @@ The LVGL UI now uses the MeshCrossway graphite/orange visual language with a com
 ## UI v0.3 — real host diagnostics
 
 The Settings screen now displays actual ESP32-S3 uptime and free heap (refreshed every 5 seconds), while all radio and GNSS displays remain explicitly simulated. Also shortens the overview Crossway card text to prevent overlap. Palette and navigation remain unchanged. **Physical validation still required on Rev2.0**, including Settings update cadence, heap behavior and navigation stability. Screen brightness, SD and UART remain future milestones; no hardware driver or radio changes in this build.
+
+## v0.4 — Wi-Fi development screenshot server (experimental)
+
+This build adds a local Wi-Fi SoftAP (`MeshCrossway-Dev`) with WPA2 password `meshcrossway-dev`. Connect a laptop to that network and browse to `http://192.168.4.1/` to view real LVGL screen snapshots, refreshed every two seconds, and save a PNG screenshot. The board is not connected to the home router in this first iteration; Internet access on the laptop may switch off while connected to the AP. The browser page is **read-only** — touch interaction stays on the physical display.
+
+Security: this is a temporary development-only AP with a known documented password. Do not leave the device powered up in public spaces or use this fixed credential for final production. The AP is isolated from the public Internet by design. Future work: secure on-device Wi-Fi provisioning (STA mode), changeable credentials, authentication and remote touch control.
+
+Before flashing, wait for GitHub Actions to report a successful build and confirm the Web Flasher announces v0.4.0. Verify AP connection, screenshot colors, rendering, touch responsiveness and memory after repeated captures. The previously hardware-tested v0.3 remains the recovery reference.
