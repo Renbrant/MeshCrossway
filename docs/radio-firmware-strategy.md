@@ -1,5 +1,7 @@
 # Radio firmware strategy and workload separation
 
+> **SUPERSEDED (2026-10-28):** The integrated single-carrier / UART architecture below remains only a bench reference. The approved MeshCrossway design has [three independently powered detachable devices connected primarily via BLE](modular-architecture.md). Do not treat the following design as the current production baseline.
+
 **Status: design decision, not bench validation.** The MeshCrossway prototype uses a Waveshare ESP32-S3 touchscreen controller and two independent Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kits. We favor upstream Meshtastic and MeshCore firmware and avoid maintaining forks unless a tested, essential capability cannot be exposed otherwise.
 
 ## Illustrated firmware boundaries
