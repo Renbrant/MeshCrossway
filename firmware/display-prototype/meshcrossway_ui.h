@@ -660,7 +660,7 @@ static void init(){
   color_label(top,"MESH",7,7,55,white);
   color_label(top,"CROSSWAY",59,7,120,orange);
   top_wifi=color_label(top,"Wi-Fi: waiting",209,7,167,green);
-  color_label(top,"v0.6.0",404,7,74,orange);
+  color_label(top,"DEV 0.6.0",390,7,88,orange);
   left_rail=panel_at(screen,0,34,79,286,panel,0);
   right_rail=panel_at(screen,355,34,125,286,panel,0);
   left_handle=action_button(left_rail,"",47,4,29,30,panel2,toggle_left,0);
