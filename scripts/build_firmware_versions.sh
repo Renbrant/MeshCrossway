@@ -322,6 +322,12 @@ print("Preserved experimental v0.5.10 SD rollback image:",
 RESTORE_V0510
 python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.10" --version v0.5.10 --ref cd8502c1ae95fae04a95a5e0452d18089d0a402e
 
+# Archive the last pre-BLE field-console version for easy downgrade.
+# This immutable source commit is from the approved main history.
+if [ "$LATEST_VERSION" != "v0.6.2" ]; then
+  build_version v0.6.2 "a508c7d9a9eaf580061d2daca6838ecb78f89085"
+fi
+
 case "$LATEST_VERSION" in
   v0.3.0|v0.4.0|v0.5.2|v0.5.4|v0.5.6|v0.5.7|v0.5.8|v0.5.9|v0.5.10) echo "Current version already available in historical archive" ;;
   *) build_version "$LATEST_VERSION" HEAD ;;
