@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.5.5: local Wi-Fi provisioning; remote UI disabled.
+// MeshCrossway v0.5.6: local Wi-Fi provisioning; remote UI disabled.
 // All radio and GNSS values remain simulated.
 #include "lvgl.h"
 #include "meshcrossway_remote.h"
@@ -110,6 +110,25 @@ static void update_wifi_scan(){
   lv_label_set_text(wifi_notice,meshnetwork::scan_count?
                     "Select SSID, then enter password below.":"No networks found; enter SSID manually.");
 }
+// Static maps: no stack-backed pointers; one insertion per completed tap.
+#define MCX_KEY_FLAGS (LV_BTNMATRIX_CTRL_NO_REPEAT | LV_BTNMATRIX_CTRL_CLICK_TRIG)
+static const char *wifi_qwerty_lower[]={"q","w","e","r","t","y","u","i","o","p","\n","a","s","d","f","g","h","j","k","l","\n","ABC","z","x","c","v","b","n","m",LV_SYMBOL_BACKSPACE,"\n","1#",LV_SYMBOL_LEFT," ",LV_SYMBOL_RIGHT,LV_SYMBOL_OK,""};
+static const lv_btnmatrix_ctrl_t wifi_qwerty_lower_ctrl[]={MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 4,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1};
+static const char *wifi_qwerty_upper[]={"Q","W","E","R","T","Y","U","I","O","P","\n","A","S","D","F","G","H","J","K","L","\n","abc","Z","X","C","V","B","N","M",LV_SYMBOL_BACKSPACE,"\n","1#",LV_SYMBOL_LEFT," ",LV_SYMBOL_RIGHT,LV_SYMBOL_OK,""};
+static const lv_btnmatrix_ctrl_t wifi_qwerty_upper_ctrl[]={MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 4,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1};
+static const char *wifi_qwerty_symbols[]={"1","2","3","4","5","6","7","8","9","0","\n","!","@","#","$","%","^","&","*","(",")","\n","-","_","+","=","[","]","{","}","<",">","\n","/","\\","|",";",":","'","\"",",",".","?","\n","abc","`","~",LV_SYMBOL_LEFT," ",LV_SYMBOL_RIGHT,LV_SYMBOL_BACKSPACE,""};
+static const lv_btnmatrix_ctrl_t wifi_qwerty_symbols_ctrl[]={MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 4,MCX_KEY_FLAGS | 1,MCX_KEY_FLAGS | 1};
+#undef MCX_KEY_FLAGS
+static uint32_t editor_key_count=0;
+static uint64_t editor_key_last_us=0,editor_key_max_us=0;
+static void editor_key_event(lv_event_t *e){
+  ++editor_key_count;
+  const int64_t started=esp_timer_get_time();
+  lv_keyboard_def_event_cb(e);
+  // The default callback can close the editor; never dereference its event/object here.
+  editor_key_last_us=(uint64_t)(esp_timer_get_time()-started);
+  if(editor_key_last_us>editor_key_max_us)editor_key_max_us=editor_key_last_us;
+}
 static void finish_wifi_edit(lv_event_t *){
   if(wifi_edit_target&&wifi_edit_text)
     lv_textarea_set_text(wifi_edit_target,lv_textarea_get_text(wifi_edit_text));
@@ -158,12 +177,17 @@ static void on_wifi_field(lv_event_t *e){
   wifi_keyboard=lv_keyboard_create(wifi_editor);
   lv_obj_set_align(wifi_keyboard,LV_ALIGN_TOP_LEFT);
   lv_obj_set_pos(wifi_keyboard,4,96);lv_obj_set_size(wifi_keyboard,472,218);
+  lv_keyboard_set_map(wifi_keyboard,LV_KEYBOARD_MODE_TEXT_LOWER,wifi_qwerty_lower,wifi_qwerty_lower_ctrl);
+  lv_keyboard_set_map(wifi_keyboard,LV_KEYBOARD_MODE_TEXT_UPPER,wifi_qwerty_upper,wifi_qwerty_upper_ctrl);
+  lv_keyboard_set_map(wifi_keyboard,LV_KEYBOARD_MODE_SPECIAL,wifi_qwerty_symbols,wifi_qwerty_symbols_ctrl);
   lv_keyboard_set_mode(wifi_keyboard,LV_KEYBOARD_MODE_TEXT_LOWER);
+  lv_obj_remove_event_cb(wifi_keyboard,lv_keyboard_def_event_cb);
+  lv_obj_add_event_cb(wifi_keyboard,editor_key_event,LV_EVENT_VALUE_CHANGED,nullptr);
   lv_keyboard_set_textarea(wifi_keyboard,wifi_edit_text);
   lv_obj_set_style_bg_color(wifi_keyboard,panel,0);
   lv_obj_set_style_pad_all(wifi_keyboard,3,0);
   lv_obj_set_style_pad_row(wifi_keyboard,4,0);
-  lv_obj_set_style_pad_column(wifi_keyboard,4,0);
+  lv_obj_set_style_pad_column(wifi_keyboard,2,0);
   lv_obj_add_event_cb(wifi_keyboard,finish_wifi_edit,LV_EVENT_READY,nullptr);
   lv_obj_add_event_cb(wifi_keyboard,cancel_wifi_edit,LV_EVENT_CANCEL,nullptr);
 }
@@ -276,9 +300,10 @@ static void on_nav(lv_event_t *e){
 }
 static void refresh(lv_timer_t *){
   update_wifi_scan();
-  printf("[MCX-DIAG v0.5.5] uptime_ms=%llu heap=%lu page=%d\n",
+  printf("[MCX-DIAG v0.5.6] uptime_ms=%llu heap=%lu page=%d keys=%lu key_us=%llu key_max_us=%llu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
-         (unsigned long)esp_get_free_heap_size(),page);
+         (unsigned long)esp_get_free_heap_size(),page,(unsigned long)editor_key_count,
+         (unsigned long long)editor_key_last_us,(unsigned long long)editor_key_max_us);
   // Change only three existing labels. Destroying/rebuilding the full Settings
   // subtree every 3 seconds invalidates the entire LVGL area and can visibly flash.
   if(page!=4 || wifi_dialog || !uptime_value || !heap_value || !network_value)return;
@@ -295,7 +320,7 @@ static void refresh(lv_timer_t *){
   if(strcmp(lv_label_get_text(network_value),network)!=0)lv_label_set_text(network_value,network);
 }
 static void init(){
-  printf("[MCX-DIAG v0.5.5] boot reset_reason=%d heap=%lu remote=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.5.6] boot reset_reason=%d heap=%lu remote=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -305,7 +330,7 @@ static void init(){
   txt(bar,"MESH",10,11,49,white);
   txt(bar,"CROSSWAY",59,11,104,orange);
   heading=txt(bar,"OVERVIEW",185,11,170,white);
-  txt(bar,"DEV 0.5.5",386,12,90,orange);
+  txt(bar,"DEV 0.5.6",386,12,90,orange);
   lv_obj_t *rail=lv_obj_create(screen);fill(rail,bg);
   lv_obj_set_pos(rail,0,43);lv_obj_set_size(rail,108,242);
   lv_obj_clear_flag(rail,LV_OBJ_FLAG_SCROLLABLE);
