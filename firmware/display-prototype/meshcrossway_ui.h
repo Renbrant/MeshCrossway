@@ -320,7 +320,8 @@ static void shade_close(lv_event_t *){lv_async_call(shade_close_now,nullptr);}
 static void notice(const char *title,const char *body_text){
   close_shade();
   if(info_dialog)info_close_now(nullptr);
-  info_dialog=panel_at(lv_layer_top(),20,45,440,220,panel,10);
+  // Put informational panels on the active screen so read-only capture shows them.
+  info_dialog=panel_at(lv_scr_act(),20,45,440,220,panel,10);
   color_label(info_dialog,title,15,13,298,orange);
   action_button(info_dialog,"CLOSE",327,7,103,38,panel2,info_close,0);
   lv_obj_t *message=txt(info_dialog,body_text,15,65,410,white);
@@ -427,7 +428,8 @@ static void quick_action(lv_event_t *e){lv_async_call(quick_action_run,lv_event_
 static void open_shade(lv_event_t *){
   if(shade){close_shade();return;}
   if(wifi_dialog||info_dialog)return;
-  shade=panel_at(lv_layer_top(),0,34,480,211,panel,0);
+  // Unlike the Wi-Fi editor, preview shade belongs to screen snapshots.
+  shade=panel_at(lv_scr_act(),0,34,480,211,panel,0);
   color_label(shade,"QUICK SETTINGS  /  STATUS",12,8,330,orange);
   action_button(shade,"CLOSE",382,4,90,34,panel2,shade_close,0);
   action_button(shade,"GPS  --",10,52,110,49,panel2,quick_action,0);
@@ -611,7 +613,7 @@ static void draw(){
     backup_value=color_label(wifi_card,status,9,47,w-34,muted);
     action_button(body,"CHANGE HOME WI-FI",8,217,w-16,40,orange,on_action,A_WIFI);
     snprintf(pin_label,sizeof(pin_label),"VIEW PIN: %s  /  READ ONLY",meshcapture::pin());
-    color_label(body,pin_label,8,267,w-16,orange);
+    color_label(body,pin_label,8,258,w-16,orange);
   }
 }
 static void refresh(lv_timer_t *){
