@@ -6,6 +6,13 @@
 #include "host/ble_hs.h"
 #include "host/util/util.h"
 #include "services/gap/ble_svc_gap.h"
+// NimBLE os/os.h exports C min/max macros; remove them before C++ headers.
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
 #include "freertos/FreeRTOS.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -37,9 +44,9 @@ static uint16_t conn=BLE_HS_CONN_HANDLE_NONE;
 static uint8_t own_addr=0;
 static bool synced=false;
 static Radio identified=UNKNOWN;
-static const ble_uuid_t *MT_SERVICE=BLE_UUID128_DECLARE(
+static const ble_uuid128_t MT_SERVICE=BLE_UUID128_INIT(
   0xfd,0xea,0x73,0xe2,0xca,0x5d,0xa8,0x9f,0x1f,0x46,0xa8,0x15,0x18,0xb2,0xa1,0x6b);
-static const ble_uuid_t *MC_SERVICE=BLE_UUID128_DECLARE(
+static const ble_uuid128_t MC_SERVICE=BLE_UUID128_INIT(
   0x9e,0xca,0xdc,0x24,0x0e,0xe5,0xa9,0xe0,0x93,0xf3,0xa3,0xb5,0x01,0x00,0x40,0x6e);
 
 static void update(Phase phase,const char *message){
@@ -146,8 +153,8 @@ static bool confirm_number(bool accepted){
 static int service_cb(uint16_t handle,const struct ble_gatt_error *err,
                       const struct ble_gatt_svc *service,void *){
   if(err->status==0&&service){
-    if(ble_uuid_cmp(&service->uuid.u,MT_SERVICE)==0)identified=MESHTASTIC;
-    if(ble_uuid_cmp(&service->uuid.u,MC_SERVICE)==0)identified=MESHCORE;
+    if(ble_uuid_cmp(&service->uuid.u,&MT_SERVICE.u)==0)identified=MESHTASTIC;
+    if(ble_uuid_cmp(&service->uuid.u,&MC_SERVICE.u)==0)identified=MESHCORE;
     return 0;
   }
   if(err->status==BLE_HS_EDONE){
@@ -183,8 +190,8 @@ static int gap_event(struct ble_gap_event *event,void *){
                         disc.event_type==BLE_HCI_ADV_RPT_EVTYPE_DIR_IND);
       Radio hint=UNKNOWN;
       for(int i=0;i<fields.num_uuids128;i++){
-        if(ble_uuid_cmp(&fields.uuids128[i].u,MT_SERVICE)==0)hint=MESHTASTIC;
-        if(ble_uuid_cmp(&fields.uuids128[i].u,MC_SERVICE)==0)hint=MESHCORE;
+        if(ble_uuid_cmp(&fields.uuids128[i].u,&MT_SERVICE.u)==0)hint=MESHTASTIC;
+        if(ble_uuid_cmp(&fields.uuids128[i].u,&MC_SERVICE.u)==0)hint=MESHCORE;
       }
       portENTER_CRITICAL(&mux);
       int index=-1;
