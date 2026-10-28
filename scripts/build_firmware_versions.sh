@@ -26,16 +26,19 @@ TEMP="$ROOT/_firmware_version_build"
 mkdir -p "$TEMP"
 TEMPLATE="$TEMP/waveshare-template"
 
-if [ ! -d "$TEMPLATE/.git" ]; then
-  echo "Preparing pinned Waveshare BSP $WAVESHARE_REF"
-  mkdir -p "$TEMPLATE"
-  git -C "$TEMPLATE" init -q
-  git -C "$TEMPLATE" remote add origin https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.5.git
-  git -C "$TEMPLATE" fetch --depth 1 origin "$WAVESHARE_REF"
-  git -C "$TEMPLATE" checkout --detach FETCH_HEAD
-  git -C "$TEMPLATE" submodule update --init --recursive --depth 1
-fi
-test "$(git -C "$TEMPLATE" rev-parse HEAD)" = "$WAVESHARE_REF"
+prepare_waveshare() {
+  if [ ! -d "$TEMPLATE/.git" ]; then
+    echo "Preparing pinned Waveshare BSP $WAVESHARE_REF"
+    mkdir -p "$TEMPLATE"
+    git -C "$TEMPLATE" init -q
+    git -C "$TEMPLATE" remote add origin https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.5.git
+    git -C "$TEMPLATE" fetch --depth 1 origin "$WAVESHARE_REF"
+    git -C "$TEMPLATE" checkout --detach FETCH_HEAD
+    git -C "$TEMPLATE" submodule update --init --recursive --depth 1
+  fi
+  test "$(git -C "$TEMPLATE" rev-parse HEAD)" = "$WAVESHARE_REF"
+  
+}
 
 build_version() {
   local version="$1"
@@ -66,6 +69,7 @@ build_version() {
     echo "::error::Expected $version but source VERSION is $recorded"
     exit 1
   fi
+  prepare_waveshare
   mkdir -p "$vendor"
   cp -a "$TEMPLATE/." "$vendor/"
   python3 "$source_root/firmware/display-prototype/apply_to_waveshare.py" "$vendor"
