@@ -10,8 +10,8 @@
 namespace meshhealth {
 static std::atomic<bool> running{false};
 static bool is_running(){return running.load();}
-static const char PAGE[]=R"MCX(<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MeshCrossway Remote — Status</title><style>body{background:#090c10;color:#f2f4f7;font:16px system-ui;max-width:640px;margin:40px auto;padding:0 20px}h1{color:#ff8a24}section{background:#181d24;padding:20px;border-radius:12px}dl{display:grid;grid-template-columns:1fr 1fr;gap:16px}dd{margin:0}small{color:#9aa6b4}</style><h1>MeshCrossway Remote</h1><p>HTTP status test · v0.5.8</p><section><p id="connection" role="status">Connecting to device…</p><dl><dt>Firmware</dt><dd id="version">—</dd><dt>Uptime</dt><dd id="uptime">—</dd><dt>Free heap</dt><dd id="heap">—</dd><dt>Local IP</dt><dd id="ip">—</dd></dl></section><p>Screen viewing and remote touch are disabled in this test.</p><small>Keep using the physical touchscreen while this page is open.</small><script>
-async function update(){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),5000);try{const r=await fetch('/health',{cache:'no-store',signal:controller.signal});if(!r.ok)throw Error();const d=await r.json();document.getElementById('connection').textContent='Device online · status only';document.getElementById('version').textContent=d.version;document.getElementById('uptime').textContent=Math.floor(d.uptime_ms/1000)+' s';document.getElementById('heap').textContent=Math.floor(d.free_heap/1024)+' KB';document.getElementById('ip').textContent=d.ip||'Not connected';}catch(e){document.getElementById('connection').textContent='Device unreachable · retrying';}finally{clearTimeout(timeout);setTimeout(update,3000);}}update();
+static const char PAGE[]=R"MCX(<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MeshCrossway Remote — Status</title><style>body{background:#090c10;color:#f2f4f7;font:16px system-ui;max-width:640px;margin:40px auto;padding:0 20px}h1{color:#ff8a24}section{background:#181d24;padding:20px;border-radius:12px}dl{display:grid;grid-template-columns:1fr 1fr;gap:16px}dd{margin:0}small{color:#9aa6b4}</style><h1>MeshCrossway Remote</h1><p>HTTP status test · v0.5.9</p><section><p id="connection" role="status">Connecting to device…</p><dl><dt>Firmware</dt><dd id="version">—</dd><dt>Uptime</dt><dd id="uptime">—</dd><dt>Free heap</dt><dd id="heap">—</dd><dt>Local IP</dt><dd id="ip">—</dd><dt>SD backup</dt><dd id="sd">—</dd><dt>SD write diagnostic</dt><dd id="sd-error">—</dd></dl></section><p>Screen viewing and remote touch are disabled in this test.</p><small>Keep using the physical touchscreen while this page is open.</small><script>
+async function update(){const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),5000);try{const r=await fetch('/health',{cache:'no-store',signal:controller.signal});if(!r.ok)throw Error();const d=await r.json();document.getElementById('connection').textContent='Device online · status only';document.getElementById('version').textContent=d.version;document.getElementById('uptime').textContent=Math.floor(d.uptime_ms/1000)+' s';document.getElementById('heap').textContent=Math.floor(d.free_heap/1024)+' KB';document.getElementById('ip').textContent=d.ip||'Not connected';document.getElementById('sd').textContent=d.sd_backup||'unknown';document.getElementById('sd-error').textContent=d.sd_backup==='write failed'?(d.sd_step+' (errno '+d.sd_errno+')'):'none';}catch(e){document.getElementById('connection').textContent='Device unreachable · retrying';}finally{clearTimeout(timeout);setTimeout(update,3000);}}update();
 </script></html>)MCX";
 static void headers(httpd_req_t *req,const char *type){
   httpd_resp_set_type(req,type);
@@ -27,8 +27,10 @@ static esp_err_t health(httpd_req_t *req){
   char ip[16],state[30],body[256];
   meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
   const int n=snprintf(body,sizeof(body),
-    "{\"version\":\"v0.5.8\",\"uptime_ms\":%llu,\"free_heap\":%lu,\"ip\":\"%s\",\"screen\":false,\"touch\":false}",
-    (unsigned long long)(esp_timer_get_time()/1000),(unsigned long)esp_get_free_heap_size(),ip);
+    "{\"version\":\"v0.5.9\",\"uptime_ms\":%llu,\"free_heap\":%lu,\"ip\":\"%s\",\"sd_backup\":\"%s\",\"sd_step\":\"%s\",\"sd_errno\":%d,\"screen\":false,\"touch\":false}",
+    (unsigned long long)(esp_timer_get_time()/1000),(unsigned long)esp_get_free_heap_size(),ip,
+    meshbackup::status(),meshbackup::step_name(meshbackup::failure_step.load()),
+    meshbackup::failure_errno.load());
   if(n<0 || n>=(int)sizeof(body))return ESP_FAIL;
   headers(req,"application/json");
   return httpd_resp_send(req,body,n);
@@ -49,6 +51,6 @@ static void start(){
   if(result==ESP_OK)result=httpd_register_uri_handler(server,&status);
   if(result!=ESP_OK){httpd_stop(server);printf("[MCX-HTTP] route setup failed err=%d\n",(int)result);return;}
   running.store(true);
-  printf("[MCX-HTTP v0.5.8] ready port=80 routes=/,/health screen=OFF touch=OFF\n");
+  printf("[MCX-HTTP v0.5.9] ready port=80 routes=/,/health screen=OFF touch=OFF\n");
 }
 } // namespace meshhealth

@@ -211,8 +211,45 @@ assert info["sha256"].startswith(expected_prefix) and info["size"]==1174384 and 
 print("Preserved exact display-tested v0.5.7 recovery image:",info["sha256"])
 RESTORE_V057
 python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.7" --version v0.5.7 --ref 6715b3d314003d107ad24eb9fbfa6de5e753913d
+# Preserve the exact published v0.5.8 SD-backup build as an experimental rollback.
+# v0.5.8 has a split flasher manifest; all three parts must be retained.
+python3 - "$OUT/versions/v0.5.8" <<'RESTORE_V058'
+import hashlib
+import json
+import sys
+import urllib.request
+from pathlib import Path
+folder=Path(sys.argv[1])
+expected_prefix="a069f6d5108d"
+compiled_ref="330c456149ac6bc23a8ef4621a83730565c11ce2"
+base="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/v0.5.8/"
+files=("manifest.json","build-info.json","meshcrossway-display-dev.bin",
+       "bootloader.bin","partition-table.bin","application.bin")
+folder.mkdir(parents=True,exist_ok=True)
+def valid():
+    if not all((folder/name).is_file() for name in files):return False
+    image=(folder/"meshcrossway-display-dev.bin").read_bytes()
+    info=json.loads((folder/"build-info.json").read_text())
+    digest=hashlib.sha256(image).hexdigest()
+    return (digest.startswith(expected_prefix) and info["sha256"]==digest and
+            info["commit"]==compiled_ref and info["version"]=="v0.5.8")
+if not valid():
+    data={}
+    for name in files:
+        with urllib.request.urlopen(base+name,timeout=60) as response:
+            data[name]=response.read()
+    if not hashlib.sha256(data["meshcrossway-display-dev.bin"]).hexdigest().startswith(expected_prefix):
+        sys.exit("REJECT: published v0.5.8 differs from the reviewed binary")
+    for name,content in data.items():
+        (folder/name).write_bytes(content)
+if not valid():sys.exit("REJECT: v0.5.8 rollback metadata mismatch")
+print("Preserved experimental v0.5.8 SD rollback image:",
+      hashlib.sha256((folder/"meshcrossway-display-dev.bin").read_bytes()).hexdigest())
+RESTORE_V058
+python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$OUT/versions/v0.5.8" --version v0.5.8 --ref 330c456149ac6bc23a8ef4621a83730565c11ce2
+
 case "$LATEST_VERSION" in
-  v0.3.0|v0.4.0|v0.5.2|v0.5.4|v0.5.6|v0.5.7) echo "Current version already available in historical archive" ;;
+  v0.3.0|v0.4.0|v0.5.2|v0.5.4|v0.5.6|v0.5.7|v0.5.8) echo "Current version already available in historical archive" ;;
   *) build_version "$LATEST_VERSION" HEAD ;;
 esac
 python3 "$ROOT/scripts/write_firmware_catalog.py" \

@@ -41,6 +41,11 @@ for name in ("meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.
 
 sdk = project / "sdkconfig.defaults"
 defaults = sdk.read_text()
-if "CONFIG_LV_USE_SNAPSHOT=y" not in defaults:
-    sdk.write_text(defaults + "\nCONFIG_LV_USE_SNAPSHOT=y\n")
+# The Wi-Fi backup uses /sdcard/meshcrossway-wifi.{tmp,json,bak}.
+# ESP-IDF FatFs defaults to FATFS_LFN_NONE, so those paths otherwise fail
+# to open even on correctly mounted FAT32 cards.
+needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_FATFS_LFN_HEAP=y"]
+missing=[option for option in needed if option not in defaults.splitlines()]
+if missing:
+    sdk.write_text(defaults.rstrip("\n")+"\n"+"\n".join(missing)+"\n")
 print(f"MeshCrossway patched and verified: {project}")

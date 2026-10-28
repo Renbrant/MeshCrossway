@@ -1,6 +1,7 @@
 #pragma once
 // Explicitly unencrypted, removable Wi-Fi backup. Never print credential contents.
 #include <stdint.h>
+#include <errno.h>
 #include "esp_sdcard_port.h"
 #include "esp_wifi.h"
 #include "cJSON.h"
@@ -19,6 +20,26 @@ static const char *TEMP_PATH="/sdcard/meshcrossway-wifi.tmp";
 static const char *OLD_PATH="/sdcard/meshcrossway-wifi.bak";
 enum Status {UNAVAILABLE,READY,SAVED,RESTORED,INVALID_FILE,WRITE_FAILED};
 static std::atomic<int> state{UNAVAILABLE};
+// Expose filesystem failure stages without exposing credentials.
+enum FailureStep {NONE,INPUT,ENCODE,OPEN_TEMP,WRITE_TEMP,FLUSH_TEMP,SYNC_TEMP,CLOSE_TEMP,
+                  REMOVE_BACKUP,ROTATE_BACKUP,REMOVE_INVALID,COMMIT_TEMP};
+static std::atomic<int> failure_step{NONE};
+static std::atomic<int> failure_errno{0};
+static const char *step_name(int step){
+  switch(step){
+    case INPUT:return "input";case ENCODE:return "JSON";case OPEN_TEMP:return "open";
+    case WRITE_TEMP:return "write";case FLUSH_TEMP:return "flush";case SYNC_TEMP:return "sync";
+    case CLOSE_TEMP:return "close";case REMOVE_BACKUP:return "remove backup";
+    case ROTATE_BACKUP:return "rotate";case REMOVE_INVALID:return "remove invalid";
+    case COMMIT_TEMP:return "rename";default:return "unknown";
+  }
+}
+static bool failed(FailureStep step,int err){
+  failure_step.store(step);
+  failure_errno.store(err);
+  printf("[MCX-SD] write failure stage=%s errno=%d\n",step_name(step),err);
+  return false;
+}
 static QueueHandle_t queue=nullptr;
 static bool mounted=false;
 static const char *status(){
@@ -27,6 +48,11 @@ static const char *status(){
     case INVALID_FILE:return "invalid file";case WRITE_FAILED:return "write failed";
     default:return "unavailable";
   }
+}
+static void describe(char *out,size_t size){
+  if(!out||!size)return;
+  if(state.load()!=WRITE_FAILED){snprintf(out,size,"%s",status());return;}
+  snprintf(out,size,"write failed (%s: %d)",step_name(failure_step.load()),failure_errno.load());
 }
 static bool valid(const credentials_t &c){
   const size_t n=strnlen(c.ssid,sizeof(c.ssid)),p=strnlen(c.password,sizeof(c.password));
@@ -65,31 +91,52 @@ static bool read_file(const char *path,credentials_t &out){
   cJSON_Delete(root);return ok;
 }
 static bool save_file(const credentials_t &c){
-  if(!valid(c))return false;
+  failure_step.store(NONE);failure_errno.store(0);
+  if(!valid(c))return failed(INPUT,EINVAL);
   credentials_t previous={};const bool old_valid=read_file(FILE_PATH,previous);
   if(old_valid&&!strcmp(previous.ssid,c.ssid)&&!strcmp(previous.password,c.password))return true;
-  cJSON *root=cJSON_CreateObject();if(!root)return false;
-  bool ok=cJSON_AddNumberToObject(root,"format",1)&&cJSON_AddStringToObject(root,"ssid",c.ssid)&&cJSON_AddStringToObject(root,"password",c.password);
-  char *json=ok?cJSON_PrintUnformatted(root):nullptr;cJSON_Delete(root);
-  if(!json)return false;
+  cJSON *root=cJSON_CreateObject();
+  if(!root)return failed(ENCODE,ENOMEM);
+  const bool encoded=cJSON_AddNumberToObject(root,"format",1)&&
+    cJSON_AddStringToObject(root,"ssid",c.ssid)&&
+    cJSON_AddStringToObject(root,"password",c.password);
+  char *json=encoded?cJSON_PrintUnformatted(root):nullptr;
+  cJSON_Delete(root);
+  if(!json)return failed(ENCODE,ENOMEM);
   FILE *f=fopen(TEMP_PATH,"wb");
-  if(!f){cJSON_free(json);return false;}
+  if(!f){const int err=errno;cJSON_free(json);return failed(OPEN_TEMP,err);}
   const size_t length=strlen(json);
-  ok=fwrite(json,1,length,f)==length;
-  if(ok)ok=fflush(f)==0;
-  if(ok)ok=fsync(fileno(f))==0;
-  if(fclose(f)!=0)ok=false;
+  bool ok=fwrite(json,1,length,f)==length;
+  if(!ok)failed(WRITE_TEMP,errno);
+  if(ok){
+    ok=fflush(f)==0;
+    if(!ok)failed(FLUSH_TEMP,errno);
+  }
+  if(ok){
+    ok=fsync(fileno(f))==0;
+    if(!ok)failed(SYNC_TEMP,errno);
+  }
+  const int close_result=fclose(f);
+  if(close_result!=0&&ok){ok=false;failed(CLOSE_TEMP,errno);}
   cJSON_free(json);
   if(!ok){unlink(TEMP_PATH);return false;}
-  bool moved=false;
+  bool rotated=false;
   if(old_valid){
-    unlink(OLD_PATH);
-    if(rename(FILE_PATH,OLD_PATH)!=0){unlink(TEMP_PATH);return false;}
-    moved=true;
-  } else if(access(FILE_PATH,F_OK)==0&&unlink(FILE_PATH)!=0){unlink(TEMP_PATH);return false;}
+    if(unlink(OLD_PATH)!=0&&errno!=ENOENT){
+      const int err=errno;unlink(TEMP_PATH);return failed(REMOVE_BACKUP,err);
+    }
+    if(rename(FILE_PATH,OLD_PATH)!=0){
+      const int err=errno;unlink(TEMP_PATH);return failed(ROTATE_BACKUP,err);
+    }
+    rotated=true;
+  }else if(access(FILE_PATH,F_OK)==0&&unlink(FILE_PATH)!=0){
+    const int err=errno;unlink(TEMP_PATH);return failed(REMOVE_INVALID,err);
+  }
   if(rename(TEMP_PATH,FILE_PATH)!=0){
-    if(moved)(void)rename(OLD_PATH,FILE_PATH);
-    unlink(TEMP_PATH);return false;
+    const int err=errno;
+    if(rotated)(void)rename(OLD_PATH,FILE_PATH);
+    unlink(TEMP_PATH);
+    return failed(COMMIT_TEMP,err);
   }
   return true;
 }

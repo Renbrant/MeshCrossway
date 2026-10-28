@@ -75,3 +75,16 @@ At startup, internal NVS takes precedence. Only when no SSID exists internally d
 From v0.5.8, ESP Web Tools installs separate bootloader (0), partition table (0x8000) and application (0x10000) files, leaving NVS 0x9000–0xefff and PHY data untouched when Erase is unchecked. The merged image remains an archive/checksum artifact, not the installer input. Components have individual SHA-256 values and must equal their corresponding merged-image slices. Historical version manifests/images stay unchanged; installing older merged images can still overwrite NVS. A full Erase still clears internal settings; SD restore is available only if a valid backup already exists.
 
 Physical tests pending: first boot/card mount and backup creation, reboot without Erase, reinstall v0.5.8 without Erase to verify NVS preservation, then (only after saved backup is confirmed) full Erase and SD recovery. Keep keyboard/Wi-Fi/status HTTP testing; capture and remote touch remain disabled. Do not mark SD/preservation tested solely from CI.
+
+
+## v0.5.8 SD write failure on physical FAT32 / v0.5.9 fix candidate
+
+On October 28 the owner first attempted a 64 GB exFAT card (not mountable by the current FatFs configuration). Switching to 32 GB FAT32 changed the device's SD backup status to **ready**, confirming mount success. After entering home Wi-Fi credentials, Settings reported **write failed**. The expected root-level file `meshcrossway-wifi.json` was absent, and owner previously saw only unrelated files on the card.
+
+**Root-cause candidate strongly supported by source:** The pinned ESP-IDF v5.3.2 FatFs Kconfig defaults to `CONFIG_FATFS_LFN_NONE=y`; the original Waveshare `sdkconfig.defaults` does not override it. Yet the backup opens `/sdcard/meshcrossway-wifi.tmp`, renames to `meshcrossway-wifi.json`, and may create `meshcrossway-wifi.bak` — all filenames longer than FAT 8.3. The card can mount successfully while these operations fail (likely an invalid filename error). Actual failed syscall and errno in the owner's v0.5.8 binary are not available because that build logs only a generic status.
+
+v0.5.9 (not physically tested) explicitly enables `CONFIG_FATFS_LFN_HEAP=y` in the patched ESP-IDF build. It also reports the exact failing stage/errno (open, write, flush, sync, close, rotate, rename, etc.) in serial diagnostics, on the main Settings overview, in the Wi-Fi setup dialog, and via `/health`; never logs SSID/password. HTTP remains **status only**, with no LVGL screenshot or remote input.
+
+Physical test: insert FAT32 card before boot; install **without Erase**; verify Settings' SD state; reconnect Wi-Fi (or await DHCP); confirm state **saved** and a valid `meshcrossway-wifi.json` at SD root. Remove/read the card only while device is powered down, and treat the plaintext password as sensitive. Only after verifying the backup should full Erase/recovery be tested. NVS-preservation on firmware updates is an independent issue; continue investigating if credentials still disappear despite installing without Erase. Preserve v0.5.7 and v0.5.8 binary rollbacks.
+
+**Release numbering:** v0.5.9 is reserved for the SD bug fix. The separate experimental read-only screen viewer PR #21 must be renumbered/rebased before future merge; do not publish two different firmwares with the same version.
