@@ -52,16 +52,6 @@ jobs:
           set -euo pipefail
           bash -n scripts/build_firmware_versions.sh
           python3 -m py_compile scripts/write_firmware_version.py scripts/write_firmware_catalog.py scripts/verify_firmware_version.py
-      - name: Restore compiled v0.3.0 recovery image
-        uses: actions/cache@v4
-        with:
-          path: _site/flasher/firmware/versions/v0.3.0
-          key: meshcrossway-v030-b48145f0-bsp-d9ff7837-idf532-v1
-      - name: Restore compiled v0.4.0 recovery image
-        uses: actions/cache@v4
-        with:
-          path: _site/flasher/firmware/versions/v0.4.0
-          key: meshcrossway-v040-5dfe3744-bsp-d9ff7837-idf532-v1
       - name: Restore cached current firmware image
         uses: actions/cache@v4
         with:
@@ -71,13 +61,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/restore_reviewed_firmware.py
-      - name: Compile missing firmware archives and current image
+      - name: Compile only supported releases
         run: bash scripts/build_firmware_versions.sh
       - name: Verify selectable manifests and binaries
         run: |
           set -euo pipefail
-          python3 scripts/verify_firmware_version.py --dir _site/flasher/firmware/versions/v0.3.0 --version v0.3.0 --ref b48145f07ef4d00895f7ccedbdfb240a322dd37a
-          python3 scripts/verify_firmware_version.py --dir _site/flasher/firmware/versions/v0.4.0 --version v0.4.0 --ref 5dfe3744ed7b062c629ea5d2811dc434928826b1
+          python3 scripts/verify_firmware_version.py --dir _site/flasher/firmware/versions/v0.6.2 --version v0.6.2 --ref a508c7d9a9eaf580061d2daca6838ecb78f89085
+          python3 scripts/preflight_firmware_catalog.py --catalog _site/flasher/firmware/catalog.json
           python3 scripts/verify_firmware_version.py --dir "_site/flasher/firmware/versions/$(cat firmware/display-prototype/VERSION)" --version "$(cat firmware/display-prototype/VERSION)"
       - name: Verify embedded firmware UI version
         run: python3 scripts/check_firmware_identity.py

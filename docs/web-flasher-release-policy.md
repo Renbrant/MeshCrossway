@@ -4,12 +4,14 @@
 
 1. Publish a successful, compiled firmware candidate through the official [Web Flasher](https://renbrant.github.io/MeshCrossway/flasher/), even before it has passed physical testing, **clearly labeled EXPERIMENTAL / NOT HARDWARE TESTED**. Do not publish a failed CI build or an incomplete manifest.
 2. The default selected build must always be the **most recent explicitly hardware-tested release**. Never automatically select `latest` if that release remains experimental or has a known issue.
-3. Experimental and known-issue versions must display a prominent warning and require an explicit opt-in checkbox before the Install button is enabled.
-4. Retain older, pinned compiled versions and recovery images, with intact versions, manifests and SHA-256 verification. No update may silently replace a previously released binary.
+3. Experimental versions must display a prominent warning and require explicit opt-in before installation. Versions with a confirmed critical boot regression must not appear in the installation picker.
+4. The active Web Flasher lists **only the most recently owner-approved hardware-tested release and supported newer candidates**. Do not republish older recovery versions or known-broken builds in the Pages artifact. Retain historical source commits, version metadata and failure reports in GitHub. Every selectable binary must keep its own manifest and SHA-256 validation.
 5. Once the owner confirms a candidate works on physical hardware, record the test conditions and update its catalog label/status to `hardware-tested`. The tested release then becomes the default without modifying the flasher's selection logic.
 6. The Web Flasher targets only the **Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0 non-B**. The MeshCore-enabled Heltec V3 runs its **own separate Companion Bluetooth firmware**, not a MeshCrossway display image.
 
-After the owner tested v0.6.3 twice, the latest confirmed hardware-tested build is **v0.6.2** (Wi-Fi, SD backup and manual remote screenshots). v0.6.3 is confirmed broken at boot and its Web Flasher installation is blocked. v0.6.4 is the new experimental safe-boot candidate (BLE initially disabled). The pre-v0.5.0 v0.4.0 and v0.3.0 images remain emergency recovery options.
+**Flasher archive policy narrowed on 2026-10-28:** publish the last stable and later supported builds only. For now show v0.6.2 and v0.6.4, not the known-broken v0.6.3. When a newer release passes owner hardware testing, advance the stable pin and prune older images.
+
+After the owner tested v0.6.3 twice, the latest confirmed hardware-tested build is **v0.6.2** (Wi-Fi, SD backup and manual remote screenshots). v0.6.3 is confirmed broken at boot and its Web Flasher installation is blocked. v0.6.4 is the new experimental safe-boot candidate (BLE initially disabled). Older v0.3.x, v0.4.x and v0.5.x builds are no longer offered through the active Web Flasher; their source history remains in GitHub.
 
 ## MeshCore first-device acceptance test
 

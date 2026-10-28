@@ -60,22 +60,12 @@ jobs:
           fetch-depth: 0
       - name: Check selector JavaScript and build scripts
         run: python3 scripts/preflight_firmware_catalog.py
-      - name: Restore v0.3 recovery binary
-        uses: actions/cache@v4
-        with:
-          path: _site/flasher/firmware/versions/v0.3.0
-          key: meshcrossway-v030-b48145f0-bsp-d9ff7837-idf532-v1
-      - name: Restore v0.4 recovery binary
-        uses: actions/cache@v4
-        with:
-          path: _site/flasher/firmware/versions/v0.4.0
-          key: meshcrossway-v040-5dfe3744-bsp-d9ff7837-idf532-v1
       - name: Restore source-keyed firmware cache
         uses: actions/cache@v4
         with:
           path: _site/flasher/firmware/versions
           key: meshcrossway-current-${{ hashFiles('firmware/display-prototype/**', 'scripts/build_firmware_versions.sh', 'scripts/write_firmware_version.py') }}-idf532-bsp-d9ff7837-v2
-      - name: Compile archived versions and current firmware
+      - name: Compile stable release and recent candidates
         run: bash scripts/build_firmware_versions.sh
       - name: Verify compiled catalog and manifests
         run: python3 scripts/preflight_firmware_catalog.py --catalog _site/flasher/firmware/catalog.json

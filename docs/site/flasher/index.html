@@ -20,7 +20,7 @@
 <main id="flasher-app"><section class="pagehero"><div class="wrap prose">
 <div class="eyebrow" style="color:#ff993c">USB firmware installer</div>
 <h1>MeshCrossway Web Flasher.</h1>
-<p class="sectionintro">The latest hardware-tested firmware is selected by default. Experimental releases remain available, but never install automatically.</p>
+<p class="sectionintro">Only the latest hardware-tested version and newer supported development builds are listed. The tested firmware is always selected by default; experimental builds require explicit confirmation.</p>
 <div class="flashbox">
 <span class="status" id="build-status">CHECKING VERSION ARCHIVE</span>
 <h2>Display / Host — Waveshare ESP32-S3-Touch-LCD-3.5</h2>
@@ -38,16 +38,16 @@
 <div id="installer" hidden></div>
 <p class="note" id="build-version"></p>
 </div>
-<h2>Recovery: flickering or rebooting display</h2>
+<h2>Recovery: touchscreen freezes or display reboots</h2>
 <div class="steps">
 <div class="step">Connect the Waveshare Rev2.0 display to your computer with a USB data cable. Leave the computer on its normal Wi-Fi network.</div>
-<div class="step">For normal rollback, choose the most recent <b>hardware-tested</b> version (currently v0.5.10). If the display fails to boot, use the older known-good <b>v0.4.0</b> or <b>v0.3.0</b> recovery images.</div>
+<div class="step">Select <b>v0.6.2 — hardware-tested</b> for rollback after an experimental build. Older versions are no longer listed in the Web Flasher.</div>
 <div class="step">If the USB serial port is unavailable because the new firmware keeps restarting, enter ESP32-S3 download mode using the board's <b>BOOT</b> and <b>RESET</b> controls, then retry connecting.</div>
 <div class="step">From v0.5.8, installation without Erase preserves internal Wi-Fi/settings. Older merged installers can overwrite settings even without Erase. An SD Wi-Fi backup is plaintext and should be created before erasing. For a clean downgrade, you can choose <b>Erase device</b> in the installer. This will also erase saved Wi-Fi credentials and other settings.</div>
 </div>
 <div class="notice"><b>Target limitation:</b> these images are for the Waveshare ESP32-S3-Touch-LCD-3.5 <b>non-B, Rev2.0</b> display. Do not flash a XIAO radio module or a Waveshare 3.5B with this image. Firmware installation may overwrite data.</div>
 <h2>How versions are maintained</h2>
-<p>The latest experimental firmware is <b>automatically published after the GitHub Actions build and checks succeed</b>; it remains explicitly labeled experimental until physical validation. The firmware listed above is <b>compiled automatically in GitHub Actions</b> from pinned historical commits. The browser installs the compiled binary; it does not compile ESP-IDF source code locally. Each build is archived in its own directory with its own manifest and SHA-256 checksum. New releases do not replace the recovery images.</p>
+<p>The latest experimental firmware is <b>automatically published after the GitHub Actions build and checks succeed</b>; it remains explicitly labeled experimental until physical validation. The firmware listed above is <b>compiled automatically in GitHub Actions</b> from pinned historical commits. The browser installs the compiled binary; it does not compile ESP-IDF source code locally. Each selectable build keeps its own manifest and SHA-256 checksum. Obsolete and known-broken versions are excluded from the active Web Flasher list; historical source commits remain in GitHub.</p>
 <p><a class="inset-link" href="https://github.com/Renbrant/MeshCrossway/actions">View build and deployment history on GitHub</a></p>
 </div></section></main>
 <script>

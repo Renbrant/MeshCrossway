@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish a catalog of verified historical ESP32-S3 images with a safe default."""
+"""Publish ONLY the newest owner-tested image and newer supported builds."""
 import argparse
 import json
 import re
@@ -9,85 +9,60 @@ from pathlib import Path
 p=argparse.ArgumentParser()
 p.add_argument("--root",required=True)
 p.add_argument("--latest",required=True)
+p.add_argument("--stable",required=True)
 args=p.parse_args()
 root=Path(args.root)
 latest=args.latest
-if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+",latest):
-    p.error("Invalid latest version")
-tested={
-    "v0.6.2":("Owner tested v0.6.2 on Waveshare Rev2.0: touch, Wi-Fi and normal UI operate. v0.6.3 boot freezes; v0.6.2 is confirmed working rollback.", "Last working tested UI / recommended"),
-    "v0.5.6":("Owner confirmed usable wider QWERTY and normal Wi-Fi operation; remote screen/touch disabled", "Tested keyboard + Wi-Fi / rollback"),
-    "v0.5.7":("Owner confirmed stable physical UI and status HTTP with live uptime/IP/heap; screenshot and remote touch disabled", "Tested HTTP status + Wi-Fi / rollback"),
-    "v0.5.9":("Owner verified 32GB FAT32 JSON Wi-Fi backup, successful reinstall without Erase and automatic Wi-Fi reconnect; remote capture disabled", "Tested SD backup + Wi-Fi / rollback"),
-    "v0.5.10":("Owner confirmed multiple manual read-only screenshots, responsive pages and stable Wi-Fi/SD on Waveshare Rev2.0", "Tested read-only remote viewer / rollback"),
-    "v0.5.4":("Owner confirmed Wi-Fi connection and normal operation; landscape UI", "Tested Wi-Fi / rollback"),
-    "v0.3.0":("Tested on Rev2.0: LVGL, touchscreen and live ESP32 diagnostics","Display / touch baseline"),
-    "v0.4.0":("Tested on Rev2.0: Wi-Fi access point, screenshot viewing and PNG capture","Recommended recovery"),
+stable=args.stable
+
+def version_key(version):
+    if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+",version):
+        p.error(f"Invalid firmware version {version!r}")
+    return tuple(map(int,version[1:].split(".")))
+
+if version_key(stable)>version_key(latest):
+    p.error("Approved stable cannot be newer than latest build")
+
+# Only include releases with explicit owner approval.
+approved={
+    "v0.6.2":("Owner confirmed touchscreen, Wi-Fi and normal UI work on the Waveshare Rev2.0; confirmed working after v0.6.3 failed.", "Last hardware-tested / recommended"),
 }
+# Do not expose a known-broken image through the installer.
+blocked={"v0.6.3"}
+if stable not in approved:
+    p.error(f"Approved stable version {stable} has no recorded hardware validation")
+if latest in blocked:
+    p.error(f"Latest version {latest} is known broken; cannot publish")
+if not (root/"versions"/stable).is_dir():
+    p.error(f"Missing tested rollback image {stable}")
+if not (root/"versions"/latest).is_dir():
+    p.error(f"Missing latest compiled image {latest}")
+
 catalog=[]
-for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8","v0.5.9","v0.5.10","v0.6.2","v0.6.3",latest):
-    if any(entry["version"]==version for entry in catalog):
+for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name)):
+    if not folder.is_dir():
         continue
-    folder=root/"versions"/version
+    version=folder.name
+    if version_key(version)<version_key(stable) or version_key(version)>version_key(latest) or version in blocked:
+        continue
     manifest=folder/"manifest.json"
     info_file=folder/"build-info.json"
     if not manifest.is_file() or not info_file.is_file():
-        p.error(f"Missing built firmware or metadata for {version}")
+        p.error(f"Missing compiled binary or metadata for {version}")
     m=json.loads(manifest.read_text())
     info=json.loads(info_file.read_text())
     if m["version"]!=version or info["version"]!=version:
         p.error(f"Manifest/version mismatch for {version}")
-    if version in tested:
-        summary,label=tested[version]
+    if version==stable:
+        summary,label=approved[version]
         status="hardware-tested"
     elif version=="v0.6.4":
-        summary="EXPERIMENTAL, NOT TESTED: post-v0.6.3 recovery candidate. BLE remains OFF at startup to preserve Wi-Fi/touch; enable BLE manually in More > Radios. Wi-Fi / touch must be verified before enabling."
-        label="Safe boot + manual BLE enable / UNTESTED"
+        summary="EXPERIMENTAL, NOT HARDWARE TESTED: safe boot with Bluetooth disabled by default; manual BLE enable in More > Radios. Keep the tested rollback available."
+        label="Manual BLE activation / EXPERIMENTAL"
         status="experimental"
-    elif version=="v0.6.3":
-        summary="KNOWN CRITICAL ISSUE: owner tested v0.6.3 twice and both boots froze: touch not responding and Wi-Fi stuck at waiting. Reinstall v0.6.2. Do NOT install v0.6.3."
-        label="BROKEN BOOT / DO NOT INSTALL"
-        status="known-issue"
-    elif version=="v0.6.2":
-        summary="Six-tab navigation (Home, Nodes, Groups, Chats, Map, More), per-network filters and persistent selected demo chat; compact radio/group icons, hidden Home rail; radio and Wi-Fi preserved. Physical test pending."
-        label="Nodes + groups + chats / experimental"
-        status="experimental"
-    elif version=="v0.6.1":
-        summary="Field Console responsive layout update: compact icons centered, scrolling content, improved status cards and contextual actions; Wi-Fi/SD/read-only remote untouched. Physical test pending."
-        label="Adaptive console / experimental"
-        status="experimental"
-    elif version=="v0.6.0":
-        summary="Field Console LVGL redesign from approved virtual UI: dual collapsible side rails, Map subviews, contextual actions and quick settings. Wi-Fi/SD/read-only remote preserved; physical test pending."
-        label="Side-console navigation / experimental"
-        status="experimental"
-    elif version=="v0.5.8":
-        summary="Plaintext Wi-Fi backup/restore on optional SD; split installer preserves internal settings without Erase. HTTP status only. Hardware test pending."
-        label="SD Wi-Fi backup / experimental"
-        status="experimental"
-    elif version=="v0.5.6":
-        summary="Wider landscape QWERTY and one character per completed tap; automatic key repeat disabled. v0.5.5 froze during typing in one owner test; root cause unconfirmed. Hardware test pending."
-        label="Wider keys / experimental"
-        status="experimental"
-    elif version=="v0.5.5":
-        summary="Larger full-screen landscape QWERTY editor for Wi-Fi credentials. Hardware test pending; remote display/touch disabled."
-        label="Full-screen keyboard / experimental"
-        status="experimental"
-    elif version in ("v0.5.3","v0.5.4"):
-        summary="Touchscreen Wi-Fi setup experiment: asynchronous SSID scan and on-screen password entry. Remote display/touch remains disabled; hardware not tested."
-        label="Wi-Fi setup / experimental"
-        status="experimental"
-    elif version=="v0.5.2":
-        summary="Diagnostic build: Wi-Fi AP+STA enabled; remote screen capture and touch disabled. Display and menu navigation passed the owner test on October 28, 2026; Wi-Fi provisioning remains unverified."
-        label="Display-tested rollback / Wi-Fi unverified"
-        status="experimental"
-    elif version in ("v0.5.0","v0.5.1"):
-
-        summary="Known issue: user reported flashing/flickering screen on Rev2.0. Not recommended."
-        label="Unstable / do not install"
-        status="known-issue"
     else:
-        summary="New development firmware: compiled but not yet tested on physical hardware"
-        label="Latest experimental"
+        summary="EXPERIMENTAL, NOT HARDWARE TESTED: development firmware. May freeze or require rollback to tested firmware."
+        label="Newest candidate / EXPERIMENTAL"
         status="experimental"
     catalog.append({
         "version":version,
@@ -98,23 +73,25 @@ for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8","
         "sha256":info["sha256"],
         "size":info["size"],
         "manifest":f"/MeshCrossway/flasher/firmware/versions/{version}/manifest.json",
-        "binary":f"/MeshCrossway/flasher/firmware/versions/{version}/meshcrossway-display-dev.bin"
+        "binary":f"/MeshCrossway/flasher/firmware/versions/{version}/meshcrossway-display-dev.bin",
     })
-# The Web Flasher default is the newest hardware-tested release.
-tested_versions=[entry["version"] for entry in catalog if entry["status"]=="hardware-tested"]
-if not tested_versions:
-    p.error("No hardware-tested firmware in catalog")
-recommended=max(tested_versions,key=lambda v:tuple(map(int,v[1:].split("."))))
+
+if not any(v["version"]==stable and v["status"]=="hardware-tested" for v in catalog):
+    p.error("Approved stable image missing from published catalog")
+if not any(v["version"]==latest for v in catalog):
+    p.error("Latest image missing from published catalog")
+
 catalog_info={
     "target":"Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0 non-B",
-    "recommended":recommended,
+    "recommended":stable,
     "latest":latest,
-    "versions":catalog
+    "versions":catalog,
 }
 (root/"catalog.json").write_text(json.dumps(catalog_info,indent=2)+"\n")
 
-# Backwards compatible paths for previously bookmarked ESP Web Tools links.
+# Keep legacy direct URLs pointing at the newest binary only (no old archives).
 current=root/"versions"/latest
-for filename in ("manifest.json","build-info.json","meshcrossway-display-dev.bin")+tuple(part["path"] for part in json.loads((current/"manifest.json").read_text())["builds"][0]["parts"] if part["path"]!="meshcrossway-display-dev.bin"):
+parts=tuple(part["path"] for part in json.loads((current/"manifest.json").read_text())["builds"][0]["parts"] if part["path"]!="meshcrossway-display-dev.bin")
+for filename in ("manifest.json","build-info.json","meshcrossway-display-dev.bin")+parts:
     shutil.copy2(current/filename,root/filename)
-print("Firmware catalog:", ", ".join(v["version"] for v in catalog))
+print("Flasher versions:",", ".join(v["version"] for v in catalog),"; default:",stable)
