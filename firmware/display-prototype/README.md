@@ -67,3 +67,18 @@ ESP32-S3 supports 2.4 GHz Wi-Fi; the v0.5 setup screen uses manually entered SSI
 ## v0.5.1 — settings redraw regression candidate
 
 The v0.5 Settings refresh destroyed/recreated every Settings card every 3 seconds. v0.5.1 keeps LVGL cards and touch targets alive, updating only their existing uptime/heap/IP label text when values change. This avoids whole-subtree invalidation and preserves the LAN Wi-Fi and remote touch features. **This is a candidate, not a confirmed physical fix**: repeated reboot, Wi-Fi AP+STA power or memory pressure may also produce apparent screen flashing. Keep v0.4.0 as the tested recovery version. Check v0.5.1 by opening Settings for at least 5 minutes, observing other screens, and testing Wi-Fi credentials, DHCP IP, remote clicks, physical touchscreen, and PNG. If the device still flashes, gather serial boot/restart logs before further changes.
+
+## v0.6.3 — critical boot regression (DO NOT INSTALL)
+
+On Oct 28, 2026 the owner installed v0.6.3 twice: boot logo/UI `DEV 0.6.3` displayed, but touch froze and Wi-Fi stayed `waiting`. Reflashing v0.6.2 restored normal operation. The underlying cause has **not been established** (serial logs were not captured); starting NimBLE unconditionally at boot is a leading hypothesis. The Web Flasher must block this known-broken image. [Issue #30](https://github.com/Renbrant/MeshCrossway/issues/30).
+
+## v0.6.4 — staged BLE initialization (experimental, NOT hardware tested)
+
+The default boot **does not call NimBLE initialization at all**. Wi-Fi AP/STA, LVGL, SD backup, and manual read-only screen viewer should start unchanged. Use **More > Radios > ENABLE BLE / TEST** only *after* confirming that touch and Wi-Fi are functional. NimBLE initialization runs in a separate FreeRTOS worker; the radio page reports startup stages and GATT discovery. Startup on-demand is a diagnostic isolation measure, **not a proven fix**: enabling BLE may reproduce the v0.6.3 freeze. Do not use this image for critical communications.
+
+Test sequence:
+1. Flash v0.6.4 without Erase; boot normally with Heltec initially off or unconnected; test all tabs, Wi-Fi IP, manual viewer and Settings.
+2. Open Radios, verify the state is `DISABLED`. Confirm it remains responsive for several minutes **before pressing ENABLE BLE**.
+3. Enable BLE and note whether UI stops responding or Wi-Fi disconnects. A serial monitor at 115200 baud (and boot reset reason) is essential if it freezes.
+4. If the link initializes successfully, scan and select the Heltec V3 **MeshCore Companion Bluetooth**, enter PIN shown by the device. No messages or MeshCore commands are sent by this candidate.
+5. If any freeze occurs, reinstall the tested v0.6.2 image; do not erase unless necessary.
