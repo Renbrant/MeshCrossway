@@ -492,6 +492,7 @@ static void rebuild_context(){
   else if(page==3){choices=radio_actions;count=sizeof(radio_actions)/sizeof(radio_actions[0]);}
   else if(page==4){choices=more_actions;count=sizeof(more_actions)/sizeof(more_actions[0]);}
   lv_obj_clean(context_actions);
+  lv_obj_scroll_to_y(context_actions,0,LV_ANIM_OFF);
   if(right_compact)return;
   color_label(context_actions,titles[page],6,5,106,orange);
   int y=28;
@@ -664,6 +665,10 @@ static void init(){
     color_label(tabs[i],tab_names[i],3,24,65,white);
   }
   context_actions=panel_at(right_rail,0,39,125,247,panel,0);
+  // The Map context has more actions than fit vertically; allow finger scrolling.
+  lv_obj_add_flag(context_actions,LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_set_scroll_dir(context_actions,LV_DIR_VER);
+  lv_obj_set_scrollbar_mode(context_actions,LV_SCROLLBAR_MODE_AUTO);
   body=panel_at(screen,79,34,276,286,bg,0);
   draw();
   lv_timer_create(refresh,3000,nullptr);
