@@ -1,5 +1,7 @@
 # MeshCrossway Rev A power architecture — selectable 5 V to XIAO VBUS
 
+> **SUPERSEDED (2026-10-28):** The integrated single-carrier / UART architecture below remains only a bench reference. The approved MeshCrossway design has [three independently powered detachable devices connected primarily via BLE](modular-architecture.md). Do not treat the following design as the current production baseline.
+
 [README](../README.md) · [Hardware wiring](hardware-wiring.md) · [Rev A pin allocation](pcb-rev-a-pin-allocation.md) · [Official hardware sources](hardware-sources.md)
 
 > **Status: engineering baseline, not fabrication approval.** The earlier proposal to feed both XIAO/Wio radios from the Waveshare J8 3V3 rail has been retired. Rev A powers each XIAO at **pin 14 / VBUS / 5V** through a selectable and measurable carrier path. J8 3V3 remains available for the 3 V GNSS breakout and optional I2C pull-ups.
