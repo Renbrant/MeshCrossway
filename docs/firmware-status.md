@@ -39,3 +39,11 @@ Report the visible firmware version, scan/keyboard result, connection/IP result 
 ## v0.5.4 keyboard correction
 
 The owner confirmed v0.5.3 installation, network scan and SSID selection. Password input was blocked because the keyboard was not visible. LVGL 8.4 creates keyboards with bottom-center alignment; applying the dialog coordinates without resetting that anchor places the keyboard below the screen. v0.5.4 sets top-left alignment before positioning it at (4, 185), size 472 × 131, inside the 480 × 320 dialog. The Wi-Fi logic and disabled remote subsystem remain unchanged. Keyboard visibility/typing, connection and display stability require a new hardware test.
+
+## v0.5.4 physical result and next layout
+
+The owner confirmed successful Wi-Fi connection and normal operation on v0.5.4. Preserve it as the landscape reference while developing portrait separately. Portrait (320 × 480) is the requested direction, but simply compressing the current ten-column keyboard would reduce key width from roughly 47 to 31 pixels. Use a dedicated text-entry view; consider a reduced-column keyboard or optional landscape entry rather than shrinking existing keys. Portrait firmware is not yet implemented or tested.
+
+## Build once, publish verified bytes
+
+Pages first looks for an artifact from successful same-repository PR preflight. It checks the GitHub artifact digest and compares all firmware files, build script, metadata writer and preflight workflow against the compiled commit. Only identical inputs may reuse that binary; current manifest/checksum/embedded-version checks run again. Missing, expired or mismatched artifacts fall back to compilation. Compiled commit provenance is retained. Superseded preflight runs are cancelled automatically; active Pages deployments are not cancelled.

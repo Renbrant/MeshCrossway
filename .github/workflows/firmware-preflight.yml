@@ -9,6 +9,7 @@ on:
       - "scripts/preflight_display.py"
       - "scripts/preflight_firmware_catalog.py"
       - "scripts/check_firmware_identity.py"
+      - "scripts/restore_reviewed_firmware.py"
       - ".github/workflows/firmware-preflight.yml"
   pull_request:
     branches: [main]
@@ -22,8 +23,13 @@ on:
       - "scripts/verify_firmware_version.py"
       - "scripts/preflight_firmware_catalog.py"
       - "scripts/check_firmware_identity.py"
+      - "scripts/restore_reviewed_firmware.py"
       - ".github/workflows/ui-pages.yml"
   workflow_dispatch:
+
+concurrency:
+  group: firmware-preflight-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
