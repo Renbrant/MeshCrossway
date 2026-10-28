@@ -1,8 +1,11 @@
 #pragma once
-// MeshCrossway UI v0.2 — original graphite/orange design inspired by modern field consoles.
+// MeshCrossway UI v0.3 — original graphite/orange design inspired by modern field consoles.
 // LVGL 8.x; every radio/GNSS metric is simulated. No packets are transmitted.
 #include "lvgl.h"
 #include <stdint.h>
+#include <stdio.h>
+#include "esp_system.h"
+#include "esp_timer.h"
 namespace meshcrossway {
 static lv_obj_t *body=nullptr,*heading=nullptr,*foot=nullptr,*tabs[5]={};
 static int page=0;
@@ -51,7 +54,7 @@ static void render() {
     tile(7,7,171,91,"MESHTASTIC","Radio A / Standby","17 peers  [DEMO]");
     tile(185,7,171,91,"MESHCORE","Radio B / Standby","9 peers   [DEMO]");
     tile(7,105,171,91,"POSITION","No GNSS connected","Fix: demo only");
-    tile(185,105,171,91,"CROSSWAY","2 independent radios","Bridge: disabled");
+    tile(185,105,171,91,"CROSSWAY","Dual radio design","Bridge: off");
     break;
   case 1:
     tile(7,7,349,62,"MESHTASTIC  /  DEMO","Trail group: At checkpoint",nullptr);
@@ -68,10 +71,20 @@ static void render() {
     txt(body,"No packets sent  •  Simulation only",10,176,340,muted);
     break;
   default:
-    tile(7,7,349,91,"DISPLAY","480 x 320  /  Landscape","Touch: enabled");
-    tile(7,105,349,91,"FIRMWARE","MeshCrossway Dev v0.2","Radios & GNSS: simulated");
+    {
+    char runtime[48], memory[48];
+    uint64_t sec=(uint64_t)(esp_timer_get_time()/1000000LL);
+    snprintf(runtime,sizeof(runtime),"Uptime: %lluh %02llum",(unsigned long long)(sec/3600),(unsigned long long)((sec/60)%60));
+    snprintf(memory,sizeof(memory),"Free heap: %lu KB",(unsigned long)(esp_get_free_heap_size()/1024));
+    tile(7,7,349,91,"DEVICE  /  LIVE",runtime,memory);
+    tile(7,105,349,91,"FIRMWARE","MeshCrossway Dev v0.3","480x320  /  Touch enabled");
+    break;
+    }
     break;
   }
+}
+static void refresh_cb(lv_timer_t *) {
+  if(page==4) render();
 }
 static void nav_cb(lv_event_t *e) {
   page=(int)(intptr_t)lv_event_get_user_data(e);
@@ -86,7 +99,7 @@ static void init() {
   txt(bar,"MESH",10,11,49,white);
   txt(bar,"CROSSWAY",59,11,104,orange);
   heading=txt(bar,"OVERVIEW",185,11,170,white);
-  txt(bar,"DEV 0.2",395,12,80,orange);
+  txt(bar,"DEV 0.3",395,12,80,orange);
   lv_obj_t *rail=lv_obj_create(s);fill(rail,bg);
   lv_obj_set_pos(rail,0,43);lv_obj_set_size(rail,108,242);
   lv_obj_clear_flag(rail,LV_OBJ_FLAG_SCROLLABLE);
@@ -108,5 +121,6 @@ static void init() {
   lv_obj_clear_flag(bottom,LV_OBJ_FLAG_SCROLLABLE);
   foot=txt(bottom,"DEMO MODE  |  MT: --  MC: --  GPS: --",11,9,450,muted);
   render();
+  lv_timer_create(refresh_cb,5000,nullptr);
 }
 } // namespace meshcrossway
