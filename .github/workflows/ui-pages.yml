@@ -1,10 +1,12 @@
-name: Deploy UI prototype to GitHub Pages
+name: Deploy MeshCrossway website to GitHub Pages
 
 on:
   push:
     branches: [main]
     paths:
+      - "docs/site/**"
       - "docs/ui-prototype/**"
+      - "docs/images/meshcrossway_mountain_connectivity_concept.png"
       - ".github/workflows/ui-pages.yml"
   workflow_dispatch:
 
@@ -26,12 +28,18 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+      - name: Assemble website
+        run: |
+          mkdir -p _site/ui _site/media
+          cp -R docs/site/. _site/
+          cp -R docs/ui-prototype/. _site/ui/
+          cp docs/images/meshcrossway_mountain_connectivity_concept.png _site/media/
       - name: Set up GitHub Pages
         uses: actions/configure-pages@v5
-      - name: Upload UI prototype
+      - name: Upload website
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/ui-prototype
+          path: _site
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
