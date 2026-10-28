@@ -33,7 +33,7 @@ ATAK-CIV (Android)
 1. Confirm current ATAK-CIV availability, plugin APIs, CoT schemas and relevant distribution/licensing conditions.
 2. Test existing Meshtastic-to-ATAK plugins with the chosen firmware and transport, checking whether a dedicated Android Meshtastic radio connection is required.
 3. Investigate MeshCore Companion APIs and the feasibility of a separate CoT adapter; do not assume a maintained ATAK/MeshCore plugin exists.
-4. Evaluate BLE, Wi-Fi, USB, or an external gateway between the ATAK Android device and MeshCrossway; the V1 Waveshare/XIAO UART wiring does not automatically provide an ATAK connection.
+4. Evaluate BLE, Wi-Fi, USB, or an external gateway between the ATAK Android device and MeshCrossway; the modular BLE Core-to-Pod links do not automatically provide an ATAK connection.
 5. Define a minimal translation schema for position, timestamp, source network, identity, accuracy, expiry, and marker type. Avoid conflating identities from different networks.
 6. Implement explicit user authorization and per-network sharing policies. Default to **no automatic cross-network forwarding**, consistent with the V1 design.
 7. Validate airtime budgets, message size, rate limits, deduplication, stale-position handling, offline operation, authentication, encryption boundaries, and loss/reconnection behavior.
