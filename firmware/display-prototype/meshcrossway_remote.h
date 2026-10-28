@@ -8,7 +8,7 @@
 #include "esp_heap_caps.h"
 #include "esp_lvgl_port.h"
 #include "lvgl.h"
-#include "lv_snapshot.h"
+#include "lvgl/src/extra/others/snapshot/lv_snapshot.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -49,7 +49,7 @@ static esp_err_t screen(httpd_req_t *req) {
  // Copy under lock so the snapshot can be freed before sending over Wi-Fi.
  const size_t len=(size_t)480*320*2;
  uint8_t *buf=(uint8_t*)heap_caps_malloc(len,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
- if(buf && img->data_size>=len)memcpy(buf,img->data,len);
+ if(buf && img->data_size>=len)memcpy(buf,img->data,len);\n else {heap_caps_free(buf);buf=nullptr;}
  lv_snapshot_free(img);
  lvgl_port_unlock();
  if(!buf)return httpd_resp_send_err(req,HTTPD_503_SERVICE_UNAVAILABLE,"Capture memory unavailable");
