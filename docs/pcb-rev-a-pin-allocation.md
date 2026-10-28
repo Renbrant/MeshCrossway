@@ -1,5 +1,7 @@
 # MeshCrossway PCB Rev A — pin allocation and schematic plan
 
+> **ARCHIVED INTEGRATED PCB VARIANT — DO NOT MODIFY KICAD:** This engineering reference describes the older integrated Rev A board. The new project architecture is three detachable modules with BLE links; PCB work is deferred while software is developed on separate boards. [Current architecture](modular-architecture.md).
+
 > Status: engineering schematic baseline, 2026-10-26. Pin/net assignments below are the source of truth for the Rev A carrier schematic. This is not yet fabrication approval; the listed validation gates still apply.
 >
 > Primary manufacturer references: [official hardware source registry](hardware-sources.md).
