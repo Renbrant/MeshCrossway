@@ -21,7 +21,7 @@ if version not in ("v0.5.1", "v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "
     errors.append("Unexpected version: " + version)
 if "HTTPD_503_SERVICE_UNAVAILABLE" in remote:
     errors.append("Unsupported HTTPD_503_SERVICE_UNAVAILABLE token")
-if "\\n else" in remote:
+if "\n else" in remote:
     errors.append("Literal backslash-n outside a C++ string")
 if 'lv_snapshot.h"' in remote:
     errors.append("Do not include internal LVGL snapshot header directly")
@@ -56,7 +56,7 @@ void app(){
     }
 }
 ''')
-        (main.parent / "CMakeLists.txt").write_text('idf_component_register(SRCS "main.cpp" INCLUDE_DIRS ".")\\n')
+        (main.parent / "CMakeLists.txt").write_text('idf_component_register(SRCS "main.cpp" INCLUDE_DIRS ".")\n')
         (example / "sdkconfig.defaults").write_text('CONFIG_IDF_TARGET="esp32s3"\n')
         for attempt in range(2):
             p = subprocess.run([sys.executable, str(patcher), str(vendor)], text=True, capture_output=True)
