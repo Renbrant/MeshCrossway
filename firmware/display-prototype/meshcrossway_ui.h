@@ -649,18 +649,19 @@ static void ble_select(lv_event_t *e){lv_async_call(ble_select_now,lv_event_get_
 static void ble_dialog_close(){
   if(ble_dialog){lv_obj_del(ble_dialog);ble_dialog=nullptr;ble_pin=nullptr;}
 }
+static void ble_dialog_close_later(void *){ble_dialog_close();}
 static void ble_pin_action(lv_event_t *e){
-  if((intptr_t)lv_event_get_user_data(e)==0){meshble::disconnect();ble_dialog_close();return;}
+  if((intptr_t)lv_event_get_user_data(e)==0){meshble::disconnect();lv_async_call(ble_dialog_close_later,nullptr);return;}
   if(!ble_pin)return;
   const char *p=lv_textarea_get_text(ble_pin);
   if(strlen(p)!=6)return;
   uint32_t code=0;
   for(int i=0;i<6;i++){if(p[i]<'0'||p[i]>'9')return;code=code*10+(uint32_t)(p[i]-'0');}
-  if(meshble::submit_pin(code))ble_dialog_close();
+  if(meshble::submit_pin(code))lv_async_call(ble_dialog_close_later,nullptr);
 }
 static void ble_confirmation(lv_event_t *e){
   (void)meshble::confirm_number((intptr_t)lv_event_get_user_data(e)!=0);
-  ble_dialog_close();
+  lv_async_call(ble_dialog_close_later,nullptr);
 }
 static void ble_show_pairing(){
   const meshble::Snapshot s=meshble::snapshot();
