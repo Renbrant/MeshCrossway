@@ -22,10 +22,10 @@ for n,script in enumerate(scripts):
         sys.exit("ERROR: JS script "+str(n)+" invalid:\n"+p.stderr)
 if 'firmware-picker' not in html or 'catalog.json' not in html:
     sys.exit("ERROR: version selection UI or catalog loader missing")
-if "select.value=find(catalog.latest)?.version" not in html:
-    sys.exit("ERROR: Web Flasher must preselect the newest published firmware")
-if "find(catalog.recommended)?.version || versions[0].version" not in html:
-    sys.exit("ERROR: Web Flasher must retain safe fallback if latest is missing")
+if "select.value=recommended.version" not in html or "recommended.status!=='hardware-tested'" not in html:
+    sys.exit("ERROR: The Web Flasher must select only a hardware-tested default")
+if "entry.status!=='hardware-tested'" not in html:
+    sys.exit("ERROR: Experimental installs must require opt-in")
 for file in ("build_firmware_versions.sh",):
     p=subprocess.run(["bash","-n",str(root/"scripts"/file)],capture_output=True,text=True)
     if p.returncode:sys.exit(p.stderr)
@@ -40,11 +40,14 @@ if args.catalog is not None:
     path=args.catalog.resolve()
     manifest=json.loads(path.read_text())
     versions=manifest["versions"]
-    assert manifest["recommended"]=="v0.4.0"
+    selected=next((entry for entry in versions if entry["version"]==manifest["recommended"]),None)
+    assert selected and selected["status"]=="hardware-tested"
+    tested=[entry["version"] for entry in versions if entry["status"]=="hardware-tested"]
+    assert manifest["recommended"]==max(tested,key=lambda v:tuple(map(int,v[1:].split("."))))
     found={entry["version"] for entry in versions}
     current=(root/"firmware/display-prototype/VERSION").read_text().strip()
     assert manifest["latest"]==current,(manifest["latest"],current)
-    assert {"v0.3.0","v0.4.0","v0.5.2","v0.5.6","v0.5.7","v0.5.8","v0.5.9","v0.5.10",current}.issubset(found),found
+    assert {"v0.3.0","v0.4.0","v0.5.2","v0.5.6","v0.5.7","v0.5.8","v0.5.9","v0.5.10","v0.6.2",current}.issubset(found),found
     for entry in versions:
         assert entry["status"] in ("hardware-tested","experimental","known-issue")
         assert entry["manifest"].startswith("/MeshCrossway/flasher/firmware/versions/")
