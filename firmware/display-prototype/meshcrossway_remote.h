@@ -8,7 +8,6 @@
 #include "esp_heap_caps.h"
 #include "esp_lvgl_port.h"
 #include "lvgl.h"
-#include "lvgl/src/extra/others/snapshot/lv_snapshot.h"
 #include <stdio.h>
 #include <string.h>
 
