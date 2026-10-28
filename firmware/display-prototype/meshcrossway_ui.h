@@ -302,22 +302,24 @@ static lv_obj_t *action_button(lv_obj_t *parent,const char *label,int x,int y,in
   lv_obj_t *b=lv_btn_create(parent);fill(b,color,7);
   lv_obj_set_pos(b,x,y);lv_obj_set_size(b,w,h);
   lv_obj_add_event_cb(b,callback,LV_EVENT_CLICKED,(void*)data);
-  lv_obj_t *l=txt(b,label,6,(h-18)/2,w-12,color==orange?bg:white);
+  lv_obj_t *l=txt(b,label,6,(h-18)/2,w-12,white);
   lv_obj_set_style_text_align(l,LV_TEXT_ALIGN_CENTER,0);
   return b;
 }
-static void info_close(lv_event_t *){
+static void info_close_now(void *){
   if(!info_dialog)return;
   lv_obj_t *old=info_dialog;info_dialog=nullptr;lv_obj_del(old);
 }
+static void info_close(lv_event_t *){lv_async_call(info_close_now,nullptr);}
 static void close_shade(){
   if(!shade)return;
   lv_obj_t *old=shade;shade=nullptr;lv_obj_del(old);
 }
-static void shade_close(lv_event_t *){close_shade();}
+static void shade_close_now(void *){close_shade();}
+static void shade_close(lv_event_t *){lv_async_call(shade_close_now,nullptr);}
 static void notice(const char *title,const char *body_text){
   close_shade();
-  if(info_dialog)info_close(nullptr);
+  if(info_dialog)info_close_now(nullptr);
   info_dialog=panel_at(lv_layer_top(),20,45,440,220,panel,10);
   color_label(info_dialog,title,15,13,298,orange);
   action_button(info_dialog,"CLOSE",327,7,103,38,panel2,info_close,0);
@@ -325,8 +327,8 @@ static void notice(const char *title,const char *body_text){
   lv_label_set_long_mode(message,LV_LABEL_LONG_WRAP);
   lv_obj_set_height(message,143);
 }
-static void on_action(lv_event_t *e){
-  int id=(int)(intptr_t)lv_event_get_user_data(e);
+static void run_action(void *data){
+  int id=(int)(intptr_t)data;
   if(id==A_WIFI){close_shade();wifi_setup(nullptr);return;}
   if(id==A_MAP_HOME){page=2;map_view=0;draw();return;}
   if(id==A_INBOX||id==A_CHAT_ALL||id==A_CHAT_MT||id==A_CHAT_MC){
@@ -404,23 +406,24 @@ static void on_action(lv_event_t *e){
     default:break;
   }
 }
+static void on_action(lv_event_t *e){lv_async_call(run_action,lv_event_get_user_data(e));}
 static void on_nav(lv_event_t *e){
   page=(int)(intptr_t)lv_event_get_user_data(e);
   close_shade();draw();
 }
 static void toggle_left(lv_event_t *){left_compact=!left_compact;draw();}
 static void toggle_right(lv_event_t *){right_compact=!right_compact;draw();}
-static void on_filter(lv_event_t *e){
-  chat_filter=(int)(intptr_t)lv_event_get_user_data(e);draw();
-}
-static void quick_action(lv_event_t *e){
-  int mode=(int)(intptr_t)lv_event_get_user_data(e);
+static void apply_filter(void *value){chat_filter=(int)(intptr_t)value;draw();}
+static void on_filter(lv_event_t *e){lv_async_call(apply_filter,lv_event_get_user_data(e));}
+static void quick_action_run(void *value){
+  int mode=(int)(intptr_t)value;
   if(mode==2){close_shade();wifi_setup(nullptr);return;}
   const char *names[]={"GPS","Bluetooth","","Sound","Brightness"};
   char text[160];snprintf(text,sizeof(text),"%s is a UI preview only. No device setting was changed.",
                            names[mode]);
   notice("QUICK SETTINGS / DEMO",text);
 }
+static void quick_action(lv_event_t *e){lv_async_call(quick_action_run,lv_event_get_user_data(e));}
 static void open_shade(lv_event_t *){
   if(shade){close_shade();return;}
   if(wifi_dialog||info_dialog)return;
