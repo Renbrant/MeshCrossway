@@ -39,8 +39,8 @@ if 'port_cfg.task_affinity = 1;' not in source:
     if source.count(lvgl_core_marker) != 1:
         sys.exit('Missing or duplicate upstream LVGL port config')
     source = source.replace(lvgl_core_marker,
-                            lvgl_core_marker + '\\n    port_cfg.task_affinity = 1;'
-                            + '\\n    printf("[MCX-LCD] LVGL task pinned to CPU1\\\\n");',1)
+                            lvgl_core_marker + '\n    port_cfg.task_affinity = 1;'
+                            + '\n    printf("[MCX-LCD] LVGL task pinned to CPU1\\n");',1)
     main.write_text(source)
 
 lcd_driver = project / "components" / "esp_port" / "esp_3inch5_lcd_port.cpp"
