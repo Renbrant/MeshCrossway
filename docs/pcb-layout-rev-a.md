@@ -1,5 +1,7 @@
 # MeshCrossway Rev A - PCB layout baseline
 
+> **ARCHIVED INTEGRATED PCB VARIANT — DO NOT MODIFY KICAD:** This engineering reference describes the older integrated Rev A board. The new project architecture is three detachable modules with BLE links; PCB work is deferred while software is developed on separate boards. [Current architecture](modular-architecture.md).
+
 > Status: engineering floorplan/routing baseline. This is suitable for review and bench-layout iteration, **not yet for fabrication**.
 
 ## Board and stackup
