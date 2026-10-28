@@ -371,7 +371,8 @@ static void update_nav_vector(int index,lv_color_t tint){
   const uint32_t n=lv_obj_get_child_cnt(v);
   for(uint32_t j=0;j<n;j++){
     lv_obj_t *child=lv_obj_get_child(v,j);
-    if(index==3&&j>=n-2)lv_obj_set_style_bg_color(child,index==page?orange:panel2,0);
+    if((index==3&&j>=n-2)||(index==1&&j>=2))
+      lv_obj_set_style_bg_color(child,index==page?orange:panel2,0);
     else lv_obj_set_style_bg_color(child,tint,0);
   }
 }
@@ -668,8 +669,8 @@ static void draw(){
     lv_obj_set_size(glyph,button_width,19);
     lv_obj_set_style_text_align(glyph,LV_TEXT_ALIGN_CENTER,0);
     lv_obj_t *caption=lv_obj_get_child(tabs[i],1);
-    lv_obj_set_pos(caption,0,19);
-    lv_obj_set_size(caption,button_width,18);
+    lv_obj_set_pos(caption,0,21);
+    lv_obj_set_size(caption,button_width,16);
     lv_obj_set_style_text_align(caption,LV_TEXT_ALIGN_CENTER,0);
     lv_obj_set_style_text_color(caption,active?bg:white,0);
     if(left_compact)lv_obj_add_flag(caption,LV_OBJ_FLAG_HIDDEN);
