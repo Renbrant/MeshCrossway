@@ -53,3 +53,13 @@ This build adds a local Wi-Fi SoftAP (`MeshCrossway-Dev`) with WPA2 password `me
 Security: this is a temporary development-only AP with a known documented password. Do not leave the device powered up in public spaces or use this fixed credential for final production. The AP is isolated from the public Internet by design. Future work: secure on-device Wi-Fi provisioning (STA mode), changeable credentials, authentication and remote touch control.
 
 Before flashing, wait for GitHub Actions to report a successful build and confirm the Web Flasher announces v0.4.0. Verify AP connection, screenshot colors, rendering, touch responsiveness and memory after repeated captures. The previously hardware-tested v0.3 remains the recovery reference.
+
+## v0.5.0 — Join home Wi-Fi and operate the screen remotely (experimental)
+
+On the physical **Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0**, open **Settings > CONNECT / CHANGE HOME WI-FI**, enter the exact 2.4 GHz network SSID and WPA2/WPA3-Personal password using the touchscreen keyboard, then press **CONNECT**. The ESP-IDF Wi-Fi station configuration is stored in device NVS, not committed to GitHub. The device retries its saved Wi-Fi automatically on reboot. When DHCP completes, Settings displays its local IP address. Keep your computer on the **same Wi-Fi/LAN** and navigate to **http://DEVICE_IP/**.
+
+For remote access, look at Settings on the physical display, enter its eight-digit **Pairing PIN** in your computer's browser, and press **Pair device**. The PIN changes on each reboot and is not provided to unauthenticated browser requests. The browser shows the actual 480 x 320 LVGL screen, allows remote click/touch and PNG screenshots. Remote clicks use a **separate LVGL pointer input driver**; physical touch remains active. A timeout releases any pointer held for over 1.5 seconds.
+
+Development-only **AP+STA**: Once connected, use the home LAN IP. The old MeshCrossway-Dev AP at 192.168.4.1 remains as a recovery fallback. All screen/touch API endpoints require the pairing PIN. HTTP is **not encrypted**; use trusted local Wi-Fi only and never expose TCP port 80 to the Internet. The AP password is shared, and the eight-digit PIN is not production-grade authentication. Standard ESP-IDF NVS is not encrypted unless separately configured.
+
+ESP32-S3 supports 2.4 GHz Wi-Fi; the v0.5 setup screen uses manually entered SSID/password (WPA2/WPA3 Personal, 8–63 characters), not enterprise 802.1X. Guest network client isolation may prevent browser access even with Wi-Fi connected. **Physical testing required:** keyboard entry; DHCP IP; reconnection after power cycle; PIN challenge; remote pointer press/release; real touchscreen still works; screenshot colors/PNG; heap stability across repeated captures.

@@ -8,11 +8,12 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 FW = ROOT / "firmware" / "display-prototype"
 remote = (FW / "meshcrossway_remote.h").read_text()
+page = (FW / "meshcrossway_remote_page.h").read_text()
 patcher = FW / "apply_to_waveshare.py"
 version = (FW / "VERSION").read_text().strip()
 errors = []
 
-if version != "v0.4.0":
+if version != "v0.5.0":
     errors.append("Unexpected version: " + version)
 if "HTTPD_503_SERVICE_UNAVAILABLE" in remote:
     errors.append("Unsupported HTTPD_503_SERVICE_UNAVAILABLE token")
@@ -20,10 +21,10 @@ if "\\n else" in remote:
     errors.append("Literal backslash-n outside a C++ string")
 if 'lv_snapshot.h"' in remote:
     errors.append("Do not include internal LVGL snapshot header directly")
-if not all(value in remote for value in ('#include "lvgl.h"', 'lv_snapshot_take(', 'lv_snapshot_free(', 'httpd_resp_set_status(', 'LV_USE_SNAPSHOT')):
+if not all(value in remote for value in ('#include "lvgl.h"', 'lv_snapshot_take(', 'lv_snapshot_free(', 'httpd_resp_set_status(', 'LV_USE_SNAPSHOT', 'lv_indev_drv_register(', '/touch', '/screen.raw')):
     errors.append("Missing LVGL snapshot or HTTP API")
 try:
-    js = remote.split("<script>", 1)[1].split("</script>", 1)[0]
+    js = page.split("<script>", 1)[1].split("</script>", 1)[0]
 except IndexError:
     errors.append("Missing embedded browser script")
     js = ""
@@ -58,7 +59,7 @@ void app(){
                 errors.append("Patcher failed: " + p.stdout + p.stderr)
                 break
         output = main.read_text()
-        if output.count("meshremote::start();") != 1 or output.count("meshcrossway::init();") != 1:
+        if (output.count("meshremote::start();") != 1 or output.count("meshcrossway::init();") != 1 or output.count("meshremote::register_input();") != 1):
             errors.append("Patcher not idempotent for main.cpp")
         if '#define EXAMPLE_DISPLAY_ROTATION 90' not in output:
             errors.append("Display rotation missing")
