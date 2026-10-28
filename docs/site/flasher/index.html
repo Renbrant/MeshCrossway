@@ -1,34 +1,160 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Install MeshCrossway development firmware directly from a compatible desktop browser."><title>Web Flasher — MeshCrossway</title><link rel="stylesheet" href="/MeshCrossway/assets/site.css"></head><body><nav class="nav"><div class="wrap navin"><a class="brand" href="/MeshCrossway/">MESH<b>CROSSWAY</b></a><div class="links"><a href="/MeshCrossway/about/">About</a><a href="/MeshCrossway/hardware/">Hardware</a><a href="/MeshCrossway/software/">Software</a><a href="/MeshCrossway/roadmap/">Roadmap</a><a href="/MeshCrossway/faq/">FAQ</a><a href="/MeshCrossway/ui/">UI Demo</a></div><a class="cta" href="/MeshCrossway/flasher/">Web Flasher</a></div></nav><script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script><main><section class="pagehero"><div class="wrap prose"><div class="eyebrow">USB firmware installer</div><h1>MeshCrossway Web Flasher.</h1><p class="sectionintro">A browser-based path from development build to hardware — no Arduino IDE required for routine flashing.</p><div class="flashbox"><span class="status" id="build-status">CHECKING DEVELOPMENT BUILD</span><div style="margin:16px 0;padding:18px;background:#111820;border:1px solid #82521e;border-radius:12px"><div style="font-size:12px;color:#ffa64d;font-weight:800;letter-spacing:.12em">AVAILABLE FIRMWARE VERSION</div><div id="firmware-release" style="font-size:38px;font-weight:900;color:#fff;line-height:1.35">Checking…</div><div id="firmware-commit" style="font-size:13px;color:#b3c5ce">Build information pending</div></div><h2>Display / Host — Waveshare ESP32-S3</h2><p>The downloadable image is an <strong>experimental, untested development build</strong> for the non-B Waveshare ESP32-S3-Touch-LCD-3.5. Confirm your exact board model before installing. Flashing may erase existing firmware and saved settings.</p><p id="build-message" role="status">Checking whether the compiled firmware is available…</p><div id="installer" hidden><esp-web-install-button manifest="/MeshCrossway/flasher/firmware/manifest.json"><button class="button primary" slot="activate" id="install-action">Connect &amp; install firmware</button><span slot="unsupported">Use desktop Chrome or Edge with Web Serial, over HTTPS.</span><span slot="not-allowed">Allow USB/serial access to enable the installer.</span></esp-web-install-button></div><p><small id="build-version"></small></p></div><h2>How it will work</h2><div class="steps"><div class="step">Connect the supported MeshCrossway board to your computer using a data-capable USB cable.</div><div class="step">Open this page in a browser with Web Serial support and select the correct USB serial device.</div><div class="step">Choose the desired verified build and confirm installation. Experimental builds will remain clearly labeled.</div></div><div class="notice"><b>Important:</b> flashing can erase configuration and a wrong image can make a board temporarily unbootable. This display build is experimental and is not hardware-verified. Do not flash the two XIAO radios with this image.</div><h2>Planned targets</h2><p><b>Host:</b> Waveshare ESP32-S3-Touch-LCD-3.5. <b>Radio A:</b> XIAO ESP32-S3 + Wio-SX1262 / Meshtastic. <b>Radio B:</b> XIAO ESP32-S3 + Wio-SX1262 / MeshCore Companion. Radio flashing will only be added after we verify the exact upstream build and partition requirements.</p><p>This page is built around ESP Web Tools, which uses Web Serial and a firmware manifest to install ESP32 images over HTTPS.</p></div></section></main><script>
-(async () => {
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Install MeshCrossway development firmware directly from a compatible desktop browser."><title>Web Flasher — MeshCrossway</title><link rel="stylesheet" href="/MeshCrossway/assets/site.css"></head><body><nav class="nav"><div class="wrap navin"><a class="brand" href="/MeshCrossway/">MESH<b>CROSSWAY</b></a><div class="links"><a href="/MeshCrossway/about/">About</a><a href="/MeshCrossway/hardware/">Hardware</a><a href="/MeshCrossway/software/">Software</a><a href="/MeshCrossway/roadmap/">Roadmap</a><a href="/MeshCrossway/faq/">FAQ</a><a href="/MeshCrossway/ui/">UI Demo</a></div><a class="cta" href="/MeshCrossway/flasher/">Web Flasher</a></div></nav><script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script><style>
+#flasher-app{--mcx-orange:#ff8a24;--mcx-panel:#111820;--mcx-line:#79502c}
+#flasher-app .flashbox{border-color:#684627;background:#111820}
+#flasher-app .version-select{display:block;width:100%;max-width:640px;margin:12px 0 16px;padding:15px 14px;border:1px solid #aa682f;border-radius:10px;background:#19212b;color:#fff;font:inherit;font-weight:800;cursor:pointer}
+#flasher-app .version-info{background:#0c1117;border:1px solid #5a432c;border-radius:12px;padding:18px 20px;margin:18px 0}
+#flasher-app .version-large{font-weight:900;font-size:clamp(27px,4vw,46px);color:#ff993c;line-height:1.2;margin:4px 0}
+#flasher-app .minor{color:#aab7c5;font-size:13px;overflow-wrap:anywhere}
+#flasher-app .version-description{color:#d7e0e8;margin-top:11px}
+#flasher-app .button.primary{background:#ff8a24;border-color:#ff8a24;color:#111820}
+#flasher-app .status{background:#523219;color:#ffc992}
+#flasher-app .warning-panel{padding:15px;border:1px solid #b96a2d;background:#332211;color:#ffd8ad;border-radius:10px;margin:16px 0}
+#flasher-app .warning-panel[hidden],#flasher-app #installer[hidden],#flasher-app #verify-risk[hidden]{display:none}
+#flasher-app #verify-risk{display:flex;align-items:center;gap:10px;margin:14px 0;color:#f6d9b3}
+#flasher-app #verify-risk input{width:18px;height:18px;accent-color:#ff8a24}
+#flasher-app .note{font-size:14px;color:#aebdcc}
+#flasher-app .steps{margin-top:18px}
+#flasher-app .step:before{background:#422a16;color:#ffb665}
+#flasher-app a.inset-link{color:#ffad58;text-decoration:underline}
+</style>
+<main id="flasher-app"><section class="pagehero"><div class="wrap prose">
+<div class="eyebrow" style="color:#ff993c">USB firmware installer</div>
+<h1>MeshCrossway Web Flasher.</h1>
+<p class="sectionintro">Choose an archived firmware version, then install it directly to your Waveshare ESP32-S3 over USB. Previously tested builds remain available for recovery.</p>
+<div class="flashbox">
+<span class="status" id="build-status">CHECKING VERSION ARCHIVE</span>
+<h2>Display / Host — Waveshare ESP32-S3-Touch-LCD-3.5</h2>
+<label for="firmware-picker" style="font-weight:800">Select firmware version</label>
+<select id="firmware-picker" class="version-select" disabled><option value="">Loading versions...</option></select>
+<div class="version-info" aria-live="polite">
+<div style="font-size:12px;color:#ffb366;font-weight:800;letter-spacing:.12em">SELECTED FIRMWARE</div>
+<div id="firmware-release" class="version-large">Checking...</div>
+<div id="firmware-description" class="version-description">Retrieving compiled and archived images.</div>
+<div id="firmware-commit" class="minor">Build information unavailable</div>
+</div>
+<div id="version-warning" class="warning-panel" hidden><b>Known hardware issue.</b> This build has caused screen flashing/flickering on the Waveshare Rev2.0. For recovery, select v0.4.0 or v0.3.0 instead.</div>
+<label id="verify-risk" hidden><input id="allow-unstable" type="checkbox">I understand this version is unstable and want to flash it anyway.</label>
+<p id="build-message" role="status">Checking available firmware versions...</p>
+<div id="installer" hidden></div>
+<p class="note" id="build-version"></p>
+</div>
+<h2>Recovery: flickering or rebooting display</h2>
+<div class="steps">
+<div class="step">Connect the Waveshare Rev2.0 display to your computer with a USB data cable. Leave the computer on its normal Wi-Fi network.</div>
+<div class="step">Choose <b>v0.4.0 — Recommended recovery</b> above, and select <b>Install</b>. v0.3.0 is another tested fallback.</div>
+<div class="step">If the USB serial port is unavailable because the new firmware keeps restarting, enter ESP32-S3 download mode using the board's <b>BOOT</b> and <b>RESET</b> controls, then retry connecting.</div>
+<div class="step">For a clean downgrade, you can choose <b>Erase device</b> in the installer. This will also erase saved Wi-Fi credentials and other settings.</div>
+</div>
+<div class="notice"><b>Target limitation:</b> these images are for the Waveshare ESP32-S3-Touch-LCD-3.5 <b>non-B, Rev2.0</b> display. Do not flash a XIAO radio module or a Waveshare 3.5B with this image. Firmware installation may overwrite data.</div>
+<h2>How versions are maintained</h2>
+<p>The firmware listed above is <b>compiled automatically in GitHub Actions</b> from pinned historical commits. The browser installs the compiled binary; it does not compile ESP-IDF source code locally. Each build is archived in its own directory with its own manifest and SHA-256 checksum. New releases do not replace the recovery images.</p>
+<p><a class="inset-link" href="https://github.com/Renbrant/MeshCrossway/actions">View build and deployment history on GitHub</a></p>
+</div></section></main>
+<script>
+(() => {
+  'use strict';
+  const base='/MeshCrossway/flasher/firmware/';
+  const select=document.getElementById('firmware-picker');
   const status=document.getElementById('build-status');
-  const message=document.getElementById('build-message');
-  const installer=document.getElementById('installer');
-  const version=document.getElementById('build-version');
   const release=document.getElementById('firmware-release');
+  const description=document.getElementById('firmware-description');
   const commit=document.getElementById('firmware-commit');
-  try {
-    const response=await fetch('/MeshCrossway/flasher/firmware/manifest.json?check='+Date.now(),{cache:'no-store'});
-    if(!response.ok) throw Error('Firmware not published');
-    const manifest=await response.json();
-    if(!manifest.builds?.some(b=>b.chipFamily==='ESP32-S3'&&b.parts?.length)) throw Error('No ESP32-S3 build');
-    const infoResp=await fetch('/MeshCrossway/flasher/firmware/build-info.json?check='+Date.now(),{cache:'no-store'});
-    if(!infoResp.ok) throw Error('Build metadata missing');
-    const info=await infoResp.json();
-    if(info.version!==manifest.version) throw Error('Firmware version mismatch');
-    const binary=await fetch('/MeshCrossway/flasher/firmware/meshcrossway-display-dev.bin',{method:'HEAD',cache:'no-store'});
-    if(!binary.ok) throw Error('Binary not published');
-    release.textContent=info.version;
-    commit.textContent='Build '+info.commit+' · '+info.channel+' · ESP32-S3';
-    document.getElementById('install-action').textContent='Install '+info.version+' (Experimental)';
-    status.textContent='EXPERIMENTAL BUILD AVAILABLE';
-    message.textContent='Connect your Waveshare ESP32-S3 display via a USB data cable. This firmware has not yet been verified on real hardware.';
-    version.textContent='Firmware: '+info.version+' · Commit: '+info.commit+' · Target: ESP32-S3 (Waveshare non-B)';
+  const message=document.getElementById('build-message');
+  const versionDetails=document.getElementById('build-version');
+  const installer=document.getElementById('installer');
+  const warning=document.getElementById('version-warning');
+  const verifyRisk=document.getElementById('verify-risk');
+  const allowUnstable=document.getElementById('allow-unstable');
+  let versions=[],generation=0;
+
+  const error=(text) => {
+    status.textContent='BUILD UNAVAILABLE';
+    message.textContent=text;
+    installer.hidden=true;
+  };
+  const find=(version) => versions.find(entry=>entry.version===version);
+  function makeInstaller(entry) {
+    const component=document.createElement('esp-web-install-button');
+    component.setAttribute('manifest',entry.manifest);
+    const button=document.createElement('button');
+    button.className='button primary';
+    button.id='install-action';
+    button.setAttribute('slot','activate');
+    button.textContent='Connect & install '+entry.version;
+    const unsupported=document.createElement('span');
+    unsupported.setAttribute('slot','unsupported');
+    unsupported.textContent='Use desktop Chrome or Edge with Web Serial over HTTPS.';
+    const disallowed=document.createElement('span');
+    disallowed.setAttribute('slot','not-allowed');
+    disallowed.textContent='Allow access to your USB serial device to install the firmware.';
+    component.append(button,unsupported,disallowed);
+    installer.replaceChildren(component);
     installer.hidden=false;
-  } catch (err) {
-    status.textContent='BUILD NOT AVAILABLE';
-    release.textContent='Not available';
-    commit.textContent='A verified build manifest has not been published';
-    message.textContent='The automatic firmware build has not published an installable image yet. Check GitHub Actions for compilation errors.';
+    const flagged=entry.status==='known-issue';
+    button.disabled=flagged && !allowUnstable.checked;
+    allowUnstable.onchange=()=>{button.disabled=flagged && !allowUnstable.checked;};
   }
+  async function choose(version) {
+    const ticket=++generation;
+    const entry=find(version);
+    installer.hidden=true;
+    warning.hidden=true;
+    verifyRisk.hidden=true;
+    allowUnstable.checked=false;
+    if(!entry) return error('Choose a valid firmware version.');
+    release.textContent=entry.version;
+    description.textContent=entry.description;
+    commit.textContent='Source commit '+entry.commit+' · '+entry.label;
+    versionDetails.textContent='ESP32-S3 • '+Math.round(entry.size/1024)+' KiB • SHA-256 '+entry.sha256.slice(0,16)+'…';
+    if(entry.status==='known-issue'){
+      warning.hidden=false;verifyRisk.hidden=false;
+    }
+    status.textContent='CHECKING '+entry.version;
+    message.textContent='Checking version-specific manifest and compiled binary...';
+    try {
+      const manifestResponse=await fetch(entry.manifest+'?check='+Date.now(),{cache:'no-store'});
+      if(!manifestResponse.ok) throw Error('Version manifest not published');
+      const manifest=await manifestResponse.json();
+      if(manifest.version!==entry.version ||
+         !manifest.builds?.some(b=>b.chipFamily==='ESP32-S3' &&
+           b.parts?.some(part=>part.path==='meshcrossway-display-dev.bin' && part.offset===0)))
+        throw Error('Firmware manifest does not match the selected version');
+      const binaryResponse=await fetch(entry.binary,{method:'HEAD',cache:'no-store'});
+      if(!binaryResponse.ok) throw Error('Compiled binary is missing');
+      if(ticket!==generation) return;
+      status.textContent=entry.status==='known-issue'?'KNOWN ISSUE — EXPERIMENTAL':'HARDWARE-TESTED BUILD AVAILABLE';
+      message.textContent='Ready to install '+entry.version+'. Make sure the USB port belongs to the Waveshare display.';
+      makeInstaller(entry);
+    } catch(e) {
+      if(ticket===generation)error(entry.version+': '+e.message);
+    }
+  }
+  async function load() {
+    try {
+      const resp=await fetch(base+'catalog.json?check='+Date.now(),{cache:'no-store'});
+      if(!resp.ok)throw Error('Version archive has not been published yet');
+      const catalog=await resp.json();
+      if(!Array.isArray(catalog.versions)||!catalog.versions.length)throw Error('Version archive is empty');
+      versions=catalog.versions;
+      select.replaceChildren();
+      for(const entry of versions) {
+        const option=document.createElement('option');
+        option.value=entry.version;
+        option.textContent=entry.version+' — '+entry.label;
+        select.append(option);
+      }
+      select.disabled=false;
+      select.onchange=()=>choose(select.value);
+      select.value=find(catalog.recommended)?.version || versions[0].version;
+      await choose(select.value);
+    }catch(e){
+      select.replaceChildren(new Option('Version archive unavailable',''));
+      select.disabled=true;
+      release.textContent='Not available';
+      description.textContent='The updated Web Flasher archive is not yet published.';
+      error(e.message);
+    }
+  }
+  load();
 })();
 </script><footer><div class="wrap">MeshCrossway is an independent open-source experimental project. Meshtastic, MeshCore and referenced hardware brands remain the property of their respective projects and owners. Not a certified emergency device.</div></footer></body></html>

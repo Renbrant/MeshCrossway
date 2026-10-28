@@ -14,6 +14,12 @@ on:
       - "firmware/display-prototype/**"
       - "scripts/preflight_display.py"
       - ".github/workflows/firmware-preflight.yml"
+      - "docs/site/flasher/**"
+      - "scripts/build_firmware_versions.sh"
+      - "scripts/write_firmware_*.py"
+      - "scripts/verify_firmware_version.py"
+      - "scripts/preflight_firmware_catalog.py"
+      - ".github/workflows/ui-pages.yml"
   workflow_dispatch:
 
 permissions:
@@ -65,4 +71,26 @@ jobs:
         with:
           name: display-v0.5-preflight
           path: _preflight/meshcrossway-display-dev.bin
+          if-no-files-found: error
+
+  version_catalog:
+    name: Archive preflight (no Pages deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - name: Checkout complete Git history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check selector JavaScript and build scripts
+        run: python3 scripts/preflight_firmware_catalog.py
+      - name: Compile archived versions and current firmware
+        run: bash scripts/build_firmware_versions.sh
+      - name: Verify compiled catalog and manifests
+        run: python3 scripts/preflight_firmware_catalog.py --catalog _site/flasher/firmware/catalog.json
+      - name: Retain test artifacts, never publish Pages
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-version-archive-preflight
+          path: _site/flasher/firmware
           if-no-files-found: error

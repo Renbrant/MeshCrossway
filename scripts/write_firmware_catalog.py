@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""Publish a catalog of verified historical ESP32-S3 images with a safe default."""
+import argparse
+import json
+import re
+import shutil
+from pathlib import Path
+
+p=argparse.ArgumentParser()
+p.add_argument("--root",required=True)
+p.add_argument("--latest",required=True)
+args=p.parse_args()
+root=Path(args.root)
+latest=args.latest
+if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+",latest):
+    p.error("Invalid latest version")
+tested={
+    "v0.3.0":("Tested on Rev2.0: LVGL, touchscreen and live ESP32 diagnostics","Display / touch baseline"),
+    "v0.4.0":("Tested on Rev2.0: Wi-Fi access point, screenshot viewing and PNG capture","Recommended recovery"),
+}
+catalog=[]
+for version in ("v0.4.0","v0.3.0",latest):
+    if any(entry["version"]==version for entry in catalog):
+        continue
+    folder=root/"versions"/version
+    manifest=folder/"manifest.json"
+    info_file=folder/"build-info.json"
+    if not manifest.is_file() or not info_file.is_file():
+        p.error(f"Missing built firmware or metadata for {version}")
+    m=json.loads(manifest.read_text())
+    info=json.loads(info_file.read_text())
+    if m["version"]!=version or info["version"]!=version:
+        p.error(f"Manifest/version mismatch for {version}")
+    if version in tested:
+        summary,label=tested[version]
+        status="hardware-tested"
+    elif version=="v0.5.0":
+        summary="Known issue: user reported flashing/flickering screen on Rev2.0. Not recommended."
+        label="Unstable / do not install"
+        status="known-issue"
+    else:
+        summary="New development firmware: compiled but not yet tested on physical hardware"
+        label="Latest experimental"
+        status="experimental"
+    catalog.append({
+        "version":version,
+        "label":label,
+        "status":status,
+        "description":summary,
+        "commit":info["commit"][:8],
+        "sha256":info["sha256"],
+        "size":info["size"],
+        "manifest":f"/MeshCrossway/flasher/firmware/versions/{version}/manifest.json",
+        "binary":f"/MeshCrossway/flasher/firmware/versions/{version}/meshcrossway-display-dev.bin"
+    })
+catalog_info={
+    "target":"Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0 non-B",
+    "recommended":"v0.4.0",
+    "latest":latest,
+    "versions":catalog
+}
+(root/"catalog.json").write_text(json.dumps(catalog_info,indent=2)+"\n")
+
+# Backwards compatible paths for previously bookmarked ESP Web Tools links.
+current=root/"versions"/latest
+for filename in ("manifest.json","build-info.json","meshcrossway-display-dev.bin"):
+    shutil.copy2(current/filename,root/filename)
+print("Firmware catalog:", ", ".join(v["version"] for v in catalog))
