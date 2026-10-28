@@ -253,6 +253,7 @@ static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
 static bool left_compact=false,right_compact=false,home_nav_open=false;
 static int nodes_filter=0,groups_filter=0,active_thread=-1,more_view=0;
 static uint32_t ble_generation=0;
+static lv_obj_t *ble_dialog=nullptr,*ble_pin=nullptr;
 static lv_obj_t *tab_vectors[6]={};
 // Persistent selection is independent of Nodes/Groups filtering and page navigation.
 static const char *thread_names[]={"Alex","Jamie","LongFast","#public","Backcountry","SAR Room"};
@@ -645,6 +646,46 @@ static void rebuild_context(){
 }
 static void ble_select_now(void *v){meshble::connect((int)(intptr_t)v);draw();}
 static void ble_select(lv_event_t *e){lv_async_call(ble_select_now,lv_event_get_user_data(e));}
+static void ble_dialog_close(){
+  if(ble_dialog){lv_obj_del(ble_dialog);ble_dialog=nullptr;ble_pin=nullptr;}
+}
+static void ble_pin_action(lv_event_t *e){
+  if((intptr_t)lv_event_get_user_data(e)==0){meshble::disconnect();ble_dialog_close();return;}
+  if(!ble_pin)return;
+  const char *p=lv_textarea_get_text(ble_pin);
+  if(strlen(p)!=6)return;
+  uint32_t code=0;
+  for(int i=0;i<6;i++){if(p[i]<'0'||p[i]>'9')return;code=code*10+(uint32_t)(p[i]-'0');}
+  if(meshble::submit_pin(code))ble_dialog_close();
+}
+static void ble_confirmation(lv_event_t *e){
+  (void)meshble::confirm_number((intptr_t)lv_event_get_user_data(e)!=0);
+  ble_dialog_close();
+}
+static void ble_show_pairing(){
+  const meshble::Snapshot s=meshble::snapshot();
+  if(ble_dialog||(!s.pin_required&&!s.confirm_required))return;
+  ble_dialog=panel_at(lv_scr_act(),12,42,456,236,panel,9);
+  single_label(ble_dialog,"BLUETOOTH PAIRING",10,8,260,orange);
+  if(s.pin_required){
+    single_label(ble_dialog,"Six-digit PIN shown on Heltec:",10,37,430,white);
+    ble_pin=lv_textarea_create(ble_dialog);
+    lv_obj_set_pos(ble_pin,10,62);lv_obj_set_size(ble_pin,239,42);
+    lv_textarea_set_one_line(ble_pin,true);
+    lv_textarea_set_accepted_chars(ble_pin,"0123456789");
+    lv_textarea_set_max_length(ble_pin,6);
+    action_button(ble_dialog,"PAIR",258,62,184,42,orange,ble_pin_action,1);
+    lv_obj_t *kb=lv_keyboard_create(ble_dialog);
+    lv_obj_set_pos(kb,10,112);lv_obj_set_size(kb,432,112);
+    lv_keyboard_set_mode(kb,LV_KEYBOARD_MODE_NUMBER);
+    lv_keyboard_set_textarea(kb,ble_pin);
+  }else{
+    char number[48];snprintf(number,sizeof(number),"Verify: %06lu",(unsigned long)s.compare_number);
+    single_label(ble_dialog,number,10,67,430,white);
+    action_button(ble_dialog,"MATCHES",10,142,208,50,orange,ble_confirmation,1);
+    action_button(ble_dialog,"REJECT",227,142,215,50,panel2,ble_confirmation,0);
+  }
+}
 static void draw(){
   if(!body||!left_rail||!right_rail||!context_actions)return;
   const bool home_hidden=page==0&&!home_nav_open;
@@ -818,7 +859,12 @@ static void draw(){
 static void refresh(lv_timer_t *){
   update_wifi_scan();
   const meshble::Snapshot bs=meshble::snapshot();
-  if(bs.generation!=ble_generation){ble_generation=bs.generation;if(page==5&&more_view==1&&!wifi_dialog&&!info_dialog)draw();}
+  if(bs.generation!=ble_generation){
+    ble_generation=bs.generation;
+    if(ble_dialog&&!bs.pin_required&&!bs.confirm_required)ble_dialog_close();
+    if(page==5&&more_view==1&&!wifi_dialog&&!info_dialog&&!ble_dialog)draw();
+    if(bs.pin_required||bs.confirm_required)ble_show_pairing();
+  }
   if(wifi_sd_status){
     char detail[64],backup[88];
     meshbackup::describe(detail,sizeof(detail));
