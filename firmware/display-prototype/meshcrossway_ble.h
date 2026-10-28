@@ -114,6 +114,8 @@ static void disconnect(){
     update(IDLE,"Disconnect requested");
   }else if(snapshot().phase==SCANNING){
     (void)ble_gap_disc_cancel();update(IDLE,"Scan cancelled");
+  }else if(snapshot().phase==CONNECTING){
+    (void)ble_gap_conn_cancel();update(IDLE,"Connection cancelled");
   }else update(IDLE,"Ready to scan");
 }
 static bool submit_pin(uint32_t passkey){
@@ -214,7 +216,7 @@ static int gap_event(struct ble_gap_event *event,void *){
     case BLE_GAP_EVENT_DISC_COMPLETE:
       if(snapshot().phase==SCANNING)update(IDLE,"Scan complete - choose a device");
       return 0;
-    case BLE_GAP_EVENT_CONNECT:
+    case BLE_GAP_EVENT_LINK_ESTAB:
       if(event->connect.status!=0){
         conn=BLE_HS_CONN_HANDLE_NONE;
         char msg[64];snprintf(msg,sizeof(msg),"BLE connect failed: %d",event->connect.status);
