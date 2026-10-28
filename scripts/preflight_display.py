@@ -13,7 +13,7 @@ patcher = FW / "apply_to_waveshare.py"
 version = (FW / "VERSION").read_text().strip()
 errors = []
 
-if version not in ("v0.5.1", "v0.5.2"):
+if version not in ("v0.5.1", "v0.5.2", "v0.5.3"):
     errors.append("Unexpected version: " + version)
 if "HTTPD_503_SERVICE_UNAVAILABLE" in remote:
     errors.append("Unsupported HTTPD_503_SERVICE_UNAVAILABLE token")
@@ -59,7 +59,7 @@ void app(){
                 errors.append("Patcher failed: " + p.stdout + p.stderr)
                 break
         output = main.read_text()
-        if version == "v0.5.2":
+        if version in ("v0.5.2", "v0.5.3"):
             if (output.count("meshnetwork::start();") != 1 or output.count("meshcrossway::init();") != 1 or "meshremote::start();" in output or "meshremote::register_input();" in output):
                 errors.append("Diagnostic patcher must start only Wi-Fi; no remote HTTP or LVGL input")
         elif (output.count("meshremote::start();") != 1 or output.count("meshcrossway::init();") != 1 or output.count("meshremote::register_input();") != 1):
