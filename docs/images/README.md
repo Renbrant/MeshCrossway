@@ -1,8 +1,10 @@
 # MeshCrossway — image sources and V1 visual status
 
+> **Architecture update — 2026-10-28:** Current MeshCrossway development is **software-first, three independently powered detachable devices, two BLE links**. See [modular architecture](modular-architecture.md). The previous UART/single-carrier PCB content on this page is **archived integrated-variant reference**, not the current implementation. **All KiCad files remain untouched.**
+
 [Project README](../../README.md) · [Current BOM and pin-level proposal](../hardware-wiring.md)
 
-## Provisional final-device concept
+## Archived integrated-device concept (superseded)
 
 The selected arrangement is **one custom carrier PCB** with a Waveshare ESP32-S3-Touch-LCD-3.5, **two Seeed XIAO ESP32S3 + Wio-SX1262 kits**, u-blox MAX-M10S GNSS breakout, onboard microSD and a protected **rear-mounted 1S LiPo battery**. Two LoRa antennas are independent; the enclosure is intended to be nearly invisible and transparent.
 
