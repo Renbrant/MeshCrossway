@@ -92,9 +92,11 @@
     component.append(button,unsupported,disallowed);
     installer.replaceChildren(component);
     installer.hidden=false;
-    const flagged=entry.status!=='hardware-tested';
-    button.disabled=flagged && !allowUnstable.checked;
-    allowUnstable.onchange=()=>{button.disabled=flagged && !allowUnstable.checked;};
+    const blocked=entry.status==='known-issue';
+    const experimental=entry.status==='experimental';
+    if(blocked)button.textContent='Installation blocked — known boot failure';
+    button.disabled=blocked || (experimental && !allowUnstable.checked);
+    allowUnstable.onchange=()=>{button.disabled=blocked || (experimental && !allowUnstable.checked);};
   }
   async function choose(version) {
     const ticket=++generation;
@@ -109,10 +111,10 @@
     commit.textContent='Source commit '+entry.commit+' · '+entry.label;
     versionDetails.textContent='ESP32-S3 • '+Math.round(entry.size/1024)+' KiB • SHA-256 '+entry.sha256.slice(0,16)+'…';
     if(entry.status!=='hardware-tested'){
-      warning.hidden=false;verifyRisk.hidden=false;
+      warning.hidden=false;verifyRisk.hidden=entry.status==='known-issue';
       if(entry.status==='known-issue'){
-        warningTitle.textContent='KNOWN HARDWARE ISSUE.';
-        warningText.textContent='This version has caused screen flickering or instability. Prefer the hardware-tested default.';
+        warningTitle.textContent='KNOWN CRITICAL BOOT FAILURE — DO NOT INSTALL.';
+        warningText.textContent='v0.6.3 freezes the touchscreen and leaves Wi-Fi at waiting. Return to the tested v0.6.2 release. Installation of this known-broken image is blocked.';
       }else{
         warningTitle.textContent='EXPERIMENTAL / NOT HARDWARE TESTED.';
         warningText.textContent='This build may malfunction, freeze or require a rollback. It is not approved for critical communication. A tested version is available in the list.';
