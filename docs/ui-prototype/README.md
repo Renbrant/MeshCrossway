@@ -2,7 +2,7 @@
 
 > **Current architecture (2026-10-28):** The UI will connect via two concurrent BLE Central links to independent MX-M Meshtastic and MX-C MeshCore Radio Pods. Hardware remains separate; archived UART/PCB implementation references below are not current. [Approved design](../modular-architecture.md).
 
-This folder contains a browser-based UI concept for the 3.5-inch MeshCrossway touchscreen.
+This folder contains a **browser-based UI concept** for the 3.5-inch MeshCrossway touchscreen. It is separate from the device's ESP-IDF/LVGL firmware and does not establish that all pictured screens are implemented on hardware. **Older README screenshots were removed from the repository front page and preserved in the [historical UI gallery](archived-readme-gallery.md)**.
 
 ## Landscape UI v5 — dual collapsible sidebars
 
@@ -38,11 +38,11 @@ Open [the interactive GitHub Pages prototype](https://renbrant.github.io/MeshCro
 
 > GitHub's normal file view displays the source code rather than executing the HTML. The current demo is published through GitHub Pages.
 
-## Static overview
+## Static overview — historical browser mockup
 
-![MeshCrossway current Home, Map and Tools menu overview](ui-overview-current.svg)
+![Historical MeshCrossway Home, Map and Tools menu mockup](ui-overview-current.svg)
 
-The interface groups POIs, waypoints, saved tracks, track recording, live-location sharing, GNSS sky, team positions and saved paths under **Map → Tools**. **More** contains general device controls and settings. The overview is illustrative; open the live simulator to interact with the current controls.
+The interface groups POIs, waypoints, saved tracks, track recording, live-location sharing, GNSS sky, team positions and saved paths under **Map → Tools**. **More** contains general device controls and settings. This archived overview is illustrative and may differ from the live simulator or current physical firmware. Open the browser simulator for its currently deployed behavior.
 
 ## Important
 
@@ -51,9 +51,19 @@ This is a UI mockup only. It uses demo data and does not communicate with Meshta
 The prototype deliberately avoids claiming that queued messages were transmitted or delivered. The firmware implementation will need to map each protocol's real evidence into accurate message states.
 
 
-## Selected bench hardware
+## Selected development hardware — modular BLE architecture
 
-The current V1 hardware proposal is Waveshare ESP32-S3-Touch-LCD-3.5, **two Seeed XIAO ESP32-S3 + Wio-SX1262 B2B radio kits** (Meshtastic and MeshCore Companion), a Uputronics u-blox MAX-M10S (3 V variant) GNSS breakout and onboard microSD. Rev A assigns **D7/GPIO44 RX and D6/GPIO43 TX** for the external XIAO UARTs. The radios are intended to receive carrier power at **VBUS/5V** through independent selectable J8/local 5 V paths; current budget, local-regulator choice, USB backfeed, PCB layout and end-to-end operation remain unverified. See the [current hardware wiring and BOM](../hardware-wiring.md). This simulator does not connect to the boards.
+The approved system has **three detachable, independently powered units**, each with its **own rechargeable battery and power-management circuit**:
+
+- **MeshCrossway Core:** Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0, with UI, onboard microSD and planned u-blox MAX-M10S GNSS; it will act as a **BLE Central** for two simultaneous radio connections.
+- **MX-M Pod:** Seeed XIAO ESP32-S3 + Wio-SX1262, running **Meshtastic with BLE PhoneAPI**, with its own battery and LoRa antenna.
+- **MX-C Pod:** a separate Seeed XIAO ESP32-S3 + Wio-SX1262, running **MeshCore BLE Companion**, with its own battery and LoRa antenna.
+
+**No wired UART, integrated shared carrier PCB, or shared battery connects the three units in the current design.** Earlier UART pinouts, 5 V selectors and the old Rev A KiCad files remain historical references only. BLE integration and real radio operations are still under development. See the [approved modular architecture and software-first plan](../modular-architecture.md).
+
+## Archived UI screenshots
+
+The former main-README screenshots and screen descriptions are retained in the **[historical UI gallery](archived-readme-gallery.md)**, separately from the project's main introduction. They are design references, not current device screenshots or an accurate statement of implemented functionality.
 
 
 ## Navigation and sharing concept
