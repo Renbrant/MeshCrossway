@@ -15,11 +15,12 @@ latest=args.latest
 if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+",latest):
     p.error("Invalid latest version")
 tested={
+    "v0.5.4":("Owner confirmed Wi-Fi connection and normal operation; landscape UI", "Tested Wi-Fi / rollback"),
     "v0.3.0":("Tested on Rev2.0: LVGL, touchscreen and live ESP32 diagnostics","Display / touch baseline"),
     "v0.4.0":("Tested on Rev2.0: Wi-Fi access point, screenshot viewing and PNG capture","Recommended recovery"),
 }
 catalog=[]
-for version in ("v0.4.0","v0.3.0","v0.5.2",latest):
+for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4",latest):
     if any(entry["version"]==version for entry in catalog):
         continue
     folder=root/"versions"/version
@@ -34,6 +35,10 @@ for version in ("v0.4.0","v0.3.0","v0.5.2",latest):
     if version in tested:
         summary,label=tested[version]
         status="hardware-tested"
+    elif version=="v0.5.5":
+        summary="Larger full-screen landscape QWERTY editor for Wi-Fi credentials. Hardware test pending; remote display/touch disabled."
+        label="Full-screen keyboard / experimental"
+        status="experimental"
     elif version in ("v0.5.3","v0.5.4"):
         summary="Touchscreen Wi-Fi setup experiment: asynchronous SSID scan and on-screen password entry. Remote display/touch remains disabled; hardware not tested."
         label="Wi-Fi setup / experimental"
