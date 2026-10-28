@@ -75,3 +75,20 @@ At startup, internal NVS takes precedence. Only when no SSID exists internally d
 From v0.5.8, ESP Web Tools installs separate bootloader (0), partition table (0x8000) and application (0x10000) files, leaving NVS 0x9000–0xefff and PHY data untouched when Erase is unchecked. The merged image remains an archive/checksum artifact, not the installer input. Components have individual SHA-256 values and must equal their corresponding merged-image slices. Historical version manifests/images stay unchanged; installing older merged images can still overwrite NVS. A full Erase still clears internal settings; SD restore is available only if a valid backup already exists.
 
 Physical tests pending: first boot/card mount and backup creation, reboot without Erase, reinstall v0.5.8 without Erase to verify NVS preservation, then (only after saved backup is confirmed) full Erase and SD recovery. Keep keyboard/Wi-Fi/status HTTP testing; capture and remote touch remain disabled. Do not mark SD/preservation tested solely from CI.
+
+
+## v0.5.7 physical baseline and v0.5.9 experiment C
+
+On October 28 the owner confirmed v0.5.7 touchscreen, home Wi-Fi and HTTP status page operate normally. Preserve its exact image in the catalog while subsequent firmware experiments are developed. v0.5.8 adds optional plaintext SD backup and an NVS-preserving split flasher manifest but still requires SD/Erase testing on physical hardware.
+
+v0.5.9 is **not** a confirmed stability fix and must remain a separate experimental branch until v0.5.8 is tested. It introduces a **manual, read-only** screenshot endpoint with the following safeguards:
+
+- No secondary LVGL pointer input and no HTTP touch endpoint; old meshremote server is never started.
+- A single preallocated RGB565 frame in PSRAM (~300 KiB) with no per-request framebuffer copies.
+- LVGL snapshot drawing runs only from an LVGL timer, never the HTTP server thread.
+- A bounded state machine admits only one capture at a time, with a 4-second HTTP timeout and a minimum five-second interval.
+- The screenshot requires an eight-digit per-boot View PIN displayed **only** on the physical device Settings screen.
+- Browser conversion to an RGB565 canvas happens on demand; there is no automatic screenshot polling.
+- HTTP is plaintext and limited to trusted local networks; do not expose port 80 publicly.
+
+**Physical test gate before enabling remote touch or marking v0.5.9 tested:** confirm normal boot, touchscreen interaction, Wi-Fi/SD behavior, manual capture and RGB colors, heap and uptime after repeated captures, responsiveness during capture, and no black screen. If unstable, do not add remote touch; revert to the exact v0.5.7 image and investigate snapshot draw or LVGL/PSRAM contention.
