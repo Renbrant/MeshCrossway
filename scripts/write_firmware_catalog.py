@@ -34,7 +34,12 @@ for version in ("v0.4.0","v0.3.0",latest):
     if version in tested:
         summary,label=tested[version]
         status="hardware-tested"
-    elif version=="v0.5.0":
+    elif version=="v0.5.2":
+        summary="Diagnostic build: Wi-Fi AP+STA enabled; remote screen capture and touch disabled. Physical display stability NOT verified."
+        label="Diagnostic / hardware test required"
+        status="experimental"
+    elif version in ("v0.5.0","v0.5.1"):
+
         summary="Known issue: user reported flashing/flickering screen on Rev2.0. Not recommended."
         label="Unstable / do not install"
         status="known-issue"
