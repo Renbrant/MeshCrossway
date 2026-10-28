@@ -33,10 +33,10 @@ if '#include "meshcrossway_ble.h"' not in source:
     main.write_text(source)
 cmake = project / "main" / "CMakeLists.txt"
 cmake_text = cmake.read_text()
-if "REQUIRES bt" not in cmake_text:
+if "REQUIRES bt nvs_flash" not in cmake_text:
     if 'INCLUDE_DIRS "."' not in cmake_text:
         sys.exit("Unsupported upstream main CMakeLists.txt; cannot add BLE component")
-    cmake.write_text(cmake_text.replace('INCLUDE_DIRS "."', 'INCLUDE_DIRS "." REQUIRES bt', 1))
+    cmake.write_text(cmake_text.replace('INCLUDE_DIRS "."', 'INCLUDE_DIRS "." REQUIRES bt nvs_flash', 1))
 if 'meshremote::register_input();' in source or 'meshremote::start();' in source:
     sys.exit('Diagnostic firmware must not activate remote LVGL input or screenshot HTTP')
 if source.count('meshcapture::init();') != 1:
