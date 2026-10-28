@@ -13,6 +13,7 @@ namespace meshcrossway {
 static lv_obj_t *body=nullptr,*heading=nullptr,*tabs[5]={};
 static lv_obj_t *wifi_dialog=nullptr,*wifi_ssid=nullptr,*wifi_password=nullptr,*wifi_keyboard=nullptr,*wifi_notice=nullptr;
 static int page=0;
+static lv_obj_t *uptime_value=nullptr,*heap_value=nullptr,*network_value=nullptr;
 static const lv_color_t bg=lv_color_hex(0x090C10);
 static const lv_color_t panel=lv_color_hex(0x181D24);
 static const lv_color_t panel2=lv_color_hex(0x242B34);
@@ -115,6 +116,7 @@ static void wifi_setup(lv_event_t *){
   lv_obj_set_style_bg_color(wifi_keyboard,panel,0);
 }
 static void draw(){
+  uptime_value=nullptr;heap_value=nullptr;network_value=nullptr;
   static const char *names[]={"OVERVIEW","MESSAGES","NAVIGATION","RADIOS","SETTINGS"};
   lv_label_set_text(heading,names[page]);
   lv_obj_clean(body);
@@ -153,8 +155,11 @@ static void draw(){
       meshnetwork::get_status(ip,sizeof(ip),wifi,sizeof(wifi));
       snprintf(address,sizeof(address),"%s",ip[0]?ip:wifi);
       snprintf(pairing,sizeof(pairing),"Pairing PIN: %s",meshremote::pin());
-      tile(7,6,349,80,"DEVICE / LIVE",uptime,memory);
-      tile(7,93,349,82,"WIFI / REMOTE",address,pairing);
+      lv_obj_t *device_card=tile(7,6,349,80,"DEVICE / LIVE",uptime,memory);
+      lv_obj_t *wifi_card=tile(7,93,349,82,"WIFI / REMOTE",address,pairing);
+      uptime_value=lv_obj_get_child(device_card,1);
+      heap_value=lv_obj_get_child(device_card,2);
+      network_value=lv_obj_get_child(wifi_card,1);
       lv_obj_t *b=lv_btn_create(body);
       fill(b,orange,8);lv_obj_set_pos(b,7,182);lv_obj_set_size(b,349,44);
       txt(b,"CONNECT / CHANGE HOME WI-FI",28,11,325,bg);
@@ -168,7 +173,20 @@ static void on_nav(lv_event_t *e){
   draw();
 }
 static void refresh(lv_timer_t *){
-  if(page==4 && !wifi_dialog)draw();
+  // Change only three existing labels. Destroying/rebuilding the full Settings
+  // subtree every 3 seconds invalidates the entire LVGL area and can visibly flash.
+  if(page!=4 || wifi_dialog || !uptime_value || !heap_value || !network_value)return;
+  char uptime[40],memory[40],ip[16],wifi[30];
+  const uint64_t sec=(uint64_t)(esp_timer_get_time()/1000000LL);
+  snprintf(uptime,sizeof(uptime),"Uptime: %lluh %02llum",
+           (unsigned long long)(sec/3600),(unsigned long long)((sec/60)%60));
+  snprintf(memory,sizeof(memory),"Free heap: %lu KB",
+           (unsigned long)(esp_get_free_heap_size()/1024));
+  meshnetwork::get_status(ip,sizeof(ip),wifi,sizeof(wifi));
+  const char *network=ip[0]?ip:wifi;
+  if(strcmp(lv_label_get_text(uptime_value),uptime)!=0)lv_label_set_text(uptime_value,uptime);
+  if(strcmp(lv_label_get_text(heap_value),memory)!=0)lv_label_set_text(heap_value,memory);
+  if(strcmp(lv_label_get_text(network_value),network)!=0)lv_label_set_text(network_value,network);
 }
 static void init(){
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
@@ -179,7 +197,7 @@ static void init(){
   txt(bar,"MESH",10,11,49,white);
   txt(bar,"CROSSWAY",59,11,104,orange);
   heading=txt(bar,"OVERVIEW",185,11,170,white);
-  txt(bar,"DEV 0.5",395,12,80,orange);
+  txt(bar,"DEV 0.5.1",386,12,90,orange);
   lv_obj_t *rail=lv_obj_create(screen);fill(rail,bg);
   lv_obj_set_pos(rail,0,43);lv_obj_set_size(rail,108,242);
   lv_obj_clear_flag(rail,LV_OBJ_FLAG_SCROLLABLE);

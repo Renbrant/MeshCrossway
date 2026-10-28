@@ -13,7 +13,7 @@ patcher = FW / "apply_to_waveshare.py"
 version = (FW / "VERSION").read_text().strip()
 errors = []
 
-if version != "v0.5.0":
+if version != "v0.5.1":
     errors.append("Unexpected version: " + version)
 if "HTTPD_503_SERVICE_UNAVAILABLE" in remote:
     errors.append("Unsupported HTTPD_503_SERVICE_UNAVAILABLE token")
