@@ -47,3 +47,7 @@ The owner confirmed successful Wi-Fi connection and normal operation on v0.5.4. 
 ## Build once, publish verified bytes
 
 Pages first looks for an artifact from successful same-repository PR preflight. It checks the GitHub artifact digest and compares all firmware files, build script, metadata writer and preflight workflow against the compiled commit. Only identical inputs may reuse that binary; current manifest/checksum/embedded-version checks run again. Missing, expired or mismatched artifacts fall back to compilation. Compiled commit provenance is retained. Superseded preflight runs are cancelled automatically; active Pages deployments are not cancelled.
+
+## v0.5.5 full-screen landscape QWERTY
+
+The agreed orientation remains landscape for every screen; portrait and ABC keyboard proposals are superseded. Tap the SSID/password field to open an editor with text at the top and the native QWERTY keyboard below. Keyboard area grows from 472 × 131 to 472 × 218 pixels. Native uppercase/numeric/symbol modes remain available. DONE (or keyboard checkmark) applies the edit; CANCEL (or keyboard close key) discards it. Password is masked on opening, with a SHOW/HIDE control. Connection still requires CONNECT on the provisioning screen. v0.5.5 requires hardware testing; exact owner-tested v0.5.4 bytes remain available as rollback.
