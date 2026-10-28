@@ -27,7 +27,7 @@ for name in ("meshcrossway_ui.h", "meshcrossway_remote.h"):
 cmake = project / "main" / "CMakeLists.txt"
 config = cmake.read_text()
 if "esp_http_server" not in config:
-    config = config.replace('INCLUDE_DIRS "."','INCLUDE_DIRS "." REQUIRES esp_wifi esp_netif esp_event esp_http_server esp_timer')
+    config = config.replace('INCLUDE_DIRS "."','INCLUDE_DIRS "." REQUIRES nvs_flash esp_wifi esp_netif esp_event esp_http_server esp_timer')
     cmake.write_text(config)
 sdk = project / "sdkconfig.defaults"
 defaults = sdk.read_text()
