@@ -1,112 +1,112 @@
 #pragma once
-// MeshCrossway early touchscreen bring-up UI. LVGL 8.4; all network data is fake.
-// This file is included from Waveshare examples/esp-idf/02_lvgl_example/main/main.cpp.
+// MeshCrossway UI v0.2 — original graphite/orange design inspired by modern field consoles.
+// LVGL 8.x; every radio/GNSS metric is simulated. No packets are transmitted.
 #include "lvgl.h"
-#include <stdio.h>
-
+#include <stdint.h>
 namespace meshcrossway {
-static lv_obj_t *content = nullptr;
-static lv_obj_t *title = nullptr;
-static lv_obj_t *status = nullptr;
-static lv_obj_t *nav[5] = {};
-static int page = 0;
-static unsigned tick = 0;
-static const lv_color_t bg = lv_color_hex(0x101722);
-static const lv_color_t panel = lv_color_hex(0x1c293a);
-static const lv_color_t bright = lv_color_hex(0x28baca);
-static const lv_color_t muted = lv_color_hex(0xaabacc);
-
-static void style(lv_obj_t *o, lv_color_t color, int radius=9) {
+static lv_obj_t *body=nullptr,*heading=nullptr,*foot=nullptr,*tabs[5]={};
+static int page=0;
+static const lv_color_t bg=lv_color_hex(0x090C10);
+static const lv_color_t panel=lv_color_hex(0x181D24);
+static const lv_color_t panel2=lv_color_hex(0x242B34);
+static const lv_color_t orange=lv_color_hex(0xFF8A24);
+static const lv_color_t white=lv_color_hex(0xF2F4F7);
+static const lv_color_t muted=lv_color_hex(0x9AA6B4);
+static void fill(lv_obj_t *o,lv_color_t color,int r=0) {
   lv_obj_set_style_bg_color(o,color,0);
   lv_obj_set_style_bg_opa(o,LV_OPA_COVER,0);
+  lv_obj_set_style_radius(o,r,0);
   lv_obj_set_style_border_width(o,0,0);
-  lv_obj_set_style_radius(o,radius,0);
+  lv_obj_set_style_pad_all(o,0,0);
+  lv_obj_set_style_shadow_width(o,0,0);
 }
-static lv_obj_t *label(lv_obj_t *parent,const char *s,int x,int y,lv_color_t c) {
-  lv_obj_t *l=lv_label_create(parent);
-  lv_label_set_text(l,s);
-  lv_obj_set_style_text_color(l,c,0);
-  lv_obj_set_pos(l,x,y);
-  return l;
+static lv_obj_t *txt(lv_obj_t *p,const char *s,int x,int y,int w,lv_color_t color) {
+  lv_obj_t *o=lv_label_create(p);
+  lv_label_set_text(o,s);
+  lv_label_set_long_mode(o,LV_LABEL_LONG_DOT);
+  lv_obj_set_width(o,w);
+  lv_obj_set_pos(o,x,y);
+  lv_obj_set_style_text_color(o,color,0);
+  return o;
 }
-static void clear_content() { lv_obj_clean(content); }
-static lv_obj_t *card(int x,int y,int w,int h,const char *heading,const char *body) {
-  lv_obj_t *c=lv_obj_create(content);
-  lv_obj_set_pos(c,x,y); lv_obj_set_size(c,w,h);
-  style(c,panel);
-  lv_obj_clear_flag(c,LV_OBJ_FLAG_SCROLLABLE);
-  label(c,heading,10,7,bright);
-  label(c,body,10,31,lv_color_white());
-  return c;
+static lv_obj_t *tile(int x,int y,int w,int h,const char *top,const char *line1,const char *line2) {
+  lv_obj_t *o=lv_obj_create(body);fill(o,panel,9);
+  lv_obj_set_pos(o,x,y);lv_obj_set_size(o,w,h);
+  lv_obj_clear_flag(o,LV_OBJ_FLAG_SCROLLABLE);
+  txt(o,top,11,9,w-22,orange);
+  txt(o,line1,11,32,w-22,white);
+  if(line2) txt(o,line2,11,53,w-22,muted);
+  return o;
 }
-static void draw() {
-  static const char *names[]={"HOME","MESSAGES","MAP","RADIOS","SETTINGS"};
-  lv_label_set_text(title,names[page]);
-  lv_label_set_text(status,"DEMO  |  MESH A + MESH B  |  GNSS MOCK");
-  clear_content();
-  for(int i=0;i<5;i++) style(nav[i],i==page?bright:panel,7);
-  if(page==0) {
-    card(3,3,160,87,"MESHTASTIC","ONLINE (MOCK)\n17 nodes  -87 dBm");
-    card(170,3,160,87,"MESHCORE","ONLINE (MOCK)\n9 nodes   -94 dBm");
-    card(3,99,160,86,"GNSS","3D FIX (MOCK)\n14 sats  1.8 m");
-    card(170,99,160,86,"CROSSWAY","2 independent links\nNO BRIDGE");
-    label(content,"Touch the left menu to explore.",9,194,muted);
-  } else if(page==1) {
-    card(3,3,327,57,"MESHTASTIC  |  MOCK","Trail group: Checkpoint reached");
-    card(3,65,327,57,"MESHCORE  |  MOCK","Field team: Copy, all good");
-    card(3,127,327,57,"SAFETY","Messages are examples. Nothing is sent.");
-  } else if(page==2) {
-    card(3,3,327,152,"MAP / NAVIGATION","Map tiles not loaded in offline demo.\nGNSS coordinates simulated.\nReal position sharing: DISABLED.");
-    card(3,161,327,55,"FIELD TEST","Touch response + navigation enabled");
-  } else if(page==3) {
-    card(3,3,160,159,"RADIO A - MESH","Meshtastic (MOCK)\nUART not connected\nRSSI -87 dBm\nSNR 8.2 dB");
-    card(170,3,160,159,"RADIO B - CORE","MeshCore (MOCK)\nUART not connected\nRSSI -94 dBm\nSNR 5.7 dB");
-    label(content,"No packets transmitted.",10,177,muted);
-  } else {
-    card(3,3,327,153,"DEVICE SETTINGS","Mode: UI-only demo\nDisplay: 480 x 320 landscape\nTouch: enabled\nRadio A/B: simulated\nGNSS: simulated");
-    label(content,"Hardware integration follows later.",10,176,muted);
+static void render() {
+  static const char *heads[]={"OVERVIEW","MESSAGES","NAVIGATION","RADIOS","SETTINGS"};
+  lv_label_set_text(heading,heads[page]);
+  lv_obj_clean(body);
+  for(int i=0;i<5;i++) {
+    fill(tabs[i],i==page?orange:panel2,8);
+    lv_obj_set_style_text_color(tabs[i],i==page?bg:white,0);
+  }
+  switch(page) {
+  case 0:
+    tile(7,7,171,91,"MESHTASTIC","Radio A / Standby","17 peers  [DEMO]");
+    tile(185,7,171,91,"MESHCORE","Radio B / Standby","9 peers   [DEMO]");
+    tile(7,105,171,91,"POSITION","No GNSS connected","Fix: demo only");
+    tile(185,105,171,91,"CROSSWAY","2 independent radios","Bridge: disabled");
+    break;
+  case 1:
+    tile(7,7,349,62,"MESHTASTIC  /  DEMO","Trail group: At checkpoint",nullptr);
+    tile(7,76,349,62,"MESHCORE  /  DEMO","Field team: Copy, all good",nullptr);
+    tile(7,145,349,51,"OFFLINE INBOX","Sample messages only",nullptr);
+    break;
+  case 2:
+    tile(7,7,349,130,"MAP  /  OFFLINE","No map tiles loaded","GNSS source: simulated");
+    tile(7,144,349,52,"LOCATION SHARING","Off  /  No data transmitted",nullptr);
+    break;
+  case 3:
+    tile(7,7,171,152,"RADIO A  /  MT","No UART link","RSSI: demo -87 dBm");
+    tile(185,7,171,152,"RADIO B  /  MC","No UART link","RSSI: demo -94 dBm");
+    txt(body,"No packets sent  •  Simulation only",10,176,340,muted);
+    break;
+  default:
+    tile(7,7,349,91,"DISPLAY","480 x 320  /  Landscape","Touch: enabled");
+    tile(7,105,349,91,"FIRMWARE","MeshCrossway Dev v0.2","Radios & GNSS: simulated");
+    break;
   }
 }
-static void on_nav(lv_event_t *e) {
+static void nav_cb(lv_event_t *e) {
   page=(int)(intptr_t)lv_event_get_user_data(e);
-  draw();
-}
-static void on_timer(lv_timer_t *) {
-  ++tick;
-  // Keep a genuine UI update in the prototype without implying real radio telemetry.
-  if(page==0 && tick%5==0) draw();
+  render();
 }
 static void init() {
-  lv_obj_t *screen=lv_scr_act();
-  style(screen,bg,0);
-  lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_t *top=lv_obj_create(screen);
-  lv_obj_set_pos(top,0,0); lv_obj_set_size(top,480,45);
-  style(top,panel,0); lv_obj_clear_flag(top,LV_OBJ_FLAG_SCROLLABLE);
-  label(top,"MeshCrossway",10,8,lv_color_white());
-  title=label(top,"HOME",207,8,bright);
-  lv_obj_t *side=lv_obj_create(screen);
-  lv_obj_set_pos(side,0,45); lv_obj_set_size(side,134,275);
-  style(side,bg,0);
-  lv_obj_clear_flag(side,LV_OBJ_FLAG_SCROLLABLE);
-  const char *navtext[]={"Home","Messages","Map","Radios","Settings"};
+  lv_obj_t *s=lv_scr_act();fill(s,bg);
+  lv_obj_clear_flag(s,LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_t *bar=lv_obj_create(s);fill(bar,panel);
+  lv_obj_set_pos(bar,0,0);lv_obj_set_size(bar,480,43);
+  lv_obj_clear_flag(bar,LV_OBJ_FLAG_SCROLLABLE);
+  txt(bar,"MESH",10,11,49,white);
+  txt(bar,"CROSSWAY",59,11,104,orange);
+  heading=txt(bar,"OVERVIEW",185,11,170,white);
+  txt(bar,"DEV 0.2",395,12,80,orange);
+  lv_obj_t *rail=lv_obj_create(s);fill(rail,bg);
+  lv_obj_set_pos(rail,0,43);lv_obj_set_size(rail,108,242);
+  lv_obj_clear_flag(rail,LV_OBJ_FLAG_SCROLLABLE);
+  static const char *names[]={"Home","Messages","Map","Radios","Settings"};
   for(int i=0;i<5;i++) {
-    nav[i]=lv_btn_create(side);
-    lv_obj_set_pos(nav[i],1,4+i*49);
-    lv_obj_set_size(nav[i],113,44);
-    lv_obj_set_style_pad_all(nav[i],0,0);
-    lv_obj_add_event_cb(nav[i],on_nav,LV_EVENT_CLICKED,(void *)(intptr_t)i);
-    lv_obj_t *t=lv_label_create(nav[i]);
-    lv_label_set_text(t,navtext[i]);
-    lv_obj_center(t);
+    tabs[i]=lv_btn_create(rail);
+    lv_obj_set_pos(tabs[i],5,5+i*47);
+    lv_obj_set_size(tabs[i],98,42);
+    lv_obj_set_style_pad_all(tabs[i],0,0);
+    lv_obj_add_event_cb(tabs[i],nav_cb,LV_EVENT_CLICKED,(void *)(intptr_t)i);
+    lv_obj_t *t=lv_label_create(tabs[i]);
+    lv_label_set_text(t,names[i]);lv_obj_center(t);
   }
-  content=lv_obj_create(screen);
-  lv_obj_set_pos(content,134,45); lv_obj_set_size(content,346,242);
-  style(content,bg,0);
-  lv_obj_set_style_pad_all(content,0,0);
-  lv_obj_clear_flag(content,LV_OBJ_FLAG_SCROLLABLE);
-  status=label(screen,"DEMO",145,294,muted);
-  draw();
-  lv_timer_create(on_timer,1000,nullptr);
+  body=lv_obj_create(s);fill(body,bg);
+  lv_obj_set_pos(body,108,43);lv_obj_set_size(body,372,242);
+  lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_t *bottom=lv_obj_create(s);fill(bottom,panel);
+  lv_obj_set_pos(bottom,0,285);lv_obj_set_size(bottom,480,35);
+  lv_obj_clear_flag(bottom,LV_OBJ_FLAG_SCROLLABLE);
+  foot=txt(bottom,"DEMO MODE  |  MT: --  MC: --  GPS: --",11,9,450,muted);
+  render();
 }
-}  // namespace meshcrossway
+} // namespace meshcrossway
