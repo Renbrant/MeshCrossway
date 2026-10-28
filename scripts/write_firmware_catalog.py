@@ -24,7 +24,7 @@ tested={
     "v0.4.0":("Tested on Rev2.0: Wi-Fi access point, screenshot viewing and PNG capture","Recommended recovery"),
 }
 catalog=[]
-for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8","v0.5.9","v0.5.10",latest):
+for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8","v0.5.9","v0.5.10","v0.6.2",latest):
     if any(entry["version"]==version for entry in catalog):
         continue
     folder=root/"versions"/version
@@ -39,6 +39,10 @@ for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8","
     if version in tested:
         summary,label=tested[version]
         status="hardware-tested"
+    elif version=="v0.6.3":
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: Heltec V3 MeshCore BLE discovery, GATT identification and PIN pairing candidate. No MeshCore application packets or messaging yet. Wi-Fi / read-only screen remains."
+        label="MeshCore BLE pairing / UNTESTED"
+        status="experimental"
     elif version=="v0.6.2":
         summary="Six-tab navigation (Home, Nodes, Groups, Chats, Map, More), per-network filters and persistent selected demo chat; compact radio/group icons, hidden Home rail; radio and Wi-Fi preserved. Physical test pending."
         label="Nodes + groups + chats / experimental"
@@ -91,9 +95,14 @@ for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8","
         "manifest":f"/MeshCrossway/flasher/firmware/versions/{version}/manifest.json",
         "binary":f"/MeshCrossway/flasher/firmware/versions/{version}/meshcrossway-display-dev.bin"
     })
+# The Web Flasher default is the newest hardware-tested release.
+tested_versions=[entry["version"] for entry in catalog if entry["status"]=="hardware-tested"]
+if not tested_versions:
+    p.error("No hardware-tested firmware in catalog")
+recommended=max(tested_versions,key=lambda v:tuple(map(int,v[1:].split("."))))
 catalog_info={
     "target":"Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0 non-B",
-    "recommended":"v0.4.0",
+    "recommended":recommended,
     "latest":latest,
     "versions":catalog
 }
