@@ -37,42 +37,9 @@ jobs:
       - name: Offline syntax and patcher checks
         run: python3 scripts/preflight_display.py
 
-      - name: Checkout pinned Waveshare BSP
-        run: |
-          set -euo pipefail
-          mkdir -p vendor/ESP32-S3-Touch-LCD-3.5
-          git -C vendor/ESP32-S3-Touch-LCD-3.5 init -q
-          git -C vendor/ESP32-S3-Touch-LCD-3.5 remote add origin https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.5.git
-          git -C vendor/ESP32-S3-Touch-LCD-3.5 fetch --depth 1 origin d9ff7837148b47b33edadc4b87775c341cf35bbe
-          git -C vendor/ESP32-S3-Touch-LCD-3.5 checkout --detach FETCH_HEAD
-          git -C vendor/ESP32-S3-Touch-LCD-3.5 submodule update --init --recursive --depth 1
-          test "$(git -C vendor/ESP32-S3-Touch-LCD-3.5 rev-parse HEAD)" = "d9ff7837148b47b33edadc4b87775c341cf35bbe"
-
-      - name: Patch Waveshare example
-        run: |
-          python3 firmware/display-prototype/apply_to_waveshare.py
-          grep -q 'CONFIG_LV_USE_SNAPSHOT=y' vendor/ESP32-S3-Touch-LCD-3.5/examples/esp-idf/02_lvgl_example/sdkconfig.defaults
-
-      - name: Compile ESP-IDF v5.3.2 and merge ESP32-S3 image
-        run: |
-          mkdir -p _preflight
-          docker run --rm -v "$PWD":/workspace \
-            -w /workspace/vendor/ESP32-S3-Touch-LCD-3.5/examples/esp-idf/02_lvgl_example \
-            espressif/idf:v5.3.2 /bin/bash -lc '
-              set -e
-              idf.py set-target esp32s3
-              idf.py build
-              idf.py merge-bin -o /workspace/_preflight/meshcrossway-display-dev.bin
-            '
-          test -s _preflight/meshcrossway-display-dev.bin
-          ls -lh _preflight/meshcrossway-display-dev.bin
-
-      - name: Retain successful build for inspection (not published)
-        uses: actions/upload-artifact@v4
-        with:
-          name: display-v0.5-preflight
-          path: _preflight/meshcrossway-display-dev.bin
-          if-no-files-found: error
+      # The archive job below is the single authoritative ESP-IDF build.
+      # This job checks syntax/patcher invariants only, avoiding a duplicate
+      # full BSP checkout and ESP-IDF compilation on every pull request.
 
   version_catalog:
     name: Archive preflight (no Pages deploy)
