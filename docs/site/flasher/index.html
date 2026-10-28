@@ -20,7 +20,7 @@
 <main id="flasher-app"><section class="pagehero"><div class="wrap prose">
 <div class="eyebrow" style="color:#ff993c">USB firmware installer</div>
 <h1>MeshCrossway Web Flasher.</h1>
-<p class="sectionintro">Choose an archived firmware version, then install it directly to your Waveshare ESP32-S3 over USB. Previously tested builds remain available for recovery.</p>
+<p class="sectionintro">The newest firmware is selected automatically. You can choose any archived build for recovery before installing it to your Waveshare ESP32-S3 over USB.</p>
 <div class="flashbox">
 <span class="status" id="build-status">CHECKING VERSION ARCHIVE</span>
 <h2>Display / Host — Waveshare ESP32-S3-Touch-LCD-3.5</h2>
@@ -152,7 +152,10 @@
       }
       select.disabled=false;
       select.onchange=()=>choose(select.value);
-      select.value=find(catalog.recommended)?.version || versions[0].version;
+      // Start on the most recently published firmware, but retain all recoveries.
+      // The catalog's "recommended" field intentionally still points to tested
+      // recovery v0.4.0; it is not the version preselected for daily upgrades.
+      select.value=find(catalog.latest)?.version || find(catalog.recommended)?.version || versions[0].version;
       await choose(select.value);
     }catch(e){
       select.replaceChildren(new Option('Version archive unavailable',''));

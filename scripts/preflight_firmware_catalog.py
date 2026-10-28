@@ -22,6 +22,10 @@ for n,script in enumerate(scripts):
         sys.exit("ERROR: JS script "+str(n)+" invalid:\n"+p.stderr)
 if 'firmware-picker' not in html or 'catalog.json' not in html:
     sys.exit("ERROR: version selection UI or catalog loader missing")
+if "select.value=find(catalog.latest)?.version" not in html:
+    sys.exit("ERROR: Web Flasher must preselect the newest published firmware")
+if "find(catalog.recommended)?.version || versions[0].version" not in html:
+    sys.exit("ERROR: Web Flasher must retain safe fallback if latest is missing")
 for file in ("build_firmware_versions.sh",):
     p=subprocess.run(["bash","-n",str(root/"scripts"/file)],capture_output=True,text=True)
     if p.returncode:sys.exit(p.stderr)
