@@ -28,7 +28,7 @@ approved={
     "v0.6.2":("Owner confirmed touchscreen, Wi-Fi and normal UI work on the Waveshare Rev2.0; confirmed working after v0.6.3 failed.", "Last hardware-tested / recommended"),
 }
 # Do not expose a known-broken image through the installer.
-blocked={"v0.6.3"}
+blocked={"v0.6.3","v0.6.4"}
 if stable not in approved:
     p.error(f"Approved stable version {stable} has no recorded hardware validation")
 if latest in blocked:
