@@ -29,7 +29,7 @@ if '#include "meshcrossway_ui.h"' not in source:
     main.write_text(source)
 
 if '#include "meshcrossway_ble.h"' not in source:
-    source=source.replace('#include "meshcrossway_ui.h"', '#include "meshcrossway_ui.h"\\n#include "meshcrossway_ble.h"',1)
+    source=source.replace('#include "meshcrossway_ui.h"', '#include "meshcrossway_ui.h"\n#include "meshcrossway_ble.h"',1)
     main.write_text(source)
 cmake = project / "main" / "CMakeLists.txt"
 cmake_text = cmake.read_text()
