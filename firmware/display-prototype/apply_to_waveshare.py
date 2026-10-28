@@ -25,19 +25,24 @@ if '#include "meshcrossway_ui.h"' not in source:
                             '#include "lvgl_ui.h"\n#include "meshcrossway_ui.h"\n#include "meshcrossway_health.h"\n#include "meshcrossway_capture.h"', 1)
     source = source.replace('lv_demo_widgets();', 'meshcrossway::init();\n        meshcapture::init();', 1)
     source = source.replace(anchor,
-                            '        lvgl_port_unlock();\n    }\n    meshnetwork::start();\n    meshhealth::start();\n}', 1)
+                            '        lvgl_port_unlock();\n    }\n    meshnetwork::start();\n    meshhealth::start();\n    meshble::start();\n}', 1)
     main.write_text(source)
 
+if '#include "meshcrossway_ble.h"' not in source:
+    source=source.replace('#include "meshcrossway_ui.h"', '#include "meshcrossway_ui.h"\\n#include "meshcrossway_ble.h"',1)
+    main.write_text(source)
 if 'meshremote::register_input();' in source or 'meshremote::start();' in source:
     sys.exit('Diagnostic firmware must not activate remote LVGL input or screenshot HTTP')
 if source.count('meshcapture::init();') != 1:
     sys.exit('Missing or duplicate single-shot LVGL capture initialization')
 if source.count('meshhealth::start();') != 1:
     sys.exit('Missing or duplicate status-only HTTP initialization')
+if source.count('meshble::start();') != 1:
+    sys.exit('Missing or duplicate BLE initialization')
 if source.count('meshnetwork::start();') != 1:
     sys.exit('Missing or duplicate isolated Wi-Fi initialization')
 for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",
-             "meshcrossway_remote_page.h", "meshcrossway_network.h"):
+             "meshcrossway_remote_page.h", "meshcrossway_network.h", "meshcrossway_ble.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 
@@ -46,7 +51,10 @@ defaults = sdk.read_text()
 # The Wi-Fi backup uses /sdcard/meshcrossway-wifi.{tmp,json,bak}.
 # ESP-IDF FatFs defaults to FATFS_LFN_NONE, so those paths otherwise fail
 # to open even on correctly mounted FAT32 cards.
-needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_FATFS_LFN_HEAP=y"]
+needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_FATFS_LFN_HEAP=y",
+        "CONFIG_BT_ENABLED=y","CONFIG_BT_NIMBLE_ENABLED=y",
+        "CONFIG_BT_NIMBLE_ROLE_CENTRAL=y","CONFIG_BT_NIMBLE_MAX_CONNECTIONS=2",
+        "CONFIG_BTDM_CTRL_MODE_BLE_ONLY=y"]
 missing=[option for option in needed if option not in defaults.splitlines()]
 if missing:
     sdk.write_text(defaults.rstrip("\n")+"\n"+"\n".join(missing)+"\n")
