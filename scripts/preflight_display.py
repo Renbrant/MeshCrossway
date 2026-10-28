@@ -69,6 +69,8 @@ void app(){
                 errors.append("Patcher failed: " + p.stdout + p.stderr)
                 break
         output = main.read_text()
+        patched_lcd = lcd_fixture.read_text()
+        patched_sdkconfig = (example / "sdkconfig.defaults").read_text()
         if version in ("v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7", "v0.5.8", "v0.5.9", "v0.5.10", "v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.6.5"):
             if (output.count("meshnetwork::start();") != 1 or output.count("meshcrossway::init();") != 1 or "meshremote::start();" in output or "meshremote::register_input();" in output):
                 errors.append("Diagnostic patcher must start only Wi-Fi; no remote HTTP or LVGL input")
@@ -167,12 +169,12 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.6.5"):
         assert "CONFIG_BT_NIMBLE_ENABLED=y" in patcher.read_text()
     if version=="v0.6.5":
         assert "port_cfg.task_affinity = 1;" in output
-        lcd=(example/"components"/"esp_port"/"esp_3inch5_lcd_port.cpp").read_text()
+        lcd=patched_lcd
         assert "#define EXAMPLE_LCD_PIXEL_CLOCK_HZ (40 * 1000 * 1000)" in lcd
         assert "io_config.trans_queue_depth = 6;" in lcd
         for setting in ("CONFIG_BT_CTRL_PINNED_TO_CORE_1=y","CONFIG_BT_NIMBLE_PINNED_TO_CORE_1=y",
                         "CONFIG_ESP_WIFI_TASK_CORE_ID=0"):
-            assert setting in (example/"sdkconfig.defaults").read_text()
+            assert setting in patched_sdkconfig
         assert "[MCX-MEM]" in ble
     # Approved simulator v5: independent collapsible left/right rails and shade.
     for marker in ("left_compact","right_compact","toggle_left","toggle_right",
