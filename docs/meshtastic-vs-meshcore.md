@@ -1,5 +1,7 @@
 # Meshtastic vs MeshCore: from the basics to the technical details
 
+> **MeshCrossway architecture update (2026-10-28):** The latest product uses a BLE Central Core and two separate battery-powered Radio Pods. Historical UART comparisons below describe the archived integrated variant, not the current implementation. [Modular baseline](modular-architecture.md).
+
 [Back to MeshCrossway](../README.md) · [Maps and regional checks](mesh-maps-and-regional-check.md) · [Radio integration](radio-firmware-strategy.md)
 
 [Future exploration: Reticulum](reticulum-future-integration.md) has a separate guide covering its architecture and a possible later integration.
@@ -238,7 +240,7 @@ Sources: [MT routing][MT-routing], [MT next-hop source][MT-next-hop], [MT roles]
 | Sensors and telemetry | Documented modules for device, environmental and other sensor data | Sensor-node examples, telemetry queries and permissions; 1.18 adds push subscriptions |
 | Standalone operation | Supported on suitable device/UI builds | Supported on suitable device/UI builds; feature availability differs |
 | Phone/computer clients | Android, Apple, web and developer tools | Native, web and community clients; check platform and transport support |
-| Host/controller API | Protobuf client API; serial PROTO is planned for MeshCrossway | Companion protocol; custom UART exposure still needs board/build validation |
+| Host/controller API | Protobuf PhoneAPI over BLE is the selected MeshCrossway link | BLE Companion API is the selected MeshCrossway link |
 | BLE, USB and network links | Availability depends on board and build | Interface variants; 1.18 adds BLE+Wi-Fi on selected boards, on supported hardware |
 | MQTT/online integration | Built-in module and supported client proxy configurations | Observer/upload/bridge projects; behavior depends on the integration |
 | TAK and other integrations | Published integrations including ATAK and CalTopo/SARTopo | Assess the specific third-party integration; do not assume native feature parity |
