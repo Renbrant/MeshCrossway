@@ -1,3 +1,9 @@
+# LEGACY INTEGRATED REV A DIAGRAM GENERATOR (2026-10-28)
+# This script generates only ARCHIVED UART/single-carrier experimental diagrams.
+# The approved MeshCrossway product is three detached, independently powered BLE-connected devices.
+# Current canonical illustration: docs/images/architecture/modular-ble-topology.svg
+# Do not run this script to regenerate current modular architecture artwork.
+# Keep old outputs intact for documentation of the separate integrated variant.
 from pathlib import Path
 from html import escape
 from xml.etree import ElementTree
