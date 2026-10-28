@@ -84,7 +84,11 @@ static void host_task(void *){
   nimble_port_freertos_deinit();
 }
 static void scan(){
-  if(!synced){update(FAILED,"BLE host not ready");return;}
+  if(!synced){
+    if(snapshot().phase==OFF)update(OFF,"Enable BLE before scanning");
+    else update(FAILED,"BLE host not ready");
+    return;
+  }
   const Snapshot current=snapshot();
   if(current.phase==CONNECTING||current.phase==VERIFYING||current.phase==PAIRING||current.phase==READY)return;
   (void)ble_gap_disc_cancel();
@@ -117,6 +121,9 @@ static void connect(int index){
   if(rc){char msg[64];snprintf(msg,sizeof(msg),"Connect error: %d",rc);update(FAILED,msg);}
 }
 static void disconnect(){
+  const Phase phase=snapshot().phase;
+  if(phase==OFF){update(OFF,"Bluetooth is off; enable before scan");return;}
+  if(phase==STARTING){update(STARTING,"Bluetooth is still starting");return;}
   const uint16_t handle=conn;
   if(handle!=BLE_HS_CONN_HANDLE_NONE){
     (void)ble_gap_terminate(handle,BLE_ERR_REM_USER_CONN_TERM);
