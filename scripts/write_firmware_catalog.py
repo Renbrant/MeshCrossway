@@ -56,6 +56,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.6.5":
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: targets LCD SPI queue hang following BLE start. LVGL task core1, LCD SPI 40MHz / queue6, Wi-Fi core0 and NimBLE core1, extra internal SRAM/DMA diagnostic logs. Do not use for critical communication."
+        label="SPI/LVGL + BLE coexistence diagnostic / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.6.4":
         summary="KNOWN CRITICAL ISSUE: v0.6.4 boots but enabling Bluetooth freezes the touchscreen/device before radio discovery. Do not install; return to hardware-tested v0.6.2."
         label="FREEZES ON BLE ENABLE / DO NOT INSTALL"
