@@ -9,6 +9,9 @@ on:
       - "docs/images/architecture/modular-ble-topology.svg"
       - "docs/images/meshcrossway_mountain_connectivity_concept.png"
       - "firmware/display-prototype/**"
+      - "scripts/build_firmware_versions.sh"
+      - "scripts/write_firmware_*.py"
+      - "scripts/verify_firmware_version.py"
       - ".github/workflows/ui-pages.yml"
   workflow_dispatch:
 
@@ -19,16 +22,19 @@ permissions:
 
 concurrency:
   group: github-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 65
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Assemble website
         run: |
           mkdir -p _site/ui _site/media _site/flasher/firmware
@@ -36,33 +42,29 @@ jobs:
           cp -R docs/ui-prototype/. _site/ui/
           cp docs/images/meshcrossway_mountain_connectivity_concept.png _site/media/
           cp docs/images/architecture/modular-ble-topology.svg _site/media/
-      - name: Build Waveshare ESP32-S3 firmware with ESP-IDF
+      - name: Validate firmware archive scripts
         run: |
-          git clone --depth 1 --recurse-submodules https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.5.git vendor/ESP32-S3-Touch-LCD-3.5
-          python3 firmware/display-prototype/apply_to_waveshare.py
-          docker run --rm -v "$PWD":/workspace -w /workspace/vendor/ESP32-S3-Touch-LCD-3.5/examples/esp-idf/02_lvgl_example espressif/idf:v5.3.2 /bin/bash -lc '
-            idf.py set-target esp32s3
-            idf.py build
-            idf.py merge-bin -o /workspace/_site/flasher/firmware/meshcrossway-display-dev.bin
-          '
-          test -s _site/flasher/firmware/meshcrossway-display-dev.bin
-      - name: Generate web flasher manifest
+          set -euo pipefail
+          bash -n scripts/build_firmware_versions.sh
+          python3 -m py_compile scripts/write_firmware_version.py scripts/write_firmware_catalog.py scripts/verify_firmware_version.py
+      - name: Restore compiled v0.3.0 recovery image
+        uses: actions/cache@v4
+        with:
+          path: _site/flasher/firmware/versions/v0.3.0
+          key: meshcrossway-v030-b48145f0-bsp-d9ff7837-idf532-v1
+      - name: Restore compiled v0.4.0 recovery image
+        uses: actions/cache@v4
+        with:
+          path: _site/flasher/firmware/versions/v0.4.0
+          key: meshcrossway-v040-5dfe3744-bsp-d9ff7837-idf532-v1
+      - name: Compile missing firmware archives and current image
+        run: bash scripts/build_firmware_versions.sh
+      - name: Verify selectable manifests and binaries
         run: |
-          python3 - <<'PY'
-          import json, os
-          from pathlib import Path
-          out=Path("_site/flasher/firmware")
-          release=(Path("firmware/display-prototype/VERSION").read_text().strip())
-          manifest={
-            "name":"MeshCrossway Display "+release+" (Experimental)",
-            "version":release,
-            "new_install_prompt_erase":True,
-            "builds":[{"chipFamily":"ESP32-S3","parts":[{"path":"meshcrossway-display-dev.bin","offset":0}]}]
-          }
-          (out/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
-          metadata={"version":release,"commit":os.environ["GITHUB_SHA"][:8],"target":"Waveshare ESP32-S3-Touch-LCD-3.5 (non-B)","channel":"development","hardware_verified":False}
-          (out/"build-info.json").write_text(json.dumps(metadata,indent=2)+"\n")
-          PY
+          set -euo pipefail
+          python3 scripts/verify_firmware_version.py --dir _site/flasher/firmware/versions/v0.3.0 --version v0.3.0 --ref b48145f07ef4d00895f7ccedbdfb240a322dd37a
+          python3 scripts/verify_firmware_version.py --dir _site/flasher/firmware/versions/v0.4.0 --version v0.4.0 --ref 5dfe3744ed7b062c629ea5d2811dc434928826b1
+          python3 scripts/verify_firmware_version.py --dir "_site/flasher/firmware/versions/$(cat firmware/display-prototype/VERSION)" --version "$(cat firmware/display-prototype/VERSION)"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
