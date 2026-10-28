@@ -63,6 +63,6 @@ jobs:
       - name: Retain successful build for inspection (not published)
         uses: actions/upload-artifact@v4
         with:
-          name: display-v0.4-preflight
+          name: display-v0.5-preflight
           path: _preflight/meshcrossway-display-dev.bin
           if-no-files-found: error
