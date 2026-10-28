@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.5.3: local Wi-Fi provisioning; remote UI disabled.
+// MeshCrossway v0.5.4: local Wi-Fi provisioning; remote UI disabled.
 // All radio and GNSS values remain simulated.
 #include "lvgl.h"
 #include "meshcrossway_remote.h"
@@ -148,6 +148,8 @@ static void wifi_setup(lv_event_t *){
 
   wifi_notice=txt(wifi_dialog,"Tap SCAN to find nearby Wi-Fi networks.",10,162,453,muted);
   wifi_keyboard=lv_keyboard_create(wifi_dialog);
+  // Keyboard constructor anchors at BOTTOM_MID; use absolute dialog coordinates.
+  lv_obj_set_align(wifi_keyboard,LV_ALIGN_TOP_LEFT);
   lv_obj_set_pos(wifi_keyboard,4,185);lv_obj_set_size(wifi_keyboard,472,131);
   lv_keyboard_set_textarea(wifi_keyboard,wifi_password);
   lv_obj_set_style_bg_color(wifi_keyboard,panel,0);
@@ -213,7 +215,7 @@ static void on_nav(lv_event_t *e){
 }
 static void refresh(lv_timer_t *){
   update_wifi_scan();
-  printf("[MCX-DIAG v0.5.3] uptime_ms=%llu heap=%lu page=%d\n",
+  printf("[MCX-DIAG v0.5.4] uptime_ms=%llu heap=%lu page=%d\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page);
   // Change only three existing labels. Destroying/rebuilding the full Settings
@@ -232,7 +234,7 @@ static void refresh(lv_timer_t *){
   if(strcmp(lv_label_get_text(network_value),network)!=0)lv_label_set_text(network_value,network);
 }
 static void init(){
-  printf("[MCX-DIAG v0.5.3] boot reset_reason=%d heap=%lu remote=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.5.4] boot reset_reason=%d heap=%lu remote=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -242,7 +244,7 @@ static void init(){
   txt(bar,"MESH",10,11,49,white);
   txt(bar,"CROSSWAY",59,11,104,orange);
   heading=txt(bar,"OVERVIEW",185,11,170,white);
-  txt(bar,"DEV 0.5.3",386,12,90,orange);
+  txt(bar,"DEV 0.5.4",386,12,90,orange);
   lv_obj_t *rail=lv_obj_create(screen);fill(rail,bg);
   lv_obj_set_pos(rail,0,43);lv_obj_set_size(rail,108,242);
   lv_obj_clear_flag(rail,LV_OBJ_FLAG_SCROLLABLE);

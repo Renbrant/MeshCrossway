@@ -34,7 +34,7 @@ for version in ("v0.4.0","v0.3.0","v0.5.2",latest):
     if version in tested:
         summary,label=tested[version]
         status="hardware-tested"
-    elif version=="v0.5.3":
+    elif version in ("v0.5.3","v0.5.4"):
         summary="Touchscreen Wi-Fi setup experiment: asynchronous SSID scan and on-screen password entry. Remote display/touch remains disabled; hardware not tested."
         label="Wi-Fi setup / experimental"
         status="experimental"

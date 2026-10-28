@@ -35,3 +35,7 @@ The archive retains the exact physically tested v0.5.2 image from commit `ce221f
 7. Restart once to check credential persistence and reconnection. If connection fails, retry through the dialog.
 
 Report the visible firmware version, scan/keyboard result, connection/IP result and whether blackouts occurred. Roll back directly to v0.5.2 or v0.4.0 if necessary. Do not mark v0.5.3 hardware-tested until the owner confirms the results.
+
+## v0.5.4 keyboard correction
+
+The owner confirmed v0.5.3 installation, network scan and SSID selection. Password input was blocked because the keyboard was not visible. LVGL 8.4 creates keyboards with bottom-center alignment; applying the dialog coordinates without resetting that anchor places the keyboard below the screen. v0.5.4 sets top-left alignment before positioning it at (4, 185), size 472 × 131, inside the 480 × 320 dialog. The Wi-Fi logic and disabled remote subsystem remain unchanged. Keyboard visibility/typing, connection and display stability require a new hardware test.
