@@ -251,6 +251,7 @@ static lv_obj_t *left_handle=nullptr,*right_handle=nullptr,*top_wifi=nullptr;
 static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
 static bool left_compact=false,right_compact=false;
 static int chat_filter=0;
+static int map_view=0; // 0 map, 1 POIs, 2 tracks, 3 GNSS, 4 team, 5 sharing.
 static const lv_color_t line_color=lv_color_hex(0x494039);
 static const lv_color_t purple=lv_color_hex(0xB99AFF);
 static const lv_color_t green=lv_color_hex(0x72D8A5);
@@ -260,7 +261,7 @@ static const char *screen_names[5]={"HOME","CHATS","MAP","RADIOS","MORE"};
 static const char *tab_names[5]={"Home","Chats","Map","Radios","More"};
 static const char *tab_glyphs[5]={LV_SYMBOL_HOME,LV_SYMBOL_EDIT,LV_SYMBOL_GPS,LV_SYMBOL_BLUETOOTH,LV_SYMBOL_SETTINGS};
 enum Action {
-  A_INBOX,A_NEW,A_POSITION,A_NETWORKS,A_WIFI,A_POIS,A_TRACKS,A_RECORD,A_SHARE,
+  A_MAP_HOME,A_INBOX,A_NEW,A_POSITION,A_NETWORKS,A_WIFI,A_POIS,A_TRACKS,A_RECORD,A_SHARE,
   A_GNSS,A_TEAM,A_PATHS,A_SCANNER,A_PACKETS,A_REPEATERS,A_SETUP,A_DIAGNOSTIC,
   A_VIEW,A_PRIVACY,A_ABOUT,A_CHAT_MT,A_CHAT_MC,A_CHAT_ALL,A_QUICK
 };
@@ -274,7 +275,7 @@ static const ActionInfo chat_actions[]={
   {"MeshCore",A_CHAT_MC,purple},{"Compose",A_NEW,orange}
 };
 static const ActionInfo map_actions[]={
-  {"POIs",A_POIS,orange},{"Tracks",A_TRACKS,purple},{"Record",A_RECORD,red},
+  {"Map view",A_MAP_HOME,orange},{"POIs",A_POIS,orange},{"Tracks",A_TRACKS,purple},{"Record",A_RECORD,red},
   {"Live share",A_SHARE,green},{"GNSS",A_GNSS,cyan},{"Team",A_TEAM,orange}
 };
 static const ActionInfo radio_actions[]={
@@ -327,6 +328,7 @@ static void notice(const char *title,const char *body_text){
 static void on_action(lv_event_t *e){
   int id=(int)(intptr_t)lv_event_get_user_data(e);
   if(id==A_WIFI){close_shade();wifi_setup(nullptr);return;}
+  if(id==A_MAP_HOME){page=2;map_view=0;draw();return;}
   if(id==A_INBOX||id==A_CHAT_ALL||id==A_CHAT_MT||id==A_CHAT_MC){
     if(id==A_CHAT_MT)chat_filter=1;
     else if(id==A_CHAT_MC)chat_filter=2;
@@ -334,7 +336,13 @@ static void on_action(lv_event_t *e){
     page=1;draw();return;
   }
   if(id==A_POSITION||id==A_POIS||id==A_TRACKS||id==A_RECORD||id==A_SHARE||
-     id==A_GNSS||id==A_TEAM||id==A_PATHS){page=2;draw();}
+     id==A_GNSS||id==A_TEAM||id==A_PATHS){
+    if(id==A_POIS)map_view=1;else if(id==A_TRACKS||id==A_PATHS)map_view=2;
+    else if(id==A_GNSS)map_view=3;else if(id==A_TEAM)map_view=4;
+    else if(id==A_SHARE)map_view=5;else if(id==A_POSITION)map_view=0;
+    page=2;draw();
+    if(id!=A_RECORD)return;
+  }
   if(id==A_NETWORKS||id==A_SCANNER||id==A_PACKETS||id==A_REPEATERS){page=3;draw();}
   if(id==A_SETUP||id==A_DIAGNOSTIC||id==A_VIEW||id==A_PRIVACY||id==A_ABOUT){page=4;draw();}
   char summary[320];
@@ -549,10 +557,31 @@ static void draw(){
     }
     color_label(body,"Radio BLE not connected; nothing sent.",8,268,w-16,muted);
   } else if(page==2){
-    show_center_heading("NAVIGATION","GNSS offline  /  map demo");
-    map_preview(w);
-    color_label(body,"Fix: NONE   Accuracy: --   Age: --",8,221,w-16,orange);
-    color_label(body,"Tools: POIs / Tracks / Record / Share",8,249,w-16,muted);
+    static const char *modes[]={"MAP / OFFLINE","POINTS OF INTEREST","SAVED TRACKS",
+                                "GNSS STATUS","TEAM POSITIONS","LIVE LOCATION SHARE"};
+    show_center_heading(modes[map_view],"Navigation workspace / DEMO");
+    if(map_view==0){
+      map_preview(w);
+      color_label(body,"Fix: NONE   Accuracy: --   Age: --",8,221,w-16,orange);
+      color_label(body,"Tools: POIs / Tracks / Record / Share",8,249,w-16,muted);
+    }else if(map_view==1){
+      center_card(8,58,w-16,66,"POI / DEMO","Camp Alpha  [sample]","Not saved to SD",orange);
+      center_card(8,131,w-16,66,"WAYPOINT / DEMO","Trail Junction  [sample]","No coordinates recorded",orange);
+      color_label(body,"Real POIs require GNSS and SD storage.",8,229,w-16,muted);
+    }else if(map_view==2){
+      center_card(8,58,w-16,69,"TRACKS / DEMO","Ridge Loop  [sample]","No GPX file loaded",purple);
+      center_card(8,134,w-16,69,"FOLDERS / DEMO","Expedition A  [sample]","No tracks stored",purple);
+      color_label(body,"GPX import/export is not implemented.",8,232,w-16,muted);
+    }else if(map_view==3){
+      center_card(8,58,w-16,98,"GNSS / OFFLINE","No MAX-M10S connected","Fix: NONE  /  Sats: --",cyan);
+      center_card(8,165,w-16,78,"SKY VIEW / OFF","No satellite observations",nullptr,cyan);
+    }else if(map_view==4){
+      center_card(8,58,w-16,78,"TEAM / DEMO","No nearby radios connected","All peer positions unavailable",green);
+      color_label(body,"No live teammates or location data.",8,163,w-16,muted);
+    }else{
+      center_card(8,58,w-16,90,"LIVE SHARE / OFF","No session running","No position transmitted",green);
+      center_card(8,156,w-16,86,"PRIVACY / REQUIRED","Destination + consent needed","Auto-stop required before share",orange);
+    }
   } else if(page==3){
     show_center_heading("RADIO PODS","Independent BLE connections");
     center_card(8,54,w-16,94,"MX-M / MESHTASTIC","BLE: NOT CONNECTED","Packets: 0  /  RSSI: --",green);
