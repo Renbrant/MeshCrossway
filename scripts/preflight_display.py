@@ -131,7 +131,13 @@ if version in ("v0.5.10","v0.6.0", "v0.6.1"):
     assert ('v0.6.1' if version=='v0.6.1' else ('v0.6.0' if version=='v0.6.0' else 'v0.5.10')) in health
     print("PASS: isolated one-shot manual capture, bounded PSRAM, serial-safe PIN and SD recovery preserved")
 
-if version=="v0.6.0", "v0.6.1":
+if version in ("v0.6.0","v0.6.1"):
+    if version=="v0.6.1":
+        for marker in ("single_label(context_actions", "lv_obj_set_size(icon,button_width,20)",
+                       "lv_obj_add_flag(caption,LV_OBJ_FLAG_HIDDEN)", "lv_obj_add_flag(body,LV_OBJ_FLAG_SCROLLABLE)",
+                       "lv_obj_scroll_to_y(body", "DEV 0.6.1"):
+            assert marker in ui, "Missing adaptive element: "+marker
+        assert "DEV 0.6.0" not in ui
     # Approved simulator v5: independent collapsible left/right rails and shade.
     for marker in ("left_compact","right_compact","toggle_left","toggle_right",
                    "context_actions","open_shade","QUICK SETTINGS",
@@ -140,7 +146,7 @@ if version=="v0.6.0", "v0.6.1":
                    "BLE: NOT CONNECTED","GNSS / OFFLINE","wifi_setup("):
         assert marker in ui, "v0.6.0 side-console element missing: "+marker
     assert 'DEV 0.5.10' not in ui
-    assert 'v0.6.0' in ui
+    assert version in ui
     assert "meshcapture::screenshot" in health
     assert "meshbackup::describe(" in ui
     assert "meshremote::register_input();" not in patcher.read_text().split("if 'meshremote::register_input();'")[0]
