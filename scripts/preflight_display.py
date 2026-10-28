@@ -81,7 +81,7 @@ void app(){
             patched_config=(example / "sdkconfig.defaults").read_text()
             if "CONFIG_FATFS_LFN_HEAP=y" not in patched_config or "CONFIG_FATFS_LFN_NONE=y" in patched_config:
                 errors.append("Wi-Fi SD backup requires FATFS heap long filename support")
-        if version=="v0.5.10" and not (main.parent / "meshcrossway_capture.h").is_file():
+        if version in ("v0.5.10","v0.6.0") and not (main.parent / "meshcrossway_capture.h").is_file():
             errors.append("Manual remote capture header not copied into vendor example")
         if not (main.parent / "meshcrossway_remote.h").is_file():
             errors.append("Remote header not copied")
@@ -93,7 +93,7 @@ if errors:
     sys.exit(1)
 print("Preflight PASS: version, C++ source patterns, JS syntax, patcher syntax and idempotence")
 
-if version in ("v0.5.7","v0.5.8","v0.5.9","v0.5.10"):
+if version in ("v0.5.7","v0.5.8","v0.5.9","v0.5.10","v0.6.0"):
     health=(FW/"meshcrossway_health.h").read_text()
     assert '#include "meshcrossway_health.h"' in ui
     assert not any(token in health for token in ("lv_snapshot_take(","lvgl_port_lock(","lv_indev_drv_register(","/touch"))
@@ -103,13 +103,13 @@ if version in ("v0.5.7","v0.5.8","v0.5.9","v0.5.10"):
     subprocess.run(["node","--check","-"],input=js,text=True,check=True)
     print("PASS status HTTP isolation and browser JavaScript")
 
-if version in ("v0.5.9","v0.5.10"):
+if version in ("v0.5.9","v0.5.10","v0.6.0"):
     backup=(FW/"meshcrossway_backup.h").read_text()
     assert all(name in backup for name in ("/sdcard/meshcrossway-wifi.json", "/sdcard/meshcrossway-wifi.tmp", "write failed (", "failed(FailureStep"))
     assert "meshbackup::describe(" in ui
     print("PASS: FATFS LFN enabled and write-stage diagnostics available without exposing secrets")
 
-if version=="v0.5.10":
+if version in ("v0.5.10","v0.6.0"):
     capture=(FW/"meshcrossway_capture.h").read_text()
     patch=patcher.read_text()
     assert "lv_snapshot_buf_size_needed(" in capture and "lv_snapshot_take_to_buf(" in capture
