@@ -1,5 +1,7 @@
 # MeshCrossway display-only firmware prototype
 
+> **Modular BLE software-first development (2026-10-28):** This firmware remains a **display-only / Wi-Fi screen-viewer prototype**, not a finished BLE Central implementation. The final MeshCrossway Core must connect to both autonomous Meshtastic and MeshCore Radio Pods over BLE. Retain this firmware's current behavior for UI tests, but evaluate Wi-Fi AP and BLE radio coexistence/memory before simultaneous operation. See [approved architecture](../../docs/modular-architecture.md). No PCB or wiring changes are required.
+
 This is an **early UI-only hardware test**, using the official Waveshare `ESP32-S3-Touch-LCD-3.5` ESP-IDF 8.4 LVGL example as its board-support baseline. No XIAO modules, GNSS receiver, antennas, or radio firmware are required. No network traffic is transmitted and all signal/satellite data is fictional.
 
 ## Windows / ESP-IDF quick start
