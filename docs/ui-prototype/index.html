@@ -1,28 +1,28 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MeshCrossway UI v5 — Field Console</title>
+<title>MeshCrossway — Dark Orange Field Console</title>
 <style>
-*{box-sizing:border-box}body{background:#030b12;color:#f1f8fd;font-family:system-ui,Arial;margin:0;min-height:100vh;display:flex;align-items:center;flex-direction:column;padding:14px}
-h1{font-size:20px;margin:8px}.intro{font-size:13px;color:#a5bccd;text-align:center;margin:5px 0 15px}.device{background:#142533;border:2px solid #42596b;border-radius:18px;padding:12px;max-width:100%}.screen{width:480px;height:320px;max-width:100%;background:#091723;border:1px solid #3a5365;border-radius:9px;position:relative;overflow:hidden}
-header{height:35px;background:#112637;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:14px;font-weight:850}header small{font-size:11px;color:#a7eaba}
+*{box-sizing:border-box}body{background:#17130f;color:#f1f8fd;font-family:system-ui,Arial;margin:0;min-height:100vh;display:flex;align-items:center;flex-direction:column;padding:14px}
+h1{font-size:20px;margin:8px}.intro{font-size:13px;color:#2f2b27;text-align:center;margin:5px 0 15px}.device{background:#1b1713;border:2px solid #774723;border-radius:18px;padding:12px;max-width:100%}.screen{width:480px;height:320px;max-width:100%;background:#191511;border:1px solid #774723;border-radius:9px;position:relative;overflow:hidden}
+header{height:35px;background:#1c1814;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:14px;font-weight:850}header small{font-size:11px;color:#a7eaba}
 main{height:235px;padding:9px 11px;overflow:auto;scrollbar-width:thin}.page{display:none}.page.active{display:block}
-nav{height:50px;display:grid;grid-template-columns:repeat(5,1fr);background:#122939;border-top:1px solid #355266}nav button{font-size:11px;font-weight:800;background:none;border:0;color:#a5bccd;padding:2px 0;cursor:pointer}nav button.active{color:white;background:#1b4963;border-top:3px solid #69d6ff}nav span{display:block;font-size:20px;line-height:22px}
-.heading{font-size:17px;font-weight:900}.sub{font-size:12px;color:#acc2ce}.line{display:flex;align-items:center;justify-content:space-between;gap:8px}.btn{background:#def3ff;color:#061722;border:0;border-radius:8px;padding:9px 11px;font-size:14px;font-weight:900;cursor:pointer}.btn.dark{background:#1a3a4c;color:#f1f8fd;border:1px solid #416077}.btn:active,.rowitem:active{filter:brightness(1.35)}
-.mt{color:#5df0d8}.mc{color:#ffbf72}.tag{padding:3px 6px;border-radius:5px;font-size:11px;font-weight:900}.tag.mt{background:#173f42}.tag.mc{background:#533720}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.card{border:1px solid #355165;background:#102636;border-radius:9px;padding:9px}.card strong{font-size:15px}.metric{font-size:13px;margin-top:5px;color:#bfd2de}.rowitem{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid #2c4658;background:#102432;border-radius:9px;margin-top:7px;cursor:pointer;min-height:50px}.grow{flex:1;min-width:0}.rowitem strong{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rowitem .sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tabs{display:flex;gap:5px}.tabs button{font-size:12px;padding:6px 9px;border-radius:7px;background:#1a3a4c;color:#cfdeea;border:1px solid #385c73}.tabs button.selected{background:#dcf3ff;color:#091723}
-.map{position:relative;height:150px;background:linear-gradient(#2744565a 1px,transparent 1px),linear-gradient(90deg,#2744565a 1px,transparent 1px),#122b3b;background-size:24px 24px;border:1px solid #48657a;border-radius:8px;overflow:hidden}.map:before{content:'';position:absolute;left:0;top:70%;width:120%;height:20px;background:#54728644;transform:rotate(-23deg)}.map .pin{position:absolute;left:50%;top:43%;background:#e8fbff;border:5px solid #39bedf;width:20px;height:20px;border-radius:50%}.map .peer{position:absolute;background:#5df0d8;border:2px solid #102636;border-radius:50%;width:13px;height:13px}.map .peer.mcpeer{background:#ffbf72}.map label{position:absolute;bottom:7px;left:7px;font-size:12px;background:#06121ddc;border-radius:5px;padding:4px}
-.controls{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #45667b;background:#173546;color:#f1f8fd;border-radius:7px;font-size:13px;font-weight:700;padding:7px 9px}
-.overlay{position:absolute;inset:35px 0 50px;background:#0a1925;z-index:2;display:none;padding:9px 12px;overflow-y:auto}.overlay.open{display:block}.overlay h2{font-size:17px;margin:0 0 6px}.overlay label{display:block;font-size:12px;color:#b5c9d8;font-weight:700;margin:5px 0 3px}.overlay select,.overlay textarea{background:#183749;border:1px solid #4b6a7d;border-radius:7px;color:white;padding:6px 8px;width:100%;font-family:inherit;font-size:15px}.overlay textarea{resize:none;height:45px}.overlay .line{margin-bottom:6px}.quick{display:flex;gap:5px;margin:5px 0}.quick button{background:#244559;color:#fff;border:1px solid #506c7d;border-radius:6px;font-size:12px;padding:5px}
-.kbd{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;margin-top:5px}.kbd button{border:1px solid #49687b;border-radius:5px;background:#264759;color:white;font-size:12px;height:24px;padding:0}
-.toast{position:absolute;bottom:51px;left:9px;right:9px;border:1px solid #548397;background:#15394a;border-radius:8px;padding:8px;font-size:12px;display:none;z-index:3}.toast.show{display:block}
-footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:center}a{color:#8edaff}
+nav{height:50px;display:grid;grid-template-columns:repeat(5,1fr);background:#1c1814;border-top:1px solid #774723}nav button{font-size:11px;font-weight:800;background:none;border:0;color:#2f2b27;padding:2px 0;cursor:pointer}nav button.active{color:white;background:#774723;border-top:3px solid #ffab42}nav span{display:block;font-size:20px;line-height:22px}
+.heading{font-size:17px;font-weight:900}.sub{font-size:12px;color:#2f2b27}.line{display:flex;align-items:center;justify-content:space-between;gap:8px}.btn{background:#35312d;color:#191511;border:0;border-radius:8px;padding:9px 11px;font-size:14px;font-weight:900;cursor:pointer}.btn.dark{background:#774723;color:#f1f8fd;border:1px solid #e37e2a}.btn:active,.rowitem:active{filter:brightness(1.35)}
+.mt{color:#ffab42}.mc{color:#ffbf72}.tag{padding:3px 6px;border-radius:5px;font-size:11px;font-weight:900}.tag.mt{background:#774723}.tag.mc{background:#533720}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.card{border:1px solid #774723;background:#1c1814;border-radius:9px;padding:9px}.card strong{font-size:15px}.metric{font-size:13px;margin-top:5px;color:#312d29}.rowitem{display:flex;align-items:center;gap:8px;padding:9px;border:1px solid #774723;background:#1b1713;border-radius:9px;margin-top:7px;cursor:pointer;min-height:50px}.grow{flex:1;min-width:0}.rowitem strong{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rowitem .sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tabs{display:flex;gap:5px}.tabs button{font-size:12px;padding:6px 9px;border-radius:7px;background:#774723;color:#322e2a;border:1px solid #774723}.tabs button.selected{background:#35312d;color:#191511}
+.map{position:relative;height:150px;background:linear-gradient(#7747235a 1px,transparent 1px),linear-gradient(90deg,#7747235a 1px,transparent 1px),#1c1814;background-size:24px 24px;border:1px solid #e37e2a;border-radius:8px;overflow:hidden}.map:before{content:'';position:absolute;left:0;top:70%;width:120%;height:20px;background:#e37e2a44;transform:rotate(-23deg)}.map .pin{position:absolute;left:50%;top:43%;background:#e8fbff;border:5px solid #ffab42;width:20px;height:20px;border-radius:50%}.map .peer{position:absolute;background:#ffab42;border:2px solid #1c1814;border-radius:50%;width:13px;height:13px}.map .peer.mcpeer{background:#ffbf72}.map label{position:absolute;bottom:7px;left:7px;font-size:12px;background:#191511dc;border-radius:5px;padding:4px}
+.controls{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #e37e2a;background:#774723;color:#f1f8fd;border-radius:7px;font-size:13px;font-weight:700;padding:7px 9px}
+.overlay{position:absolute;inset:35px 0 50px;background:#1a1612;z-index:2;display:none;padding:9px 12px;overflow-y:auto}.overlay.open{display:block}.overlay h2{font-size:17px;margin:0 0 6px}.overlay label{display:block;font-size:12px;color:#302c28;font-weight:700;margin:5px 0 3px}.overlay select,.overlay textarea{background:#774723;border:1px solid #e37e2a;border-radius:7px;color:white;padding:6px 8px;width:100%;font-family:inherit;font-size:15px}.overlay textarea{resize:none;height:45px}.overlay .line{margin-bottom:6px}.quick{display:flex;gap:5px;margin:5px 0}.quick button{background:#774723;color:#ffffff;border:1px solid #e37e2a;border-radius:6px;font-size:12px;padding:5px}
+.kbd{display:grid;grid-template-columns:repeat(10,1fr);gap:2px;margin-top:5px}.kbd button{border:1px solid #e37e2a;border-radius:5px;background:#774723;color:white;font-size:12px;height:24px;padding:0}
+.toast{position:absolute;bottom:51px;left:9px;right:9px;border:1px solid #e37e2a;background:#774723;border-radius:8px;padding:8px;font-size:12px;display:none;z-index:3}.toast.show{display:block}
+footer{font-size:12px;color:#2e2a26;max-width:560px;margin:12px;text-align:center}a{color:#ffab42}
 @media(max-width:520px){body{padding:5px}.device{padding:5px;border-radius:10px}h1{font-size:17px}.intro{font-size:12px;margin-bottom:7px}}
 
 /* Field Console v3 extensions */
-:root{--accent:#69d6ff}.screen.light{background:#e8f2f6;color:#08202d}.screen.light main{background:#e8f2f6;color:#08202d}.screen.light .card,.screen.light .rowitem{background:#fff;color:#08202d;border-color:#a5bfcb}.screen.light .sub,.screen.light .metric{color:#395e71}.screen.light nav{background:#d2e4eb}.screen.light nav button{color:#284c61}.screen.light nav button.active{background:#b2d8ea;color:#071923;border-top-color:var(--accent)}.screen.light header{background:#b9d9e8;color:#092434}.screen.light .overlay{background:#eef7fa;color:#092434}.screen.light .heading{color:#092434}.screen.light .pill,.screen.light .chip{color:#effaff}.screen{border-top-color:var(--accent)}
-.field-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:9px}.field-tile{border:1px solid #3f6277;border-radius:9px;background:#153548;color:#f6fbff;padding:9px 7px;text-align:left;min-height:57px;cursor:pointer}.field-tile strong{font-size:14px;display:block}.field-tile small{color:#bdd2df;font-size:11px}.field-tile:focus-visible,button:focus-visible{outline:3px solid #faca59}.sky{height:105px;width:105px;border-radius:50%;border:2px solid #4c7489;background:radial-gradient(circle,transparent 27%,#4a738b88 28%,transparent 30%,transparent 60%,#4a738b88 61%,transparent 63%),linear-gradient(90deg,transparent 49%,#527e91 50%,transparent 51%),linear-gradient(transparent 49%,#527e91 50%,transparent 51%),#102c3e;position:relative;flex:none}.sat{position:absolute;font-size:10px;font-weight:900;color:#081c23;background:#77e7b0;border-radius:50%;width:20px;height:20px;text-align:center;line-height:20px}.track-head{font-size:12px;color:#a9c6d8;margin:6px 0}.action-row{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}.demo-caption{font-size:11px;color:#b1c9d8;margin:8px 0}
-.map-dropdown{position:absolute;top:75px;right:9px;width:250px;max-height:193px;overflow-y:auto;background:#183447;border:1px solid #6a90a6;border-radius:10px;padding:5px;z-index:2;box-shadow:0 8px 20px #0009}.map-dropdown[hidden]{display:none}.map-dropdown button{display:block;width:100%;font-size:14px;text-align:left;color:#f3fcff;background:transparent;border:0;border-bottom:1px solid #426074;padding:9px 7px;min-height:38px}.map-dropdown button:last-child{border-bottom:0}.map-dropdown button:active{background:#2e5870}
+:root{--accent:#ffab42}.screen.light{background:#e8f2f6;color:#1b1713}.screen.light main{background:#e8f2f6;color:#1b1713}.screen.light .card,.screen.light .rowitem{background:#ffffff;color:#1b1713;border-color:#2e2a26}.screen.light .sub,.screen.light .metric{color:#774723}.screen.light nav{background:#d2e4eb}.screen.light nav button{color:#774723}.screen.light nav button.active{background:#322e2a;color:#191511;border-top-color:var(--accent)}.screen.light header{background:#322e2a;color:#1c1814}.screen.light .overlay{background:#eef7fa;color:#1c1814}.screen.light .heading{color:#1c1814}.screen.light .pill,.screen.light .chip{color:#effaff}.screen{border-top-color:var(--accent)}
+.field-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:9px}.field-tile{border:1px solid #e37e2a;border-radius:9px;background:#774723;color:#f6fbff;padding:9px 7px;text-align:left;min-height:57px;cursor:pointer}.field-tile strong{font-size:14px;display:block}.field-tile small{color:#312d29;font-size:11px}.field-tile:focus-visible,button:focus-visible{outline:3px solid #faca59}.sky{height:105px;width:105px;border-radius:50%;border:2px solid #e37e2a;background:radial-gradient(circle,transparent 27%,#e37e2a88 28%,transparent 30%,transparent 60%,#e37e2a88 61%,transparent 63%),linear-gradient(90deg,transparent 49%,#e37e2a 50%,transparent 51%),linear-gradient(transparent 49%,#e37e2a 50%,transparent 51%),#1d1915;position:relative;flex:none}.sat{position:absolute;font-size:10px;font-weight:900;color:#191511;background:#77e7b0;border-radius:50%;width:20px;height:20px;text-align:center;line-height:20px}.track-head{font-size:12px;color:#302c28;margin:6px 0}.action-row{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}.demo-caption{font-size:11px;color:#302c28;margin:8px 0}
+.map-dropdown{position:absolute;top:75px;right:9px;width:250px;max-height:193px;overflow-y:auto;background:#774723;border:1px solid #e37e2a;border-radius:10px;padding:5px;z-index:2;box-shadow:0 8px 20px #00000099}.map-dropdown[hidden]{display:none}.map-dropdown button{display:block;width:100%;font-size:14px;text-align:left;color:#f3fcff;background:transparent;border:0;border-bottom:1px solid #774723;padding:9px 7px;min-height:38px}.map-dropdown button:last-child{border-bottom:0}.map-dropdown button:active{background:#774723}
 /* v4: landscape side navigation, context actions and drop-down quick shade */
 .screen{display:grid;grid-template-columns:76px minmax(0,1fr) 128px;grid-template-rows:34px minmax(0,1fr);--railLeft:76px;--railRight:128px}
 .screen.left-collapsed{grid-template-columns:39px minmax(0,1fr) 128px;--railLeft:39px}
@@ -31,83 +31,83 @@ footer{font-size:12px;color:#9db5c6;max-width:560px;margin:12px;text-align:cente
 .top-status{grid-column:1/-1;grid-row:1;height:34px;min-width:0}
 .top-status button{background:none;color:inherit;border:0;font:inherit;text-align:left;padding:5px 8px;cursor:pointer;white-space:nowrap}
 .top-status small{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:6px}
-.shadeHint{color:#69d6ff;font-size:13px}
-.side-nav{grid-column:1;grid-row:2;height:auto;display:flex;flex-direction:column;gap:3px;padding:4px 3px;border-top:0;border-right:1px solid #355266;min-width:0;overflow:hidden}
+.shadeHint{color:#ffab42;font-size:13px}
+.side-nav{grid-column:1;grid-row:2;height:auto;display:flex;flex-direction:column;gap:3px;padding:4px 3px;border-top:0;border-right:1px solid #774723;min-width:0;overflow:hidden}
 .side-nav .nav-top{display:flex;justify-content:flex-end;min-height:20px}
-.side-nav .nav-top button,.context-top button{min-width:22px;min-height:23px;color:#e6faff;background:#1c3b4d;border:1px solid #507083;border-radius:6px;cursor:pointer}
-.side-nav button[data-nav]{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:42px;flex:1;padding:2px 1px;font-size:10px;line-height:13px;border:1px solid #203b4d;border-radius:7px}
+.side-nav .nav-top button,.context-top button{min-width:22px;min-height:23px;color:#e6faff;background:#774723;border:1px solid #e37e2a;border-radius:6px;cursor:pointer}
+.side-nav button[data-nav]{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:42px;flex:1;padding:2px 1px;font-size:10px;line-height:13px;border:1px solid #774723;border-radius:7px}
 .side-nav button[data-nav] span{font-size:19px;line-height:22px}
 .side-nav button[data-nav] em{font-style:normal}
-.side-nav button[data-nav].active{border:1px solid #56d8f5;border-top:1px solid #56d8f5}
+.side-nav button[data-nav].active{border:1px solid #ffab42;border-top:1px solid #ffab42}
 .left-collapsed .side-nav button[data-nav] em{display:none}
 .left-collapsed .side-nav button[data-nav] span{font-size:20px}
 main{grid-column:2;grid-row:2;height:auto;min-width:0;padding:7px;overflow:auto}
-.context-rail{grid-column:3;grid-row:2;min-width:0;background:#102537;border-left:1px solid #406075;display:flex;flex-direction:column;overflow:hidden;padding:3px}
+.context-rail{grid-column:3;grid-row:2;min-width:0;background:#1c1814;border-left:1px solid #774723;display:flex;flex-direction:column;overflow:hidden;padding:3px}
 .context-top{min-height:30px;display:flex;align-items:center;gap:4px}
 .context-top strong{font-size:11px;line-height:13px}
 .context-actions{overflow-y:auto;min-height:0;scrollbar-width:thin;display:flex;flex-direction:column;gap:5px;padding:3px 0}
-.context-actions button{background:#193647;border:1px solid #416074;color:#f3fbff;text-align:left;border-radius:7px;padding:9px 5px;font-size:11px;font-weight:700;min-height:39px;cursor:pointer}
-.context-actions button:active{background:#2b5a70}
+.context-actions button{background:#774723;border:1px solid #774723;color:#f3fbff;text-align:left;border-radius:7px;padding:9px 5px;font-size:11px;font-weight:700;min-height:39px;cursor:pointer}
+.context-actions button:active{background:#774723}
 .right-collapsed .context-top{flex-direction:column}.right-collapsed .context-top strong,.right-collapsed .context-actions{display:none}
 .right-collapsed #rightCollapse{transform:rotate(180deg)}
 .map-dropdown{position:static;width:100%;max-height:none;overflow:visible;box-shadow:none;background:transparent;border:0;padding:0}
-.map-dropdown button{border:1px solid #416074;border-radius:7px;background:#193647;padding:8px 4px;min-height:37px;font-size:11px;white-space:normal;margin:0 0 5px}
+.map-dropdown button{border:1px solid #774723;border-radius:7px;background:#774723;padding:8px 4px;min-height:37px;font-size:11px;white-space:normal;margin:0 0 5px}
 .map-dropdown[hidden]{display:none}
 #mapMenuToggle{display:none}
 #map .map{height:172px}
 #maparea label{font-size:9px}
-.quick-shade{position:absolute;z-index:12;left:0;right:0;top:34px;min-height:174px;max-height:280px;overflow:auto;background:#102d3e;border:1px solid #6aa6c4;border-radius:0 0 12px 12px;padding:9px;box-shadow:0 8px 30px #000b}
+.quick-shade{position:absolute;z-index:12;left:0;right:0;top:34px;min-height:174px;max-height:280px;overflow:auto;background:#1d1915;border:1px solid #ffab42;border-radius:0 0 12px 12px;padding:9px;box-shadow:0 8px 30px #000000bb}
 .quick-shade[hidden]{display:none}
 .shade-head{display:flex;justify-content:space-between;align-items:center;font-size:14px}
 .shade-toggles{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:9px 0}
-.qs-toggle{min-height:42px;background:#23465a;color:white;border:1px solid #456b7c;border-radius:8px;font-size:11px}
-.qs-toggle.active{background:#135268;border-color:#66def0;color:#fff}
+.qs-toggle{min-height:42px;background:#774723;color:white;border:1px solid #e37e2a;border-radius:8px;font-size:11px}
+.qs-toggle.active{background:#774723;border-color:#ffab42;color:#ffffff}
 .shade-bright{display:flex;align-items:center;gap:8px;font-size:12px}.shade-bright input{flex:1;min-width:0}
-.shade-detail{font-size:10px;color:#b6cddd;margin-top:8px}
+.shade-detail{font-size:10px;color:#312d29;margin-top:8px}
 .overlay{inset:34px 0 0;z-index:7}
 .toast{bottom:8px;z-index:9}
-.screen.light .side-nav,.screen.light .context-rail{background:#d2e4eb;color:#08202d}
-.screen.light .context-actions button{color:#fff}
+.screen.light .side-nav,.screen.light .context-rail{background:#d2e4eb;color:#1b1713}
+.screen.light .context-actions button{color:#ffffff}
 
 /* MeshCrossway field aesthetic v5: vector icons, colorful contextual tools, edge pull-tabs */
-body{background:radial-gradient(ellipse at 50% -30%,#1d4359 0%,#051019 64%);color:#f3faff}
-.device{background:linear-gradient(135deg,#213849,#101f2d);border:1px solid #58839a;box-shadow:0 16px 48px #0009,0 0 0 1px #0e2333 inset;padding:9px}
-.screen{border:1px solid #527991;box-shadow:inset 0 0 0 1px #193e4c;border-radius:10px;--accent:#29d9ee}
-.top-status{background:linear-gradient(90deg,#152f41,#091925);border-bottom:1px solid #315668}
-.top-status button{font-size:14px;letter-spacing:-.25px;color:#f5fbff;text-shadow:0 1px 8px #0005}
-.top-status button:first-letter{color:#60e5f5}
+body{background:radial-gradient(ellipse at 50% -30%,#774723 0%,#181410 64%);color:#f3faff}
+.device{background:linear-gradient(135deg,#774723,#1b1713);border:1px solid #e37e2a;box-shadow:0 16px 48px #00000099,0 0 0 1px #1b1713 inset;padding:9px}
+.screen{border:1px solid #e37e2a;box-shadow:inset 0 0 0 1px #774723;border-radius:10px;--accent:#ffab42}
+.top-status{background:linear-gradient(90deg,#774723,#1a1612);border-bottom:1px solid #774723}
+.top-status button{font-size:14px;letter-spacing:-.25px;color:#f5fbff;text-shadow:0 1px 8px #00000055}
+.top-status button:first-letter{color:#ffab42}
 .top-status small{color:#8df1bf;letter-spacing:.15px}
-.side-nav,.context-rail{background:linear-gradient(165deg,#142b3c,#0b1b29);border-color:#456d83}
+.side-nav,.context-rail{background:linear-gradient(165deg,#1d1915,#1a1612);border-color:#e37e2a}
 .side-nav{padding:5px 3px 5px 4px;gap:4px;overflow:visible}
 .side-nav .nav-top{min-height:0;height:0}
-.side-nav button[data-nav]{min-height:39px;border:1px solid #29475b;border-radius:9px;background:linear-gradient(135deg,#142b3b,#0c1e2c);color:#d4e7f4;box-shadow:inset 0 1px #ffffff0b;gap:1px}
+.side-nav button[data-nav]{min-height:39px;border:1px solid #774723;border-radius:9px;background:linear-gradient(135deg,#1c1814,#1b1713);color:#34302c;box-shadow:inset 0 1px #ffffff0b;gap:1px}
 .side-nav button[data-nav] span{display:flex;align-items:center;justify-content:center;line-height:1}
 .side-nav button[data-nav] .ui-icon{width:23px;height:23px;stroke-width:1.95}
-.side-nav button[data-nav="home"] .ui-icon{color:#daedff}
-.side-nav button[data-nav="chat"] .ui-icon{color:#65dcff}
-.side-nav button[data-nav="map"] .ui-icon{color:#2de1eb}
+.side-nav button[data-nav="home"] .ui-icon{color:#35312d}
+.side-nav button[data-nav="chat"] .ui-icon{color:#ffab42}
+.side-nav button[data-nav="map"] .ui-icon{color:#ffab42}
 .side-nav button[data-nav="tools"] .ui-icon{color:#f5b75e}
-.side-nav button[data-nav="more"] .ui-icon{color:#c4a5fd}
-.side-nav button[data-nav].active{border:1.5px solid #22e8fa;background:linear-gradient(130deg,#11374c,#0b4f64);color:#fff;box-shadow:0 0 13px #19bed424,inset 0 0 13px #2bd0f51b}
-.side-nav button[data-nav].active .ui-icon{filter:drop-shadow(0 0 4px #31cfff88)}
+.side-nav button[data-nav="more"] .ui-icon{color:#ffab42}
+.side-nav button[data-nav].active{border:1.5px solid #ffab42;background:linear-gradient(130deg,#774723,#774723);color:#ffffff;box-shadow:0 0 13px #ffab4224,inset 0 0 13px #ffab421b}
+.side-nav button[data-nav].active .ui-icon{filter:drop-shadow(0 0 4px #ffab4288)}
 .context-rail{padding:4px 4px 4px 6px;overflow:visible}
-.context-top{justify-content:center;min-height:33px;border-bottom:1px solid #335b72;margin-bottom:3px;padding-left:2px}
+.context-top{justify-content:center;min-height:33px;border-bottom:1px solid #774723;margin-bottom:3px;padding-left:2px}
 .context-top strong{font-size:12px;color:#e9f7ff;white-space:normal;line-height:1.2}
 .context-actions{padding:3px 1px;overflow-y:auto}
-.context-actions button,.map-dropdown button{display:flex;align-items:center;gap:7px;min-height:44px;background:linear-gradient(130deg,#172f40,#0b1c2a);border:1px solid #35556a;border-radius:8px;color:#f2f8ff;font-size:11px;font-weight:750;padding:7px 5px;line-height:1.2;box-shadow:inset 0 1px #ffffff10}
-.context-actions button:hover,.map-dropdown button:hover{border-color:#4aabc8;background:#194058}
+.context-actions button,.map-dropdown button{display:flex;align-items:center;gap:7px;min-height:44px;background:linear-gradient(130deg,#774723,#1a1612);border:1px solid #774723;border-radius:8px;color:#f2f8ff;font-size:11px;font-weight:750;padding:7px 5px;line-height:1.2;box-shadow:inset 0 1px #ffffff10}
+.context-actions button:hover,.map-dropdown button:hover{border-color:#ffab42;background:#774723}
 .map-dropdown{display:flex;flex-direction:column;gap:5px}
 .map-dropdown button{width:100%;margin:0;text-align:left}
 .map-dropdown .ui-icon{flex-shrink:0;width:21px;height:21px}
 .map-dropdown button[data-gps="pois"] .ui-icon{color:#ffb24e}
-.map-dropdown button[data-gps="tracks"] .ui-icon,.map-dropdown button[data-feature="paths"] .ui-icon{color:#c788fb}
+.map-dropdown button[data-gps="tracks"] .ui-icon,.map-dropdown button[data-feature="paths"] .ui-icon{color:#ffab42}
 .map-dropdown button[data-gps="record"] .ui-icon{color:#ff7373}
 .map-dropdown button#liveShareOpen .ui-icon{color:#48ef9c}
-.map-dropdown button[data-feature="team"] .ui-icon{color:#4bbaff}
-.map-dropdown button[data-feature="sky"] .ui-icon{color:#38dce7}
-.map-dropdown button[data-gps="share"] .ui-icon{color:#cde5ff}
+.map-dropdown button[data-feature="team"] .ui-icon{color:#ffab42}
+.map-dropdown button[data-feature="sky"] .ui-icon{color:#ffab42}
+.map-dropdown button[data-gps="share"] .ui-icon{color:#35312d}
 .map-dropdown button[data-feature="tracker"] .ui-icon{color:#ffc96b}
-#leftCollapse,#rightCollapse{position:absolute;z-index:6;top:47%;height:45px;width:23px;border:1.5px solid #5e8a9f;border-radius:9px;color:#eaf9ff;background:linear-gradient(#25475c,#102637);box-shadow:0 2px 8px #000b;font-size:23px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+#leftCollapse,#rightCollapse{position:absolute;z-index:6;top:47%;height:45px;width:23px;border:1.5px solid #e37e2a;border-radius:9px;color:#eaf9ff;background:linear-gradient(#774723,#1c1814);box-shadow:0 2px 8px #000000bb;font-size:23px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
 #leftCollapse{left:calc(var(--railLeft) - 1px);border-radius:0 11px 11px 0}
 #rightCollapse{right:calc(var(--railRight) - 1px);border-radius:11px 0 0 11px}
 .right-collapsed #rightCollapse{transform:rotate(180deg)}
@@ -115,25 +115,48 @@ body{background:radial-gradient(ellipse at 50% -30%,#1d4359 0%,#051019 64%);colo
 .context-top button{min-width:0}
 .left-collapsed .side-nav button[data-nav]{min-height:39px}
 .left-collapsed .side-nav button[data-nav] .ui-icon{width:23px;height:23px}
-main{background:#0b202d;padding:6px;scrollbar-color:#385d70 transparent}
+main{background:#1b1713;padding:6px;scrollbar-color:#774723 transparent}
 #map .heading{font-size:14px}
-#map .map{border:1px solid #456a82;background:radial-gradient(ellipse at 65% 20%,#24504088,transparent 43%),radial-gradient(ellipse at 15% 86%,#214c4588,transparent 37%),repeating-radial-gradient(ellipse at 50% 50%,transparent 0px,transparent 15px,#45736d27 16px,transparent 17px),linear-gradient(133deg,#122934,#162c37 60%,#0d2530);background-size:auto;box-shadow:inset 0 0 24px #020b1288}
-#map .map::before{background:#39749a77;border-radius:60%;height:9px;transform:rotate(-18deg);top:68%;width:150%}
-#maparea .pin{box-shadow:0 0 0 9px #1ca9ff24,0 0 10px #37cfffaa;z-index:1}
-#maparea .peer{box-shadow:0 0 0 3px #06192366}
-#maparea label{background:#081a25d8;color:#c9dfeb;border:1px solid #436175}
+#map .map{border:1px solid #e37e2a;background:radial-gradient(ellipse at 65% 20%,#24504088,transparent 43%),radial-gradient(ellipse at 15% 86%,#77472388,transparent 37%),repeating-radial-gradient(ellipse at 50% 50%,transparent 0px,transparent 15px,#77472327 16px,transparent 17px),linear-gradient(133deg,#1c1814,#1c1814 60%,#1b1713);background-size:auto;box-shadow:inset 0 0 24px #17130f88}
+#map .map::before{background:#e37e2a77;border-radius:60%;height:9px;transform:rotate(-18deg);top:68%;width:150%}
+#maparea .pin{box-shadow:0 0 0 9px #ffab4224,0 0 10px #ffab42aa;z-index:1}
+#maparea .peer{box-shadow:0 0 0 3px #19151166}
+#maparea label{background:#1a1612d8;color:#322e2a;border:1px solid #774723}
 #map .sub{font-size:10px}
-.chip{border-color:#467188;background:#15384b}
-.quick-shade{background:linear-gradient(155deg,#1b4253,#0d2331);border-color:#50abc7}
-.qs-toggle.active{background:#12596b;border-color:#44dbe9}
+.chip{border-color:#e37e2a;background:#774723}
+.quick-shade{background:linear-gradient(155deg,#774723,#1b1713);border-color:#ffab42}
+.qs-toggle.active{background:#774723;border-color:#ffab42}
+/* Brand v6: graphite and burnt orange, no blue UI accent. */
+:root{--accent:#ff9d32;color-scheme:dark}
+body{background:radial-gradient(ellipse at 50% -30%,#3e2a1b 0%,#0d0d0e 66%);color:#f5f2ee}
+.device{background:linear-gradient(135deg,#29231f,#141416);border-color:#67513e}
+.screen{background:#151516;border-color:#65513f;border-top-color:var(--accent)}
+.top-status{background:linear-gradient(90deg,#2b221c,#171719)}
+main{background:#161719}
+.side-nav,.context-rail{background:linear-gradient(165deg,#24211e,#151719)}
+.side-nav button[data-nav].active{border-color:var(--accent);background:linear-gradient(130deg,#493019,#332115);box-shadow:inset 0 0 12px #ff9d3224}
+.side-nav button[data-nav].active .ui-icon{color:#ffb35f;filter:drop-shadow(0 0 4px #ff9d3255)}
+.shadeHint{color:var(--accent)}
+a{color:#ffb35f}
+/* Keep the app dark even if the browser prototype's theme switch is used. */
+.screen.light{background:#181819;color:#f5f2ee}
+.screen.light main{background:#181819;color:#f5f2ee}
+.screen.light .card,.screen.light .rowitem{background:#262321;color:#f5f2ee;border-color:#554437}
+.screen.light .sub,.screen.light .metric{color:#d0c1b5}
+.screen.light nav,.screen.light .side-nav,.screen.light .context-rail{background:#211f1d;color:#f5f2ee}
+.screen.light nav button{color:#d0c1b5}
+.screen.light nav button.active{background:#493019;color:#fff;border-top-color:var(--accent)}
+.screen.light header{background:#2b221c;color:#fff}
+.screen.light .overlay{background:#211f1d;color:#fff}
+.screen.light .heading{color:#fff}
 </style></head><body>
-<h1>MeshCrossway · Field Console v5</h1><p class="intro">Meshtastic + MeshCore · touchscreen prototype · 480 × 320</p>
+<h1>MeshCrossway · Field Console</h1><p class="intro">Meshtastic + MeshCore · touchscreen prototype · 480 × 320</p>
 <div class="device"><div class="screen">
 <header class="top-status"><button id="quickShadeToggle" aria-expanded="false" aria-controls="quickShade" title="Open quick settings">MeshCrossway <span class="shadeHint">⌄</span></button><small>● MT &nbsp; ● MC &nbsp; GPS ▴ &nbsp; ▣ 78%</small></header>
 <nav id="sideNav" class="side-nav"><div class="nav-top"><button id="leftCollapse" class="drawer-handle" aria-label="Collapse navigation" aria-expanded="true">‹</button></div><button class="active" data-nav="home"><span><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10H4V10"/><path d="M9 20v-7h6v7"/></svg></span><em>Home</em></button><button data-nav="chat"><span><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z"/></svg></span><em>Chats</em></button><button data-nav="map"><span><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 5 6-2 6 3 6-3v16l-6 3-6-3-6 2z"/><path d="M9 3v16M15 6v16"/></svg></span><em>Map</em></button><button data-nav="tools"><span><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="5" width="10" height="16" rx="2"/><path d="M10 5V2h4v3M10 10h4M12 15h.01"/></svg></span><em>Radios</em></button><button data-nav="more"><span><svg class="ui-icon" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg></span><em>More</em></button></nav>
 <main>
 <section class="page active" id="home">
-<div class="card" style="padding:6px 9px;margin-bottom:7px;border-color:#42677e"><div class="line"><strong style="font-size:12px">MeshCrossway V1 · XIAO + Wio-SX1262 ×2</strong><span class="tag" style="background:#274253;color:#b6e5ff">DEMO</span></div><div class="sub" style="font-size:10px;margin-top:3px">Waveshare ESP32-S3 · Meshtastic + MeshCore · UART integration pending</div></div>
+<div class="card" style="padding:6px 9px;margin-bottom:7px;border-color:#e37e2a"><div class="line"><strong style="font-size:12px">MeshCrossway V1 · XIAO + Wio-SX1262 ×2</strong><span class="tag" style="background:#774723;color:#ffab42">DEMO</span></div><div class="sub" style="font-size:10px;margin-top:3px">Waveshare ESP32-S3 · Meshtastic + MeshCore · UART integration pending</div></div>
 <div class="grid2"><div class="card"><div class="line"><strong class="mt">Meshtastic</strong><span class="tag mt">MT</span></div><div class="metric">● Online · 4 nodes</div></div><div class="card"><div class="line"><strong class="mc">MeshCore</strong><span class="tag mc">MC</span></div><div class="metric">● Online · 3 contacts</div></div></div>
 <div class="line" style="margin-top:11px"><span class="heading">Latest messages</span><button class="btn" data-compose>+ Message</button></div>
 <div class="rowitem" data-open="chat"><span class="tag mt">MT</span><div class="grow"><strong>Trail Team</strong><div class="sub">Reached checkpoint 3.</div></div><span class="sub">14:35</span></div>
@@ -219,7 +242,7 @@ team:['Team coordination','<div class="card"><strong>Expedition Alpha · demo</s
 sky:['GNSS sky plot','<div class="line"><div class="sky"><span class="sat" style="left:20%;top:17%">G</span><span class="sat" style="left:66%;top:27%;background:#ffc579">E</span><span class="sat" style="left:47%;top:64%">B</span></div><div class="grow"><strong>12 satellites · 3D</strong><div class="metric">Used: 8 · HDOP: 0.9</div><div class="metric">Fix age: 2 sec</div><div class="metric">G: GPS · E: Galileo · B: BeiDou</div></div></div><div class="demo-caption">Illustrative sky plot, not live GNSS measurements.</div>'],
 paths:['Saved radio paths','<div class="card"><strong>Ridge → Base</strong><div class="metric">MeshCore · 2 relay hops</div><div class="metric">Manual route · inactive demo</div></div><div class="action-row"><button class="btn" id="pathButton">Select example path</button></div><div class="demo-caption">Paths are protocol-specific; no cross-network forwarding.</div>'],
 control:['Quick controls','<div class="field-grid"><button class="field-tile control-toggle" data-tog="GPS" data-on="true"><strong>GPS</strong><small>ON · demo</small></button><button class="field-tile control-toggle" data-tog="Bluetooth" data-on="false"><strong>Bluetooth</strong><small>OFF · demo</small></button><button class="field-tile control-toggle" data-tog="Wi-Fi" data-on="false"><strong>Wi-Fi</strong><small>OFF · demo</small></button><button class="field-tile control-toggle" data-tog="Sound" data-on="true"><strong>Sound</strong><small>ON · demo</small></button></div><div class="track-head">Brightness</div><input type="range" min="20" max="100" value="80" id="bright" aria-label="Brightness" style="width:95%"><div class="demo-caption">Visual controls only. No device peripherals are changed.</div>'],
-display:['Display appearance','<div class="card"><strong>Color mode</strong><div class="action-row"><button class="btn" id="darkTheme">Dark</button><button class="btn dark" id="lightTheme">Light</button></div><div class="track-head">Accent color</div><div class="action-row"><button class="chip themeAccent" data-color="#69d6ff">Blue</button><button class="chip themeAccent" data-color="#5df0d8">Teal</button><button class="chip themeAccent" data-color="#ffbf72">Amber</button></div></div><div class="demo-caption">MeshCrossway display settings. Changes affect this browser preview only.</div>']
+display:['Display appearance','<div class="card"><strong>Color mode</strong><div class="action-row"><button class="btn" id="darkTheme">Dark</button><button class="btn dark" id="lightTheme">Light</button></div><div class="track-head">Accent color</div><div class="action-row"><button class="chip themeAccent" data-color="#ffab42">Blue</button><button class="chip themeAccent" data-color="#ffab42">Teal</button><button class="chip themeAccent" data-color="#ffbf72">Amber</button></div></div><div class="demo-caption">MeshCrossway display settings. Changes affect this browser preview only.</div>']
 };
 function feature(name){const d=examples[name];if(!d)return;ft.textContent=d[0];fc.innerHTML=d[1];open('featurePanel');
 const click=(id,fn)=>{const el=document.getElementById(id);if(el)el.onclick=fn};
@@ -259,11 +282,11 @@ let liveState={active:false,paused:false,mode:'person',recipient:'Alex',network:
 function livePanel(){
  gpsTitle.textContent='Live location sharing';
  gpsBody.innerHTML='<div class="sub">OFF by default · deliberate opt-in · demo only</div>'+
- '<div class="line" style="margin-top:8px"><label style="font-size:13px" for="liveMode">Recipients</label><select id="liveMode" style="font-size:14px;padding:6px;background:#193b4d;color:white;border-radius:7px"><option value="person">One person</option><option value="group">Group/channel</option></select></div>'+
- '<div class="line" style="margin-top:7px"><label style="font-size:13px" for="liveNetwork">Network</label><select id="liveNetwork" style="font-size:14px;padding:6px;background:#193b4d;color:white;border-radius:7px"><option>Meshtastic</option><option>MeshCore</option></select></div>'+
- '<div class="line" style="margin-top:7px"><label style="font-size:13px" for="liveRecipient">Send to</label><select id="liveRecipient" style="font-size:14px;padding:6px;background:#193b4d;color:white;border-radius:7px"></select></div>'+
- '<div class="grid2" style="margin-top:8px"><div><label class="sub" for="liveInterval">Every</label><select id="liveInterval" style="width:100%;font-size:14px;padding:7px;background:#193b4d;color:white;border-radius:7px"><option value="30">30 sec</option><option value="60">1 min</option><option value="300">5 min</option><option value="900">15 min</option><option value="1800">30 min</option></select></div><div><label class="sub" for="liveDistance">After moving</label><select id="liveDistance" style="width:100%;font-size:14px;padding:7px;background:#193b4d;color:white;border-radius:7px"><option value="0">Any distance</option><option value="25">25 m</option><option value="50">50 m</option><option value="100">100 m</option><option value="250">250 m</option><option value="500">500 m</option></select></div></div>'+
- '<div class="grid2" style="margin-top:8px"><div><label class="sub" for="liveRule">Send when</label><select id="liveRule" style="width:100%;font-size:14px;padding:7px;background:#193b4d;color:white;border-radius:7px"><option value="either">Time OR movement</option><option value="both">Time AND movement</option></select></div><div><label class="sub" for="liveDuration">Auto-stop after</label><select id="liveDuration" style="width:100%;font-size:14px;padding:7px;background:#193b4d;color:white;border-radius:7px"><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hour</option><option value="240">4 hours</option><option value="480">8 hours</option></select></div></div>'+
+ '<div class="line" style="margin-top:8px"><label style="font-size:13px" for="liveMode">Recipients</label><select id="liveMode" style="font-size:14px;padding:6px;background:#774723;color:white;border-radius:7px"><option value="person">One person</option><option value="group">Group/channel</option></select></div>'+
+ '<div class="line" style="margin-top:7px"><label style="font-size:13px" for="liveNetwork">Network</label><select id="liveNetwork" style="font-size:14px;padding:6px;background:#774723;color:white;border-radius:7px"><option>Meshtastic</option><option>MeshCore</option></select></div>'+
+ '<div class="line" style="margin-top:7px"><label style="font-size:13px" for="liveRecipient">Send to</label><select id="liveRecipient" style="font-size:14px;padding:6px;background:#774723;color:white;border-radius:7px"></select></div>'+
+ '<div class="grid2" style="margin-top:8px"><div><label class="sub" for="liveInterval">Every</label><select id="liveInterval" style="width:100%;font-size:14px;padding:7px;background:#774723;color:white;border-radius:7px"><option value="30">30 sec</option><option value="60">1 min</option><option value="300">5 min</option><option value="900">15 min</option><option value="1800">30 min</option></select></div><div><label class="sub" for="liveDistance">After moving</label><select id="liveDistance" style="width:100%;font-size:14px;padding:7px;background:#774723;color:white;border-radius:7px"><option value="0">Any distance</option><option value="25">25 m</option><option value="50">50 m</option><option value="100">100 m</option><option value="250">250 m</option><option value="500">500 m</option></select></div></div>'+
+ '<div class="grid2" style="margin-top:8px"><div><label class="sub" for="liveRule">Send when</label><select id="liveRule" style="width:100%;font-size:14px;padding:7px;background:#774723;color:white;border-radius:7px"><option value="either">Time OR movement</option><option value="both">Time AND movement</option></select></div><div><label class="sub" for="liveDuration">Auto-stop after</label><select id="liveDuration" style="width:100%;font-size:14px;padding:7px;background:#774723;color:white;border-radius:7px"><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hour</option><option value="240">4 hours</option><option value="480">8 hours</option></select></div></div>'+
  '<div class="demo-caption" id="liveSummary"></div><div class="action-row"><button class="btn" id="liveStart">'+(liveState.active?'Restart demo sharing':'Start demo sharing')+'</button><button class="btn dark" id="livePause" '+(!liveState.active?'disabled':'')+'>'+(liveState.paused?'Resume':'Pause')+'</button><button class="btn dark" id="liveStop" '+(!liveState.active?'disabled':'')+'>Stop</button></div>'+
  '<div class="demo-caption" id="liveStatus"></div>';
  open('gpsPanel');
