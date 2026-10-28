@@ -101,6 +101,12 @@ The illustrated electrical design is a **proposal**; it is not a production-read
 
 Explore the [future integrations registry](docs/future-integrations/README.md), including [Colorado Mesh-Client](docs/future-integrations/colorado-mesh-client.md), MeshMapper, ATAK, Reticulum and upstream protocol projects. These are research opportunities, not committed features or partnerships.
 
+## Alternative central console: LilyGO T-Deck Plus
+
+The **LilyGO T-Deck Plus** is being evaluated as an **optional portable replacement for the Waveshare central display/controller**, keeping MeshCore and Meshtastic on independent radio nodes (including compatible Heltec V3 devices) linked by BLE. Its screen, keyboard and trackball would provide the MeshCrossway UI; a dedicated firmware build would aim to support the installed Launcher Web Flasher workflow. **Candidate only — BLE multi-peer operation, firmware packaging and on-device compatibility still require hardware validation.** The existing modular reference architecture remains unchanged.
+
+[Read the T-Deck Plus alternative central-controller feasibility plan](docs/alternative-central-lilygo-tdeck-plus.md).
+
 ## Design and documentation
 
 | Topic | Detailed documentation |
