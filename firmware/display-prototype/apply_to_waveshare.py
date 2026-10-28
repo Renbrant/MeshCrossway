@@ -47,5 +47,5 @@ defaults = sdk.read_text()
 needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_FATFS_LFN_HEAP=y"]
 missing=[option for option in needed if option not in defaults.splitlines()]
 if missing:
-    sdk.write_text(defaults.rstrip("\\n")+"\\n"+"\\n".join(missing)+"\\n")
+    sdk.write_text(defaults.rstrip("\n")+"\n"+"\n".join(missing)+"\n")
 print(f"MeshCrossway patched and verified: {project}")
