@@ -148,3 +148,14 @@ This is a **major UI navigation milestone** based on the approved browser UI v5 
 **Hardware test plan:** Select v0.6.0 in the Web Flasher (without Erase), boot with the tested FAT32 SD, verify Wi-Fi auto-reconnect and `SD backup: saved`, navigate each page, collapse/expand both rails, scroll the Map context tools, open POI/Tracks/GNSS/Share subviews and top shade, use the original Wi-Fi keyboard, and capture multiple pages through the unchanged read-only HTTP interface. Observe the display for blackouts/flicker and memory stability. If anything regresses, recover using the **unchanged v0.5.10 archived image**. Automated build success does not establish hardware stability.
 
 The approved visual reference has dark graphite and orange/amber as its primary palette; color-coded functional accents may indicate map/track/share/radio tools without implying actual live data.
+
+
+## v0.6.1 — adaptive Field Console layout (physical validation pending)
+
+- Compact left navigation centers each glyph inside its 34px button and hides captions without losing the icon.
+- Body scrolls vertically for overflowing Chats and Radio status; headings/cards use single-line ellipsis.
+- Right contextual tools use short one-line headers, a fixed 32px header gap, and active-filter highlighting.
+- Home status cards use shorter text on narrow widths; map sample contours scale with available canvas width.
+- Quick Settings is a bounded modal with a dim backdrop and explicit demo-only indicators.
+- Wi-Fi touchscreen provisioning, SD plaintext backup, manual PIN-protected view-only capture and disabled remote touch are unchanged.
+- Check all four independent rail combinations, 5 pages, map subviews and modal behavior on physical 480x320 LCD. Do not mark hardware-tested before owner confirmation.

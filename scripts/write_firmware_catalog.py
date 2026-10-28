@@ -39,6 +39,10 @@ for version in ("v0.4.0","v0.3.0","v0.5.2","v0.5.4","v0.5.6","v0.5.7","v0.5.8","
     if version in tested:
         summary,label=tested[version]
         status="hardware-tested"
+    elif version=="v0.6.1":
+        summary="Field Console responsive layout update: compact icons centered, scrolling content, improved status cards and contextual actions; Wi-Fi/SD/read-only remote untouched. Physical test pending."
+        label="Adaptive console / experimental"
+        status="experimental"
     elif version=="v0.6.0":
         summary="Field Console LVGL redesign from approved virtual UI: dual collapsible side rails, Map subviews, contextual actions and quick settings. Wi-Fi/SD/read-only remote preserved; physical test pending."
         label="Side-console navigation / experimental"
