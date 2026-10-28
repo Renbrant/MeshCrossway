@@ -1,4 +1,4 @@
-name: Deploy MeshCrossway website to GitHub Pages
+name: Build firmware and deploy MeshCrossway website
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
       - "docs/site/**"
       - "docs/ui-prototype/**"
       - "docs/images/meshcrossway_mountain_connectivity_concept.png"
+      - "firmware/display-prototype/**"
       - ".github/workflows/ui-pages.yml"
   workflow_dispatch:
 
@@ -21,23 +22,44 @@ concurrency:
 
 jobs:
   deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Assemble website
         run: |
-          mkdir -p _site/ui _site/media
+          mkdir -p _site/ui _site/media _site/flasher/firmware
           cp -R docs/site/. _site/
           cp -R docs/ui-prototype/. _site/ui/
           cp docs/images/meshcrossway_mountain_connectivity_concept.png _site/media/
-      - name: Set up GitHub Pages
-        uses: actions/configure-pages@v5
-      - name: Upload website
-        uses: actions/upload-pages-artifact@v3
+      - name: Build Waveshare ESP32-S3 firmware with ESP-IDF
+        run: |
+          git clone --depth 1 --recurse-submodules https://github.com/waveshareteam/ESP32-S3-Touch-LCD-3.5.git vendor/ESP32-S3-Touch-LCD-3.5
+          python3 firmware/display-prototype/apply_to_waveshare.py
+          docker run --rm -v "$PWD":/workspace -w /workspace/vendor/ESP32-S3-Touch-LCD-3.5/examples/esp-idf/02_lvgl_example espressif/idf:v5.3.2 /bin/bash -lc '
+            idf.py set-target esp32s3
+            idf.py build
+            idf.py merge-bin -o /workspace/_site/flasher/firmware/meshcrossway-display-dev.bin
+          '
+          test -s _site/flasher/firmware/meshcrossway-display-dev.bin
+      - name: Generate web flasher manifest
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          out=Path("_site/flasher/firmware")
+          manifest={
+            "name":"MeshCrossway Display Development",
+            "version":os.environ["GITHUB_SHA"][:8],
+            "new_install_prompt_erase":True,
+            "builds":[{"chipFamily":"ESP32-S3","parts":[{"path":"meshcrossway-display-dev.bin","offset":0}]}]
+          }
+          (out/"manifest.json").write_text(json.dumps(manifest,indent=2)+"\n")
+          PY
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
       - name: Deploy to GitHub Pages
