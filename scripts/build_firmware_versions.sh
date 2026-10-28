@@ -45,6 +45,14 @@ build_version() {
   local vendor="$TEMP/vendor-$version"
   local image_rel="$OUT_REL/versions/$version/meshcrossway-display-dev.bin"
   mkdir -p "$image_dir"
+  # An immutable version can use a previous successful GitHub Actions cache.
+  if [ "$ref" != "HEAD" ] && [ -s "$image_dir/meshcrossway-display-dev.bin" ] &&
+     [ -s "$image_dir/manifest.json" ] && [ -s "$image_dir/build-info.json" ]; then
+    if python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$image_dir" --version "$version" --ref "$ref"; then
+      echo "RESTORED: $version from verified immutable cache"
+      return
+    fi
+  fi
 
   if [ "$ref" != "HEAD" ]; then
     source_root="$TEMP/source-$version"
