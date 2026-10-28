@@ -56,6 +56,7 @@ void app(){
     }
 }
 ''')
+        (main.parent / "CMakeLists.txt").write_text('idf_component_register(SRCS "main.cpp" INCLUDE_DIRS ".")\\n')
         (example / "sdkconfig.defaults").write_text('CONFIG_IDF_TARGET="esp32s3"\n')
         for attempt in range(2):
             p = subprocess.run([sys.executable, str(patcher), str(vendor)], text=True, capture_output=True)
