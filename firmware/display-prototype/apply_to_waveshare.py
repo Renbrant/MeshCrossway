@@ -31,12 +31,6 @@ if '#include "meshcrossway_ui.h"' not in source:
 if '#include "meshcrossway_ble.h"' not in source:
     source=source.replace('#include "meshcrossway_ui.h"', '#include "meshcrossway_ui.h"\n#include "meshcrossway_ble.h"',1)
     main.write_text(source)
-cmake = project / "main" / "CMakeLists.txt"
-cmake_text = cmake.read_text()
-if "REQUIRES bt nvs_flash" not in cmake_text:
-    if 'INCLUDE_DIRS "."' not in cmake_text:
-        sys.exit("Unsupported upstream main CMakeLists.txt; cannot add BLE component")
-    cmake.write_text(cmake_text.replace('INCLUDE_DIRS "."', 'INCLUDE_DIRS "." REQUIRES bt nvs_flash', 1))
 if 'meshremote::register_input();' in source or 'meshremote::start();' in source:
     sys.exit('Diagnostic firmware must not activate remote LVGL input or screenshot HTTP')
 if source.count('meshcapture::init();') != 1:
@@ -60,7 +54,7 @@ defaults = sdk.read_text()
 needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_FATFS_LFN_HEAP=y",
         "CONFIG_BT_ENABLED=y","CONFIG_BT_NIMBLE_ENABLED=y",
         "CONFIG_BT_NIMBLE_ROLE_CENTRAL=y","CONFIG_BT_NIMBLE_MAX_CONNECTIONS=2",
-        "CONFIG_BTDM_CTRL_MODE_BLE_ONLY=y"]
+        "CONFIG_ESP_COEX_SW_COEXIST_ENABLE=y"]
 missing=[option for option in needed if option not in defaults.splitlines()]
 if missing:
     sdk.write_text(defaults.rstrip("\n")+"\n"+"\n".join(missing)+"\n")
