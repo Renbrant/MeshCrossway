@@ -128,3 +128,23 @@ The owner installed v0.5.10 and provided a browser screenshot showing **Device o
 Following the first successful v0.5.10 remote screenshot, the owner physically tested **multiple captures of different interface pages** and reported all captures working normally with no black-screen or touch-interaction regressions observed during this test. The v0.5.10 manual **read-only viewer** is therefore hardware-tested for multiple captures. This is not a multi-hour stability/soak test; **remote touch remains disabled** and requires its own isolated experiment.
 
 The Web Flasher now **preselects `catalog.latest`** on load (v0.5.10 at this change), while the existing drop-down remains able to select any archived firmware. The catalog's `recommended` entry remains `v0.4.0` for historical recovery; do not remove or replace it. Subsequent releases will open on their newest published version automatically, without hardcoding the version number.
+
+
+## v0.6.0 — native Waveshare LVGL Field Console (physical test pending)
+
+This is a **major UI navigation milestone** based on the approved browser UI v5 in `docs/ui-prototype/` (480 × 320 landscape). It **does not** add GNSS hardware, map tiles, Meshtastic/MeshCore BLE, radio packet transmission, or remote touch.
+
+- **Left global sidebar** with Home, Chats, Map, Radios and More, each with icon and label. It can collapse to an icon-only rail.
+- **Right context sidebar** with tools based on the active screen. It independently collapses for maximum workspace, and the list scrolls for long Map action lists.
+- **Top quick-settings shade** opens from the status bar. Displays preview options for GPS, BLE, sound and brightness, clearly labeled as non-operational; the Wi-Fi action opens the **actual working** local touchscreen provisioning workflow.
+- **Home:** separate MX-M/Meshtastic and MX-C/MeshCore status cards, GNSS and cross-network indicators, all explicitly **offline/demo**, not invented live counts.
+- **Chats:** demo inbox with All / Meshtastic / MeshCore filters and contextual actions. Compose remains demo-only and does not send messages.
+- **Navigation:** an illustrative topographic-style map/grid (not a basemap) plus separate POI, Tracks, GNSS, Team and Live Share panels. Track recording and live position sharing are **OFF**, with clear physical requirements. No file or radio transmissions occur.
+- **Radios:** independent BLE status cards explicitly marked not connected; tools remain demonstrations until the radio pods are integrated.
+- **More:** real ESP32 uptime, free heap, current Wi-Fi connection, SD backup status and physical View PIN; the same tested full-screen QWERTY Wi-Fi keyboard, NVS saving, and FAT32 backup are retained.
+- **Remote viewing:** exactly the existing v0.5.10 PIN-protected, manual, read-only RGB565 screenshot. No HTTP remote click/touch endpoint and no additional LVGL pointer.
+- **Rendering safety:** live Settings and top Wi-Fi status labels are updated **in place** every 3 seconds; switching pages or changing sidebar size can rebuild that page only on a user interaction. A potentially destabilizing wholesale timer-driven UI recreation is intentionally avoided.
+
+**Hardware test plan:** Select v0.6.0 in the Web Flasher (without Erase), boot with the tested FAT32 SD, verify Wi-Fi auto-reconnect and `SD backup: saved`, navigate each page, collapse/expand both rails, scroll the Map context tools, open POI/Tracks/GNSS/Share subviews and top shade, use the original Wi-Fi keyboard, and capture multiple pages through the unchanged read-only HTTP interface. Observe the display for blackouts/flicker and memory stability. If anything regresses, recover using the **unchanged v0.5.10 archived image**. Automated build success does not establish hardware stability.
+
+The approved visual reference has dark graphite and orange/amber as its primary palette; color-coded functional accents may indicate map/track/share/radio tools without implying actual live data.
