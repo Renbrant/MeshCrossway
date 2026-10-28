@@ -1,8 +1,8 @@
 ![MeshCrossway — Meshtastic and MeshCore modular three-device system](docs/images/meshcrossway-modular-hero.jpg)
 
-MeshCrossway is an **open-source, offline-first touchscreen communicator** designed to use **Meshtastic** and **MeshCore** through **two independent Seeed XIAO ESP32-S3 + Wio-SX1262 radio kits**. One interface brings together messaging, navigation, GNSS positioning, tracks and field diagnostics without requiring cellular coverage or the internet.
+MeshCrossway is an **open-source, offline-first modular communication system** with **three independent, battery-powered devices**: one touchscreen **Core** and two detachable LoRa **Radio Pods**, one for **Meshtastic** and one for **MeshCore**. The Core connects to both Pods over **two separate Bluetooth Low Energy (BLE) links**, bringing messaging, navigation, GNSS positioning, tracks and field diagnostics into a single interface without requiring cellular coverage or the internet.
 
-> **Development status — October 26, 2026:** the Rev A carrier pin contract has been corrected against the manufacturer documentation for the Waveshare J8, XIAO ESP32-S3 and Wio-SX1262. The interactive UI is a **simulation with sample data**, not working radio hardware. UART integration, the selectable 5 V/VBUS radio-power path, local-regulator choice, RF coexistence and tracking are still bench-validation gates. This is not a certified rescue/emergency device.
+> **Development status — October 28, 2026:** the **three-device, independent-battery BLE architecture** is the approved direction. The Waveshare touchscreen firmware **v0.4.0 is the stable physical UI baseline**, but the two-Pod BLE integration and real radio features are **not yet implemented**; the web UI still contains simulated data. Firmware v0.5.0/v0.5.1 has a known display regression and is **not recommended for installation**. The former integrated Rev A carrier/UART/one-battery design is archived as an alternative historical variant, **not the current build plan**. This is not a certified rescue/emergency device.
 
 ## Try the interactive interface
 
@@ -14,28 +14,29 @@ MeshCrossway is an **open-source, offline-first touchscreen communicator** desig
 
 The UI prototype explores **horizontal-screen navigation**, collapsible left navigation and right contextual tools, a pull-down top settings area, messages, maps, sharing and diagnostics. It does not yet communicate with physical radios. [Interface documentation](docs/ui-prototype/README.md).
 
-## V1 hardware selection
+## Current hardware — three independent BLE devices
 
-![Approved exploded hardware concept showing the single carrier PCB and battery in the transparent rear shell](docs/images/architecture/meshcrossway-exploded.jpg)
+![Approved MeshCrossway modular topology: one Core and two autonomous Radio Pods, each with its own battery](docs/images/architecture/modular-ble-topology.svg)
 
-The planned physical packaging uses **one integrated custom carrier PCB** for the two XIAO/Wio radios and GNSS with the Waveshare display, plus the protected **rear-mounted 1S LiPo**, all inside an almost invisible transparent case. Actual component geometry, antenna routing, RF isolation, battery thickness and retention are **unverified**.
+**Three separate units, three batteries, two simultaneous BLE links, and two independent LoRa networks.** The three devices may be carried separately or attached to an optional mechanical dock. **There is no electrical wiring, shared carrier PCB or shared battery between the Core and either Pod** in the current software-first design. BLE remains the Core-to-Pod data link even when the units are docked.
 
-![Independent XIAO/Wio B2B and external UART interface illustration](docs/images/architecture/xiao-wiring.svg)
+| Device | Selected hardware | Independent power | Role and wireless connection |
+|---|---|---|---|
+| **MeshCrossway Core** | **Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0** (480 × 320 touchscreen) | **Own protected rechargeable battery**, charging/power management to be validated | Central LVGL UI, microSD, planned MAX-M10S GNSS; **BLE Central** connected to both Pods |
+| **MX-M Radio Pod** | **Seeed XIAO ESP32-S3 + Wio-SX1262** B2B kit | **Own protected rechargeable battery**, charging circuit and power switch | Native **Meshtastic** radio with **BLE PhoneAPI Peripheral**; its own SX1262 and LoRa antenna |
+| **MX-C Radio Pod** | **Second Seeed XIAO ESP32-S3 + Wio-SX1262** B2B kit | **Own protected rechargeable battery**, charging circuit and power switch | Native **MeshCore BLE Companion Peripheral**; its own SX1262 and LoRa antenna |
 
-![Proposed overall system architecture](docs/images/architecture/system-overview.svg)
+**Selected radio kit:** [Seeed Studio XIAO ESP32-S3 & Wio-SX1262](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html), **quantity 2**. The XIAO controls its own SX1262 through the kit's **internal board-to-board (B2B) connection**. The Core talks to each XIAO **wirelessly over BLE**, not via UART, SPI or GPIO wires.
 
-| Role | Selected component | Function |
-|---|---|---|
-| Main display/controller | **Waveshare ESP32-S3-Touch-LCD-3.5** | LVGL UI, navigation, local storage and coordination |
-| Radio A | **Seeed XIAO ESP32-S3 + Wio-SX1262** | Meshtastic |
-| Radio B | **Second Seeed XIAO ESP32-S3 + Wio-SX1262** | MeshCore Companion |
-| GNSS | **Uputronics u-blox MAX-M10S**, 3 V breakout | Position and time; active antenna under validation |
-| Storage | Waveshare onboard **microSD** | Messages, POIs, GPX and future offline map assets |
-| Portable power | **Waveshare AXP2101 + protected 1S LiPo (candidate)** | Charging and distribution, subject to electrical validation |
+**Two BLE connections, two different APIs:** Meshtastic uses **protobuf PhoneAPI over BLE GATT**; MeshCore uses its **Companion binary protocol over BLE GATT**. These are distinct protocol adapters, not an interchangeable serial stream. Concurrent pairing, reconnection, packet handling and responsiveness remain real-hardware validation tasks. The Pods must retain their native LoRa operation when the Core is off or out of BLE range.
 
-**Radio kit:** [Seeed Studio XIAO ESP32-S3 & Wio-SX1262](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html). The SX1262 connects internally to each XIAO through the kit's B2B connector; the Waveshare talks to the two XIAO MCUs over independent UARTs.
+**Three independent power systems:** Each enclosure requires its own battery protection, charging, charge-state/level monitoring and power switching as appropriate. Final battery chemistry/capacity, charger choices, mounting and endurance are **not yet approved**. A future docking charger, if adopted, must charge the three cells through **separate protected charging paths**; battery terminals are never directly paralleled. This modular design also allows a **larger Core battery** without being constrained by a shared carrier PCB.
 
-**Radio interface:** Rev A uses **D7/GPIO44 RX and D6/GPIO43 TX** on both XIAO modules. Radio A is crossed to Waveshare J8 GPIO39/GPIO40; Radio B is crossed to GPIO17/GPIO18. Each radio is powered at **XIAO pin 14 / VBUS / 5V** through an independent 3-pin source selector (`J8_5V` or `LOCAL_5V`), Schottky isolation and a removable current-measurement link. XIAO `3V3_OUT` is treated as an output/test node, not the normal carrier power input. Bench validation of current headroom, USB backfeed and the final `LOCAL_5V` regulator is still required. See [current wiring, shopping and pinout](docs/hardware-wiring.md).
+**GNSS:** The [u-blox MAX-M10S breakout](docs/hardware-sources.md) remains a proposed **Core-side** location/time source; its exact power connection and antenna require validation. Waveshare onboard microSD is the planned local storage. Each LoRa Pod has its **own antenna**, with coexistence testing required even when carried close together.
+
+**Mechanical concept:** The Core and Pods are **detachable**; an optional physical dock can hold them together, but **docked UART and dock charging are future options**, not V1 prerequisites. Firmware and BLE interoperability come **before** new enclosure, charging-board or PCB work.
+
+**Reference:** [Approved modular architecture, BLE roles and test plan](docs/modular-architecture.md). The former [integrated Rev A UART wiring](docs/hardware-wiring.md), [PCB layout](docs/pcb-layout-rev-a.md) and KiCad files are retained **unchanged as an archived variant**; they are not assembly instructions for the current design.
 
 ## What MeshCrossway is designed to do
 
@@ -85,17 +86,20 @@ Location updates require deliberate user consent and defined duration, movement 
 
 [![Device settings](docs/ui-prototype/readme/settings.svg)](https://renbrant.github.io/MeshCrossway/)
 
-## How the system works
+## How the modular system works
 
-![Meshtastic and MeshCore communication stacks](docs/images/architecture/communication-stack.svg)
+The Waveshare **Core acts as a BLE Central with two independent Peripheral connections**. It maintains one Meshtastic PhoneAPI (protobuf) adapter for **MX-M** and one MeshCore Companion (binary) adapter for **MX-C**. The two LoRa networks are handled **on their own XIAO ESP32-S3 + SX1262 Pods**, using their respective native firmware and separate antenna/battery systems.
 
-The Waveshare controller runs the main UI and separate radio adapters. **Meshtastic uses the PROTO/Protobuf serial API; MeshCore uses its Companion binary API.** Two radio stacks and two SX1262 transceivers remain independent. Firmware on each kit is preferably upstream, with board-specific configuration/builds and patches only when a demonstrated blocker requires them.
+1. **Core:** touchscreen navigation, unified inbox, GNSS and microSD plans, local configuration and per-network status; Core battery powers **only the Core**.
+2. **BLE link A:** Core ↔ **MX-M** via the Meshtastic GATT PhoneAPI. MX-M operates on the Meshtastic LoRa network with its **own battery**.
+3. **BLE link B:** Core ↔ **MX-C** via the MeshCore Companion GATT API. MX-C operates on the MeshCore LoRa network with its **own battery**.
+4. **Separation:** the Pods are **not** electrically tethered to the Core, do not exchange packets directly by BLE, and should continue native radio operation when disconnected from the Core. The Core does not automatically bridge one mesh network to the other.
 
-![Firmware responsibility boundaries](docs/images/architecture/firmware-responsibilities.svg)
+The Core firmware will need bounded BLE queues, independent reconnect logic, secure pairing and non-blocking LVGL integration. **Two concurrent BLE radio sessions are a design target, not an already verified firmware feature.** The current v0.4.0 hardware build is an isolated, stable display/UI prototype.
 
-![Proposed power distribution](docs/images/architecture/power-architecture.svg)
+Each Pod should use a verified upstream BLE-enabled firmware target. In particular, MeshCore must use a **BLE Companion** build rather than an old serial-only build; on Meshtastic ESP32, enabling Wi-Fi may disable Bluetooth. Radio frequencies, antennas, duty/airtime policies and close-proximity RF interference require regional and physical testing.
 
-The illustrated electrical design is a **proposal**; it is not a production-ready schematic.
+[Implementation specification](docs/modular-architecture.md) · [Native radio firmware strategy](docs/radio-firmware-strategy.md) · [Protocol documentation (legacy UART sections are historical)](docs/radio-communication-architecture.md)
 
 ## Future integrations and collaborations
 
@@ -111,11 +115,14 @@ The **LilyGO T-Deck Plus** is being evaluated as an **optional portable replacem
 
 | Topic | Detailed documentation |
 |---|---|
-| **Hardware, shopping, UART pinout and wiring** | [XIAO/Wio V1 hardware guide](docs/hardware-wiring.md) |
-| **PCB layout baseline** | [Rev A 4-layer floorplan, routing and fabrication gates](docs/pcb-layout-rev-a.md) |
+| **Approved modular hardware / two BLE links / three batteries** | [Three-device modular architecture](docs/modular-architecture.md) |
+| **Former integrated hardware and UART wiring (archived)** | [Rev A wiring and historic shopping guide](docs/hardware-wiring.md) |
+| **Archived PCB variant — not the new baseline** | [Rev A 4-layer PCB reference](docs/pcb-layout-rev-a.md) |
 | **Manufacturer hardware sources** | [Official source registry](docs/hardware-sources.md) |
-| **Power and charging** | [5 V/VBUS source selection and validation gates](docs/power-architecture.md) |
-| **Radio APIs and transport** | [Meshtastic PROTO, MeshCore Companion and interoperability](docs/radio-communication-architecture.md) |
+| **Power and charging (current concept)** | [Independent batteries and charge-domain requirements](docs/modular-architecture.md#power-and-charging) |
+| **Archived shared-carrier power design** | [Rev A 5 V/VBUS study](docs/power-architecture.md) |
+| **Radio APIs and BLE transports** | [Meshtastic BLE PhoneAPI + MeshCore BLE Companion](docs/modular-architecture.md#ble-implementation) |
+| **Legacy UART transport research** | [Older PROTO/Companion serial design](docs/radio-communication-architecture.md) |
 | **Firmware responsibilities** | [Upstream firmware, custom builds and fallback strategy](docs/radio-firmware-strategy.md) |
 | **Navigation and live sharing** | [Positions, GPX, routing policies and airtime](docs/navigation-and-sharing.md) |
 | **Meshtastic versus MeshCore** | [Illustrated comparison and technical analysis](docs/meshtastic-vs-meshcore.md) |
@@ -127,12 +134,13 @@ The **LilyGO T-Deck Plus** is being evaluated as an **optional portable replacem
 
 ## Next validation milestones
 
-1. Check exact received **XIAO/Wio B2B kit** hardware revision, SX1262 RF configuration and external UART pin availability.
-2. Prove Meshtastic **PROTO** and MeshCore **Companion** over separate external UART links with real firmware.
-3. Measure Waveshare **J8 5 V** source capability, the alternate `LOCAL_5V` regulator, Schottky drop, XIAO USB/VBUS backfeed paths and SX1262 TX peaks before approving shared carrier power.
-4. Bring up two radios concurrently and test independent recovery, GNSS, microSD and a responsive LVGL interface.
-5. Validate zero-hop routing, channel congestion, close-proximity RF coexistence and privacy with actual peer/repeater devices.
-6. Finalize carrier PCB and enclosure only after the above electrical and protocol gates.
+1. Confirm hardware revisions for the **two Seeed XIAO ESP32-S3 + Wio-SX1262** kits; install compatible **Meshtastic BLE PhoneAPI** and **MeshCore BLE Companion** firmware, respectively.
+2. Verify that **each Pod connects to its native phone app independently**, retains LoRa operation without the Core, and reports available radio/battery telemetry.
+3. Make the **Waveshare Core establish and maintain both BLE connections at once** using separate protocol adapters, with secure pairing, automatic recovery and a responsive touchscreen.
+4. Decode/send real messages separately on Meshtastic and MeshCore; validate identity, acknowledgments, queues and per-network diagnostics without automatic cross-network bridging.
+5. Validate the **three separate battery/charging systems**, current consumption, autonomy, GNSS integration, microSD and Wi-Fi/BLE coexistence where needed.
+6. Measure RF coexistence, packet reception and antenna separation in both **separated and optionally docked** configurations.
+7. **Only then** design optional Pod carriers, enclosures, secure dock/charging and a future modular PCB revision. Keep the older integrated KiCad variant archived and unchanged.
 
 **This project is experimental.** Do not rely on it as the sole communication device in a rescue or safety-critical situation.
 
