@@ -26,6 +26,7 @@ static uint8_t *frame=nullptr;
 static SemaphoreHandle_t completion=nullptr;
 static char pairing_pin[9]="";
 static int64_t earliest_capture=0;  // HTTP server task only.
+static int64_t deny_until=0;        // Throttle incorrect PIN attempts.
 static std::atomic<uint32_t> captures{0},failures{0},last_capture_ms{0};
 
 static const char *pin(){return pairing_pin;}
@@ -40,7 +41,7 @@ static void capture_timer(lv_timer_t *){
   const uint32_t needed=lv_snapshot_buf_size_needed(screen,LV_IMG_CF_TRUE_COLOR);
   const bool ok=available()&&needed==FRAME_BYTES&&
     lv_snapshot_take_to_buf(screen,LV_IMG_CF_TRUE_COLOR,&descriptor,frame,FRAME_BYTES)==LV_RES_OK&&
-    descriptor.header.w==480&&descriptor.header.h==320&&descriptor.data_size==FRAME_BYTES;
+    descriptor.header.w==480&&descriptor.header.h==320;
   const uint32_t elapsed_ms=(uint32_t)((esp_timer_get_time()-started)/1000);
   last_capture_ms.store(elapsed_ms);
   if(ok)captures.fetch_add(1);else failures.fetch_add(1);
@@ -70,9 +71,13 @@ static esp_err_t reject(httpd_req_t *req,const char *status,const char *message)
   return httpd_resp_send(req,message,HTTPD_RESP_USE_STRLEN);
 }
 static bool authorized(httpd_req_t *req){
+  const int64_t now=esp_timer_get_time();
+  if(now<deny_until)return false;
   char supplied[16]={};
-  if(httpd_req_get_hdr_value_str(req,"X-MCX-Pin",supplied,sizeof(supplied))!=ESP_OK)return false;
-  return strlen(supplied)==8&&strcmp(supplied,pairing_pin)==0;
+  if(httpd_req_get_hdr_value_str(req,"X-MCX-Pin",supplied,sizeof(supplied))==ESP_OK &&
+     strlen(supplied)==8&&strcmp(supplied,pairing_pin)==0)return true;
+  deny_until=now+800000;
+  return false;
 }
 static esp_err_t screenshot(httpd_req_t *req){
   if(!authorized(req))return reject(req,"403 Forbidden","View PIN required");
@@ -80,10 +85,10 @@ static esp_err_t screenshot(httpd_req_t *req){
   const int64_t now=esp_timer_get_time();
   if(now<earliest_capture)return reject(req,"429 Too Many Requests","Manual capture: wait 5 seconds");
   int idle=IDLE;
+  (void)xSemaphoreTake(completion,0); // Drain before queueing a new request.
   if(!phase.compare_exchange_strong(idle,QUEUED))
     return reject(req,"503 Service Unavailable","Capture still busy");
   earliest_capture=now+MIN_INTERVAL_US;
-  (void)xSemaphoreTake(completion,0); // Drain any stale notification.
   if(xSemaphoreTake(completion,pdMS_TO_TICKS(4000))!=pdTRUE){
     int queued=QUEUED;
     if(!phase.compare_exchange_strong(queued,IDLE)){
