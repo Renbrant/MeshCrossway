@@ -1,5 +1,7 @@
 # Navigation, location sharing, POIs and tracks
 
+> **Transport update (2026-10-28):** The controller communicates with the two independent Radio Pods using BLE (Meshtastic PhoneAPI / MeshCore BLE Companion). UART tests mentioned below are superseded. [Modular architecture](modular-architecture.md).
+
 **Status:** product requirements and interactive browser simulation. No live GNSS, LoRa location-sharing scheduler, file-transfer service or companion app has been implemented or bench-validated.
 
 ## Illustrated location-sharing modes
@@ -59,7 +61,7 @@ Meshtastic and MeshCore are **not mutually bridged by default**. Any future cros
 
 ## Direct Tracking: local one-hop location sharing (design proposal)
 
-**Firmware policy:** implement rate budgets, consent and movement/time scheduling on the central ESP32, using protocol-native radio APIs. Prefer unmodified official firmware and adjust only UART build settings if required; enable Direct Only only after verifying actual zero-hop packet behavior. If a required per-packet control is not exposed, document the limitation and consider an upstream contribution rather than silently changing firmware. See [radio firmware strategy](radio-firmware-strategy.md).
+**Firmware policy:** implement rate budgets, consent and movement/time scheduling on the central ESP32, using protocol-native radio APIs. Prefer unmodified official firmware and adjust only board-specific BLE firmware settings if required; enable Direct Only only after verifying actual zero-hop packet behavior. If a required per-packet control is not exposed, document the limitation and consider an upstream contribution rather than silently changing firmware. See [radio firmware strategy](radio-firmware-strategy.md).
 
 **Default tracking mode: Direct Only.** This is a proposed protocol-aware application policy, **not a working feature or a new interoperable mesh protocol**. It is independent from ordinary messages, which may continue using normal multi-hop routing. A one-hop link is not a dedicated point-to-point frequency: everyone nearby sharing the channel can still experience contention, airtime consumption and collisions.
 
@@ -102,7 +104,7 @@ The settings in the UI are **requested triggers, not unconditional broadcast sch
 - Inspect packet routing fields to confirm **zero repeater hops**, with no unexpected retransmission, MeshCore path reuse or fallback flooding.
 - Compare over-the-air packets, collisions and delivery performance with tracking OFF versus tracking ON; measure per-radio airtime and interference with simultaneous Meshtastic/MeshCore traffic.
 - Test 1, 2, 5, and 10 participating devices, at multiple motion speeds and terrain types; verify how group delivery scales and whether the configured budget suppresses updates.
-- Inject invalid/stale GNSS, position jumps, power loss, UART disconnects, radio restarts, congested channels, and expired consent; ensure tracking does not reactivate or transmit stale positions.
+- Inject invalid/stale GNSS, position jumps, power loss, BLE disconnects, radio restarts, congested channels, and expired consent; ensure tracking does not reactivate or transmit stale positions.
 - Test privacy scenarios including public channels, group membership changes, revoked contacts and the distinction between sending one-hop radio packets and destination-only encryption.
 
 **No formal range, delivery-rate, battery-life or SAR reliability claim** should be made until tests are repeatable. MeshCrossway is not a certified emergency communication or tracking system.
@@ -113,7 +115,7 @@ Plan map markers for participants with identity and network, last fix age, sourc
 
 ## Implementation boundary and validation
 
-The central ESP32-S3 will eventually run a GNSS service, track logger, POI storage, location scheduler, radio-specific adapters and a transport router. Prove on actual hardware: UART adapter capabilities, update/airtime limits, RF coexistence, radio acknowledgments, GNSS power/accuracy, storage resilience, privacy across restarts, Bluetooth throughput/security and degraded/no-fix behavior.
+The central ESP32-S3 will eventually run a GNSS service, track logger, POI storage, location scheduler, radio-specific adapters and a transport router. Prove on actual hardware: BLE adapter capabilities, update/airtime limits, RF coexistence, radio acknowledgments, GNSS power/accuracy, storage resilience, privacy across restarts, Bluetooth throughput/security and degraded/no-fix behavior.
 
 See the [interactive simulator](https://renbrant.github.io/MeshCrossway/) and [UI prototype notes](ui-prototype/README.md). Demo interactions and settings are not proof of firmware feature completeness.
 
