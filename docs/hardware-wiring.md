@@ -1,5 +1,7 @@
 # MeshCrossway V1 — Seeed XIAO ESP32-S3 + Wio-SX1262 hardware and wiring
 
+> **SUPERSEDED (2026-10-28):** The integrated single-carrier / UART architecture below remains only a bench reference. The approved MeshCrossway design has [three independently powered detachable devices connected primarily via BLE](modular-architecture.md). Do not treat the following design as the current production baseline.
+
 [README](../README.md) · [Power design](power-architecture.md) · [Serial APIs](radio-communication-architecture.md) · [Official hardware sources](hardware-sources.md)
 
 > **Current V1 hardware selection (2026-10-26):** two **Seeed Studio XIAO ESP32-S3 & Wio-SX1262 kits**, one running Meshtastic and one MeshCore Companion. No soldered prototype or PCB has been electrically validated.
