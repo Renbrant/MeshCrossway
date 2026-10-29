@@ -71,6 +71,11 @@ int main(int argc,char **argv){
  frame=mcxmap::render(unavailable,c);assert(frame&&frame->missing&&fake_http_calls==downloads+2&&mcxmap::cache_full);mcxmap::release(frame);fake_free_space=1024ULL*1024*1024;
  fake_sd_size=0;unavailable.generation=9;mcxmap::wanted=9;frame=mcxmap::render(unavailable,c);assert(frame&&frame->missing&&fake_http_calls==downloads+2);mcxmap::release(frame);fake_sd_size=1000000;
 
+ auto retry=online_view;retry.longitude+=2;retry.generation=10;mcxmap::wanted=10;mcxmap::backing_off=false;fake_http_enabled=false;
+ const int before_retry=fake_http_calls;frame=mcxmap::render(retry,c);assert(frame&&frame->missing&&fake_http_calls==before_retry+1);mcxmap::release(frame);
+ lv_tick_inc(10001);fake_http_enabled=true;fake_http_status=200;retry.generation=11;mcxmap::wanted=11;
+ frame=mcxmap::render(retry,c);assert(frame&&!frame->missing&&fake_http_calls>before_retry+1);mcxmap::release(frame);
+
  unsigned char invalid[33]={137,80,78,71,13,10,26,10};memcpy(invalid+12,"IHDR",4);unsigned char *rgba=nullptr;assert(!mcxmap::decode(invalid,sizeof(invalid),&rgba)&&!rgba);
  c.url[0]=0;assert(!mcxmap::valid_config(c));c=mcxmap::Config{};strcpy(c.url,"http://not-tls.example");assert(!mcxmap::valid_config(c));
  using namespace meshcrossway;

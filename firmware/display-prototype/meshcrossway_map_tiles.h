@@ -44,7 +44,7 @@ static TaskHandle_t task=nullptr;
 static std::atomic<uint32_t> wanted{0};
 static std::atomic<int> last_error{0};
 static std::atomic<bool> settings_saved{true};
-static uint32_t backoff_started=0,last_request=0;
+static uint32_t backoff_started=0,backoff_ms=0,last_request=0;
 static bool backing_off=false;
 static bool sntp_started=false,waiting_clock=false,cache_full=false;
 struct Miss {unsigned z=0,x=0,y=0;uint32_t at=0;bool used=false;};
@@ -97,7 +97,7 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
   if(auto *p=checked_png(file,size))return p;
   paths(file,sizeof(file),c,z,x,y);if(auto *p=checked_png(file,size))return p;
   const uint32_t now=milliseconds();if(!c.online||!network_allowed())return nullptr;
-  if(backing_off){if(uint32_t(now-backoff_started)<120000)return nullptr;backing_off=false;}
+  if(backing_off){if(uint32_t(now-backoff_started)<backoff_ms)return nullptr;backing_off=false;}
   if(time(nullptr)<1700000000){
     waiting_clock=true;
     if(!sntp_started){const esp_sntp_config_t ntp=ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");const auto rc=esp_netif_sntp_init(&ntp);sntp_started=rc==ESP_OK||rc==ESP_ERR_INVALID_STATE;}
@@ -114,10 +114,10 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
   char url[256];snprintf(url,sizeof(url),"%s%s%u/%u/%u.png",c.url,c.url[strlen(c.url)-1]=='/'?"":"/",z,x,y);
   esp_http_client_config_t http={};http.url=url;http.timeout_ms=2500;http.buffer_size=1024;http.buffer_size_tx=512;
   http.user_agent="MeshCrossway/0.8.1 (+https://github.com/Renbrant/MeshCrossway)";http.crt_bundle_attach=esp_crt_bundle_attach;http.disable_auto_redirect=true;
-  auto client=esp_http_client_init(&http);bool ok=false;unsigned char *png=nullptr;size=0;
+  auto client=esp_http_client_init(&http);bool ok=false,valid_payload=false;int response=0;unsigned char *png=nullptr;size=0;
   if(client&&esp_http_client_open(client,0)==ESP_OK){
-    const auto length=esp_http_client_fetch_headers(client);const int status=esp_http_client_get_status_code(client);
-    if(status==429||status>=500){backoff_started=now;backing_off=true;}
+    const auto length=esp_http_client_fetch_headers(client);const int status=esp_http_client_get_status_code(client);response=status;
+    if(status==429||status>=500){backoff_started=now;backoff_ms=120000;backing_off=true;}
     if(status==200&&length<=int64_t(MAX_PNG)){
       png=(unsigned char *)heap_caps_malloc(MAX_PNG,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
       if(png){int n=0;ok=true;
@@ -127,12 +127,17 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
     }
   }
   if(client){esp_http_client_close(client);esp_http_client_cleanup(client);}
-  unsigned char *test=nullptr;if(ok)ok=decode(png,size,&test);lv_mem_free(test);
+  unsigned char *test=nullptr;if(ok){valid_payload=decode(png,size,&test);ok=valid_payload;}lv_mem_free(test);
   if(ok)ok=fwrite(png,1,size,out)==size&&fflush(out)==0&&fsync(fileno(out))==0;
   if(fclose(out))ok=false;
   if(ok&&remove(file)&&errno!=ENOENT)ok=false;
   if(ok)ok=rename(temporary,file)==0;
-  if(!ok){remove(temporary);heap_caps_free(png);png=nullptr;misses[miss_slot]={z,x,y,now,true};miss_slot=(miss_slot+1)%12;}
+  if(!ok){
+    const bool missing=response==404||response==410||(response==200&&png&&!valid_payload);
+    remove(temporary);heap_caps_free(png);png=nullptr;
+    if(missing){misses[miss_slot]={z,x,y,now,true};miss_slot=(miss_slot+1)%12;}
+    else if(!backing_off){backoff_started=now;backoff_ms=10000;backing_off=true;}
+  }
   // Bound demand from an interactive viewport; never prefetch adjacent regions.
 
   return png;
