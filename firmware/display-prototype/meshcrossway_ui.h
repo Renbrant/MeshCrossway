@@ -255,6 +255,7 @@ static void wifi_setup(lv_event_t *){
 // Left navigation and contextual right drawer can be independently collapsed.
 // Keep Wi-Fi provisioning and the manual screen viewer independent of UI rebuilds.
 static lv_obj_t *left_rail=nullptr,*right_rail=nullptr,*context_actions=nullptr;
+static lv_obj_t *context_scroll_track=nullptr,*context_scroll_thumb=nullptr;
 static lv_obj_t *top_wifi=nullptr,*top_mt=nullptr,*top_mc=nullptr;
 static lv_obj_t *top_mt_name=nullptr,*top_mc_name=nullptr,*top_charge=nullptr;
 static lv_obj_t *top_battery=nullptr,*top_battery_fill=nullptr,*top_battery_percent=nullptr;
@@ -709,10 +710,28 @@ static const char *context_glyph(int id){
     default:return LV_SYMBOL_SETTINGS;
   }
 }
+// Place a separate, thin scroll indicator LEFT of the action buttons.
+static void update_context_scroll_track(){
+  if(!context_scroll_track||!context_scroll_thumb||!context_actions)return;
+  if(page!=4||!has_context_rail()){
+    lv_obj_add_flag(context_scroll_track,LV_OBJ_FLAG_HIDDEN);return;
+  }
+  lv_obj_clear_flag(context_scroll_track,LV_OBJ_FLAG_HIDDEN);
+  const int top=lv_obj_get_scroll_y(context_actions);
+  const int bottom=lv_obj_get_scroll_bottom(context_actions);
+  const int total=top+bottom;
+  const int track=266;
+  const int thumb=total>0?200:track;
+  lv_obj_set_pos(context_scroll_thumb,0,total>0?top*(track-thumb)/total:0);
+  lv_obj_set_height(context_scroll_thumb,thumb);
+}
+static void context_scrolled(lv_event_t *){update_context_scroll_track();}
 static void rebuild_context(){
   lv_obj_clean(context_actions);
   lv_obj_scroll_to_y(context_actions,0,LV_ANIM_OFF);
-  if(!has_context_rail())return;
+  if(!has_context_rail()){
+    update_context_scroll_track();return;
+  }
   const ActionInfo *choices=page==3?chat_actions:map_actions;
   const size_t count=page==3?sizeof(chat_actions)/sizeof(chat_actions[0]):
                              sizeof(map_actions)/sizeof(map_actions[0]);
@@ -726,7 +745,7 @@ static void rebuild_context(){
        (id==A_TEAM&&map_view==4)||(id==A_SHARE&&map_view==5));
     lv_obj_t *button=action_button(context_actions,
                                    right_compact?context_glyph(id):choices[i].label,
-                                   4,y,right_compact?32:111,38,
+                                   right_compact?0:4,y,right_compact?32:111,38,
                                    selected?orange:panel2,on_action,(intptr_t)id);
     lv_obj_set_style_border_width(button,selected?0:1,0);
     // Match the left primary navigation palette: orange icons on dark panels,
@@ -735,6 +754,8 @@ static void rebuild_context(){
     lv_obj_set_style_text_color(lv_obj_get_child(button,0),selected?bg:orange,0);
     y+=41;
   }
+  lv_obj_update_layout(context_actions);
+  update_context_scroll_track();
 }
 static void ble_select_now(void *v){meshble::connect((int)(intptr_t)v);draw();}
 static void ble_select(lv_event_t *e){lv_async_call(ble_select_now,lv_event_get_user_data(e));}
@@ -823,7 +844,10 @@ static void draw(){
   lv_obj_set_pos(body,lw,34);lv_obj_set_size(body,cw,286);
   lv_obj_set_pos(right_rail,480-rw,34);lv_obj_set_size(right_rail,rw?rw:40,286);
   // All rail height is now available for icons; no arrow-button row.
-  lv_obj_set_pos(context_actions,0,0);lv_obj_set_size(context_actions,rw?rw:40,286);
+  // Reserve a dedicated 5px gutter at left of the contextual icons.
+  lv_obj_set_pos(context_actions,5,0);
+  lv_obj_set_size(context_actions,rw?rw-5:35,286);
+  if(context_scroll_track)lv_obj_set_pos(context_scroll_track,1,9);
   for(int i=0;i<6;i++){
     if(!lw){lv_obj_add_flag(tabs[i],LV_OBJ_FLAG_HIDDEN);continue;}
     lv_obj_clear_flag(tabs[i],LV_OBJ_FLAG_HIDDEN);
@@ -1069,7 +1093,12 @@ static void init(){
     single_label(tabs[i],tab_names[i],0,19,73,white);
     make_nav_vector(i);
   }
-  context_actions=panel_at(right_rail,0,0,125,286,panel,0);
+  context_actions=panel_at(right_rail,5,0,120,286,panel,0);
+  context_scroll_track=panel_at(right_rail,1,9,3,266,muted,0);
+  lv_obj_set_style_bg_opa(context_scroll_track,LV_OPA_30,0);
+  context_scroll_thumb=panel_at(context_scroll_track,0,0,3,200,orange,1);
+  lv_obj_add_flag(context_scroll_track,LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_event_cb(context_actions,context_scrolled,LV_EVENT_SCROLL,nullptr);
   // The Map context has more actions than fit vertically; allow finger scrolling.
   lv_obj_add_flag(context_actions,LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_set_scroll_dir(context_actions,LV_DIR_VER);
