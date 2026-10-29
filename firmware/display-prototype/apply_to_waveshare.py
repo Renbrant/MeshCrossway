@@ -137,6 +137,13 @@ for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_he
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 
+# Emoji display sources are a self-contained LVGL 8.4 image-font extension.
+emoji_root = root / "firmware" / "display-prototype" / "emoji"
+emoji_target = project / "main" / "emoji"
+emoji_target.mkdir(parents=True, exist_ok=True)
+for name in ("emoji_presentation.h", "emoji_registry.inc", "emoji_assets_data.h", "emoji_display.h"):
+    shutil.copy2(emoji_root / name, emoji_target / name)
+
 sdk = project / "sdkconfig.defaults"
 defaults = sdk.read_text()
 # Remove the invalid choice name used in the earlier candidate.
@@ -146,7 +153,7 @@ sdk.write_text(defaults)
 # The Wi-Fi backup uses /sdcard/meshcrossway-wifi.{tmp,json,bak}.
 # ESP-IDF FatFs defaults to FATFS_LFN_NONE, so those paths otherwise fail
 # to open even on correctly mounted FAT32 cards.
-needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_FATFS_LFN_HEAP=y",
+needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_LV_USE_IMGFONT=y","CONFIG_FATFS_LFN_HEAP=y",
         "CONFIG_BT_ENABLED=y","CONFIG_BT_NIMBLE_ENABLED=y",
         "CONFIG_BT_NIMBLE_ROLE_CENTRAL=y","CONFIG_BT_NIMBLE_MAX_CONNECTIONS=2",
         "CONFIG_BT_NIMBLE_NVS_PERSIST=y","CONFIG_BT_NIMBLE_MAX_BONDS=4",
