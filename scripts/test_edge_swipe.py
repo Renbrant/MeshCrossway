@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Run edge-swipe gesture policy tests under C++11 and C++20."""
+import os
 import pathlib
 import subprocess
 import tempfile
@@ -12,4 +13,9 @@ with tempfile.TemporaryDirectory(prefix="mcx-edge-swipe-") as tmp:
         subprocess.run(["g++","-std="+standard,"-Wall","-Wextra","-Werror","-pedantic",
                         "-O2",str(TEST),"-o",str(exe)],check=True,cwd=ROOT)
         subprocess.run([str(exe)],check=True,cwd=ROOT)
+    exe=pathlib.Path(tmp)/"touch-queue"
+    subprocess.run(["g++","-std=c++11","-Wall","-Wextra","-Werror","-pedantic",
+                    "-fsanitize=address,undefined","-fno-omit-frame-pointer","-g",
+                    str(ROOT/"tests/touch_queue_test.cpp"),"-o",str(exe)],check=True,cwd=ROOT)
+    subprocess.run([str(exe)],check=True,cwd=ROOT,env={**os.environ,"ASAN_OPTIONS":"detect_leaks=0"})
 print("PASS: edge gestures C++11/C++20")

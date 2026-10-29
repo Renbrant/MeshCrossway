@@ -328,7 +328,7 @@ static void compose_send(lv_event_t *) {
 static void refresh_composer(){
   if(mode!=2||!dialog||!compose_button||!session()||!feedback)return;
   const char *problem=mcxchat::send_problem(*session(),selected);
-  if(problem){lv_obj_add_state(compose_button,LV_STATE_DISABLED);lv_label_set_text(feedback,problem);}
+  if(problem){lv_obj_add_state(compose_button,LV_STATE_DISABLED);chatview::label(feedback,problem);}
   else if(lv_obj_has_state(compose_button,LV_STATE_DISABLED)){
     lv_obj_clear_state(compose_button,LV_STATE_DISABLED);
     lv_label_set_text(feedback,"Draft is local. SEND queues one MeshCore transmission.");
@@ -750,12 +750,11 @@ static void render() {
                         : ci >= 0 ? s->contacts[ci].name
                                   : "Unknown contact";
     title=thread_name(selected);
-    emoji_center_heading(title[0] ? title : "Empty channel",
-                        ready() ? "MeshCore / live" : "MeshCore / disconnected history");
-    // Compose and Tools now live exclusively in the contextual right rail.
-    action_button(body,"< CHATS",8,54,100,32,panel2,list_event,0);
-    history_status=single_label(body,mcxhistory::status(),114,61,w-122,muted);
-    int y = 96;
+    const bool cached=chatview::active(body);
+    if(!chatview::begin(body))return;
+    chatview::header(title[0]?title:"Empty channel",ready()?"MeshCore / live":"MeshCore / disconnected history",mcxhistory::status());
+    if(!cached)action_button(body,"< CHATS",8,54,100,32,panel2,list_event,0);
+    history_status=chatview::cache->history;
     bool newly_read = false;
     for (uint32_t id = s->next_id > s->message_count ? s->next_id - s->message_count : 1; id < s->next_id;
          id++) {
@@ -796,32 +795,34 @@ static void render() {
       mcxchat::meta(m->observed_at, m->path, m->outgoing,
                     m->outgoing ? delivery(m->delivery) : nullptr,
                     metadata, sizeof(metadata));
-      lv_obj_t *card = panel_at(body, 8, y, w - 16, 94, panel, 7);
-      lv_obj_add_flag(card,LV_OBJ_FLAG_CLICKABLE);
-      lv_obj_add_event_cb(card,message_details,LV_EVENT_CLICKED,(void *)(intptr_t)m->id);
-      lv_obj_t *name = emoji_txt(card, sender, 8, 6, w - 32, sender_color);
-      lv_obj_set_height(name, 18);
-      lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
-      lv_obj_t *text = txt(card, "", 8, 34, w - 32, mcxchat::mention(m->text,s->name)?orange:white);
-      lv_label_set_long_mode(text, LV_LABEL_LONG_WRAP);
-      // Transform ONLY the visible text. The radio's UTF-8 bytes are untouched.
-#if defined(MCX_EMOJI_RENDER_ENABLED)
-      mcxemoji::view::set_message_text(text, display_text);
-#else
-      lv_label_set_text(text, display_text);
-#endif
-      lv_obj_update_layout(text);
-      const int metadata_y = lv_obj_get_y(text) + lv_obj_get_height(text) + 9;
-      lv_obj_t *footer = single_label(card, metadata, 8, metadata_y, w - 32, muted);
-      lv_obj_set_height(footer, 18);
-      const int card_height = metadata_y + 23 > 94 ? metadata_y + 23 : 94;
-      lv_obj_set_height(card, card_height);
-      y += card_height + 8;
+      const unsigned color=unsigned(sender_color.full)^unsigned(mcxchat::mention(m->text,s->name));
+      chatview::row(m->id,chatview::hash(sender,display_text,metadata,color),[&](int y){
+        lv_obj_t *card = panel_at(body, 8, y, w - 16, 94, panel, 7);
+        lv_obj_add_flag(card,LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_add_event_cb(card,message_details,LV_EVENT_CLICKED,(void *)(intptr_t)m->id);
+        lv_obj_t *name = emoji_txt(card, sender, 8, 6, w - 32, sender_color);
+        lv_obj_set_height(name, 18);
+        lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
+        lv_obj_t *text = txt(card, "", 8, 34, w - 32, mcxchat::mention(m->text,s->name)?orange:white);
+        lv_label_set_long_mode(text, LV_LABEL_LONG_WRAP);
+        // Transform ONLY the visible text. The radio's UTF-8 bytes are untouched.
+  #if defined(MCX_EMOJI_RENDER_ENABLED)
+        mcxemoji::view::set_message_text(text, display_text);
+  #else
+        lv_label_set_text(text, display_text);
+  #endif
+        lv_obj_update_layout(text);
+        const int metadata_y = lv_obj_get_y(text) + lv_obj_get_height(text) + 9;
+        lv_obj_t *footer = single_label(card, metadata, 8, metadata_y, w - 32, muted);
+        lv_obj_set_height(footer, 18);
+        const int card_height = metadata_y + 23 > 94 ? metadata_y + 23 : 94;
+        lv_obj_set_height(card, card_height);
+        return card;
+      });
     }
     if (newly_read) ++s->generation; // Persist unread state after a thread is opened.
-    if (y == 96)
-      single_label(body, "No messages in saved history.", 8, 100, w - 16, muted);
-    lv_obj_scroll_to_y(body, y, LV_ANIM_OFF);
+    rendered_generation=s->generation;
+    chatview::end("No messages in saved history.");
   }
 }
 static void poll(lv_timer_t *) {
@@ -849,7 +850,7 @@ static void poll(lv_timer_t *) {
     if (home_status && strcmp(lv_label_get_text(home_status), summary))
       lv_label_set_text(home_status, summary);
   }
-  if(dialog&&mode==9&&feedback)lv_label_set_text(feedback,room_state());
+  if(dialog&&mode==9&&feedback)chatview::label(feedback,room_state());
   if (dialog && mode == 3 && feedback && s && s->generation != rendered_generation) {
     if (reveal) {
       char data[360], view[520];
@@ -860,7 +861,7 @@ static void poll(lv_timer_t *) {
       lv_label_set_text(feedback, s->result[0] ? s->result : s->status);
     rendered_generation = s->generation;
   }
-  if (!dialog && !wifi_dialog && !ble_dialog && s && s->generation != rendered_generation &&
+  if (!showing_mt() && !dialog && !wifi_dialog && !ble_dialog && !info_dialog && s && s->generation != rendered_generation &&
       (page == 1 || page == 2 || page == 3)) {
     // Do not delete a finger's current target. Redraw only when the input is released.
     bool pressed = false;
@@ -868,7 +869,10 @@ static void poll(lv_timer_t *) {
       if (input->proc.state == LV_INDEV_STATE_PRESSED)
         pressed = true;
     const uint32_t now=(uint32_t)(esp_timer_get_time()/1000);
-    if (!pressed&&(uint32_t)(now-last_redraw)>=250){last_redraw=now;draw();}
+    if (!pressed&&!chatview::interacting(body)&&(uint32_t)(now-last_redraw)>=250){
+      last_redraw=now;
+      if(page==3&&conversation&&chatview::active(body))render();else draw();
+    }
   }
 }
 } // namespace mcui

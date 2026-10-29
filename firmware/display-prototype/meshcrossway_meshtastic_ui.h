@@ -189,10 +189,10 @@ namespace mtui {
     mcui::rendered_generation=meshmc::client?meshmc::client->generation:0;
     if(page==3&&conversation&&active_chat_network==1&&chats_filter!=2){
       const char *title=selected.node==meshmt::BROADCAST&&c&&selected.channel<meshmt::MAX_CHANNELS?c->data.channels[selected.channel].name:name(selected.node);
-      show_center_heading(title,ready()?"Meshtastic / live":"Meshtastic / saved history");
-      action_button(body,"< CHATS",8,54,100,32,panel2,list_event,0);
-      single_label(body,meshmt::history_status(),114,61,w-122,muted);
-      int y=96;
+      const bool cached=chatview::active(body);
+      if(!chatview::begin(body))return;
+      chatview::header(title,ready()?"Meshtastic / live":"Meshtastic / saved history",meshmt::history_status());
+      if(!cached)action_button(body,"< CHATS",8,54,100,32,panel2,list_event,0);
       if(c&&!memcmp(selected.radio,c->data.radio,7)){
         uint32_t first=c->data.next_seq>meshmt::MAX_MESSAGES?c->data.next_seq-meshmt::MAX_MESSAGES:1;
         for(uint32_t seq=first;seq<c->data.next_seq;++seq){auto &m=c->data.messages[(seq-1)%meshmt::MAX_MESSAGES];
@@ -200,23 +200,25 @@ namespace mtui {
           if(!m.read){m.read=true;
             ++c->generation;
           }
-          auto *card=panel_at(body,8,y,w-16,104,panel,7);
-          mcui::emoji_txt(card,m.outgoing?"You":name(m.from),8,6,w-32,m.outgoing?orange:green);
-          auto *text=mcui::emoji_txt(card,m.text,8,30,w-32,white);
-          lv_label_set_long_mode(text,LV_LABEL_LONG_WRAP);
-          lv_obj_update_layout(text);
-          const int footer=lv_obj_get_height(text)+40;
           char meta[112];
           char clock[16];
           mcxchat::time_utc(m.time,clock,sizeof(clock));
           snprintf(meta,sizeof(meta),"%s / %s / %s%s",clock,meshmt::delivery_name(m.delivery),m.pki?"PKI":"channel",m.via_mqtt?" / MQTT":"");
-          single_label(card,meta,8,footer,w-32,muted);
-          lv_obj_set_height(card,footer+30);
-          y+=footer+38;
+          chatview::row(m.seq,chatview::hash(m.outgoing?"You":name(m.from),m.text,meta,m.outgoing),[&](int y){
+            auto *card=panel_at(body,8,y,w-16,104,panel,7);
+            mcui::emoji_txt(card,m.outgoing?"You":name(m.from),8,6,w-32,m.outgoing?orange:green);
+            auto *text=mcui::emoji_txt(card,m.text,8,30,w-32,white);
+            lv_label_set_long_mode(text,LV_LABEL_LONG_WRAP);
+            lv_obj_update_layout(text);
+            const int footer=lv_obj_get_height(text)+40;
+            single_label(card,meta,8,footer,w-32,muted);
+            lv_obj_set_height(card,footer+30);
+            return card;
+          });
         }
       }
-      if(y==96)single_label(body,"No messages in this conversation.",8,y,w-16,muted);
-      lv_obj_scroll_to_y(body,y,LV_ANIM_OFF);
+      drawn=c?c->generation:0;
+      chatview::end("No messages in this conversation.");
       return;
     }
     const int filter=page==1?nodes_filter:page==2?groups_filter:chats_filter;
@@ -296,10 +298,11 @@ namespace mtui {
   }
   static void poll(lv_timer_t *){
     meshmt::poll();
-    if(home_name)lv_label_set_text(home_name,ready()?name(meshmt::client->data.my_num):"BLE: OFF");
-    if(home_status)lv_label_set_text(home_status,ready()?"Meshtastic connected":"Connect in More / Radios");
-    if(radio_status&&meshmt::client)lv_label_set_text(radio_status,meshmt::client->status);
+    if(home_name)chatview::label(home_name,ready()?name(meshmt::client->data.my_num):"BLE: OFF");
+    if(home_status)chatview::label(home_status,ready()?"Meshtastic connected":"Connect in More / Radios");
+    if(radio_status&&meshmt::client)chatview::label(radio_status,meshmt::client->status);
 
+    if(page==3&&conversation&&active_chat_network==1&&chatview::active(body))chatview::label(chatview::cache->history,meshmt::history_status());
     auto *c=meshmt::client;
     if(dialog&&value&&c){draft_save();
       const char *problem=c->send_problem(selected,lv_textarea_get_text(value));
@@ -307,15 +310,15 @@ namespace mtui {
       else lv_obj_clear_state(send_button,LV_STATE_DISABLED);
       char detail[140];
       snprintf(detail,sizeof(detail),"%u / %u bytes%s%s",unsigned(strlen(lv_textarea_get_text(value))),unsigned(c->text_limit(selected)),problem?" / ":"",problem?problem:"");
-      lv_label_set_text(feedback,detail);
+      chatview::label(feedback,detail);
     }
     if(!showing_mt()||dialog||mcui::dialog||wifi_dialog||ble_dialog||info_dialog||page<1||page>3)return;
     const uint32_t generation=c?c->generation:0;
     if(generation==drawn&&(!meshmc::client||meshmc::client->generation==mcui::rendered_generation))return;
     for(lv_indev_t *input=lv_indev_get_next(nullptr);input;input=lv_indev_get_next(input))if(input->proc.state==LV_INDEV_STATE_PRESSED)return;
     const uint32_t now=uint32_t(esp_timer_get_time()/1000);
-    if(uint32_t(now-last_draw)>=250){last_draw=now;
-      draw();
+    if(!chatview::interacting(body)&&uint32_t(now-last_draw)>=250){last_draw=now;
+      if(page==3&&conversation&&active_chat_network==1&&chatview::active(body))render();else draw();
     }
   }
 } // namespace mtui

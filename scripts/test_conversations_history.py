@@ -62,6 +62,16 @@ int main(){
   mcxhistory::ble_startup.store(true);mcxhistory::poll(*client,0,0);assert(task_calls==0);
   mcxhistory::ble_startup.store(false);mcxhistory::poll(*client,0,0);assert(task_calls==1);
   mcxhistory::poll(*client,0,0);assert(task_calls==1);
+  // First offline restore is queued at boot with BLE still off, not at 5/12 s.
+  assert(mcxhistory::count==1&&mcxhistory::offline_requested&&mcxhistory::jobs[0].offline);
+  mcxhistory::head=mcxhistory::count=0;
+  mcxhistory::loaded_offline=true;mcxhistory::load_unavailable=true;
+  mcxhistory::complete.store(true);mcxhistory::poll(*client,100,0);
+  mcxhistory::poll(*client,5099,0);assert(mcxhistory::count==0);
+  mcxhistory::poll(*client,5100,0);assert(mcxhistory::count==1);
+  mcxhistory::head=mcxhistory::count=0; // Mock worker consumed the retry.
+  assert(!client->connected&&client->qcount==0);
+
   client->public_key[0]=7;mcxhistory::restored=true;mcxhistory::preferences().revision=42;
   fail_allocation=true;assert(!mcxhistory::before_attach(*client,100));
   assert(mcxhistory::restored&&mcxhistory::preferences().revision==42&&client->public_key[0]==7);
