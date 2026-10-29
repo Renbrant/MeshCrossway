@@ -260,7 +260,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
     if version=="v0.7.6":
         brand=(FW/"meshcrossway_brand.h").read_text()
         current=(FW/"meshcrossway_ui.h").read_text()
-        assert "official_pixels[1879]" in brand
+        assert "official_pixels[2224]" in brand
         assert "official_lockup" in brand
         assert '"meshcrossway_brand.h"' in patcher.read_text()
         assert "lv_img_set_src(brand,&mcxbrand::official_lockup)" in current
