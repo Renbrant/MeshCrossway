@@ -985,7 +985,7 @@ static void draw(){
     if(more_view==1){
       action_button(body,"SETTINGS",w-112,5,104,35,panel2,on_action,A_SETTINGS);
       const meshble::Snapshot s=meshble::snapshot();
-      show_center_heading("BLE / RADIO PODS","Meshtastic T-Deck / MeshCore Companion");
+      show_center_heading("BLE / RADIO PODS","Meshtastic PhoneAPI / MeshCore Companion");
       const char *phase=s.phase==meshble::OFF?"DISABLED":s.phase==meshble::STARTING?"STARTING":s.phase==meshble::READY?"SECURE":s.phase==meshble::SCANNING?"SCANNING":s.phase==meshble::CONNECTING?"CONNECTING":s.phase==meshble::VERIFYING?"VERIFYING":s.phase==meshble::PAIRING?"PAIRING":s.phase==meshble::FAILED?"ERROR":"IDLE";
       char detail[64];snprintf(detail,sizeof(detail),"%s / %s",phase,meshble::protocol_name(s.radio));
       single_label(body,detail,8,53,w-16,s.phase==meshble::READY?green:orange);
