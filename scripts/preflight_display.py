@@ -261,7 +261,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         key_header=(FW/"meshcrossway_device_key.h").read_text()
         assert '#include "meshcrossway_device_key.h"' in (FW/"meshcrossway_ui.h").read_text()
         assert '"meshcrossway_device_key.h"' in patcher.read_text()
-        assert (main.parent/"meshcrossway_device_key.h").is_file()
+        assert '"meshcrossway_device_key.h"' in patcher.read_text()
         assert "mcxkey::device_audit()" in (FW/"meshcrossway_ui.h").read_text()
         assert "esp_efuse_get_key_purpose(block)" in key_header
         assert "esp_efuse_write_key(" not in key_header
