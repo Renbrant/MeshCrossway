@@ -30,6 +30,7 @@ int main(int argc,char **argv){
   client->initialized=true;client->data.my_num=123;client->have_lora=true;
   poll();assert(disk_state.load()==1&&!client->history_ready);
   disk_work();assert(disk_state.load()==3);poll();assert(client->history_ready&&restored);
+  assert(strstr(client->status,"history restored"));
   auto &m=client->append();m.id=900;m.from=123;m.to=BROADCAST;m.outgoing=true;m.delivery=QUEUED;strcpy(m.text,"pending before disconnect");
   ++client->generation;fake_us=5000000;poll();assert(disk_state.load()==2);
   disk_work();assert(disk_state.load()==4);poll();assert(storage==1);

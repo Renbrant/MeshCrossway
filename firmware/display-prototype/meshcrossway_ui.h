@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.7.13: independent MeshCore Companion and Meshtastic PhoneAPI.
+// MeshCrossway v0.7.14: independent MeshCore Companion and Meshtastic PhoneAPI.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -500,7 +500,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.7.13","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. GNSS navigation remains a preview.");break;
+      notice("MESH CROSSWAY v0.7.14","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. GNSS navigation remains a preview.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -985,7 +985,7 @@ static void draw(){
     if(more_view==1){
       action_button(body,"SETTINGS",w-112,5,104,35,panel2,on_action,A_SETTINGS);
       const meshble::Snapshot s=meshble::snapshot();
-      show_center_heading("BLE / RADIO PODS","Meshtastic T-Deck / MeshCore Companion");
+      show_center_heading("BLE / RADIO PODS","Meshtastic PhoneAPI / MeshCore Companion");
       const char *phase=s.phase==meshble::OFF?"DISABLED":s.phase==meshble::STARTING?"STARTING":s.phase==meshble::READY?"SECURE":s.phase==meshble::SCANNING?"SCANNING":s.phase==meshble::CONNECTING?"CONNECTING":s.phase==meshble::VERIFYING?"VERIFYING":s.phase==meshble::PAIRING?"PAIRING":s.phase==meshble::FAILED?"ERROR":"IDLE";
       char detail[64];snprintf(detail,sizeof(detail),"%s / %s",phase,meshble::protocol_name(s.radio));
       single_label(body,detail,8,53,w-16,s.phase==meshble::READY?green:orange);
@@ -1097,7 +1097,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.7.13] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.7.14] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1118,7 +1118,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.7.13] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.7.14] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1131,7 +1131,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.7.13",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.7.14",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,242,7,22,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,273,7,20,muted);

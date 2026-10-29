@@ -192,7 +192,7 @@ namespace meshmt {
     uint8_t region=0,hop_limit=3;
     uint16_t mtu=0;
     uint32_t config_nonce=0,generation=0,started=0,last_tx=0,min_app_version=0,hardware=0;
-    uint32_t ignored=0,dropped_nodes=0;
+    uint32_t ignored=0,dropped_nodes=0,rx_frames=0,rx_packets=0,rx_text=0;
     char firmware[49]={},status[112]="Connect Meshtastic in More / Radios";
     Frame pending;
     uint32_t pending_id=0;
@@ -245,7 +245,7 @@ namespace meshmt {
       config_nonce=nonce?nonce:1;
       if(config_nonce==69420||config_nonce==69421)config_nonce+=2;
       started=last_tx=now;
-      min_app_version=hardware=ignored=dropped_nodes=0;
+      min_app_version=hardware=ignored=dropped_nodes=rx_frames=rx_packets=rx_text=0;
       firmware[0]=0;
       region=0;
       hop_limit=3;
@@ -386,6 +386,7 @@ namespace meshmt {
       }return r.ok;
     }
     bool parse_packet(View v,uint32_t now){
+      ++rx_packets;
       Reader r(v);
       Field f;
       Message m;
@@ -472,6 +473,7 @@ namespace meshmt {
         auto &added=append();
         m.seq=added.seq;
         added=m;
+        ++rx_text;
       }else if(port==3||port==4||port==67){
         // POSITION_APP, NODEINFO_APP, TELEMETRY_APP. Never relay any packet.
         Node n;
@@ -515,7 +517,7 @@ namespace meshmt {
         else if(f.tag==7){
           if(f.wire!=0)return false;
           if(f.value!=config_nonce)continue;
-          if(!have_my_info||!have_metadata||!have_lora){fail("Incomplete Meshtastic config. Use T-Deck BaseUI / Bluetooth mode.");
+          if(!have_my_info||!have_metadata||!have_lora){fail("Incomplete Meshtastic PhoneAPI config. Check radio Bluetooth mode.");
             return false;
           }
           unsigned major=0,minor=0;
@@ -572,6 +574,7 @@ namespace meshmt {
         }
       }
       if(!r.ok)return false;
+      ++rx_frames;
       ++generation;
       return true;
     }
@@ -605,12 +608,15 @@ namespace meshmt {
       if(!connected||fault)return "Meshtastic radio disconnected. Draft kept locally.";
       if(!initialized||!history_ready)return "Meshtastic is synchronizing / restoring history.";
       if(memcmp(t.radio,data.radio,7))return "Conversation belongs to another radio. Select it again.";
-      if(!region||!tx_enabled)return "LoRa region is unset or TX disabled. Configure the T-Deck first.";
+      if(!region||!tx_enabled)return "LoRa region unset or TX disabled. Configure the radio using an official Meshtastic client.";
       if(t.channel>=MAX_CHANNELS)return "Invalid Meshtastic channel.";
       const auto &c=data.channels[t.channel];
       if(!c.loaded||!c.role||!t.channel_identity||c.identity!=t.channel_identity)return "Channel changed or is disabled. Select it again.";
-      if(t.node!=BROADCAST){auto *n=node(t.node);
-        if(!n||n->unmessagable||t.node==data.my_num)return "Node unavailable or cannot receive messages.";
+      if(t.node!=BROADCAST){
+        if(t.node==data.my_num)return "Cannot DM your own radio. Choose a peer or a channel.";
+        auto *n=node(t.node);
+        if(!n)return "Node missing from NodeDB. Wait for sync or choose a channel.";
+        if(n->unmessagable)return "Destination does not accept direct messages. Choose a channel.";
         if(has_pki&&!n->has_key)return "Wait for this node's public key before sending a PKI direct message.";
       }
       if(pending_ready||writing)return "Bluetooth write in progress. Wait before sending again.";
@@ -641,7 +647,8 @@ namespace meshmt {
       }
       Writer out(pending);
       out.message(1,packet);
-      if(!d.ok||!p.ok||!out.ok||pending.len>mtu-3)return false;
+      // The GATT driver chooses short/long WRITE after MTU negotiation.
+      if(!d.ok||!p.ok||!out.ok||pending.len>MAX_FRAME)return false;
       auto &m=append();
       m.id=id;
       m.from=data.my_num;
@@ -660,7 +667,7 @@ namespace meshmt {
     }
     bool next(uint32_t now,Frame &out){
       if(!connected||fault)return false;
-      if(!initialized&&(uint32_t)(now-started)>90000){fail("Config timeout. T-Deck: BaseUI / Bluetooth mode; Wi-Fi off; close phone app.");
+      if(!initialized&&(uint32_t)(now-started)>90000){fail("PhoneAPI config timeout. Check radio Bluetooth mode, Wi-Fi and competing BLE clients.");
         return false;
       }
       for(auto &m:data.messages)if(m.seq&&m.outgoing&&(m.delivery==SUBMITTED||m.delivery==RADIO_ACCEPTED)&&(uint32_t)(now-m.queued_at)>120000){m.delivery=UNCERTAIN;

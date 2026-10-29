@@ -145,7 +145,9 @@ namespace meshmt {
       write_allowed=disk->result>=0;
       storage=disk->result<0?2:disk->result==1?1:0;
       client->history_ready=true;
-      ++client->generation;
+      if(client->connected&&client->initialized&&!client->fault)
+        client->status_text(storage==2?"Meshtastic ready / SD recovery failed":"Meshtastic ready / history restored");
+      else ++client->generation;
       disk_state.store(0);
     }
     if(disk_state.load()==4){storage=disk->result?1:2;

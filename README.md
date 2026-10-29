@@ -1,3 +1,5 @@
+**v0.7.14 experimental:** PR #65 improves Meshtastic PhoneAPI GATT compatibility and RX/send diagnostics. Physical Heltec V3 RX/TX validation is pending; do not treat missing RX as confirmed fixed. Install without Erase. v0.7.8 remains the unchanged recovery.
+
 ![MeshCrossway — Meshtastic and MeshCore modular three-device system](docs/images/meshcrossway-modular-hero.jpg)
 
 MeshCrossway is an **open-source, offline-first modular communication system** with **three independent, battery-powered devices**: one touchscreen **Core** and two detachable LoRa **Radio Pods**, one for **Meshtastic** and one for **MeshCore**. The Core connects to both Pods over **two separate Bluetooth Low Energy (BLE) links**, bringing messaging, navigation, GNSS positioning, tracks and field diagnostics into a single interface without requiring cellular coverage or the internet.

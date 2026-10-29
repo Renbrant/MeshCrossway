@@ -71,7 +71,7 @@ namespace mtui {
     }
     close();
     dialog=panel_at(lv_scr_act(),0,0,480,320,bg,0);
-    txt(dialog,"MESHTASTIC / MESSAGE",8,8,260,orange);
+    txt(dialog,selected.node==meshmt::BROADCAST?"MESHTASTIC / CHANNEL":"MESHTASTIC / DIRECT",8,8,260,orange);
     action_button(dialog,"CLOSE",378,3,96,33,panel2,close_event,0);
     value=lv_textarea_create(dialog);
     lv_obj_set_pos(value,6,40);
@@ -97,12 +97,14 @@ namespace mtui {
   static void tools(){
     auto *c=meshmt::client;
     char info[900];
-    if(!c){notice("MESHTASTIC / T-DECK","More > Radios > Enable BLE > Scan. On T-Deck use official Meshtastic, Bluetooth Programming Mode or BaseUI, Wi-Fi OFF, and the displayed PIN. Close the phone app.");
+    if(!c){notice("MESHTASTIC / RADIO","More > Radios > Enable BLE > Scan. Use official Meshtastic BLE PhoneAPI with Bluetooth enabled, radio Wi-Fi off, and a compatible pairing mode. Close any competing clients.");
       return;
     }
-    snprintf(info,sizeof(info),"%.105s\nFirmware: %.48s / HW: %lu / MTU: %u\nNode: !%08lx / region: %u / TX: %s\n%u nodes / %u messages / dropped nodes: %lu\n%s\nT-Deck: BaseUI or Bluetooth Programming Mode, Wi-Fi OFF. One active BLE radio on this Core.",
+    snprintf(info,sizeof(info),"%.105s\nFirmware: %.48s / HW: %lu / MTU: %u\nNode: !%08lx / region: %u / TX: %s\n%u nodes / %u messages / dropped nodes: %lu\nFromRadio: %lu frames / %lu packets / %lu text / %lu ignored\n%s\nOfficial Meshtastic BLE PhoneAPI required. For ESP32 radios, turn Wi-Fi OFF. One active BLE radio.",
     c->status,c->firmware,(unsigned long)c->hardware,c->mtu,(unsigned long)c->data.my_num,c->region,c->tx_enabled?"enabled":"disabled",
-    c->data.node_count,c->data.message_count,(unsigned long)c->dropped_nodes,meshmt::history_status());
+    c->data.node_count,c->data.message_count,(unsigned long)c->dropped_nodes,
+    (unsigned long)c->rx_frames,(unsigned long)c->rx_packets,(unsigned long)c->rx_text,(unsigned long)c->ignored,
+    meshmt::history_status());
     close();
     dialog=panel_at(lv_scr_act(),0,0,480,320,bg,0);
     txt(dialog,"MESHTASTIC / COMPATIBILITY",8,10,355,orange);

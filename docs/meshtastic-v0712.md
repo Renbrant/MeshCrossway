@@ -90,3 +90,42 @@ Meshtastic firmware remains separately installed on the user's radio.
 - [Official Python BLE API behavior](https://github.com/meshtastic/python/blob/master/meshtastic/ble_interface.py) and [packet/PKI behavior](https://github.com/meshtastic/python/blob/master/meshtastic/mesh_interface.py), research only; moving references should be rechecked when updating the adapter.
 
 See the [dependency review](third-party-licenses.md) and [release policy](licensing.md).
+
+## Vendor-independent BLE PhoneAPI compatibility investigation — 29 October 2026
+
+The BLE PhoneAPI UUIDs, GATT characteristics, and protobuf envelopes are properties
+of the **official Meshtastic firmware**, not the T-Deck form factor. A matching BLE
+service can be found on Heltec ESP32, T-Deck, and supported nRF52 radios. This
+does not imply support for hardware without BLE or a firmware lacking the official
+PhoneAPI, nor does it promise concurrent mobile + MeshCrossway sessions.
+
+The prior hard stop at negotiated ATT MTU below 512 was not justified: official
+nRF52 firmware can negotiate MTU 247. The pending follow-up uses a short
+acknowledged ToRadio write when the entire protobuf fits in MTU - 3 and
+otherwise uses one ATT Prepare/Execute Write transaction, preserving a **single
+ToRadio envelope**. The existing complete-message long FromRadio read remains.
+Per-radio behavior requires actual hardware validation, notably with small
+MTUs and large protobufs.
+
+**Receiving and debugging:** The connected BLE link is not equivalent to a
+completed application sync. More > Radios > Meshtastic Status includes firmware,
+radio model, MTU, own node, region, TX enable, NodeDB count and decoded
+FromRadio frame/packet/text/ignored counters. Transmit a fresh text message
+from another LoRa device **after the host has connected**. A message visible in
+the radio's native display/archive before the PhoneAPI connection does not
+necessarily get replayed into the host history. If FromRadio packet count
+rises but text does not, investigate portnum, recipient, channel and protobuf
+decoding; if no frames arrive, investigate FromNum notifications, GATT reads,
+MTU and the radio firmware's single-client behavior.
+
+**Sending:** Groups/Channels > Meshtastic > an enabled channel provides a
+broadcast-path test independent of a particular direct-message recipient.
+Direct messages require a remote known node, matching radio identity/channel,
+and any mandatory public key. A radio cannot DM itself. A disabled send button
+with a node-specific validation error is not evidence of a failed RF TX.
+
+**Safety:** Do not erase MeshCrossway NVS or microSD history while debugging.
+The host does not replay outgoing messages after reconnection. MeshCore and
+Meshtastic stores/radio networks remain strictly independent, with one active
+BLE radio connection in this firmware. Never silently downgrade authenticated
+Bluetooth bonds or send any packet over the other network.
