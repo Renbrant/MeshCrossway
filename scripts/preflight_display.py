@@ -188,7 +188,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.1","v0.7.2"):
         for marker in ("tab_names[6]", "home_nav_open", "NODES / MESHCORE",
                        "GROUPS / CHANNELS", "CHAT / NO SELECTION", "active_thread",
                        "nodes_filter", "groups_filter", "make_nav_vector",
-                       "open_thread_now", "more_view", "DEV 0.7.1" if version=="v0.7.1" else ("DEV 0.6.4" if version=="v0.6.4" else ("DEV 0.6.3" if version=="v0.6.3" else "DEV 0.6.2"))):
+                       "open_thread_now", "more_view", "DEV " + version.lstrip("v")):
             assert marker in ui, "Missing new navigation element: "+marker
         assert version in health
         assert 'remote touch disabled' in ui
@@ -211,7 +211,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.1","v0.7.2"):
             assert "meshble::start();" in output
         assert '"meshcrossway_ble.h"' in patcher.read_text()
         assert "CONFIG_BT_NIMBLE_ENABLED=y" in patcher.read_text()
-    if version=="v0.7.1":
+    if version in ("v0.7.1","v0.7.2"):
         assert "port_cfg.task_affinity = 1;" in output
         lcd=patched_lcd
         assert "#define EXAMPLE_LCD_PIXEL_CLOCK_HZ (40 * 1000 * 1000)" in lcd
