@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.7.0: adaptive field-console layout, no remote touch.
+// MeshCrossway v0.7.1: adaptive field-console layout, no remote touch.
 // MeshCore is live over BLE. Meshtastic and navigation remain previews.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
@@ -812,7 +812,7 @@ static void draw(){
       const char *phase=s.phase==meshble::OFF?"DISABLED":s.phase==meshble::STARTING?"STARTING":s.phase==meshble::READY?"SECURE":s.phase==meshble::SCANNING?"SCANNING":s.phase==meshble::CONNECTING?"CONNECTING":s.phase==meshble::VERIFYING?"VERIFYING":s.phase==meshble::PAIRING?"PAIRING":s.phase==meshble::FAILED?"ERROR":"IDLE";
       char detail[64];snprintf(detail,sizeof(detail),"%s / %s",phase,meshble::protocol_name(s.radio));
       single_label(body,detail,8,53,w-16,s.phase==meshble::READY?green:orange);
-      single_label(body,s.status,8,76,w-16,muted);
+      single_label(body,s.phase==meshble::READY?(s.bonded?"BLE bond saved / PIN remembered":"Secure link / bond not supported"):s.status,8,76,w-16,muted);
       if(s.phase==meshble::OFF){
         single_label(body,"Safe boot: BLE is off until enabled.",8,106,w-16,green);
         action_button(body,"ENABLE BLE / TEST",8,151,w-16,49,orange,on_action,A_BLE_ENABLE);
@@ -913,7 +913,7 @@ static void init(){
   color_label(top,"MESH",7,7,55,white);
   color_label(top,"CROSSWAY",59,7,120,orange);
   top_wifi=color_label(top,"Wi-Fi: waiting",209,7,167,green);
-  color_label(top,"DEV 0.7.0",390,7,88,orange);
+  color_label(top,"DEV 0.7.1",390,7,88,orange);
   left_rail=panel_at(screen,0,34,79,286,panel,0);
   right_rail=panel_at(screen,355,34,125,286,panel,0);
   left_handle=action_button(left_rail,"",47,4,29,30,panel2,toggle_left,0);
