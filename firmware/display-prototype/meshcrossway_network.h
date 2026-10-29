@@ -37,6 +37,8 @@ struct profile_list_t {
   credentials_t entries[MAX_PROFILES];
 };
 static profile_list_t profiles={};
+static credentials_t legacy_profile={}; // first upgrade from single-SSID ESP-IDF NVS or SD
+
 static int active_index=-1;      // -1: manually entered / legacy STA configuration
 static unsigned attempted=0;    // profiles attempted in this fallback pass
 static bool manual_active=false;
@@ -93,7 +95,10 @@ static void remember_success(const credentials_t &success){
   for(unsigned i=0;i<profiles.count&&next.count<MAX_PROFILES;i++)
     if(!same_ssid(profiles.entries[i],success.ssid))
       next.entries[next.count++]=profiles.entries[i];
+  const bool unchanged=profiles.magic==next.magic&&profiles.count==next.count&&
+                       !memcmp(&profiles,&next,sizeof(next));
   portEXIT_CRITICAL(&guard);
+  if(unchanged)return; // No needless flash write on every successful reboot.
   nvs_handle_t h;
   if(nvs_open("mcx_wifi",NVS_READWRITE,&h)!=ESP_OK)return;
   const bool ok=nvs_set_blob(h,"profiles",&next,sizeof(next))==ESP_OK &&
@@ -210,7 +215,12 @@ static void wifi_event(void *,esp_event_base_t base,int32_t event,void *data){
   }else if(base==MCX_CONTROL_EVENT && event==RETRY_KNOWN){
     if(!station_connected&&!manual_active){
       attempted=0;
-      next_saved();
+      if(profiles.count==0 && valid(legacy_profile)){
+        active_index=-1;
+        if(configure_station(legacy_profile)){
+          if(esp_wifi_connect()!=ESP_OK)delay_retry();
+        }else delay_retry();
+      }else next_saved();
     }
   }else if(base==WIFI_EVENT && event==WIFI_EVENT_SCAN_DONE){
     portENTER_CRITICAL(&guard);scan_done=true;portEXIT_CRITICAL(&guard);
@@ -298,7 +308,9 @@ static void start(){
     credentials_t c={};
     memcpy(c.ssid,old.sta.ssid,32);
     memcpy(c.password,old.sta.password,63);
-    if(configure_station(c)){active_index=-1;attempted=0;}
+    if(configure_station(c)){
+      active_index=-1;attempted=0;legacy_profile=c;
+    }
     memset(&c,0,sizeof(c));
   }
   ESP_ERROR_CHECK(esp_wifi_start());
