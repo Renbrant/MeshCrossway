@@ -20,3 +20,7 @@ Read the [licensing policy and release checks](docs/licensing.md) before distrib
 ## Validation
 
 Run checks relevant to the change. For firmware, use the existing preflight scripts and documented build workflow, record the exact source version and report physical tests separately. Documentation-only changes should preserve local links and accurately state review limitations.
+
+## Current implementation boundaries (October 2026)
+
+Consult [the current status matrix](docs/current-status.md) before changing docs, examples or site claims. Maintain separate statuses for code on `main`, open PR experiments, CI results and owner-verified hardware. Never describe the paused encrypted microSD drafts as active persistence or suggest automatic eFuse provisioning. All MT/MC UI integration must preserve strict network isolation, with **no bridge, relay, synchronization, translation or cross-send**.

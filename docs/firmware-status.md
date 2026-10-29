@@ -1,3 +1,5 @@
+> **CURRENT STATUS — October 28, 2026 (local):** `main` = **v0.7.6 experimental**. Latest physical owner-confirmed baseline/default rollback = **v0.6.8**. **v0.7.7 is OPEN PR #54**, not merged or hardware-validated. Encrypted SD history is **paused**, drafts #50/#52 unmerged; v0.7.5 eFuse diagnostics are **read-only**. The text below is a **chronological historical development log**, including old default/rollback instructions that were correct only at their original dates. Follow [current-status.md](current-status.md) and [web-flasher-release-policy.md](web-flasher-release-policy.md) for today's state.
+
 # Waveshare firmware status — October 28, 2026
 
 Target: Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0, non-B, 480 × 320. ESP-IDF 5.3.2; LVGL 8.4.0; Waveshare BSP `d9ff7837148b47b33edadc4b87775c341cf35bbe`.
