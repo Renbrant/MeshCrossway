@@ -22,7 +22,9 @@ namespace mtui {
     auto *c=meshmt::client;
     if(!c||!value)return;
     auto *d=c->draft(selected,true);
-    if(d&&strcmp(d->text,lv_textarea_get_text(value))){snprintf(d->text,sizeof(d->text),"%s",lv_textarea_get_text(value));
+    const char *text=lv_textarea_get_text(value);const size_t n=strlen(text);
+    if(n>meshmt::MAX_TEXT||!meshmt::utf8(text,n))return;
+    if(d&&strcmp(d->text,text)){snprintf(d->text,sizeof(d->text),"%s",text);
       ++c->generation;
     }
   }

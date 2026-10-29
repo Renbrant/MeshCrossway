@@ -10,6 +10,8 @@ static void close_more(){++closes;transport_down();}
 int main(int argc,char **argv){
   assert(argc==2);history_root=argv[1];assert(init());assert(sizeof(Buffers)<100000);
   send_frame=send;can_write=writable;pump_read=read_more;close_link=close_more;
+  mcxhistory::ble_startup.store(true);poll();assert(!mcxhistory::worker);
+  mcxhistory::ble_startup.store(false);
   uint8_t identity[7]={0,9,8,7,6,5,4};transport_up(identity,517);poll();
   assert(client->connected&&writes==1);on_write(true);poll();
   assert(!client->writing&&reads>0);

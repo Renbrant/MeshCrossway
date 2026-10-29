@@ -120,6 +120,7 @@ namespace meshmt {
   }
   static void poll(){
     if(!client||!buffers||!disk)return;
+    if(mcxhistory::ble_startup.load()&&!mcxhistory::worker)return;
     const uint32_t now=uint32_t(esp_timer_get_time()/1000);
     mcxhistory::begin();
     if(!link.load()&&offline_request.exchange(false)&&!client->data.message_count&&disk_state.load()==0){
