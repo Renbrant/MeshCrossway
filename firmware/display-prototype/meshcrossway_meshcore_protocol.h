@@ -826,12 +826,17 @@ public:
     char description[600] = {};
     switch (code) {
     case 0:
-      valid = n == 1;
+      // The official Companion protocol allows a 4-byte optional value.
+      // T-Deck and other firmware variants may return the extended form.
+      valid = n == 1 || n == 5;
       snprintf(description, sizeof(description), "Accepted by radio (not a delivery confirmation)");
       break;
     case 1:
-      valid = n >= 2;
-      if (valid)
+      // Error code is optional on the wire; absent code is not malformed.
+      valid = n == 1 || n == 2;
+      if (valid && n == 1)
+        snprintf(description, sizeof(description), "Radio command rejected (error code omitted)");
+      else if (valid)
         snprintf(description, sizeof(description), "Radio error %u: %s", p[1],
                  p[1] == 1   ? "unsupported command"
                  : p[1] == 2 ? "not found"
@@ -1047,7 +1052,8 @@ public:
       valid = n >= 1 && ((n - 1) % 8) == 0;
       break;
     case 27:
-      valid = n >= 9;
+      // Channel datagram 0x1B has an 8-byte header; payload may be empty.
+      valid = n >= 8;
       if (valid)
         waiting_messages = true;
       break;
@@ -1101,7 +1107,21 @@ public:
     }
     if (!valid) {
       ++invalid;
-      fail("Malformed or unsupported radio response; reconnect");
+      // Never log the frame payload: it can carry private keys, channel
+      // secrets, usernames, GPS locations or confidential messages.
+      // Code/length/protocol are sufficient for a safe compatibility report.
+      char reason[128];
+      if (code == 13 && n >= 2 && p[1] < 3)
+        snprintf(reason, sizeof(reason),
+                 "MeshCore Companion protocol v%u unsupported (need >=3). Update T-Deck Companion.",
+                 (unsigned)p[1]);
+      else
+        snprintf(reason, sizeof(reason),
+                 "MeshCore invalid frame 0x%02X len %u (cmd %u; %s). Check Companion firmware.",
+                 (unsigned)code,(unsigned)n,
+                 (unsigned)(busy ? active.frame.data[0] : 0u),
+                 initialized ? "live" : "sync");
+      fail(reason);
       return false;
     }
     ++generation;
