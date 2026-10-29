@@ -37,7 +37,7 @@ inline bool unpack(const char *encoded, uint8_t *out, size_t capacity, size_t ex
     filled += 6;
     if (filled >= 8) {
       filled -= 8;
-      if (p >= out_capacity) return false;
+      if (p >= expected) return false;
       out[p++] = (uint8_t)(bits >> filled);
       bits &= (1u << filled) - 1;
     }
