@@ -120,3 +120,7 @@ For Bluetooth, after the UI and Wi-Fi server have initialized, a deferred worker
 The color emoji renderer now recognizes the checkered flag (`U+1F3C1`, with or without optional `U+FE0F`) and draws its real 20×20 Noto Emoji bitmap rather than the `[emoji]` fallback in MeshCore messages. The same display-only mapping also applies to contact names in node lists/details, chat headings, tool dialogs, and the Home radio name. The underlying transmitted text, keys and contacts remain unmodified. The original 92-emoji atlas checksum is unchanged; a separately hashed 264-byte indexed-4 image supplies glyph #93. C++11/20 tests include the exact reported sender-name pattern.
 
 **Physical hardware verification is still required** for color/spacing, power-cycle and Bluetooth coexistence. v0.6.8 remains the immutable owner-tested rollback, and normal updates must leave Web Flasher **Erase device unchecked**. [Regression and acceptance steps](../../docs/checkered-flag-emoji-v074.md).
+
+## v0.7.7 — swipe-to-expand sidebars (experimental)
+
+The left navigation and the Chat/Map contextual menu now open/close with a horizontal finger gesture from the relevant screen edge or expanded rail. Arrow buttons were removed; compact rails keep clickable icons. This is triggered after releasing the finger and does not interfere with the header, vertical scrolling or PIN/Wi-Fi keyboards. [Swipe UX and on-device acceptance matrix](../../docs/edge-swipe-sidebars-v077.md). **Not yet tested on Waveshare hardware**; keep Web Flasher Erase unchecked to preserve Wi-Fi and BLE bonds.
