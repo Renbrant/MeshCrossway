@@ -138,6 +138,7 @@ static bool matching_remembered(const ble_addr_t &address){
 static int gap_event(struct ble_gap_event *event,void *arg);
 static void debug_memory(const char *phase);
 static void on_sync(){
+  mcxhistory::ble_startup.store(false);
   const int rc=ble_hs_util_ensure_addr(0);
   if(rc!=0){update(FAILED,"BLE identity unavailable");return;}
   if(ble_hs_id_infer_auto(0,&own_addr)!=0){update(FAILED,"BLE address unavailable");return;}
@@ -157,7 +158,8 @@ static void host_task(void *){
 static void scan(bool automatic=false){
   if(!synced){
     if(snapshot().phase==OFF)update(OFF,"Enable BLE before scanning");
-    else update(FAILED,"BLE host not ready");
+    else if(snapshot().phase==STARTING)update(STARTING,"Bluetooth is still starting");
+    else if(snapshot().phase!=FAILED)update(FAILED,"BLE host not ready"); // Keep the original init error visible.
     return;
   }
   const Snapshot current=snapshot();
@@ -459,6 +461,7 @@ static void start_internal(){
   printf("[MCX-BLE] nimble_port_init result=%d heap=%lu\n",(int)err,(unsigned long)esp_get_free_heap_size());
   debug_memory("after nimble init");
   if(err!=ESP_OK){
+    mcxhistory::ble_startup.store(false);
     char msg[64];snprintf(msg,sizeof(msg),"NimBLE: %s (%d)",esp_err_to_name(err),(int)err);
     update(FAILED,msg);return;
   }
@@ -476,6 +479,7 @@ static void start_internal(){
   ble_store_config_init();
   debug_memory("before host task");
   nimble_port_freertos_init(host_task);
+  mcxhistory::ble_startup.store(false);
   printf("[MCX-BLE] host created; awaiting sync\n");
 }
 static void init_task(void *){
@@ -487,12 +491,14 @@ static void init_task(void *){
 }
 static bool request_start(){
   if(snapshot().phase!=OFF)return false; // Do not repeat a partial or failed init.
-  if(!meshmc::init()){update(FAILED,"No PSRAM for MeshCore session");return false;}
+  mcxhistory::ble_startup.store(true);
+  if(!meshmc::init()){mcxhistory::ble_startup.store(false);update(FAILED,"No PSRAM for MeshCore session");return false;}
   meshmc::send_frame=mc_write;meshmc::close_link=mc_close;
   debug_memory("BLE requested");
   update(STARTING,"BLE worker requested - standby...");
   const BaseType_t created=xTaskCreate(init_task,"mcx_ble_init",6144,nullptr,tskIDLE_PRIORITY+1,nullptr);
   if(created!=pdPASS){
+    mcxhistory::ble_startup.store(false);
     update(FAILED,"No memory for BLE worker; restart");return false;
   }
   return true;

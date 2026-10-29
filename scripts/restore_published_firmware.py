@@ -21,6 +21,9 @@ ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_BASE = "https://renbrant.github.io/MeshCrossway/flasher/firmware/versions"
 BUILDER = ROOT / "scripts" / "build_firmware_versions.sh"
 INPUTS = [
+    "scripts/check_chat_memory.py",
+    "scripts/test_conversations_history.py",
+    "tests/conversations_history_test.cpp",
     "firmware/display-prototype",
     "scripts/build_firmware_versions.sh",
     "scripts/write_firmware_version.py",

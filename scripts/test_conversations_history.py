@@ -38,7 +38,8 @@ using portMUX_TYPE=int;
 static void vTaskDelay(uint32_t){}
 static void vTaskDelete(void *){}
 static uint32_t xTaskGetTickCount(){return 0;}
-static void xTaskCreatePinnedToCore(void (*)(void *),const char *,int,void *,int,TaskHandle_t *,int){}
+static int task_calls=0;
+static void xTaskCreatePinnedToCore(void (*)(void *),const char *,int,void *,int,TaskHandle_t *out,int){++task_calls;*out=(void *)1;}
 ''')
     source=temp/'worker.cpp';source.write_text(r'''#include "meshcrossway_sd_history.h"
 #include <cassert>
@@ -52,6 +53,10 @@ int main(){
   mcxhistory::preferences().revision=42;
   const int allocations=calls;assert(mcxhistory::init_workspace());assert(calls==allocations);
   assert(mcxhistory::preferences().revision==42);
+  auto *client=new meshmc::Client();
+  mcxhistory::ble_startup.store(true);mcxhistory::poll(*client,0,0);assert(task_calls==0);
+  mcxhistory::ble_startup.store(false);mcxhistory::poll(*client,0,0);assert(task_calls==1);
+  mcxhistory::poll(*client,0,0);assert(task_calls==1);delete client;
   printf("PASS: %zu-byte workspace uses explicit PSRAM; OOM has no internal fallback; initialization preserves preferences\n",sizeof(mcxchat::Workspace));
 }
 ''')

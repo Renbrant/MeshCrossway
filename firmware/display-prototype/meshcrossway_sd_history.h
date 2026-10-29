@@ -20,6 +20,7 @@ static bool init_workspace(){
 }
 static mcxchat::Local &preferences(){return workspace()->local;}
 static TaskHandle_t worker=nullptr;
+static std::atomic<bool> ble_startup{false};
 static portMUX_TYPE lock=portMUX_INITIALIZER_UNLOCKED;
 struct Job {mcxstore::State *image=nullptr;bool load=false,offline=false;uint8_t radio[32]={};uint32_t epoch=0,ticket=0;};
 static Job jobs[4];static unsigned head=0,count=0;
@@ -117,6 +118,7 @@ static const char *status(){
 }
 static void poll(meshmc::Client &c,uint32_t now,uint32_t epoch){
   if(!init_workspace()){restored=true;c.history_ready=true;storage.store(2);return;}
+  if(ble_startup.load()&&!worker)return; // Let controller/host claim internal stacks first.
   begin();if(!worker||worker_failed.load()){restored=true;c.history_ready=true;storage.store(2);return;}
   if(complete.load()){
     bool transmitting=c.busy&&c.active.message>=0;
