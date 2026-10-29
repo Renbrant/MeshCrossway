@@ -333,10 +333,22 @@ static int mt_written(uint16_t handle,const struct ble_gatt_error *err,struct bl
 static bool mt_can_write(){return mt_transport_started.load()&&!mt_io_busy.load()&&conn!=BLE_HS_CONN_HANDLE_NONE;
 }
 static bool mt_write(const uint8_t *p,size_t n){
-  if(!mt_can_write()||!mt_to||n>(size_t)(ble_att_mtu(conn)-3))return false;
+  if(!mt_can_write()||!mt_to||!p||!n||n>meshmt::MAX_FRAME)return false;
+  const uint16_t mtu=ble_att_mtu(conn);
+  if(mtu<23)return false;
   bool expected=false;
   if(!mt_io_busy.compare_exchange_strong(expected,true))return false;
-  const int rc=ble_gattc_write_flat(conn,mt_to,p,n,mt_written,mt_token());
+  // PhoneAPI sends one complete protobuf per GATT write. For smaller MTUs,
+  // use ATT Prepare/Execute Write rather than splitting a protobuf.
+  int rc=0;
+  if(n<=size_t(mtu-3)){
+    rc=ble_gattc_write_flat(conn,mt_to,p,n,mt_written,mt_token());
+  }else{
+    struct os_mbuf *payload=ble_hs_mbuf_from_flat(p,n);
+    if(!payload){mt_io_busy=false;return false;}
+    // NimBLE consumes the mbuf, including on failed initiation.
+    rc=ble_gattc_write_long(conn,mt_to,0,payload,mt_written,mt_token());
+  }
   if(rc)mt_io_busy=false;
   return rc==0;
 }
@@ -431,15 +443,18 @@ static int mt_characteristic(uint16_t handle,const struct ble_gatt_error *err,co
 }
 static int mt_mtu(uint16_t handle,const struct ble_gatt_error *err,uint16_t mtu,void *token){
   if(!mt_callback_current(handle,token))return 0;
-  if(err->status||mtu<512){transport_failure("Meshtastic needs MTU >=512. Update T-Deck firmware / use BaseUI.");
+  // Official Meshtastic BLE devices negotiate different ATT MTUs.
+  // Long characteristic reads/writes keep the protobuf framing intact.
+  if(err->status||mtu<23){transport_failure("Meshtastic ATT MTU exchange failed; reconnect radio.");
     return 0;
   }
+  printf("[MCX-MT] negotiated ATT MTU=%u; using long GATT operations as needed\n",(unsigned)mtu);
   if(ble_gattc_disc_all_chrs(handle,mt_start,mt_end,mt_characteristic,token))transport_failure("Meshtastic characteristic discovery failed");
   return 0;
 }
 static void start_meshtastic(){
   if(identified!=MESHTASTIC||mt_transport_started)return;
-  update(VERIFYING,"Meshtastic: checking MTU and PhoneAPI...");
+  update(VERIFYING,"Meshtastic: negotiating GATT PhoneAPI...");
   if(ble_gattc_exchange_mtu(conn,mt_mtu,mt_token()))transport_failure("Meshtastic MTU exchange failed");
 }
 static int service_cb(uint16_t handle,const struct ble_gatt_error *err,
