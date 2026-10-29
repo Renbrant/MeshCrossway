@@ -133,7 +133,8 @@ if source.count('meshnetwork::start();') != 1:
     sys.exit('Missing or duplicate isolated Wi-Fi initialization')
 for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",
              "meshcrossway_remote_page.h", "meshcrossway_network.h", "meshcrossway_ble.h", "meshcrossway_meshcore.h",
-             "meshcrossway_meshcore_protocol.h", "meshcrossway_meshcore_ui.h"):
+             "meshcrossway_meshcore_protocol.h", "meshcrossway_meshcore_ui.h",
+             "meshcrossway_device_key.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 
