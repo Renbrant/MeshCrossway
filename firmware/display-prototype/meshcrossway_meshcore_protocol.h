@@ -530,6 +530,7 @@ struct Message {
 struct Pending {
   Frame frame;
   int32_t message = -1;
+  bool visible = true;
 };
 class Client {
 public:
@@ -592,7 +593,7 @@ public:
     payload_limit = limit;
     change("Reading MeshCore identity...");
   }
-  bool enqueue(const Frame &f, int32_t message = -1) {
+  bool enqueue(const Frame &f, int32_t message = -1, bool visible = true) {
     if (!connected || fault || !f.len || f.len > payload_limit || qcount >= 12)
       return false;
     if (f.data[0] == 3 && (f.len < 8 || size_t(f.len - 7) > text_limit(true)))
@@ -610,10 +611,11 @@ public:
       return false;
     queue[(qhead + qcount) % 12].frame = f;
     queue[(qhead + qcount) % 12].message = message;
+    queue[(qhead + qcount) % 12].visible = visible;
     ++qcount;
     return true;
   }
-  bool simple(uint8_t code, int arg = -1) {
+  bool simple(uint8_t code, int arg = -1, bool visible = true) {
     Frame f;
     char error[90];
     const Command *c = command(code);
@@ -625,7 +627,7 @@ public:
       f.data[1] = arg;
     } else if (!build(*c, nullptr, 0, f, error, sizeof(error)))
       return false;
-    return enqueue(f);
+    return enqueue(f, -1, visible);
   }
   uint32_t timestamp() { return clock + (now_ms - clock_at) / 1000; }
   Message *by_id(uint32_t id) {
@@ -728,18 +730,18 @@ public:
       return false;
     if (!qcount && !initialized) {
       if (bootstrap == 0)
-        simple(1);
+        simple(1, -1, false);
       else if (bootstrap == 1)
-        simple(22);
+        simple(22, -1, false);
       else if (bootstrap == 2)
-        simple(5);
+        simple(5, -1, false);
       else if (bootstrap == 3) {
         contact_count = 0;
-        simple(4);
+        simple(4, -1, false);
       } else if (channel_next < channel_count) {
-        simple(31, channel_next++);
+        simple(31, channel_next++, false);
       } else if (bootstrap == 4)
-        simple(20);
+        simple(20, -1, false);
       else {
         initialized = true;
         waiting_messages = true;
@@ -752,7 +754,7 @@ public:
     }
     if (!qcount && initialized && waiting_messages) {
       waiting_messages = false;
-      simple(10);
+      simple(10, -1, false);
     }
     if (!qcount)
       return false;
@@ -773,7 +775,8 @@ public:
     ++tx_count;
     f = active.frame;
     const Command *c = command(f.data[0]);
-    snprintf(result, sizeof(result), "%s\nWaiting for radio response...", c ? c->name : "Command");
+    if (active.visible)
+      snprintf(result, sizeof(result), "%s\nWaiting for radio response...", c ? c->name : "Command");
     change(c ? c->name : "Command");
     return true;
   }
@@ -1188,21 +1191,23 @@ public:
               contacts[i] = contacts[--contact_count];
           }
           if (cmd == 9 || cmd == 13 || cmd == 18)
-            simple(4);
+            simple(4, -1, false);
         }
         response_done = true;
         if (written)
           busy = false;
-        last_frame.len = n;
-        memcpy(last_frame.data, p, n);
-        if (code == 13 && n >= 8)
-          memset(last_frame.data + 4, 0, 4);
-        if (!description[0]) {
-          char data[360];
-          hex(p + 1, n - 1, data, sizeof(data));
-          snprintf(description, sizeof(description), "Response %u / %u bytes\n%s", code, (unsigned)n, data);
+        if (active.visible || code == 27) {
+          last_frame.len = n;
+          memcpy(last_frame.data, p, n);
+          if (code == 13 && n >= 8)
+            memset(last_frame.data + 4, 0, 4);
+          if (!description[0]) {
+            char data[360];
+            hex(p + 1, n - 1, data, sizeof(data));
+            snprintf(description, sizeof(description), "Response %u / %u bytes\n%s", code, (unsigned)n, data);
+          }
+          snprintf(result, sizeof(result), "%s\n%s", command(cmd)->name, description);
         }
-        snprintf(result, sizeof(result), "%s\n%s", command(cmd)->name, description);
         change(error ? description : "Command completed");
       }
     }
@@ -1224,6 +1229,8 @@ public:
                           : code == 144 ? "Radio contacts full"
                                         : "Radio event received";
       if (code != 131 && code != 128 && code != 129) {
+        last_frame.len = n;
+        memcpy(last_frame.data, p, n);
         char data[360];
         hex(p + 1, n - 1, data, sizeof(data));
         snprintf(result, sizeof(result), "%s\n%s", event, description[0] ? description : data);
@@ -1234,7 +1241,7 @@ public:
           if (queue[(qhead + i) % 12].frame.data[0] == 4)
             queued = true;
         if (!queued && initialized)
-          simple(4);
+          simple(4, -1, false);
       }
     }
     return true;

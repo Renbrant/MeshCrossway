@@ -77,6 +77,10 @@ int main(){
  auto budget=make_client();bootstrap(*budget);memset(budget->name,'N',31);budget->name[31]=0;
  assert(budget->text_limit(true)==127);char longtext[151];memset(longtext,'x',150);longtext[150]=0;assert(!budget->send_text(true,0,longtext));
  assert(budget->send_text(false,0,"one")&&budget->send_text(false,0,"two"));assert(budget->by_id(2)->timestamp>budget->by_id(1)->timestamp);
+ // Automatic inbox maintenance must not erase the last tool response.
+ auto view=make_client();bootstrap(*view);assert(view->simple(20));f=start(*view,3000);view->write_done(true);r=response(12,11);r.data[1]=0x68;r.data[2]=0x10;recv(*view,r,3001);assert(strstr(view->result,"Battery"));
+ char saved[800];strcpy(saved,view->result);view->waiting_messages=true;f=start(*view,3200);assert(f.data[0]==10);view->write_done(true);r=response(10,1);recv(*view,r,3201);assert(!strcmp(saved,view->result));
+ r=response(139,12);r.data[8]=1;r.data[9]=116;r.data[10]=1;r.data[11]=0x9a;recv(*view,r,3202);assert(view->last_frame.data[0]==139&&strstr(view->result,"4.100 V"));
  // Sanitizer corpus: all packet types and truncated lengths, plus random oversized/truncated frames.
  std::mt19937 random(7);auto fuzz=make_client();uint8_t bytes[MAX_FRAME+1];
  for(int code=0;code<256;code++)for(size_t n=0;n<=MAX_FRAME+1;n++){
