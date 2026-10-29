@@ -49,7 +49,7 @@ static portMUX_TYPE mux=portMUX_INITIALIZER_UNLOCKED;
 static Snapshot state={};
 static std::atomic<uint16_t> conn{BLE_HS_CONN_HANDLE_NONE};
 static uint8_t own_addr=0;
-static bool synced=false;
+static std::atomic<bool> synced{false};
 static Radio identified=UNKNOWN;
 static constexpr uint32_t LAST_PEER_MAGIC=0x4D435842u;
 struct RememberedPeer {uint32_t magic;uint8_t version;uint8_t radio;uint8_t addr_type;uint8_t addr[6];char name[29];};
