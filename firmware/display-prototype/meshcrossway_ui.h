@@ -5,6 +5,8 @@
 #include "meshcrossway_health.h"
 #include "meshcrossway_ble.h"
 #include "meshcrossway_device_key.h"
+// Stage B: compile-only crypto helper. No runtime invocation or eFuse access.
+#include "meshcrossway_storage_crypto.h"
 #include "emoji/emoji_display.h"
 #define MCX_EMOJI_RENDER_ENABLED 1
 #include "esp_system.h"
