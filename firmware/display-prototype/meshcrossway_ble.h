@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.6.7 - BLE remains OFF during boot; explicit staged initialization.
+// MeshCrossway v0.6.8 - BLE remains OFF during boot; explicit staged initialization.
 // and PIN-authenticated pairing. No application frames are sent.
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"

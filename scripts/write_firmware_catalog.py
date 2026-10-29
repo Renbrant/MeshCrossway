@@ -56,6 +56,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.6.8":
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: manual web screenshots without a View PIN; remote touch remains disabled. Retains the Bluetooth numeric PIN keypad and DMA/BLE stability changes."
+        label="Web capture without PIN / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.6.7":
         summary="EXPERIMENTAL / NOT HARDWARE TESTED: fixes Bluetooth PIN keyboard visibility with a full-screen numeric keypad; retains v0.6.6 DMA/BLE stability changes. Pairing/encryption still requires owner testing."
         label="Bluetooth PIN keyboard fix / EXPERIMENTAL"
