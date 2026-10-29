@@ -364,6 +364,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
             assert 'color_label(top,"0.7.8",187,11' in current
             assert 'color_label(top,"DEV 0.7.8"' not in current
             assert "top_battery_fill" in current
+            assert "CONFIG_LV_FONT_MONTSERRAT_10=y" in patcher.read_text()
             assert "lv_obj_set_width(top_battery_fill" in current
             assert "top_mt_name=color_label(top,\"MT\"" in current
             assert "top_mc_name=color_label(top,\"MC\"" in current
