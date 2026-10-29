@@ -65,6 +65,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.7.5":
+        summary="EXPERIMENTAL / HARDWARE TEST PENDING: Read-only ESP32-S3 eFuse HMAC key-block inventory in More > Diagnostics. Reports free blocks and storage-vault status without exposing or programming secret keys. Encrypted SD and persistent chat history are NOT implemented. Includes v0.7.4 emoji, Bluetooth and Wi-Fi behavior. Leave Erase unchecked."
+        label="Read-only eFuse / secure-storage diagnostics / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.7.4":
         summary="EXPERIMENTAL / NOT HARDWARE TESTED: Fix checkered flag U+1F3C1 rendered as [emoji] in MeshCore chat and names; add 93rd indexed-4 emoji with source bytes untouched. Keeps all v0.7.3 chat emojis and v0.7.2 Wi-Fi/BLE automatic reconnect. Leave Erase unchecked."
         label="Checkered flag + 93 color emojis / EXPERIMENTAL"
