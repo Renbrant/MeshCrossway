@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.6.6 - BLE remains OFF during boot; explicit staged initialization.
+// MeshCrossway v0.6.7 - BLE remains OFF during boot; explicit staged initialization.
 // and PIN-authenticated pairing. No application frames are sent.
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
@@ -144,6 +144,7 @@ static bool submit_pin(uint32_t passkey){
   struct ble_sm_io io={};
   io.action=BLE_SM_IOACT_INPUT;io.passkey=passkey;
   int rc=ble_sm_inject_io(conn,&io);
+  printf("[MCX-BLE] PIN submission rc=%d\n",rc);
   if(rc){update(FAILED,"PIN submission failed");return false;}
   portENTER_CRITICAL(&mux);
   state.pin_required=false;state.generation++;
@@ -250,6 +251,7 @@ static int gap_event(struct ble_gap_event *event,void *){
       return 0;
     case BLE_GAP_EVENT_PASSKEY_ACTION:
       if(event->passkey.params.action==BLE_SM_IOACT_INPUT){
+        printf("[MCX-BLE] PIN entry requested\n");
         portENTER_CRITICAL(&mux);
         state.pin_required=true;state.generation++;
         portEXIT_CRITICAL(&mux);
