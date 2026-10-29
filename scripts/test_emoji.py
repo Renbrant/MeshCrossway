@@ -30,13 +30,18 @@ def main():
         assert max(alpha) > 0, f'blank palette {idx}'
         assert any(value != 0 for value in icon[64:]), f'blank sprite {idx}'
         assert all(value <= 255 for value in palette)
+    # ESP-IDF 5.3.x builds the C++ sources with C++20: UTF-8 literals must
+    # remain compatible with const char* and not accidentally become char8_t*.
+    registry_source = REGISTRY.read_text()
+    assert 'u8"' not in registry_source, "C++20 char8_t* is incompatible with const char*"
     with tempfile.TemporaryDirectory(prefix='mcx-emoji-') as temp:
         executable = str(Path(temp)/'test_emoji')
-        build = ['g++', '-std=c++11', '-Wall', '-Wextra', '-Werror', '-pedantic',
-                 '-O2', str(TEST), '-o', executable]
-        subprocess.run(build, cwd=ROOT, check=True)
-        subprocess.run([executable], cwd=ROOT, check=True)
-    print('PASS: 92 color emojis, atlas SHA256, palette/alpha, and UTF-8 host tests')
+        for standard in ('c++11', 'c++20'):
+            build = ['g++', '-std=' + standard, '-Wall', '-Wextra', '-Werror', '-pedantic',
+                     '-O2', str(TEST), '-o', executable]
+            subprocess.run(build, cwd=ROOT, check=True)
+            subprocess.run([executable], cwd=ROOT, check=True)
+    print('PASS: 92 color emojis, atlas SHA256, palette/alpha, and UTF-8 host tests on C++11 + C++20')
 
 
 if __name__ == '__main__':
