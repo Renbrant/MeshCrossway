@@ -90,6 +90,9 @@ build_version() {
   if [ -f "$source_root/scripts/test_meshcore.py" ]; then
     python3 "$source_root/scripts/test_meshcore.py"
   fi
+  if [ -f "$source_root/scripts/test_emoji.py" ]; then
+    python3 "$source_root/scripts/test_emoji.py"
+  fi
   prepare_waveshare
   if [ -f "$source_root/scripts/test_ble_pairing_ui.py" ]; then
     python3 "$source_root/scripts/test_ble_pairing_ui.py" \

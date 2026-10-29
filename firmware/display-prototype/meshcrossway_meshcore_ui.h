@@ -461,10 +461,19 @@ static void render() {
       }
       lv_obj_t *card = panel_at(body, 8, y, w - 16, 94, panel, 7);
       txt(card, label, 7, 5, w - 30, m->outgoing ? orange : green);
-      lv_obj_t *text = txt(card, m->text, 7, 29, w - 30, white);
+      lv_obj_t *text = txt(card, "", 7, 29, w - 30, white);
       lv_label_set_long_mode(text, LV_LABEL_LONG_WRAP);
-      lv_obj_set_height(text, 60);
-      y += 102;
+      // Render emojis only in the UI. The radio's original UTF-8 message is untouched.
+#if defined(MCX_EMOJI_RENDER_ENABLED)
+      mcxemoji::view::set_message_text(text, m->text);
+#else
+      lv_label_set_text(text, m->text); // standalone non-firmware UI tests
+#endif
+      lv_obj_update_layout(text);
+      const int card_height = lv_obj_get_height(text) + 39 > 94
+                                  ? lv_obj_get_height(text) + 39 : 94;
+      lv_obj_set_height(card, card_height);
+      y += card_height + 8;
     }
     if (y == 104)
       single_label(body, "No messages in this session.", 8, 109, w - 16, muted);
