@@ -520,7 +520,7 @@ struct Channel {
 };
 enum Delivery : uint8_t { RECEIVED, QUEUED, ACCEPTED, DELIVERED, REJECTED, UNCERTAIN };
 struct Message {
-  uint32_t id = 0, timestamp = 0, ack = 0, ack_deadline = 0;
+  uint32_t id = 0, timestamp = 0, observed_at = 0, ack = 0, ack_deadline = 0;
   bool channel = false, outgoing = false, read = false;
   uint8_t slot = 0, key[6] = {}, signer[4] = {}, type = 0, path = 255;
   int8_t snr = 0;
@@ -695,6 +695,7 @@ public:
     last_timestamp = stamp;
     Message &m = append();
     m.timestamp = stamp;
+    m.observed_at = stamp; // Local send time; does not claim remote delivery.
     m.outgoing = true;
     m.channel = group;
     m.slot = target;
@@ -927,7 +928,11 @@ public:
               memcpy(m.signer, p + start + meta + 4, 4);
             m.path = p[start + (group ? 1 : 6)];
             m.snr = v3 ? (int8_t)p[1] : 0;
-            m.timestamp = u32(p + start + meta);
+            m.timestamp = u32(p + start + meta); // Sender's clock, unchanged.
+            // Observe time when this packet reaches the BLE-connected client.
+            // If the radio has not supplied a valid Unix clock yet, show --:--.
+            const uint32_t observed = clock >= 1577836800u ? timestamp() : 0u;
+            m.observed_at = observed >= 1577836800u ? observed : 0u;
             string_copy(m.text, sizeof(m.text), p + offset, n - offset);
           }
           waiting_messages = true;
