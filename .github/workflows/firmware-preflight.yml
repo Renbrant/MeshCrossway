@@ -11,10 +11,14 @@ on:
       - "scripts/check_firmware_identity.py"
       - "scripts/check_ble_sdkconfig.py"
       - "scripts/test_ble_sdkconfig.py"
+      - "scripts/test_ble_resume.py"
+      - "scripts/test_runtime_diagnostics.py"
       - "scripts/test_ble_pairing_ui.py"
       - "scripts/check_chat_memory.py"
       - "scripts/test_conversations_history.py"
       - "tests/conversations_history_test.cpp"
+      - "tests/sd_history_worker_test.cpp"
+      - "tests/meshcore_transport_test.cpp"
       - "scripts/test_meshcore.py"
       - "scripts/test_edge_swipe.py"
       - "scripts/test_battery_decode.py"
@@ -42,10 +46,14 @@ on:
       - "scripts/check_firmware_identity.py"
       - "scripts/check_ble_sdkconfig.py"
       - "scripts/test_ble_sdkconfig.py"
+      - "scripts/test_ble_resume.py"
+      - "scripts/test_runtime_diagnostics.py"
       - "scripts/test_ble_pairing_ui.py"
       - "scripts/check_chat_memory.py"
       - "scripts/test_conversations_history.py"
       - "tests/conversations_history_test.cpp"
+      - "tests/sd_history_worker_test.cpp"
+      - "tests/meshcore_transport_test.cpp"
       - "scripts/test_meshcore.py"
       - "scripts/test_edge_swipe.py"
       - "scripts/test_battery_decode.py"
@@ -98,6 +106,8 @@ jobs:
         run: |
           python3 scripts/preflight_display.py
           python3 scripts/test_ble_sdkconfig.py
+          python3 scripts/test_ble_resume.py
+          python3 scripts/test_runtime_diagnostics.py
           python3 scripts/test_conversations_history.py
           python3 scripts/test_meshcore.py
           python3 scripts/test_emoji.py
@@ -131,7 +141,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: _site/flasher/firmware/versions
-          key: meshcrossway-current-${{ hashFiles('scripts/check_chat_memory.py', 'scripts/test_conversations_history.py', 'tests/conversations_history_test.cpp', 'firmware/display-prototype/**', 'scripts/build_firmware_versions.sh', 'scripts/write_firmware_version.py', 'scripts/check_ble_sdkconfig.py', 'scripts/test_ble_pairing_ui.py', 'scripts/test_meshcore.py', 'tests/meshcore_protocol_test.cpp') }}-idf532-bsp-d9ff7837-v2
+          key: meshcrossway-current-${{ hashFiles('scripts/check_chat_memory.py', 'scripts/test_conversations_history.py', 'tests/conversations_history_test.cpp', 'tests/sd_history_worker_test.cpp', 'tests/meshcore_transport_test.cpp', 'scripts/test_ble_resume.py', 'scripts/test_runtime_diagnostics.py', 'firmware/display-prototype/**', 'scripts/build_firmware_versions.sh', 'scripts/write_firmware_version.py', 'scripts/check_ble_sdkconfig.py', 'scripts/test_ble_pairing_ui.py', 'scripts/test_meshcore.py', 'tests/meshcore_protocol_test.cpp') }}-idf532-bsp-d9ff7837-v2
       - name: Compile stable release and recent candidates
         run: bash scripts/build_firmware_versions.sh
       - name: Verify compiled catalog and manifests

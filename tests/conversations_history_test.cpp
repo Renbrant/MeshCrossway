@@ -1,4 +1,21 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <cstring>
+#include <cerrno>
+static bool fail_read=false,fail_sync=false;
+static unsigned journal_opens=0;
+static FILE *test_open(const char *file,const char *mode){
+ if(!strcmp(mode,"rb")&&strstr(file,".log")){
+   ++journal_opens;if(fail_read){errno=EIO;return nullptr;}
+ }
+ return fopen(file,mode);
+}
+static int test_sync(int fd){if(fail_sync){errno=EIO;return -1;}return fsync(fd);}
+#define fopen test_open
+#define fsync test_sync
 #include "meshcrossway_history_store.h"
+#undef fopen
+#undef fsync
 #include <cassert>
 #include <memory>
 #include <string>
@@ -73,6 +90,36 @@ int main(int argc,char **argv){
  assert(!mcxstore::replay(file,wrong,*previous,*staging).found);
  char different[240];mcxstore::path(different,sizeof(different),root,wrong,"log");assert(strcmp(file,different));
  assert(!mcxstore::save("/does-not-exist/mcx-test",*state,*previous,*staging));
+ // Production cursor: steady-state saves never reread the whole log. No-op
+ // radio telemetry does not create empty transactions. A failed sync invalidates
+ // the cursor and a read failure must leave the journal byte-for-byte unchanged.
+ const std::string cached_root=std::string(root)+"/cached";
+ mcxstore::Cursor cursor;const unsigned opens=journal_opens;
+ assert(mcxstore::save(cached_root.c_str(),*state,*previous,*staging,&cursor));
+ assert(journal_opens==opens+1&&cursor.ready);
+ for(int i=0;i<20;++i){++state->local.revision;assert(mcxstore::save(cached_root.c_str(),*state,*previous,*staging,&cursor));}
+ assert(journal_opens==opens+1&&cursor.recovery.sequence==21);
+ const long same_end=cursor.recovery.end;
+ assert(mcxstore::save(cached_root.c_str(),*state,*previous,*staging,&cursor));
+ assert(cursor.recovery.end==same_end&&cursor.recovery.sequence==21);
+ ++state->local.revision;fail_sync=true;
+ assert(!mcxstore::save(cached_root.c_str(),*state,*previous,*staging,&cursor));
+ assert(!cursor.ready&&mcxstore::failure==mcxstore::SYNC&&mcxstore::failure_errno==EIO);
+ fail_sync=false;fail_read=true;
+ char cached_file[240];mcxstore::path(cached_file,sizeof(cached_file),cached_root.c_str(),c.public_key,"log");
+ struct stat before={},after={};assert(stat(cached_file,&before)==0);
+ assert(!mcxstore::save(cached_root.c_str(),*state,*previous,*staging,&cursor));
+ assert(mcxstore::failure==mcxstore::READ&&mcxstore::failure_errno==EIO);
+ assert(stat(cached_file,&after)==0&&before.st_size==after.st_size);
+ fail_read=false;assert(mcxstore::save(cached_root.c_str(),*state,*previous,*staging,&cursor));
+ assert(cursor.ready);
+ // Small deltas also compact after a bounded transaction count, even below the
+ // byte quota, so startup never rehashes thousands of almost-empty commits.
+ for(unsigned i=0;i<mcxstore::MAX_TRANSACTIONS;++i){++state->contacts[0].advert;
+   assert(mcxstore::save(cached_root.c_str(),*state,*previous,*staging,&cursor));}
+ assert(cursor.recovery.sequence<=mcxstore::MAX_TRANSACTIONS);
+ char bounded_backup[240];mcxstore::path(bounded_backup,sizeof(bounded_backup),cached_root.c_str(),c.public_key,"bak2");
+ assert(access(bounded_backup,F_OK)==0);
  // Quota compaction keeps a recoverable prior journal, including rename interruption.
  out=fopen(file,"ab");assert(out);uint32_t sequence=recovery.sequence;
  while(ftell(out)<=long(mcxstore::QUOTA)){++state->local.revision;assert(mcxstore::transaction(out,*state,nullptr,++sequence));}
@@ -81,5 +128,5 @@ int main(int argc,char **argv){
  // Deliberately corrupt the new compacted log and restore the previous valid journal.
  out=fopen(file,"wb");assert(out);fputs("truncated",out);fclose(out);
  recovery=mcxstore::load(root,c.public_key,*previous,*staging);assert(recovery.found&&recovery.recovered);
- printf("PASS: network/radio isolation, UTF-8, rooms, organization, local persistence, every delta truncation, corruption, quotas, backup and zero replay TX\n");
+ printf("PASS: network/radio isolation, UTF-8, rooms, organization, local persistence, every delta truncation, corruption, quotas, backup, cached appends, read/sync errors and zero replay TX\n");
 }

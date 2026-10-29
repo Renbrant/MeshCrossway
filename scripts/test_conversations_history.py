@@ -17,12 +17,14 @@ def compile_worker(temp, root):
     stubs=temp/'stubs';(stubs/'freertos').mkdir(parents=True)
     (stubs/'esp_heap_caps.h').write_text('''#pragma once
 #include <cstdlib>
+#include <cstring>
 #define MALLOC_CAP_SPIRAM 1
 #define MALLOC_CAP_8BIT 2
 static int last_caps=0,calls=0;
 static size_t last_bytes=0;
 static bool fail_allocation=false;
 static void *heap_caps_malloc(size_t n,int caps){last_caps=caps;last_bytes=n;++calls;return fail_allocation?nullptr:malloc(n);}
+static void *heap_caps_calloc(size_t n,size_t size,int caps){void *p=heap_caps_malloc(n*size,caps);if(p)memset(p,0,n*size);return p;}
 static void heap_caps_free(void *p){free(p);}
 ''')
     (stubs/'freertos/FreeRTOS.h').write_text('''#pragma once
@@ -33,11 +35,14 @@ using portMUX_TYPE=int;
 #define portENTER_CRITICAL(p) ((void)(p))
 #define portEXIT_CRITICAL(p) ((void)(p))
 #define pdMS_TO_TICKS(n) (n)
+#define portTICK_PERIOD_MS 1
 ''')
     (stubs/'freertos/task.h').write_text('''#pragma once
-static void vTaskDelay(uint32_t){}
+static uint32_t fake_ticks=0;
+static void (*idle_hook)(uint32_t)=nullptr;
+static void vTaskDelay(uint32_t n){fake_ticks+=n;if(idle_hook)idle_hook(n);}
 static void vTaskDelete(void *){}
-static uint32_t xTaskGetTickCount(){return 0;}
+static uint32_t xTaskGetTickCount(){return fake_ticks;}
 static int task_calls=0;
 static void xTaskCreatePinnedToCore(void (*)(void *),const char *,int,void *,int,TaskHandle_t *out,int){++task_calls;*out=(void *)1;}
 ''')
@@ -56,7 +61,18 @@ int main(){
   auto *client=new meshmc::Client();
   mcxhistory::ble_startup.store(true);mcxhistory::poll(*client,0,0);assert(task_calls==0);
   mcxhistory::ble_startup.store(false);mcxhistory::poll(*client,0,0);assert(task_calls==1);
-  mcxhistory::poll(*client,0,0);assert(task_calls==1);delete client;
+  mcxhistory::poll(*client,0,0);assert(task_calls==1);
+  client->public_key[0]=7;mcxhistory::restored=true;mcxhistory::preferences().revision=42;
+  fail_allocation=true;assert(!mcxhistory::before_attach(*client,100));
+  assert(mcxhistory::restored&&mcxhistory::preferences().revision==42&&client->public_key[0]==7);
+  fail_allocation=false;mcxhistory::restored=false;
+  client->connected=true;client->initialized=false;client->fault=true;
+  mcxhistory::bound_epoch=mcxhistory::loaded_epoch=5;memcpy(mcxhistory::bound_radio,client->public_key,32);
+  mcxhistory::loaded=mcxhistory::allocate();mcxhistory::loaded->meta.radio[0]=7;
+  mcxhistory::loaded_offline=false;mcxhistory::load_ok=true;mcxhistory::restore_requested=true;
+  mcxhistory::complete.store(true);mcxhistory::poll(*client,2000,5);
+  assert(!mcxhistory::restored&&!client->history_ready&&mcxhistory::count==0);
+  delete client;
   printf("PASS: %zu-byte workspace uses explicit PSRAM; OOM has no internal fallback; initialization preserves preferences\n",sizeof(mcxchat::Workspace));
 }
 ''')
@@ -65,6 +81,20 @@ int main(){
         '-I'+str(root/'firmware/display-prototype'),str(source),'-o',str(temp/'worker')],check=True)
     subprocess.run([str(temp/'worker')],check=True)
     subprocess.run(['python3',str(root/'scripts/check_chat_memory.py'),str(temp/'worker')],check=True)
+    subprocess.run(['c++','-std=c++20','-O1','-Wall','-Werror=all','-Wno-unused-function',
+        '-Wno-unused-variable','-Wframe-larger-than=4096','-I'+str(stubs),
+        '-I'+str(root/'firmware/display-prototype'),str(root/'tests/sd_history_worker_test.cpp'),
+        '-o',str(temp/'worker-flow')],check=True)
+    subprocess.run([str(temp/'worker-flow'),str(temp/'worker-card')],check=True)
+    (stubs/'mbedtls').mkdir()
+    (stubs/'mbedtls/sha256.h').write_text('#pragma once\nstatic int mbedtls_sha256(const unsigned char *,size_t,unsigned char *,int){return -1;}\n')
+    (stubs/'esp_random.h').write_text('#pragma once\nstatic void esp_fill_random(void *p,size_t n){memset(p,0x5a,n);}\n')
+    (stubs/'esp_timer.h').write_text('#pragma once\nstatic int64_t esp_timer_get_time(){return 1000000;}\n')
+    subprocess.run(['c++','-std=c++20','-O1','-Wall','-Werror=all','-Wno-unused-function',
+        '-Wno-unused-variable','-Wframe-larger-than=4096','-I'+str(stubs),
+        '-I'+str(root/'firmware/display-prototype'),str(root/'tests/meshcore_transport_test.cpp'),
+        '-o',str(temp/'transport')],check=True)
+    subprocess.run([str(temp/'transport')],check=True)
 
 ROOT=Path(__file__).resolve().parents[1]
 with tempfile.TemporaryDirectory() as temp:

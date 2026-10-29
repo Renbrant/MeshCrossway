@@ -116,10 +116,35 @@ static size_t list(meshmc::Client &c,Local &local,Thread *out,size_t cap,const c
   for(size_t i=1;i<count;++i){Thread value=out[i];size_t j=i;while(j&&out[j-1].last<value.last){out[j]=out[j-1];--j;}out[j]=value;}
   return count;
 }
+static const char *send_problem(meshmc::Client &c,const Key &k,const char *text=nullptr){
+  if(!c.connected)return "Radio disconnected. Draft kept locally; reconnect Bluetooth to send.";
+  if(c.fault)return "Radio session stopped. Reconnect Bluetooth before sending.";
+  if(!c.initialized||!c.payload_limit)return "Radio is synchronizing. Wait for MeshCore ready.";
+  if(!c.history_ready)return "Restoring history. Please wait; your draft is kept locally.";
+  if(k.network!=Network::MC||memcmp(k.radio,c.public_key,32)||k.kind<Kind::Direct||k.kind>Kind::Room)
+    return "Conversation belongs to another radio or network. Select it again.";
+  if(c.timestamp()<1577836800u)return "Radio clock is invalid. Read or set the radio time before sending.";
+  if(c.qcount>=12)return "Radio command queue is full. Wait before sending again.";
+  if(k.kind==Kind::Channel){
+    const auto &ch=c.channels[k.native[0]];
+    if(k.native[0]>=c.channel_count||!ch.loaded||!ch.name[0]||memcmp(k.native+1,ch.secret,16))
+      return "Channel is unavailable or has changed. Select the current channel again.";
+  }else{
+    const int target=c.find_contact(k.native);
+    if(target<0||c.find_contact(k.native,6)!=target)return "Contact is unavailable or ambiguous. Select the contact again.";
+    if(k.kind==Kind::Room){auto *r=c.room(k.native);if(!r||r->state!=meshmc::RoomState::Joined)
+      return "Log in to this room before sending.";}
+  }
+  if(text){const size_t n=strlen(text);
+    if(!n)return "Enter a message before sending.";
+    if(!meshmc::valid_utf8(text,n))return "Message contains invalid UTF-8 text.";
+    if(n>c.text_limit(k.kind==Kind::Channel))return "Message exceeds this radio's UTF-8 byte limit. Shorten it to send.";
+  }
+  return nullptr;
+}
 static bool send(Network network,meshmc::Client &c,const Key &k,const char *text) {
-  if(network!=Network::MC||k.network!=network||memcmp(k.radio,c.public_key,32))return false;
-  if(k.kind==Kind::Channel){if(memcmp(k.native+1,c.channels[k.native[0]].secret,16))return false;return c.send_text(true,k.native[0],text);}
-  if(k.kind==Kind::Room){auto *r=c.room(k.native);if(!r||r->state!=meshmc::RoomState::Joined)return false;}
+  if(network!=Network::MC||k.network!=network||!text||send_problem(c,k,text))return false;
+  if(k.kind==Kind::Channel)return c.send_text(true,k.native[0],text);
   const int target=c.find_contact(k.native);
   return target>=0&&c.send_text(false,uint16_t(target),text);
 }

@@ -97,6 +97,19 @@ static bool read_remembered(){
   portENTER_CRITICAL(&mux);remembered=p;have_remembered=true;portEXIT_CRITICAL(&mux);
   return true;
 }
+static bool read_enabled(){
+  nvs_handle_t h;if(nvs_open("mcx_ble",NVS_READONLY,&h)!=ESP_OK)return false;
+  uint8_t enabled=0;const esp_err_t rc=nvs_get_u8(h,"enabled",&enabled);nvs_close(h);
+  return rc==ESP_OK&&enabled==1;
+}
+static void remember_enabled(){
+  // Runs in the initialization worker, never in an LVGL event. Store intent
+  // independently of bonding: an enabled, unpaired radio must survive a restart.
+  if(read_enabled())return;
+  nvs_handle_t h;if(nvs_open("mcx_ble",NVS_READWRITE,&h)!=ESP_OK)return;
+  esp_err_t rc=nvs_set_u8(h,"enabled",1);if(rc==ESP_OK)rc=nvs_commit(h);nvs_close(h);
+  if(rc!=ESP_OK)printf("[MCX-BLE] enabled preference not saved err=%d\n",(int)rc);
+}
 static void save_remembered(){
   const uint16_t handle=conn;
   if(handle==BLE_HS_CONN_HANDLE_NONE||identified==UNKNOWN)return;
@@ -479,6 +492,7 @@ static void start_internal(){
   ble_store_config_init();
   debug_memory("before host task");
   nimble_port_freertos_init(host_task);
+  remember_enabled();
   mcxhistory::ble_startup.store(false);
   printf("[MCX-BLE] host created; awaiting sync\n");
 }
@@ -506,7 +520,8 @@ static bool request_start(){
 static void auto_resume_task(void *){
   // Keep BLE completely OFF while LVGL, AP+STA and HTTP initialize.
   vTaskDelay(pdMS_TO_TICKS(12000));
-  if(!read_remembered()||auto_paused.load()){
+  const bool paired_before=read_remembered();
+  if((!paired_before&&!read_enabled())||auto_paused.load()){
     reconnect_worker=nullptr;vTaskDelete(nullptr);return;
   }
   (void)request_start();
@@ -515,7 +530,7 @@ static void auto_resume_task(void *){
     vTaskDelay(pdMS_TO_TICKS(first?3000:30000));
     first=false;
     const Snapshot current=snapshot();
-    if(synced&&conn==BLE_HS_CONN_HANDLE_NONE&&
+    if(paired_before&&synced&&conn==BLE_HS_CONN_HANDLE_NONE&&
        (current.phase==IDLE||current.phase==FAILED))scan(true);
   }
   reconnect_worker=nullptr;vTaskDelete(nullptr);

@@ -147,6 +147,22 @@ A touch PRESSING handler on each left nav tab detects a horizontal swipe before 
 MeshCore conversation lists, native room session flow, local search/aliases/favorites, notification and mute controls, editable quick replies, draft persistence and manually confirmed resend now use a bounded transaction journal on microSD. Filesystem work runs outside LVGL. The SD is plaintext by owner choice. Meshtastic remains unavailable pending its adapter. **v0.7.8 is the recommended recovery image**; v0.7.9 still requires physical RX/TX/ACK, SD failure and coexistence acceptance. See [implementation, resource limits and verification](../../docs/messaging-phase-1-v079.md). Earlier release sections describe historical behavior.
 
 
+## v0.7.11 — Application stability audit (experimental)
+
+LVGL allocation and reallocation explicitly require PSRAM, preserving internal
+heap for BLE/stacks/DMA. BLE uses a bounded 128-frame burst mailbox; automatic
+list/chat reconstruction is throttled. Enabled Bluetooth intent survives reboot
+independently of bonding. Offline/synchronizing composers keep drafts, disable
+SEND and explain the actual blocker. Reset breadcrumbs and heap/UI diagnostics
+are available remotely. See [audit, sources and tests](../../docs/stability-audit-v0711.md).
+
+Cached incremental saves avoid replaying the entire journal for every update.
+Snapshots coalesce, continuous traffic respects retry backoff, and BLE reconnect
+preserves a same-radio unsaved RAM snapshot. Read errors cannot trigger archive
+truncation. Chat storage has separate error/errno/timing diagnostics in the UI,
+remote page and `/health`. Existing journals remain readable. Physical retest is
+pending; v0.7.8 remains recovery. See [evidence and retest](../../docs/sd-history-reliability-v0711.md).
+
 ## v0.7.10 — Bluetooth startup memory fix (experimental)
 
 v0.7.9 was withdrawn after the owner reproduced NimBLE error 257 (out of memory). Chat preferences and list/sort workspaces now use explicit PSRAM instead of 45,604 bytes of static internal RAM. CI audits the actual ELF to prevent a repeat. Phase-1 history and NVS pairing are preserved; v0.7.8 remains recommended recovery. [Diagnosis and retest](../../docs/ble-memory-fix-v0710.md).

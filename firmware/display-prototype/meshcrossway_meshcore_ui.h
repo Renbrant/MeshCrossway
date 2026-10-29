@@ -4,7 +4,7 @@
 namespace mcui {
 static lv_obj_t *dialog = nullptr, *scroller = nullptr, *feedback = nullptr, *editor = nullptr,
                 *edit_value = nullptr, *keyboard = nullptr, *edit_target = nullptr;
-static lv_obj_t *fields[10] = {};
+static lv_obj_t *fields[10] = {}, *compose_button=nullptr;
 static lv_obj_t *radio_status = nullptr, *home_name = nullptr, *home_status = nullptr, *history_status=nullptr;
 static char home_name_source[80] = {};
 static uint8_t field_count = 0, selected_command = 0;
@@ -12,6 +12,7 @@ static bool confirm_pending = false, group = false, conversation = false, reveal
 static uint8_t target_key[32] = {};
 static uint16_t target_slot = 0, list_offset = 0;
 static uint32_t rendered_generation = 0;
+static uint32_t last_redraw=0;
 static mcxchat::Key selected;
 static int mode = 0; // 0 menu, 1 typed command, 2 compose, 3 result, 4 contact details
 static void tools();
@@ -43,7 +44,7 @@ static void close() {
   close_editor();
   if (dialog)
     lv_obj_del(dialog);
-  dialog = scroller = feedback = nullptr;
+  dialog = scroller = feedback = compose_button = nullptr;
   memset(fields, 0, sizeof(fields));
   field_count = 0;
   confirm_pending = false;
@@ -315,14 +316,23 @@ static void compose_send(lv_event_t *) {
   if (!session() || !fields[0])
     return;
   if (!mcxchat::send(mcxchat::Network::MC,*session(),selected,lv_textarea_get_text(fields[0]))) {
-    lv_label_set_text(feedback,
-                      "Cannot send: check radio connection/clock, recipient, queue and 150-byte text limit.");
+    const char *problem=mcxchat::send_problem(*session(),selected,lv_textarea_get_text(fields[0]));
+    lv_label_set_text(feedback,problem?problem:"Radio could not queue this message. Draft kept locally.");
     return;
   }
   lv_textarea_set_text(fields[0],"");save_draft();
   close();
   page = 3;
   draw();
+}
+static void refresh_composer(){
+  if(mode!=2||!dialog||!compose_button||!session()||!feedback)return;
+  const char *problem=mcxchat::send_problem(*session(),selected);
+  if(problem){lv_obj_add_state(compose_button,LV_STATE_DISABLED);lv_label_set_text(feedback,problem);}
+  else if(lv_obj_has_state(compose_button,LV_STATE_DISABLED)){
+    lv_obj_clear_state(compose_button,LV_STATE_DISABLED);
+    lv_label_set_text(feedback,"Draft is local. SEND queues one MeshCore transmission.");
+  }
 }
 static void compose() {
   if (!conversation) {
@@ -332,13 +342,15 @@ static void compose() {
   base("MESHCORE / COMPOSE");
   mode = 2;
   char limit[80];
-  snprintf(limit, sizeof(limit), "Message (up to %u UTF-8 bytes)",
-           (unsigned)(session() ? session()->text_limit(group) : 0));
+  const size_t bytes=session()?session()->text_limit(group):0;
+  snprintf(limit, sizeof(limit), bytes?"Message (up to %u UTF-8 bytes)":"Draft (up to %u UTF-8 bytes)",
+           (unsigned)(bytes?bytes:meshmc::MAX_TEXT));
   auto *pref=mcxhistory::preferences().get(selected);
   field(limit, pref?pref->draft:"", 0);
   feedback = txt(scroller, "Draft is local. Send uses MeshCore and requires a connected radio with a valid clock.", 10, 88, 450, muted);
   lv_label_set_long_mode(feedback, LV_LABEL_LONG_WRAP);
-  action_button(dialog, "SEND", 10, 273, 460, 40, orange, compose_send, 0);
+  compose_button=action_button(dialog, "SEND", 10, 273, 460, 40, orange, compose_send, 0);
+  refresh_composer();
 }
 static void compose_event(lv_event_t *) {
   compose();
@@ -807,19 +819,23 @@ static void render() {
     }
     if (newly_read) ++s->generation; // Persist unread state after a thread is opened.
     if (y == 96)
-      single_label(body, "No messages in saved history.", 8, 65, w - 16, muted);
+      single_label(body, "No messages in saved history.", 8, 100, w - 16, muted);
     lv_obj_scroll_to_y(body, y, LV_ANIM_OFF);
   }
 }
 static void poll(lv_timer_t *) {
+  mcxruntime::Scope measured(mcxruntime::PROTOCOL);
+  mcxruntime::sample_ui_stack();
   meshmc::poll();
   auto *s = session();
+  refresh_composer();
   if (s) {
     const uint32_t now=(uint32_t)(esp_timer_get_time()/1000);
-    mcxhistory::poll(*s,now,meshmc::connection_epoch.load());
+    {mcxruntime::Scope restoring(mcxruntime::HISTORY);mcxhistory::poll(*s,now,meshmc::connection_epoch.load());}
     if(!s->initialized&&s->connected){view_restored=false;conversation=false;}
     notifications(*s,now);
-    if(history_status&&strcmp(lv_label_get_text(history_status),mcxhistory::status()))lv_label_set_text(history_status,mcxhistory::status());
+    char history[96];mcxhistory::describe(history,sizeof(history));
+    if(history_status&&strcmp(lv_label_get_text(history_status),history))lv_label_set_text(history_status,history);
   }
   if (s) {
     const char *state = s->initialized && !s->busy && !s->fault ? "MeshCore ready" : s->status;
@@ -850,8 +866,8 @@ static void poll(lv_timer_t *) {
     for (lv_indev_t *input = lv_indev_get_next(nullptr); input; input = lv_indev_get_next(input))
       if (input->proc.state == LV_INDEV_STATE_PRESSED)
         pressed = true;
-    if (!pressed)
-      draw();
+    const uint32_t now=(uint32_t)(esp_timer_get_time()/1000);
+    if (!pressed&&(uint32_t)(now-last_redraw)>=250){last_redraw=now;draw();}
   }
 }
 } // namespace mcui

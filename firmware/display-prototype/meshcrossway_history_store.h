@@ -6,9 +6,21 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <atomic>
 namespace mcxstore {
+enum Failure { NONE, INVALID_STATE, DIRECTORY, OPEN, READ, WRITE, FLUSH, SYNC, CLOSE, TRUNCATE, SEEK, ROTATE, INSTALL, MEMORY, CORRUPT };
+static std::atomic<int> failure{NONE},failure_errno{0};
+static const char *step_name(int step){
+  switch(step){case INVALID_STATE:return "state";case DIRECTORY:return "directory";case OPEN:return "open";
+    case READ:return "read";case WRITE:return "write";case FLUSH:return "flush";case SYNC:return "sync";
+    case CLOSE:return "close";case TRUNCATE:return "truncate";case SEEK:return "seek";
+    case ROTATE:return "rotate";case INSTALL:return "rename";case MEMORY:return "memory";
+    case CORRUPT:return "journal";default:return "none";}
+}
+static bool failed(Failure step,int error){failure_errno.store(error);failure.store(step);return false;}
 static constexpr uint32_t MAGIC=0x3248434d, SCHEMA=2;
 static constexpr size_t QUOTA=1024*1024; // Per radio: active + previous compacted journal <= ~2 MiB.
+static constexpr uint32_t MAX_TRANSACTIONS=64; // Also bound replay CPU for many tiny deltas.
 struct Meta {
   mcxchat::Network network=mcxchat::Network::MC;
   uint8_t radio[32]={};
@@ -49,13 +61,18 @@ static void path(char *out,size_t cap,const char *root,const uint8_t *radio,cons
 }
 static bool record(FILE *f,uint16_t kind,uint16_t index,uint32_t sequence,const void *p,size_t n) {
   Header h;h.kind=kind;h.index=index;h.sequence=sequence;h.bytes=n;h.checksum=hash(p,n);
-  return fwrite(&h,1,sizeof(h),f)==sizeof(h)&&fwrite(p,1,n,f)==n;
+  if(fwrite(&h,1,sizeof(h),f)!=sizeof(h)||fwrite(p,1,n,f)!=n)return failed(WRITE,errno?errno:EIO);
+  return true;
 }
-struct Recovery {bool found=false,recovered=false;long end=0;uint32_t sequence=0;};
+struct Recovery {bool found=false,recovered=false;long end=0;uint32_t sequence=0;int error=0;};
+// Worker-owned cursor. Bulk state stays in its existing PSRAM buffers. A healthy
+// append compares against the last flushed state instead of replaying the SD log.
+struct Cursor {bool ready=false;uint8_t radio[32]={};Recovery recovery;};
 // Caller supplies PSRAM staging buffers; no large stack objects or unbounded allocation.
 static Recovery replay(const char *file,const uint8_t *radio,State &out,State &staging) {
-  Recovery r;FILE *f=fopen(file,"rb");if(!f)return r;
-  struct stat st={};if(fstat(fileno(f),&st)||st.st_size>long(QUOTA+sizeof(State)*2)){fclose(f);r.recovered=true;return r;}
+  Recovery r;FILE *f=fopen(file,"rb");if(!f){if(errno!=ENOENT)r.error=errno?errno:EIO;return r;}
+  struct stat st={};if(fstat(fileno(f),&st)){r.error=errno?errno:EIO;fclose(f);return r;}
+  if(st.st_size>long(QUOTA+sizeof(State)*2)){fclose(f);r.recovered=true;return r;}
   new (&out) State();bool transaction=false;
   while(true){Header h;size_t got=fread(&h,1,sizeof(h),f);if(!got)break;
     if(got!=sizeof(h)||h.magic!=MAGIC||h.schema!=SCHEMA||h.sequence!=r.sequence+1){r.recovered=true;break;}
@@ -77,8 +94,10 @@ static Recovery replay(const char *file,const uint8_t *radio,State &out,State &s
       r.recovered=true;break;
     }
   }
-  if(transaction||ferror(f))r.recovered=true;
-  fclose(f);return r;
+  if(transaction)r.recovered=true;
+  if(ferror(f))r.error=errno?errno:EIO;
+  if(fclose(f)&&!r.error)r.error=errno?errno:EIO;
+  return r;
 }
 static bool transaction(FILE *f,const State &state,const State *previous,uint32_t seq) {
   bool ok=record(f,BEGIN,0,seq,&state.meta,sizeof(Meta));
@@ -92,36 +111,60 @@ static bool transaction(FILE *f,const State &state,const State *previous,uint32_
     ok=record(f,LOCAL,0,seq,&state.local,sizeof(mcxchat::Local));
   const uint32_t sum=hash(&state,sizeof(state));
   if(ok)ok=record(f,COMMIT,0,seq,&sum,sizeof(sum));
-  return ok&&fflush(f)==0&&fsync(fileno(f))==0;
+  if(!ok)return false;
+  if(fflush(f))return failed(FLUSH,errno?errno:EIO);
+  if(fsync(fileno(f)))return failed(SYNC,errno?errno:EIO);
+  return true;
 }
 // A compacted file is installed only after a full transaction is flushed. The previous
 // log survives interruptions between renames. An incomplete append is truncated before retry.
-static bool save(const char *root,const State &s,State &previous,State &staging) {
-  if(!valid(s,s.meta.radio))return false;
-  if(mkdir(root,0755)&&errno!=EEXIST)return false;
+static bool save(const char *root,const State &s,State &previous,State &staging,Cursor *cursor=nullptr) {
+  failure.store(NONE);failure_errno.store(0);
+  if(!valid(s,s.meta.radio))return failed(INVALID_STATE,EINVAL);
+  if(mkdir(root,0755)&&errno!=EEXIST){if(cursor)cursor->ready=false;return failed(DIRECTORY,errno);}
   char file[240],backup[240],temp[240];path(file,sizeof(file),root,s.meta.radio,"log");
   path(backup,sizeof(backup),root,s.meta.radio,"bak2");path(temp,sizeof(temp),root,s.meta.radio,"tmp2");
-  Recovery r=replay(file,s.meta.radio,previous,staging);
-  if(r.found&&r.end<long(QUOTA)&&r.sequence<UINT32_MAX){
-    FILE *f=fopen(file,"r+b");if(!f)return false;
-    bool ok=ftruncate(fileno(f),r.end)==0&&fseek(f,r.end,SEEK_SET)==0&&transaction(f,s,&previous,r.sequence+1);
-    if(fclose(f))ok=false;
+  Recovery r;struct stat st={};bool cached=false;
+  if(cursor&&cursor->ready&&!memcmp(cursor->radio,s.meta.radio,32)){
+    cached=stat(file,&st)==0&&st.st_size==cursor->recovery.end;
+    if(cached)r=cursor->recovery;
+  }
+  if(!cached){if(cursor)cursor->ready=false;r=replay(file,s.meta.radio,previous,staging);}
+  // An I/O failure is not a corrupt tail: never truncate or replace on read error.
+  if(r.error){if(cursor)cursor->ready=false;return failed(READ,r.error);}
+  if(cached&&!memcmp(&s,&previous,sizeof(s)))return true;
+  if(cursor)cursor->ready=false; // Any failed mutation forces replay before retry.
+  if(r.found&&r.end<long(QUOTA)&&r.sequence<MAX_TRANSACTIONS){
+    FILE *f=fopen(file,"r+b");if(!f)return failed(OPEN,errno);
+    bool ok=true;
+    if(r.recovered&&ftruncate(fileno(f),r.end))ok=failed(TRUNCATE,errno);
+    if(ok&&fseek(f,r.end,SEEK_SET))ok=failed(SEEK,errno);
+    if(ok)ok=transaction(f,s,&previous,r.sequence+1);
+    const long end=ok?ftell(f):0;
+    if(ok&&end<0)ok=failed(SEEK,errno);
+    if(fclose(f)&&ok)ok=failed(CLOSE,errno);
+    if(ok&&cursor){previous=s;cursor->ready=true;memcpy(cursor->radio,s.meta.radio,32);
+      cursor->recovery=Recovery{};cursor->recovery.found=true;cursor->recovery.end=end;cursor->recovery.sequence=r.sequence+1;}
     return ok;
   }
-  FILE *f=fopen(temp,"wb");if(!f)return false;
-  bool ok=transaction(f,s,nullptr,1);if(fclose(f))ok=false;
+  FILE *f=fopen(temp,"wb");if(!f)return failed(OPEN,errno);
+  bool ok=transaction(f,s,nullptr,1);const long end=ok?ftell(f):0;
+  if(ok&&end<0)ok=failed(SEEK,errno);
+  if(fclose(f)&&ok)ok=failed(CLOSE,errno);
   if(!ok){remove(temp);return false;}
   if(r.found){
-    if(remove(backup)&&errno!=ENOENT)return false;
-    if(rename(file,backup))return false;
+    if(remove(backup)&&errno!=ENOENT)return failed(ROTATE,errno);
+    if(rename(file,backup))return failed(ROTATE,errno);
   }
-  if(!r.found&&remove(file)&&errno!=ENOENT)return false;
-  if(rename(temp,file))return false;
+  if(!r.found&&remove(file)&&errno!=ENOENT)return failed(ROTATE,errno);
+  if(rename(temp,file))return failed(INSTALL,errno);
+  if(cursor){previous=s;cursor->ready=true;memcpy(cursor->radio,s.meta.radio,32);
+    cursor->recovery=Recovery{};cursor->recovery.found=true;cursor->recovery.end=end;cursor->recovery.sequence=1;}
   return true;
 }
 static Recovery load(const char *root,const uint8_t *radio,State &out,State &staging) {
   char file[240];path(file,sizeof(file),root,radio,"log");Recovery r=replay(file,radio,out,staging);
-  if(r.found)return r;
+  if(r.found||r.error)return r;
   const bool corrupt=r.recovered;
   path(file,sizeof(file),root,radio,"bak2");r=replay(file,radio,out,staging);if(r.found||corrupt)r.recovered=true;return r;
 }
