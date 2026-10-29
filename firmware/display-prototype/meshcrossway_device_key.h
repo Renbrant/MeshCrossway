@@ -5,6 +5,9 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdio.h>
+#if defined(ESP_PLATFORM)
+#include "esp_efuse.h"
+#endif
 
 namespace mcxkey {
 
@@ -83,7 +86,6 @@ inline void describe(const Audit &a, char *dst, size_t cap) {
 }
 
 #if defined(ESP_PLATFORM)
-#include "esp_efuse.h"
 
 // Evaluates only public metadata; never reads the contents of key blocks.
 // Existing HMAC_UP keys must NOT be adopted until authenticated ownership and
