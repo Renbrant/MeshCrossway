@@ -169,6 +169,9 @@ static lv_obj_t *mc_button(lv_obj_t *parent,const char *text){
 static void test_companion_ui(const char *preview){
   meshmc::client=new meshmc::Client();auto &c=*meshmc::client;c.attach(173);c.initialized=true;c.protocol=14;c.channel_count=2;c.max_power=22;
   c.clock=1800000000;c.contacts[0].key[0]=0xab;c.contact_count=1;strcpy(c.contacts[0].name,"Heltec");
+  c.repeat_enabled=true;c.manual_contacts=1;c.telemetry_policy=21;c.location_policy=2;c.multi_acks=3;
+  mcui::form(11);assert(mcui::field_count==5&&!strcmp(lv_textarea_get_text(mcui::fields[4]),"1"));mcui::close();
+  mcui::form(38);assert(!strcmp(lv_textarea_get_text(mcui::fields[1]),"21")&&!strcmp(lv_textarea_get_text(mcui::fields[3]),"3"));mcui::close();
   mcui::form(32);advance();assert(mcui::field_count==3);
   lv_textarea_set_text(mcui::fields[0],"1");lv_textarea_set_text(mcui::fields[1],"#test");lv_textarea_set_text(mcui::fields[2],"");
   lv_event_send(mcui::fields[1],LV_EVENT_CLICKED,nullptr);advance();

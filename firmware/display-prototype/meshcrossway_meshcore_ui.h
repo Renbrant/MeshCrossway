@@ -4,7 +4,7 @@ namespace mcui {
 static lv_obj_t *dialog = nullptr, *scroller = nullptr, *feedback = nullptr, *editor = nullptr,
                 *edit_value = nullptr, *keyboard = nullptr, *edit_target = nullptr;
 static lv_obj_t *fields[10] = {};
-static lv_obj_t *radio_status=nullptr,*home_name=nullptr,*home_status=nullptr;
+static lv_obj_t *radio_status = nullptr, *home_name = nullptr, *home_status = nullptr;
 static uint8_t field_count = 0, selected_command = 0;
 static bool confirm_pending = false, group = false, conversation = false, reveal = false;
 static uint8_t target_key[32] = {};
@@ -205,6 +205,13 @@ static void form(uint8_t code) {
           snprintf(value, sizeof(value), "%u", session()->sf);
         if (field_count == 3)
           snprintf(value, sizeof(value), "%u", session()->cr);
+        if (field_count == 4)
+          snprintf(value, sizeof(value), "%u", session()->repeat_enabled ? 1 : 0);
+      }
+      if (code == 38) {
+        unsigned policies[] = {session()->manual_contacts, session()->telemetry_policy,
+                               session()->location_policy, session()->multi_acks};
+        snprintf(value, sizeof(value), "%u", policies[field_count]);
       }
       if (code == 12)
         snprintf(value, sizeof(value), "%d", (int8_t)session()->tx_power);
@@ -467,12 +474,16 @@ static void render() {
 static void poll(lv_timer_t *) {
   meshmc::poll();
   auto *s = session();
-  if(s){
-    const char *state=s->initialized&&!s->busy&&!s->fault?"MeshCore ready":s->status;
-    if(radio_status&&strcmp(lv_label_get_text(radio_status),state))lv_label_set_text(radio_status,state);
-    if(home_name&&s->initialized&&strcmp(lv_label_get_text(home_name),s->name))lv_label_set_text(home_name,s->name);
-    const char *summary=s->connected?(s->initialized?"MeshCore connected":"Synchronizing..."):"Connect in More / Radios";
-    if(home_status&&strcmp(lv_label_get_text(home_status),summary))lv_label_set_text(home_status,summary);
+  if (s) {
+    const char *state = s->initialized && !s->busy && !s->fault ? "MeshCore ready" : s->status;
+    if (radio_status && strcmp(lv_label_get_text(radio_status), state))
+      lv_label_set_text(radio_status, state);
+    if (home_name && s->initialized && strcmp(lv_label_get_text(home_name), s->name))
+      lv_label_set_text(home_name, s->name);
+    const char *summary = s->connected ? (s->initialized ? "MeshCore connected" : "Synchronizing...")
+                                       : "Connect in More / Radios";
+    if (home_status && strcmp(lv_label_get_text(home_status), summary))
+      lv_label_set_text(home_status, summary);
   }
   if (dialog && mode == 3 && feedback && s && s->generation != rendered_generation) {
     if (reveal) {

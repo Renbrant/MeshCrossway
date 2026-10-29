@@ -94,7 +94,9 @@ static const Command COMMANDS[] = {
      true},
     {10, 10, 1, "Fetch waiting messages", "", false},
     {11, 0, 1, "Radio parameters",
-     "uint:Frequency kHz|uint:Bandwidth Hz|byte:Spreading factor (5-12)|byte:Coding rate (5-8)", true},
+     "uint:Frequency kHz|uint:Bandwidth Hz|byte:Spreading factor (5-12)|byte:Coding rate (5-8)|byte:Repeat "
+     "(0 off / 1 on)",
+     true},
     {12, 0, 1, "Transmit power", "sbyte:Power dBm", true},
     {13, 0, 1, "Reset contact path", "key:Public key", true},
     {14, 0, 1, "Set advertised location", "int:Latitude x1000000|int:Longitude x1000000", true},
@@ -288,7 +290,7 @@ static bool build(const Command &c, const char *const *values, size_t count, Fra
     break;
   case 11:
     valid = u32(p + 1) >= 150000 && u32(p + 1) <= 2500000 && u32(p + 5) >= 7000 && u32(p + 5) <= 500000 &&
-            p[9] >= 5 && p[9] <= 12 && p[10] >= 5 && p[10] <= 8;
+            p[9] >= 5 && p[9] <= 12 && p[10] >= 5 && p[10] <= 8 && p[11] <= 1;
     break;
   case 12:
     valid = (int8_t)p[1] >= -9;
@@ -543,6 +545,8 @@ public:
   char name[33] = {}, firmware[21] = {}, model[41] = {}, status[128] = "Connect a MeshCore Companion radio",
        result[800] = {};
   uint8_t public_key[32] = {}, tx_power = 0, max_power = 0, sf = 0, cr = 0;
+  uint8_t manual_contacts = 0, telemetry_policy = 0, location_policy = 0, multi_acks = 0;
+  bool repeat_enabled = false;
   uint32_t frequency = 0, bandwidth = 0;
   int32_t latitude = 0, longitude = 0;
   Frame last_frame;
@@ -599,6 +603,8 @@ public:
     if (f.data[0] == 2 && find_contact(f.data + 7, 6) == -2)
       return false;
     if ((f.data[0] == 31 || f.data[0] == 32) && protocol && f.data[1] >= channel_count)
+      return false;
+    if (f.data[0] == 11 && protocol < 9 && f.data[11])
       return false;
     if (f.data[0] == 12 && protocol && (int8_t)f.data[1] > (int8_t)max_power)
       return false;
@@ -855,6 +861,10 @@ public:
         tx_power = p[2];
         max_power = p[3];
         memcpy(public_key, p + 4, 32);
+        multi_acks = p[44];
+        location_policy = p[45];
+        telemetry_policy = p[46];
+        manual_contacts = p[47];
         latitude = (int32_t)u32(p + 36);
         longitude = (int32_t)u32(p + 40);
         frequency = u32(p + 48);
@@ -951,6 +961,7 @@ public:
         protocol = p[1];
         max_contacts = uint16_t(p[2]) * 2;
         channel_count = p[3];
+        repeat_enabled = protocol >= 9 && n >= 81 && p[80];
         if (n >= 60)
           string_copy(model, sizeof(model), p + 20, 40);
         if (n >= 80)
@@ -1152,11 +1163,18 @@ public:
           return false;
         }
         if (!error && code == 0) {
+          if (cmd == 38) {
+            manual_contacts = active.frame.data[1];
+            telemetry_policy = active.frame.data[2];
+            location_policy = active.frame.data[3];
+            multi_acks = active.frame.data[4];
+          }
           if (cmd == 11) {
             frequency = u32(active.frame.data + 1);
             bandwidth = u32(active.frame.data + 5);
             sf = active.frame.data[9];
             cr = active.frame.data[10];
+            repeat_enabled = active.frame.len >= 12 && active.frame.data[11];
           }
           if (cmd == 12)
             tx_power = active.frame.data[1];

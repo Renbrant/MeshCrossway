@@ -63,7 +63,7 @@ int main(){
  telemetry_text(lpp,3,telem,sizeof(telem));assert(strstr(telem,"Truncated"));
  // Typed encoders use official fixed layouts, units, padding and bounds.
  char error[128];const char *ch[]={"1","#trail","00112233445566778899aabbccddeeff"};assert(build(*command(32),ch,3,f,error,sizeof(error)));assert(f.len==50&&f.data[1]==1&&f.data[34]==0&&f.data[49]==255);
- const char *radio[]={"910525","62500","7","5"};assert(build(*command(11),radio,4,f,error,sizeof(error)));assert(f.len==11&&u32(f.data+1)==910525&&u32(f.data+5)==62500);
+ const char *radio[]={"910525","62500","7","5","0"};assert(build(*command(11),radio,5,f,error,sizeof(error)));assert(f.len==12&&u32(f.data+1)==910525&&u32(f.data+5)==62500);
  const char *negative[]={"-10"};assert(!build(*command(12),negative,1,f,error,sizeof(error)));
  const char *overflow[]={"4294967296"};assert(!build(*command(6),overflow,1,f,error,sizeof(error)));
  const char *pin[]={"99999"};assert(!build(*command(37),pin,1,f,error,sizeof(error)));
