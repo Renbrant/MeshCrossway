@@ -51,10 +51,30 @@ build_version() {
      [ -s "$image_dir/manifest.json" ] && [ -s "$image_dir/build-info.json" ]; then
     local verify_args=(--dir "$image_dir" --version "$version")
     if [ "$ref" != "HEAD" ]; then verify_args+=(--ref "$ref"); fi
-    if python3 "$ROOT/scripts/verify_firmware_version.py" "${verify_args[@]}"; then
+    if python3 "$ROOT/scripts/verify_firmware_version.py" "${verify_args[@]}" &&
+       { [ "$version" != "$STABLE_VERSION" ] ||
+         echo "$STABLE_SHA256  $image_dir/meshcrossway-display-dev.bin" | sha256sum -c -; }; then
       echo "RESTORED: $version from verified compiled artifact cache"
       return
     fi
+  fi
+
+  # Preserve the exact owner-tested bytes. Rebuilding an old source revision
+  # with newly resolved component versions is not an approved rollback image.
+  if [ "$version" = "$STABLE_VERSION" ] && [ "$ref" = "$STABLE_REF" ]; then
+    local approved_temp
+    approved_temp="$(mktemp -d "$TEMP/approved-XXXXXX")"
+    local approved_url="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/$version"
+    local file
+    for file in build-info.json manifest.json meshcrossway-display-dev.bin bootloader.bin partition-table.bin application.bin; do
+      curl --fail --location --retry 3 "$approved_url/$file" -o "$approved_temp/$file"
+    done
+    python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$approved_temp" --version "$version" --ref "$ref"
+    echo "$STABLE_SHA256  $approved_temp/meshcrossway-display-dev.bin" | sha256sum -c -
+    cp "$approved_temp/"* "$image_dir/"
+    rm -rf -- "$approved_temp"
+    echo "RESTORED: immutable owner-tested $version"
+    return
   fi
 
   if [ "$ref" != "HEAD" ]; then
@@ -83,6 +103,11 @@ build_version() {
       idf.py build
       idf.py merge-bin -o '/workspace/$image_rel'
     "
+  # Defaults are requests; only the generated file proves these choices took effect.
+  if [ -f "$source_root/scripts/check_ble_sdkconfig.py" ]; then
+    python3 "$source_root/scripts/check_ble_sdkconfig.py" \
+      "$vendor/examples/esp-idf/02_lvgl_example/sdkconfig"
+  fi
   test -s "$image_dir/meshcrossway-display-dev.bin"
   python3 "$ROOT/scripts/write_firmware_version.py" \
     --version "$version" --ref "$(git -C "$source_root" rev-parse HEAD)" \
@@ -95,6 +120,7 @@ build_version() {
 # Update these two constants whenever the owner validates a newer hardware build.
 STABLE_VERSION="v0.6.2"
 STABLE_REF="a508c7d9a9eaf580061d2daca6838ecb78f89085"
+STABLE_SHA256="11b253c3102c9e7b8d07b8899faf8171e8ddffe9fa6f6c98aaddb288258999a5"
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).

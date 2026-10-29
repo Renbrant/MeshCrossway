@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.6.4 - BLE remains OFF during boot; explicit staged initialization.
+// MeshCrossway v0.6.6 - BLE remains OFF during boot; explicit staged initialization.
 // and PIN-authenticated pairing. No application frames are sent.
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
@@ -68,10 +68,12 @@ static const char *protocol_name(Radio r){
   return r==MESHTASTIC?"Meshtastic":r==MESHCORE?"MeshCore":"Unknown";
 }
 static int gap_event(struct ble_gap_event *event,void *arg);
+static void debug_memory(const char *phase);
 static void on_sync(){
   const int rc=ble_hs_util_ensure_addr(0);
   if(rc!=0){update(FAILED,"BLE identity unavailable");return;}
   if(ble_hs_id_infer_auto(0,&own_addr)!=0){update(FAILED,"BLE address unavailable");return;}
+  debug_memory("host synced");
   synced=true;
   update(IDLE,"Ready to scan (9 seconds)");
 }
@@ -292,10 +294,12 @@ static int gap_event(struct ble_gap_event *event,void *){
 static void debug_memory(const char *phase){
   const uint32_t free_internal=(uint32_t)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   const uint32_t largest_internal=(uint32_t)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  const uint32_t largest_dma=(uint32_t)heap_caps_get_largest_free_block(MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
   const uint32_t free_dma=(uint32_t)heap_caps_get_free_size(MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-  printf("[MCX-MEM] %s core=%d internal=%lu largest=%lu dma=%lu all=%lu\n",
+  printf("[MCX-MEM] %s core=%d internal=%lu largest=%lu dma=%lu largest_dma=%lu stack_hwm=%u all=%lu\n",
          phase,(int)xPortGetCoreID(),(unsigned long)free_internal,
          (unsigned long)largest_internal,(unsigned long)free_dma,
+         (unsigned long)largest_dma,(unsigned)uxTaskGetStackHighWaterMark(nullptr),
          (unsigned long)esp_get_free_heap_size());
   fflush(stdout);
 }
@@ -305,6 +309,7 @@ static void start_internal(){
   update(STARTING,"Initializing NimBLE in worker...");
   const esp_err_t err=nimble_port_init();
   printf("[MCX-BLE] nimble_port_init result=%d heap=%lu\n",(int)err,(unsigned long)esp_get_free_heap_size());
+  debug_memory("after nimble init");
   if(err!=ESP_OK){
     char msg[64];snprintf(msg,sizeof(msg),"NimBLE init failed: %d",(int)err);
     update(FAILED,msg);return;

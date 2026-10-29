@@ -9,6 +9,8 @@ on:
       - "scripts/preflight_display.py"
       - "scripts/preflight_firmware_catalog.py"
       - "scripts/check_firmware_identity.py"
+      - "scripts/check_ble_sdkconfig.py"
+      - "scripts/test_ble_sdkconfig.py"
       - "scripts/restore_reviewed_firmware.py"
       - ".github/workflows/firmware-preflight.yml"
   pull_request:
@@ -23,6 +25,8 @@ on:
       - "scripts/verify_firmware_version.py"
       - "scripts/preflight_firmware_catalog.py"
       - "scripts/check_firmware_identity.py"
+      - "scripts/check_ble_sdkconfig.py"
+      - "scripts/test_ble_sdkconfig.py"
       - "scripts/restore_reviewed_firmware.py"
       - ".github/workflows/ui-pages.yml"
   workflow_dispatch:
@@ -43,7 +47,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Offline syntax and patcher checks
-        run: python3 scripts/preflight_display.py
+        run: |
+          python3 scripts/preflight_display.py
+          python3 scripts/test_ble_sdkconfig.py
 
       # The archive job below is the single authoritative ESP-IDF build.
       # This job checks syntax/patcher invariants only, avoiding a duplicate
@@ -77,3 +83,14 @@ jobs:
           name: firmware-version-archive-preflight
           path: _site/flasher/firmware
           if-no-files-found: error
+      - name: Retain candidate ELF, map and effective configuration
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ble-display-debug-symbols
+          path: |
+            _firmware_version_build/vendor-v*/examples/esp-idf/02_lvgl_example/build/*.elf
+            _firmware_version_build/vendor-v*/examples/esp-idf/02_lvgl_example/build/*.map
+            _firmware_version_build/vendor-v*/examples/esp-idf/02_lvgl_example/sdkconfig
+            _firmware_version_build/vendor-v*/examples/esp-idf/02_lvgl_example/dependencies.lock
+          if-no-files-found: warn
