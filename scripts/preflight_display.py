@@ -265,7 +265,8 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert '"meshcrossway_brand.h"' in patcher.read_text()
         assert "lv_img_set_src(brand,&mcxbrand::official_lockup)" in current
         assert "static bool has_context_rail(){return page==3||page==4;}" in current
-        assert "static bool has_left_rail(){return page!=5;}" in current
+        assert ("static bool has_left_rail(){return true;}" if version=="v0.7.7"
+                else "static bool has_left_rail(){return page!=5;}") in current
         assert "right_compact?context_glyph(id):choices[i].label" in current
         chat=(FW/"meshcrossway_meshcore_ui.h").read_text()
         assert "static void thread_info()" in chat
@@ -274,7 +275,8 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert 'action_button(body, "TOOLS", 16 +' not in chat
         assert "int y = 57;" in chat
         assert "if(!has_context_rail())return;" in current
-        assert 'action_button(body,"HOME"' in current
+        if version=="v0.7.6":assert 'action_button(body,"HOME"' in current
+        else:assert 'action_button(body,"HOME"' not in current
         assert 'action_button(body,"SETTINGS"' in current
         assert "home_nav_open" not in current
         assert "nodes_actions" not in current and "groups_actions" not in current
@@ -294,7 +296,27 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert "if(overlay" in swipe
         assert "if(y<34||y>=320" in swipe
         assert (FW/"meshcrossway_edge_swipe.h").is_file()
-        print("PASS: v0.7.7 has edge gestures, no arrow buttons, and protected dialogs")
+        power=(FW/"meshcrossway_power_status.h").read_text()
+        battery=(FW/"meshcrossway_battery_decode.h").read_text()
+        assert "meshcrossway_power_status.h" in patcher.read_text()
+        assert "meshcrossway_battery_decode.h" in patcher.read_text()
+        assert "meshpower::start();" in current
+        assert "meshpower::snapshot()" in current
+        assert "i2c_master_transmit_receive(i2c_device" in power
+        assert "i2c_master_bus_add_device(" not in power
+        assert "i2c_master_transmit(i2c_device" not in power
+        assert "i2c_master_transmit_receive(i2c_device" in power
+        assert "vTaskDelay(pdMS_TO_TICKS(15000))" in power
+        assert "LV_SYMBOL_WIFI" in current and "LV_SYMBOL_BLUETOOTH" in current
+        assert "LV_SYMBOL_CHARGE" in current and "LV_SYMBOL_BATTERY_EMPTY" in current
+        assert 'char label[54];snprintf(label,sizeof(label),"Wi-Fi: %s"' not in current
+        assert "static bool has_left_rail(){return true;}" in current
+        assert "lv_obj_set_style_border_color(button,orange,0)" in current
+        assert "selected?bg:orange" in current
+        assert "battery_present" in battery and "charging" in battery
+        assert (FW/"meshcrossway_power_status.h").is_file()
+        assert (FW/"meshcrossway_battery_decode.h").is_file()
+        print("PASS: v0.7.7 gesture, permanent Settings navigation, real status icons and read-only AXP2101")
     if version in ("v0.7.5","v0.7.6","v0.7.7"):
         key_header=(FW/"meshcrossway_device_key.h").read_text()
         assert '#include "meshcrossway_device_key.h"' in (FW/"meshcrossway_ui.h").read_text()

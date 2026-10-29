@@ -894,7 +894,6 @@ static void draw(){
       return;
     }
     show_center_heading("SETTINGS / DEVICE","Core configuration and system status");
-    action_button(body,"HOME",w-90,5,82,32,panel2,on_action,A_RETURN_HOME);
     char uptime[42],memory[42],ip[16],wifi[30],status[55];
     const uint64_t seconds=(uint64_t)(esp_timer_get_time()/1000000LL);
     snprintf(uptime,sizeof(uptime),"Uptime: %lluh %02llum",
@@ -1015,8 +1014,8 @@ static void init(){
   top_mc=color_label(top,LV_SYMBOL_BLUETOOTH,289,7,19,muted);
   color_label(top,"MC",308,10,20,muted);
   top_battery=color_label(top,LV_SYMBOL_BATTERY_EMPTY,337,7,24,muted);
-  top_charge=color_label(top,"",362,7,15,muted);
-  top_battery_percent=color_label(top,"--",379,10,30,muted);
+  top_charge=color_label(top,"",357,7,15,muted);
+  top_battery_percent=color_label(top,"--",374,10,35,muted);
   color_label(top,"DEV 0.7.7",409,7,71,orange);
   left_rail=panel_at(screen,0,34,79,286,panel,0);
   right_rail=panel_at(screen,355,34,125,286,panel,0);
