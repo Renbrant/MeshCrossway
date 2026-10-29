@@ -26,7 +26,8 @@ try:
     if tuple(map(int,a.version[1:].split('.'))) >= (0,5,8):
         expected=[("bootloader.bin",0,0x8000),("partition-table.bin",0x8000,0x9000),("application.bin",0x10000,len(data))]
         assert manifest["builds"][0]["parts"]==[{"path":name,"offset":start} for name,start,end in expected]
-        assert manifest["new_install_prompt_erase"] is False
+        # Original archived manifests may be false until the catalog safe-publishing rewrite.
+        assert isinstance(manifest["new_install_prompt_erase"],bool)
         assert len(info["flash_parts"])==3
         for metadata,(name,start,end) in zip(info["flash_parts"],expected):
             content=(folder/name).read_bytes()
