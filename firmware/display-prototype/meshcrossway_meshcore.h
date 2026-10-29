@@ -6,6 +6,7 @@
 #include "freertos/FreeRTOS.h"
 #include "mbedtls/sha256.h"
 #include "meshcrossway_meshcore_protocol.h"
+#include "meshcrossway_sd_history.h"
 #include <atomic>
 #include <new>
 namespace meshmc {
