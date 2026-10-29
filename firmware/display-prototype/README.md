@@ -82,3 +82,17 @@ Test sequence:
 3. Enable BLE and note whether UI stops responding or Wi-Fi disconnects. A serial monitor at 115200 baud (and boot reset reason) is essential if it freezes.
 4. If the link initializes successfully, scan and select the Heltec V3 **MeshCore Companion Bluetooth**, enter PIN shown by the device. No messages or MeshCore commands are sent by this candidate.
 5. If any freeze occurs, reinstall the tested v0.6.2 image; do not erase unless necessary.
+
+## v0.6.5 — LVGL / SPI coexistence diagnostic (EXPERIMENTAL / not tested)
+
+The owner provided detailed v0.6.4 Web Flasher serial logs. BLE startup **completed** (`nimble_port_init result=0`, host created), immediately followed by `lcd_panel.io.spi: spi transmit (queue) color failed`. The task watchdog repeatedly reported `IDLE0` starved with `taskLVGL` running on CPU0; CPU1 was idle. The triggering issue is in LCD SPI transfers / LVGL progress, not a failed BLE connection or MeshCore pairing. Root cause of the SPI queue error is not yet proven.
+
+This candidate stays on the pinned Waveshare BSP and ESP-IDF 5.3.2, and tests only a targeted resource adjustment:
+- Pins LVGL task to CPU1 rather than an unpinned task that was observed on CPU0.
+- Decreases LCD SPI PCLK 80 MHz to 40 MHz and transaction depth 10 to 6.
+- Keeps Wi-Fi CPU0 and pins NimBLE host/controller CPU1 (coexistence enabled).
+- Prints `[MCX-MEM]` with free internal 8-bit SRAM, largest internal block and DMA-capable SRAM before/after NimBLE startup, separately from PSRAM-inclusive total heap.
+
+The documented tested rollback is **v0.6.2**. Versions **v0.6.3** and **v0.6.4** are blocked from the Web Flasher selector. After flashing v0.6.5, check touch/Wi-Fi before choosing **More → Radios → ENABLE BLE / TEST**, and capture the **Web Flasher Logs**. Do not assume the new candidate fixes the display without hardware testing.
+
+Issue tracker: https://github.com/Renbrant/MeshCrossway/issues/30

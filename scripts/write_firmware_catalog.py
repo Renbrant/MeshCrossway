@@ -28,7 +28,7 @@ approved={
     "v0.6.2":("Owner confirmed touchscreen, Wi-Fi and normal UI work on the Waveshare Rev2.0; confirmed working after v0.6.3 failed.", "Last hardware-tested / recommended"),
 }
 # Do not expose a known-broken image through the installer.
-blocked={"v0.6.3"}
+blocked={"v0.6.3","v0.6.4"}
 if stable not in approved:
     p.error(f"Approved stable version {stable} has no recorded hardware validation")
 if latest in blocked:
@@ -56,6 +56,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.6.6":
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: reserves small DMA LCD buffers before BLE startup, reports and aborts on SPI color failure instead of waiting forever. LVGL core1, LCD 40MHz / queue6, Wi-Fi core0 and NimBLE core1; generated sdkconfig verified. Do not use for critical communication."
+        label="DMA display + BLE diagnostic / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.6.4":
         summary="KNOWN CRITICAL ISSUE: v0.6.4 boots but enabling Bluetooth freezes the touchscreen/device before radio discovery. Do not install; return to hardware-tested v0.6.2."
         label="FREEZES ON BLE ENABLE / DO NOT INSTALL"

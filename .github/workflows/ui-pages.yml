@@ -14,6 +14,8 @@ on:
       - "scripts/write_firmware_*.py"
       - "scripts/verify_firmware_version.py"
       - "scripts/check_firmware_identity.py"
+      - "scripts/check_ble_sdkconfig.py"
+      - "scripts/test_ble_sdkconfig.py"
       - "scripts/restore_reviewed_firmware.py"
       - ".github/workflows/ui-pages.yml"
   workflow_dispatch:
