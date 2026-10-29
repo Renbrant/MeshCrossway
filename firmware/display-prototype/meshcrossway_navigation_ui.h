@@ -71,6 +71,7 @@ static void poll(){
   if(!canvas||info_dialog)return;
   if(seen_config!=mcxmap::configuration_revision()){
     seen_config=mcxmap::configuration_revision();const auto c=mcxmap::configuration();zoom=c.zoom;
+    if(front&&front->source!=mcxmap::source_hash(c))lv_obj_add_flag(picture,LV_OBJ_FLAG_HIDDEN);
     chatview::label(attribution,c.attribution);lv_obj_update_layout(attribution);lv_obj_set_y(attribution,155-lv_obj_get_height(attribution)-2);
     if(centered)request();
   }

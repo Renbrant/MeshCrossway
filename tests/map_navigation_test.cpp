@@ -76,6 +76,11 @@ int main(int argc,char **argv){
  lv_tick_inc(10001);fake_http_enabled=true;fake_http_status=200;retry.generation=11;mcxmap::wanted=11;
  frame=mcxmap::render(retry,c);assert(frame&&!frame->missing&&fake_http_calls>before_retry+1);mcxmap::release(frame);
 
+ retry.longitude+=2;retry.generation=12;mcxmap::wanted=12;mcxmap::backing_off=false;fake_read_failure=true;
+ const int before_partial=fake_http_calls;frame=mcxmap::render(retry,c);assert(frame&&frame->missing&&fake_http_calls==before_partial+1);mcxmap::release(frame);
+ lv_tick_inc(10001);fake_read_failure=false;retry.generation=13;mcxmap::wanted=13;frame=mcxmap::render(retry,c);assert(frame&&!frame->missing);mcxmap::release(frame);
+ const auto cancel_generation=mcxmap::wanted.load();mcxmap::queued=true;auto cancelled=mcxmap::configuration();cancelled.online=0;mcxmap::configure(cancelled);
+ assert(mcxmap::wanted.load()!=cancel_generation&&!mcxmap::queued);
  unsigned char invalid[33]={137,80,78,71,13,10,26,10};memcpy(invalid+12,"IHDR",4);unsigned char *rgba=nullptr;assert(!mcxmap::decode(invalid,sizeof(invalid),&rgba)&&!rgba);
  c.url[0]=0;assert(!mcxmap::valid_config(c));c=mcxmap::Config{};strcpy(c.url,"http://not-tls.example");assert(!mcxmap::valid_config(c));
  using namespace meshcrossway;

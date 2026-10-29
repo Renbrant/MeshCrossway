@@ -33,7 +33,7 @@ static bool valid_config(const Config &c){
   return true;
 }
 struct View {double latitude=0,longitude=0;uint32_t generation=0;unsigned zoom=14,width=400,height=155;};
-struct Frame {lv_img_dsc_t image={};View view;unsigned loaded=0,missing=0;char status[96]={};};
+struct Frame {lv_img_dsc_t image={};View view;uint64_t source=0;unsigned loaded=0,missing=0;char status[96]={};};
 static portMUX_TYPE mux=portMUX_INITIALIZER_UNLOCKED;
 static Config config;
 static View requested;
@@ -61,7 +61,7 @@ static void load_config(){
 static uint32_t configuration_revision(){portENTER_CRITICAL(&mux);const auto r=revision;portEXIT_CRITICAL(&mux);return r;}
 static Config configuration(){portENTER_CRITICAL(&mux);auto c=config;portEXIT_CRITICAL(&mux);return c;}
 static void configure(const Config &c){if(!valid_config(c))return;
-  portENTER_CRITICAL(&mux);config=c;++revision;changed_ms=milliseconds();settings_saved=false;portEXIT_CRITICAL(&mux);
+  portENTER_CRITICAL(&mux);config=c;++revision;changed_ms=milliseconds();settings_saved=false;wanted.fetch_add(1);queued=false;portEXIT_CRITICAL(&mux);
 }
 static uint64_t source_hash(const Config &c){uint64_t hash=14695981039346656037ULL;for(const char *p=c.url;*p;++p)hash=(hash^uint8_t(*p))*1099511628211ULL;return hash;}
 static void paths(char *file,size_t cap,const Config &c,unsigned z,unsigned x,unsigned y){snprintf(file,cap,"%s/mcx-map-cache/%016llx/%u/%u/%u.png",SD_ROOT,(unsigned long long)source_hash(c),z,x,y);}
@@ -114,7 +114,7 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
   char url[256];snprintf(url,sizeof(url),"%s%s%u/%u/%u.png",c.url,c.url[strlen(c.url)-1]=='/'?"":"/",z,x,y);
   esp_http_client_config_t http={};http.url=url;http.timeout_ms=2500;http.buffer_size=1024;http.buffer_size_tx=512;
   http.user_agent="MeshCrossway/0.8.1 (+https://github.com/Renbrant/MeshCrossway)";http.crt_bundle_attach=esp_crt_bundle_attach;http.disable_auto_redirect=true;
-  auto client=esp_http_client_init(&http);bool ok=false,valid_payload=false;int response=0;unsigned char *png=nullptr;size=0;
+  auto client=esp_http_client_init(&http);bool ok=false,valid_payload=false,decode_attempted=false;int response=0;unsigned char *png=nullptr;size=0;
   if(client&&esp_http_client_open(client,0)==ESP_OK){
     const auto length=esp_http_client_fetch_headers(client);const int status=esp_http_client_get_status_code(client);response=status;
     if(status==429||status>=500){backoff_started=now;backoff_ms=120000;backing_off=true;}
@@ -127,13 +127,13 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
     }
   }
   if(client){esp_http_client_close(client);esp_http_client_cleanup(client);}
-  unsigned char *test=nullptr;if(ok){valid_payload=decode(png,size,&test);ok=valid_payload;}lv_mem_free(test);
+  unsigned char *test=nullptr;if(ok){decode_attempted=true;valid_payload=decode(png,size,&test);ok=valid_payload;}lv_mem_free(test);
   if(ok)ok=fwrite(png,1,size,out)==size&&fflush(out)==0&&fsync(fileno(out))==0;
   if(fclose(out))ok=false;
   if(ok&&remove(file)&&errno!=ENOENT)ok=false;
   if(ok)ok=rename(temporary,file)==0;
   if(!ok){
-    const bool missing=response==404||response==410||(response==200&&png&&!valid_payload);
+    const bool missing=response==404||response==410||(response==200&&decode_attempted&&!valid_payload);
     remove(temporary);heap_caps_free(png);png=nullptr;
     if(missing){misses[miss_slot]={z,x,y,now,true};miss_slot=(miss_slot+1)%12;}
     else if(!backing_off){backoff_started=now;backoff_ms=10000;backing_off=true;}
@@ -150,7 +150,7 @@ static unsigned char *checked_png(const char *file,size_t &size){
 }
 static Frame *render(const View &v,const Config &c){
   waiting_clock=cache_full=false;
-  auto *f=(Frame *)heap_caps_malloc(sizeof(Frame),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!f)return nullptr;new(f) Frame();f->view=v;
+  auto *f=(Frame *)heap_caps_malloc(sizeof(Frame),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!f)return nullptr;new(f) Frame();f->view=v;f->source=source_hash(c);
   const size_t count=v.width*v.height;auto *pixels=(lv_color_t *)heap_caps_malloc(count*sizeof(lv_color_t),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
   if(!pixels){release(f);return nullptr;}
   f->image.header.cf=LV_IMG_CF_TRUE_COLOR;f->image.header.w=v.width;f->image.header.h=v.height;f->image.data=(const uint8_t *)pixels;f->image.data_size=count*sizeof(lv_color_t);

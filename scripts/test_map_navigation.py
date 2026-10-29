@@ -34,13 +34,13 @@ using esp_err_t=int;
 #define ESP_ERR_NO_MEM 257
 struct esp_http_client_config_t {const char *url=nullptr;int timeout_ms=0,buffer_size=0,buffer_size_tx=0;const char *user_agent=nullptr;int (*crt_bundle_attach)(void *)=nullptr;bool disable_auto_redirect=false;};
 using esp_http_client_handle_t=void *;
-static bool fake_http_enabled=false;static int fake_http_calls=0,fake_http_status=200;static size_t fake_http_pos=0;
+static bool fake_http_enabled=false,fake_read_failure=false;static int fake_http_calls=0,fake_http_status=200;static size_t fake_http_pos=0;
 static std::vector<unsigned char> fake_http_body;
 static void *esp_http_client_init(const esp_http_client_config_t *c){++fake_http_calls;assert(!strncmp(c->user_agent,"MeshCrossway/",12)&&c->crt_bundle_attach&&c->disable_auto_redirect);fake_http_pos=0;return fake_http_enabled?(void *)&fake_http_pos:nullptr;}
 static int esp_http_client_open(void *,int){return 0;}
 static int64_t esp_http_client_fetch_headers(void *){return fake_http_body.size();}
 static int esp_http_client_get_status_code(void *){return fake_http_status;}
-static int esp_http_client_read(void *,char *out,int cap){const size_t n=std::min(size_t(cap),fake_http_body.size()-fake_http_pos);memcpy(out,fake_http_body.data()+fake_http_pos,n);fake_http_pos+=n;return int(n);}
+static int esp_http_client_read(void *,char *out,int cap){if(fake_read_failure&&fake_http_pos>=64)return -1;const size_t n=std::min(size_t(fake_read_failure?std::min(cap,64):cap),fake_http_body.size()-fake_http_pos);memcpy(out,fake_http_body.data()+fake_http_pos,n);fake_http_pos+=n;return int(n);}
 static bool esp_http_client_is_complete_data_received(void *){return fake_http_pos==fake_http_body.size();}
 static void esp_http_client_close(void *){}
 static void esp_http_client_cleanup(void *){}
