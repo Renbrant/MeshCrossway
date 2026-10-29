@@ -5,14 +5,15 @@ struct Row {uint32_t id=0;uint64_t hash=0;lv_obj_t *object=nullptr;bool used=fal
 struct Cache {Row rows[96];lv_obj_t *parent=nullptr,*empty=nullptr,*title=nullptr,*subtitle=nullptr,*history=nullptr;
   uint64_t title_hash=0;uint32_t anchor=0;int offset=0,y=96;bool follow=true;};
 static Cache *cache=nullptr;
-static void invalidate(){if(cache)*cache=Cache{};}
+static void invalidate(){if(cache)new(cache) Cache();} // Reset in PSRAM, no full Cache temporary on the UI stack.
 static bool active(lv_obj_t *parent){return cache&&cache->parent==parent;}
 static void label(lv_obj_t *object,const char *text){
   if(object&&strcmp(lv_label_get_text(object),text))lv_label_set_text(object,text);
 }
 static uint64_t hash(const char *a,const char *b,const char *c,unsigned color=0){
   uint64_t h=14695981039346656037ULL;
-  for(const char *s:{a,b,c}){for(;*s;++s){h^=uint8_t(*s);h*=1099511628211ULL;}h^=0xff;h*=1099511628211ULL;}
+  const char *parts[]={a,b,c};
+  for(const char *s:parts){for(;*s;++s){h^=uint8_t(*s);h*=1099511628211ULL;}h^=0xff;h*=1099511628211ULL;}
   return (h^color)*1099511628211ULL;
 }
 static void header(const char *name,const char *subtitle,const char *history){
@@ -41,7 +42,7 @@ static bool interacting(lv_obj_t *parent){
 static bool begin(lv_obj_t *parent){
   if(!cache){void *p=lv_mem_alloc(sizeof(Cache));if(!p)return false;cache=new(p) Cache();}
   const bool initial=cache->parent!=parent;
-  if(initial){*cache=Cache{};cache->parent=parent;}
+  if(initial){new(cache) Cache();cache->parent=parent;}
   lv_obj_update_layout(parent);
   const int scroll=lv_obj_get_scroll_y(parent);
   cache->follow=initial||lv_obj_get_scroll_bottom(parent)<=24;
