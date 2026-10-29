@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway display-only UTF-8 emoji preparation; not wired into firmware.
+// MeshCrossway display-only UTF-8 emoji parser (read-only presentation).
 // No external dependencies, allocation, BLE access, storage or LVGL calls.
 // C++11 and later. Registry glyph IDs are append-only and never sent over radio.
 #include <stddef.h>
