@@ -25,7 +25,7 @@ if '#include "meshcrossway_ui.h"' not in source:
                             '#include "lvgl_ui.h"\n#include "meshcrossway_ui.h"\n#include "meshcrossway_health.h"\n#include "meshcrossway_capture.h"', 1)
     source = source.replace('lv_demo_widgets();', 'meshcrossway::init();\n        meshcapture::init();', 1)
     source = source.replace(anchor,
-                            '        lvgl_port_unlock();\n    }\n    meshnetwork::start();\n    meshhealth::start();\n}', 1)
+                            '        lvgl_port_unlock();\n    }\n    meshnetwork::start();\n    meshhealth::start();\n    meshble::schedule_auto_resume();\n}', 1)
     main.write_text(source)
 
 if '#include "meshcrossway_ble.h"' not in source:
@@ -137,7 +137,7 @@ for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_he
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 
-# Emoji display sources are a self-contained LVGL 8.4 image-font extension.
+# Read-only color emoji sprites for LVGL 8.4; keep device offline.
 emoji_root = root / "firmware" / "display-prototype" / "emoji"
 emoji_target = project / "main" / "emoji"
 emoji_target.mkdir(parents=True, exist_ok=True)

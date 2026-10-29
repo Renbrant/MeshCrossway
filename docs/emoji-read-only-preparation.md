@@ -1,4 +1,4 @@
-# Read-only color emoji rendering — MeshCrossway v0.7.2 candidate
+# Read-only color emoji rendering — MeshCrossway v0.7.3 candidate
 
 **Implemented in branch `feature/color-emoji-rendering`, PR #41.** This is a **candidate**, not yet hardware-tested, merged or published. It adds 92 colored emoji images to the conversation view; it does **not** add an emoji picker or alter the keyboard, message payloads, BLE security or native radio protocols.
 
@@ -22,7 +22,7 @@ Color artwork is derived from **Noto Color Emoji**, copyright Google Inc. and co
 - On hardware, install only after CI succeeds, with **Erase unchecked** to preserve NVS Wi-Fi and Bluetooth bonds. Capture screenshots of mixed emoji text, multi-line and long chat; verify colored images, layout/scroll, BLE, Wi-Fi, touch and memory stability.
 - Do not merge or publish this PR until the user has inspected and approved the behavior on hardware.
 
-**Scope excludes** emoji keyboard or picker, relaying between Meshtastic and MeshCore, automatic radio message conversion, global fonts and external downloads. The prior v0.7.1 firmware remains on `main` until review.
+**Scope excludes** emoji keyboard or picker, relaying between Meshtastic and MeshCore, automatic radio message conversion, global fonts and external downloads. The v0.7.2 automatic reconnect firmware remains on `main` until approval.
 
 ## References
 

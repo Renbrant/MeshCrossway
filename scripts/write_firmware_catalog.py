@@ -65,6 +65,14 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.7.3":
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: Color emojis in MeshCore chat, 92 local LVGL 8.4 image glyphs, read-only UTF-8 display. Retains v0.7.2 automatic Wi-Fi profile fallback and last bonded BLE-radio reconnect. Never converts mesh traffic. Leave Erase unchecked."
+        label="Color chat emojis + Wi-Fi/BLE reconnect / EXPERIMENTAL"
+        status="experimental"
+    elif version=="v0.7.2":
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: Wi-Fi reconnects to the last successful network and falls back to four other saved networks. The last bonded BLE radio is discovered after safe boot with bounded retry scans; manual disconnect suppresses retry. BLE currently operates one radio session. Leave Erase unchecked."
+        label="Wi-Fi and last BLE radio auto-reconnect / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.7.1":
         summary="EXPERIMENTAL / NOT HARDWARE TESTED: MeshCore Companion with persistent Bluetooth per-radio bonds in NVS, so PIN should be required only on first successful pairing. Tested rollback v0.6.8 retained."
         label="MeshCore + saved Bluetooth pairing / EXPERIMENTAL"
