@@ -101,3 +101,5 @@ A radio screenshot showed `RX / RECEIVED / 1793246599` above every received chat
 20. Confirm a 14px glyph (approximately the text height) in the Home card, Nodes contact names and received chat. Send an unregistered emoji and an explicit literal `[emoji]`; both show `$` without changing stored/forwarded Unicode.
 21. Pair a T-Deck flashed with MeshCore **BLE Companion**: inspect handshake, contact loading and channels; verify no false “malformed” errors for the documented response variants. If rejected, capture ONLY diagnostic `0xXX` code, length, pending command and version (do not share raw packets). No hard-coded acceptance of non-Companion devices.
 22. Reboot with normal erase **unchecked**. Confirm saved Wi-Fi and Bluetooth pairings, UI and MeshCore chat work without regression.
+
+23. Test a deliberately truncated DEVICE_INFO v3 response: the client must reject it and show `frame 0x0D len 6` without reading a missing PIN field. Confirm the error label wraps onto a second line instead of being truncated with ellipsis. Bluetooth radio names and scanner rows containing emoji must render using the compact font or the `$` fallback.

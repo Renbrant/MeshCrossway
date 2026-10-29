@@ -65,6 +65,10 @@ int main(){
  r=response(13,4);r.data[1]=2;
  assert(!older->receive(r.data,r.len,2931) && older->fault);
  assert(strstr(older->status,"protocol v2 unsupported"));
+ auto short_info=make_client();short_info->attach(173);
+ r=response(13,6);r.data[1]=14;
+ assert(!short_info->receive(r.data,r.len,2932) && short_info->fault);
+ assert(strstr(short_info->status,"0x0D") && strstr(short_info->status,"len 6"));
  // No transport payload is exposed in diagnostics.
  assert(!strstr(older->status,"private") && !strstr(older->status,"secret"));
  // Wrong channel response does not release GET_CHANNEL; malformed responses fail the session.
