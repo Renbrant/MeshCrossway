@@ -361,7 +361,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
             assert "suppress_left_nav_click||edge_swipe_click_in_progress()" in current
             assert "lv_obj_add_event_cb(tabs[i],left_tab_touch,LV_EVENT_PRESSING,nullptr)" in current
             assert "LV_SCROLLBAR_MODE_OFF" in current
-            assert 'color_label(top,"0.7.8",187,11' in current
+            assert 'color_label(top,"0.7.9",187,11' in current
             assert 'color_label(top,"DEV 0.7.8"' not in current
             assert "top_battery_fill" in current
             assert "CONFIG_LV_FONT_MONTSERRAT_10=y" in patcher.read_text()
