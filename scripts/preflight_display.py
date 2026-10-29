@@ -229,7 +229,8 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3"):
         if version=="v0.7.3":
             assert "CONFIG_LV_USE_IMGFONT=y" in patched_sdkconfig
             assert '#include "emoji/emoji_display.h"' in ui
-            assert (main.parent / "emoji" / "emoji_display.h").is_file()
+            assert (FW / "emoji" / "emoji_display.h").is_file()
+            assert '"emoji_display.h"' in patcher.read_text()
             assert "set_message_text(text, m->text)" in (FW/"meshcrossway_meshcore_ui.h").read_text()
         if version in ("v0.7.2","v0.7.3"):
             wifi=(FW/"meshcrossway_network.h").read_text()
