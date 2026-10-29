@@ -92,3 +92,4 @@
 {"\U00000030\U0000FE0F\U000020E3", 0xE059u, "keycap zero"},
 {"\U00000023\U0000FE0F\U000020E3", 0xE05Au, "keycap hash"},
 {"\U0000002A\U0000FE0F\U000020E3", 0xE05Bu, "keycap star"},
+{"\U0001F3C1", 0xE05Cu, "checkered flag"},
