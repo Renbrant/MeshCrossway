@@ -386,12 +386,13 @@ static void notice(const char *title,const char *body_text){
   lv_label_set_long_mode(message,LV_LABEL_LONG_WRAP);
   lv_obj_set_height(message,143);
 }
-namespace mcui {static void tools();static void compose();static void form(uint8_t);}
+namespace mcui {static void tools();static void compose();static void form(uint8_t);static void thread_info();}
 static void run_action(void *data){
   int id=(int)(intptr_t)data;
   if(id==A_NEW){mcui::compose();return;}
   if(id==A_GROUP_NEW){mcui::form(32);return;}
-  if(id==A_PACKETS||id==A_NETWORKS||id==A_THREAD_INFO||id==A_NODE_DETAILS){mcui::tools();return;}
+  if(id==A_THREAD_INFO){mcui::thread_info();return;}
+  if(id==A_PACKETS||id==A_NETWORKS||id==A_NODE_DETAILS){mcui::tools();return;}
   if(id==A_WIFI){close_shade();wifi_setup(nullptr);return;}
   if(id==A_BLE_ENABLE){(void)meshble::request_start();page=5;more_view=1;draw();return;}
   if(id==A_BLE_SCAN){meshble::scan();page=5;more_view=1;draw();return;}
@@ -788,7 +789,7 @@ static void draw(){
     if(map_view==0){
       map_preview(w);
       color_label(body,"Fix: NONE   Accuracy: --   Age: --",8,221,w-16,orange);
-      color_label(body,"Tools: POIs / Tracks / Record / Share",8,249,w-16,muted);
+      color_label(body,"Sharing OFF  /  demo basemap only",8,249,w-16,muted);
     }else if(map_view==1){
       center_card(8,58,w-16,66,"POI / DEMO","Camp Alpha  [sample]","Not saved to SD",orange);
       center_card(8,131,w-16,66,"WAYPOINT / DEMO","Trail Junction  [sample]","No coordinates recorded",orange);
