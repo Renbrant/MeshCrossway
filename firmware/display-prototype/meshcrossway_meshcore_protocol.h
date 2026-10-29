@@ -563,6 +563,7 @@ public:
   uint8_t protocol = 0;
   bool connected = false, initialized = false, fault = false, busy = false, written = false,
        response_done = false, waiting_messages = false;
+  bool history_ready=true; // Transport gates user sends while an archive is being restored.
   uint16_t payload_limit = 0, battery_mv = 0;
   uint32_t used_kb = 0, total_kb = 0, generation = 0, rx_count = 0, tx_count = 0, invalid = 0;
   char name[33] = {}, firmware[21] = {}, model[41] = {}, status[128] = "Connect a MeshCore Companion radio",
@@ -687,7 +688,7 @@ public:
   }
   bool send_text(bool group, uint16_t target, const char *text) {
     size_t n = strlen(text);
-    if (!connected || fault || !initialized || !n || !valid_utf8(text,n) || n > text_limit(group) || timestamp() < 1577836800u)
+    if (!connected || fault || !initialized || !history_ready || !n || !valid_utf8(text,n) || n > text_limit(group) || timestamp() < 1577836800u)
       return false;
     if (group ? (target >= channel_count || !channels[target].loaded || !channels[target].name[0])
               : target >= contact_count)

@@ -845,7 +845,7 @@ static void draw(){
   const int rw=has_context_rail()?(right_compact?40:125):0;
   const int cw=480-lw-rw;
   uptime_value=nullptr;heap_value=nullptr;network_value=nullptr;backup_value=nullptr;
-  mcui::radio_status=mcui::home_name=mcui::home_status=nullptr;
+  mcui::radio_status=mcui::home_name=mcui::home_status=mcui::history_status=nullptr;
   if(lw)lv_obj_clear_flag(left_rail,LV_OBJ_FLAG_HIDDEN);
   else lv_obj_add_flag(left_rail,LV_OBJ_FLAG_HIDDEN);
   if(rw)lv_obj_clear_flag(right_rail,LV_OBJ_FLAG_HIDDEN);

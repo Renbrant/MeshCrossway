@@ -19,6 +19,8 @@ int main(int argc,char **argv){
  assert(!send(Network::MC,c,other,"cross network"));other=alice;other.radio[31]=1;
  assert(!send(Network::MC,c,other,"wrong radio"));assert(c.qcount==0);
  assert(send(Network::MC,c,alice,"Hello 👋"));assert(c.qcount==1&&c.queue[0].frame.data[7]==9);
+ // Reusing a channel slot with a new identity does not redirect an old chat.
+ c.channels[1].secret[0]=1;assert(!send(Network::MC,c,channel,"old group"));c.channels[1].secret[0]=0;
  assert(!belongs(c.messages[0],bob)&&belongs(c.messages[0],alice));
  assert(!clear(c,alice));c.messages[0].delivery=UNCERTAIN;c.qcount=0;
  assert(!send(Network::MC,c,alice,"\xc0\xaf"));
@@ -43,7 +45,7 @@ int main(int argc,char **argv){
  auto state=std::unique_ptr<mcxstore::State>(new mcxstore::State());
  auto previous=std::unique_ptr<mcxstore::State>(new mcxstore::State());
  auto staging=std::unique_ptr<mcxstore::State>(new mcxstore::State());
- mcxstore::capture(c,local,*state);assert(mcxstore::save(root,*state,*previous,*staging));
+ mcxstore::capture(c,local,*state);state->meta.network=Network::MT;assert(!mcxstore::valid(*state,c.public_key));state->meta.network=Network::MC;assert(mcxstore::save(root,*state,*previous,*staging));
  char file[240];mcxstore::path(file,sizeof(file),root,c.public_key,"log");
  auto recovery=mcxstore::load(root,c.public_key,*previous,*staging);assert(recovery.found&&!recovery.recovered);
  auto restored=std::unique_ptr<Client>(new Client());auto loaded_local=std::unique_ptr<Local>(new Local());

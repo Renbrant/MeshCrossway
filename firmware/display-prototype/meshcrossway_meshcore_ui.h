@@ -5,7 +5,7 @@ namespace mcui {
 static lv_obj_t *dialog = nullptr, *scroller = nullptr, *feedback = nullptr, *editor = nullptr,
                 *edit_value = nullptr, *keyboard = nullptr, *edit_target = nullptr;
 static lv_obj_t *fields[10] = {};
-static lv_obj_t *radio_status = nullptr, *home_name = nullptr, *home_status = nullptr;
+static lv_obj_t *radio_status = nullptr, *home_name = nullptr, *home_status = nullptr, *history_status=nullptr;
 static char home_name_source[80] = {};
 static uint8_t field_count = 0, selected_command = 0;
 static bool confirm_pending = false, group = false, conversation = false, reveal = false;
@@ -28,7 +28,7 @@ static meshmc::Client *session() {
   return meshmc::client;
 }
 static bool ready() {
-  return session() && session()->initialized && session()->connected && !session()->fault;
+  return session() && session()->initialized && session()->history_ready && session()->connected && !session()->fault;
 }
 static void close_editor() {
   if (!editor)
@@ -442,12 +442,13 @@ static lv_obj_t *notification=nullptr;
 static uint8_t view_radio[32]={};
 static bool groups_rooms=false;
 static uint16_t display_indices[meshmc::MAX_CONTACTS];
+static uint64_t display_scores[meshmc::MAX_CONTACTS];
 static bool view_restored=false;
 static void chat_tools();
 static void room_menu();
 static void select(const mcxchat::Key &key){
   selected=key;group=key.kind==mcxchat::Kind::Channel;
-  memcpy(target_key,key.native,32);target_slot=key.native[0];conversation=true;
+  memcpy(target_key,key.native,32);target_slot=group?key.native[0]:0;conversation=true;
   mcxhistory::local.context=key;mcxhistory::local.has_context=true;++mcxhistory::local.revision;
 }
 static void show_list(){close();conversation=false;search_text[0]=0;page=3;draw();}
@@ -629,7 +630,8 @@ static void message_details_now(void *data){
 }
 static void message_details(lv_event_t *e){lv_async_call(message_details_now,lv_event_get_user_data(e));}
 static void conversation_list(int w){
-  auto *s=session();show_center_heading("CHATS / CONVERSATIONS",mcxhistory::status());filter_tabs(w,chats_filter);
+  auto *s=session();show_center_heading("CHATS / CONVERSATIONS",nullptr);
+  history_status=single_label(body,mcxhistory::status(),8,30,w-16,muted);filter_tabs(w,chats_filter);
   action_button(body,"SEARCH",8,98,(w-22)/2,34,panel2,search_event,0);
   action_button(body,"TOOLS",(w+2)/2,98,(w-22)/2,34,panel2,chat_tools_event,0);
   if(chats_filter==1){single_label(body,"Meshtastic: not available",8,145,w-16,muted);return;}
@@ -682,8 +684,9 @@ static void render() {
       uint32_t last=0;for(const auto &m:s->messages)if(mcxchat::belongs(m,key)&&m.id>last)last=m.id;
       return (uint64_t(p&&p->favorite)<<32)|last;
     };
-    for(int a=1;a<total;++a){uint16_t value=display_indices[a];int b=a;const uint64_t score=rank(value);
-      while(b&&rank(display_indices[b-1])<score){display_indices[b]=display_indices[b-1];--b;}display_indices[b]=value;
+    for(int a=0;a<total;++a)display_scores[display_indices[a]]=rank(display_indices[a]);
+    for(int a=1;a<total;++a){uint16_t value=display_indices[a];int b=a;const uint64_t score=display_scores[value];
+      while(b&&display_scores[display_indices[b-1]]<score){display_indices[b]=display_indices[b-1];--b;}display_indices[b]=value;
     }
     if (list_offset >= total)
       list_offset = 0;
@@ -714,6 +717,8 @@ static void render() {
                                : "Companion",
                  unread(false, i));
       }
+      uint32_t last=0;for(const auto &m:s->messages)if(mcxchat::belongs(m,key)&&m.id>last)last=m.id;
+      if(last){auto *m=s->by_id(last);char recent[100];snprintf(recent,sizeof(recent),"%d unread / %.65s",mcxchat::unread(*s,key),m->text);snprintf(detail,sizeof(detail),"%s",recent);}
       lv_obj_t *b =
           action_button(body, "", 8, y, w - 16, 60, panel, is_channel ? choose_channel : choose_contact, i);
       emoji_txt(b, title, 7, 6, w - 30, white);
@@ -731,7 +736,7 @@ static void render() {
                         ready() ? "MeshCore / live" : "MeshCore / disconnected history");
     // Compose and Tools now live exclusively in the contextual right rail.
     action_button(body,"< CHATS",8,54,100,32,panel2,list_event,0);
-    single_label(body,mcxhistory::status(),114,61,w-122,muted);
+    history_status=single_label(body,mcxhistory::status(),114,61,w-122,muted);
     int y = 96;
     bool newly_read = false;
     for (uint32_t id = s->next_id > s->message_count ? s->next_id - s->message_count : 1; id < s->next_id;
@@ -809,6 +814,7 @@ static void poll(lv_timer_t *) {
     mcxhistory::poll(*s,now,meshmc::connection_epoch.load());
     if(!s->initialized&&s->connected){view_restored=false;conversation=false;}
     notifications(*s,now);
+    if(history_status&&strcmp(lv_label_get_text(history_status),mcxhistory::status()))lv_label_set_text(history_status,mcxhistory::status());
   }
   if (s) {
     const char *state = s->initialized && !s->busy && !s->fault ? "MeshCore ready" : s->status;

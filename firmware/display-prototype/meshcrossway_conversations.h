@@ -119,6 +119,7 @@ static bool send(Network network,meshmc::Client &c,const Key &k,const char *text
 static bool url(const char *text,char *out,size_t cap) {
   const char *p=strstr(text,"https://");if(!p)p=strstr(text,"http://");if(!p||cap<2)return false;
   size_t n=0;while(p[n]&&!isspace((unsigned char)p[n])&&p[n]!='<'&&p[n]!='>')++n;
-  if(n>=cap)return false;memcpy(out,p,n);out[n]=0;return true;
+  if(n>=cap)return false;
+  memcpy(out,p,n);out[n]=0;return true;
 }
 } // namespace mcxchat

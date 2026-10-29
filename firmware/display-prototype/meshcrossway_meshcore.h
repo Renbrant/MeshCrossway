@@ -96,6 +96,7 @@ static void poll() {
   if (!client->connected || seen_epoch != connection_epoch.load()) {
     mcxhistory::before_attach(*client,(uint32_t)(esp_timer_get_time()/1000));
     client->attach(negotiated_payload.load());
+    client->history_ready=false;
     seen_epoch = connection_epoch.load();
   }
   if (overflow.exchange(false)) {

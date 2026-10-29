@@ -49,15 +49,15 @@ static void worker_main(void *){
       while(complete.load())vTaskDelay(pdMS_TO_TICKS(50));
       bool identity=true;
       if(job.offline){
-        FILE *f=fopen(DIR "/last-radio","rb");identity=f&&fread(job.radio,1,32,f)==32&&fgetc(f)==EOF;if(f)fclose(f);
-        if(!identity){f=fopen(DIR "/last-radio.bak","rb");identity=f&&fread(job.radio,1,32,f)==32&&fgetc(f)==EOF;if(f)fclose(f);}
+        FILE *f=fopen("/sdcard/mcx-history/last-radio","rb");identity=f&&fread(job.radio,1,32,f)==32&&fgetc(f)==EOF;if(f)fclose(f);
+        if(!identity){f=fopen("/sdcard/mcx-history/last-radio.bak","rb");identity=f&&fread(job.radio,1,32,f)==32&&fgetc(f)==EOF;if(f)fclose(f);}
       }
       auto *image=allocate();
       mcxstore::Recovery r;
       if(image&&identity)r=mcxstore::load(DIR,job.radio,*image,*staging);
       loaded=image;loaded_epoch=job.epoch;loaded_offline=job.offline;load_ok=r.found;
       if(r.found)storage.store(r.recovered?3:1);
-      else {storage.store((mkdir(DIR,0755)==0||errno==EEXIST)?4:2);}
+      else {storage.store(r.recovered?2:(mkdir(DIR,0755)==0||errno==EEXIST)?4:2);}
       load_unavailable=storage.load()==2;
       complete.store(true);continue;
     }
@@ -65,9 +65,10 @@ static void worker_main(void *){
     const bool ok=mcxstore::save(DIR,*job.image,*previous,*staging);
     if(ok){
       // last-radio is advisory only. Archives still require the full 32-byte identity.
-      FILE *f=fopen(DIR "/last-radio.tmp","wb");
+      FILE *f=fopen("/sdcard/mcx-history/last-radio.tmp","wb");
       if(f){bool wrote=fwrite(job.image->meta.radio,1,32,f)==32&&fflush(f)==0&&fsync(fileno(f))==0;
-        if(fclose(f))wrote=false;if(wrote){remove(DIR "/last-radio.bak");rename(DIR "/last-radio",DIR "/last-radio.bak");rename(DIR "/last-radio.tmp",DIR "/last-radio");}}
+        if(fclose(f))wrote=false;
+        if(wrote){remove("/sdcard/mcx-history/last-radio.bak");rename("/sdcard/mcx-history/last-radio","/sdcard/mcx-history/last-radio.bak");rename("/sdcard/mcx-history/last-radio.tmp","/sdcard/mcx-history/last-radio");}}
       storage.store(1);commits.fetch_add(1);
       if(job.ticket>committed.load())committed.store(job.ticket);
       if(retry.image&&!memcmp(retry.image->meta.radio,job.image->meta.radio,32)){
@@ -104,8 +105,11 @@ static const char *status(){
     case 3:return "SD: recovered last commit";default:return "SD: no saved history";}
 }
 static void poll(meshmc::Client &c,uint32_t now,uint32_t epoch){
-  begin();if(!worker||worker_failed.load()){restored=true;storage.store(2);return;}
+  begin();if(!worker||worker_failed.load()){restored=true;c.history_ready=true;storage.store(2);return;}
   if(complete.load()){
+    bool transmitting=c.busy&&c.active.message>=0;
+    for(const auto &m:c.messages)if(m.id&&m.outgoing&&m.delivery==meshmc::QUEUED)transmitting=true;
+    if(!loaded_offline&&transmitting)return; // Preserve live queue-to-message IDs during a late SD restore.
     if(load_ok&&loaded){
       if(loaded_offline&&!c.connected){mcxstore::restore(*loaded,c,local,false);memcpy(bound_radio,c.public_key,32);restored=true;}
       else if(!loaded_offline&&epoch==loaded_epoch&&c.initialized&&!memcmp(loaded->meta.radio,c.public_key,32)){
@@ -126,14 +130,16 @@ static void poll(meshmc::Client &c,uint32_t now,uint32_t epoch){
             for(const auto &p:edits->local.threads)if(p.used){auto *dst=local.get(p.key,true);if(dst)*dst=p;}
             ++local.revision;
           }
-          if(edits)heap_caps_free(edits);heap_caps_free(recent);restored=true;
+          if(edits)heap_caps_free(edits);
+          heap_caps_free(recent);restored=true;
         }else {storage.store(2);load_unavailable=true;}
 
       }
     }
     if(!loaded_offline&&epoch==loaded_epoch){restored=true;restore_unavailable=load_unavailable;last_generation=last_revision=UINT32_MAX;}
     if(loaded_offline&&load_unavailable){offline_requested=false;last_restore_attempt=now;}
-    if(loaded)heap_caps_free(loaded);loaded=nullptr;complete.store(false);
+    if(loaded)heap_caps_free(loaded);
+    loaded=nullptr;complete.store(false);
   }
   if(c.connected&&c.initialized&&mcxstore::nonzero(c.public_key)){
     if(bound_epoch!=epoch||memcmp(bound_radio,c.public_key,32)){
@@ -144,6 +150,7 @@ static void poll(meshmc::Client &c,uint32_t now,uint32_t epoch){
   }else if(!c.connected&&!offline_requested&&!restored&&(uint32_t)(now-last_restore_attempt)>=5000){
     Job j;j.load=j.offline=true;offline_requested=submit(j);
   }
+  c.history_ready=restored;
   dirty.store(c.generation!=last_generation||local.revision!=last_revision);
   if(restored&&!restore_unavailable)capture(c,now);
 }

@@ -140,3 +140,8 @@ The 93 image-font emoji are reduced from 20px to **14px** with a 16px line box f
 ## v0.7.8 — left drag and status bar polish (experimental)
 
 A touch PRESSING handler on each left nav tab detects a horizontal swipe before LVGL sends CLICKED, suppresses accidental navigation and defers redraw until release. Right Map action scrollbar graphics are hidden so the scroll remains touch-draggable without covering the icons. Header moves just `0.7.8` beside the original logo, fixes MT/MC on a single line, and places battery percentage inside its rightmost battery silhouette. The battery placeholder is `--` for missing/invalid pack. No Wi-Fi/BLE protocol changes. **Real-device touch and layout acceptance remains necessary**, and Web Flasher updates must leave Erase unchecked.
+
+
+## v0.7.9 — messaging phase 1 (experimental)
+
+MeshCore conversation lists, native room session flow, local search/aliases/favorites, notification and mute controls, editable quick replies, draft persistence and manually confirmed resend now use a bounded transaction journal on microSD. Filesystem work runs outside LVGL. The SD is plaintext by owner choice. Meshtastic remains unavailable pending its adapter. **v0.7.8 is the recommended recovery image**; v0.7.9 still requires physical RX/TX/ACK, SD failure and coexistence acceptance. See [implementation, resource limits and verification](../../docs/messaging-phase-1-v079.md). Earlier release sections describe historical behavior.
