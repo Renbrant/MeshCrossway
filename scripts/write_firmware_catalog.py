@@ -65,6 +65,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.7.7":
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: Swipe horizontally from left edge to expand navigation and toward left edge to collapse; Chat/Map right edge swipe to expand/collapse contextual menu. No arrow buttons. Ignore overlays, short taps and vertical scroll. Preserves v0.7.6 logo, Wi-Fi and BLE. Leave Erase unchecked."
+        label="Edge-swipe sidebar gestures / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.7.6":
         summary="EXPERIMENTAL / HARDWARE TEST PENDING: Official traced MeshCrossway SVG brand in header, visible left icons on Home, Chat and Map right action rail with clickable icons when compact, no duplicate Nodes/Groups context rail, full-width Settings and Radios. Maintains v0.7.5 eFuse inventory, BLE/Wi-Fi and emoji. Leave Erase unchecked."
         label="Official logo and contextual compact UI / EXPERIMENTAL"

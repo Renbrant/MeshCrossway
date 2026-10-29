@@ -48,6 +48,29 @@ int main(){
  c.contacts[1]=c.contacts[0];c.contacts[1].key[31]=1;c.contact_count=2;assert(!c.send_text(false,0,"ambiguous"));
  c.contact_count=1;c.protocol=7;assert(!c.simple(56,0));c.protocol=14;
  for(int i=0;i<12;i++)assert(c.simple(20));assert(!c.simple(20));c.qcount=0;
+ // T-Deck / other Companion firmware may return documented optional fields.
+ // Do not classify these packets as corrupted or disconnect the radio.
+ auto variants=make_client();bootstrap(*variants);
+ r=response(0,5);put32(r.data+1,0x10203040);recv(*variants,r,2900);
+ assert(!variants->fault);
+ r=response(1,1);recv(*variants,r,2910);
+ assert(!variants->fault);
+ r=response(27,8);recv(*variants,r,2920); // empty channel datagram
+ assert(!variants->fault && variants->waiting_messages);
+ // Malformed frames must still fail safely and report a code/length only.
+ r=response(0,3);assert(!variants->receive(r.data,r.len,2930));
+ assert(variants->fault && strstr(variants->status,"0x00") &&
+        strstr(variants->status,"len 3"));
+ auto older=make_client();older->attach(173);
+ r=response(13,4);r.data[1]=2;
+ assert(!older->receive(r.data,r.len,2931) && older->fault);
+ assert(strstr(older->status,"protocol v2 unsupported"));
+ auto short_info=make_client();short_info->attach(173);
+ r=response(13,6);r.data[1]=14;
+ assert(!short_info->receive(r.data,r.len,2932) && short_info->fault);
+ assert(strstr(short_info->status,"0x0D") && strstr(short_info->status,"len 6"));
+ // No transport payload is exposed in diagnostics.
+ assert(!strstr(older->status,"private") && !strstr(older->status,"secret"));
  // Wrong channel response does not release GET_CHANNEL; malformed responses fail the session.
  assert(c.simple(31,1));f=start(c,3000);c.write_done(true);r=response(18,50);r.data[1]=0;recv(c,r,3001);assert(c.busy);r.data[1]=1;recv(c,r,3002);assert(!c.busy);
  r=response(5,57);assert(!c.receive(r.data,r.len,3003)&&c.fault);

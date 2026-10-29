@@ -1,11 +1,14 @@
 #pragma once
-// MeshCrossway v0.7.6: compact context actions, clean Settings, official logo.
+// MeshCrossway v0.7.7: swipe-open sidebars without arrow buttons.
 // MeshCore is live over BLE. Meshtastic and navigation remain previews.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_ble.h"
 #include "meshcrossway_device_key.h"
 #include "meshcrossway_brand.h"
+#include "meshcrossway_edge_swipe.h"
+#include "meshcrossway_power_status.h"
+#include "meshcrossway_chat_presentation.h"
 #include "emoji/emoji_display.h"
 #define MCX_EMOJI_RENDER_ENABLED 1
 #include "esp_system.h"
@@ -252,7 +255,8 @@ static void wifi_setup(lv_event_t *){
 // Left navigation and contextual right drawer can be independently collapsed.
 // Keep Wi-Fi provisioning and the manual screen viewer independent of UI rebuilds.
 static lv_obj_t *left_rail=nullptr,*right_rail=nullptr,*context_actions=nullptr;
-static lv_obj_t *left_handle=nullptr,*right_handle=nullptr,*top_wifi=nullptr;
+static lv_obj_t *top_wifi=nullptr,*top_mt=nullptr,*top_mc=nullptr;
+static lv_obj_t *top_battery=nullptr,*top_charge=nullptr,*top_battery_percent=nullptr;
 static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
 static bool left_compact=true,right_compact=true;
 static int nodes_filter=0,groups_filter=0,active_thread=-1,more_view=0;
@@ -289,8 +293,9 @@ static const ActionInfo map_actions[]={
   {"GNSS",A_GNSS,cyan},{"Team",A_TEAM,orange}
 };
 static void draw(); // Forward-declared above Wi-Fi editor callbacks.
+static bool edge_swipe_click_in_progress();
 static bool has_context_rail(){return page==3||page==4;}
-static bool has_left_rail(){return page!=5;}
+static bool has_left_rail(){return true;} // Main navigation never disappears, even in Settings / Radios.
 static int content_width(){return 480-(has_left_rail()?(left_compact?40:79):0)
                                    -(has_context_rail()?(right_compact?40:125):0);}
 // Keep labels one line high: wrapping formerly overlapped adjacent touch targets.
@@ -475,25 +480,72 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Location sharing and radio transmission are off. SD Wi-Fi backup is plaintext; protect your SD card.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.7.6","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
+      notice("MESH CROSSWAY v0.7.7","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
   }
 }
-static void on_action(lv_event_t *e){lv_async_call(run_action,lv_event_get_user_data(e));}
+static void on_action(lv_event_t *e){
+  if(edge_swipe_click_in_progress())return;
+  lv_async_call(run_action,lv_event_get_user_data(e));
+}
 static void on_nav(lv_event_t *e){
+  if(edge_swipe_click_in_progress())return;
   page=(int)(intptr_t)lv_event_get_user_data(e);
   if(page==5)more_view=0;
   close_shade();draw();
 }
-static void toggle_left(lv_event_t *){
-  if(has_left_rail())left_compact=!left_compact;
+// Poll the existing LVGL touch device from the LVGL thread. Unlike
+// LV_EVENT_GESTURE, this also works when a scrollable chat or map is visible;
+// only edge-armed horizontal movements may change layout.
+static mcxswipe::State swipe_state={};
+static lv_indev_t *swipe_pointer=nullptr;
+static void edge_swipe_poll(lv_timer_t *){
+  if(!swipe_pointer){
+    for(lv_indev_t *d=lv_indev_get_next(nullptr);d;d=lv_indev_get_next(d))
+      if(lv_indev_get_type(d)==LV_INDEV_TYPE_POINTER){swipe_pointer=d;break;}
+  }
+  if(!swipe_pointer)return;
+  lv_point_t point={};lv_indev_get_point(swipe_pointer,&point);
+  // ESP-IDF's pinned LVGL 8.4 has no lv_indev_get_state() API (LVGL 9 only).
+  // The v8 public lv_hal_indev.h exposes the current state in proc.state.
+  const bool pressed=swipe_pointer->proc.state==LV_INDEV_STATE_PRESSED;
+  const bool modal=wifi_dialog||wifi_editor||ble_dialog||info_dialog||shade;
+  const int lw=has_left_rail()?(left_compact?40:79):0;
+  const int rw=has_context_rail()?(right_compact?40:125):0;
+  const mcxswipe::Result gesture=mcxswipe::sample(
+    swipe_state,pressed,point.x,point.y,page,has_left_rail(),
+    has_context_rail(),left_compact,right_compact,lw,rw,modal,lv_tick_get());
+  switch(gesture){
+    case mcxswipe::OPEN_LEFT:left_compact=false;break;
+    case mcxswipe::CLOSE_LEFT:left_compact=true;break;
+    case mcxswipe::OPEN_RIGHT:right_compact=false;break;
+    case mcxswipe::CLOSE_RIGHT:right_compact=true;break;
+    default:return;
+  }
+  // Redraw only once, after release. Never destroy widgets while pressed.
   draw();
 }
-static void toggle_right(lv_event_t *){
-  if(has_context_rail())right_compact=!right_compact;
-  draw();
+// A horizontal swipe can end on a clickable icon. LVGL 8.x can emit CLICKED
+// before the 20ms polling timer sees the released state. Suppress that click
+// so dragging a rail never accidentally switches page or activates Compose.
+static bool edge_swipe_click_in_progress(){
+  if(!swipe_state.down||swipe_state.origin==mcxswipe::NOT_ARMED)return false;
+  lv_indev_t *dev=lv_indev_get_act();
+  if(!dev||lv_indev_get_type(dev)!=LV_INDEV_TYPE_POINTER)return false;
+  lv_point_t p={};lv_indev_get_point(dev,&p);
+  const int dx=int(p.x)-int(swipe_state.start_x);
+  const int dy=int(p.y)-int(swipe_state.start_y);
+  if(mcxswipe::iabs(dx)<44||mcxswipe::iabs(dx)<2*mcxswipe::iabs(dy))return false;
+  const bool correct_direction=
+    (swipe_state.origin==mcxswipe::LEFT_OPEN_ZONE&&dx>0)||
+    (swipe_state.origin==mcxswipe::LEFT_CLOSE_ZONE&&dx<0)||
+    (swipe_state.origin==mcxswipe::RIGHT_OPEN_ZONE&&dx<0)||
+    (swipe_state.origin==mcxswipe::RIGHT_CLOSE_ZONE&&dx>0);
+  if(!correct_direction)return false;
+  swipe_state.last_x=p.x;swipe_state.last_y=p.y;
+  return true;
 }
 static void apply_filter(void *value){
   const int filter=(int)(intptr_t)value;
@@ -642,8 +694,10 @@ static void rebuild_context(){
                                    4,y,right_compact?32:111,38,
                                    selected?orange:panel2,on_action,(intptr_t)id);
     lv_obj_set_style_border_width(button,selected?0:1,0);
-    lv_obj_set_style_border_color(button,choices[i].color,0);
-    if(selected)lv_obj_set_style_text_color(lv_obj_get_child(button,0),bg,0);
+    // Match the left primary navigation palette: orange icons on dark panels,
+    // dark glyph on orange for the selected action.
+    lv_obj_set_style_border_color(button,orange,0);
+    lv_obj_set_style_text_color(lv_obj_get_child(button,0),selected?bg:orange,0);
     y+=41;
   }
 }
@@ -733,18 +787,13 @@ static void draw(){
   lv_obj_set_pos(left_rail,0,34);lv_obj_set_size(left_rail,lw?lw:40,286);
   lv_obj_set_pos(body,lw,34);lv_obj_set_size(body,cw,286);
   lv_obj_set_pos(right_rail,480-rw,34);lv_obj_set_size(right_rail,rw?rw:40,286);
-  lv_obj_set_pos(context_actions,0,39);lv_obj_set_size(context_actions,rw?rw:40,247);
-  lv_obj_set_pos(left_handle,lw?lw-32:8,4);
-  lv_obj_set_pos(right_handle,rw?(rw-28)/2:6,5);
-  lv_label_set_text(lv_obj_get_child(left_handle,0),
-                    left_compact?LV_SYMBOL_RIGHT:LV_SYMBOL_LEFT);
-  lv_label_set_text(lv_obj_get_child(right_handle,0),
-                    right_compact?LV_SYMBOL_LEFT:LV_SYMBOL_RIGHT);
+  // All rail height is now available for icons; no arrow-button row.
+  lv_obj_set_pos(context_actions,0,0);lv_obj_set_size(context_actions,rw?rw:40,286);
   for(int i=0;i<6;i++){
     if(!lw){lv_obj_add_flag(tabs[i],LV_OBJ_FLAG_HIDDEN);continue;}
     lv_obj_clear_flag(tabs[i],LV_OBJ_FLAG_HIDDEN);
     const int button_width=lw-6;
-    lv_obj_set_pos(tabs[i],3,40+i*40);
+    lv_obj_set_pos(tabs[i],3,7+i*45);
     lv_obj_set_size(tabs[i],button_width,38);
     const bool active=i==page;
     const lv_color_t tint=active?bg:orange;
@@ -826,6 +875,7 @@ static void draw(){
         single_label(body,"Watch Wi-Fi / touch; report boot log.",8,152,w-16,muted);
       }else if(s.phase==meshble::READY){
         lv_obj_t *mc_card=center_card(8,104,w-16,80,"CONNECTED",s.active_name,s.radio==meshble::MESHCORE&&meshmc::client?meshmc::client->status:"Meshtastic transport only",green);
+        mcxemoji::view::set_message_text(lv_obj_get_child(mc_card,1),s.active_name);
         if(s.radio==meshble::MESHCORE)mcui::radio_status=lv_obj_get_child(mc_card,2);
         action_button(body,"MESHCORE TOOLS",8,190,w-16,40,orange,mcui::on_tools,0);
         action_button(body,"DISCONNECT",8,236,w-16,40,panel2,on_action,A_BLE_DISCONNECT);
@@ -836,9 +886,10 @@ static void draw(){
         action_button(body,"SCAN NEARBY BLE",8,105,w-16,40,orange,on_action,A_BLE_SCAN);
         int y=155;
         for(int k=0;k<s.count;k++){
-          char name[60];snprintf(name,sizeof(name),"%.22s / %d dBm",s.peers[k].name,s.peers[k].rssi);
+          char name[60];snprintf(name,sizeof(name),"%s / %d dBm",s.peers[k].name,s.peers[k].rssi);
           lv_obj_t *b=action_button(body,"",8,y,w-16,52,panel,ble_select,k);
-          single_label(b,name,7,6,w-28,white);
+          lv_obj_t *peer_name=single_label(b,name,7,6,w-28,white);
+          mcxemoji::view::set_message_text(peer_name,name);
           single_label(b,meshble::protocol_name(s.peers[k].advertised),7,30,w-28,muted);
           y+=56;
         }
@@ -846,7 +897,6 @@ static void draw(){
       return;
     }
     show_center_heading("SETTINGS / DEVICE","Core configuration and system status");
-    action_button(body,"HOME",w-90,5,82,32,panel2,on_action,A_RETURN_HOME);
     char uptime[42],memory[42],ip[16],wifi[30],status[55];
     const uint64_t seconds=(uint64_t)(esp_timer_get_time()/1000000LL);
     snprintf(uptime,sizeof(uptime),"Uptime: %lluh %02llum",
@@ -887,12 +937,47 @@ static void refresh(lv_timer_t *){
     snprintf(backup,sizeof(backup),"SD backup: %s",detail);
     if(strcmp(lv_label_get_text(wifi_sd_status),backup))lv_label_set_text(wifi_sd_status,backup);
   }
-  if(top_wifi){
-    char ip[16],state[30];meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
-    char label[54];snprintf(label,sizeof(label),"Wi-Fi: %s",ip[0]?ip:state);
-    if(strcmp(lv_label_get_text(top_wifi),label)!=0)lv_label_set_text(top_wifi,label);
+  // Compact status bar: real Wi-Fi STA IP state and actual current BLE
+  // GATT identity. The current radio adapter has ONE active BLE session.
+  if(top_wifi&&top_mt&&top_mc){
+    char ip[16]={},state[30]={};
+    meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
+    const bool wifi_online=ip[0]!=0;
+    const bool mt_online=bs.phase==meshble::READY &&
+                         bs.radio==meshble::MESHTASTIC;
+    const bool mc_online=bs.phase==meshble::READY &&
+                         bs.radio==meshble::MESHCORE && mcui::ready();
+    lv_obj_set_style_text_color(top_wifi,wifi_online?green:muted,0);
+    lv_obj_set_style_text_color(top_mt,mt_online?orange:muted,0);
+    lv_obj_set_style_text_color(top_mc,mc_online?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.7.6] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  // Read-only PMU worker publishes atomic snapshots; LVGL never performs I2C.
+  if(top_battery&&top_charge&&top_battery_percent){
+    const mcxbattery::Reading b=meshpower::snapshot();
+    const bool have_level=b.valid&&b.battery_present&&b.percent<=100;
+    const char *icon=LV_SYMBOL_BATTERY_EMPTY;
+    if(have_level){
+      icon=b.percent>=90?LV_SYMBOL_BATTERY_FULL:
+           b.percent>=65?LV_SYMBOL_BATTERY_3:
+           b.percent>=40?LV_SYMBOL_BATTERY_2:
+           b.percent>=15?LV_SYMBOL_BATTERY_1:LV_SYMBOL_BATTERY_EMPTY;
+    }
+    if(strcmp(lv_label_get_text(top_battery),icon))lv_label_set_text(top_battery,icon);
+    char percent[8];
+    if(have_level)snprintf(percent,sizeof(percent),"%u%%",(unsigned)b.percent);
+    else snprintf(percent,sizeof(percent),"--");
+    if(strcmp(lv_label_get_text(top_battery_percent),percent))
+      lv_label_set_text(top_battery_percent,percent);
+    lv_obj_set_style_text_color(top_battery,have_level?
+      (b.percent<=15?red:green):muted,0);
+    lv_obj_set_style_text_color(top_battery_percent,have_level?white:muted,0);
+    const char *charging=b.charging?LV_SYMBOL_CHARGE:
+                         (b.valid&&b.usb_present?LV_SYMBOL_USB:"");
+    if(strcmp(lv_label_get_text(top_charge),charging))
+      lv_label_set_text(top_charge,charging);
+    lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
+  }
+  printf("[MCX-DIAG v0.7.7] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -912,7 +997,7 @@ static void refresh(lv_timer_t *){
     if(strcmp(lv_label_get_text(objects[i]),values[i]))lv_label_set_text(objects[i],values[i]);
 }
 static void init(){
-  printf("[MCX-DIAG v0.7.6] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.7.7] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -924,18 +1009,25 @@ static void init(){
   lv_obj_t *brand=lv_img_create(top);
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
-  top_wifi=color_label(top,"Wi-Fi: waiting",209,7,167,green);
-  color_label(top,"DEV 0.7.6",390,7,88,orange);
+  // Header retains official 180px SVG-raster brand at x=6..186.
+  // No IP printed in the top bar: IP and SSID remain in Settings / Wi-Fi.
+  top_wifi=color_label(top,LV_SYMBOL_WIFI,207,7,25,muted);
+  top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,241,7,19,muted);
+  color_label(top,"MT",260,10,20,muted);
+  top_mc=color_label(top,LV_SYMBOL_BLUETOOTH,289,7,19,muted);
+  color_label(top,"MC",308,10,20,muted);
+  top_battery=color_label(top,LV_SYMBOL_BATTERY_EMPTY,337,7,24,muted);
+  top_charge=color_label(top,"",357,7,15,muted);
+  top_battery_percent=color_label(top,"--",374,10,35,muted);
+  color_label(top,"DEV 0.7.7",409,7,71,orange);
   left_rail=panel_at(screen,0,34,79,286,panel,0);
   right_rail=panel_at(screen,355,34,125,286,panel,0);
-  left_handle=action_button(left_rail,"",47,4,29,30,panel2,toggle_left,0);
-  right_handle=action_button(right_rail,LV_SYMBOL_RIGHT,2,5,25,30,panel2,toggle_right,0);
   for(int i=0;i<6;i++){
-    tabs[i]=action_button(left_rail,"",3,40+i*40,73,38,panel2,on_nav,i);
+    tabs[i]=action_button(left_rail,"",3,7+i*45,73,38,panel2,on_nav,i);
     single_label(tabs[i],tab_names[i],0,19,73,white);
     make_nav_vector(i);
   }
-  context_actions=panel_at(right_rail,0,39,125,247,panel,0);
+  context_actions=panel_at(right_rail,0,0,125,286,panel,0);
   // The Map context has more actions than fit vertically; allow finger scrolling.
   lv_obj_add_flag(context_actions,LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_set_scroll_dir(context_actions,LV_DIR_VER);
@@ -945,6 +1037,8 @@ static void init(){
   lv_obj_set_scroll_dir(body,LV_DIR_VER);
   lv_obj_set_scrollbar_mode(body,LV_SCROLLBAR_MODE_AUTO);
   draw();
+  meshpower::start(); // Read-only 15s AXP2101 samples on a background task.
+  lv_timer_create(edge_swipe_poll,20,nullptr);
   lv_timer_create(refresh,3000,nullptr);
   lv_timer_create(mcui::poll,50,nullptr);
 }

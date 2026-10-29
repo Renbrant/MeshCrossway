@@ -43,7 +43,20 @@ static void unknown_and_zwj_stay_atomic() {
   char dst[128];
   const mcxemoji::Report r = mcxemoji::transform(src, strlen(src), dst, sizeof(dst));
   assert(r.emoji_substitutions == 0 && r.unsupported_clusters == 2);
-  assert(strcmp(dst, "A [emoji] B [emoji]") == 0);
+  assert(strcmp(dst, "A $ B $") == 0);
+}
+static void fallback_and_text_only_rendering() {
+  const char source[]="A [emoji] B \U0001F90D C \U0001F9D1 D";
+  char display[96] = {};
+  const mcxemoji::Report r=mcxemoji::transform(source,strlen(source),
+                                                 display,sizeof(display));
+  assert(r.emoji_substitutions==1 && r.unsupported_clusters==2);
+  assert(!contains(display,"[emoji]"));
+  const mcxemoji::Report no_images=mcxemoji::transform(
+    source,strlen(source),display,sizeof(display),false);
+  assert(no_images.emoji_substitutions==0 && no_images.unsupported_clusters==3);
+  assert(strcmp(display,"A $ B $ C $ D")==0);
+  assert(strcmp(source,"A [emoji] B \U0001F90D C \U0001F9D1 D")==0);
 }
 static void keycaps_vs_normal_digits() {
   const char src[] = "No. 1 & #, but \u0031\ufe0f\u20e3 \u0023\ufe0f\u20e3";
@@ -83,7 +96,8 @@ static void no_memory_allocation_or_side_effects() {
 }
 int main() {
   plain_and_accents(); known_single_and_composed(); checkered_flag_in_sender_name(); unknown_and_zwj_stay_atomic();
+  fallback_and_text_only_rendering();
   keycaps_vs_normal_digits(); invalid_utf8_never_overreads();
   truncation_never_splits_utf8(); no_memory_allocation_or_side_effects();
-  printf("emoji presentation: 8 host test groups passed; %zu registry entries\n", mcxemoji::kGlyphCount);
+  printf("emoji presentation: 9 host test groups passed; %zu registry entries\n", mcxemoji::kGlyphCount);
 }

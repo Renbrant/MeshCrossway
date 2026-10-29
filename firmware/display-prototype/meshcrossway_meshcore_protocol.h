@@ -520,7 +520,7 @@ struct Channel {
 };
 enum Delivery : uint8_t { RECEIVED, QUEUED, ACCEPTED, DELIVERED, REJECTED, UNCERTAIN };
 struct Message {
-  uint32_t id = 0, timestamp = 0, ack = 0, ack_deadline = 0;
+  uint32_t id = 0, timestamp = 0, observed_at = 0, ack = 0, ack_deadline = 0;
   bool channel = false, outgoing = false, read = false;
   uint8_t slot = 0, key[6] = {}, signer[4] = {}, type = 0, path = 255;
   int8_t snr = 0;
@@ -695,6 +695,7 @@ public:
     last_timestamp = stamp;
     Message &m = append();
     m.timestamp = stamp;
+    m.observed_at = stamp; // Local send time; does not claim remote delivery.
     m.outgoing = true;
     m.channel = group;
     m.slot = target;
@@ -825,12 +826,17 @@ public:
     char description[600] = {};
     switch (code) {
     case 0:
-      valid = n == 1;
+      // The official Companion protocol allows a 4-byte optional value.
+      // T-Deck and other firmware variants may return the extended form.
+      valid = n == 1 || n == 5;
       snprintf(description, sizeof(description), "Accepted by radio (not a delivery confirmation)");
       break;
     case 1:
-      valid = n >= 2;
-      if (valid)
+      // Error code is optional on the wire; absent code is not malformed.
+      valid = n == 1 || n == 2;
+      if (valid && n == 1)
+        snprintf(description, sizeof(description), "Radio command rejected (error code omitted)");
+      else if (valid)
         snprintf(description, sizeof(description), "Radio error %u: %s", p[1],
                  p[1] == 1   ? "unsupported command"
                  : p[1] == 2 ? "not found"
@@ -927,7 +933,11 @@ public:
               memcpy(m.signer, p + start + meta + 4, 4);
             m.path = p[start + (group ? 1 : 6)];
             m.snr = v3 ? (int8_t)p[1] : 0;
-            m.timestamp = u32(p + start + meta);
+            m.timestamp = u32(p + start + meta); // Sender's clock, unchanged.
+            // Observe time when this packet reaches the BLE-connected client.
+            // If the radio has not supplied a valid Unix clock yet, show --:--.
+            const uint32_t observed = clock >= 1577836800u ? timestamp() : 0u;
+            m.observed_at = observed >= 1577836800u ? observed : 0u;
             string_copy(m.text, sizeof(m.text), p + offset, n - offset);
           }
           waiting_messages = true;
@@ -959,7 +969,8 @@ public:
       }
       break;
     case 13:
-      valid = n >= 4 && p[1] >= 3;
+      // v3+ information requires version, counts and 4-byte BLE PIN field.
+      valid = n >= 8 && p[1] >= 3;
       if (valid) {
         protocol = p[1];
         max_contacts = uint16_t(p[2]) * 2;
@@ -1042,7 +1053,8 @@ public:
       valid = n >= 1 && ((n - 1) % 8) == 0;
       break;
     case 27:
-      valid = n >= 9;
+      // Channel datagram 0x1B has an 8-byte header; payload may be empty.
+      valid = n >= 8;
       if (valid)
         waiting_messages = true;
       break;
@@ -1096,7 +1108,21 @@ public:
     }
     if (!valid) {
       ++invalid;
-      fail("Malformed or unsupported radio response; reconnect");
+      // Never log the frame payload: it can carry private keys, channel
+      // secrets, usernames, GPS locations or confidential messages.
+      // Code/length/protocol are sufficient for a safe compatibility report.
+      char reason[128];
+      if (code == 13 && n >= 2 && p[1] < 3)
+        snprintf(reason, sizeof(reason),
+                 "MeshCore Companion protocol v%u unsupported (need >=3). Update radio firmware.",
+                 (unsigned)p[1]);
+      else
+        snprintf(reason, sizeof(reason),
+                 "MeshCore invalid frame 0x%02X len %u (cmd %u; %s). Check Companion firmware.",
+                 (unsigned)code,(unsigned)n,
+                 (unsigned)(busy ? active.frame.data[0] : 0u),
+                 initialized ? "live" : "sync");
+      fail(reason);
       return false;
     }
     ++generation;

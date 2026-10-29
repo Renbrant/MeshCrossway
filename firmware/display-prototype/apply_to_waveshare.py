@@ -134,7 +134,9 @@ if source.count('meshnetwork::start();') != 1:
 for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",
              "meshcrossway_remote_page.h", "meshcrossway_network.h", "meshcrossway_ble.h", "meshcrossway_meshcore.h",
              "meshcrossway_meshcore_protocol.h", "meshcrossway_meshcore_ui.h",
-             "meshcrossway_device_key.h", "meshcrossway_brand.h"):
+             "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h",
+             "meshcrossway_power_status.h", "meshcrossway_battery_decode.h",
+             "meshcrossway_chat_presentation.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 
@@ -142,7 +144,7 @@ for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_he
 emoji_root = root / "firmware" / "display-prototype" / "emoji"
 emoji_target = project / "main" / "emoji"
 emoji_target.mkdir(parents=True, exist_ok=True)
-for name in ("emoji_presentation.h", "emoji_registry.inc", "emoji_assets_data.h", "emoji_flag_asset.h", "emoji_display.h"):
+for name in ("emoji_presentation.h", "emoji_registry.inc", "emoji_assets_data.h", "emoji_flag_asset.h", "emoji_small_sprite.h", "emoji_display.h"):
     shutil.copy2(emoji_root / name, emoji_target / name)
 
 sdk = project / "sdkconfig.defaults"

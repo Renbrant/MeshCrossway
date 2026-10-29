@@ -93,6 +93,15 @@ build_version() {
   if [ -f "$source_root/scripts/test_emoji.py" ]; then
     python3 "$source_root/scripts/test_emoji.py"
   fi
+  if [ -f "$source_root/scripts/test_edge_swipe.py" ]; then
+    python3 "$source_root/scripts/test_edge_swipe.py"
+  fi
+  if [ -f "$source_root/scripts/test_battery_decode.py" ]; then
+    python3 "$source_root/scripts/test_battery_decode.py"
+  fi
+  if [ -f "$source_root/scripts/test_chat_presentation.py" ]; then
+    python3 "$source_root/scripts/test_chat_presentation.py"
+  fi
   prepare_waveshare
   if [ -f "$source_root/scripts/test_ble_pairing_ui.py" ]; then
     python3 "$source_root/scripts/test_ble_pairing_ui.py" \

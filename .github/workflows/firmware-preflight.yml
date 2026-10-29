@@ -13,6 +13,13 @@ on:
       - "scripts/test_ble_sdkconfig.py"
       - "scripts/test_ble_pairing_ui.py"
       - "scripts/test_meshcore.py"
+      - "scripts/test_edge_swipe.py"
+      - "scripts/test_battery_decode.py"
+      - "scripts/test_chat_presentation.py"
+      - "tests/test_chat_presentation.cpp"
+      - "tests/test_emoji_sprite.cpp"
+      - "tests/test_battery_decode.cpp"
+      - "tests/test_edge_swipe.cpp"
       - "tests/meshcore_protocol_test.cpp"
       - "scripts/restore_reviewed_firmware.py"
       - "scripts/ci_change_scope.py"
@@ -34,6 +41,13 @@ on:
       - "scripts/test_ble_sdkconfig.py"
       - "scripts/test_ble_pairing_ui.py"
       - "scripts/test_meshcore.py"
+      - "scripts/test_edge_swipe.py"
+      - "scripts/test_battery_decode.py"
+      - "scripts/test_chat_presentation.py"
+      - "tests/test_chat_presentation.cpp"
+      - "tests/test_emoji_sprite.cpp"
+      - "tests/test_battery_decode.cpp"
+      - "tests/test_edge_swipe.cpp"
       - "tests/meshcore_protocol_test.cpp"
       - "scripts/restore_reviewed_firmware.py"
       - "scripts/ci_change_scope.py"
@@ -80,6 +94,9 @@ jobs:
           python3 scripts/test_ble_sdkconfig.py
           python3 scripts/test_meshcore.py
           python3 scripts/test_emoji.py
+          python3 scripts/test_edge_swipe.py
+          python3 scripts/test_battery_decode.py
+          python3 scripts/test_chat_presentation.py
           python3 scripts/test_device_key_audit.py
           python3 scripts/test_ci_change_scope.py
           python3 scripts/preflight_firmware_catalog.py

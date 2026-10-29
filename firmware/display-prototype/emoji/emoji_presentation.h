@@ -137,12 +137,19 @@ inline const EmojiGlyph *lookup(const char *src, size_t length) {
   return nullptr;
 }
 
-inline Report transform(const char *src, size_t src_len, char *dst, size_t dst_cap) {
+inline Report transform(const char *src, size_t src_len, char *dst, size_t dst_cap,
+                        bool image_font_available = true) {
   Report r = {0, 0, 0, 0, false};
   if (!dst || !dst_cap) { r.truncated = true; return r; }
   dst[0] = 0;
   if (!src && src_len) { r.invalid_bytes = src_len; return r; }
   for (size_t pos = 0; pos < src_len;) {
+    // Some old clients send a literal [emoji] placeholder; on-screen only.
+    if (src_len - pos >= 7 && !memcmp(src + pos, "[emoji]", 7)) {
+      if (!append(dst, dst_cap, r.bytes_written, "$", 1)) { r.truncated = true; break; }
+      ++r.unsupported_clusters; pos += 7;
+      continue;
+    }
     size_t width; uint32_t cp;
     if (!decode(src, src_len, pos, cp, width)) {
       const char replacement[] = "?";
@@ -153,12 +160,12 @@ inline Report transform(const char *src, size_t src_len, char *dst, size_t dst_c
     const size_t cluster = cluster_length(src, src_len, pos);
     if (cluster) {
       const EmojiGlyph *glyph = lookup(src + pos, cluster);
-      if (glyph) {
+      if (glyph && image_font_available) {
         char pua[4]; const size_t pua_len = encode(glyph->private_use, pua);
         if (!append(dst, dst_cap, r.bytes_written, pua, pua_len)) { r.truncated = true; break; }
         ++r.emoji_substitutions;
       } else {
-        const char fallback[] = "[emoji]";
+        const char fallback[] = "$";
         if (!append(dst, dst_cap, r.bytes_written, fallback, sizeof(fallback) - 1)) {
           r.truncated = true; break;
         }
