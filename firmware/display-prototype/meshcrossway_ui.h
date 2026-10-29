@@ -500,7 +500,9 @@ static void edge_swipe_poll(lv_timer_t *){
   }
   if(!swipe_pointer)return;
   lv_point_t point={};lv_indev_get_point(swipe_pointer,&point);
-  const bool pressed=lv_indev_get_state(swipe_pointer)==LV_INDEV_STATE_PRESSED;
+  // ESP-IDF's pinned LVGL 8.4 has no lv_indev_get_state() API (LVGL 9 only).
+  // The v8 public lv_hal_indev.h exposes the current state in proc.state.
+  const bool pressed=swipe_pointer->proc.state==LV_INDEV_STATE_PRESSED;
   const bool modal=wifi_dialog||wifi_editor||ble_dialog||info_dialog||shade;
   const int lw=has_left_rail()?(left_compact?40:79):0;
   const int rw=has_context_rail()?(right_compact?40:125):0;
