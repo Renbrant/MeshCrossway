@@ -34,6 +34,7 @@
 </div>
 <div id="version-warning" class="warning-panel" hidden><b id="warning-title">EXPERIMENTAL / NOT TESTED.</b> <span id="warning-text">This firmware has not been physically validated. Use a tested version for normal operation.</span></div>
 <label id="verify-risk" hidden><input id="allow-unstable" type="checkbox">I understand this build is experimental or has known issues and want to install it anyway.</label>
+<p class="note"><b>Preserve Wi-Fi and Bluetooth pairing:</b> when ESP Web Tools asks "Erase device", leave the checkbox <b>UNCHECKED</b>. Erasing deletes the device NVS (saved Wi-Fi and Bluetooth bond keys). Full erase is only for an intentional factory reset.</p>
 <p id="build-message" role="status">Checking available firmware versions...</p>
 <div id="installer" hidden></div>
 <p class="note" id="build-version"></p>
@@ -43,7 +44,7 @@
 <div class="step">Connect the Waveshare Rev2.0 display to your computer with a USB data cable. Leave the computer on its normal Wi-Fi network.</div>
 <div class="step">Select <b>v0.6.8 — hardware-tested</b> for rollback after an experimental build. Older versions are no longer listed in the Web Flasher.</div>
 <div class="step">If the USB serial port is unavailable because the new firmware keeps restarting, enter ESP32-S3 download mode using the board's <b>BOOT</b> and <b>RESET</b> controls, then retry connecting.</div>
-<div class="step">From v0.5.8, installation without Erase preserves internal Wi-Fi/settings. Older merged installers can overwrite settings even without Erase. An SD Wi-Fi backup is plaintext and should be created before erasing. For a clean downgrade, you can choose <b>Erase device</b> in the installer. This will also erase saved Wi-Fi credentials and other settings.</div>
+<div class="step">Always leave the <b>Erase device</b> checkbox <b>unchecked</b> for normal updates. An erase resets NVS and deletes saved Wi-Fi and BLE bonds. From v0.5.8, the split image writes bootloader, partition table and application without targeting NVS. Older merged installers can overwrite settings even without Erase. An SD Wi-Fi backup is plaintext and should be created before erasing. For a clean downgrade, you can choose <b>Erase device</b> in the installer. This will also erase saved Wi-Fi credentials and other settings.</div>
 </div>
 <div class="notice"><b>Target limitation:</b> these images are for the Waveshare ESP32-S3-Touch-LCD-3.5 <b>non-B, Rev2.0</b> display. Do not flash a XIAO radio module or a Waveshare 3.5B with this image. Firmware installation may overwrite data.</div>
 <h2>How versions are maintained</h2>
@@ -126,6 +127,8 @@
       const manifestResponse=await fetch(entry.manifest+'?check='+Date.now(),{cache:'no-store'});
       if(!manifestResponse.ok) throw Error('Version manifest not published');
       const manifest=await manifestResponse.json();
+      if(manifest.new_install_prompt_erase!==true)
+        throw Error("Unsafe manifest: erase choice missing. Installation blocked to protect saved settings.");
       if(manifest.version!==entry.version ||
          !manifest.builds?.some(b=>b.chipFamily==='ESP32-S3' &&
            ((b.parts?.length===1 && b.parts[0].path==='meshcrossway-display-dev.bin' && b.parts[0].offset===0) ||
