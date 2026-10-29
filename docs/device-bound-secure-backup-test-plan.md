@@ -1,6 +1,6 @@
-# v0.7.4 — secure backup verification matrix (gates, no eFuse writes in this PR)
+# future version (TBD) — secure backup verification matrix (gates, no eFuse writes in this PR)
 
-This file provides an executable acceptance checklist for the separate design at [device-bound-secure-backup-v074.md](device-bound-secure-backup-v074.md). Pass/fail fields are deliberately **not marked passed**: no physical Core has been inspected or provisioned under this proposal.
+This file provides an executable acceptance checklist for the separate design at [device-bound-secure-backup-plan.md](device-bound-secure-backup-plan.md). Pass/fail fields are deliberately **not marked passed**: no physical Core has been inspected or provisioned under this proposal.
 
 ## Gate 0 — non-destructive inventory
 
@@ -61,7 +61,7 @@ This file provides an executable acceptance checklist for the separate design at
 - [ ] Erase-device explicit selection still present; installing without erase preserves NVS.
 - [ ] Restoring after erase involves no outgoing LoRa messages or automatic message replays.
 - [ ] No secrets in GitHub Actions artifacts, serial logs, HTTP pages, screenshots or diagnostic exports.
-- [ ] Physical Core evidence available before announcing "v0.7.4 functional", with reversible rollback to immutable owner-tested v0.6.8.
+- [ ] Physical Core evidence available before announcing "future version (TBD) functional", with reversible rollback to immutable owner-tested v0.6.8.
 
 ## Gate 5 — threat/UX disclosures
 

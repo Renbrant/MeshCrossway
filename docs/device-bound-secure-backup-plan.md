@@ -1,4 +1,4 @@
-# v0.7.4 — Device-Bound Secure BLE Backup (design and implementation plan)
+# future version (TBD) — Device-Bound Secure BLE Backup (design and implementation plan)
 
 **Status:** proposed/design-only. No runtime firmware changes, no eFuse write, no bootloader/partition modifications, no change to the Web Flasher. This document is an engineering specification and checklist, **not** a claim that secure backup is already functional. Target: Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0 non-B, ESP-IDF **5.3.2**, LVGL 8.x, NimBLE Central.
 
@@ -14,7 +14,7 @@ This is **not** cross-network messaging, a bridge or relay between Meshtastic an
 - `firmware/display-prototype/meshcrossway_backup.h`: existing **plaintext Wi-Fi JSON** at `/sdcard/meshcrossway-wifi.json`; its own worker, .tmp/.bak rotation, `fflush/fsync`, FAT32 mounted through `esp_sdcard_port_init()`. Must remain separate: do not claim entire SD is encrypted and do not overwrite this file.
 - `firmware/display-prototype/meshcrossway_network.h`: starts Wi-Fi and mounts the SD via the existing backup. Verify init sequencing before adding secure restoration; avoid duplicate mounts, races or access from LVGL callbacks.
 - `scripts/write_firmware_version.py`, `scripts/write_firmware_catalog.py` and `docs/site/flasher/index.html`: split images from v0.5.8 preserve NVS when Erase is **unchecked**, and the recent hotfix restores an explicit erase prompt. Never silently erase NVS while testing.
-- `firmware/display-prototype/VERSION` is currently v0.7.1; v0.6.8 is the owner-tested rollback. **This design PR must not bump VERSION or publish v0.7.4 until real implementation and evidence exist.**
+- `firmware/display-prototype/VERSION` is currently v0.7.1; v0.6.8 is the owner-tested rollback. **This design PR must not bump VERSION or publish future version (TBD) until real implementation and evidence exist.**
 
 ## 2. Root of trust: eFuse instead of MAC/serial
 
@@ -68,7 +68,7 @@ Settings > Security & Backups (proposed within existing More UI, not app store):
 | C. BLE store adapter | Implement typed export/import behind feature gate, including local/peer privacy material | Reconnect after NVS-clear on disposable test board, all records consistent |
 | D. eFuse provisioning | Explicit irreversible one-time provisioning on disposable test board first; later owner-approved Core | Read/write protection and HMAC; no automatic burn; secure logs |
 | E. SD durability/UI | Async atomic journal, encryption, restore order, UI states | Power-loss/corruption tests pass without breaking Wi-Fi or touchscreen |
-| F. Physical acceptance and publication | Battery/SD/BLE restart and erase/reflash matrix, review CI + artifacts | Owner hardware confirms MC bond reuse; only then enable production/release v0.7.4 |
+| F. Physical acceptance and publication | Battery/SD/BLE restart and erase/reflash matrix, review CI + artifacts | Owner hardware confirms MC bond reuse; only then enable production/release future version (TBD) |
 
 ## 8. Hardware answers still needed, not guessed
 
