@@ -19,6 +19,9 @@ try:
     assert manifest["version"]==a.version
     assert info["version"]==a.version
     assert manifest["builds"][0]["chipFamily"]=="ESP32-S3"
+    # Historical stable archives can carry false before safe publication rewrite.
+    # Final deploy verification requires true (see preflight_firmware_catalog.py).
+    assert isinstance(manifest.get("new_install_prompt_erase"),bool)
     data=image.read_bytes()
     if tuple(map(int,a.version[1:].split('.'))) >= (0,5,8):
         expected=[("bootloader.bin",0,0x8000),("partition-table.bin",0x8000,0x9000),("application.bin",0x10000,len(data))]
