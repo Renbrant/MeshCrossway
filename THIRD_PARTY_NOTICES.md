@@ -11,6 +11,11 @@ MeshCrossway's [MIT license](LICENSE) covers its original code and documentation
 
 This is an initial source-level notice collection, **not a complete notice bundle for any published firmware binary**. Review exact resolved components, file-level copyright notices and upstream NOTICE files before redistribution. Track incomplete work in the [dependency review](docs/third-party-licenses.md#open-review-items).
 
+## Emoji artwork (read-only message rendering)
+
+- **Noto Color Emoji** (Google Inc. and contributors): glyphs were rasterized from the locally installed `NotoColorEmoji.ttf`, resized to 20×20 and quantized into 16-color per-glyph images; only derived bitmap data is bundled, **not the font file**. Upstream project: https://github.com/googlefonts/noto-emoji. The Noto Color Emoji font software is licensed under **SIL Open Font License 1.1**. [License and copyright](LICENSES/NotoEmoji-OFL-1.1.txt). Rasterization and palette reduction are MeshCrossway adaptations; this does not claim the bitmaps are original emoji artwork or endorsed by Google.
+- The initial set contains **92** sequences (including common multi-codepoint emoji); unrecognized sequences become readable text placeholders in the message display. The original UTF-8 payload is unchanged.
+
 ## Independent firmware and assets
 
 Meshtastic and MeshCore native firmware keep their upstream licenses. Communication through BLE does not transfer their ownership or license to MeshCrossway, nor does it remove obligations when distributing those binaries.
