@@ -969,7 +969,8 @@ public:
       }
       break;
     case 13:
-      valid = n >= 4 && p[1] >= 3;
+      // v3+ information requires version, counts and 4-byte BLE PIN field.
+      valid = n >= 8 && p[1] >= 3;
       if (valid) {
         protocol = p[1];
         max_contacts = uint16_t(p[2]) * 2;
@@ -1113,7 +1114,7 @@ public:
       char reason[128];
       if (code == 13 && n >= 2 && p[1] < 3)
         snprintf(reason, sizeof(reason),
-                 "MeshCore Companion protocol v%u unsupported (need >=3). Update T-Deck Companion.",
+                 "MeshCore Companion protocol v%u unsupported (need >=3). Update radio firmware.",
                  (unsigned)p[1]);
       else
         snprintf(reason, sizeof(reason),
