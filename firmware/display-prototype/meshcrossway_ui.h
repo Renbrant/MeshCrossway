@@ -4,6 +4,7 @@
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_ble.h"
+#include "emoji/emoji_display.h"
 #include "esp_system.h"
 #include "esp_timer.h"
 #include <stdint.h>
