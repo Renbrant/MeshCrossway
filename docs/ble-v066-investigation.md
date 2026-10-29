@@ -22,7 +22,9 @@ Verified source findings:
   code and a full backtrace: DMA exhaustion remains a hypothesis.**
 
 The candidate reserves two 4,800-pixel DMA draw buffers at boot (9,600 bytes each)
-and matches SPI max-transfer size in **bytes**. PSRAM remains enabled for the UI,
+and matches SPI max-transfer size in **bytes**. A two-pixel area rounder keeps
+RGB565 lengths divisible by four, preventing odd pixel rectangles from requiring
+a temporary DMA copy. The audited esp_lvgl_port version is pinned to 2.9.0. PSRAM remains enabled for the UI,
 manual capture and other allocations. Rotation, touch and interface layout remain
 unchanged. `trans_size=0` keeps one completion per flush, avoiding reliance on
 upstream chunked PSRAM handling discussed in Espressif BSP issue 716.

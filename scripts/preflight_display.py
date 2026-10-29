@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Offline safety checks before the ESP-IDF compile/deploy stages."""
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -66,6 +67,7 @@ void app(){
         lcd_fixture.parent.mkdir(parents=True,exist_ok=True)
         lcd_fixture.write_text('#define EXAMPLE_LCD_PIXEL_CLOCK_HZ (80 * 1000 * 1000)\\n'
                                'io_config.trans_queue_depth = 10;\\n')
+        (main.parent / "idf_component.yml").write_text('dependencies:\n  espressif/esp_lvgl_port: "^2.5.0"\n')
         panel_fixture=example/"components"/"esp_lcd_st7796"/"esp_lcd_st7796.c"
         panel_fixture.parent.mkdir(parents=True,exist_ok=True)
         panel_fixture.write_text('    esp_lcd_panel_io_tx_color(io, LCD_CMD_RAMWR, color_data, len);\n')
@@ -79,6 +81,7 @@ void app(){
         output = main.read_text()
         patched_lcd = lcd_fixture.read_text()
         patched_panel = panel_fixture.read_text()
+        patched_manifest = (main.parent / 'idf_component.yml').read_text()
         patched_sdkconfig = (example / "sdkconfig.defaults").read_text()
         if version in ("v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7", "v0.5.8", "v0.5.9", "v0.5.10", "v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.6.6"):
             if (output.count("meshnetwork::start();") != 1 or output.count("meshcrossway::init();") != 1 or "meshremote::start();" in output or "meshremote::register_input();" in output):
@@ -108,6 +111,35 @@ if errors:
     for message in errors:
         print(" -", message)
     sys.exit(1)
+# Compile the actual generated rounder, then check every horizontal rectangle.
+# This catches DMA alignment regressions without asserting a copy of its formula.
+rounder = re.search(r'display_cfg\.rounder_cb = (\[\]\(lv_area_t \*area\) \{.*?\});', output, re.S)
+assert rounder, "Missing generated DMA area rounder"
+with tempfile.TemporaryDirectory() as temp:
+    source = Path(temp) / 'rounder.cpp'
+    binary = Path(temp) / 'rounder'
+    source.write_text('''#include <cassert>
+#include <cstdint>
+struct lv_area_t { int16_t x1, y1, x2, y2; };
+int main() {
+    auto rounder = ''' + rounder.group(1) + ';\n' + '''
+    for (int left=0; left<480; ++left) {
+        for (int right=left; right<480; ++right) {
+            lv_area_t area={(int16_t)left, 1, (int16_t)right, 10};
+            rounder(&area);
+            assert(area.x1>=0 && area.x2<480);
+            assert(area.x1<=left && area.x2>=right);
+            assert(area.y1==1 && area.y2==10);
+            for(int height=1; height<=10; ++height)
+                assert(((area.x2-area.x1+1)*height*2)%4==0);
+        }
+    }
+}
+''')
+    subprocess.run(['c++', '-std=c++17', str(source), '-o', str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)
+print("PASS: compiled DMA rounder preserves geometry and aligns all 115440 horizontal rectangles")
+
 print("Preflight PASS: version, C++ source patterns, JS syntax, patcher syntax and idempotence")
 
 if version in ("v0.5.7","v0.5.8","v0.5.9","v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.6.6"):
@@ -188,6 +220,8 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.6.6"):
         assert '#define LCD_BUFFER_SIZE (EXAMPLE_LCD_H_RES * 10)' in output
         assert '.buff_dma = 1,' in output and '.buff_spiram = 0,' in output
         assert 'assert(lvgl_disp != nullptr);' in output
+        assert 'display_cfg.rounder_cb = [](lv_area_t *area)' in output
+        assert 'espressif/esp_lvgl_port: "2.9.0"' in patched_manifest
         assert 'ESP_ERROR_CHECK(color_result);' in patched_panel
         assert 'CONFIG_ESP_WIFI_TASK_CORE_ID=' not in patched_sdkconfig
     # Approved simulator v5: independent collapsible left/right rails and shade.

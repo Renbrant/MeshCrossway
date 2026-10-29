@@ -43,7 +43,10 @@ replacements = {
     '.buff_dma = 0,': '.buff_dma = 1,',
     '.buff_spiram = 1,': '.buff_spiram = 0,',
     'lvgl_disp = lvgl_port_add_disp(&display_cfg);':
-        'lvgl_disp = lvgl_port_add_disp(&display_cfg);\n'
+        'display_cfg.rounder_cb = [](lv_area_t *area) {\n'
+        '        area->x1 &= ~1; area->x2 |= 1; // RGB565 transfers stay 4-byte aligned.\n'
+        '    };\n'
+        '    lvgl_disp = lvgl_port_add_disp(&display_cfg);\n'
         '    assert(lvgl_disp != nullptr);\n'
         '    printf("[MCX-LCD] reserved DMA draw buffers: 2 x %u bytes; trans_size=0\\n",\n'
         '           (unsigned)(LCD_BUFFER_SIZE * sizeof(lv_color_t)));',
@@ -67,6 +70,17 @@ if 'port_cfg.task_affinity = 1;' not in source:
                             lvgl_core_marker + '\n    port_cfg.task_affinity = 1;'
                             + '\n    printf("[MCX-LCD] LVGL task pinned to CPU1\\n");',1)
     main.write_text(source)
+
+# Match the resolved component audited in the successful v0.6.5 build and
+# guarantee the rounder_cb API (introduced after the BSP's ^2.5.0 minimum).
+component_manifest = main.parent / "idf_component.yml"
+manifest = component_manifest.read_text()
+old_port = 'espressif/esp_lvgl_port: "^2.5.0"'
+new_port = 'espressif/esp_lvgl_port: "2.9.0"'
+if new_port not in manifest:
+    if manifest.count(old_port) != 1:
+        sys.exit('Unsupported upstream LVGL port dependency')
+    component_manifest.write_text(manifest.replace(old_port, new_port, 1))
 
 lcd_driver = project / "components" / "esp_port" / "esp_3inch5_lcd_port.cpp"
 if not lcd_driver.is_file():
