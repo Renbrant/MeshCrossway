@@ -18,6 +18,7 @@
 
 - Left rail toggles 40px icon-only ↔ 79px labeled mode. Home no longer hides icons and the compact setting is consistent when changing pages.
 - Right rail toggles 40px icon-only ↔ 125px labeled mode; action buttons **remain visible and clickable** when minimized. All seven Map actions can be reached with vertical scrolling without obstructing the display. No empty right handle/strip on pages without contextual actions.
+- Chat Compose and Tools are **only** on the right rail, not duplicated above each conversation. The message list begins higher up. Chat info opens actual contact details (or safe channel metadata for group chats), not another copy of Tools.
 - Settings has a clearly visible **HOME** exit button; its Radios detail has a **SETTINGS** return. Main actions: Wi-Fi Networks, Bluetooth / Radios, Remote View (read-only), Device Diagnostics (including read-only eFuse audit), Privacy, About.
 - The upper application bar uses the **actual official mountain logo and traced wordmark**, rasterized from `docs/site/assets/meshcrossway-logo.svg` to a 180×24 indexed-4 LVGL image. The letterforms are not approximated by a generic font. The existing Wi-Fi status and version remain visible and the bar still opens Quick Settings.
 - Rendering-only/layout change: does not change mesh messages, MeshCore pairing, Meshtastic independence, Wi-Fi profiles, flash partitions, eFuses, SD data or Web Flasher erase handling.
@@ -27,7 +28,7 @@
 1. Boot v0.7.6 without checking Erase; verify both the mountain symbol and custom MeshCrossway wordmark at the top, with Wi-Fi IP and DEV 0.7.6 visible and no overlap.
 2. On Home confirm the compact **left rail displays all six icons**. Open and collapse it; all icons remain visible and clickable, including More.
 3. On Nodes and Groups check All / MT / MC filters work and **there is no duplicate right sidebar**. The main list grows to fill the space.
-4. On Chat: right bar starts compact with **Compose, Chat tools and Info icons** visible. Toggle expanded/collapsed and tap every icon. Verify messages are not hidden, sent, converted or replayed unexpectedly.
+4. On Chat: right bar starts compact with **Compose, Chat tools and Info icons** visible. The center no longer repeats Compose/Tools. Toggle expanded/collapsed, open contact details and a channel's info; verify actions match the selected conversation and messages are not hidden, sent, converted or replayed unexpectedly.
 5. On Map: verify all 7 actions show accessible icons when compact (scroll if needed); expanded labels match actions; content changes modes while GNSS / map remain clearly demo-only.
 6. On Settings: no left or right rails. Verify two balanced status cards and six touch actions, HOME exit works, Bluetooth / Radios opens full-width with SETTINGS return and BLE scanning/pairing remains functional.
 7. Open and close Quick Settings from the header, Wi-Fi password editor, BLE PIN keyboard, diagnostics modal and read-only remote screenshot. Verify no clipping, scroll corruption, missing touch targets or watchdog stalls.
