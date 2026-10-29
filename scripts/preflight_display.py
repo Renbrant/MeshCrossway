@@ -226,6 +226,12 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2"):
         assert "save_remembered()" in ble and "read_remembered()" in ble
         assert "scan(true)" in ble and "auto_paused.store(true)" in ble
         assert "[MCX-MEM]" in ble
+        if version=="v0.7.2":
+            wifi=(FW/"meshcrossway_network.h").read_text()
+            assert all(marker in wifi for marker in ("MAX_PROFILES=5","remember_success(","known_network(","try_saved(","next_saved(","RETRY_KNOWN","WIFI_VAULT_MAGIC","60000000ULL","suppress_user_leave"))
+            assert "meshble::schedule_auto_resume();" in output
+            assert "matching_remembered(" in ble and "read_remembered()" in ble
+            assert "auto_resume_task" in ble and "auto_paused.store(true)" in ble
         assert '#define LCD_BUFFER_SIZE (EXAMPLE_LCD_H_RES * 10)' in output
         assert '.buff_dma = 1,' in output and '.buff_spiram = 0,' in output
         assert 'assert(lvgl_disp != nullptr);' in output
