@@ -1,4 +1,5 @@
 #pragma once
+#include "meshcrossway_chat_presentation.h" // Also included by standalone pairing host fixture.
 // Included inside meshcrossway after the shared LVGL helpers. All callbacks stay on LVGL thread.
 namespace mcui {
 static lv_obj_t *dialog = nullptr, *scroller = nullptr, *feedback = nullptr, *editor = nullptr,
