@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.7.0 - BLE remains OFF during boot; explicit staged initialization.
+// MeshCrossway v0.7.1 - BLE remains OFF during boot; explicit staged initialization.
 // PIN-authenticated MeshCore Companion transport; Meshtastic remains discovery-only.
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
@@ -39,6 +39,7 @@ struct Snapshot {
   bool confirm_required;
   uint32_t compare_number;
   bool paired;
+  bool bonded;
   uint32_t generation;
   char status[64];
   char active_name[29];
@@ -123,7 +124,7 @@ static void connect(int index){
   (void)ble_gap_disc_cancel();
   identified=UNKNOWN;mc_start=mc_end=mc_rx=mc_tx=mc_cccd=0;mc_transport_started=false;meshmc::transport_down();
   portENTER_CRITICAL(&mux);
-  state.selected=index;state.radio=UNKNOWN;state.paired=false;
+  state.selected=index;state.radio=UNKNOWN;state.paired=false;state.bonded=false;
   state.pin_required=false;state.confirm_required=false;
   snprintf(state.active_name,sizeof(state.active_name),"%s",found.peers[index].name);
   portEXIT_CRITICAL(&mux);
@@ -331,13 +332,14 @@ static int gap_event(struct ble_gap_event *event,void *){
     case BLE_GAP_EVENT_ENC_CHANGE:
       if(event->enc_change.status==0){
         portENTER_CRITICAL(&mux);
-        state.paired=true;state.pin_required=false;state.confirm_required=false;
+        state.paired=true;state.bonded=false;state.pin_required=false;state.confirm_required=false;
         state.generation++;
         portEXIT_CRITICAL(&mux);
         struct ble_gap_conn_desc desc={};
         if(ble_gap_conn_find(conn,&desc)||!desc.sec_state.encrypted||!desc.sec_state.authenticated){
           transport_failure("Authenticated BLE link required");return 0;
         }
+        portENTER_CRITICAL(&mux);state.bonded=desc.sec_state.bonded;state.generation++;portEXIT_CRITICAL(&mux);
         if(identified==MESHCORE)start_meshcore();
         else update(READY,"BLE secure link / GATT verified");
       }else{
@@ -350,7 +352,7 @@ static int gap_event(struct ble_gap_event *event,void *){
       conn=BLE_HS_CONN_HANDLE_NONE;mc_transport_started=false;meshmc::transport_down();
       const Phase before=snapshot().phase;
       portENTER_CRITICAL(&mux);
-      state.paired=false;state.pin_required=false;state.confirm_required=false;
+      state.paired=false;state.bonded=false;state.pin_required=false;state.confirm_required=false;
       state.generation++;
       portEXIT_CRITICAL(&mux);
       if(before!=FAILED)update(IDLE,"Radio disconnected");
@@ -396,6 +398,8 @@ static void start_internal(){
   ble_hs_cfg.sm_bonding=1;
   ble_hs_cfg.sm_mitm=1;
   ble_hs_cfg.sm_sc=1;
+  ble_hs_cfg.sm_our_key_dist=BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
+  ble_hs_cfg.sm_their_key_dist=BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID;
   (void)ble_svc_gap_device_name_set("MeshCrossway");
   ble_store_config_init();
   debug_memory("before host task");
