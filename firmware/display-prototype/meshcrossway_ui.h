@@ -7,6 +7,7 @@
 #include "meshcrossway_device_key.h"
 #include "meshcrossway_brand.h"
 #include "meshcrossway_edge_swipe.h"
+#include "meshcrossway_power_status.h"
 #include "emoji/emoji_display.h"
 #define MCX_EMOJI_RENDER_ENABLED 1
 #include "esp_system.h"
@@ -253,7 +254,8 @@ static void wifi_setup(lv_event_t *){
 // Left navigation and contextual right drawer can be independently collapsed.
 // Keep Wi-Fi provisioning and the manual screen viewer independent of UI rebuilds.
 static lv_obj_t *left_rail=nullptr,*right_rail=nullptr,*context_actions=nullptr;
-static lv_obj_t *top_wifi=nullptr;
+static lv_obj_t *top_wifi=nullptr,*top_mt=nullptr,*top_mc=nullptr;
+static lv_obj_t *top_battery=nullptr,*top_charge=nullptr,*top_battery_percent=nullptr;
 static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
 static bool left_compact=true,right_compact=true;
 static int nodes_filter=0,groups_filter=0,active_thread=-1,more_view=0;
@@ -292,7 +294,7 @@ static const ActionInfo map_actions[]={
 static void draw(); // Forward-declared above Wi-Fi editor callbacks.
 static bool edge_swipe_click_in_progress();
 static bool has_context_rail(){return page==3||page==4;}
-static bool has_left_rail(){return page!=5;}
+static bool has_left_rail(){return true;} // Main navigation never disappears, even in Settings / Radios.
 static int content_width(){return 480-(has_left_rail()?(left_compact?40:79):0)
                                    -(has_context_rail()?(right_compact?40:125):0);}
 // Keep labels one line high: wrapping formerly overlapped adjacent touch targets.
@@ -691,8 +693,10 @@ static void rebuild_context(){
                                    4,y,right_compact?32:111,38,
                                    selected?orange:panel2,on_action,(intptr_t)id);
     lv_obj_set_style_border_width(button,selected?0:1,0);
-    lv_obj_set_style_border_color(button,choices[i].color,0);
-    if(selected)lv_obj_set_style_text_color(lv_obj_get_child(button,0),bg,0);
+    // Match the left primary navigation palette: orange icons on dark panels,
+    // dark glyph on orange for the selected action.
+    lv_obj_set_style_border_color(button,orange,0);
+    lv_obj_set_style_text_color(lv_obj_get_child(button,0),selected?bg:orange,0);
     y+=41;
   }
 }
@@ -931,10 +935,45 @@ static void refresh(lv_timer_t *){
     snprintf(backup,sizeof(backup),"SD backup: %s",detail);
     if(strcmp(lv_label_get_text(wifi_sd_status),backup))lv_label_set_text(wifi_sd_status,backup);
   }
-  if(top_wifi){
-    char ip[16],state[30];meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
-    char label[54];snprintf(label,sizeof(label),"Wi-Fi: %s",ip[0]?ip:state);
-    if(strcmp(lv_label_get_text(top_wifi),label)!=0)lv_label_set_text(top_wifi,label);
+  // Compact status bar: real Wi-Fi STA IP state and actual current BLE
+  // GATT identity. The current radio adapter has ONE active BLE session.
+  if(top_wifi&&top_mt&&top_mc){
+    char ip[16]={},state[30]={};
+    meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
+    const bool wifi_online=ip[0]!=0;
+    const bool mt_online=bs.phase==meshble::READY &&
+                         bs.radio==meshble::MESHTASTIC;
+    const bool mc_online=bs.phase==meshble::READY &&
+                         bs.radio==meshble::MESHCORE && mcui::ready();
+    lv_obj_set_style_text_color(top_wifi,wifi_online?green:muted,0);
+    lv_obj_set_style_text_color(top_mt,mt_online?orange:muted,0);
+    lv_obj_set_style_text_color(top_mc,mc_online?orange:muted,0);
+  }
+  // Read-only PMU worker publishes atomic snapshots; LVGL never performs I2C.
+  if(top_battery&&top_charge&&top_battery_percent){
+    const mcxbattery::Reading b=meshpower::snapshot();
+    const bool have_level=b.valid&&b.battery_present&&b.percent<=100;
+    const char *icon=LV_SYMBOL_BATTERY_EMPTY;
+    if(have_level){
+      icon=b.percent>=90?LV_SYMBOL_BATTERY_FULL:
+           b.percent>=65?LV_SYMBOL_BATTERY_3:
+           b.percent>=40?LV_SYMBOL_BATTERY_2:
+           b.percent>=15?LV_SYMBOL_BATTERY_1:LV_SYMBOL_BATTERY_EMPTY;
+    }
+    if(strcmp(lv_label_get_text(top_battery),icon))lv_label_set_text(top_battery,icon);
+    char percent[8];
+    if(have_level)snprintf(percent,sizeof(percent),"%u%%",(unsigned)b.percent);
+    else snprintf(percent,sizeof(percent),"--");
+    if(strcmp(lv_label_get_text(top_battery_percent),percent))
+      lv_label_set_text(top_battery_percent,percent);
+    lv_obj_set_style_text_color(top_battery,have_level?
+      (b.percent<=15?red:green):muted,0);
+    lv_obj_set_style_text_color(top_battery_percent,have_level?white:muted,0);
+    const char *charging=b.charging?LV_SYMBOL_CHARGE:
+                         (b.valid&&b.usb_present?LV_SYMBOL_USB:"");
+    if(strcmp(lv_label_get_text(top_charge),charging))
+      lv_label_set_text(top_charge,charging);
+    lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
   printf("[MCX-DIAG v0.7.7] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
@@ -968,8 +1007,17 @@ static void init(){
   lv_obj_t *brand=lv_img_create(top);
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
-  top_wifi=color_label(top,"Wi-Fi: waiting",209,7,167,green);
-  color_label(top,"DEV 0.7.7",390,7,88,orange);
+  // Header retains official 180px SVG-raster brand at x=6..186.
+  // No IP printed in the top bar: IP and SSID remain in Settings / Wi-Fi.
+  top_wifi=color_label(top,LV_SYMBOL_WIFI,207,7,25,muted);
+  top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,241,7,19,muted);
+  color_label(top,"MT",260,10,20,muted);
+  top_mc=color_label(top,LV_SYMBOL_BLUETOOTH,289,7,19,muted);
+  color_label(top,"MC",308,10,20,muted);
+  top_battery=color_label(top,LV_SYMBOL_BATTERY_EMPTY,337,7,24,muted);
+  top_charge=color_label(top,"",362,7,15,muted);
+  top_battery_percent=color_label(top,"--",379,10,30,muted);
+  color_label(top,"DEV 0.7.7",409,7,71,orange);
   left_rail=panel_at(screen,0,34,79,286,panel,0);
   right_rail=panel_at(screen,355,34,125,286,panel,0);
   for(int i=0;i<6;i++){
@@ -987,6 +1035,7 @@ static void init(){
   lv_obj_set_scroll_dir(body,LV_DIR_VER);
   lv_obj_set_scrollbar_mode(body,LV_SCROLLBAR_MODE_AUTO);
   draw();
+  meshpower::start(); // Read-only 15s AXP2101 samples on a background task.
   lv_timer_create(edge_swipe_poll,20,nullptr);
   lv_timer_create(refresh,3000,nullptr);
   lv_timer_create(mcui::poll,50,nullptr);
