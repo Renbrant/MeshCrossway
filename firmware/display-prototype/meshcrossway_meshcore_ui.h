@@ -59,7 +59,7 @@ static lv_obj_t *emoji_txt(lv_obj_t *parent,const char *value,int x,int y,int wi
 static void emoji_center_heading(const char *name,const char *subtitle){
   const int width=lv_obj_get_width(body);
   lv_obj_t *label=single_label(body,name,8,8,width-16,white);
-  lv_obj_set_height(label,21); // 20 px image glyph plus 1 px breathing room.
+  lv_obj_set_height(label,19); // Compact 14px color glyph in normal text row.
 #if defined(MCX_EMOJI_RENDER_ENABLED)
   mcxemoji::view::set_message_text(label,name);
 #endif
@@ -529,7 +529,7 @@ static void render() {
                     metadata, sizeof(metadata));
       lv_obj_t *card = panel_at(body, 8, y, w - 16, 94, panel, 7);
       lv_obj_t *name = emoji_txt(card, sender, 8, 6, w - 32, sender_color);
-      lv_obj_set_height(name, 21);
+      lv_obj_set_height(name, 18);
       lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
       lv_obj_t *text = txt(card, "", 8, 34, w - 32, white);
       lv_label_set_long_mode(text, LV_LABEL_LONG_WRAP);
