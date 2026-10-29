@@ -15,6 +15,8 @@ on:
       - "scripts/test_meshcore.py"
       - "tests/meshcore_protocol_test.cpp"
       - "scripts/restore_reviewed_firmware.py"
+      - "scripts/ci_change_scope.py"
+      - "scripts/test_ci_change_scope.py"
       - ".github/workflows/firmware-preflight.yml"
   pull_request:
     branches: [main]
@@ -34,9 +36,13 @@ on:
       - "scripts/test_meshcore.py"
       - "tests/meshcore_protocol_test.cpp"
       - "scripts/restore_reviewed_firmware.py"
+      - "scripts/ci_change_scope.py"
+      - "scripts/test_ci_change_scope.py"
       - ".github/workflows/ui-pages.yml"
   workflow_dispatch:
 
+# GitHub retains cancelled attempts in history, but only the newest commit
+# of a given PR can continue compiling. Other PRs remain independent.
 concurrency:
   group: firmware-preflight-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -48,9 +54,25 @@ jobs:
   preflight:
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    outputs:
+      docs_only: ${{ steps.scope.outputs.docs_only }}
     steps:
       - name: Checkout MeshCrossway
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Classify PR changes (code versus documentation/website)
+        id: scope
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            python3 scripts/ci_change_scope.py --base "$PR_BASE_SHA" --head "$PR_HEAD_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Offline syntax and patcher checks
         run: |
@@ -59,12 +81,18 @@ jobs:
           python3 scripts/test_meshcore.py
           python3 scripts/test_emoji.py
           python3 scripts/test_device_key_audit.py
+          python3 scripts/test_ci_change_scope.py
+          python3 scripts/preflight_firmware_catalog.py
 
       # The archive job below is the single authoritative ESP-IDF build.
       # This job checks syntax/patcher invariants only, avoiding a duplicate
       # full BSP checkout and ESP-IDF compilation on every pull request.
 
   version_catalog:
+    # Do not compile if only README/docs/site pages were edited.
+    # The fast preflight still validates Web Flasher selector and syntax.
+    needs: preflight
+    if: needs.preflight.outputs.docs_only != 'true'
     name: Archive preflight (no Pages deploy)
     runs-on: ubuntu-latest
     timeout-minutes: 70

@@ -20,6 +20,9 @@ on:
       - "scripts/test_meshcore.py"
       - "tests/meshcore_protocol_test.cpp"
       - "scripts/restore_reviewed_firmware.py"
+      - "scripts/restore_published_firmware.py"
+      - "scripts/ci_change_scope.py"
+      - "scripts/test_ci_change_scope.py"
       - ".github/workflows/ui-pages.yml"
   workflow_dispatch:
 
@@ -29,6 +32,8 @@ permissions:
   pages: write
   id-token: write
 
+# Publish deployments serially and do NOT cancel one halfway through.
+# This is deliberately independent from PR firmware-preflight concurrency.
 concurrency:
   group: github-pages
   cancel-in-progress: false
@@ -44,6 +49,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Classify changes for website-only deployment
+        id: scope
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            python3 scripts/ci_change_scope.py --base "$BEFORE_SHA" --head "$CURRENT_SHA" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Assemble website
         run: |
           mkdir -p _site/ui _site/media _site/flasher/firmware
@@ -62,11 +78,14 @@ jobs:
         with:
           path: _site/flasher/firmware/versions
           key: meshcrossway-current-${{ hashFiles('firmware/display-prototype/**', 'scripts/build_firmware_versions.sh', 'scripts/write_firmware_version.py', 'scripts/check_ble_sdkconfig.py', 'scripts/test_ble_pairing_ui.py', 'scripts/test_meshcore.py', 'tests/meshcore_protocol_test.cpp') }}-idf532-bsp-d9ff7837-v2
+      - name: Reuse published verified firmware for docs-only changes
+        if: steps.scope.outputs.docs_only == 'true'
+        run: python3 scripts/restore_published_firmware.py
       - name: Reuse identical firmware approved by PR preflight
         env:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/restore_reviewed_firmware.py
-      - name: Compile only supported releases
+      - name: Assemble supported releases (compile only when cache misses)
         run: bash scripts/build_firmware_versions.sh
       - name: Verify selectable manifests and binaries
         run: |
