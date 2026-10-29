@@ -125,6 +125,12 @@ build_version() {
       idf.py build
       idf.py merge-bin -o '/workspace/$image_rel'
     "
+  if [ -f "$source_root/scripts/check_chat_memory.py" ]; then
+    local candidate_elf
+    for candidate_elf in "$vendor/examples/esp-idf/02_lvgl_example/build/"*.elf; do
+      python3 "$source_root/scripts/check_chat_memory.py" "$candidate_elf"
+    done
+  fi
   # Defaults are requests; only the generated file proves these choices took effect.
   if [ -f "$source_root/scripts/check_ble_sdkconfig.py" ]; then
     python3 "$source_root/scripts/check_ble_sdkconfig.py" \
@@ -153,8 +159,8 @@ if ! version_gte "$LATEST_VERSION" "$STABLE_VERSION"; then
   echo "::error::LATEST_VERSION is below the approved stable release."
   exit 1
 fi
-if [ "$LATEST_VERSION" = "v0.6.3" ] || [ "$LATEST_VERSION" = "v0.6.4" ]; then
-  echo "::error::v0.6.3/v0.6.4 are known-broken BLE releases and cannot be published."
+if [ "$LATEST_VERSION" = "v0.6.3" ] || [ "$LATEST_VERSION" = "v0.6.4" ] || [ "$LATEST_VERSION" = "v0.7.9" ]; then
+  echo "::error::v0.6.3/v0.6.4/v0.7.9 are known-broken BLE releases and cannot be published."
   exit 1
 fi
 

@@ -7,7 +7,18 @@
 #include <atomic>
 namespace mcxhistory {
 static constexpr const char *DIR="/sdcard/mcx-history";
-static mcxchat::Local local;
+static std::atomic<mcxchat::Workspace *> workspace_memory{nullptr};
+static mcxchat::Workspace *workspace(){return workspace_memory.load();}
+static bool init_workspace(){
+  if(workspace())return true;
+  void *memory=heap_caps_malloc(sizeof(mcxchat::Workspace),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+  if(!memory)return false; // No fallback into the RAM required by Bluetooth/DMA.
+  auto *created=new(memory) mcxchat::Workspace();
+  mcxchat::Workspace *expected=nullptr;
+  if(!workspace_memory.compare_exchange_strong(expected,created))heap_caps_free(created);
+  return true;
+}
+static mcxchat::Local &preferences(){return workspace()->local;}
 static TaskHandle_t worker=nullptr;
 static portMUX_TYPE lock=portMUX_INITIALIZER_UNLOCKED;
 struct Job {mcxstore::State *image=nullptr;bool load=false,offline=false;uint8_t radio[32]={};uint32_t epoch=0,ticket=0;};
@@ -87,16 +98,16 @@ static void worker_main(void *){
 static void begin(){if(!worker)xTaskCreatePinnedToCore(worker_main,"mcx_history",6144,nullptr,1,&worker,0);}
 static void capture(meshmc::Client &c,uint32_t now,bool force=false){
   if(!mcxstore::nonzero(c.public_key))return;
-  if(!force&&((uint32_t)(now-last_capture)<1000||(c.generation==last_generation&&local.revision==last_revision)))return;
+  if(!force&&((uint32_t)(now-last_capture)<1000||(c.generation==last_generation&&preferences().revision==last_revision)))return;
   auto *image=allocate();if(!image){storage.store(2);return;}
-  mcxstore::capture(c,local,*image);Job j;j.image=image;
-  if(submit(j)){last_generation=c.generation;last_revision=local.revision;last_capture=now;}
+  mcxstore::capture(c,preferences(),*image);Job j;j.image=image;
+  if(submit(j)){last_generation=c.generation;last_revision=preferences().revision;last_capture=now;}
   else heap_caps_free(image);
 }
 static void before_attach(meshmc::Client &c,uint32_t now){
   // Save the previous identity before Client::attach clears its model.
   if(restored)capture(c,now,true);
-  new (&local) mcxchat::Local();restored=restore_requested=restore_unavailable=false;
+  new (&preferences()) mcxchat::Local();restored=restore_requested=restore_unavailable=false;
 }
 static const char *status(){
   if(storage.load()==2)return "SD unavailable / unsaved RAM";
@@ -105,20 +116,21 @@ static const char *status(){
     case 3:return "SD: recovered last commit";default:return "SD: no saved history";}
 }
 static void poll(meshmc::Client &c,uint32_t now,uint32_t epoch){
+  if(!init_workspace()){restored=true;c.history_ready=true;storage.store(2);return;}
   begin();if(!worker||worker_failed.load()){restored=true;c.history_ready=true;storage.store(2);return;}
   if(complete.load()){
     bool transmitting=c.busy&&c.active.message>=0;
     for(const auto &m:c.messages)if(m.id&&m.outgoing&&m.delivery==meshmc::QUEUED)transmitting=true;
     if(!loaded_offline&&transmitting)return; // Preserve live queue-to-message IDs during a late SD restore.
     if(load_ok&&loaded){
-      if(loaded_offline&&!c.connected){mcxstore::restore(*loaded,c,local,false);memcpy(bound_radio,c.public_key,32);restored=true;}
+      if(loaded_offline&&!c.connected){mcxstore::restore(*loaded,c,preferences(),false);memcpy(bound_radio,c.public_key,32);restored=true;}
       else if(!loaded_offline&&epoch==loaded_epoch&&c.initialized&&!memcmp(loaded->meta.radio,c.public_key,32)){
         // Messages received while SD was absent are merged after the older journal.
         auto *recent=(meshmc::Message *)heap_caps_malloc(sizeof(c.messages),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
         if(recent){
           memcpy(recent,c.messages,sizeof(c.messages));const uint32_t next=c.next_id;
-          auto *edits=allocate();if(edits)edits->local=local;
-          mcxstore::restore(*loaded,c,local,true);
+          auto *edits=allocate();if(edits)edits->local=preferences();
+          mcxstore::restore(*loaded,c,preferences(),true);
           const uint32_t first=next>meshmc::MAX_MESSAGES?next-meshmc::MAX_MESSAGES:1;
           for(uint32_t id=first;id<next;++id){const auto &m=recent[(id-1)%meshmc::MAX_MESSAGES];if(m.id!=id)continue;
             bool seen=false;for(auto &old:c.messages)if(old.id&&old.channel==m.channel&&old.outgoing==m.outgoing&&
@@ -127,8 +139,8 @@ static void poll(meshmc::Client &c,uint32_t now,uint32_t epoch){
             if(!seen){auto &dst=c.append();uint32_t saved=dst.id;dst=m;dst.id=saved;}
           }
           if(edits&&edits->local.revision){
-            for(const auto &p:edits->local.threads)if(p.used){auto *dst=local.get(p.key,true);if(dst)*dst=p;}
-            ++local.revision;
+            for(const auto &p:edits->local.threads)if(p.used){auto *dst=preferences().get(p.key,true);if(dst)*dst=p;}
+            ++preferences().revision;
           }
           if(edits)heap_caps_free(edits);
           heap_caps_free(recent);restored=true;
@@ -151,7 +163,7 @@ static void poll(meshmc::Client &c,uint32_t now,uint32_t epoch){
     Job j;j.load=j.offline=true;offline_requested=submit(j);
   }
   c.history_ready=restored;
-  dirty.store(c.generation!=last_generation||local.revision!=last_revision);
+  dirty.store(c.generation!=last_generation||preferences().revision!=last_revision);
   if(restored&&!restore_unavailable)capture(c,now);
 }
 static bool ready_for(const meshmc::Client &c){return !c.initialized||restored;}

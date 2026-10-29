@@ -459,7 +459,7 @@ static void start_internal(){
   printf("[MCX-BLE] nimble_port_init result=%d heap=%lu\n",(int)err,(unsigned long)esp_get_free_heap_size());
   debug_memory("after nimble init");
   if(err!=ESP_OK){
-    char msg[64];snprintf(msg,sizeof(msg),"NimBLE init failed: %d",(int)err);
+    char msg[64];snprintf(msg,sizeof(msg),"NimBLE: %s (%d)",esp_err_to_name(err),(int)err);
     update(FAILED,msg);return;
   }
   (void)ble_att_set_preferred_mtu(247);

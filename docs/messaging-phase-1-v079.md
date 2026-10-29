@@ -1,4 +1,6 @@
-# Messaging phase 1 — v0.7.9 experimental
+# Messaging phase 1 — v0.7.9 historical implementation
+
+**v0.7.9 withdrawn:** owner testing reproduced NimBLE startup error 257. [v0.7.10 moves the workspace to PSRAM](ble-memory-fix-v0710.md) and preserves the behavior documented below; hardware retest remains pending.
 
 Related to #37. Original implementation based on comparative research across several communication systems and the public Companion protocol. Target remains the Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0 (non-B), 480×320.
 
