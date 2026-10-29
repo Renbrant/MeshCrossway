@@ -119,7 +119,13 @@ static void poll() {
     portEXIT_CRITICAL(&mailbox_mux);
     if (!got)
       break;
-    client->receive(f.data, f.len, now);
+    const bool was_fault=client->fault;
+    if (!client->receive(f.data, f.len, now) && !was_fault && client->fault) {
+      // Diagnostic contains ONLY packet type and length, never payload,
+      // public/private keys, BLE PIN, channel secrets or radio message text.
+      printf("[MCX-MC-FRAME] invalid code=0x%02X len=%u; see status on screen\n",
+             (unsigned)f.data[0],(unsigned)f.len);
+    }
   }
   Frame f;
   if (client->next(now, f) && (!send_frame || !send_frame(f.data, f.len)))
