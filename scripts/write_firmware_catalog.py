@@ -57,6 +57,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.7.1":
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: MeshCore Companion with persistent Bluetooth per-radio bonds in NVS, so PIN should be required only on first successful pairing. Tested rollback v0.6.8 retained."
+        label="MeshCore + saved Bluetooth pairing / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.7.0":
         summary="EXPERIMENTAL / NOT HARDWARE TESTED: MeshCore Companion BLE session, real contacts/channels, direct/group messaging, delivery ACKs and typed radio tools. Board/firmware capabilities apply. PIN-free manual screenshots retained."
         label="MeshCore Companion / EXPERIMENTAL"
