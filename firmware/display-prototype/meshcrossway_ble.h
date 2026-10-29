@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.7.1 - BLE remains OFF during boot; explicit staged initialization.
+// MeshCrossway v0.7.2 - resume only last bonded BLE peer after safe boot.
 // PIN-authenticated MeshCore Companion transport; Meshtastic remains discovery-only.
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
@@ -17,6 +17,7 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "esp_heap_caps.h"
+#include "nvs.h"
 #include "meshcrossway_meshcore.h"
 #include "os/os_mbuf.h"
 #include <stdint.h>
@@ -48,8 +49,16 @@ static portMUX_TYPE mux=portMUX_INITIALIZER_UNLOCKED;
 static Snapshot state={};
 static std::atomic<uint16_t> conn{BLE_HS_CONN_HANDLE_NONE};
 static uint8_t own_addr=0;
-static bool synced=false;
+static std::atomic<bool> synced{false};
 static Radio identified=UNKNOWN;
+static constexpr uint32_t LAST_PEER_MAGIC=0x4D435842u;
+struct RememberedPeer {uint32_t magic;uint8_t version;uint8_t radio;uint8_t addr_type;uint8_t addr[6];char name[29];};
+static RememberedPeer remembered={};
+static bool have_remembered=false;
+static std::atomic<bool> auto_paused{false};
+static std::atomic<bool> auto_scan{false};
+static std::atomic<int> auto_candidate{-1};
+static TaskHandle_t reconnect_worker=nullptr;
 static const ble_uuid128_t MT_SERVICE=BLE_UUID128_INIT(
   0xfd,0xea,0x73,0xe2,0xca,0x5d,0xa8,0x9f,0x1f,0x46,0xa8,0x15,0x18,0xb2,0xa1,0x6b);
 static const ble_uuid128_t MC_SERVICE=BLE_UUID128_INIT(
@@ -76,6 +85,56 @@ static Snapshot snapshot(){
 static const char *protocol_name(Radio r){
   return r==MESHTASTIC?"Meshtastic":r==MESHCORE?"MeshCore":"Unknown";
 }
+static bool read_remembered(){
+  nvs_handle_t h;
+  if(nvs_open("mcx_ble",NVS_READONLY,&h)!=ESP_OK)return false;
+  RememberedPeer p={};size_t length=sizeof(p);
+  const esp_err_t rc=nvs_get_blob(h,"last_peer",&p,&length);
+  nvs_close(h);
+  if(rc!=ESP_OK||length!=sizeof(p)||p.magic!=LAST_PEER_MAGIC||
+     p.version!=1||(p.radio!=MESHTASTIC&&p.radio!=MESHCORE)||
+     p.addr_type>3||!memchr(p.name,0,sizeof(p.name)))return false;
+  portENTER_CRITICAL(&mux);remembered=p;have_remembered=true;portEXIT_CRITICAL(&mux);
+  return true;
+}
+static void save_remembered(){
+  const uint16_t handle=conn;
+  if(handle==BLE_HS_CONN_HANDLE_NONE||identified==UNKNOWN)return;
+  struct ble_gap_conn_desc desc={};
+  if(ble_gap_conn_find(handle,&desc)!=0||
+     !desc.sec_state.encrypted||!desc.sec_state.authenticated||!desc.sec_state.bonded)return;
+  RememberedPeer p={};
+  p.magic=LAST_PEER_MAGIC;p.version=1;p.radio=(uint8_t)identified;
+  p.addr_type=desc.peer_id_addr.type;
+  if(p.addr_type>3)return;
+  memcpy(p.addr,desc.peer_id_addr.val,6);
+  const Snapshot current=snapshot();
+  snprintf(p.name,sizeof(p.name),"%s",current.active_name);
+  bool unchanged=false;
+  portENTER_CRITICAL(&mux);
+  unchanged=have_remembered&&!memcmp(&remembered,&p,sizeof(p));
+  portEXIT_CRITICAL(&mux);
+  if(!unchanged){
+    nvs_handle_t h;
+    if(nvs_open("mcx_ble",NVS_READWRITE,&h)!=ESP_OK)return;
+    const bool ok=nvs_set_blob(h,"last_peer",&p,sizeof(p))==ESP_OK&&nvs_commit(h)==ESP_OK;
+    nvs_close(h);
+    if(!ok)return;
+    portENTER_CRITICAL(&mux);remembered=p;have_remembered=true;portEXIT_CRITICAL(&mux);
+  }
+  auto_paused.store(false);
+}
+static bool matching_remembered(const ble_addr_t &address){
+  bool match=false;
+  portENTER_CRITICAL(&mux);
+  // NimBLE can report an identity type (PUBLIC_ID/RANDOM_ID) while
+  // advertisement descriptors use the equivalent PUBLIC/RANDOM base type.
+  match=have_remembered&&((remembered.addr_type&1)==(address.type&1))&&
+        memcmp(remembered.addr,address.val,6)==0;
+  portEXIT_CRITICAL(&mux);
+  // Never auto-select merely from an advertised name.
+  return match;
+}
 static int gap_event(struct ble_gap_event *event,void *arg);
 static void debug_memory(const char *phase);
 static void on_sync(){
@@ -95,7 +154,7 @@ static void host_task(void *){
   nimble_port_run();
   nimble_port_freertos_deinit();
 }
-static void scan(){
+static void scan(bool automatic=false){
   if(!synced){
     if(snapshot().phase==OFF)update(OFF,"Enable BLE before scanning");
     else update(FAILED,"BLE host not ready");
@@ -104,6 +163,7 @@ static void scan(){
   const Snapshot current=snapshot();
   if(current.phase==CONNECTING||current.phase==VERIFYING||current.phase==PAIRING||current.phase==READY)return;
   (void)ble_gap_disc_cancel();
+  auto_scan=automatic;auto_candidate=-1;
   portENTER_CRITICAL(&mux);
   state.count=0;state.selected=-1;state.radio=UNKNOWN;
   state.pin_required=false;state.confirm_required=false;
@@ -114,8 +174,8 @@ static void scan(){
   params.filter_duplicates=0; // Accept scan responses supplying the name.
   params.itvl=0;params.window=0;
   const int rc=ble_gap_disc(own_addr,9000,&params,gap_event,nullptr);
-  if(rc==0)update(SCANNING,"Searching nearby BLE radios...");
-  else {char msg[64];snprintf(msg,sizeof(msg),"Scan error: %d",rc);update(FAILED,msg);}
+  if(rc==0)update(SCANNING,automatic?"Finding last paired radio...":"Searching nearby BLE radios...");
+  else {auto_scan=false;char msg[64];snprintf(msg,sizeof(msg),"Scan error: %d",rc);update(FAILED,msg);}
 }
 static void connect(int index){
   const Snapshot found=snapshot();
@@ -133,6 +193,8 @@ static void connect(int index){
   if(rc){char msg[64];snprintf(msg,sizeof(msg),"Connect error: %d",rc);update(FAILED,msg);}
 }
 static void disconnect(){
+  // A deliberate disconnect stops automatic retry until the next boot.
+  auto_paused.store(true);auto_scan=false;auto_candidate=-1;
   const Phase phase=snapshot().phase;
   if(phase==OFF){update(OFF,"Bluetooth is off; enable before scan");return;}
   if(phase==STARTING){update(STARTING,"Bluetooth is still starting");return;}
@@ -189,7 +251,8 @@ static int mc_subscribed(uint16_t handle,const struct ble_gatt_error *err,struct
   if(handle!=conn)return 0;
   if(err->status){transport_failure("MeshCore notifications subscription failed");return 0;}
   mc_transport_started=true;meshmc::transport_up(ble_att_mtu(conn)-3);
-  update(READY,"MeshCore notifications ready; synchronizing...");return 0;
+  update(READY,"MeshCore notifications ready; synchronizing...");
+  save_remembered();return 0;
 }
 static int mc_descriptor(uint16_t handle,const struct ble_gatt_error *err,uint16_t,const struct ble_gatt_dsc *dsc,void *){
   if(handle!=conn)return 0;
@@ -273,7 +336,7 @@ static int gap_event(struct ble_gap_event *event,void *){
       for(int i=0;i<state.count;i++)
         if(!memcmp(state.peers[i].addr.val,disc.addr.val,6)&&
            state.peers[i].addr.type==disc.addr.type){index=i;break;}
-      if(index<0 && connectable && (fields.name_len>0 || hint!=UNKNOWN) &&
+      if(index<0 && connectable && (fields.name_len>0 || hint!=UNKNOWN || (auto_scan&&matching_remembered(disc.addr))) &&
          state.count<8){
         index=state.count++;
         state.peers[index].addr=disc.addr;
@@ -293,11 +356,20 @@ static int gap_event(struct ble_gap_event *event,void *){
         state.generation++;
       }
       portEXIT_CRITICAL(&mux);
+      if(auto_scan.load()&&connectable&&index>=0&&!auto_paused.load()&&
+         matching_remembered(disc.addr)){
+        auto_candidate.store(index);
+        (void)ble_gap_disc_cancel(); // Wait for DISC_COMPLETE before connecting.
+      }
       return 0;
     }
-    case BLE_GAP_EVENT_DISC_COMPLETE:
+    case BLE_GAP_EVENT_DISC_COMPLETE:{
+      const int candidate=auto_candidate.exchange(-1);
+      const bool resume=auto_scan.exchange(false)&&!auto_paused.load();
       if(snapshot().phase==SCANNING)update(IDLE,"Scan complete - choose a device");
+      if(resume&&candidate>=0)connect(candidate);
       return 0;
+    }
     case BLE_GAP_EVENT_LINK_ESTAB:
       if(event->connect.status!=0){
         conn=BLE_HS_CONN_HANDLE_NONE;
@@ -341,7 +413,7 @@ static int gap_event(struct ble_gap_event *event,void *){
         }
         portENTER_CRITICAL(&mux);state.bonded=desc.sec_state.bonded;state.generation++;portEXIT_CRITICAL(&mux);
         if(identified==MESHCORE)start_meshcore();
-        else update(READY,"BLE secure link / GATT verified");
+        else {update(READY,"BLE secure link / GATT verified");save_remembered();}
       }else{
         char msg[64];snprintf(msg,sizeof(msg),"Pairing failed: %d",event->enc_change.status);
         update(FAILED,msg);
@@ -417,13 +489,35 @@ static bool request_start(){
   if(snapshot().phase!=OFF)return false; // Do not repeat a partial or failed init.
   if(!meshmc::init()){update(FAILED,"No PSRAM for MeshCore session");return false;}
   meshmc::send_frame=mc_write;meshmc::close_link=mc_close;
-  debug_memory("BLE button pressed");
+  debug_memory("BLE requested");
   update(STARTING,"BLE worker requested - standby...");
   const BaseType_t created=xTaskCreate(init_task,"mcx_ble_init",6144,nullptr,tskIDLE_PRIORITY+1,nullptr);
   if(created!=pdPASS){
-    update(FAILED,"No memory for BLE worker; restart");
-    return false;
+    update(FAILED,"No memory for BLE worker; restart");return false;
   }
   return true;
+}
+static void auto_resume_task(void *){
+  // Keep BLE completely OFF while LVGL, AP+STA and HTTP initialize.
+  vTaskDelay(pdMS_TO_TICKS(12000));
+  if(!read_remembered()||auto_paused.load()){
+    reconnect_worker=nullptr;vTaskDelete(nullptr);return;
+  }
+  (void)request_start();
+  bool first=true;
+  while(!auto_paused.load()){
+    vTaskDelay(pdMS_TO_TICKS(first?3000:30000));
+    first=false;
+    const Snapshot current=snapshot();
+    if(synced&&conn==BLE_HS_CONN_HANDLE_NONE&&
+       (current.phase==IDLE||current.phase==FAILED))scan(true);
+  }
+  reconnect_worker=nullptr;vTaskDelete(nullptr);
+}
+static void schedule_auto_resume(){
+  // An unpaired new Core never enables BLE on its own.
+  if(reconnect_worker)return;
+  (void)xTaskCreate(auto_resume_task,"mcx_ble_resume",4096,nullptr,
+                    tskIDLE_PRIORITY+1,&reconnect_worker);
 }
 } // namespace meshble

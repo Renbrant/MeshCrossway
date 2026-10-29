@@ -25,7 +25,7 @@ if '#include "meshcrossway_ui.h"' not in source:
                             '#include "lvgl_ui.h"\n#include "meshcrossway_ui.h"\n#include "meshcrossway_health.h"\n#include "meshcrossway_capture.h"', 1)
     source = source.replace('lv_demo_widgets();', 'meshcrossway::init();\n        meshcapture::init();', 1)
     source = source.replace(anchor,
-                            '        lvgl_port_unlock();\n    }\n    meshnetwork::start();\n    meshhealth::start();\n}', 1)
+                            '        lvgl_port_unlock();\n    }\n    meshnetwork::start();\n    meshhealth::start();\n    meshble::schedule_auto_resume();\n}', 1)
     main.write_text(source)
 
 if '#include "meshcrossway_ble.h"' not in source:
