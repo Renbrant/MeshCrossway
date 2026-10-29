@@ -112,6 +112,7 @@ static bool save(const char *root,const State &s,State &previous,State &staging)
     if(remove(backup)&&errno!=ENOENT)return false;
     if(rename(file,backup))return false;
   }
+  if(!r.found&&remove(file)&&errno!=ENOENT)return false;
   if(rename(temp,file))return false;
   return true;
 }

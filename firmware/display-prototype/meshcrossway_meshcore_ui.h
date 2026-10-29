@@ -336,7 +336,7 @@ static void compose() {
            (unsigned)(session() ? session()->text_limit(group) : 0));
   auto *pref=mcxhistory::local.get(selected);
   field(limit, pref?pref->draft:"", 0);
-  feedback = txt(scroller, "The radio must be connected with a valid clock.", 10, 88, 450, muted);
+  feedback = txt(scroller, "Draft is local. Send uses MeshCore and requires a connected radio with a valid clock.", 10, 88, 450, muted);
   lv_label_set_long_mode(feedback, LV_LABEL_LONG_WRAP);
   action_button(dialog, "SEND", 10, 273, 460, 40, orange, compose_send, 0);
 }
@@ -613,7 +613,11 @@ static void message_details_now(void *data){
   snprintf(detail,sizeof(detail),"Network: MeshCore\nSender: %.32s\nSender time: %lu Unix\nObserved time: %lu Unix\nState: %s\n%s",
     m->outgoing?"You":thread_name(selected),(unsigned long)m->timestamp,(unsigned long)m->observed_at,
     delivery(m->delivery),"Accepting a message is not delivery or reading.");
-  txt(scroller,detail,10,0,450,white);
+  auto *details=txt(scroller,detail,10,0,450,white);lv_label_set_long_mode(details,LV_LABEL_LONG_WRAP);
+  char signal[90],route[96];mcxchat::meta(m->observed_at,m->path,m->outgoing,nullptr,route,sizeof(route));
+  if(m->has_snr)snprintf(signal,sizeof(signal),"SNR: %.2f dB / %.65s",m->snr/4.0,route);
+  else snprintf(signal,sizeof(signal),"SNR not provided / %.65s",route);
+  txt(scroller,signal,10,130,450,muted);
   char link[meshmc::MAX_FRAME+1];
   if(mcxchat::url(m->text,link,sizeof(link))){
     txt(scroller,"Open this URL on another device:",10,150,450,orange);

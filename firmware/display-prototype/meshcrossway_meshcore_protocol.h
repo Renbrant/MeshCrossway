@@ -730,7 +730,7 @@ public:
     return true;
   }
   // Returns one complete frame. Caller must provide its ATT write completion through write_done().
-  bool next(uint32_t now, Frame &f) {
+  bool next(uint32_t now, Frame &f, bool history_ready=true) {
     now_ms = now;
     if (!connected || fault)
       return false;
@@ -777,6 +777,7 @@ public:
       else if (channel_next >= channel_count && qcount && queue[qhead].frame.data[0] == 20)
         ++bootstrap;
     }
+    if(initialized&&!history_ready)return false;
     if (!qcount && initialized && waiting_messages) {
       waiting_messages = false;
       simple(10, -1, false);

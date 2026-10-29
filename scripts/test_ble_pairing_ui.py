@@ -144,14 +144,22 @@ int main(int argc,char **argv){
 '''
     # Compile and exercise the actual MeshCore workspace with real LVGL too.
     companion_setup = r'''
-#include "meshcrossway_meshcore_protocol.h"
+#include "meshcrossway_conversations.h"
+#include <atomic>
+static int64_t esp_timer_get_time(){return 6000000;}
+namespace mcxhistory {
+static mcxchat::Local local;static bool restored=true;
+static const char *status(){return "SD: test fixture";}
+static void poll(meshmc::Client &,uint32_t,uint32_t){}
+}
 namespace meshmc {
+static std::atomic<uint32_t> connection_epoch{1};
 static Client *client=nullptr;
 static void poll(){}
 static bool channel_secret(const char *,uint8_t *p){memset(p,0xA5,16);return true;}
 }
 static lv_obj_t *body=nullptr,*wifi_dialog=nullptr;
-static int page=1,nodes_filter=0,groups_filter=0,redraws=0;
+static int page=1,nodes_filter=0,groups_filter=0,chats_filter=0,redraws=0;
 static const lv_color_t green=lv_color_hex(0x72D8A5);
 static int content_width(){return 400;}
 static void draw(){++redraws;}
@@ -182,7 +190,7 @@ static void test_companion_ui(const char *preview){
   tap_object(mc_button(mcui::dialog,"APPLY"));advance();assert(c.qcount==0&&mcui::confirm_pending);
   tap_object(mc_button(mcui::dialog,"CONFIRM"));advance();assert(c.qcount==1&&c.queue[0].frame.data[0]==32&&c.queue[0].frame.len==50);
   assert(c.queue[0].frame.data[34]==0xa5);mcui::close();c.qcount=0;
-  memcpy(mcui::target_key,c.contacts[0].key,32);mcui::group=false;mcui::conversation=true;mcui::compose();advance();
+  mcui::select(mcxchat::key_for(c,false,0));mcui::compose();advance();
   lv_textarea_set_text(mcui::fields[0],"hello from display");tap_object(mc_button(mcui::dialog,"SEND"));advance();
   assert(!mcui::dialog&&c.qcount==1&&c.queue[0].frame.data[0]==2&&c.message_count==1);
   body=panel_at(lv_scr_act(),0,34,400,286,bg);page=1;mcui::render();advance();

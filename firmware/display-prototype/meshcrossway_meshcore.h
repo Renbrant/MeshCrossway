@@ -132,7 +132,7 @@ static void poll() {
   mcxhistory::poll(*client,now,seen_epoch);
   if (!mcxhistory::ready_for(*client)) return; // Restore before draining the radio backlog.
   Frame f;
-  if (client->next(now, f) && (!send_frame || !send_frame(f.data, f.len)))
+  if (client->next(now, f,mcxhistory::restored) && (!send_frame || !send_frame(f.data, f.len)))
     client->write_done(false);
   if (client->fault && close_link)
     close_link();
