@@ -29,7 +29,7 @@ class InstallerTests(unittest.TestCase):
             data=(self.folder/p['path']).read_bytes();device[p['offset']:p['offset']+len(data)]=data
         self.assertEqual(device[0x9000:0x10000],before)
         self.assertEqual(device[0x10000:],self.image[0x10000:])
-        self.assertFalse(m['new_install_prompt_erase'])
+        self.assertTrue(m['new_install_prompt_erase'])
     def test_reject_corrupt_component(self):
         self.build();p=self.folder/'application.bin';p.write_bytes(p.read_bytes()[:-1]+b'X')
         self.assertNotEqual(self.verify(),0)
