@@ -31,6 +31,16 @@ if '#include "meshcrossway_ui.h"' not in source:
 if '#include "meshcrossway_ble.h"' not in source:
     source=source.replace('#include "meshcrossway_ui.h"', '#include "meshcrossway_ui.h"\n#include "meshcrossway_ble.h"',1)
     main.write_text(source)
+# Keep the SDK pointer and its user_data; only replace its read path under lock.
+if 'mcxtouch::attach(lvgl_touch_indev, touch_handle);' not in source:
+    marker = 'meshcrossway::init();'
+    if source.count(marker) != 1:
+        sys.exit('Missing or duplicate UI initialization marker')
+    source = source.replace(marker,
+        'mcxoffline::begin();\n        mcxtouch::attach(lvgl_touch_indev, touch_handle);\n        ' + marker, 1)
+    source = source.replace('#include "meshcrossway_ui.h"',
+        '#include "meshcrossway_ui.h"\n#include "meshcrossway_offline_boot.h"', 1)
+    main.write_text(source)
 # Reserve two small DMA buffers at display initialization. The previous PSRAM
 # draw buffers required SPI to allocate internal bounce memory during each flush.
 # Keep rotation and the UI unchanged; trans_size stays zero (one completion per
@@ -137,7 +147,8 @@ for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_he
              "meshcrossway_meshcore_protocol.h", "meshcrossway_meshcore_ui.h", "meshcrossway_sd_history.h", "meshcrossway_history_store.h", "meshcrossway_conversations.h",
              "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h", "meshcrossway_lvgl_alloc.h", "meshcrossway_runtime.h",
              "meshcrossway_power_status.h", "meshcrossway_battery_decode.h",
-             "meshcrossway_chat_presentation.h"):
+             "meshcrossway_chat_presentation.h", "meshcrossway_chat_view.h", "meshcrossway_offline_boot.h",
+             "meshcrossway_touch_queue.h", "meshcrossway_touch_input.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 

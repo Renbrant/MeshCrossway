@@ -274,7 +274,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert "if(id==A_THREAD_INFO){mcui::thread_info();return;}" in current
         assert 'action_button(body, "COMPOSE", 8, 53' not in chat
         assert 'action_button(body, "TOOLS", 16 +' not in chat
-        assert "int y = 96;" in chat
+        assert "int y = 96;" in chat or "chatview::begin(body)" in chat
         assert ("if(!has_context_rail()){" if version in ("v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12") else "if(!has_context_rail())return;") in current
         if version=="v0.7.6":assert 'action_button(body,"HOME"' in current
         else:assert 'action_button(body,"HOME"' not in current

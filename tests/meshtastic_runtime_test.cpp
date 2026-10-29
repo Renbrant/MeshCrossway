@@ -12,7 +12,12 @@ int main(int argc,char **argv){
   send_frame=send;can_write=writable;pump_read=read_more;close_link=close_more;
   mcxhistory::ble_startup.store(true);poll();assert(!mcxhistory::worker);
   mcxhistory::ble_startup.store(false);
-  uint8_t identity[7]={0,9,8,7,6,5,4};transport_up(identity,517);poll();
+  uint8_t identity[7]={0,9,8,7,6,5,4};
+  // Local history boots independently of a BLE connection; no frame is sent.
+  request_offline(identity);poll();assert(disk_state.load()==1&&writes==0&&!client->connected);
+  disk_work();poll();assert(client->history_ready&&writes==0&&!client->pending_ready);
+  assert(!memcmp(client->data.radio,identity,7));
+  transport_up(identity,517);poll();
   assert(client->connected&&writes==1);on_write(true);poll();
   assert(!client->writing&&reads>0);
   // Saturation is explicit and does not overwrite earlier frames.

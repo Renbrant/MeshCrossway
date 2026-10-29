@@ -46,6 +46,7 @@ static void report_error(int step,int number){
 }
 static bool offline_requested=false,restore_requested=false,restored=false,restore_unavailable=false;
 static uint32_t last_restore_attempt=0;
+static bool offline_attempted=false;
 static uint32_t bound_epoch=0,last_generation=UINT32_MAX,last_revision=UINT32_MAX,last_capture=0;
 static uint8_t bound_radio[32]={};
 static mcxstore::State *allocate(){
@@ -222,8 +223,9 @@ static void poll(meshmc::Client &c,uint32_t now,uint32_t epoch){
     }
     if(restore_unavailable&&(uint32_t)(now-last_restore_attempt)>=5000){restore_requested=false;last_restore_attempt=now;}
     if(!restore_requested){Job j;j.load=true;j.epoch=epoch;memcpy(j.radio,c.public_key,32);restore_requested=submit(j);}
-  }else if(!c.connected&&!offline_requested&&!restored&&(uint32_t)(now-last_restore_attempt)>=5000){
+  }else if(!c.connected&&!offline_requested&&!restored&&(!offline_attempted||(uint32_t)(now-last_restore_attempt)>=5000)){
     Job j;j.load=j.offline=true;offline_requested=submit(j);
+    if(offline_requested){offline_attempted=true;last_restore_attempt=now;}
   }
   c.history_ready=restored;
   dirty.store(c.generation!=last_generation||preferences().revision!=last_revision);

@@ -7,6 +7,9 @@
 #include "meshcrossway_device_key.h"
 #include "meshcrossway_brand.h"
 #include "meshcrossway_edge_swipe.h"
+#include "meshcrossway_touch_input.h"
+#include <initializer_list>
+#include <new>
 #include "meshcrossway_power_status.h"
 #include "meshcrossway_chat_presentation.h"
 #include "emoji/emoji_display.h"
@@ -530,6 +533,7 @@ static void finish_left_drag(void *){
   draw();
 }
 static void left_tab_touch(lv_event_t *e){
+  if(mcxtouch::active())return; // Buffered feedback classifies every sample.
   const lv_event_code_t kind=lv_event_get_code(e);
   lv_indev_t *dev=lv_indev_get_act();
   if(!dev||lv_indev_get_type(dev)!=LV_INDEV_TYPE_POINTER)return;
@@ -552,7 +556,29 @@ static void left_tab_touch(lv_event_t *e){
     lv_async_call(finish_left_drag,nullptr);
   }
 }
+static bool touch_modal();
+static mcxswipe::Result pending_swipe=mcxswipe::NONE;
+static void buffered_swipe(bool down,int x,int y,uint32_t ms,bool cancel){
+  if(cancel){mcxswipe::reset(swipe_state);pending_swipe=mcxswipe::NONE;suppress_left_nav_click=false;return;}
+  if(pending_swipe!=mcxswipe::NONE)return;
+  const auto result=mcxswipe::sample(swipe_state,down,x,y,page,has_left_rail(),has_context_rail(),
+    left_compact,right_compact,has_left_rail()?(left_compact?40:79):0,
+    has_context_rail()?(right_compact?40:125):0,touch_modal(),ms);
+  if(result!=mcxswipe::NONE){pending_swipe=result;suppress_left_nav_click=true;}
+}
 static void edge_swipe_poll(lv_timer_t *){
+  if(mcxtouch::active()){
+    if(pending_swipe==mcxswipe::NONE||mcxtouch::busy())return;
+    if(touch_modal()){pending_swipe=mcxswipe::NONE;suppress_left_nav_click=false;return;}
+    switch(pending_swipe){
+      case mcxswipe::OPEN_LEFT:left_compact=false;break;
+      case mcxswipe::CLOSE_LEFT:left_compact=true;break;
+      case mcxswipe::OPEN_RIGHT:right_compact=false;break;
+      case mcxswipe::CLOSE_RIGHT:right_compact=true;break;
+      default:break;
+    }
+    pending_swipe=mcxswipe::NONE;suppress_left_nav_click=false;draw();return;
+  }
   if(!swipe_pointer){
     for(lv_indev_t *d=lv_indev_get_next(nullptr);d;d=lv_indev_get_next(d))
       if(lv_indev_get_type(d)==LV_INDEV_TYPE_POINTER){swipe_pointer=d;break;}
@@ -582,6 +608,7 @@ static void edge_swipe_poll(lv_timer_t *){
 // before the 20ms polling timer sees the released state. Suppress that click
 // so dragging a rail never accidentally switches page or activates Compose.
 static bool edge_swipe_click_in_progress(){
+  if(pending_swipe!=mcxswipe::NONE)return true;
   if(!swipe_state.down||swipe_state.origin==mcxswipe::NOT_ARMED)return false;
   lv_indev_t *dev=lv_indev_get_act();
   if(!dev||lv_indev_get_type(dev)!=LV_INDEV_TYPE_POINTER)return false;
@@ -851,8 +878,10 @@ static void ble_show_pairing(){
   }
 }
 // MeshCore workspace
+#include "meshcrossway_chat_view.h"
 #include "meshcrossway_meshcore_ui.h"
 #include "meshcrossway_meshtastic_ui.h"
+static bool touch_modal(){return wifi_dialog||wifi_editor||ble_dialog||info_dialog||shade||mcui::dialog||mtui::dialog;}
 static void reset_conversation_view(){mtui::conversation=false;mcui::conversation=false;}
 static bool showing_mt(){
   if(page==1)return nodes_filter!=2;
@@ -909,6 +938,7 @@ static void draw(){
       update_nav_vector(i,tint);
     }
   }
+  chatview::invalidate();
   lv_obj_clean(body);
   lv_obj_scroll_to_y(body,0,LV_ANIM_OFF);
   rebuild_context();
@@ -1149,6 +1179,7 @@ static void init(){
   lv_obj_set_scrollbar_mode(body,LV_SCROLLBAR_MODE_AUTO);
   draw();
   meshpower::start(); // Read-only 15s AXP2101 samples on a background task.
+  mcxtouch::on_sample=buffered_swipe;
   lv_timer_create(edge_swipe_poll,20,nullptr);
   lv_timer_create(refresh,3000,nullptr);
   lv_timer_create(mcui::poll,50,nullptr);

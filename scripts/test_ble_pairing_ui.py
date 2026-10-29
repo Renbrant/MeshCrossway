@@ -146,7 +146,7 @@ int main(int argc,char **argv){
     companion_setup = r'''
 #include "meshcrossway_conversations.h"
 #include <atomic>
-static int64_t esp_timer_get_time(){return 6000000;}
+static int64_t esp_timer_get_time(){return int64_t(lv_tick_get())*1000;}
 namespace mcxhistory {
 static mcxchat::Workspace memory;
 static bool init_workspace(){return true;}
@@ -167,7 +167,7 @@ namespace mcxruntime {
 enum Stage{PROTOCOL,HISTORY};struct Scope{explicit Scope(Stage){}};
 static void sample_ui_stack(){}
 }
-static lv_obj_t *body=nullptr,*wifi_dialog=nullptr;
+static lv_obj_t *body=nullptr,*wifi_dialog=nullptr,*info_dialog=nullptr;
 static int page=1,nodes_filter=0,groups_filter=0,chats_filter=0,redraws=0,active_chat_network=2;
 static const lv_color_t green=lv_color_hex(0x72D8A5);
 static int content_width(){return 400;}
@@ -176,6 +176,10 @@ static void notice(const char *,const char *){}
 static void filter_tabs(int,int){}
 static void show_center_heading(const char *,const char *){}
 ''' + segment('// Static maps:', '#undef MCX_KEY_FLAGS') + '\n#undef MCX_KEY_FLAGS\n' + r'''
+namespace mcxtouch {static bool pending=false;static bool busy(){return pending;}}
+static bool showing_mt(){return active_chat_network==1;}
+#include <new>
+#include "meshcrossway_chat_view.h"
 #include "meshcrossway_meshcore_ui.h"
 #include "meshcrossway_meshtastic_protocol.h"
 namespace meshmt {
@@ -184,8 +188,7 @@ static void poll(){}
 static const char *history_status(){return "MT SD fixture";}
 }
 static uint32_t esp_random(){return 0x12345678;}
-static lv_obj_t *info_dialog=nullptr;
-static bool showing_mt(){return true;}
+
 #include "meshcrossway_meshtastic_ui.h"
 static lv_obj_t *mc_button(lv_obj_t *parent,const char *text){
   for(uint32_t i=0;i<lv_obj_get_child_cnt(parent);i++){
@@ -213,7 +216,7 @@ static void test_companion_ui(const char *preview){
   lv_textarea_set_text(mcui::fields[0],"hello from display");tap_object(mc_button(mcui::dialog,"SEND"));advance();
   assert(!mcui::dialog&&c.qcount==1&&c.queue[0].frame.data[0]==2&&c.message_count==1);
   body=panel_at(lv_scr_act(),0,34,400,286,bg);page=1;mcui::render();advance();
-  page=3;lv_obj_clean(body);mcui::render();advance();
+  page=3;chatview::invalidate();lv_obj_clean(body);mcui::render();advance();
   // Exercise phase-1 controls against the real LVGL workspace and production model.
   c.qcount=0;c.messages[0].delivery=meshmc::UNCERTAIN;
   mcui::compose();lv_textarea_set_text(mcui::fields[0],"draft kept offline");mcui::close();
@@ -225,7 +228,7 @@ static void test_companion_ui(const char *preview){
   mcui::message_details_now((void *)(intptr_t)1);advance();tap_object(mc_button(mcui::dialog,"RESEND"));advance();
   assert(c.qcount==0&&mcui::confirm_pending);tap_object(mc_button(mcui::dialog,"RESEND"));advance();
   assert(c.qcount==1&&c.message_count==2&&!mcui::dialog);
-  mcui::show_list();assert(!mcui::conversation);lv_obj_clean(body);mcui::render();advance();assert(mcui::thread_count==1);
+  mcui::show_list();assert(!mcui::conversation);chatview::invalidate();lv_obj_clean(body);mcui::render();advance();assert(mcui::thread_count==1);
   c.qcount=0;mcui::select(mcxchat::key_for(c,false,0));
   for(int i=0;i<20;i++){mcui::form(26);assert(lv_textarea_get_password_mode(mcui::fields[1]));mcui::close();}
   mcui::tools();advance();assert(lv_obj_get_child_cnt(mcui::scroller)==meshmc::COMMAND_COUNT);mcui::close();
@@ -237,6 +240,9 @@ static void test_companion_ui(const char *preview){
   assert(lv_obj_has_state(mcui::compose_button,LV_STATE_DISABLED));
   assert(strstr(lv_label_get_text(mcui::feedback),"disconnected"));
   assert(!strstr(lv_label_get_text(lv_obj_get_child(mcui::scroller,0)),"up to 0 "));
+  const size_t idle_allocations=ui_alloc_calls;
+  for(int i=0;i<100;++i)mcui::refresh_composer();
+  assert(ui_alloc_calls==idle_allocations);
   lv_textarea_set_text(mcui::fields[0],"kept through reconnect");
   c.connected=true;c.payload_limit=173;mcui::refresh_composer();
   assert(!lv_obj_has_state(mcui::compose_button,LV_STATE_DISABLED));
@@ -247,11 +253,44 @@ static void test_companion_ui(const char *preview){
   for(unsigned i=0;i<meshmc::MAX_MESSAGES;++i){auto &m=c.append();memcpy(m.key,c.contacts[0].key,6);
     m.timestamp=m.observed_at=1800000000+i;strcpy(m.text,"Synthetic repeated full-history rendering");}
   page=3;mcui::select(mcxchat::key_for(c,false,0));
-  for(int i=0;i<5;++i){lv_obj_clean(body);mcui::render();advance();}
+  for(int i=0;i<5;++i){chatview::invalidate();lv_obj_clean(body);mcui::render();advance();}
   const size_t baseline=ui_live_bytes;
-  for(int i=0;i<30;++i){lv_obj_clean(body);mcui::render();advance();}
+  for(int i=0;i<30;++i){chatview::invalidate();lv_obj_clean(body);mcui::render();advance();}
   assert(ui_live_bytes<=baseline+1024&&ui_alloc_calls>1000&&ui_resize_calls>0);
-  lv_obj_del(body);body=nullptr;delete meshmc::client;meshmc::client=nullptr;
+  // Real production poll must retain the cards and reading position on status
+  // changes, and preserve the visible message while the ring evicts old rows.
+  active_chat_network=2;lv_obj_add_flag(body,LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_set_scroll_dir(body,LV_DIR_VER);lv_obj_scroll_to_y(body,800,LV_ANIM_OFF);advance();
+  assert(lv_obj_get_scroll_y(body)==800);
+  lv_obj_t *retained=chatview::cache->rows[20].object;
+  const size_t before_status=ui_alloc_calls;
+  c.change("Synthetic status only");mcui::last_redraw=0;mcui::poll(nullptr);advance();
+  assert(lv_obj_get_scroll_y(body)==800&&retained==chatview::cache->rows[20].object);
+  assert(ui_alloc_calls==before_status);
+  // A momentum/animated scroll must finish before structural refresh.
+  lv_obj_scroll_to_y(body,400,LV_ANIM_ON);advance(30);
+  c.change("Status during animated scroll");const auto scrolling_generation=mcui::rendered_generation;
+  mcui::poll(nullptr);assert(mcui::rendered_generation==scrolling_generation);
+  advance(500);mcui::poll(nullptr);advance();
+  lv_obj_scroll_to_y(body,800,LV_ANIM_OFF);advance();
+  // Touch already buffered but not yet delivered must defer protocol refresh.
+  mcxtouch::pending=true;auto &added=c.append();memcpy(added.key,c.contacts[0].key,6);
+  strcpy(added.text,"New message while reading");++c.generation;advance(300);
+  const auto old_generation=mcui::rendered_generation;mcui::poll(nullptr);
+  assert(mcui::rendered_generation==old_generation);
+  mcxtouch::pending=false;mcui::poll(nullptr);advance();
+  assert(lv_obj_get_scroll_y(body)<800&&lv_obj_get_scroll_y(body)>600);
+  // ACK updates replace only one card; the reading viewport remains anchored.
+  const int reading=lv_obj_get_scroll_y(body);
+  c.messages[20].delivery=meshmc::DELIVERED;c.messages[20].outgoing=true;
+  ++c.generation;advance(300);mcui::poll(nullptr);advance();
+  assert(lv_obj_get_scroll_y(body)==reading);
+  lv_obj_scroll_to_y(body,20000,LV_ANIM_OFF);advance();
+  auto &tail=c.append();memcpy(tail.key,c.contacts[0].key,6);strcpy(tail.text,"Follow tail");
+  ++c.generation;advance(300);mcui::poll(nullptr);advance();
+  assert(lv_obj_get_scroll_bottom(body)<=0);
+  puts("PASS: status refresh allocates no cards; buffered touch defers updates; ring eviction/ACK preserve reading; bottom follows new messages; idle composer allocates nothing");
+  chatview::invalidate();lv_obj_del(body);body=nullptr;delete meshmc::client;meshmc::client=nullptr;
   puts("PASS: MeshCore real-LVGL forms, keyboard geometry, confirmation, channel command, compose/send, lists, history and firmware gating");
   meshmt::client=new meshmt::Client();auto &mt=*meshmt::client;
   const uint8_t identity[7]={0,1,2,3,4,5,6};mt.attach(identity,517,123,0);
@@ -271,10 +310,19 @@ static void test_companion_ui(const char *preview){
   assert(!strcmp(mt.draft(mtui::selected)->text,"saved draft"));mt.connected=true;
   mtui::compose();assert(!strcmp(lv_textarea_get_text(mtui::value),"saved draft"));mtui::close();
   mtui::tools();advance();mtui::close();
-  page=2;groups_filter=1;lv_obj_clean(body);mtui::render();advance();
+  // The shared retained-card behavior must work with native Meshtastic IDs.
+  for(unsigned i=0;i<meshmt::MAX_MESSAGES;++i){auto &m=mt.append();m.from=456;m.to=123;
+    m.channel=0;m.channel_identity=99;strcpy(m.text,"Meshtastic saved message");}
+  page=3;chatview::invalidate();lv_obj_clean(body);mtui::render();advance();
+  lv_obj_add_flag(body,LV_OBJ_FLAG_SCROLLABLE);lv_obj_set_scroll_dir(body,LV_DIR_VER);
+  lv_obj_scroll_to_y(body,800,LV_ANIM_OFF);advance();
+  const size_t mt_allocations=ui_alloc_calls;auto *mt_card=chatview::cache->rows[20].object;
+  ++mt.generation;mtui::last_draw=0;mtui::poll(nullptr);advance();
+  assert(lv_obj_get_scroll_y(body)==800&&ui_alloc_calls==mt_allocations&&chatview::cache->rows[20].object==mt_card);
+  page=2;groups_filter=1;chatview::invalidate();lv_obj_clean(body);mtui::render();advance();
   mtui::select_channel_now(nullptr);assert(mtui::selected.node==meshmt::BROADCAST&&active_chat_network==1);
-  page=3;lv_obj_clean(body);mtui::render();advance();
-  lv_obj_del(body);body=nullptr;delete meshmt::client;meshmt::client=nullptr;
+  page=3;chatview::invalidate();lv_obj_clean(body);mtui::render();advance();
+  chatview::invalidate();lv_obj_del(body);body=nullptr;delete meshmt::client;meshmt::client=nullptr;
   puts("PASS: Meshtastic real-LVGL node/channel selection, compose, keyboard bounds, native send, offline gating, saved draft and compatibility dialog");
 
 }
@@ -346,6 +394,46 @@ void heap_caps_free(void *);
             render.parent.mkdir(parents=True, exist_ok=True)
             args.extend([str(render),str(render.with_name(render.stem+'-meshcore.ppm'))])
         subprocess.run(args,check=True)
+        # Reuse the actual LVGL objects for the production buffered adapter.
+        (temp/'freertos').mkdir()
+        (temp/'freertos/FreeRTOS.h').write_text(r'''#pragma once
+#include <cstdint>
+using portMUX_TYPE=int;
+#define portMUX_INITIALIZER_UNLOCKED 0
+#define portENTER_CRITICAL(x) ((void)(x))
+#define portEXIT_CRITICAL(x) ((void)(x))
+#define pdMS_TO_TICKS(x) (x)
+#define pdPASS 1
+''')
+        (temp/'freertos/task.h').write_text(r'''#pragma once
+#include "FreeRTOS.h"
+using TaskHandle_t=void *;
+static bool fake_task_failure=false;
+static int xTaskCreatePinnedToCore(void (*)(void *),const char *,unsigned,void *,int,TaskHandle_t *out,int){
+  if(fake_task_failure)return 0;*out=(void *)1;return pdPASS;
+}
+static void vTaskDelay(unsigned){}
+static unsigned uxTaskGetStackHighWaterMark(void *){return 2048;}
+''')
+        (temp/'esp_timer.h').write_text(r'''#pragma once
+#include "lvgl.h"
+static int64_t esp_timer_get_time(){return int64_t(lv_tick_get())*1000;}
+''')
+        (temp/'esp_lcd_touch.h').write_text(r'''#pragma once
+#include <cstdint>
+using esp_lcd_touch_handle_t=void *;
+using esp_err_t=int;
+#define ESP_OK 0
+static int esp_lcd_touch_read_data(void *){return ESP_OK;}
+static bool esp_lcd_touch_get_coordinates(void *,uint16_t *,uint16_t *,uint16_t *,uint8_t *,uint8_t){return false;}
+''')
+        edge=segment('static mcxswipe::State swipe_state=', 'static void apply_filter(')
+        touch=(ROOT/'tests/touch_input_test.cpp').read_text().replace('// PRODUCTION_EDGE_CODE',edge)
+        source=temp/'touch.cpp';source.write_text(allocator+touch)
+        binary=temp/'touch'
+        subprocess.run(['c++','-std=c++17',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
+        subprocess.run([str(binary)],check=True)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
