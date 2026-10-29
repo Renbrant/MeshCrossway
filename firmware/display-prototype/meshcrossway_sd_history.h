@@ -102,23 +102,23 @@ static bool load(const uint8_t radio[32],meshmc::Client &c,bool history_only){
   heap_caps_free(image);
   return ok;
 }
-static void save_image(Image *image){
-  if(!image)return;
+static bool save_image(Image *image){
+  if(!image)return false;
   struct stat st={};
-  if(stat("/sdcard",&st)||mkdir(DIR,0755)&&errno!=EEXIST)return;
+  if(stat("/sdcard",&st)||(mkdir(DIR,0755)!=0&&errno!=EEXIST))return false;
   char current[110],temp[110],backup[110];
   filename(current,sizeof(current),image->data.radio,"bin");
   filename(temp,sizeof(temp),image->data.radio,"tmp");
   filename(backup,sizeof(backup),image->data.radio,"bak");
-  FILE *f=fopen(temp,"wb");if(!f)return;
+  FILE *f=fopen(temp,"wb");if(!f)return false;
   bool ok=fwrite(image,1,sizeof(*image),f)==sizeof(*image);
   if(ok)ok=fflush(f)==0 && fsync(fileno(f))==0;
   if(fclose(f)!=0)ok=false;
-  if(!ok){remove(temp);return;}
+  if(!ok){remove(temp);return false;}
   // Keep last committed snapshot if power is lost during replacement.
   remove(backup);
   rename(current,backup);
-  if(rename(temp,current)!=0){rename(backup,current);remove(temp);return;}
+  if(rename(temp,current)!=0){rename(backup,current);remove(temp);return false;}
   FILE *last=fopen(DIR "/last-radio.tmp","wb");
   if(last){
     bool wrote=fwrite(image->data.radio,1,32,last)==32;
@@ -126,13 +126,23 @@ static void save_image(Image *image){
     if(fclose(last)!=0)wrote=false;
     if(wrote)rename(DIR "/last-radio.tmp",DIR "/last-radio");
   }
+  return true;
 }
 static void task(void *){
   while(true){
     Image *image=nullptr;
     portENTER_CRITICAL(&lock);image=pending;pending=nullptr;portEXIT_CRITICAL(&lock);
-    if(image){save_image(image);heap_caps_free(image);}
-    else vTaskDelay(pdMS_TO_TICKS(250));
+    if(image){
+      if(save_image(image))heap_caps_free(image);
+      else {
+        // SD missing / full / read-only: retain newest unsaved image and retry.
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        portENTER_CRITICAL(&lock);
+        if(!pending){pending=image;image=nullptr;}
+        portEXIT_CRITICAL(&lock);
+        if(image)heap_caps_free(image); // A newer pending snapshot supersedes it.
+      }
+    }else vTaskDelay(pdMS_TO_TICKS(250));
   }
 }
 static void begin(){
