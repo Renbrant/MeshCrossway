@@ -37,10 +37,21 @@ if 'mcxtouch::attach(lvgl_touch_indev, touch_handle);' not in source:
     if source.count(marker) != 1:
         sys.exit('Missing or duplicate UI initialization marker')
     source = source.replace(marker,
-        'mcxoffline::begin();\n        mcxtouch::attach(lvgl_touch_indev, touch_handle);\n        ' + marker, 1)
+        'mcxtouch::attach(lvgl_touch_indev, touch_handle);\n        ' + marker, 1)
     source = source.replace('#include "meshcrossway_ui.h"',
         '#include "meshcrossway_ui.h"\n#include "meshcrossway_offline_boot.h"', 1)
     main.write_text(source)
+# Network startup attempts the SD mount. Restoring earlier can mistake an
+# unmounted card for an empty archive. Bootstrap under the UI lock afterwards,
+# still independently of Bluetooth and its 12-second auto-resume delay.
+source = source.replace('        mcxoffline::begin();\n', '')  # migrate this patcher's earlier hook
+if '    // MCX offline restore after SD mount attempt' not in source:
+    marker = '    meshnetwork::start();'
+    if source.count(marker) != 1:
+        sys.exit('Missing or duplicate network startup marker')
+    source = source.replace(marker, marker + '\n    // MCX offline restore after SD mount attempt'
+        + '\n    if (lvgl_port_lock(0)) { mcxoffline::begin(); lvgl_port_unlock(); }', 1)
+main.write_text(source)
 # Reserve two small DMA buffers at display initialization. The previous PSRAM
 # draw buffers required SPI to allocate internal bounce memory during each flush.
 # Keep rotation and the UI unchanged; trans_size stays zero (one completion per

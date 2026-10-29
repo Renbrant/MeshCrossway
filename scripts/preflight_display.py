@@ -253,6 +253,9 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
             assert "auto_resume_task" in ble and "auto_paused.store(true)" in ble
         assert '#define LCD_BUFFER_SIZE (EXAMPLE_LCD_H_RES * 10)' in output
         assert '.buff_dma = 1,' in output and '.buff_spiram = 0,' in output
+        assert output.index('meshnetwork::start();') < output.index('mcxoffline::begin();') < output.index('meshble::schedule_auto_resume();')
+        assert output.count('mcxoffline::begin();') == 1
+
         assert 'assert(lvgl_disp != nullptr);' in output
         assert 'display_cfg.rounder_cb = [](lv_area_t *area)' in output
         assert 'espressif/esp_lvgl_port: "2.9.0"' in patched_manifest

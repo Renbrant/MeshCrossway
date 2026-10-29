@@ -1,7 +1,7 @@
 #pragma once
 #include "meshcrossway_ble.h"
 namespace mcxoffline {
-// LVGL lock held, before its protocol timers start. No controller/host startup,
+// LVGL lock held, after the SD mount attempt. No controller/host startup,
 // transport callback or transmission. Existing workers restore separate stores.
 static void begin(){
   const bool mc=meshmc::init(),mt=meshmt::init();

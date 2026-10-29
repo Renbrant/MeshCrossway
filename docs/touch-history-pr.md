@@ -41,8 +41,9 @@ changes, avoiding repeated allocations for an unchanged offline reason.
 
 ## Startup and storage
 
-The PSRAM models are allocated before the UI's protocol timers start. The first
-MeshCore offline restore can queue immediately; subsequent unavailable-card
+The PSRAM models are allocated under the UI lock after network startup has
+attempted the SD mount, avoiding an unmounted-card/empty-archive race. The first
+MeshCore offline restore can then queue immediately; subsequent unavailable-card
 attempts retain the five-second backoff. Meshtastic can restore its separately
 remembered BLE identity without starting Bluetooth. Reads/writes continue in the
 existing low-priority SD worker. Neither restore path queues a transmission.
