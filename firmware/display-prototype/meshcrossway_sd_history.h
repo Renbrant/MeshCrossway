@@ -139,10 +139,10 @@ static void begin(){
   if(!worker)xTaskCreatePinnedToCore(task,"mcx_sd_history",4096,nullptr,2,&worker,0);
 }
 static void restore_offline(meshmc::Client &c){
-  if(offline_loaded)return;
-  offline_loaded=true;
+  if(offline_loaded||c.connected)return;
   FILE *f=fopen(DIR "/last-radio","rb");
   if(!f)return;
+  offline_loaded=true;
   uint8_t radio[32]={};
   bool ok=fread(radio,1,32,f)==32 && fgetc(f)==EOF;
   fclose(f);
