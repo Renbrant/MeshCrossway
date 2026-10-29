@@ -544,12 +544,13 @@ static void show_center_heading(const char *heading_text,const char *subtitle){
   single_label(body,heading_text,8,8,w-16,white);
   if(subtitle)single_label(body,subtitle,8,30,w-16,muted);
 }
-static void center_card(int x,int y,int w,int h,const char *title,
+static lv_obj_t *center_card(int x,int y,int w,int h,const char *title,
                         const char *first,const char *second,lv_color_t color){
   lv_obj_t *card=panel_at(body,x,y,w,h,panel,8);
   single_label(card,title,8,8,w-16,color);
   if(first)single_label(card,first,8,32,w-16,white);
   if(second)single_label(card,second,8,h-23,w-16,muted);
+  return card;
 }
 static void chat_row(int y,int w,const char *network,const char *who,const char *detail,lv_color_t color){
   lv_obj_t *button=action_button(body,"",8,y,w-16,53,panel,on_action,A_NEW);
@@ -727,6 +728,7 @@ static void draw(){
   const int lw=home_hidden?29:(left_compact?40:79);
   const int rw=right_compact?29:125,cw=480-lw-rw;
   uptime_value=nullptr;heap_value=nullptr;network_value=nullptr;backup_value=nullptr;
+  mcui::radio_status=mcui::home_name=mcui::home_status=nullptr;
   lv_obj_set_pos(left_rail,0,34);lv_obj_set_size(left_rail,lw,home_hidden?39:286);
   lv_obj_set_pos(body,lw,34);lv_obj_set_size(body,cw,286);
   lv_obj_set_pos(right_rail,480-rw,34);lv_obj_set_size(right_rail,rw,286);
@@ -773,7 +775,8 @@ static void draw(){
     const int col=(w-24)/2;
     const bool narrow=col<155;
     center_card(8,54,col,95,"MESHTASTIC",narrow?"BLE: OFF":"MX-M / BLE OFF",narrow?"No packets":"No live packets",green);
-    center_card(col+16,54,col,95,"MESHCORE",mcui::ready()?meshmc::client->name:"BLE: OFF",mcui::ready()?"MeshCore connected":"Connect in More / Radios",purple);
+    lv_obj_t *mc_card=center_card(col+16,54,col,95,"MESHCORE",mcui::ready()?meshmc::client->name:"BLE: OFF",mcui::ready()?"MeshCore connected":"Connect in More / Radios",purple);
+    mcui::home_name=lv_obj_get_child(mc_card,1);mcui::home_status=lv_obj_get_child(mc_card,2);
     center_card(8,157,col,95,"POSITION","GNSS: OFFLINE","No valid fix",cyan);
     center_card(col+16,157,col,95,"CROSSWAY","Bridge: OFF",narrow?"Demo only":"Demo data only",orange);
   } else if(page==4){
@@ -818,7 +821,8 @@ static void draw(){
         single_label(body,"BLE starting in dedicated worker...",8,113,w-16,white);
         single_label(body,"Watch Wi-Fi / touch; report boot log.",8,152,w-16,muted);
       }else if(s.phase==meshble::READY){
-        center_card(8,104,w-16,80,"CONNECTED",s.active_name,s.radio==meshble::MESHCORE&&meshmc::client?meshmc::client->status:"Meshtastic transport only",green);
+        lv_obj_t *mc_card=center_card(8,104,w-16,80,"CONNECTED",s.active_name,s.radio==meshble::MESHCORE&&meshmc::client?meshmc::client->status:"Meshtastic transport only",green);
+        if(s.radio==meshble::MESHCORE)mcui::radio_status=lv_obj_get_child(mc_card,2);
         action_button(body,"MESHCORE TOOLS",8,190,w-16,40,orange,mcui::on_tools,0);
         action_button(body,"DISCONNECT",8,236,w-16,40,panel2,on_action,A_BLE_DISCONNECT);
       }else if(s.phase==meshble::CONNECTING||s.phase==meshble::VERIFYING||s.phase==meshble::PAIRING){

@@ -4,6 +4,7 @@ namespace mcui {
 static lv_obj_t *dialog = nullptr, *scroller = nullptr, *feedback = nullptr, *editor = nullptr,
                 *edit_value = nullptr, *keyboard = nullptr, *edit_target = nullptr;
 static lv_obj_t *fields[10] = {};
+static lv_obj_t *radio_status=nullptr,*home_name=nullptr,*home_status=nullptr;
 static uint8_t field_count = 0, selected_command = 0;
 static bool confirm_pending = false, group = false, conversation = false, reveal = false;
 static uint8_t target_key[32] = {};
@@ -466,6 +467,13 @@ static void render() {
 static void poll(lv_timer_t *) {
   meshmc::poll();
   auto *s = session();
+  if(s){
+    const char *state=s->initialized&&!s->busy&&!s->fault?"MeshCore ready":s->status;
+    if(radio_status&&strcmp(lv_label_get_text(radio_status),state))lv_label_set_text(radio_status,state);
+    if(home_name&&s->initialized&&strcmp(lv_label_get_text(home_name),s->name))lv_label_set_text(home_name,s->name);
+    const char *summary=s->connected?(s->initialized?"MeshCore connected":"Synchronizing..."):"Connect in More / Radios";
+    if(home_status&&strcmp(lv_label_get_text(home_status),summary))lv_label_set_text(home_status,summary);
+  }
   if (dialog && mode == 3 && feedback && s && s->generation != rendered_generation) {
     if (reveal) {
       char data[360], view[520];
