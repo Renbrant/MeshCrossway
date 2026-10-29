@@ -1087,6 +1087,8 @@ static void init(){
   right_rail=panel_at(screen,355,34,125,286,panel,0);
   for(int i=0;i<6;i++){
     tabs[i]=action_button(left_rail,"",3,7+i*45,73,38,panel2,on_nav,i);
+    // Keep tracking this finger after it leaves the icon bounds during drag.
+    lv_obj_add_flag(tabs[i],LV_OBJ_FLAG_PRESS_LOCK);
     lv_obj_add_event_cb(tabs[i],left_tab_touch,LV_EVENT_PRESSED,nullptr);
     lv_obj_add_event_cb(tabs[i],left_tab_touch,LV_EVENT_PRESSING,nullptr);
     lv_obj_add_event_cb(tabs[i],left_tab_touch,LV_EVENT_RELEASED,nullptr);
