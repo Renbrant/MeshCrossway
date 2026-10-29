@@ -1,6 +1,6 @@
 #pragma once
 // MeshCrossway v0.7.2 - resume only last bonded BLE peer after safe boot.
-// PIN-authenticated MeshCore Companion transport; Meshtastic remains discovery-only.
+// PIN-authenticated transports: MeshCore Companion and Meshtastic PhoneAPI.
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
 #include "host/ble_hs.h"
@@ -19,6 +19,7 @@
 #include "esp_heap_caps.h"
 #include "nvs.h"
 #include "meshcrossway_meshcore.h"
+#include "meshcrossway_meshtastic.h"
 #include "os/os_mbuf.h"
 #include <stdint.h>
 #include <stdio.h>
@@ -65,6 +66,19 @@ static const ble_uuid128_t MC_SERVICE=BLE_UUID128_INIT(
   0x9e,0xca,0xdc,0x24,0x0e,0xe5,0xa9,0xe0,0x93,0xf3,0xa3,0xb5,0x01,0x00,0x40,0x6e);
 
 static uint16_t mc_start=0,mc_end=0,mc_rx=0,mc_tx=0,mc_tx_end=0,mc_cccd=0;
+static uint16_t mt_start=0,mt_end=0,mt_to=0,mt_from=0,mt_num=0,mt_num_end=0,mt_cccd=0;
+static std::atomic<bool> mt_transport_started{false},mt_io_busy{false},mt_need_read{true};
+static std::atomic<uint32_t> mt_epoch{0},mt_notifications{0};
+static uint32_t mt_read_notice=0,mt_last_read=0;
+static const ble_uuid128_t MT_TO=BLE_UUID128_INIT(
+  0xe7,0x01,0x44,0x12,0x66,0x78,0xdd,0xa1,0xad,0x4d,0x9e,0x12,0xd2,0x76,0x5c,0xf7);
+static const ble_uuid128_t MT_FROM=BLE_UUID128_INIT(
+  0x02,0x00,0x12,0xac,0x42,0x02,0x78,0xb8,0xed,0x11,0x93,0x49,0x9e,0xe6,0x55,0x2c);
+static const ble_uuid128_t MT_NUM=BLE_UUID128_INIT(
+  0x53,0x44,0xe3,0x47,0x75,0xaa,0x70,0xa6,0x66,0x4f,0x00,0xa8,0x8c,0xa1,0x9d,0xed);
+static void mt_down(){
+  mt_transport_started=false;mt_io_busy=false;mt_epoch.fetch_add(1);meshmt::transport_down();
+}
 static std::atomic<bool> mc_transport_started{false};
 static const ble_uuid128_t MC_RX=BLE_UUID128_INIT(
   0x9e,0xca,0xdc,0x24,0x0e,0xe5,0xa9,0xe0,0x93,0xf3,0xa3,0xb5,0x02,0x00,0x40,0x6e);
@@ -160,6 +174,7 @@ static void on_sync(){
   update(IDLE,"Ready to scan (9 seconds)");
 }
 static void on_reset(int reason){
+  mt_down();
   synced=false;conn=BLE_HS_CONN_HANDLE_NONE;mc_transport_started=false;meshmc::transport_down();
   char msg[64];snprintf(msg,sizeof(msg),"BLE controller reset: %d",reason);
   update(FAILED,msg);
@@ -198,6 +213,7 @@ static void connect(int index){
   if(found.phase==READY||found.phase==PAIRING||found.phase==VERIFYING||found.phase==CONNECTING)return;
   (void)ble_gap_disc_cancel();
   identified=UNKNOWN;mc_start=mc_end=mc_rx=mc_tx=mc_cccd=0;mc_transport_started=false;meshmc::transport_down();
+  mt_down();mt_start=mt_end=mt_to=mt_from=mt_num=mt_num_end=mt_cccd=0;
   portENTER_CRITICAL(&mux);
   state.selected=index;state.radio=UNKNOWN;state.paired=false;state.bonded=false;
   state.pin_required=false;state.confirm_required=false;
@@ -250,6 +266,7 @@ static bool confirm_number(bool accepted){
   return rc==0;
 }
 static void transport_failure(const char *message){
+  mt_down();
   meshmc::transport_down();update(FAILED,message);
   if(conn!=BLE_HS_CONN_HANDLE_NONE)(void)ble_gap_terminate(conn,BLE_ERR_REM_USER_CONN_TERM);
 }
@@ -302,15 +319,139 @@ static void start_meshcore(){
   update(VERIFYING,"MeshCore: negotiating MTU / notifications...");
   if(ble_gattc_exchange_mtu(conn,mc_mtu,nullptr))transport_failure("MeshCore MTU exchange failed");
 }
+static bool mt_callback_current(uint16_t handle,void *token){return handle==conn&&uintptr_t(token)==mt_epoch.load();
+}
+static void *mt_token(){return reinterpret_cast<void *>(uintptr_t(mt_epoch.load()));
+}
+static int mt_written(uint16_t handle,const struct ble_gatt_error *err,struct ble_gatt_attr *,void *token){
+  if(!mt_callback_current(handle,token))return 0;
+  meshmt::on_write(err->status==0);
+  mt_io_busy.store(false);
+  mt_need_read.store(true);
+  return 0;
+}
+static bool mt_can_write(){return mt_transport_started.load()&&!mt_io_busy.load()&&conn!=BLE_HS_CONN_HANDLE_NONE;
+}
+static bool mt_write(const uint8_t *p,size_t n){
+  if(!mt_can_write()||!mt_to||n>(size_t)(ble_att_mtu(conn)-3))return false;
+  bool expected=false;
+  if(!mt_io_busy.compare_exchange_strong(expected,true))return false;
+  const int rc=ble_gattc_write_flat(conn,mt_to,p,n,mt_written,mt_token());
+  if(rc)mt_io_busy=false;
+  return rc==0;
+}
+static void mt_close(){transport_failure(meshmt::client?meshmt::client->status:"Meshtastic session stopped");
+}
+static int mt_read_result(uint16_t handle,const struct ble_gatt_error *err,struct ble_gatt_attr *attr,void *token){
+  if(!mt_callback_current(handle,token)||!mt_transport_started)return 0;
+  auto &frame=meshmt::buffers->reading;
+  if(!err->status&&attr){
+    const uint16_t n=OS_MBUF_PKTLEN(attr->om);
+    if(attr->offset!=frame.len||n>meshmt::MAX_FRAME-frame.len||os_mbuf_copydata(attr->om,0,n,frame.data+frame.len)){
+      transport_failure("Meshtastic long-read invalid / over 512 bytes");
+      return 0;
+    }
+    frame.len+=n;
+    return 0;
+  }
+  if(err->status!=BLE_HS_EDONE){transport_failure("Meshtastic FromRadio read failed; reconnect");
+    return 0;
+  }
+  if(frame.len){if(!meshmt::on_frame(frame.data,frame.len)){transport_failure("Meshtastic receive queue full");
+      return 0;
+    }}
+  else if(mt_read_notice==mt_notifications.load())mt_need_read.store(false);
+  mt_last_read=uint32_t(esp_timer_get_time()/1000);
+  mt_io_busy.store(false);
+  return 0;
+}
+static void mt_pump_read(){
+  const uint32_t now=uint32_t(esp_timer_get_time()/1000);
+  if(!mt_can_write()||(!mt_need_read.load()&&(uint32_t)(now-mt_last_read)<2000))return;
+  bool expected=false;
+  if(!mt_io_busy.compare_exchange_strong(expected,true))return;
+  meshmt::buffers->reading.len=0;
+  mt_read_notice=mt_notifications.load();
+  // Standard GATT long read preserves a complete FromRadio at MTU 512 as well
+  // as 517. No stream header and no assumption that a notification is a packet.
+  if(ble_gattc_read_long(conn,mt_from,0,mt_read_result,mt_token())){mt_io_busy=false;
+    transport_failure("Cannot read Meshtastic FromRadio");
+  }
+}
+static int mt_subscribed(uint16_t handle,const struct ble_gatt_error *err,struct ble_gatt_attr *,void *token){
+  if(!mt_callback_current(handle,token))return 0;
+  if(err->status){transport_failure("Meshtastic FromNum subscription failed");
+    return 0;
+  }
+  struct ble_gap_conn_desc desc={};
+  if(ble_gap_conn_find(handle,&desc)){transport_failure("Meshtastic peer identity unavailable");
+    return 0;
+  }
+  uint8_t identity[7];
+  identity[0]=desc.peer_id_addr.type&1;
+  memcpy(identity+1,desc.peer_id_addr.val,6);
+  mt_transport_started=true;
+  mt_io_busy=false;
+  mt_need_read=true;
+  mt_notifications=0;
+  mt_last_read=0;
+  meshmt::transport_up(identity,ble_att_mtu(handle));
+  update(READY,"Meshtastic PhoneAPI ready; synchronizing...");
+  save_remembered();
+  return 0;
+}
+static int mt_descriptor(uint16_t handle,const struct ble_gatt_error *err,uint16_t,const struct ble_gatt_dsc *dsc,void *token){
+  if(!mt_callback_current(handle,token))return 0;
+  if(!err->status&&dsc){if(ble_uuid_u16(&dsc->uuid.u)==0x2902)mt_cccd=dsc->handle;
+    return 0;
+  }
+  if(err->status!=BLE_HS_EDONE||!mt_cccd){transport_failure("Meshtastic FromNum CCCD missing");
+    return 0;
+  }
+  const uint8_t enable[2]={1,0};
+  if(ble_gattc_write_flat(handle,mt_cccd,enable,2,mt_subscribed,token))transport_failure("Cannot subscribe to Meshtastic FromNum");
+  return 0;
+}
+static int mt_characteristic(uint16_t handle,const struct ble_gatt_error *err,const struct ble_gatt_chr *chr,void *token){
+  if(!mt_callback_current(handle,token))return 0;
+  if(!err->status&&chr){
+    if(mt_num&&chr->def_handle>mt_num&&(!mt_num_end||chr->def_handle-1<mt_num_end))mt_num_end=chr->def_handle-1;
+    if(ble_uuid_cmp(&chr->uuid.u,&MT_TO.u)==0&&(chr->properties&BLE_GATT_CHR_F_WRITE))mt_to=chr->val_handle;
+    if(ble_uuid_cmp(&chr->uuid.u,&MT_FROM.u)==0&&(chr->properties&BLE_GATT_CHR_F_READ))mt_from=chr->val_handle;
+    if(ble_uuid_cmp(&chr->uuid.u,&MT_NUM.u)==0&&(chr->properties&BLE_GATT_CHR_F_NOTIFY)&&(chr->properties&BLE_GATT_CHR_F_READ)){mt_num=chr->val_handle;
+      mt_num_end=mt_end;
+    }
+    return 0;
+  }
+  if(err->status!=BLE_HS_EDONE||!mt_to||!mt_from||!mt_num||mt_num_end<=mt_num){transport_failure("Meshtastic ToRadio/FromRadio/FromNum incompatible");
+    return 0;
+  }
+  if(ble_gattc_disc_all_dscs(handle,mt_num,mt_num_end,mt_descriptor,token))transport_failure("Meshtastic descriptor discovery failed");
+  return 0;
+}
+static int mt_mtu(uint16_t handle,const struct ble_gatt_error *err,uint16_t mtu,void *token){
+  if(!mt_callback_current(handle,token))return 0;
+  if(err->status||mtu<512){transport_failure("Meshtastic needs MTU >=512. Update T-Deck firmware / use BaseUI.");
+    return 0;
+  }
+  if(ble_gattc_disc_all_chrs(handle,mt_start,mt_end,mt_characteristic,token))transport_failure("Meshtastic characteristic discovery failed");
+  return 0;
+}
+static void start_meshtastic(){
+  if(identified!=MESHTASTIC||mt_transport_started)return;
+  update(VERIFYING,"Meshtastic: checking MTU and PhoneAPI...");
+  if(ble_gattc_exchange_mtu(conn,mt_mtu,mt_token()))transport_failure("Meshtastic MTU exchange failed");
+}
 static int service_cb(uint16_t handle,const struct ble_gatt_error *err,
                       const struct ble_gatt_svc *service,void *){
   if(handle!=conn)return 0;
   if(err->status==0&&service){
-    if(ble_uuid_cmp(&service->uuid.u,&MT_SERVICE.u)==0)identified=MESHTASTIC;
+    if(ble_uuid_cmp(&service->uuid.u,&MT_SERVICE.u)==0){identified=MESHTASTIC;mt_start=service->start_handle;mt_end=service->end_handle;}
     if(ble_uuid_cmp(&service->uuid.u,&MC_SERVICE.u)==0){identified=MESHCORE;mc_start=service->start_handle;mc_end=service->end_handle;}
     return 0;
   }
   if(err->status==BLE_HS_EDONE){
+    if(mt_start&&mc_start){transport_failure("Ambiguous dual-protocol GATT. Use one official radio firmware.");return 0;}
     if(identified==UNKNOWN){
       update(FAILED,"No Meshtastic / MeshCore GATT service");
       (void)ble_gap_terminate(handle,BLE_ERR_REM_USER_CONN_TERM);
@@ -404,13 +545,13 @@ static int gap_event(struct ble_gap_event *event,void *){
         portENTER_CRITICAL(&mux);
         state.pin_required=true;state.generation++;
         portEXIT_CRITICAL(&mux);
-        update(PAIRING,"Enter the six-digit PIN shown on Heltec");
+        update(PAIRING,"Enter the six-digit PIN shown on your radio");
       }else if(event->passkey.params.action==BLE_SM_IOACT_NUMCMP){
         portENTER_CRITICAL(&mux);
         state.compare_number=event->passkey.params.numcmp;
         state.confirm_required=true;state.generation++;
         portEXIT_CRITICAL(&mux);
-        update(PAIRING,"Compare six-digit number on the Heltec");
+        update(PAIRING,"Compare six-digit number on your radio");
       }else{
         update(FAILED,"Unsupported pairing method");
         (void)ble_gap_terminate(event->passkey.conn_handle,BLE_ERR_REM_USER_CONN_TERM);
@@ -424,10 +565,11 @@ static int gap_event(struct ble_gap_event *event,void *){
         portEXIT_CRITICAL(&mux);
         struct ble_gap_conn_desc desc={};
         if(ble_gap_conn_find(conn,&desc)||!desc.sec_state.encrypted||!desc.sec_state.authenticated){
-          transport_failure("Authenticated BLE link required");return 0;
+          transport_failure("PIN pairing required: enable RANDOM_PIN / FIXED_PIN on radio");return 0;
         }
         portENTER_CRITICAL(&mux);state.bonded=desc.sec_state.bonded;state.generation++;portEXIT_CRITICAL(&mux);
         if(identified==MESHCORE)start_meshcore();
+        else if(identified==MESHTASTIC)start_meshtastic();
         else {update(READY,"BLE secure link / GATT verified");save_remembered();}
       }else{
         char msg[64];snprintf(msg,sizeof(msg),"Pairing failed: %d",event->enc_change.status);
@@ -436,6 +578,7 @@ static int gap_event(struct ble_gap_event *event,void *){
       }
       return 0;
     case BLE_GAP_EVENT_DISCONNECT:{
+      mt_down();
       conn=BLE_HS_CONN_HANDLE_NONE;mc_transport_started=false;meshmc::transport_down();
       const Phase before=snapshot().phase;
       portENTER_CRITICAL(&mux);
@@ -446,6 +589,10 @@ static int gap_event(struct ble_gap_event *event,void *){
       return 0;
     }
     case BLE_GAP_EVENT_NOTIFY_RX:{
+      if(event->notify_rx.conn_handle==conn&&event->notify_rx.attr_handle==mt_num&&mt_transport_started){
+        if(OS_MBUF_PKTLEN(event->notify_rx.om)!=4){transport_failure("Invalid Meshtastic FromNum notification");return 0;}
+        mt_notifications.fetch_add(1);mt_need_read=true;return 0;
+      }
       if(event->notify_rx.conn_handle!=conn||event->notify_rx.attr_handle!=mc_tx||!mc_transport_started)return 0;
       uint8_t data[meshmc::MAX_FRAME];const uint16_t n=OS_MBUF_PKTLEN(event->notify_rx.om);
       if(n>sizeof(data)||os_mbuf_copydata(event->notify_rx.om,0,n,data)!=0){meshmc::overflow.store(true);return 0;}
@@ -478,7 +625,7 @@ static void start_internal(){
     char msg[64];snprintf(msg,sizeof(msg),"NimBLE: %s (%d)",esp_err_to_name(err),(int)err);
     update(FAILED,msg);return;
   }
-  (void)ble_att_set_preferred_mtu(247);
+  (void)ble_att_set_preferred_mtu(517);
   ble_hs_cfg.reset_cb=on_reset;
   ble_hs_cfg.sync_cb=on_sync;
   ble_hs_cfg.store_status_cb=ble_store_util_status_rr;
@@ -501,13 +648,19 @@ static void init_task(void *){
   // A short delay allows LVGL, the Wi-Fi AP/STA and HTTP to become responsive.
   vTaskDelay(pdMS_TO_TICKS(500));
   start_internal();
+  if(read_remembered()){
+    RememberedPeer peer;portENTER_CRITICAL(&mux);peer=remembered;portEXIT_CRITICAL(&mux);
+    if(peer.radio==MESHTASTIC){uint8_t id[7];id[0]=peer.addr_type&1;memcpy(id+1,peer.addr,6);meshmt::request_offline(id);}
+  }
   vTaskDelete(nullptr);
 }
 static bool request_start(){
   if(snapshot().phase!=OFF)return false; // Do not repeat a partial or failed init.
   mcxhistory::ble_startup.store(true);
   if(!meshmc::init()){mcxhistory::ble_startup.store(false);update(FAILED,"No PSRAM for MeshCore session");return false;}
+  if(!meshmt::init()){mcxhistory::ble_startup.store(false);update(FAILED,"No PSRAM for Meshtastic session");return false;}
   meshmc::send_frame=mc_write;meshmc::close_link=mc_close;
+  meshmt::send_frame=mt_write;meshmt::can_write=mt_can_write;meshmt::pump_read=mt_pump_read;meshmt::close_link=mt_close;
   debug_memory("BLE requested");
   update(STARTING,"BLE worker requested - standby...");
   const BaseType_t created=xTaskCreate(init_task,"mcx_ble_init",6144,nullptr,tskIDLE_PRIORITY+1,nullptr);
@@ -542,3 +695,4 @@ static void schedule_auto_resume(){
                     tskIDLE_PRIORITY+1,&reconnect_worker);
 }
 } // namespace meshble
+

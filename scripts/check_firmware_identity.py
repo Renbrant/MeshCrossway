@@ -11,7 +11,7 @@ p.add_argument("--ui-header",default="firmware/display-prototype/meshcrossway_ui
 a=p.parse_args()
 version=Path(a.version_file).read_text().strip()
 header=Path(a.ui_header).read_text()
-expected=version.lstrip("v") if version in ("v0.7.8","v0.7.9","v0.7.10","v0.7.11") else "DEV "+version.lstrip("v")
+expected=version.lstrip("v") if tuple(map(int,version.lstrip("v").split("."))) >= (0,7,8) else "DEV "+version.lstrip("v")
 if f'"{expected}"' not in header:
     p.error(f"Header does not contain the expected UI label {expected!r}")
 image_dir=Path(a.root)/"versions"/version
@@ -26,3 +26,4 @@ for older in ("DEV 0.4","DEV 0.5.0"):
     if older!=expected and older.encode()+b"\x00" in data:
         p.error(f"Compiled image unexpectedly contains old UI label {older!r}")
 print(f"PASS: {version} binary contains embedded UI label {expected!r} ({len(data)} bytes)")
+

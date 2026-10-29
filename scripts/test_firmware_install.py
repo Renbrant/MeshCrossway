@@ -41,4 +41,18 @@ class InstallerTests(unittest.TestCase):
         self.image[0x8004]=0;self.image[0x8005]=0xa0
         (self.folder/'meshcrossway-display-dev.bin').write_bytes(self.image)
         with self.assertRaises(subprocess.CalledProcessError):self.build()
+    def test_numeric_version_identity_for_current_and_future_candidates(self):
+        for version in ('v0.7.12','v0.8.0'):
+            with self.subTest(version=version):
+                label=version[1:];version_file=self.folder/'VERSION';version_file.write_text(version)
+                ui=self.folder/'ui.h';ui.write_text('label("'+label+'");')
+                target=self.folder/'versions'/version;target.mkdir(parents=True)
+                (target/'build-info.json').write_text(json.dumps({'version':version}))
+                binary=target/'meshcrossway-display-dev.bin';binary.write_bytes(b'firmware\x00'+label.encode()+b'\x00')
+                command=[sys.executable,str(ROOT/'scripts/check_firmware_identity.py'),'--root',str(self.folder),
+                         '--version-file',str(version_file),'--ui-header',str(ui)]
+                self.assertEqual(subprocess.run(command,capture_output=True).returncode,0)
+                binary.write_bytes(b'firmware\x000.7.11\x00')
+                self.assertNotEqual(subprocess.run(command,capture_output=True).returncode,0)
 if __name__=='__main__':unittest.main()
+

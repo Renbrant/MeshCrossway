@@ -10,7 +10,7 @@ import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
 REPO=os.environ.get('GITHUB_REPOSITORY','Renbrant/MeshCrossway')
-INPUTS=['scripts/check_chat_memory.py','scripts/test_conversations_history.py','tests/conversations_history_test.cpp', 'tests/sd_history_worker_test.cpp', 'tests/meshcore_transport_test.cpp', 'scripts/test_ble_resume.py', 'scripts/test_runtime_diagnostics.py','firmware/display-prototype','scripts/build_firmware_versions.sh',
+INPUTS=['scripts/test_meshtastic.py','tests/meshtastic_protocol_test.cpp','tests/meshtastic_runtime_test.cpp','scripts/check_chat_memory.py','scripts/test_conversations_history.py','tests/conversations_history_test.cpp', 'tests/sd_history_worker_test.cpp', 'tests/meshcore_transport_test.cpp', 'scripts/test_ble_resume.py', 'scripts/test_runtime_diagnostics.py','firmware/display-prototype','scripts/build_firmware_versions.sh',
         'scripts/write_firmware_version.py','scripts/check_ble_sdkconfig.py',
         'scripts/test_ble_pairing_ui.py','scripts/test_meshcore.py','tests/meshcore_protocol_test.cpp']
 
@@ -73,3 +73,4 @@ if __name__=='__main__':
     except (OSError,ValueError,KeyError,subprocess.CalledProcessError,zipfile.BadZipFile) as error:
         # Never publish unverified bytes. The existing build/verification follows.
         print(f'Reviewed artifact unavailable: {error}; falling back to compilation')
+

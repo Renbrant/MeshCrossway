@@ -133,6 +133,7 @@ if source.count('meshnetwork::start();') != 1:
     sys.exit('Missing or duplicate isolated Wi-Fi initialization')
 for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",
              "meshcrossway_remote_page.h", "meshcrossway_network.h", "meshcrossway_ble.h", "meshcrossway_meshcore.h",
+             "meshcrossway_meshtastic_protocol.h", "meshcrossway_meshtastic.h", "meshcrossway_meshtastic_store.h", "meshcrossway_meshtastic_ui.h",
              "meshcrossway_meshcore_protocol.h", "meshcrossway_meshcore_ui.h", "meshcrossway_sd_history.h", "meshcrossway_history_store.h", "meshcrossway_conversations.h",
              "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h", "meshcrossway_lvgl_alloc.h", "meshcrossway_runtime.h",
              "meshcrossway_power_status.h", "meshcrossway_battery_decode.h",
@@ -163,7 +164,7 @@ needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_LV_USE_IMGFONT=y","CONFIG_LV_FONT_MON
         "CONFIG_BT_ENABLED=y","CONFIG_BT_NIMBLE_ENABLED=y",
         "CONFIG_BT_NIMBLE_ROLE_CENTRAL=y","CONFIG_BT_NIMBLE_MAX_CONNECTIONS=2",
         "CONFIG_BT_NIMBLE_NVS_PERSIST=y","CONFIG_BT_NIMBLE_MAX_BONDS=4",
-        "CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU=247",
+        "CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU=517",
         "CONFIG_ESP_COEX_SW_COEXIST_ENABLE=y",
         "CONFIG_ESP_WIFI_TASK_PINNED_TO_CORE_0=y",
         "CONFIG_BT_CTRL_PINNED_TO_CORE_1=y",
@@ -183,3 +184,4 @@ target_compile_options(${COMPONENT_LIB} PRIVATE -Wframe-larger-than=4096 -fstack
 if "idf_component_get_property(mcx_lvgl_lib" not in cmake.read_text():
     cmake.write_text(cmake.read_text()+allocator_build)
 print(f"MeshCrossway patched and verified: {project}")
+

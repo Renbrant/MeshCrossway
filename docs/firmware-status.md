@@ -1,5 +1,10 @@
 # Waveshare firmware status — October 28, 2026
 
+## Current candidate — October 29, 2026
+
+v0.7.12 implements the independent Meshtastic PhoneAPI client using an external T-Deck / T-Deck Plus BLE radio. See [setup, compatibility gates, tests and hardware acceptance](meshtastic-v0712.md). Only one BLE radio session is active at a time. Physical T-Deck qualification is pending; v0.7.8 remains the immutable owner-tested recovery. Earlier sections below are historical release records.
+
+
 Target: Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0, non-B, 480 × 320. ESP-IDF 5.3.2; LVGL 8.4.0; Waveshare BSP `d9ff7837148b47b33edadc4b87775c341cf35bbe`.
 
 | Firmware | Physical evidence | Use |
@@ -173,3 +178,4 @@ The approved visual reference has dark graphite and orange/amber as its primary 
 **Hardware acceptance:** flash without Erase, inspect all six nav entries and Home's reopen handle, collapse/expand the rail, filter Nodes/Groups independently, open each sample thread then return to Chats, check More > Radios and More > Wi-Fi, and capture screenshots with the existing remote viewer. Verify no lockups after repeated navigation. Build success is not proof of hardware stability.
 
 See [workflow research](field-console-workflow.md).
+

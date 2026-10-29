@@ -4,6 +4,8 @@ MeshCrossway is an **open-source, offline-first modular communication system** w
 
 > **Development status:** **v0.7.8 is the owner-confirmed recovery image**. **v0.7.11 experimental** follows an application-wide stability audit: explicit PSRAM UI allocation, bounded BLE burst handling and redraws, restored Bluetooth enabled preference, accurate send gating, resilient SD saves and reset/memory/timing diagnostics. [Audit, public sources and hardware retest](docs/stability-audit-v0711.md). [SD evidence and recovery](docs/sd-history-reliability-v0711.md). [Messaging behavior and limits](docs/messaging-phase-1-v079.md). v0.7.10 is withdrawn; physical validation of v0.7.11 remains pending. The Meshtastic adapter, concurrent BLE sessions, GNSS and offline navigation remain separate pending work. The web simulator is separate from the physical LVGL firmware.
 
+**v0.7.12 experimental:** Meshtastic PhoneAPI integration now supports a T-Deck / T-Deck Plus as the external BLE radio: native nodes, channels, direct/channel messages, positions/metrics, drafts and separate plaintext SD history. Use **Bluetooth Programming Mode or BaseUI**, T-Deck Wi-Fi off, and the displayed PIN. One active BLE radio session; both networks remain independent. Physical T-Deck qualification is pending; **v0.7.8 remains recovery**. [Setup and compatibility checks](docs/meshtastic-v0712.md).
+
 ## Current hardware — three independent BLE devices
 
 ![Approved MeshCrossway modular topology: one Core and two autonomous Radio Pods, each with its own battery](docs/images/architecture/modular-ble-topology.svg)
@@ -125,3 +127,4 @@ See the [licensing policy](docs/licensing.md), [initial dependency review and ou
 > **Emoji display candidate (v0.7.3, not hardware-tested):** PR #41 adds 92 local color emoji sprites for read-only MeshCore chat rendering, built on the v0.7.2 Wi-Fi/BLE auto-reconnection firmware. Incoming message bytes and both independent mesh protocols remain unchanged. [Implementation and hardware tests](docs/emoji-read-only-preparation.md).
 
 > **v0.7.4 emoji fix (experimental):** MeshCore checkered-flag names (🏁 U+1F3C1) and message bodies render the 93rd local color glyph instead of `[emoji]`, without touching transmitted UTF-8 or saved bonds. [Test procedure](docs/checkered-flag-emoji-v074.md). The Web Flasher retains v0.6.8 as tested rollback.
+
