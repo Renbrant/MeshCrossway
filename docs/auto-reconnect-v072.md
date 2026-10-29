@@ -15,7 +15,7 @@
 - Source: `firmware/display-prototype/meshcrossway_network.h`: a versioned `mcx_wifi/profiles` NVS blob of at most 5 SSID/password pairs. Last successful connect is moved to the front; runtime event handler switches credentials without blocking LVGL. The existing `meshcrossway_backup.h` plaintext Wi-Fi SD backup remains unchanged.
 - Source: `firmware/display-prototype/meshcrossway_ble.h`: `mcx_ble/last_peer` NVS blob of 1 verified security identity and protocol. Existing NimBLE bonding key storage (v0.7.1) remains separate. PIN is **not** cached in plaintext.
 - Source: `firmware/display-prototype/apply_to_waveshare.py`: after Wi-Fi+HTTP initialization, schedules (but does not synchronously perform) delayed BLE startup. The working LCD DMA buffers and Wi-Fi/AP boot sequence remain unchanged.
-- ESP-IDF firmware: v5.3.2. NVS is **not encrypted at rest** in this experimental build; a separate [device-bound encrypted microSD backup proposal](device-bound-secure-backup-v073.md) is design only and is not implemented by auto-reconnect.
+- ESP-IDF firmware: v5.3.2. NVS is **not encrypted at rest** in this experimental build; a separate [device-bound encrypted microSD backup proposal](https://github.com/Renbrant/MeshCrossway/pull/42) is design only and is not implemented by auto-reconnect.
 - This implementation does not restore erased NVS without a separately secured backup. **Leave Erase unchecked** during normal Web Flasher updates. No eFuse or bootloader changes.
 - Must remain labeled EXPERIMENTAL until tested on the physical Waveshare Rev2.0 with the real BLE Companion and Wi-Fi routers. The immutable v0.6.8 rollback remains available.
 
