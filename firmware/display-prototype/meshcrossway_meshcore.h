@@ -35,6 +35,7 @@ static bool channel_secret(const char *name, uint8_t out[16]) {
 static bool init() {
   if (client)
     return true;
+  if(!mcxhistory::init_workspace())return false;
   void *memory = heap_caps_malloc(sizeof(Client), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   mailbox = (Frame *)heap_caps_calloc(16, sizeof(Frame), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   if (!memory || !mailbox) {

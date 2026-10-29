@@ -10,7 +10,7 @@ import zipfile
 
 ROOT=Path(__file__).resolve().parents[1]
 REPO=os.environ.get('GITHUB_REPOSITORY','Renbrant/MeshCrossway')
-INPUTS=['firmware/display-prototype','scripts/build_firmware_versions.sh',
+INPUTS=['scripts/check_chat_memory.py','scripts/test_conversations_history.py','tests/conversations_history_test.cpp','firmware/display-prototype','scripts/build_firmware_versions.sh',
         'scripts/write_firmware_version.py','scripts/check_ble_sdkconfig.py',
         'scripts/test_ble_pairing_ui.py','scripts/test_meshcore.py','tests/meshcore_protocol_test.cpp']
 

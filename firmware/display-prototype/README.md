@@ -145,3 +145,8 @@ A touch PRESSING handler on each left nav tab detects a horizontal swipe before 
 ## v0.7.9 — messaging phase 1 (experimental)
 
 MeshCore conversation lists, native room session flow, local search/aliases/favorites, notification and mute controls, editable quick replies, draft persistence and manually confirmed resend now use a bounded transaction journal on microSD. Filesystem work runs outside LVGL. The SD is plaintext by owner choice. Meshtastic remains unavailable pending its adapter. **v0.7.8 is the recommended recovery image**; v0.7.9 still requires physical RX/TX/ACK, SD failure and coexistence acceptance. See [implementation, resource limits and verification](../../docs/messaging-phase-1-v079.md). Earlier release sections describe historical behavior.
+
+
+## v0.7.10 — Bluetooth startup memory fix (experimental)
+
+v0.7.9 was withdrawn after the owner reproduced NimBLE error 257 (out of memory). Chat preferences and list/sort workspaces now use explicit PSRAM instead of 45,604 bytes of static internal RAM. CI audits the actual ELF to prevent a repeat. Phase-1 history and NVS pairing are preserved; v0.7.8 remains recommended recovery. [Diagnosis and retest](../../docs/ble-memory-fix-v0710.md).

@@ -148,7 +148,11 @@ int main(int argc,char **argv){
 #include <atomic>
 static int64_t esp_timer_get_time(){return 6000000;}
 namespace mcxhistory {
-static mcxchat::Local local;static bool restored=true;
+static mcxchat::Workspace memory;
+static bool init_workspace(){return true;}
+static mcxchat::Workspace *workspace(){return &memory;}
+static mcxchat::Local &preferences(){return memory.local;}
+static bool restored=true;
 static const char *status(){return "SD: test fixture";}
 static void poll(meshmc::Client &,uint32_t,uint32_t){}
 }
@@ -198,9 +202,9 @@ static void test_companion_ui(const char *preview){
   // Exercise phase-1 controls against the real LVGL workspace and production model.
   c.qcount=0;c.messages[0].delivery=meshmc::UNCERTAIN;
   mcui::compose();lv_textarea_set_text(mcui::fields[0],"draft kept offline");mcui::close();
-  assert(!strcmp(mcxhistory::local.get(mcui::selected)->draft,"draft kept offline"));
+  assert(!strcmp(mcxhistory::preferences().get(mcui::selected)->draft,"draft kept offline"));
   assert(mcui::conversation);mcui::chat_tools();advance();tap_object(mc_button(mcui::scroller,"FAVORITE"));advance();
-  assert(mcxhistory::local.get(mcui::selected)->favorite);mcui::close();
+  assert(mcxhistory::preferences().get(mcui::selected)->favorite);mcui::close();
   mcui::alias_event(nullptr);advance();lv_textarea_set_text(mcui::fields[0],"Local Heltec");advance();
   tap_object(mc_button(mcui::dialog,"SAVE"));advance();assert(!strcmp(mcui::thread_name(mcui::selected),"Local Heltec"));
   mcui::message_details_now((void *)(intptr_t)1);advance();tap_object(mc_button(mcui::dialog,"RESEND"));advance();

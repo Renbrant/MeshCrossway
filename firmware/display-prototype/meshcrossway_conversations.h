@@ -84,6 +84,14 @@ static bool clear(meshmc::Client &c,const Key &k) {
   ++c.generation;return true;
 }
 struct Thread {Key key;uint32_t last=0;uint16_t unread=0;};
+// This entire workspace belongs in PSRAM, never in static internal .data/.bss.
+struct Workspace {
+  Local local;
+  Thread rows[meshmc::MAX_MESSAGES];
+  uint16_t indices[meshmc::MAX_CONTACTS]={};
+  uint64_t scores[meshmc::MAX_CONTACTS]={};
+};
+static_assert(sizeof(Workspace)<64*1024,"Bound the chat PSRAM workspace");
 static size_t list(meshmc::Client &c,Local &local,Thread *out,size_t cap,const char *query="",bool groups_only=false,bool include_blocked=false) {
   size_t count=0;
   for(auto &m:c.messages){

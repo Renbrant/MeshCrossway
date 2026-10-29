@@ -334,7 +334,7 @@ static void compose() {
   char limit[80];
   snprintf(limit, sizeof(limit), "Message (up to %u UTF-8 bytes)",
            (unsigned)(session() ? session()->text_limit(group) : 0));
-  auto *pref=mcxhistory::local.get(selected);
+  auto *pref=mcxhistory::preferences().get(selected);
   field(limit, pref?pref->draft:"", 0);
   feedback = txt(scroller, "Draft is local. Send uses MeshCore and requires a connected radio with a valid clock.", 10, 88, 450, muted);
   lv_label_set_long_mode(feedback, LV_LABEL_LONG_WRAP);
@@ -433,7 +433,7 @@ static int unread(bool is_group, int index) {
       ++count;
   return count;
 }
-static mcxchat::Thread thread_rows[meshmc::MAX_MESSAGES];
+static mcxchat::Thread *thread_rows=nullptr;
 static size_t thread_count=0;
 static char search_text[81]={};
 static bool show_blocked=false;
@@ -441,29 +441,29 @@ static uint32_t detail_id=0,notification_id=0,notification_cursor=0,notice_until
 static lv_obj_t *notification=nullptr;
 static uint8_t view_radio[32]={};
 static bool groups_rooms=false;
-static uint16_t display_indices[meshmc::MAX_CONTACTS];
-static uint64_t display_scores[meshmc::MAX_CONTACTS];
+static uint16_t *display_indices=nullptr;
+static uint64_t *display_scores=nullptr;
 static bool view_restored=false;
 static void chat_tools();
 static void room_menu();
 static void select(const mcxchat::Key &key){
   selected=key;group=key.kind==mcxchat::Kind::Channel;
   memcpy(target_key,key.native,32);target_slot=group?key.native[0]:0;conversation=true;
-  mcxhistory::local.context=key;mcxhistory::local.has_context=true;++mcxhistory::local.revision;
+  mcxhistory::preferences().context=key;mcxhistory::preferences().has_context=true;++mcxhistory::preferences().revision;
 }
 static void show_list(){close();conversation=false;search_text[0]=0;page=3;draw();}
 static void list_event(lv_event_t *){show_list();}
-static mcxchat::Preference *preference(bool create=false){return mcxhistory::local.get(selected,create);}
+static mcxchat::Preference *preference(bool create=false){return mcxhistory::preferences().get(selected,create);}
 static void save_draft(){
   if(mode!=2||!conversation||!fields[0])return;
   const char *text=lv_textarea_get_text(fields[0]);
   if(strlen(text)>meshmc::MAX_TEXT||!meshmc::valid_utf8(text,strlen(text)))return;
   auto *p=preference(true);if(p&&strcmp(p->draft,text)){
-    snprintf(p->draft,sizeof(p->draft),"%s",text);++mcxhistory::local.revision;
+    snprintf(p->draft,sizeof(p->draft),"%s",text);++mcxhistory::preferences().revision;
   }
 }
 static const char *thread_name(const mcxchat::Key &key){
-  auto *p=mcxhistory::local.get(key);if(p&&p->alias[0])return p->alias;
+  auto *p=mcxhistory::preferences().get(key);if(p&&p->alias[0])return p->alias;
   auto *s=session();if(!s)return "Unknown sender";
   if(key.kind==mcxchat::Kind::Channel)return memcmp(key.native+1,s->channels[key.native[0]].secret,16)?"Archived channel":s->channels[key.native[0]].name;
   const int i=s->find_contact(key.native);return i>=0?s->contacts[i].name:"Unknown sender";
@@ -477,10 +477,10 @@ static void text_apply(lv_event_t *){
   const char *value=fields[0]?lv_textarea_get_text(fields[0]):"";
   if(mode==5){snprintf(search_text,sizeof(search_text),"%.80s",value);}
   else if(mode==6){auto *p=preference(true);if(!p||strlen(value)>32){lv_label_set_text(feedback,"Alias limit: 32 UTF-8 bytes / local preferences full.");return;}
-    snprintf(p->alias,sizeof(p->alias),"%s",value);++mcxhistory::local.revision;
+    snprintf(p->alias,sizeof(p->alias),"%s",value);++mcxhistory::preferences().revision;
   }else if(mode==7){
     if(strlen(value)>meshmc::MAX_TEXT||!meshmc::valid_utf8(value,strlen(value))){lv_label_set_text(feedback,"Limit: 150 valid UTF-8 bytes.");return;}
-    snprintf(mcxhistory::local.quick[selected_command],sizeof(mcxhistory::local.quick[0]),"%s",value);++mcxhistory::local.revision;
+    snprintf(mcxhistory::preferences().quick[selected_command],sizeof(mcxhistory::preferences().quick[0]),"%s",value);++mcxhistory::preferences().revision;
   }
   close();draw();
 }
@@ -496,18 +496,18 @@ static void alias_event(lv_event_t *){
 }
 static void quick_edit(lv_event_t *e){
   selected_command=(uint8_t)(intptr_t)lv_event_get_user_data(e);
-  base("QUICK REPLY / EDIT");mode=7;field("Saved text",mcxhistory::local.quick[selected_command],0);
+  base("QUICK REPLY / EDIT");mode=7;field("Saved text",mcxhistory::preferences().quick[selected_command],0);
   feedback=txt(scroller,"Local only; saving does not transmit.",10,90,450,muted);
   action_button(dialog,"SAVE",10,273,460,40,orange,text_apply,0);
 }
 static void quick_use(lv_event_t *e){
   unsigned i=(unsigned)(intptr_t)lv_event_get_user_data(e);if(i>=mcxchat::QUICK_COUNT||!conversation)return;
-  compose();if(fields[0]){lv_textarea_set_text(fields[0],mcxhistory::local.quick[i]);save_draft();}
+  compose();if(fields[0]){lv_textarea_set_text(fields[0],mcxhistory::preferences().quick[i]);save_draft();}
 }
 static void local_action(lv_event_t *e){
   const int action=(int)(intptr_t)lv_event_get_user_data(e);auto *s=session();
   if(action==0&&s)mcxchat::mark_read(*s);
-  else if(action==5)mcxhistory::local.previews=!mcxhistory::local.previews;
+  else if(action==5)mcxhistory::preferences().previews=!mcxhistory::preferences().previews;
   else if(action==6)show_blocked=!show_blocked;
   else if(conversation){auto *p=preference(true);if(!p){notice("LOCAL SETTINGS","Preference limit reached (128 conversations).");return;}
     if(action==1)p->favorite=!p->favorite;
@@ -518,7 +518,7 @@ static void local_action(lv_event_t *e){
       if(!mcxchat::clear(*s,selected)){lv_label_set_text(feedback,"Wait for queued/accepted sends to finish or disconnect first.");return;}
     }
   }
-  ++mcxhistory::local.revision;chat_tools();
+  ++mcxhistory::preferences().revision;chat_tools();
 }
 static void chat_tools_event(lv_event_t *){chat_tools();}
 static void room_menu_event(lv_event_t *){room_menu();}
@@ -534,29 +534,30 @@ static void notifications(meshmc::Client &s,uint32_t now){
   if(memcmp(view_radio,s.public_key,32)||!view_restored){
     memcpy(view_radio,s.public_key,32);view_restored=true;
     conversation=false;
-    if(mcxhistory::local.has_context)select(mcxhistory::local.context);
+    if(mcxhistory::preferences().has_context)select(mcxhistory::preferences().context);
     notification_cursor=s.next_id-1;
   }
   for(uint32_t id=notification_cursor+1;id<s.next_id;++id){
     auto *m=s.by_id(id);if(!m)continue;
-    const auto key=mcxchat::key_for_message(s,*m);const auto *p=mcxhistory::local.get(key);
+    const auto key=mcxchat::key_for_message(s,*m);const auto *p=mcxhistory::preferences().get(key);
     if(!mcxchat::notify(p,*m,s.name)||(conversation&&page==3&&mcxchat::equal(key,selected)&&!dialog))continue;
     if(notification)lv_obj_del(notification);
     notification=panel_at(lv_scr_act(),80,35,320,65,panel2,6);
     lv_obj_add_flag(notification,LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(notification,notification_open,LV_EVENT_CLICKED,nullptr);
-    char preview[140];snprintf(preview,sizeof(preview),"MC / %.32s\n%.80s",thread_name(key),mcxhistory::local.previews?m->text:"New message");
+    char preview[140];snprintf(preview,sizeof(preview),"MC / %.32s\n%.80s",thread_name(key),mcxhistory::preferences().previews?m->text:"New message");
     auto *l=emoji_txt(notification,preview,8,7,304,white);lv_label_set_long_mode(l,LV_LABEL_LONG_WRAP);
     notification_id=id;notice_until=now+5000;
   }
   notification_cursor=s.next_id-1;
 }
 static void chat_tools(){
+  if(!mcxhistory::init_workspace()){notice("CHAT / MEMORY","PSRAM unavailable for chat workspace.");return;}
   base("CHAT / LOCAL TOOLS");mode=8;
   action_button(scroller,"CONVERSATIONS",8,0,220,40,panel2,list_event,0);
   action_button(scroller,"SEARCH",238,0,230,40,panel2,search_event,0);
   action_button(scroller,"MARK ALL READ",8,48,220,40,panel2,local_action,0);
-  action_button(scroller,mcxhistory::local.previews?"PREVIEWS: ON":"PREVIEWS: OFF",238,48,230,40,panel2,local_action,5);
+  action_button(scroller,mcxhistory::preferences().previews?"PREVIEWS: ON":"PREVIEWS: OFF",238,48,230,40,panel2,local_action,5);
   action_button(scroller,show_blocked?"HIDE BLOCKED":"SHOW BLOCKED",8,96,460,40,panel2,local_action,6);
   int y=144;
   if(conversation){
@@ -570,7 +571,7 @@ static void chat_tools(){
     y+=48;
   }
   for(unsigned i=0;i<mcxchat::QUICK_COUNT;++i){
-    char label[45];snprintf(label,sizeof(label),"%.40s",mcxhistory::local.quick[i]);
+    char label[45];snprintf(label,sizeof(label),"%.40s",mcxhistory::preferences().quick[i]);
     action_button(scroller,label,8,y,350,40,panel2,quick_use,i);
     action_button(scroller,"EDIT",368,y,100,40,panel2,quick_edit,i);y+=48;
   }
@@ -636,10 +637,10 @@ static void conversation_list(int w){
   action_button(body,"TOOLS",(w+2)/2,98,(w-22)/2,34,panel2,chat_tools_event,0);
   if(chats_filter==1){single_label(body,"Meshtastic: not available",8,145,w-16,muted);return;}
   if(!s)return;
-  thread_count=mcxchat::list(*s,mcxhistory::local,thread_rows,meshmc::MAX_MESSAGES,search_text,false,show_blocked);
+  thread_count=mcxchat::list(*s,mcxhistory::preferences(),thread_rows,meshmc::MAX_MESSAGES,search_text,false,show_blocked);
   int y=141;
   for(size_t i=0;i<thread_count;++i){auto &t=thread_rows[i];auto *m=s->by_id(t.last);
-    auto *p=mcxhistory::local.get(t.key);char heading[105],sub[190],meta[96];
+    auto *p=mcxhistory::preferences().get(t.key);char heading[105],sub[190],meta[96];
     snprintf(heading,sizeof(heading),"MC / %s%s / %u unread",p&&p->favorite?"* ":"",thread_name(t.key),t.unread);
     if(m){mcxchat::meta(m->observed_at,m->path,m->outgoing,m->outgoing?delivery(m->delivery):nullptr,meta,sizeof(meta));
       snprintf(sub,sizeof(sub),"%.80s\n%s / %s",m->text,meta,ready()?"connected":"offline");}
@@ -651,6 +652,10 @@ static void conversation_list(int w){
 }
 
 static void render() {
+  if(!mcxhistory::init_workspace()){show_center_heading("CHAT / MEMORY","PSRAM unavailable for chat workspace.");return;}
+  thread_rows=mcxhistory::workspace()->rows;
+  display_indices=mcxhistory::workspace()->indices;
+  display_scores=mcxhistory::workspace()->scores;
   const int w = content_width();
   auto *s = session();
   rendered_generation = s ? s->generation : 0;
@@ -680,7 +685,7 @@ static void render() {
     }
     // Most recently active first; local favorites precede other nodes/channels.
     auto rank=[&](int i)->uint64_t {
-      auto key=mcxchat::key_for(*s,channels&&!room_list,i);auto *p=mcxhistory::local.get(key);
+      auto key=mcxchat::key_for(*s,channels&&!room_list,i);auto *p=mcxhistory::preferences().get(key);
       uint32_t last=0;for(const auto &m:s->messages)if(mcxchat::belongs(m,key)&&m.id>last)last=m.id;
       return (uint64_t(p&&p->favorite)<<32)|last;
     };
@@ -699,7 +704,7 @@ static void render() {
       single_label(body, "No entries reported by the radio.", 8, y, w - 16, muted);
     for (int row = list_offset; row < total && row < list_offset + 10; row++) {
       const int i=display_indices[row];const bool is_channel=channels&&!room_list;
-      const auto key=mcxchat::key_for(*s,is_channel,i);const auto *pref=mcxhistory::local.get(key);
+      const auto key=mcxchat::key_for(*s,is_channel,i);const auto *pref=mcxhistory::preferences().get(key);
       char title[75], detail[100];
       bool loaded = is_channel && s->channels[i].loaded;
       if (is_channel) {

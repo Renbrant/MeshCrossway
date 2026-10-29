@@ -2,7 +2,7 @@
 
 MeshCrossway is an **open-source, offline-first modular communication system** with **three independent, battery-powered devices**: one touchscreen **Core** and two detachable LoRa **Radio Pods**, one for **Meshtastic** and one for **MeshCore**. The Core connects to both Pods over **two separate Bluetooth Low Energy (BLE) links**, bringing messaging, navigation, GNSS positioning, tracks and field diagnostics into a single interface without requiring cellular coverage or the internet.
 
-> **Development status:** **v0.7.8 is the owner-confirmed recovery image**. **v0.7.9 experimental** implements the MeshCore-first messaging phase: conversation lists, native room sessions, local organization and a bounded plaintext SD journal. [Behavior, limits and acceptance checks](docs/messaging-phase-1-v079.md). Physical v0.7.9 validation remains pending. The Meshtastic adapter, concurrent BLE sessions, GNSS and offline navigation remain separate pending work. The web simulator is separate from the physical LVGL firmware.
+> **Development status:** **v0.7.8 is the owner-confirmed recovery image**. **v0.7.10 experimental** fixes the Bluetooth startup memory regression and includes the MeshCore-first messaging phase: conversation lists, native room sessions, local organization and a bounded plaintext SD journal. [Behavior, limits and acceptance checks](docs/messaging-phase-1-v079.md). v0.7.9 was withdrawn after a reproducible BLE startup failure; physical v0.7.10 retesting remains pending. The Meshtastic adapter, concurrent BLE sessions, GNSS and offline navigation remain separate pending work. The web simulator is separate from the physical LVGL firmware.
 
 ## Current hardware — three independent BLE devices
 
