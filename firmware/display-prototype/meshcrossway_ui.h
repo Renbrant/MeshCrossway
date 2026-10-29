@@ -717,12 +717,20 @@ static void update_context_scroll_track(){
     lv_obj_add_flag(context_scroll_track,LV_OBJ_FLAG_HIDDEN);return;
   }
   lv_obj_clear_flag(context_scroll_track,LV_OBJ_FLAG_HIDDEN);
-  const int top=lv_obj_get_scroll_y(context_actions);
+  // LVGL can temporarily report negative offsets during elastic overscroll.
+  // Clamp the thumb to its own gutter and size it to the visible fraction.
+  const int viewport=lv_obj_get_height(context_actions);
+  const int scroll_y=lv_obj_get_scroll_y(context_actions);
   const int bottom=lv_obj_get_scroll_bottom(context_actions);
-  const int total=top+bottom;
+  const int range=(scroll_y>0?scroll_y:0)+(bottom>0?bottom:0);
   const int track=266;
-  const int thumb=total>0?200:track;
-  lv_obj_set_pos(context_scroll_thumb,0,total>0?top*(track-thumb)/total:0);
+  const int content=viewport+range;
+  int thumb=content>0?(track*viewport)/content:track;
+  if(thumb<32)thumb=32;
+  if(thumb>track)thumb=track;
+  const int offset=scroll_y<0?0:(scroll_y>range?range:scroll_y);
+  const int thumb_y=range>0?(offset*(track-thumb))/range:0;
+  lv_obj_set_pos(context_scroll_thumb,0,thumb_y);
   lv_obj_set_height(context_scroll_thumb,thumb);
 }
 static void context_scrolled(lv_event_t *){update_context_scroll_track();}
