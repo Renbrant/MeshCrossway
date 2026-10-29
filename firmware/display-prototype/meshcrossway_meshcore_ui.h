@@ -464,7 +464,11 @@ static void render() {
       lv_obj_t *text = txt(card, "", 7, 29, w - 30, white);
       lv_label_set_long_mode(text, LV_LABEL_LONG_WRAP);
       // Render emojis only in the UI. The radio's original UTF-8 message is untouched.
+#if defined(MCX_EMOJI_RENDER_ENABLED)
       mcxemoji::view::set_message_text(text, m->text);
+#else
+      lv_label_set_text(text, m->text); // standalone non-firmware UI tests
+#endif
       lv_obj_update_layout(text);
       const int card_height = lv_obj_get_height(text) + 39 > 94
                                   ? lv_obj_get_height(text) + 39 : 94;
