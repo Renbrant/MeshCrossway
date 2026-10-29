@@ -9,13 +9,15 @@ from __future__ import annotations
 import argparse
 import subprocess
 import re
+from pathlib import PurePosixPath
 
 
 def is_docs_only(paths: list[str]) -> bool:
     if not paths:
         return False
     for p in paths:
-        if not isinstance(p, str) or not p or "\n" in p:
+        if (not isinstance(p, str) or not p or "\n" in p or "\\\" in p or
+                p.startswith("/") or ".." in PurePosixPath(p).parts):
             return False
         if p == "README.md":
             continue
