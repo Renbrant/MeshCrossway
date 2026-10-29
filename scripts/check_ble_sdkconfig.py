@@ -19,6 +19,10 @@ REQUIRED = {
     'CONFIG_FATFS_LFN_HEAP': 'y',
     'CONFIG_LV_USE_SNAPSHOT': 'y',
     'CONFIG_LV_USE_IMGFONT': 'y',
+    'CONFIG_LV_MEM_CUSTOM': 'y',
+    'CONFIG_LV_MEM_CUSTOM_INCLUDE': '"meshcrossway_lvgl_alloc.h"',
+    'CONFIG_FREERTOS_CHECK_STACKOVERFLOW_CANARY': 'y',
+    'CONFIG_FREERTOS_WATCHPOINT_END_OF_STACK': 'y',
 }
 
 def verify(path):

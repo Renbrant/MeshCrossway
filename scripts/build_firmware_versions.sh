@@ -93,6 +93,12 @@ build_version() {
   if [ -f "$source_root/scripts/test_meshcore.py" ]; then
     python3 "$source_root/scripts/test_meshcore.py"
   fi
+  if [ -f "$source_root/scripts/test_ble_resume.py" ]; then
+    python3 "$source_root/scripts/test_ble_resume.py"
+  fi
+  if [ -f "$source_root/scripts/test_runtime_diagnostics.py" ]; then
+    python3 "$source_root/scripts/test_runtime_diagnostics.py"
+  fi
   if [ -f "$source_root/scripts/test_emoji.py" ]; then
     python3 "$source_root/scripts/test_emoji.py"
   fi
@@ -159,8 +165,8 @@ if ! version_gte "$LATEST_VERSION" "$STABLE_VERSION"; then
   echo "::error::LATEST_VERSION is below the approved stable release."
   exit 1
 fi
-if [ "$LATEST_VERSION" = "v0.6.3" ] || [ "$LATEST_VERSION" = "v0.6.4" ] || [ "$LATEST_VERSION" = "v0.7.9" ]; then
-  echo "::error::v0.6.3/v0.6.4/v0.7.9 are known-broken BLE releases and cannot be published."
+if [ "$LATEST_VERSION" = "v0.6.3" ] || [ "$LATEST_VERSION" = "v0.6.4" ] || [ "$LATEST_VERSION" = "v0.7.9" ] || [ "$LATEST_VERSION" = "v0.7.10" ]; then
+  echo "::error::v0.6.3/v0.6.4/v0.7.9/v0.7.10 are withdrawn unstable releases and cannot be published."
   exit 1
 fi
 

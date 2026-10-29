@@ -12,11 +12,13 @@
 namespace meshmc {
 static Client *client = nullptr;
 static Frame *mailbox = nullptr;
+static constexpr unsigned MAILBOX_CAPACITY=128, POLL_FRAMES=16;
 static portMUX_TYPE mailbox_mux = portMUX_INITIALIZER_UNLOCKED;
 static uint8_t mail_head = 0, mail_count = 0;
 static std::atomic<bool> overflow{false}, link{false};
 static std::atomic<uint16_t> negotiated_payload{0};
 static std::atomic<uint32_t> connection_epoch{0};
+static std::atomic<uint32_t> mailbox_peak{0},mailbox_overflows{0};
 static uint32_t seen_epoch = 0;
 static std::atomic<int> write_result{0};
 static bool (*send_frame)(const uint8_t *, size_t) = nullptr;
@@ -37,7 +39,7 @@ static bool init() {
     return true;
   if(!mcxhistory::init_workspace())return false;
   void *memory = heap_caps_malloc(sizeof(Client), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
-  mailbox = (Frame *)heap_caps_calloc(16, sizeof(Frame), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+  mailbox = (Frame *)heap_caps_calloc(MAILBOX_CAPACITY, sizeof(Frame), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   if (!memory || !mailbox) {
     if (memory)
       heap_caps_free(memory);
@@ -46,7 +48,7 @@ static bool init() {
     mailbox = nullptr;
     return false;
   }
-  for (int i=0;i<16;i++)new(mailbox+i) Frame();
+  for (unsigned i=0;i<MAILBOX_CAPACITY;i++)new(mailbox+i) Frame();
   client = new (memory) Client();
   return true;
 }
@@ -75,13 +77,15 @@ static void on_frame(const uint8_t *p, size_t n) {
     return;
   }
   portENTER_CRITICAL(&mailbox_mux);
-  if (mail_count == 16) {
+  if (mail_count == MAILBOX_CAPACITY) {
     overflow.store(true);
+    mailbox_overflows.fetch_add(1);
   } else {
-    Frame &f = mailbox[(mail_head + mail_count) % 16];
+    Frame &f = mailbox[(mail_head + mail_count) % MAILBOX_CAPACITY];
     f.len = n;
     memcpy(f.data, p, n);
     ++mail_count;
+    if(mail_count>mailbox_peak.load())mailbox_peak.store(mail_count);
   }
   portEXIT_CRITICAL(&mailbox_mux);
 }
@@ -95,7 +99,7 @@ static void poll() {
     return;
   }
   if (!client->connected || seen_epoch != connection_epoch.load()) {
-    mcxhistory::before_attach(*client,(uint32_t)(esp_timer_get_time()/1000));
+    if(!mcxhistory::before_attach(*client,(uint32_t)(esp_timer_get_time()/1000)))return;
     client->attach(negotiated_payload.load());
     client->history_ready=false;
     seen_epoch = connection_epoch.load();
@@ -110,13 +114,13 @@ static void poll() {
   if (result)
     client->write_done(result == 1);
   const uint32_t now = (uint32_t)(esp_timer_get_time() / 1000);
-  for (int k = 0; k < 4; k++) {
+  for (unsigned k = 0; k < POLL_FRAMES; k++) {
     Frame f;
     bool got = false;
     portENTER_CRITICAL(&mailbox_mux);
     if (mail_count) {
       f = mailbox[mail_head];
-      mail_head = (mail_head + 1) % 16;
+      mail_head = (mail_head + 1) % MAILBOX_CAPACITY;
       --mail_count;
       got = true;
     }

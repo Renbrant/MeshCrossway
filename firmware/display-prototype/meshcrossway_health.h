@@ -2,6 +2,8 @@
 // v0.6: HTTP status and PIN-free manual read-only capture.
 // No LVGL calls from HTTP thread and no remote input.
 #include "meshcrossway_network.h"
+#include "meshcrossway_sd_history.h"
+#include "meshcrossway_meshcore.h"
 #include "meshcrossway_capture.h"
 #include "esp_http_server.h"
 #include "esp_system.h"
@@ -21,10 +23,10 @@ dl{display:grid;grid-template-columns:1fr 1fr;gap:12px}dd{margin:0}small{color:#
 .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 button{font:inherit;padding:12px 16px;background:#ff8a24;color:#090c10;border:0;border-radius:6px;cursor:pointer}
 button:disabled{opacity:.5;cursor:wait}canvas[hidden]{display:none}canvas{display:block;width:100%;max-width:480px;image-rendering:pixelated;border:1px solid #9aa6b4;margin-top:14px}
-</style><h1>MeshCrossway Remote</h1><p>Experimental manual screen view · v0.7.10</p>
+</style><h1>MeshCrossway Remote</h1><p>Experimental manual screen view · v0.7.11</p>
 <section><p id="connection" role="status">Connecting to device…</p><dl>
 <dt>Firmware</dt><dd id="version">—</dd><dt>Uptime</dt><dd id="uptime">—</dd>
-<dt>Free heap</dt><dd id="heap">—</dd><dt>Local IP</dt><dd id="ip">—</dd><dt>SD backup</dt><dd id="sd">—</dd><dt>Manual captures</dt><dd id="captures">—</dd><dt>Last capture</dt><dd id="latency">—</dd></dl></section>
+<dt>Free heap</dt><dd id="heap">—</dd><dt>Internal heap</dt><dd id="internal">—</dd><dt>Reset reason / boot</dt><dd id="reset">—</dd><dt>Previous activity</dt><dd id="activity">—</dd><dt>Maximum UI operation</dt><dd id="ui-ms">—</dd><dt>Local IP</dt><dd id="ip">—</dd><dt>Wi-Fi SD backup</dt><dd id="sd">—</dd><dt>Chat SD history</dt><dd id="history">—</dd><dt>Last history operation</dt><dd id="history-ms">—</dd><dt>Manual captures</dt><dd id="captures">—</dd><dt>Last capture</dt><dd id="latency">—</dd></dl></section>
 <section><h2>Read-only screen capture</h2>
 <p>Press Capture screen to take a screenshot. No PIN is required. Captures are manual and limited to one every five seconds.</p>
 <div class="controls"><button type="button" id="capture">Capture screen</button></div>
@@ -40,8 +42,14 @@ async function update(){
  document.getElementById('version').textContent=d.version;
  document.getElementById('uptime').textContent=Math.floor(d.uptime_ms/1000)+' s';
  document.getElementById('heap').textContent=Math.floor(d.free_heap/1024)+' KB';
+ document.getElementById('internal').textContent=String(d.internal_free??0)+' B; largest '+String(d.internal_largest??0)+' B';
+ document.getElementById('reset').textContent=String(d.reset_reason??0)+' / '+String(d.boot_count??1);
+ document.getElementById('activity').textContent=d.previous_activity||'idle';
+ document.getElementById('ui-ms').textContent=String(d.ui_max_ms??0)+' ms';
  document.getElementById('ip').textContent=d.ip||'Not connected';
  document.getElementById('sd').textContent=d.sd_backup||'unknown';
+ document.getElementById('history').textContent=d.history||'unknown';
+ document.getElementById('history-ms').textContent=String(d.history_ms??0)+' ms (max '+String(d.history_max_ms??0)+' ms)';
  document.getElementById('captures').textContent=String(d.captures??0);
  document.getElementById('latency').textContent=String(d.capture_ms??0)+' ms';
  document.getElementById('capture').disabled=taking||!d.screen;
@@ -84,15 +92,27 @@ static esp_err_t home(httpd_req_t *req){
   return httpd_resp_send(req,PAGE,HTTPD_RESP_USE_STRLEN);
 }
 static esp_err_t health(httpd_req_t *req){
-  char ip[16],state[30],body[384];
+  char ip[16],state[30],body[1152],history[96];
+  mcxhistory::describe(history,sizeof(history));
   meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
   const int n=snprintf(body,sizeof(body),
-    "{\"version\":\"v0.7.10\",\"uptime_ms\":%llu,\"free_heap\":%lu,\"ip\":\"%s\",\"sd_backup\":\"%s\",\"sd_step\":\"%s\",\"sd_errno\":%d,\"screen\":%s,\"touch\":false,\"captures\":%lu,\"capture_failures\":%lu,\"capture_ms\":%lu}",
+    "{\"version\":\"v0.7.11\",\"uptime_ms\":%llu,\"free_heap\":%lu,\"ip\":\"%s\",\"sd_backup\":\"%s\",\"sd_step\":\"%s\",\"sd_errno\":%d,\"screen\":%s,\"touch\":false,\"captures\":%lu,\"capture_failures\":%lu,\"capture_ms\":%lu,\"history\":\"%s\",\"history_step\":\"%s\",\"history_errno\":%d,\"history_failures\":%lu,\"history_ms\":%lu,\"history_max_ms\":%lu,\"internal_free\":%lu,\"internal_largest\":%lu,\"internal_min\":%lu,\"reset_reason\":%d,\"boot_count\":%lu,\"previous_activity\":\"%s\",\"ui_max_ms\":%lu,\"ui_stack_min\":%lu,\"allocation_failures\":%lu,\"allocation_bytes\":%lu,\"allocation_caps\":%lu,\"mailbox_peak\":%lu,\"mailbox_overflows\":%lu}",
     (unsigned long long)(esp_timer_get_time()/1000),(unsigned long)esp_get_free_heap_size(),ip,
     meshbackup::status(),meshbackup::step_name(meshbackup::failure_step.load()),
     meshbackup::failure_errno.load(),meshcapture::available()?"true":"false",
     (unsigned long)meshcapture::captures.load(),(unsigned long)meshcapture::failures.load(),
-    (unsigned long)meshcapture::last_capture_ms.load());
+    (unsigned long)meshcapture::last_capture_ms.load(),history,
+    mcxstore::step_name(mcxhistory::error_step.load()),mcxhistory::error_number.load(),
+    (unsigned long)mcxhistory::failures.load(),(unsigned long)mcxhistory::operation_ms.load(),
+    (unsigned long)mcxhistory::max_operation_ms.load(),
+    (unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
+    (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
+    (unsigned long)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),
+    (int)esp_reset_reason(),(unsigned long)mcxruntime::boots.load(),mcxruntime::stage_name(mcxruntime::previous_stage.load()),
+    (unsigned long)mcxruntime::ui_max_ms.load(),(unsigned long)mcxruntime::ui_stack_min.load(),
+    (unsigned long)mcxruntime::allocation_failures.load(),(unsigned long)mcxruntime::last_allocation_bytes.load(),
+    (unsigned long)mcxruntime::last_allocation_caps.load(),
+    (unsigned long)meshmc::mailbox_peak.load(),(unsigned long)meshmc::mailbox_overflows.load());
   if(n<0 || n>=(int)sizeof(body))return ESP_FAIL;
   headers(req,"application/json");
   return httpd_resp_send(req,body,n);
@@ -116,6 +136,6 @@ static void start(){
   if(result==ESP_OK)result=httpd_register_uri_handler(server,&screenshot);
   if(result!=ESP_OK){httpd_stop(server);printf("[MCX-HTTP] route setup failed err=%d\n",(int)result);return;}
   running.store(true);
-  printf("[MCX-HTTP v0.7.10] ready port=80 routes=/,/health,/screen.raw manual=ON touch=OFF\n");
+  printf("[MCX-HTTP v0.7.11] ready port=80 routes=/,/health,/screen.raw manual=ON touch=OFF\n");
 }
 } // namespace meshhealth

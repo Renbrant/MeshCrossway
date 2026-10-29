@@ -154,6 +154,7 @@ static mcxchat::Workspace *workspace(){return &memory;}
 static mcxchat::Local &preferences(){return memory.local;}
 static bool restored=true;
 static const char *status(){return "SD: test fixture";}
+static void describe(char *out,size_t cap){snprintf(out,cap,"%s",status());}
 static void poll(meshmc::Client &,uint32_t,uint32_t){}
 }
 namespace meshmc {
@@ -161,6 +162,10 @@ static std::atomic<uint32_t> connection_epoch{1};
 static Client *client=nullptr;
 static void poll(){}
 static bool channel_secret(const char *,uint8_t *p){memset(p,0xA5,16);return true;}
+}
+namespace mcxruntime {
+enum Stage{PROTOCOL,HISTORY};struct Scope{explicit Scope(Stage){}};
+static void sample_ui_stack(){}
 }
 static lv_obj_t *body=nullptr,*wifi_dialog=nullptr;
 static int page=1,nodes_filter=0,groups_filter=0,chats_filter=0,redraws=0;
@@ -216,16 +221,83 @@ static void test_companion_ui(const char *preview){
   mcui::tools();advance();assert(lv_obj_get_child_cnt(mcui::scroller)==meshmc::COMMAND_COUNT);mcui::close();
   c.protocol=7;mcui::tools();lv_obj_scroll_to_y(mcui::scroller,4000,LV_ANIM_OFF);advance();assert(!strcmp(lv_label_get_text(lv_obj_get_child(lv_obj_get_child(mcui::scroller,meshmc::COMMAND_COUNT-1),0)),"Local radio console"));assert(lv_obj_has_state(lv_obj_get_child(mcui::scroller,meshmc::COMMAND_COUNT-1),LV_STATE_DISABLED));mcui::close();
   mcui::radio_status=txt(body,"stale sync",8,8,350,white);advance();c.busy=false;c.fault=false;c.initialized=true;mcui::poll(nullptr);advance();assert(!strcmp(lv_label_get_text(mcui::radio_status),"MeshCore ready"));mcui::radio_status=nullptr;
+  // The disconnected-radio regression must keep a useful draft, show a reason,
+  // and disable SEND. Reconnection re-enables it without dismissing the draft.
+  c.connected=false;c.payload_limit=0;mcui::select(mcxchat::key_for(c,false,0));mcui::compose();advance();
+  assert(lv_obj_has_state(mcui::compose_button,LV_STATE_DISABLED));
+  assert(strstr(lv_label_get_text(mcui::feedback),"disconnected"));
+  assert(!strstr(lv_label_get_text(lv_obj_get_child(mcui::scroller,0)),"up to 0 "));
+  lv_textarea_set_text(mcui::fields[0],"kept through reconnect");
+  c.connected=true;c.payload_limit=173;mcui::refresh_composer();
+  assert(!lv_obj_has_state(mcui::compose_button,LV_STATE_DISABLED));
+  assert(!strcmp(lv_textarea_get_text(mcui::fields[0]),"kept through reconnect"));mcui::close();
+  // Stress the retained 96-message page repeatedly. The actual production
+  // allocator is also compiled into lv_mem.c below, including all reallocs.
+  c.protocol=14;c.qcount=0;
+  for(unsigned i=0;i<meshmc::MAX_MESSAGES;++i){auto &m=c.append();memcpy(m.key,c.contacts[0].key,6);
+    m.timestamp=m.observed_at=1800000000+i;strcpy(m.text,"Synthetic repeated full-history rendering");}
+  page=3;mcui::select(mcxchat::key_for(c,false,0));
+  for(int i=0;i<5;++i){lv_obj_clean(body);mcui::render();advance();}
+  const size_t baseline=ui_live_bytes;
+  for(int i=0;i<30;++i){lv_obj_clean(body);mcui::render();advance();}
+  assert(ui_live_bytes<=baseline+1024&&ui_alloc_calls>1000&&ui_resize_calls>0);
   lv_obj_del(body);body=nullptr;delete meshmc::client;meshmc::client=nullptr;
   puts("PASS: MeshCore real-LVGL forms, keyboard geometry, confirmation, channel command, compose/send, lists, history and firmware gating");
 }
 '''
     test = test.replace('int main(int argc,char **argv){', companion_setup + '\nint main(int argc,char **argv){')
     test = test.replace('  puts("PASS: real LVGL', '  test_companion_ui(argc>2?argv[2]:nullptr);\n  puts("PASS: real LVGL')
+    # Use the firmware allocator in every real LVGL allocation. The fake caps
+    # provider checks the PSRAM requirement and tracks ownership/failed realloc.
+    allocator = r'''
+#include <cstdlib>
+#include <cstddef>
+#include <cassert>
+#include <cstring>
+#include "meshcrossway_lvgl_alloc.h"
+static size_t ui_live_bytes=0,ui_alloc_calls=0,ui_resize_calls=0;
+static bool ui_fail=false;
+struct alignas(std::max_align_t) Allocation {size_t bytes;};
+extern "C" void *heap_caps_malloc(size_t n,unsigned caps){
+  assert(caps==(MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));if(ui_fail)return nullptr;
+  auto *h=(Allocation *)malloc(sizeof(Allocation)+n);if(!h)return nullptr;
+  h->bytes=n;ui_live_bytes+=n;++ui_alloc_calls;return h+1;
+}
+extern "C" void heap_caps_free(void *p){if(p){auto *h=(Allocation *)p-1;ui_live_bytes-=h->bytes;free(h);}}
+extern "C" void *heap_caps_realloc(void *p,size_t n,unsigned caps){
+  assert(caps==(MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));++ui_resize_calls;if(ui_fail)return nullptr;
+  auto *h=p?(Allocation *)p-1:nullptr;const size_t old=h?h->bytes:0;
+  h=(Allocation *)realloc(h,sizeof(Allocation)+n);if(!h)return nullptr;
+  h->bytes=n;ui_live_bytes=ui_live_bytes-old+n;return h+1;
+}
+static void check_allocator(){
+  auto *p=(char *)mcx_ui_allocate(32);assert(p);memset(p,0x5a,32);
+  ui_fail=true;assert(!mcx_ui_resize(p,64));assert(p[0]==0x5a&&p[31]==0x5a);
+  ui_fail=false;p=(char *)mcx_ui_resize(p,64);assert(p&&p[0]==0x5a);
+  mcx_ui_release(p);assert(ui_live_bytes==0);
+}
+'''
+    test = allocator + test
+    test = test.replace('int main(int argc,char **argv){', 'int main(int argc,char **argv){check_allocator();')
 
     with tempfile.TemporaryDirectory() as temporary:
         temp = Path(temporary)
-        flags = ['-O1', '-DLV_CONF_SKIP', '-DLV_MEM_CUSTOM=1', '-DLV_FONT_MONTSERRAT_20=1', '-I'+str(lvgl), '-I'+str(ROOT/'firmware/display-prototype')]
+        (temp/'esp_heap_caps.h').write_text('''#pragma once
+#include <stddef.h>
+#define MALLOC_CAP_SPIRAM 1
+#define MALLOC_CAP_8BIT 2
+#ifdef __cplusplus
+extern "C" {
+#endif
+void *heap_caps_malloc(size_t,unsigned);
+void *heap_caps_realloc(void *,size_t,unsigned);
+void heap_caps_free(void *);
+#ifdef __cplusplus
+}
+#endif
+''')
+        flags = ['-O1', '-DLV_CONF_SKIP', '-DLV_MEM_CUSTOM=1', '-DLV_MEM_CUSTOM_INCLUDE="meshcrossway_lvgl_alloc.h"',
+                 '-DLV_FONT_MONTSERRAT_20=1', '-I'+str(temp), '-I'+str(lvgl), '-I'+str(ROOT/'firmware/display-prototype')]
         def compile_c(source):
             obj = temp / (hashlib.sha256(str(source).encode()).hexdigest()[:16]+'.o')
             subprocess.run(['cc', '-std=c99', *flags, '-c', str(source), '-o', str(obj)],check=True,capture_output=True)

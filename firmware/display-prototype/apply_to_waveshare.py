@@ -134,7 +134,7 @@ if source.count('meshnetwork::start();') != 1:
 for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",
              "meshcrossway_remote_page.h", "meshcrossway_network.h", "meshcrossway_ble.h", "meshcrossway_meshcore.h",
              "meshcrossway_meshcore_protocol.h", "meshcrossway_meshcore_ui.h", "meshcrossway_sd_history.h", "meshcrossway_history_store.h", "meshcrossway_conversations.h",
-             "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h",
+             "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h", "meshcrossway_lvgl_alloc.h", "meshcrossway_runtime.h",
              "meshcrossway_power_status.h", "meshcrossway_battery_decode.h",
              "meshcrossway_chat_presentation.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
@@ -157,6 +157,8 @@ sdk.write_text(defaults)
 # ESP-IDF FatFs defaults to FATFS_LFN_NONE, so those paths otherwise fail
 # to open even on correctly mounted FAT32 cards.
 needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_LV_USE_IMGFONT=y","CONFIG_LV_FONT_MONTSERRAT_10=y",
+         "CONFIG_LV_MEM_CUSTOM=y",'CONFIG_LV_MEM_CUSTOM_INCLUDE="meshcrossway_lvgl_alloc.h"',
+         "CONFIG_FREERTOS_CHECK_STACKOVERFLOW_CANARY=y","CONFIG_FREERTOS_WATCHPOINT_END_OF_STACK=y",
          "CONFIG_FATFS_LFN_HEAP=y",
         "CONFIG_BT_ENABLED=y","CONFIG_BT_NIMBLE_ENABLED=y",
         "CONFIG_BT_NIMBLE_ROLE_CENTRAL=y","CONFIG_BT_NIMBLE_MAX_CONNECTIONS=2",
@@ -169,4 +171,15 @@ needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_LV_USE_IMGFONT=y","CONFIG_LV_FONT_MON
 missing=[option for option in needed if option not in defaults.splitlines()]
 if missing:
     sdk.write_text(defaults.rstrip("\n")+"\n"+"\n".join(missing)+"\n")
+# The managed LVGL component must be able to include the allocator header while
+# compiling lv_mem.c. Its symbols are static inline; no reverse link dependency.
+cmake=project/"main"/"CMakeLists.txt"
+allocator_build='''
+# MeshCrossway: isolate LVGL allocations from BLE/DMA internal RAM.
+idf_component_get_property(mcx_lvgl_lib lvgl__lvgl COMPONENT_LIB)
+target_include_directories(${mcx_lvgl_lib} PRIVATE "${CMAKE_CURRENT_LIST_DIR}")
+target_compile_options(${COMPONENT_LIB} PRIVATE -Wframe-larger-than=4096 -fstack-usage)
+'''
+if "idf_component_get_property(mcx_lvgl_lib" not in cmake.read_text():
+    cmake.write_text(cmake.read_text()+allocator_build)
 print(f"MeshCrossway patched and verified: {project}")

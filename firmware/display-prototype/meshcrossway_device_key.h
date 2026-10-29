@@ -81,7 +81,7 @@ inline void describe(const Audit &a, char *dst, size_t cap) {
   snprintf(dst, cap,
            "Secure SD: %s\nFree key blocks: %u / %u\n"
            "Storage vault: NOT ACTIVE\n"
-           "No eFuse writes or messages saved by this feature.",
+           "Encryption is off. Chat history is a separate feature.",
            state_name(a.state), (unsigned)a.available, (unsigned)kKeySlots);
 }
 

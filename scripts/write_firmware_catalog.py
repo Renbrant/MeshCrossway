@@ -30,7 +30,7 @@ approved={
     "v0.6.2":("Owner confirmed touchscreen, Wi-Fi and normal UI work on the Waveshare Rev2.0; confirmed working after v0.6.3 failed.", "Last hardware-tested / recommended"),
 }
 # Do not expose a known-broken image through the installer.
-blocked={"v0.6.3","v0.6.4","v0.7.9"}
+blocked={"v0.6.3","v0.6.4","v0.7.9","v0.7.10"}
 if stable not in approved:
     p.error(f"Approved stable version {stable} has no recorded hardware validation")
 if latest in blocked:
@@ -66,6 +66,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.7.11":
+        summary="EXPERIMENTAL / HARDWARE RETEST PENDING: PSRAM-only LVGL allocation/reallocation, bounded BLE burst handling, restored Bluetooth enabled preference, accurate send gating, cached SD journal with bounded retries, and reset/heap/latency diagnostics. Reads existing v0.7.9/v0.7.10 archives. Keep Erase unchecked; v0.7.8 remains recovery."
+        label="SD history reliability and diagnostics / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.7.10":
         summary="EXPERIMENTAL / HARDWARE RETEST PENDING: fixes v0.7.9 NimBLE ESP_ERR_NO_MEM (257) by moving chat preferences and list/sort buffers from internal SRAM to explicit PSRAM allocations. Preserves phase-1 messaging and SD journal. Keep Erase unchecked."
         label="Bluetooth internal-memory fix / EXPERIMENTAL"

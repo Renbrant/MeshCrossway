@@ -38,7 +38,7 @@ The Waveshare repository also contains Arduino examples and libraries under othe
 | Meshtastic / MeshCore Pod firmware | Planned native firmware on separate BLE devices; live dual-Pod integration not yet implemented | Record exact targets, revisions and upstream licenses before redistribution; do not relabel upstream binaries MIT |
 | Meshtastic PhoneAPI / MeshCore Companion adapters | Planned Core-side implementation | Review each chosen library, schema, generated binding and copied example before adding it |
 | Colorado Mesh-Client | Research reference; no Electron source incorporated by this work | GPL-3.0-or-later application; check source/version compatibility before any reuse; its separate Reticulum helper is AGPL |
-| WADAMESH | UI/reference research | Current firmware README says the UI is original and does not copy WADAMESH code/assets; future source reuse requires a separate GPL review |
+| WADAMESH | UI/architecture research; stability benchmark at `26578cdc87896c78d533c00568846ecdd7dcfb2b` | [Stability audit and reviewed paths](stability-audit-v0711.md). No source/assets imported; new allocator uses documented ESP-IDF/LVGL APIs. Future source reuse requires separate GPL review |
 | Reticulum / ATAK / MeshMapper | Future research only | Review the exact implementation, client, backend/API terms and any redistributed assets at integration time |
 
 ## Images, CAD and documentation

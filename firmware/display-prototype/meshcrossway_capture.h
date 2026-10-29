@@ -7,6 +7,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "lvgl.h"
+#include "meshcrossway_runtime.h"
 #include <atomic>
 #include <stdint.h>
 #include <stdio.h>
@@ -32,6 +33,7 @@ static bool available(){return frame!=nullptr&&completion!=nullptr&&!circuit_ope
 static void capture_timer(lv_timer_t *){
   int expected=QUEUED;
   if(!phase.compare_exchange_strong(expected,RENDERING))return;
+  mcxruntime::Scope measured(mcxruntime::CAPTURE);
   const int64_t started=esp_timer_get_time();
   lv_obj_t *screen=lv_scr_act();
   lv_img_dsc_t descriptor={};
