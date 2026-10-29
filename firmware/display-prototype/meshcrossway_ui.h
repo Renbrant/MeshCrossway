@@ -474,7 +474,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Location sharing and radio transmission are off. SD Wi-Fi backup is plaintext; protect your SD card.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.7.5","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
+      notice("MESH CROSSWAY v0.7.6","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
