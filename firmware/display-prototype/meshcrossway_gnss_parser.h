@@ -4,7 +4,7 @@
 #include <string.h>
 #include <math.h>
 namespace mcxgnss {
-struct Fix {double latitude=0,longitude=0,altitude=0,hdop=0,speed_kmh=0;unsigned satellites=0;uint32_t position_ms=0,received_ms=0,frames=0,errors=0;bool valid=false,have_altitude=false,have_hdop=false;};
+struct Fix {double latitude=0,longitude=0,altitude=0,hdop=0,speed_kmh=0;unsigned satellites=0;uint32_t position_ms=0,received_ms=0,satellites_ms=0,speed_ms=0,frames=0,errors=0;bool valid=false,have_altitude=false,have_hdop=false,have_satellites=false,have_speed=false;};
 struct Parser {
   Fix fix;char line[160]={};unsigned used=0;bool collecting=false;
   static int hex(char c){return c>='0'&&c<='9'?c-'0':c>='A'&&c<='F'?c-'A'+10:c>='a'&&c<='f'?c-'a'+10:-1;}
@@ -24,7 +24,7 @@ struct Parser {
       if(!number(f[6],quality)||quality<0||quality>8||floor(quality)!=quality||!number(f[7],sats)||sats<0||sats>99||floor(sats)!=sats)return false;
       const bool valid=quality>0;
       if(valid&&(!coordinate(f[2],f[3],true,lat)||!coordinate(f[4],f[5],false,lon)))return false;
-      fix.valid=valid;fix.satellites=unsigned(sats);
+      fix.valid=valid;fix.satellites=unsigned(sats);fix.satellites_ms=now;fix.have_satellites=true;
       fix.have_hdop=number(f[8],fix.hdop)&&fix.hdop>=0;
       fix.have_altitude=number(f[9],fix.altitude)&&!strcmp(f[10],"M");
       if(valid){fix.latitude=lat;fix.longitude=lon;fix.position_ms=now;}
@@ -33,7 +33,7 @@ struct Parser {
       const bool valid=*f[2]=='A';
       if(valid&&(!coordinate(f[3],f[4],true,lat)||!coordinate(f[5],f[6],false,lon)))return false;
       fix.valid=valid;if(valid){fix.latitude=lat;fix.longitude=lon;fix.position_ms=now;}
-      double knots;if(number(f[7],knots)&&knots>=0)fix.speed_kmh=knots*1.852;
+      double knots;fix.have_speed=valid&&number(f[7],knots)&&knots>=0;if(fix.have_speed){fix.speed_kmh=knots*1.852;fix.speed_ms=now;}
     }
     fix.received_ms=now;++fix.frames;return true;
   }
@@ -45,6 +45,6 @@ struct Parser {
     if(used+1>=sizeof(line)){collecting=false;++fix.errors;return false;}
     line[used++]=c;return false;
   }
-  Fix snapshot(uint32_t now)const{Fix out=fix;if(uint32_t(now-out.position_ms)>3000)out.valid=false;return out;}
+  Fix snapshot(uint32_t now)const{Fix out=fix;if(uint32_t(now-out.position_ms)>3000)out.valid=false;if(uint32_t(now-out.satellites_ms)>3000)out.have_satellites=out.have_hdop=out.have_altitude=false;if(uint32_t(now-out.speed_ms)>3000)out.have_speed=false;return out;}
 };
 }

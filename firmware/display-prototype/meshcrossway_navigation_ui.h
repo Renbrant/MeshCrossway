@@ -104,10 +104,10 @@ static void refresh(){
   snprintf(label,sizeof(label),"GPS reading: %s",c.enabled?"ON":"OFF");if(enabled_button)chatview::label(lv_obj_get_child(enabled_button,0),label);
   if(c.baud)snprintf(label,sizeof(label),"UART baud: %lu",(unsigned long)c.baud);else snprintf(label,sizeof(label),"UART baud: AUTO");if(baud_button)chatview::label(lv_obj_get_child(baud_button,0),label);
   snprintf(label,sizeof(label),"Fix expiry: %lu seconds",(unsigned long)(c.timeout_ms/1000));if(timeout_button)chatview::label(lv_obj_get_child(timeout_button,0),label);
-  if(metrics_label){char detail[100];
-    if(f.valid&&f.have_altitude)snprintf(detail,sizeof(detail),"Altitude %.1f %s / Speed %.1f %s",f.altitude*(c.imperial?3.28084:1),c.imperial?"ft":"m",f.speed_kmh*(c.imperial?0.621371:1),c.imperial?"mph":"km/h");
-    else snprintf(detail,sizeof(detail),"Altitude -- / Speed --");
-    chatview::label(metrics_label,detail);
+  if(metrics_label){char detail[100],altitude[24]="--",speed[24]="--";
+    if(f.valid&&f.have_altitude)snprintf(altitude,sizeof(altitude),"%.1f %s",f.altitude*(c.imperial?3.28084:1),c.imperial?"ft":"m");
+    if(f.valid&&f.have_speed)snprintf(speed,sizeof(speed),"%.1f %s",f.speed_kmh*(c.imperial?0.621371:1),c.imperial?"mph":"km/h");
+    snprintf(detail,sizeof(detail),"Altitude %s / Speed %s",altitude,speed);chatview::label(metrics_label,detail);
   }
   if(units_button)chatview::label(lv_obj_get_child(units_button,0),c.imperial?"Units: ft / mph":"Units: m / km/h");
 }
@@ -132,11 +132,13 @@ static void open(){
   status_label=single_label(dialog,"",8,126,440,white);lv_label_set_long_mode(status_label,LV_LABEL_LONG_WRAP);
   metrics_label=single_label(dialog,"",8,177,440,cyan);
   single_label(dialog,"RX44 / TX43 fixed. Reading OFF does not power off GPS.",8,216,440,muted);
-  single_label(dialog,"These settings change the host UART; receiver config is unchanged.",8,244,440,muted);refresh();
+  single_label(dialog,"Host UART only; receiver configuration unchanged.",8,244,440,muted);refresh();
 }
 static void online(lv_event_t *){auto c=mcxmap::configuration();c.online=!c.online;mcxmap::configure(c);map_options();}
 static void save_editor(lv_event_t *){
   auto c=mcxmap::configuration();const char *value=lv_textarea_get_text(edit_value);
+  const size_t cap=editing==1?sizeof(c.url):sizeof(c.attribution);
+  if(strlen(value)>=cap){lv_label_set_text(edit_notice,"Text is too long in UTF-8 bytes. Shorten it before saving.");return;}
   if(editing==1)snprintf(c.url,sizeof(c.url),"%s",value);else snprintf(c.attribution,sizeof(c.attribution),"%s",value);
   if(!mcxmap::valid_config(c)){lv_label_set_text(edit_notice,"Use an HTTPS tile root without query or credentials, and attribution.");return;}
   mcxmap::configure(c);map_options();
@@ -154,7 +156,7 @@ static void map_options(){
   action_button(dialog,c.online?"Online tiles: ON":"Online tiles: OFF",8,42,440,34,panel2,[](lv_event_t *){lv_async_call([](void *){online(nullptr);},nullptr);},0);
   action_button(dialog,"CHANGE HTTPS TILE SOURCE",8,82,440,34,panel2,[](lv_event_t *e){const auto value=lv_event_get_user_data(e);lv_async_call([](void *v){edit(int(intptr_t(v)));},value);},1);
   action_button(dialog,"CHANGE ATTRIBUTION",8,122,440,34,panel2,[](lv_event_t *e){const auto value=lv_event_get_user_data(e);lv_async_call([](void *v){edit(int(intptr_t(v)));},value);},2);
-  auto *source=single_label(dialog,c.url,8,163,440,white);lv_label_set_long_mode(source,LV_LABEL_LONG_WRAP);
+  auto *source=single_label(dialog,c.url,8,163,440,white);lv_obj_set_height(source,34);lv_label_set_long_mode(source,LV_LABEL_LONG_DOT);
   single_label(dialog,"Offline PNG XYZ: /tiles/z/x/y.png on microSD.",8,206,440,muted);
   single_label(dialog,"Online mode sends the viewed area to the tile provider.",8,234,440,muted);
   map_save_label=single_label(dialog,"",8,258,440,muted);refresh();

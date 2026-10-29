@@ -4,6 +4,11 @@ import argparse
 from pathlib import Path
 
 REQUIRED = {
+    'CONFIG_LV_USE_PNG': 'y',
+    'CONFIG_MBEDTLS_CERTIFICATE_BUNDLE': 'y',
+    'CONFIG_MBEDTLS_HAVE_TIME_DATE': 'y',
+    'CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC': 'y',
+    'CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG': 'y',
     'CONFIG_IDF_TARGET': '"esp32s3"',
     'CONFIG_BT_ENABLED': 'y',
     'CONFIG_BT_NIMBLE_ENABLED': 'y',

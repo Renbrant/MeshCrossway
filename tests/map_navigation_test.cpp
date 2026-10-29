@@ -67,18 +67,20 @@ int main(int argc,char **argv){
  auto unavailable=online_view;unavailable.longitude+=1;unavailable.generation=6;mcxmap::wanted=6;fake_http_status=503;
  frame=mcxmap::render(unavailable,c);assert(frame&&frame->missing&&fake_http_calls==downloads+2);mcxmap::release(frame);
  unavailable.generation=7;mcxmap::wanted=7;frame=mcxmap::render(unavailable,c);assert(frame&&frame->missing&&fake_http_calls==downloads+2);mcxmap::release(frame);
- fake_sd_size=0;unavailable.generation=8;mcxmap::wanted=8;frame=mcxmap::render(unavailable,c);assert(frame&&frame->missing&&fake_http_calls==downloads+2);mcxmap::release(frame);fake_sd_size=1000000;
+ fake_free_space=1024*1024;mcxmap::backing_off=false;fake_http_status=200;unavailable.longitude+=1;unavailable.generation=8;mcxmap::wanted=8;
+ frame=mcxmap::render(unavailable,c);assert(frame&&frame->missing&&fake_http_calls==downloads+2&&mcxmap::cache_full);mcxmap::release(frame);fake_free_space=1024ULL*1024*1024;
+ fake_sd_size=0;unavailable.generation=9;mcxmap::wanted=9;frame=mcxmap::render(unavailable,c);assert(frame&&frame->missing&&fake_http_calls==downloads+2);mcxmap::release(frame);fake_sd_size=1000000;
 
  unsigned char invalid[33]={137,80,78,71,13,10,26,10};memcpy(invalid+12,"IHDR",4);unsigned char *rgba=nullptr;assert(!mcxmap::decode(invalid,sizeof(invalid),&rgba)&&!rgba);
  c.url[0]=0;assert(!mcxmap::valid_config(c));c=mcxmap::Config{};strcpy(c.url,"http://not-tls.example");assert(!mcxmap::valid_config(c));
  using namespace meshcrossway;
  auto *top=panel_at(lv_scr_act(),0,0,480,34,bg);
  // PRODUCTION_GPS_HEADER
- mcxgnss::fix.valid=true;mcxgnss::fix.satellites=12;mcxgnss::fix.frames=10;gps_refresh(nullptr);lv_obj_update_layout(top);
+ mcxgnss::fix.valid=true;mcxgnss::fix.satellites=12;mcxgnss::fix.have_satellites=true;mcxgnss::fix.frames=10;gps_refresh(nullptr);lv_obj_update_layout(top);
  assert(!strcmp(lv_label_get_text(gps_satellites),"12")&&lv_obj_get_style_text_color(gps_icon,0).full==green.full);
  lv_area_t badge_area,charge_area;lv_obj_get_coords(gps_satellites,&badge_area);lv_obj_get_coords(top_charge,&charge_area);assert(badge_area.x2<charge_area.x1&&charge_area.x2<430);
  mcxgnss::cfg.enabled=0;gps_refresh(nullptr);assert(!strcmp(lv_label_get_text(gps_satellites),"--"));mcxgnss::cfg.enabled=1;mcxgnss::fix.valid=false;gps_refresh(nullptr);assert(lv_obj_get_style_text_color(gps_icon,0).full==orange.full);
- body=panel_at(lv_scr_act(),40,34,400,286,bg);mcxgnss::fix.valid=true;mcxgnss::fix.latitude=v.latitude;mcxgnss::fix.longitude=v.longitude;mcxgnss::fix.satellites=12;
+ body=panel_at(lv_scr_act(),40,34,400,286,bg);mcxgnss::fix.valid=true;mcxgnss::fix.latitude=v.latitude;mcxgnss::fix.longitude=v.longitude;mcxgnss::fix.satellites=12;mcxgnss::fix.have_satellites=true;
  mcxmap::config.online=0;navui::create(400);advance();auto current=mcxmap::requested;make_tiles(current);mcxmap::ready=mcxmap::render(current,mcxmap::config);mcxmap::queued=false;navui::poll();assert(navui::front&&!navui::front->missing&&!lv_obj_has_flag(navui::marker,LV_OBJ_FLAG_HIDDEN));
  const double before=navui::longitude;pointer_x=210;pointer_y=150;down=true;advance();for(int x=215;x<=265;x+=5){pointer_x=x;advance(35);}down=false;advance();assert(!navui::following&&navui::longitude<before);
  gpsui::open();advance();assert(gpsui::enabled_button);tap(gpsui::enabled_button);assert(!mcxgnss::configuration().enabled);tap(gpsui::baud_button);assert(mcxgnss::configuration().baud==9600);tap(gpsui::timeout_button);assert(mcxgnss::configuration().timeout_ms==5000);

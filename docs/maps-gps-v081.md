@@ -67,7 +67,9 @@ OSM minimum retention), and provider changes use different directories. Files
 are bounded to 256 KiB, checked as 256×256 PNG, decoded with bounded decompression,
 then written through a flushed/synced temporary file. Corrupt app-owned cache may
 be replaced after a valid replacement is ready; user offline packs are not deleted.
-There is no cache quota manager yet: use a suitably sized card and manage space
+New downloads stop before consuming the last 8 MiB of reported free space,
+leaving a reserve for other device data. There is no cache quota manager or
+automatic purge yet: use a suitably sized card and manage space
 on a computer. A full/unavailable SD leaves placeholders rather than formatting it.
 
 ## Responsiveness and validation

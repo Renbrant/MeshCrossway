@@ -504,7 +504,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.8.1","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. GNSS navigation remains a preview.");break;
+      notice("MESH CROSSWAY v0.8.1","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. Local GPS and XYZ maps; tracks and sharing remain previews.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -659,14 +659,14 @@ static void open_shade(lv_event_t *){
   lv_obj_t *sheet=panel_at(shade,8,8,464,235,panel,9);
   single_label(sheet,"QUICK SETTINGS / STATUS",12,10,340,orange);
   action_button(sheet,"CLOSE",366,6,89,37,panel2,shade_close,0);
-  action_button(sheet,"GPS --",9,54,108,48,panel2,quick_action,0);
+  action_button(sheet,mcxgnss::snapshot().valid?"GPS FIX":"GPS --",9,54,108,48,panel2,quick_action,0);
   action_button(sheet,"BLE --",122,54,108,48,panel2,quick_action,1);
   action_button(sheet,"WI-FI",235,54,108,48,orange,quick_action,2);
   action_button(sheet,"SOUND",348,54,107,48,panel2,quick_action,3);
   single_label(sheet,"Brightness is a preview; no hardware change.",12,119,438,muted);
   action_button(sheet,"DISPLAY / DEMO",9,152,219,48,panel2,quick_action,4);
   action_button(sheet,"DEVICE SETTINGS",235,152,220,48,orange,on_action,A_DIAGNOSTIC);
-  single_label(sheet,"GPS / BLE / SOUND: DEMO ONLY",12,209,438,muted);
+  single_label(sheet,"SOUND / BRIGHTNESS: PREVIEW",12,209,438,muted);
 }
 static void show_center_heading(const char *heading_text,const char *subtitle){
   const int w=lv_obj_get_width(body);
@@ -863,7 +863,7 @@ static lv_obj_t *gps_position=nullptr,*gps_status=nullptr,*gps_icon=nullptr,*gps
 static void gps_refresh(lv_timer_t *){
   const auto f=mcxgnss::snapshot();const auto cfg=mcxgnss::configuration();const auto diag=mcxgnss::status();char pos[96],state[120];
   if(gps_icon)lv_obj_set_style_text_color(gps_icon,!cfg.enabled?muted:f.valid?green:orange,0);
-  if(gps_satellites){char count[12];snprintf(count,sizeof(count),cfg.enabled?"%u":"--",f.satellites);chatview::label(gps_satellites,count);lv_obj_set_style_text_color(gps_satellites,f.valid?green:muted,0);}
+  if(gps_satellites){char count[12];snprintf(count,sizeof(count),cfg.enabled&&f.have_satellites?"%u":"--",f.satellites);chatview::label(gps_satellites,count);lv_obj_set_style_text_color(gps_satellites,f.valid?green:muted,0);}
   navui::poll();gpsui::refresh();
   if(f.valid)snprintf(pos,sizeof(pos),"%.6f, %.6f",f.latitude,f.longitude);
   else snprintf(pos,sizeof(pos),"Position unavailable / no fresh fix");
@@ -956,7 +956,7 @@ static void draw(){
     }else if(map_view==1){
       center_card(8,58,w-16,66,"POI / DEMO","Camp Alpha  [sample]","Not saved to SD",orange);
       center_card(8,131,w-16,66,"WAYPOINT / DEMO","Trail Junction  [sample]","No coordinates recorded",orange);
-      color_label(body,"Real POIs require GNSS and SD storage.",8,229,w-16,muted);
+      color_label(body,"POI recording is not implemented yet.",8,229,w-16,muted);
     }else if(map_view==2){
       center_card(8,58,w-16,69,"TRACKS / DEMO","Ridge Loop  [sample]","No GPX file loaded",purple);
       center_card(8,134,w-16,69,"FOLDERS / DEMO","Expedition A  [sample]","No tracks stored",purple);

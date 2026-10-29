@@ -5,6 +5,7 @@ import subprocess
 ROOT=Path(__file__).resolve().parents[1]
 def run(temp, flags, objects, allocator):
     (temp/'esp_netif_sntp.h').write_text('#pragma once\nstruct esp_sntp_config_t {const char *server;};\n#define ESP_NETIF_SNTP_DEFAULT_CONFIG(x) {x}\n#define ESP_ERR_INVALID_STATE 259\nstatic int esp_netif_sntp_init(const esp_sntp_config_t *){return 0;}\n')
+    (temp/'esp_vfs_fat.h').write_text('#pragma once\n#include <cstdint>\nstatic uint64_t fake_free_space=1024ULL*1024*1024;\nstatic int esp_vfs_fat_info(const char *,uint64_t *total,uint64_t *free_space){*total=2ULL*1024*1024*1024;*free_space=fake_free_space;return 0;}\n')
     (temp/'esp_sdcard_port.h').write_text('''#pragma once
 #include <cstdint>
 static uint64_t fake_sd_size=1000000;

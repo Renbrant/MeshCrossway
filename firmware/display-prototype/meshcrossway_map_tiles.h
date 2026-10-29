@@ -4,6 +4,7 @@
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
 #include "esp_sdcard_port.h"
+#include "esp_vfs_fat.h"
 #include "nvs.h"
 #include "esp_timer.h"
 #include "esp_netif_sntp.h"
@@ -43,8 +44,9 @@ static TaskHandle_t task=nullptr;
 static std::atomic<uint32_t> wanted{0};
 static std::atomic<int> last_error{0};
 static std::atomic<bool> settings_saved{true};
-static uint32_t cooldown=0,last_request=0;
-static bool sntp_started=false,waiting_clock=false;
+static uint32_t backoff_started=0,last_request=0;
+static bool backing_off=false;
+static bool sntp_started=false,waiting_clock=false,cache_full=false;
 struct Miss {unsigned z=0,x=0,y=0;uint32_t at=0;bool used=false;};
 static Miss misses[12];static unsigned miss_slot=0;
 static uint32_t milliseconds(){return uint32_t(esp_timer_get_time()/1000);}
@@ -94,7 +96,8 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
   char file[192];snprintf(file,sizeof(file),"%s/tiles/%u/%u/%u.png",SD_ROOT,z,x,y);
   if(auto *p=checked_png(file,size))return p;
   paths(file,sizeof(file),c,z,x,y);if(auto *p=checked_png(file,size))return p;
-  const uint32_t now=milliseconds();if(!c.online||!network_allowed()||int32_t(now-cooldown)<0)return nullptr;
+  const uint32_t now=milliseconds();if(!c.online||!network_allowed())return nullptr;
+  if(backing_off){if(uint32_t(now-backoff_started)<120000)return nullptr;backing_off=false;}
   if(time(nullptr)<1700000000){
     waiting_clock=true;
     if(!sntp_started){const esp_sntp_config_t ntp=ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");const auto rc=esp_netif_sntp_init(&ntp);sntp_started=rc==ESP_OK||rc==ESP_ERR_INVALID_STATE;}
@@ -102,6 +105,8 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
   }
   waiting_clock=false;
   for(const auto &m:misses)if(m.used&&m.z==z&&m.x==x&&m.y==y&&uint32_t(now-m.at)<600000)return nullptr;
+  uint64_t total=0,free_space=0;
+  if(esp_vfs_fat_info(SD_ROOT,&total,&free_space)!=ESP_OK||free_space<8ULL*1024*1024+MAX_PNG){cache_full=true;return nullptr;}
   if(!directories(c,z,x))return nullptr;
   if(uint32_t(now-last_request)<1000)vTaskDelay(pdMS_TO_TICKS(1000-uint32_t(now-last_request)));
   last_request=milliseconds();
@@ -112,7 +117,7 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
   auto client=esp_http_client_init(&http);bool ok=false;unsigned char *png=nullptr;size=0;
   if(client&&esp_http_client_open(client,0)==ESP_OK){
     const auto length=esp_http_client_fetch_headers(client);const int status=esp_http_client_get_status_code(client);
-    if(status==429||status>=500)cooldown=now+120000;
+    if(status==429||status>=500){backoff_started=now;backing_off=true;}
     if(status==200&&length<=int64_t(MAX_PNG)){
       png=(unsigned char *)heap_caps_malloc(MAX_PNG,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
       if(png){int n=0;ok=true;
@@ -139,6 +144,7 @@ static unsigned char *checked_png(const char *file,size_t &size){
   if(!ok){heap_caps_free(png);return nullptr;}return png;
 }
 static Frame *render(const View &v,const Config &c){
+  waiting_clock=cache_full=false;
   auto *f=(Frame *)heap_caps_malloc(sizeof(Frame),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!f)return nullptr;new(f) Frame();f->view=v;
   const size_t count=v.width*v.height;auto *pixels=(lv_color_t *)heap_caps_malloc(count*sizeof(lv_color_t),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
   if(!pixels){release(f);return nullptr;}
@@ -162,7 +168,7 @@ static Frame *render(const View &v,const Config &c){
       lv_mem_free(rgba);
     }
   }
-  snprintf(f->status,sizeof(f->status),"z%u / %u tiles / %u missing%s",v.zoom,f->loaded,f->missing,!esp_sdcard_port_get_size()?" / SD unavailable":waiting_clock?" / clock sync":"");return f;
+  snprintf(f->status,sizeof(f->status),"z%u / %u tiles / %u missing%s",v.zoom,f->loaded,f->missing,!esp_sdcard_port_get_size()?" / SD unavailable":waiting_clock?" / clock sync":cache_full?" / cache reserve":"");return f;
 }
 static void worker(void *){
   uint32_t saved=0,last_save=0;uint64_t previous_source=0;
@@ -173,7 +179,7 @@ static void worker(void *){
       if(nvs_open("mcx_map",NVS_READWRITE,&h)==ESP_OK){if(nvs_set_blob(h,"config",&c,sizeof(c))==ESP_OK&&nvs_commit(h)==ESP_OK){saved=rev;portENTER_CRITICAL(&mux);if(revision==rev)settings_saved=true;portEXIT_CRITICAL(&mux);}
         nvs_close(h);}
     }
-    if(work){if(source_hash(c)!=previous_source){for(auto &miss:misses)miss=Miss{};previous_source=source_hash(c);}
+    if(work){if(source_hash(c)!=previous_source){for(auto &miss:misses)miss=Miss{};backing_off=false;previous_source=source_hash(c);}
       auto *f=render(v,c);if(f&&wanted.load()==v.generation){portENTER_CRITICAL(&mux);ready=f;portEXIT_CRITICAL(&mux);}else release(f);}
     vTaskDelay(pdMS_TO_TICKS(50));
   }
