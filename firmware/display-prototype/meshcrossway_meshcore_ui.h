@@ -439,7 +439,11 @@ static void render() {
       return;
     }
     if (!s || !s->initialized || !s->connected) {
-      single_label(body, s ? s->status : "More > Radios > Enable BLE", 8, 107, w - 16, orange);
+      lv_obj_t *status = single_label(body,
+          s ? s->status : "More > Radios > Enable BLE", 8, 107, w - 16, orange);
+      // Diagnostic code/length must remain readable, not end in "...".
+      lv_label_set_long_mode(status,LV_LABEL_LONG_WRAP);
+      lv_obj_set_height(status,52);
       return;
     }
     const int total = channels ? s->channel_count : s->contact_count;
