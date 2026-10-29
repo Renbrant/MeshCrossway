@@ -66,6 +66,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.7.14":
+        summary="EXPERIMENTAL / HELTEC AND OTHER RADIO TESTS PENDING: official Meshtastic BLE PhoneAPI compatibility, negotiated MTU with complete long GATT writes, receive counters and clearer send/history diagnostics. Includes touch/history fixes. Missing live RX is not yet confirmed resolved on hardware. One active BLE radio; MeshCore and Meshtastic remain independent. Install without Erase; v0.7.8 remains recovery."
+        label="Meshtastic PhoneAPI compatibility + RX diagnostics / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.7.13":
         summary="EXPERIMENTAL / PHYSICAL TOUCH AND SD TEST PENDING: v0.7.12 Meshtastic and MeshCore support plus PR #63 buffered FT6336 touch sampling, improved edge swipes and scroll, reuse of chat cards in PSRAM, preserved reading position and earlier offline SD restore independent of BLE startup. Real-device touch, SD absent/slow, internal heap and BLE coexistence are not yet validated. One active BLE radio; networks remain separate. Leave Erase unchecked; v0.7.8 stays the tested recovery."
         label="Touchscreen response + chat/history cache / EXPERIMENTAL"

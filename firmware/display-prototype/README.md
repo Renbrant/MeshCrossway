@@ -1,3 +1,5 @@
+**v0.7.14 experimental:** PR #65 improves Meshtastic PhoneAPI GATT compatibility and RX/send diagnostics. Physical Heltec V3 RX/TX validation is pending; do not treat missing RX as confirmed fixed. Install without Erase. v0.7.8 remains the unchanged recovery.
+
 # MeshCrossway display-only firmware prototype
 
 **Current v0.7.13 (experimental):** PR #63 adds queued touchscreen sampling, retained PSRAM chat cards, scroll-position preservation, and earlier offline history restore. Physical touch/SD/BLE testing is pending. Inherits v0.7.12 protocol support.  independent MeshCore Companion and Meshtastic PhoneAPI clients, one active BLE radio at a time. T-Deck / Plus is supported as an external Meshtastic radio with compatibility gates; physical qualification remains pending. The display-only descriptions below record earlier milestones. [Meshtastic setup, scope and acceptance](../../docs/meshtastic-v0712.md). v0.7.8 stays the owner-tested recovery image.

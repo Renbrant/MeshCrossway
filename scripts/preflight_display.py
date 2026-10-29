@@ -19,7 +19,7 @@ if (FW/"meshcrossway_meshcore_ui.h").exists():ui+=(FW/"meshcrossway_meshcore_ui.
 if version=="v0.5.4":
     anchor=ui.index("lv_obj_set_align(wifi_keyboard,LV_ALIGN_TOP_LEFT)")
     assert anchor<ui.index("lv_obj_set_pos(wifi_keyboard,4,185)"), "Keyboard must use top-left coordinates"
-if version not in ("v0.5.1", "v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7", "v0.5.8", "v0.5.9", "v0.5.10", "v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+if version not in ("v0.5.1", "v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7", "v0.5.8", "v0.5.9", "v0.5.10", "v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
     errors.append("Unexpected version: " + version)
 if "HTTPD_503_SERVICE_UNAVAILABLE" in remote:
     errors.append("Unsupported HTTPD_503_SERVICE_UNAVAILABLE token")
@@ -84,25 +84,25 @@ void app(){
         patched_panel = panel_fixture.read_text()
         patched_manifest = (main.parent / 'idf_component.yml').read_text()
         patched_sdkconfig = (example / "sdkconfig.defaults").read_text()
-        if version in ("v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7", "v0.5.8", "v0.5.9", "v0.5.10", "v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+        if version in ("v0.5.2", "v0.5.3", "v0.5.4", "v0.5.5", "v0.5.6", "v0.5.7", "v0.5.8", "v0.5.9", "v0.5.10", "v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
             if (output.count("meshnetwork::start();") != 1 or output.count("meshcrossway::init();") != 1 or "meshremote::start();" in output or "meshremote::register_input();" in output):
                 errors.append("Diagnostic patcher must start only Wi-Fi; no remote HTTP or LVGL input")
-            if version in ("v0.5.7","v0.5.8","v0.5.9","v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") and output.count("meshhealth::start();")!=1:
+            if version in ("v0.5.7","v0.5.8","v0.5.9","v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") and output.count("meshhealth::start();")!=1:
                 errors.append("Status HTTP must start once")
         elif (output.count("meshremote::start();") != 1 or output.count("meshcrossway::init();") != 1 or output.count("meshremote::register_input();") != 1):
             errors.append("Patcher not idempotent for main.cpp")
-        if version in ("v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+        if version in ("v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
             if output.count("meshcapture::init();")!=1 or '#include "meshcrossway_capture.h"' not in output:
                 errors.append("v0.5.10 must initialize one capture timer within LVGL lock")
         if '#define EXAMPLE_DISPLAY_ROTATION 90' not in output:
             errors.append("Display rotation missing")
         if 'CONFIG_LV_USE_SNAPSHOT=y' not in (example / "sdkconfig.defaults").read_text():
             errors.append("Missing snapshot config")
-        if version in ("v0.5.9","v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+        if version in ("v0.5.9","v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
             patched_config=(example / "sdkconfig.defaults").read_text()
             if "CONFIG_FATFS_LFN_HEAP=y" not in patched_config or "CONFIG_FATFS_LFN_NONE=y" in patched_config:
                 errors.append("Wi-Fi SD backup requires FATFS heap long filename support")
-        if version in ("v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") and not (main.parent / "meshcrossway_capture.h").is_file():
+        if version in ("v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") and not (main.parent / "meshcrossway_capture.h").is_file():
             errors.append("Manual remote capture header not copied into vendor example")
         if not (main.parent / "meshcrossway_remote.h").is_file():
             errors.append("Remote header not copied")
@@ -143,23 +143,23 @@ print("PASS: compiled DMA rounder preserves geometry and aligns all 115440 horiz
 
 print("Preflight PASS: version, C++ source patterns, JS syntax, patcher syntax and idempotence")
 
-if version in ("v0.5.7","v0.5.8","v0.5.9","v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+if version in ("v0.5.7","v0.5.8","v0.5.9","v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
     health=(FW/"meshcrossway_health.h").read_text()
     assert '#include "meshcrossway_health.h"' in ui
     assert not any(token in health for token in ("lv_snapshot_take(","lvgl_port_lock(","lv_indev_drv_register(","/touch"))
-    if version not in ("v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):assert "/screen.raw" not in health
-    assert health.count("httpd_register_uri_handler(")==(3 if version in ("v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") else 2)
+    if version not in ("v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):assert "/screen.raw" not in health
+    assert health.count("httpd_register_uri_handler(")==(3 if version in ("v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") else 2)
     js=health.split("<script>",1)[1].split("</script>",1)[0]
     subprocess.run(["node","--check","-"],input=js,text=True,check=True)
     print("PASS status HTTP isolation and browser JavaScript")
 
-if version in ("v0.5.9","v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+if version in ("v0.5.9","v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
     backup=(FW/"meshcrossway_backup.h").read_text()
     assert all(name in backup for name in ("/sdcard/meshcrossway-wifi.json", "/sdcard/meshcrossway-wifi.tmp", "write failed (", "failed(FailureStep"))
     assert "meshbackup::describe(" in ui
     print("PASS: FATFS LFN enabled and write-stage diagnostics available without exposing secrets")
 
-if version in ("v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+if version in ("v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
     capture=(FW/"meshcrossway_capture.h").read_text()
     patch=patcher.read_text()
     assert "lv_snapshot_buf_size_needed(" in capture and "lv_snapshot_take_to_buf(" in capture
@@ -183,12 +183,12 @@ if version in ("v0.5.10","v0.6.0", "v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2",
     assert version in health
     print("PASS: isolated one-shot manual capture, bounded PSRAM, PIN-free access and SD recovery preserved")
 
-if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
-    if version in ("v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
-        for marker in ("tab_names[6]", ("has_context_rail" if version in ("v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") else "home_nav_open"), "NODES / MESHCORE",
+if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
+    if version in ("v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
+        for marker in ("tab_names[6]", ("has_context_rail" if version in ("v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") else "home_nav_open"), "NODES / MESHCORE",
                        "GROUPS / CHANNELS", "CHAT / NO SELECTION", "active_thread",
                        "nodes_filter", "groups_filter", "make_nav_vector",
-                       "open_thread_now", "more_view", (version.lstrip("v") if version in ("v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") else "0.7.8" if version=="v0.7.8" else "DEV " + version.lstrip("v")) if version in ("v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") else ("DEV 0.6.4" if version=="v0.6.4" else ("DEV 0.6.3" if version=="v0.6.3" else "DEV 0.6.2"))):
+                       "open_thread_now", "more_view", (version.lstrip("v") if version in ("v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") else "0.7.8" if version=="v0.7.8" else "DEV " + version.lstrip("v")) if version in ("v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") else ("DEV 0.6.4" if version=="v0.6.4" else ("DEV 0.6.3" if version=="v0.6.3" else "DEV 0.6.2"))):
             assert marker in ui, "Missing new navigation element: "+marker
         assert version in health
         assert 'remote touch disabled' in ui
@@ -199,10 +199,10 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
                        "lv_obj_scroll_to_y(body", "DEV 0.6.1"):
             assert marker in ui, "Missing adaptive element: "+marker
         assert "DEV 0.6.0" not in ui
-    if version in ("v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+    if version in ("v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
         ble=(FW/"meshcrossway_ble.h").read_text()
         assert all(token in ble for token in ("nimble_port_init(", "ble_gap_disc(", "ble_gap_connect(", "ble_gattc_disc_all_svcs(", "ble_sm_inject_io(", "BLE_GAP_EVENT_ENC_CHANGE"))
-        if version in ("v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+        if version in ("v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
             assert "meshble::start();" not in output
             assert "meshble::request_start()" in ui
             assert "meshble::schedule_auto_resume();" in output
@@ -212,7 +212,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
             assert "meshble::start();" in output
         assert '"meshcrossway_ble.h"' in patcher.read_text()
         assert "CONFIG_BT_NIMBLE_ENABLED=y" in patcher.read_text()
-    if version in ("v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+    if version in ("v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
         assert "port_cfg.task_affinity = 1;" in output
         lcd=patched_lcd
         assert "#define EXAMPLE_LCD_PIXEL_CLOCK_HZ (40 * 1000 * 1000)" in lcd
@@ -226,7 +226,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert "save_remembered()" in ble and "read_remembered()" in ble
         assert "scan(true)" in ble and "auto_paused.store(true)" in ble
         assert "[MCX-MEM]" in ble
-        if version in ("v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+        if version in ("v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
             emoji_root=FW/"emoji"
             registry=(emoji_root/"emoji_registry.inc").read_text()
             display=(emoji_root/"emoji_display.h").read_text()
@@ -238,14 +238,14 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
             assert "emoji_txt(b, title" in mcui
             assert "emoji_center_heading(" in mcui
             assert "mcui::set_home_name" in ui
-        if version in ("v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+        if version in ("v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
             assert "CONFIG_LV_USE_IMGFONT=y" in patched_sdkconfig
             assert '#include "emoji/emoji_display.h"' in ui
             assert (FW / "emoji" / "emoji_display.h").is_file()
             assert '"emoji_display.h"' in patcher.read_text()
-            assert ("set_message_text(text, display_text)" if version in ("v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") else
+            assert ("set_message_text(text, display_text)" if version in ("v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") else
                     "set_message_text(text, m->text)") in (FW/"meshcrossway_meshcore_ui.h").read_text()
-        if version in ("v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+        if version in ("v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
             wifi=(FW/"meshcrossway_network.h").read_text()
             assert all(marker in wifi for marker in ("MAX_PROFILES=5","remember_success(","known_network(","try_saved(","next_saved(","RETRY_KNOWN","WIFI_VAULT_MAGIC","60000000ULL","suppress_user_leave"))
             assert "meshble::schedule_auto_resume();" in output
@@ -261,7 +261,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert 'espressif/esp_lvgl_port: "2.9.0"' in patched_manifest
         assert 'ESP_ERROR_CHECK(color_result);' in patched_panel
         assert 'CONFIG_ESP_WIFI_TASK_CORE_ID=' not in patched_sdkconfig
-    if version in ("v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+    if version in ("v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
         brand=(FW/"meshcrossway_brand.h").read_text()
         current=(FW/"meshcrossway_ui.h").read_text()
         assert "official_pixels[2224]" in brand
@@ -269,7 +269,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert '"meshcrossway_brand.h"' in patcher.read_text()
         assert "lv_img_set_src(brand,&mcxbrand::official_lockup)" in current
         assert "static bool has_context_rail(){return page==3||page==4;}" in current
-        assert ("static bool has_left_rail(){return true;}" if version in ("v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13")
+        assert ("static bool has_left_rail(){return true;}" if version in ("v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14")
                 else "static bool has_left_rail(){return page!=5;}") in current
         assert "right_compact?context_glyph(id):choices[i].label" in current
         chat=(FW/"meshcrossway_meshcore_ui.h").read_text()
@@ -278,14 +278,14 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert 'action_button(body, "COMPOSE", 8, 53' not in chat
         assert 'action_button(body, "TOOLS", 16 +' not in chat
         assert "int y = 96;" in chat or "chatview::begin(body)" in chat
-        assert ("if(!has_context_rail()){" if version in ("v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") else "if(!has_context_rail())return;") in current
+        assert ("if(!has_context_rail()){" if version in ("v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") else "if(!has_context_rail())return;") in current
         if version=="v0.7.6":assert 'action_button(body,"HOME"' in current
         else:assert 'action_button(body,"HOME"' not in current
         assert 'action_button(body,"SETTINGS"' in current
         assert "home_nav_open" not in current
         assert "nodes_actions" not in current and "groups_actions" not in current
         assert (FW/"meshcrossway_brand.h").is_file()
-    if version in ("v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+    if version in ("v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
         swipe=(FW/"meshcrossway_edge_swipe.h").read_text()
         current=(FW/"meshcrossway_ui.h").read_text()
         assert 'meshcrossway_edge_swipe.h' in patcher.read_text()
@@ -294,7 +294,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert "static void edge_swipe_poll" in current
         assert "left_handle" not in current and "right_handle" not in current
         assert "toggle_left" not in current and "toggle_right" not in current
-        assert ("context_actions,5,0" if version in ("v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") else "context_actions,0,0") in current
+        assert ("context_actions,5,0" if version in ("v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") else "context_actions,0,0") in current
         assert "lv_obj_set_pos(tabs[i],3,7+i*45)" in current
         assert "iabs(dx)<2*iabs(dy)" in swipe
         assert "if(overlay" in swipe
@@ -312,7 +312,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert "i2c_master_transmit_receive(i2c_device" in power
         assert "vTaskDelay(pdMS_TO_TICKS(15000))" in power
         assert "LV_SYMBOL_WIFI" in current and "LV_SYMBOL_BLUETOOTH" in current
-        assert "LV_SYMBOL_CHARGE" in current and ("top_battery_fill" if version in ("v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") else "LV_SYMBOL_BATTERY_EMPTY") in current
+        assert "LV_SYMBOL_CHARGE" in current and ("top_battery_fill" if version in ("v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") else "LV_SYMBOL_BATTERY_EMPTY") in current
         assert 'char label[54];snprintf(label,sizeof(label),"Wi-Fi: %s"' not in current
         assert "static bool has_left_rail(){return true;}" in current
         assert "lv_obj_set_style_border_color(button,orange,0)" in current
@@ -359,7 +359,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert 'mcxemoji::view::set_message_text(lv_obj_get_child(mc_card,1),s.active_name)' in current
         print("PASS: v0.7.7 emoji sizing/fallback and bounded Companion response validation")
         print("PASS: v0.7.7 chat sender, UTC observed time and route hops without RX IDs")
-        if version in ("v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+        if version in ("v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
             assert "static void left_tab_touch" in current
             assert "suppress_left_nav_click||edge_swipe_click_in_progress()" in current
             assert "lv_obj_add_event_cb(tabs[i],left_tab_touch,LV_EVENT_PRESSING,nullptr)" in current
@@ -372,7 +372,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
             assert "top_mt_name=color_label(top,\"MT\"" in current
             assert "top_mc_name=color_label(top,\"MC\"" in current
         print("PASS: v0.7.8 UI swipe gesture, adjacent map scrolling and clean battery/header")
-    if version in ("v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13"):
+    if version in ("v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14"):
         key_header=(FW/"meshcrossway_device_key.h").read_text()
         assert '#include "meshcrossway_device_key.h"' in (FW/"meshcrossway_ui.h").read_text()
         assert '"meshcrossway_device_key.h"' in patcher.read_text()
@@ -383,12 +383,12 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         print("PASS: read-only eFuse audit connected to Diagnostics without burn")
     # Approved simulator v5: independent collapsible left/right rails and shade.
     for marker in ("left_compact","right_compact",
-                   ("edge_swipe_poll" if version in ("v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") else "toggle_left"),
-                   ("mcxswipe::sample(" if version in ("v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") else "toggle_right"),
+                   ("edge_swipe_poll" if version in ("v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") else "toggle_left"),
+                   ("mcxswipe::sample(" if version in ("v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") else "toggle_right"),
                    "context_actions","open_shade","QUICK SETTINGS",
                    "A_POIS","A_TRACKS","A_RECORD","A_SHARE","A_GNSS",
                    "map_view","lv_obj_scroll_to_y(context_actions",
-                   "BLE / RADIO PODS" if version in ("v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13") else "BLE: NOT CONNECTED","GNSS / OFFLINE","wifi_setup("):
+                   "BLE / RADIO PODS" if version in ("v0.6.3","v0.6.4","v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14") else "BLE: NOT CONNECTED","GNSS / OFFLINE","wifi_setup("):
         assert marker in ui, "v0.6.0 side-console element missing: "+marker
     assert 'DEV 0.5.10' not in ui
     assert version in ui

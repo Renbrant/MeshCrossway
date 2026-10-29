@@ -1,3 +1,5 @@
+**v0.7.14 experimental:** PR #65 improves Meshtastic PhoneAPI GATT compatibility and RX/send diagnostics. Physical Heltec V3 RX/TX validation is pending; do not treat missing RX as confirmed fixed. Install without Erase. v0.7.8 remains the unchanged recovery.
+
 # Waveshare firmware status — October 28, 2026
 
 ## Current candidate — v0.7.13 (October 29, 2026)
