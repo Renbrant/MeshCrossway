@@ -127,7 +127,9 @@ static void save_remembered(){
 static bool matching_remembered(const ble_addr_t &address){
   bool match=false;
   portENTER_CRITICAL(&mux);
-  match=have_remembered&&remembered.addr_type==address.type&&
+  // NimBLE can report an identity type (PUBLIC_ID/RANDOM_ID) while
+  // advertisement descriptors use the equivalent PUBLIC/RANDOM base type.
+  match=have_remembered&&((remembered.addr_type&1)==(address.type&1))&&
         memcmp(remembered.addr,address.val,6)==0;
   portEXIT_CRITICAL(&mux);
   // Never auto-select merely from an advertised name.
@@ -498,7 +500,9 @@ static bool request_start(){
 static void auto_resume_task(void *){
   // Keep BLE completely OFF while LVGL, AP+STA and HTTP initialize.
   vTaskDelay(pdMS_TO_TICKS(12000));
-  if(!read_remembered()){reconnect_worker=nullptr;vTaskDelete(nullptr);return;}
+  if(!read_remembered()||auto_paused.load()){
+    reconnect_worker=nullptr;vTaskDelete(nullptr);return;
+  }
   (void)request_start();
   bool first=true;
   while(!auto_paused.load()){
