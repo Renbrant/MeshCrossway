@@ -290,6 +290,7 @@ static const ActionInfo map_actions[]={
   {"GNSS",A_GNSS,cyan},{"Team",A_TEAM,orange}
 };
 static void draw(); // Forward-declared above Wi-Fi editor callbacks.
+static bool edge_swipe_click_in_progress();
 static bool has_context_rail(){return page==3||page==4;}
 static bool has_left_rail(){return page!=5;}
 static int content_width(){return 480-(has_left_rail()?(left_compact?40:79):0)
@@ -482,8 +483,12 @@ static void run_action(void *data){
     default:break;
   }
 }
-static void on_action(lv_event_t *e){lv_async_call(run_action,lv_event_get_user_data(e));}
+static void on_action(lv_event_t *e){
+  if(edge_swipe_click_in_progress())return;
+  lv_async_call(run_action,lv_event_get_user_data(e));
+}
 static void on_nav(lv_event_t *e){
+  if(edge_swipe_click_in_progress())return;
   page=(int)(intptr_t)lv_event_get_user_data(e);
   if(page==5)more_view=0;
   close_shade();draw();
@@ -518,6 +523,26 @@ static void edge_swipe_poll(lv_timer_t *){
   }
   // Redraw only once, after release. Never destroy widgets while pressed.
   draw();
+}
+// A horizontal swipe can end on a clickable icon. LVGL 8.x can emit CLICKED
+// before the 20ms polling timer sees the released state. Suppress that click
+// so dragging a rail never accidentally switches page or activates Compose.
+static bool edge_swipe_click_in_progress(){
+  if(!swipe_state.down||swipe_state.origin==mcxswipe::NOT_ARMED)return false;
+  lv_indev_t *dev=lv_indev_get_act();
+  if(!dev||lv_indev_get_type(dev)!=LV_INDEV_TYPE_POINTER)return false;
+  lv_point_t p={};lv_indev_get_point(dev,&p);
+  const int dx=int(p.x)-int(swipe_state.start_x);
+  const int dy=int(p.y)-int(swipe_state.start_y);
+  if(mcxswipe::iabs(dx)<44||mcxswipe::iabs(dx)<2*mcxswipe::iabs(dy))return false;
+  const bool correct_direction=
+    (swipe_state.origin==mcxswipe::LEFT_OPEN_ZONE&&dx>0)||
+    (swipe_state.origin==mcxswipe::LEFT_CLOSE_ZONE&&dx<0)||
+    (swipe_state.origin==mcxswipe::RIGHT_OPEN_ZONE&&dx<0)||
+    (swipe_state.origin==mcxswipe::RIGHT_CLOSE_ZONE&&dx>0);
+  if(!correct_direction)return false;
+  swipe_state.last_x=p.x;swipe_state.last_y=p.y;
+  return true;
 }
 static void apply_filter(void *value){
   const int filter=(int)(intptr_t)value;
