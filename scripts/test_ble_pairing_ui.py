@@ -378,8 +378,8 @@ void heap_caps_free(void *);
 }
 #endif
 ''')
-        flags = ['-O1', '-DLV_CONF_SKIP', '-DLV_MEM_CUSTOM=1', '-DLV_MEM_CUSTOM_INCLUDE="meshcrossway_lvgl_alloc.h"',
-                 '-DLV_FONT_MONTSERRAT_20=1', '-I'+str(temp), '-I'+str(lvgl), '-I'+str(ROOT/'firmware/display-prototype')]
+        flags = ['-O1', '-DLV_USE_PNG=1', '-DLV_CONF_SKIP', '-DLV_MEM_CUSTOM=1', '-DLV_MEM_CUSTOM_INCLUDE="meshcrossway_lvgl_alloc.h"',
+                 '-DLV_FONT_MONTSERRAT_20=1', '-DLV_FONT_MONTSERRAT_10=1', '-I'+str(temp), '-I'+str(lvgl), '-I'+str(ROOT/'firmware/display-prototype')]
         def compile_c(source):
             obj = temp / (hashlib.sha256(str(source).encode()).hexdigest()[:16]+'.o')
             subprocess.run(['cc', '-std=c99', *flags, '-c', str(source), '-o', str(obj)],check=True,capture_output=True)
@@ -434,6 +434,8 @@ static bool esp_lcd_touch_get_coordinates(void *,uint16_t *,uint16_t *,uint16_t 
         binary=temp/'touch'
         subprocess.run(['c++','-std=c++17','-Werror=misleading-indentation',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
         subprocess.run([str(binary)],check=True)
+        from test_map_navigation import run as run_map_navigation
+        run_map_navigation(temp, flags, objects, allocator)
 
 
 if __name__ == '__main__':

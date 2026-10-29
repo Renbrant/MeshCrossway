@@ -66,6 +66,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.1":
+        summary="EXPERIMENTAL / MAP HARDWARE TEST PENDING: local GPS fix/satellite header indicator, persistent GPS reading/baud/units/expiry settings, Web Mercator XYZ PNG maps from microSD or visible-view HTTPS tiles with SD cache. Pan, zoom and GPS follow. No bulk downloads or mesh position sharing. Install without Erase; v0.7.8 remains recovery."
+        label="GPS status + XYZ maps + GPS settings / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.0":
         summary="EXPERIMENTAL / GPS HARDWARE TEST PENDING: local MAX-M10S NMEA UART reception on GPIO44 RX / GPIO43 TX, 9600/38400 baud detection, checksum validation, fresh fix/coordinates/satellites/HDOP display. USB Serial/JTAG console frees GPS pins. Basemap remains a preview; no location transmission. Install without Erase; v0.7.8 remains recovery."
         label="Local UART GPS / EXPERIMENTAL"

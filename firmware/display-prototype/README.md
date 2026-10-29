@@ -1,3 +1,5 @@
+**v0.8.1 candidate (experimental):** GPS header status, persistent local GPS settings and real XYZ PNG maps. [Configuration, SD tiles and limits](../../docs/maps-gps-v081.md). Map hardware acceptance pending; v0.7.8 recovery unchanged.
+
 **v0.7.14 experimental:** PR #65 improves Meshtastic PhoneAPI GATT compatibility and RX/send diagnostics. Physical Heltec V3 RX/TX validation is pending; do not treat missing RX as confirmed fixed. Install without Erase. v0.7.8 remains the unchanged recovery.
 
 # MeshCrossway display-only firmware prototype

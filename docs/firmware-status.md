@@ -1,8 +1,12 @@
+# Current candidate — v0.8.1
+
+GPS fix/satellite header status, persistent receiver-reading settings, and georeferenced XYZ raster maps. Host and firmware checks are tracked on the implementation PR. Physical map/SD/Wi-Fi/BLE acceptance remains pending. The owner supplied v0.8.0 photos showing a live UART fix and 12 satellites; that confirms the initial reader/display path, not all new map behavior. v0.7.8 remains recovery. [Guide](maps-gps-v081.md).
+
 **v0.7.14 experimental:** PR #65 improves Meshtastic PhoneAPI GATT compatibility and RX/send diagnostics. Physical Heltec V3 RX/TX validation is pending; do not treat missing RX as confirmed fixed. Install without Erase. v0.7.8 remains the unchanged recovery.
 
 # Waveshare firmware status — October 28, 2026
 
-## Current candidate — v0.7.13 (October 29, 2026)
+## Historical candidate — v0.7.13 (October 29, 2026)
 v0.7.13 integrates PR #63 on top of v0.7.12: a dedicated touch sampling task with bounded queue, PSRAM chat-card reuse, preserved reading position on radio updates, and offline history restore without waiting for the delayed BLE auto-resume. Preflight and full ESP-IDF build must pass before Pages publication. **Experimental, not yet hardware tested:** tap and rail scrolling during BLE traffic, absent/slow SD, internal memory and repeated cold starts must be checked. Retains one active Bluetooth radio at a time, independent MeshCore and Meshtastic network stores, and the unchanged tested v0.7.8 recovery. Install without Erase.
 
 ## Previous candidate — October 29, 2026

@@ -59,3 +59,7 @@ Use the existing [image-source register](images/README.md), [manufacturer refere
 ## Meshtastic adapter review — v0.7.12
 
 The Core adapter now implements original bounded protobuf wire handling, session, UI and separate SD storage; it incorporates no upstream library, generated binding or `.proto` source. Research-only GPL-3.0 schema revision `ffd5ad428da6db4a7ddfe62e06548718cc2603e0` and firmware revision `6d41e279f1f51bd59f687b9d441c1bf47b1594fc` are identified with reviewed paths in the [provenance register](meshtastic-v0712.md#primary-references-and-provenance). No Pod firmware is redistributed by this change. Future bindings or copied upstream source require a new dependency/license review. Existing binary-release review items above remain open.
+
+## Raster map implementation (v0.8.1 candidate)
+
+Uses the existing pinned LVGL 8.4 LodePNG decoder (Lode Vandevenne, zlib-style notice retained in the upstream library), now enabled through `LV_USE_PNG`. No external map application source was copied. Raster data is separate from firmware code: OpenStreetMap attribution is displayed; tile service terms apply. Offline XYZ packs must carry the provider's required attribution and permission for offline use. See [map guide](maps-gps-v081.md).
