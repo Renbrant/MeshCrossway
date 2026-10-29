@@ -57,6 +57,7 @@ static lv_obj_t *emoji_txt(lv_obj_t *parent,const char *value,int x,int y,int wi
 static void emoji_center_heading(const char *name,const char *subtitle){
   const int width=lv_obj_get_width(body);
   lv_obj_t *label=single_label(body,name,8,8,width-16,white);
+  lv_obj_set_height(label,21); // 20 px image glyph plus 1 px breathing room.
 #if defined(MCX_EMOJI_RENDER_ENABLED)
   mcxemoji::view::set_message_text(label,name);
 #endif
