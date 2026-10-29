@@ -559,6 +559,7 @@ static void render() {
 static void poll(lv_timer_t *) {
   meshmc::poll();
   auto *s = session();
+  if (s) mcxhistory::poll(*s, (uint32_t)(esp_timer_get_time()/1000),meshmc::connection_epoch.load());
   if (s) {
     const char *state = s->initialized && !s->busy && !s->fault ? "MeshCore ready" : s->status;
     if (radio_status && strcmp(lv_label_get_text(radio_status), state))
