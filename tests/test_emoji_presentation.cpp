@@ -1,0 +1,76 @@
+// Standalone host tests. No firmware or LVGL dependency.
+#include "../firmware/display-prototype/emoji/emoji_presentation.h"
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+
+static bool contains(const char *haystack, const char *needle) {
+  return strstr(haystack, needle) != nullptr;
+}
+static void plain_and_accents() {
+  const char src[] = u8"Acao / Sao / Caf\u00e9 123 # *!";
+  char dst[128];
+  const mcxemoji::Report r = mcxemoji::transform(src, strlen(src), dst, sizeof(dst));
+  assert(strcmp(src, dst) == 0);
+  assert(r.emoji_substitutions == 0 && r.unsupported_clusters == 0 && !r.truncated);
+}
+static void known_single_and_composed() {
+  const char src[] = u8"Hello \U0001f604 / \u2764\ufe0f / \U0001f1e7\U0001f1f7 / \U0001f469\u200d\U0001f4bb / \U0001f44d\U0001f3fd!";
+  char dst[256];
+  char raw_copy[sizeof(src)]; memcpy(raw_copy, src, sizeof(src));
+  const mcxemoji::Report r = mcxemoji::transform(src, strlen(src), dst, sizeof(dst));
+  assert(r.emoji_substitutions == 5 && r.unsupported_clusters == 0 && !r.truncated);
+  assert(strcmp(src, raw_copy) == 0); // never touches original text
+  assert(strlen(dst) < strlen(src));
+  assert(contains(dst,"Hello ") && contains(dst,"!"));
+  assert(!contains(dst,"[emoji]"));
+}
+static void unknown_and_zwj_stay_atomic() {
+  const char src[] = u8"A \U0001f468\u200d\U0001f469\u200d\U0001f467 B \U0001f1ef\U0001f1f5";
+  char dst[128];
+  const mcxemoji::Report r = mcxemoji::transform(src, strlen(src), dst, sizeof(dst));
+  assert(r.emoji_substitutions == 0 && r.unsupported_clusters == 2);
+  assert(strcmp(dst, "A [emoji] B [emoji]") == 0);
+}
+static void keycaps_vs_normal_digits() {
+  const char src[] = u8"No. 1 & #, but \u0031\ufe0f\u20e3 \u0023\ufe0f\u20e3";
+  char dst[128];
+  const mcxemoji::Report r = mcxemoji::transform(src, strlen(src), dst, sizeof(dst));
+  assert(r.emoji_substitutions == 2);
+  assert(contains(dst,"No. 1 & #, but "));
+}
+static void invalid_utf8_never_overreads() {
+  const char src[] = {'A', (char)0xf0, (char)0x80, (char)0x80, (char)0x80, 'Z'};
+  char dst[32];
+  const mcxemoji::Report r = mcxemoji::transform(src, sizeof(src), dst, sizeof(dst));
+  assert(strcmp(dst, "A????Z") == 0 && r.invalid_bytes == 4 && !r.truncated);
+  const char incomplete[] = {(char)0xe2, (char)0x82};
+  const mcxemoji::Report t = mcxemoji::transform(incomplete, sizeof(incomplete), dst, sizeof(dst));
+  assert(strcmp(dst,"??") == 0 && t.invalid_bytes == 2);
+}
+static void truncation_never_splits_utf8() {
+  const char src[] = u8"\U0001f604\U0001f1fa\U0001f1f8X";
+  char dst[5]; // one PUA (3 bytes) and trailing null; cannot fit second glyph
+  const mcxemoji::Report r = mcxemoji::transform(src, strlen(src), dst, sizeof(dst));
+  assert(r.emoji_substitutions == 1 && r.truncated && strlen(dst) == 3);
+  uint32_t cp = 0; size_t w = 0;
+  assert(mcxemoji::decode(dst,strlen(dst),0,cp,w) && w == 3 && cp >= 0xe000);
+  char tiny[1];
+  const mcxemoji::Report q = mcxemoji::transform(src,strlen(src),tiny,sizeof(tiny));
+  assert(q.truncated && tiny[0] == 0);
+}
+static void no_memory_allocation_or_side_effects() {
+  char dst[128];
+  const mcxemoji::Report r = mcxemoji::transform(nullptr, 0, dst, sizeof(dst));
+  assert(!r.truncated && dst[0] == 0);
+  const mcxemoji::Report t = mcxemoji::transform(nullptr, 2, dst, sizeof(dst));
+  assert(t.invalid_bytes == 2 && dst[0] == 0);
+  const mcxemoji::Report u = mcxemoji::transform("test", 4, nullptr, 0);
+  assert(u.truncated);
+}
+int main() {
+  plain_and_accents(); known_single_and_composed(); unknown_and_zwj_stay_atomic();
+  keycaps_vs_normal_digits(); invalid_utf8_never_overreads();
+  truncation_never_splits_utf8(); no_memory_allocation_or_side_effects();
+  printf("emoji presentation: 7 host test groups passed; %zu registry entries\n", mcxemoji::kGlyphCount);
+}
