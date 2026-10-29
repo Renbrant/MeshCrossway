@@ -875,6 +875,7 @@ static void draw(){
         single_label(body,"Watch Wi-Fi / touch; report boot log.",8,152,w-16,muted);
       }else if(s.phase==meshble::READY){
         lv_obj_t *mc_card=center_card(8,104,w-16,80,"CONNECTED",s.active_name,s.radio==meshble::MESHCORE&&meshmc::client?meshmc::client->status:"Meshtastic transport only",green);
+        mcxemoji::view::set_message_text(lv_obj_get_child(mc_card,1),s.active_name);
         if(s.radio==meshble::MESHCORE)mcui::radio_status=lv_obj_get_child(mc_card,2);
         action_button(body,"MESHCORE TOOLS",8,190,w-16,40,orange,mcui::on_tools,0);
         action_button(body,"DISCONNECT",8,236,w-16,40,panel2,on_action,A_BLE_DISCONNECT);
@@ -885,9 +886,10 @@ static void draw(){
         action_button(body,"SCAN NEARBY BLE",8,105,w-16,40,orange,on_action,A_BLE_SCAN);
         int y=155;
         for(int k=0;k<s.count;k++){
-          char name[60];snprintf(name,sizeof(name),"%.22s / %d dBm",s.peers[k].name,s.peers[k].rssi);
+          char name[60];snprintf(name,sizeof(name),"%s / %d dBm",s.peers[k].name,s.peers[k].rssi);
           lv_obj_t *b=action_button(body,"",8,y,w-16,52,panel,ble_select,k);
-          single_label(b,name,7,6,w-28,white);
+          lv_obj_t *peer_name=single_label(b,name,7,6,w-28,white);
+          mcxemoji::view::set_message_text(peer_name,name);
           single_label(b,meshble::protocol_name(s.peers[k].advertised),7,30,w-28,muted);
           y+=56;
         }
