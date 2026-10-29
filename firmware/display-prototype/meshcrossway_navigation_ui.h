@@ -14,13 +14,14 @@ static void invalidate(){
 }
 static void after_clean(){if(front){lv_img_cache_invalidate_src(&front->image);mcxmap::release(front);front=nullptr;}}
 static void request(){
-  if(!canvas)return;
+  if(!canvas||!centered)return;
   mcxmap::View v;v.latitude=latitude;v.longitude=longitude;v.zoom=zoom;v.width=unsigned(lv_obj_get_width(canvas));v.height=unsigned(lv_obj_get_height(canvas));
   seen_config=mcxmap::configuration_revision();
   generation=mcxmap::request(v);inflight=generation!=0;requested_at=uint32_t(esp_timer_get_time()/1000);
   if(map_status)chatview::label(map_status,generation?"Loading map...":"Map unavailable / memory");
 }
 static void pointer(lv_event_t *event){
+  if(!centered)return;
   auto *input=lv_indev_get_act();if(!input)return;
   lv_point_t p={};lv_indev_get_point(input,&p);const auto code=lv_event_get_code(event);
   if(code==LV_EVENT_PRESSED){drag_start=p;drag_x=drag_y=0;dragging=true;}

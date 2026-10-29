@@ -80,7 +80,11 @@ int main(int argc,char **argv){
  assert(!strcmp(lv_label_get_text(gps_satellites),"12")&&lv_obj_get_style_text_color(gps_icon,0).full==green.full);
  lv_area_t badge_area,charge_area;lv_obj_get_coords(gps_satellites,&badge_area);lv_obj_get_coords(top_charge,&charge_area);assert(badge_area.x2<charge_area.x1&&charge_area.x2<430);
  mcxgnss::cfg.enabled=0;gps_refresh(nullptr);assert(!strcmp(lv_label_get_text(gps_satellites),"--"));mcxgnss::cfg.enabled=1;mcxgnss::fix.valid=false;gps_refresh(nullptr);assert(lv_obj_get_style_text_color(gps_icon,0).full==orange.full);
- body=panel_at(lv_scr_act(),40,34,400,286,bg);mcxgnss::fix.valid=true;mcxgnss::fix.latitude=v.latitude;mcxgnss::fix.longitude=v.longitude;mcxgnss::fix.satellites=12;mcxgnss::fix.have_satellites=true;
+ body=panel_at(lv_scr_act(),40,34,400,286,bg);
+ mcxgnss::fix.valid=false;navui::centered=false;mcxmap::queued=false;navui::create(400);advance();
+ pointer_x=210;pointer_y=150;down=true;advance();pointer_x=260;advance();down=false;advance();
+ navui::request();assert(!mcxmap::queued&&!navui::inflight&&!navui::centered);
+ navui::invalidate();lv_obj_clean(body);navui::after_clean();mcxgnss::fix.valid=true;mcxgnss::fix.latitude=v.latitude;mcxgnss::fix.longitude=v.longitude;mcxgnss::fix.satellites=12;mcxgnss::fix.have_satellites=true;
  mcxmap::config.online=0;navui::create(400);advance();auto current=mcxmap::requested;make_tiles(current);mcxmap::ready=mcxmap::render(current,mcxmap::config);mcxmap::queued=false;navui::poll();assert(navui::front&&!navui::front->missing&&!lv_obj_has_flag(navui::marker,LV_OBJ_FLAG_HIDDEN));
  const double before=navui::longitude;pointer_x=210;pointer_y=150;down=true;advance();for(int x=215;x<=265;x+=5){pointer_x=x;advance(35);}down=false;advance();assert(!navui::following&&navui::longitude<before);
  gpsui::open();advance();assert(gpsui::enabled_button);tap(gpsui::enabled_button);assert(!mcxgnss::configuration().enabled);tap(gpsui::baud_button);assert(mcxgnss::configuration().baud==9600);tap(gpsui::timeout_button);assert(mcxgnss::configuration().timeout_ms==5000);
