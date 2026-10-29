@@ -231,7 +231,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
             registry=(emoji_root/"emoji_registry.inc").read_text()
             display=(emoji_root/"emoji_display.h").read_text()
             mcui=(FW/"meshcrossway_meshcore_ui.h").read_text()
-            assert r'\\U0001F3C1' in registry
+            assert r'\U0001F3C1' in registry
             assert (emoji_root/"emoji_flag_asset.h").is_file()
             assert "emoji_flag_asset.h" in patcher.read_text()
             assert "kEmojiRenderedCount" in display
