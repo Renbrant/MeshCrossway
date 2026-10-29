@@ -54,6 +54,14 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     info=json.loads(info_file.read_text())
     if m["version"]!=version or info["version"]!=version:
         p.error(f"Manifest/version mismatch for {version}")
+    # Archived owner-tested binaries retain exact bytes, but their historical
+    # manifest set new_install_prompt_erase=false. ESP Web Tools interprets
+    # that as an automatic full-chip erase when Improv is unavailable.
+    # Fix only the published manifest, never the tested firmware or checksums.
+    if m.get("new_install_prompt_erase") is not True:
+        m["new_install_prompt_erase"]=True
+        manifest.write_text(json.dumps(m,indent=2)+"\n")
+  
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
