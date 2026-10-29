@@ -44,7 +44,8 @@ if split:
 manifest={
     "name":f"MeshCrossway Display {args.version}",
     "version":args.version,
-    "new_install_prompt_erase":not split,
+    # Always offer the erase decision. False silently erases when Improv is absent.
+    "new_install_prompt_erase":True,
     "builds":[
         {"chipFamily":"ESP32-S3","parts":parts}
     ]
