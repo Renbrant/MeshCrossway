@@ -5,6 +5,7 @@
 #include "meshcrossway_health.h"
 #include "meshcrossway_ble.h"
 #include "emoji/emoji_display.h"
+#define MCX_EMOJI_RENDER_ENABLED 1
 #include "esp_system.h"
 #include "esp_timer.h"
 #include <stdint.h>
