@@ -56,8 +56,8 @@ struct RememberedPeer {uint32_t magic;uint8_t version;uint8_t radio;uint8_t addr
 static RememberedPeer remembered={};
 static bool have_remembered=false;
 static std::atomic<bool> auto_paused{false};
-static bool auto_scan=false;
-static int auto_candidate=-1;
+static std::atomic<bool> auto_scan{false};
+static std::atomic<int> auto_candidate{-1};
 static TaskHandle_t reconnect_worker=nullptr;
 static const ble_uuid128_t MT_SERVICE=BLE_UUID128_INIT(
   0xfd,0xea,0x73,0xe2,0xca,0x5d,0xa8,0x9f,0x1f,0x46,0xa8,0x15,0x18,0xb2,0xa1,0x6b);
@@ -354,11 +354,20 @@ static int gap_event(struct ble_gap_event *event,void *){
         state.generation++;
       }
       portEXIT_CRITICAL(&mux);
+      if(auto_scan.load()&&connectable&&index>=0&&!auto_paused.load()&&
+         matching_remembered(disc.addr)){
+        auto_candidate.store(index);
+        (void)ble_gap_disc_cancel(); // Wait for DISC_COMPLETE before connecting.
+      }
       return 0;
     }
-    case BLE_GAP_EVENT_DISC_COMPLETE:
+    case BLE_GAP_EVENT_DISC_COMPLETE:{
+      const int candidate=auto_candidate.exchange(-1);
+      const bool resume=auto_scan.exchange(false)&&!auto_paused.load();
       if(snapshot().phase==SCANNING)update(IDLE,"Scan complete - choose a device");
+      if(resume&&candidate>=0)connect(candidate);
       return 0;
+    }
     case BLE_GAP_EVENT_LINK_ESTAB:
       if(event->connect.status!=0){
         conn=BLE_HS_CONN_HANDLE_NONE;
@@ -478,13 +487,33 @@ static bool request_start(){
   if(snapshot().phase!=OFF)return false; // Do not repeat a partial or failed init.
   if(!meshmc::init()){update(FAILED,"No PSRAM for MeshCore session");return false;}
   meshmc::send_frame=mc_write;meshmc::close_link=mc_close;
-  debug_memory("BLE button pressed");
+  debug_memory("BLE requested");
   update(STARTING,"BLE worker requested - standby...");
   const BaseType_t created=xTaskCreate(init_task,"mcx_ble_init",6144,nullptr,tskIDLE_PRIORITY+1,nullptr);
   if(created!=pdPASS){
-    update(FAILED,"No memory for BLE worker; restart");
-    return false;
+    update(FAILED,"No memory for BLE worker; restart");return false;
   }
   return true;
+}
+static void auto_resume_task(void *){
+  // Keep BLE completely OFF while LVGL, AP+STA and HTTP initialize.
+  vTaskDelay(pdMS_TO_TICKS(12000));
+  if(!read_remembered()){reconnect_worker=nullptr;vTaskDelete(nullptr);return;}
+  (void)request_start();
+  bool first=true;
+  while(!auto_paused.load()){
+    vTaskDelay(pdMS_TO_TICKS(first?3000:30000));
+    first=false;
+    const Snapshot current=snapshot();
+    if(synced&&conn==BLE_HS_CONN_HANDLE_NONE&&
+       (current.phase==IDLE||current.phase==FAILED))scan(true);
+  }
+  reconnect_worker=nullptr;vTaskDelete(nullptr);
+}
+static void schedule_auto_resume(){
+  // An unpaired new Core never enables BLE on its own.
+  if(reconnect_worker)return;
+  (void)xTaskCreate(auto_resume_task,"mcx_ble_resume",4096,nullptr,
+                    tskIDLE_PRIORITY+1,&reconnect_worker);
 }
 } // namespace meshble
