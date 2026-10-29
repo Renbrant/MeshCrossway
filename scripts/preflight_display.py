@@ -188,7 +188,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.1"):
         for marker in ("tab_names[6]", "home_nav_open", "NODES / MESHCORE",
                        "GROUPS / CHANNELS", "CHAT / NO SELECTION", "active_thread",
                        "nodes_filter", "groups_filter", "make_nav_vector",
-                       "open_thread_now", "more_view", "DEV 0.7.0" if version=="v0.7.1" else ("DEV 0.6.4" if version=="v0.6.4" else ("DEV 0.6.3" if version=="v0.6.3" else "DEV 0.6.2"))):
+                       "open_thread_now", "more_view", "DEV 0.7.1" if version=="v0.7.1" else ("DEV 0.6.4" if version=="v0.6.4" else ("DEV 0.6.3" if version=="v0.6.3" else "DEV 0.6.2"))):
             assert marker in ui, "Missing new navigation element: "+marker
         assert version in health
         assert 'remote touch disabled' in ui
