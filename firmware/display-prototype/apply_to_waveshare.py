@@ -135,7 +135,8 @@ for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_he
              "meshcrossway_remote_page.h", "meshcrossway_network.h", "meshcrossway_ble.h", "meshcrossway_meshcore.h",
              "meshcrossway_meshcore_protocol.h", "meshcrossway_meshcore_ui.h",
              "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h",
-             "meshcrossway_power_status.h", "meshcrossway_battery_decode.h"):
+             "meshcrossway_power_status.h", "meshcrossway_battery_decode.h",
+             "meshcrossway_chat_presentation.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 

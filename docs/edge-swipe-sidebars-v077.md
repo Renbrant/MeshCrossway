@@ -59,3 +59,23 @@ CI success is necessary but **not** evidence of physical gesture behavior on the
 12. Top header shows no IP; Wi-Fi icon goes muted when disconnected, colored only after station gets an IP. MT and MC indicators follow **actual** BLE session identity and never show both connected on the current one-session implementation.
 13. Connect a Li-ion cell to the Waveshare battery header and inspect battery percentage. Connect USB: verify charging lightning indicator only while truly charging; at full/standby show USB indication. Disconnect the battery: percentage must display `--`. Compare with the vendor's AXP2101 demo; percentage may fluctuate under load.
 14. While exercising BLE pairing, touch and screenshots, verify periodic PMU polling causes no I2C timeouts, LVGL watchdog or touch lag. Check no regulator or charging configuration changes.
+
+
+## v0.7.7 chat readability: colored sender + receipt time + route hops
+
+A radio screenshot showed `RX / RECEIVED / 1793246599` above every received chat message. This is diagnostic metadata and must **never** appear in the normal chat. Instead:
+
+- First line: **sender display name** in a deterministic color chosen from six accessible colors. The same sender has the same color across messages; colors may repeat for different names. The local account label is **You** in orange.
+- Middle: actual message text with read-only UTF-8/emoji rendering. For a channel message matching the conventional `Name: message` prefix, display **Name** only as a visual label and keep just **message** in the body. The source packet and stored UTF-8 bytes are unchanged. A user-supplied channel name is **not cryptographically verified**, so do not imply authentication; if no recognizable prefix, display **Unknown sender** with the original text intact.
+- Last line: subtle metadata `HH:MM UTC | N hops`. `observed_at` is recorded when the MeshCrossway client retrieves the message over BLE, using the companion radio's clock. **It is not guaranteed to be the LoRa airtime or original RF reception**, especially for queued messages. If radio time has not been synchronized, display `--:--`, never invent one.
+- Decode MeshCore received path according to its encoded `path_len`: bottom six bits are hop/hash count; upper two bits describe path hash size. A received value of `0xFF` means **Direct route**, **not** 255 hops. Invalid/reserved values display `Hops --`. Outgoing messages retain their actual delivery states.
+- The protocol's own sender-supplied Unix `timestamp` is preserved for anti-duplication. A separate `observed_at` field is introduced in the existing in-memory message structure. No modifications to radio commands, bonding, packet transport, NVS, SD backups, eFuse or network separation.
+- Implement as a small read-only `meshcrossway_chat_presentation.h` helper with independent C++11/C++20 unit tests for colon-prefix parsing, unknown names, emoji-prefix UTF-8, UTC conversion, hop encoding, direct route and invalid routes.
+
+### Chat screenshot acceptance
+
+15. Open a busy MeshCore channel with multiple senders. There is **no** `RX / RECEIVED / [epoch]` label or raw signer ID on message cards. Sender name uses the same color across consecutive messages and different names are visually distinguishable where palette permits.
+16. With `CO-PW-HQ-MC01: @[emoji] HYPERSPACE...`, the header says `CO-PW-HQ-MC01` and body begins `@[emoji] HYPERSPACE...`; the original message and emoji bytes remain intact in the in-memory protocol store.
+17. Show `HH:MM UTC` only when the companion radio has provided a valid clock, otherwise `--:--`. Compare actual BLE observation against a nearby UTC reference; there is deliberately no unconfigured local time zone.
+18. For flooded received routes verify numeric hops from the decoded path count; for direct `0xFF`, show `Direct route` rather than `255 hops`. For invalid path show `Hops --`. Outgoing messages show actual queued/accepted/delivered statuses.
+19. Test 10+ messages with long text, multiline text, accent/emoji sender names and both compact/expanded right sidebar. Footer must not overlap text or clip against sidebars; normal scrolling and screen capture stay stable.

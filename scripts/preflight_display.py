@@ -316,6 +316,24 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert "battery_present" in battery and "charging" in battery
         assert (FW/"meshcrossway_power_status.h").is_file()
         assert (FW/"meshcrossway_battery_decode.h").is_file()
+        chat=(FW/"meshcrossway_meshcore_ui.h").read_text()
+        protocol=(FW/"meshcrossway_meshcore_protocol.h").read_text()
+        presenter=(FW/"meshcrossway_chat_presentation.h").read_text()
+        assert 'meshcrossway_chat_presentation.h' in patcher.read_text()
+        assert '#include "meshcrossway_chat_presentation.h"' in current
+        assert "mcxchat::channel_sender(m->text)" in chat
+        assert "mcxchat::color_index(sender)" in chat
+        assert "mcxchat::meta(m->observed_at" in chat
+        assert "lv_obj_t *name = emoji_txt(card, sender" in chat
+        assert "m->text = " not in chat
+        assert '"RX / signer %s / %lu"' not in chat
+        assert '"%s / %s / %lu"' not in chat
+        assert "uint32_t id = 0, timestamp = 0, observed_at = 0" in protocol
+        assert "m.observed_at = observed" in protocol
+        assert "path==0xFFu" in presenter and "path&0x3Fu" in presenter
+        assert 'snprintf(out,cap,"%02lu:%02lu UTC"' in presenter
+        assert (FW/"meshcrossway_chat_presentation.h").is_file()
+        print("PASS: v0.7.7 chat sender, UTC observed time and route hops without RX IDs")
         print("PASS: v0.7.7 gesture, permanent Settings navigation, real status icons and read-only AXP2101")
     if version in ("v0.7.5","v0.7.6","v0.7.7"):
         key_header=(FW/"meshcrossway_device_key.h").read_text()

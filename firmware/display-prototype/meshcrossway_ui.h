@@ -8,6 +8,7 @@
 #include "meshcrossway_brand.h"
 #include "meshcrossway_edge_swipe.h"
 #include "meshcrossway_power_status.h"
+#include "meshcrossway_chat_presentation.h"
 #include "emoji/emoji_display.h"
 #define MCX_EMOJI_RENDER_ENABLED 1
 #include "esp_system.h"
