@@ -1,6 +1,6 @@
 #pragma once
-// MeshCrossway v0.6.8: adaptive field-console layout, no remote touch.
-// All radio and GNSS values remain simulated.
+// MeshCrossway v0.7.0: adaptive field-console layout, no remote touch.
+// MeshCore is live over BLE. Meshtastic and navigation remain previews.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_ble.h"
@@ -401,8 +401,12 @@ static void notice(const char *title,const char *body_text){
   lv_label_set_long_mode(message,LV_LABEL_LONG_WRAP);
   lv_obj_set_height(message,143);
 }
+namespace mcui {static void tools();static void compose();static void form(uint8_t);}
 static void run_action(void *data){
   int id=(int)(intptr_t)data;
+  if(id==A_NEW){mcui::compose();return;}
+  if(id==A_GROUP_NEW){mcui::form(32);return;}
+  if(id==A_PACKETS||id==A_NETWORKS||id==A_THREAD_INFO||id==A_NODE_DETAILS){mcui::tools();return;}
   if(id==A_WIFI){close_shade();wifi_setup(nullptr);return;}
   if(id==A_BLE_ENABLE){(void)meshble::request_start();page=5;more_view=1;draw();return;}
   if(id==A_BLE_SCAN){meshble::scan();page=5;more_view=1;draw();return;}
@@ -480,7 +484,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Location sharing and radio transmission are off. SD Wi-Fi backup is plaintext; protect your SD card.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.6.8","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
+      notice("MESH CROSSWAY v0.7.0","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -714,6 +718,9 @@ static void ble_show_pairing(){
     action_button(ble_dialog,"REJECT",227,142,215,50,panel2,ble_confirmation,0);
   }
 }
+// MeshCore workspace
+#include "meshcrossway_meshcore_ui.h"
+
 static void draw(){
   if(!body||!left_rail||!right_rail||!context_actions)return;
   const bool home_hidden=page==0&&!home_nav_open;
@@ -760,55 +767,15 @@ static void draw(){
   lv_obj_scroll_to_y(body,0,LV_ANIM_OFF);
   rebuild_context();
   const int w=cw;
+  if(page==1||page==2||page==3){mcui::render();return;}
   if(page==0){
-    show_center_heading("FIELD CONSOLE","Dual radio gateway / DEMO");
+    show_center_heading("FIELD CONSOLE","MeshCore Companion / Meshtastic planned");
     const int col=(w-24)/2;
     const bool narrow=col<155;
     center_card(8,54,col,95,"MESHTASTIC",narrow?"BLE: OFF":"MX-M / BLE OFF",narrow?"No packets":"No live packets",green);
-    center_card(col+16,54,col,95,"MESHCORE",narrow?"BLE: OFF":"MX-C / BLE OFF",narrow?"No packets":"No live packets",purple);
+    center_card(col+16,54,col,95,"MESHCORE",mcui::ready()?meshmc::client->name:"BLE: OFF",mcui::ready()?"MeshCore connected":"Connect in More / Radios",purple);
     center_card(8,157,col,95,"POSITION","GNSS: OFFLINE","No valid fix",cyan);
     center_card(col+16,157,col,95,"CROSSWAY","Bridge: OFF",narrow?"Demo only":"Demo data only",orange);
-  } else if(page==1){
-    show_center_heading("NODES / OFFLINE","Sample contacts / repeaters");
-    filter_tabs(w,nodes_filter);
-    int y=99;
-    if(nodes_filter!=2){
-      demo_row(y,w,"MT","Alex","User / last heard: --",green,0);y+=62;
-      demo_row(y,w,"MT","Ridge Relay","Relay / sample only",green,-1);y+=62;
-    }
-    if(nodes_filter!=1){
-      demo_row(y,w,"MC","Jamie","Companion / last seen: --",purple,1);y+=62;
-      demo_row(y,w,"MC","Foothills Relay","Repeater / sample only",purple,-1);y+=62;
-    }
-    single_label(body,"BLE OFF / entries are DEMO",8,y+3,w-16,muted);
-  } else if(page==2){
-    show_center_heading("GROUPS / CHANNELS","Sample groups / unread is DEMO");
-    filter_tabs(w,groups_filter);
-    int y=99;
-    if(groups_filter!=2){
-      demo_row(y,w,"MT","LongFast","2 unread (DEMO)",green,2);y+=62;
-      demo_row(y,w,"MT","Backcountry","No unread (DEMO)",green,4);y+=62;
-    }
-    if(groups_filter!=1){
-      demo_row(y,w,"MC","#public","1 unread (DEMO)",purple,3);y+=62;
-      demo_row(y,w,"MC","SAR Room","Room server / sample",purple,5);y+=62;
-    }
-    single_label(body,"BLE OFF / counts are illustrative",8,y+3,w-16,muted);
-  } else if(page==3){
-    if(active_thread<0){
-      show_center_heading("CHAT / NO SELECTION","Select a Node or Group first");
-      center_card(8,57,w-16,88,"NO ACTIVE CONVERSATION","Choose a contact or group","BLE offline / DEMO",orange);
-      action_button(body,"OPEN NODES",8,157,w-16,43,panel2,on_action,A_NODES);
-      action_button(body,"OPEN GROUPS",8,208,w-16,43,panel2,on_action,A_GROUPS);
-    }else{
-      char subtitle[64];
-      snprintf(subtitle,sizeof(subtitle),"%s / DEMO ONLY",thread_networks[active_thread]);
-      show_center_heading(thread_names[active_thread],subtitle);
-      center_card(8,60,w-16,62,"RECEIVED / SAMPLE","Example message","Not received from radio",green);
-      center_card(8,130,w-16,62,"LOCAL / SAMPLE","Example reply","Not transmitted",purple);
-      single_label(body,"RADIO OFFLINE / SEND DISABLED",8,205,w-16,orange);
-      action_button(body,"COMPOSE / DEMO",8,233,w-16,43,panel2,on_action,A_NEW);
-    }
   } else if(page==4){
     static const char *modes[]={"MAP / OFFLINE","POINTS OF INTEREST","SAVED TRACKS",
                                 "GNSS STATUS","TEAM POSITIONS","LIVE LOCATION SHARE"};
@@ -851,8 +818,9 @@ static void draw(){
         single_label(body,"BLE starting in dedicated worker...",8,113,w-16,white);
         single_label(body,"Watch Wi-Fi / touch; report boot log.",8,152,w-16,muted);
       }else if(s.phase==meshble::READY){
-        center_card(8,104,w-16,80,"CONNECTED",s.active_name,"No radio traffic yet",green);
-        action_button(body,"DISCONNECT",8,199,w-16,43,panel2,on_action,A_BLE_DISCONNECT);
+        center_card(8,104,w-16,80,"CONNECTED",s.active_name,s.radio==meshble::MESHCORE&&meshmc::client?meshmc::client->status:"Meshtastic transport only",green);
+        action_button(body,"MESHCORE TOOLS",8,190,w-16,40,orange,mcui::on_tools,0);
+        action_button(body,"DISCONNECT",8,236,w-16,40,panel2,on_action,A_BLE_DISCONNECT);
       }else if(s.phase==meshble::CONNECTING||s.phase==meshble::VERIFYING||s.phase==meshble::PAIRING){
         single_label(body,"BLE handshake / PIN pairing",8,116,w-16,white);
         action_button(body,"DISCONNECT",8,179,w-16,43,panel2,on_action,A_BLE_DISCONNECT);
@@ -910,7 +878,7 @@ static void refresh(lv_timer_t *){
     char label[54];snprintf(label,sizeof(label),"Wi-Fi: %s",ip[0]?ip:state);
     if(strcmp(lv_label_get_text(top_wifi),label)!=0)lv_label_set_text(top_wifi,label);
   }
-  printf("[MCX-DIAG v0.6.8] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.7.0] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -930,7 +898,7 @@ static void refresh(lv_timer_t *){
     if(strcmp(lv_label_get_text(objects[i]),values[i]))lv_label_set_text(objects[i],values[i]);
 }
 static void init(){
-  printf("[MCX-DIAG v0.6.8] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.7.0] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -941,7 +909,7 @@ static void init(){
   color_label(top,"MESH",7,7,55,white);
   color_label(top,"CROSSWAY",59,7,120,orange);
   top_wifi=color_label(top,"Wi-Fi: waiting",209,7,167,green);
-  color_label(top,"DEV 0.6.8",390,7,88,orange);
+  color_label(top,"DEV 0.7.0",390,7,88,orange);
   left_rail=panel_at(screen,0,34,79,286,panel,0);
   right_rail=panel_at(screen,355,34,125,286,panel,0);
   left_handle=action_button(left_rail,"",47,4,29,30,panel2,toggle_left,0);
@@ -962,5 +930,6 @@ static void init(){
   lv_obj_set_scrollbar_mode(body,LV_SCROLLBAR_MODE_AUTO);
   draw();
   lv_timer_create(refresh,3000,nullptr);
+  lv_timer_create(mcui::poll,50,nullptr);
 }
 } // namespace meshcrossway

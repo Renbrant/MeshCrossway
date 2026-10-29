@@ -2,7 +2,7 @@
 
 MeshCrossway is an **open-source, offline-first modular communication system** with **three independent, battery-powered devices**: one touchscreen **Core** and two detachable LoRa **Radio Pods**, one for **Meshtastic** and one for **MeshCore**. The Core connects to both Pods over **two separate Bluetooth Low Energy (BLE) links**, bringing messaging, navigation, GNSS positioning, tracks and field diagnostics into a single interface without requiring cellular coverage or the internet.
 
-> **Development status — October 28, 2026:** the **three-device, independent-battery BLE architecture** is the approved direction. The Waveshare touchscreen firmware **v0.5.2 passed the owner’s display/menu stability test**; **v0.4.0 remains recommended recovery**. The **v0.5.3 touchscreen Wi-Fi setup release is experimental and awaits physical validation** ([firmware status and test steps](docs/firmware-status.md)), but the two-Pod BLE integration and real radio features are **not yet implemented**; the web UI still contains simulated data. Firmware v0.5.0/v0.5.1 has a known display regression and is **not recommended for installation**. The former integrated Rev A carrier/UART/one-battery design is archived as an alternative historical variant, **not the current build plan**. This is not a certified rescue/emergency device.
+> **Development status — October 28, 2026:** the three-device BLE architecture remains the target. **v0.6.8 is the owner-confirmed touchscreen/Wi-Fi/manual-screenshot baseline**. **v0.7.0 adds the MeshCore Companion client and live contact/channel/chat screens, plus typed tools for all 59 current official command opcodes; it is experimental and requires hardware validation.** [MeshCore scope, sources and test procedure](docs/meshcore-v070.md). Simultaneous Meshtastic application traffic, GNSS and navigation remain planned. The web simulator is separate from the physical LVGL firmware. This is not a certified emergency device.
 
 ## Current hardware — three independent BLE devices
 
@@ -32,7 +32,7 @@ MeshCrossway is an **open-source, offline-first modular communication system** w
 
 | Capability | Planned experience | Current state |
 |---|---|---|
-| Dual network messaging | Unified inbox; clear Meshtastic / MeshCore source and reply network | Simulated UI |
+| Dual network messaging | MeshCore contacts, channels and direct/group chat; Meshtastic planned | MeshCore v0.7.0 experimental |
 | Navigation / GPS | Local GNSS, POIs, manually drawn/imported courses, recorded tracks and GPX; automatic routing deferred | Simulated UI and specification |
 | Connected track library | wanderer API integration; separate instance account, direct website access and personal SD export | Selected direction; not implemented |
 | Live location sharing | Per-network audience, movement/time triggers, automatic expiry | Design only |
@@ -54,7 +54,7 @@ The Waveshare **Core acts as a BLE Central with two independent Peripheral conne
 3. **BLE link B:** Core ↔ **MX-C** via the MeshCore Companion GATT API. MX-C operates on the MeshCore LoRa network with its **own battery**.
 4. **Separation:** the Pods are **not** electrically tethered to the Core, do not exchange packets directly by BLE, and should continue native radio operation when disconnected from the Core. The Core does not automatically bridge one mesh network to the other.
 
-The Core firmware will need bounded BLE queues, independent reconnect logic, secure pairing and non-blocking LVGL integration. **Two concurrent BLE radio sessions are a design target, not an already verified firmware feature.** The v0.5.2 baseline keeps Wi-Fi AP+STA enabled and remote screenshots/secondary touch input disabled; v0.5.3 adds experimental touchscreen Wi-Fi provisioning on that baseline.
+The v0.7.0 experimental firmware adds bounded MeshCore BLE queues, authenticated pairing and a serialized Companion session integrated with LVGL. **Two concurrent BLE radio sessions remain a design target.** Wi-Fi AP+STA and PIN-free manual screenshots remain available; remote touch is disabled. The immutable v0.6.8 image is the rollback.
 
 Each Pod should use a verified upstream BLE-enabled firmware target. In particular, MeshCore must use a **BLE Companion** build rather than an old serial-only build; on Meshtastic ESP32, enabling Wi-Fi may disable Bluetooth. Radio frequencies, antennas, duty/airtime policies and close-proximity RF interference require regional and physical testing.
 

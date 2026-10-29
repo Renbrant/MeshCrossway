@@ -21,7 +21,7 @@ def run(lvgl, render):
         return ui[begin:ui.index(end, begin)]
     pieces = [segment('static const lv_color_t bg=', 'static lv_obj_t *tile('),
               segment('static lv_obj_t *single_label(', '// Lightweight LVGL shapes'),
-              segment('static void ble_dialog_close()', 'static void draw(){')]
+              segment('static void ble_dialog_close()', '// MeshCore workspace')]
     test = r'''
 #include "lvgl.h"
 #include <cassert>
@@ -142,9 +142,60 @@ int main(int argc,char **argv){
   puts("PASS: real LVGL reproduces old clipping; keypad visible, large touch keys, leading zeros, length, backspace, OK/PAIR, cancel, reopen and failure feedback");
 }
 '''
+    # Compile and exercise the actual MeshCore workspace with real LVGL too.
+    companion_setup = r'''
+#include "meshcrossway_meshcore_protocol.h"
+namespace meshmc {
+static Client *client=nullptr;
+static void poll(){}
+static bool channel_secret(const char *,uint8_t *p){memset(p,0xA5,16);return true;}
+}
+static lv_obj_t *body=nullptr,*wifi_dialog=nullptr;
+static int page=1,nodes_filter=0,groups_filter=0,redraws=0;
+static const lv_color_t green=lv_color_hex(0x72D8A5);
+static int content_width(){return 400;}
+static void draw(){++redraws;}
+static void notice(const char *,const char *){}
+static void filter_tabs(int,int){}
+static void show_center_heading(const char *,const char *){}
+''' + segment('// Static maps:', '#undef MCX_KEY_FLAGS') + '\n#undef MCX_KEY_FLAGS\n' + r'''
+#include "meshcrossway_meshcore_ui.h"
+static lv_obj_t *mc_button(lv_obj_t *parent,const char *text){
+  for(uint32_t i=0;i<lv_obj_get_child_cnt(parent);i++){
+    lv_obj_t *b=lv_obj_get_child(parent,i);
+    if(lv_obj_check_type(b,&lv_btn_class)&&lv_obj_get_child_cnt(b)&&!strcmp(lv_label_get_text(lv_obj_get_child(b,0)),text))return b;
+  }fprintf(stderr,"Missing MeshCore button: %s\n",text);assert(false);return nullptr;
+}
+static void test_companion_ui(){
+  meshmc::client=new meshmc::Client();auto &c=*meshmc::client;c.attach(173);c.initialized=true;c.protocol=14;c.channel_count=2;c.max_power=22;
+  c.clock=1800000000;c.contacts[0].key[0]=0xab;c.contact_count=1;strcpy(c.contacts[0].name,"Heltec");
+  mcui::form(32);advance();assert(mcui::field_count==3);
+  lv_textarea_set_text(mcui::fields[0],"1");lv_textarea_set_text(mcui::fields[1],"#test");lv_textarea_set_text(mcui::fields[2],"");
+  lv_event_send(mcui::fields[1],LV_EVENT_CLICKED,nullptr);advance();
+  lv_area_t kb;lv_obj_get_coords(mcui::keyboard,&kb);assert(kb.x1>=0&&kb.y1>=0&&kb.x2<480&&kb.y2<320);
+  assert(lv_keyboard_get_textarea(mcui::keyboard)==mcui::edit_value);
+  tap_object(mc_button(mcui::editor,"DONE"));advance();assert(!mcui::editor);
+  tap_object(mc_button(mcui::dialog,"APPLY"));advance();assert(c.qcount==0&&mcui::confirm_pending);
+  tap_object(mc_button(mcui::dialog,"CONFIRM"));advance();assert(c.qcount==1&&c.queue[0].frame.data[0]==32&&c.queue[0].frame.len==50);
+  assert(c.queue[0].frame.data[34]==0xa5);mcui::close();c.qcount=0;
+  memcpy(mcui::target_key,c.contacts[0].key,32);mcui::group=false;mcui::conversation=true;mcui::compose();advance();
+  lv_textarea_set_text(mcui::fields[0],"hello from display");tap_object(mc_button(mcui::dialog,"SEND"));advance();
+  assert(!mcui::dialog&&c.qcount==1&&c.queue[0].frame.data[0]==2&&c.message_count==1);
+  body=panel_at(lv_scr_act(),0,34,400,286,bg);page=1;mcui::render();advance();
+  page=3;lv_obj_clean(body);mcui::render();advance();
+  for(int i=0;i<20;i++){mcui::form(26);assert(lv_textarea_get_password_mode(mcui::fields[1]));mcui::close();}
+  mcui::tools();advance();assert(lv_obj_get_child_cnt(mcui::scroller)==meshmc::COMMAND_COUNT);mcui::close();
+  c.protocol=7;mcui::tools();lv_obj_scroll_to_y(mcui::scroller,4000,LV_ANIM_OFF);advance();assert(!strcmp(lv_label_get_text(lv_obj_get_child(lv_obj_get_child(mcui::scroller,meshmc::COMMAND_COUNT-1),0)),"Local radio console"));assert(lv_obj_has_state(lv_obj_get_child(mcui::scroller,meshmc::COMMAND_COUNT-1),LV_STATE_DISABLED));mcui::close();
+  lv_obj_del(body);body=nullptr;delete meshmc::client;meshmc::client=nullptr;
+  puts("PASS: MeshCore real-LVGL forms, keyboard geometry, confirmation, channel command, compose/send, lists, history and firmware gating");
+}
+'''
+    test = test.replace('int main(int argc,char **argv){', companion_setup + '\nint main(int argc,char **argv){')
+    test = test.replace('  puts("PASS: real LVGL', '  test_companion_ui();\n  puts("PASS: real LVGL')
+
     with tempfile.TemporaryDirectory() as temporary:
         temp = Path(temporary)
-        flags = ['-O1', '-DLV_CONF_SKIP', '-DLV_MEM_CUSTOM=1', '-DLV_FONT_MONTSERRAT_20=1', '-I'+str(lvgl)]
+        flags = ['-O1', '-DLV_CONF_SKIP', '-DLV_MEM_CUSTOM=1', '-DLV_FONT_MONTSERRAT_20=1', '-I'+str(lvgl), '-I'+str(ROOT/'firmware/display-prototype')]
         def compile_c(source):
             obj = temp / (hashlib.sha256(str(source).encode()).hexdigest()[:16]+'.o')
             subprocess.run(['cc', '-std=c99', *flags, '-c', str(source), '-o', str(obj)],check=True,capture_output=True)

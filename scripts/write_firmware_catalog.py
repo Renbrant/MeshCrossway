@@ -25,6 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit owner approval.
 approved={
+    "v0.6.8":("Owner confirmed normal operation and PIN-free manual web screenshots. Exact published image retained. MeshCore application traffic was not implemented in this release.", "Hardware-tested UI / screenshot rollback"),
     "v0.6.2":("Owner confirmed touchscreen, Wi-Fi and normal UI work on the Waveshare Rev2.0; confirmed working after v0.6.3 failed.", "Last hardware-tested / recommended"),
 }
 # Do not expose a known-broken image through the installer.
@@ -56,6 +57,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.7.0":
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: MeshCore Companion BLE session, real contacts/channels, direct/group messaging, delivery ACKs and typed radio tools. Board/firmware capabilities apply. PIN-free manual screenshots retained."
+        label="MeshCore Companion / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.6.8":
         summary="EXPERIMENTAL / NOT HARDWARE TESTED: manual web screenshots without a View PIN; remote touch remains disabled. Retains the Bluetooth numeric PIN keypad and DMA/BLE stability changes."
         label="Web capture without PIN / EXPERIMENTAL"

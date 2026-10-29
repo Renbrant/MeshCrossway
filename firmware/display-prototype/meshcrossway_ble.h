@@ -1,6 +1,6 @@
 #pragma once
-// MeshCrossway v0.6.8 - BLE remains OFF during boot; explicit staged initialization.
-// and PIN-authenticated pairing. No application frames are sent.
+// MeshCrossway v0.7.0 - BLE remains OFF during boot; explicit staged initialization.
+// PIN-authenticated MeshCore Companion transport; Meshtastic remains discovery-only.
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
 #include "host/ble_hs.h"
@@ -17,6 +17,8 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "esp_heap_caps.h"
+#include "meshcrossway_meshcore.h"
+#include "os/os_mbuf.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -43,7 +45,7 @@ struct Snapshot {
 };
 static portMUX_TYPE mux=portMUX_INITIALIZER_UNLOCKED;
 static Snapshot state={};
-static uint16_t conn=BLE_HS_CONN_HANDLE_NONE;
+static std::atomic<uint16_t> conn{BLE_HS_CONN_HANDLE_NONE};
 static uint8_t own_addr=0;
 static bool synced=false;
 static Radio identified=UNKNOWN;
@@ -52,6 +54,12 @@ static const ble_uuid128_t MT_SERVICE=BLE_UUID128_INIT(
 static const ble_uuid128_t MC_SERVICE=BLE_UUID128_INIT(
   0x9e,0xca,0xdc,0x24,0x0e,0xe5,0xa9,0xe0,0x93,0xf3,0xa3,0xb5,0x01,0x00,0x40,0x6e);
 
+static uint16_t mc_start=0,mc_end=0,mc_rx=0,mc_tx=0,mc_tx_end=0,mc_cccd=0;
+static std::atomic<bool> mc_transport_started{false};
+static const ble_uuid128_t MC_RX=BLE_UUID128_INIT(
+  0x9e,0xca,0xdc,0x24,0x0e,0xe5,0xa9,0xe0,0x93,0xf3,0xa3,0xb5,0x02,0x00,0x40,0x6e);
+static const ble_uuid128_t MC_TX=BLE_UUID128_INIT(
+  0x9e,0xca,0xdc,0x24,0x0e,0xe5,0xa9,0xe0,0x93,0xf3,0xa3,0xb5,0x03,0x00,0x40,0x6e);
 static void update(Phase phase,const char *message){
   portENTER_CRITICAL(&mux);
   state.phase=phase;
@@ -78,7 +86,7 @@ static void on_sync(){
   update(IDLE,"Ready to scan (9 seconds)");
 }
 static void on_reset(int reason){
-  synced=false;conn=BLE_HS_CONN_HANDLE_NONE;
+  synced=false;conn=BLE_HS_CONN_HANDLE_NONE;mc_transport_started=false;meshmc::transport_down();
   char msg[64];snprintf(msg,sizeof(msg),"BLE controller reset: %d",reason);
   update(FAILED,msg);
 }
@@ -113,7 +121,7 @@ static void connect(int index){
   if(index<0||index>=found.count)return;
   if(found.phase==READY||found.phase==PAIRING||found.phase==VERIFYING||found.phase==CONNECTING)return;
   (void)ble_gap_disc_cancel();
-  identified=UNKNOWN;
+  identified=UNKNOWN;mc_start=mc_end=mc_rx=mc_tx=mc_cccd=0;mc_transport_started=false;meshmc::transport_down();
   portENTER_CRITICAL(&mux);
   state.selected=index;state.radio=UNKNOWN;state.paired=false;
   state.pin_required=false;state.confirm_required=false;
@@ -163,11 +171,61 @@ static bool confirm_number(bool accepted){
   update(PAIRING,accepted?"Confirming pairing...":"Pairing rejected");
   return rc==0;
 }
+static void transport_failure(const char *message){
+  meshmc::transport_down();update(FAILED,message);
+  if(conn!=BLE_HS_CONN_HANDLE_NONE)(void)ble_gap_terminate(conn,BLE_ERR_REM_USER_CONN_TERM);
+}
+static int mc_write_cb(uint16_t handle,const struct ble_gatt_error *err,struct ble_gatt_attr *,void *){
+  if(handle==conn)meshmc::on_write(err->status==0);return 0;
+}
+static bool mc_write(const uint8_t *p,size_t n){
+  if(!mc_transport_started||conn==BLE_HS_CONN_HANDLE_NONE||!mc_rx||n>(size_t)(ble_att_mtu(conn)-3))return false;
+  return ble_gattc_write_flat(conn,mc_rx,p,n,mc_write_cb,nullptr)==0;
+}
+static void mc_close(){transport_failure("MeshCore session stopped; reconnect radio");}
+static int mc_subscribed(uint16_t handle,const struct ble_gatt_error *err,struct ble_gatt_attr *,void *){
+  if(handle!=conn)return 0;
+  if(err->status){transport_failure("MeshCore notifications subscription failed");return 0;}
+  mc_transport_started=true;meshmc::transport_up(ble_att_mtu(conn)-3);
+  update(READY,"MeshCore notifications ready; synchronizing...");return 0;
+}
+static int mc_descriptor(uint16_t handle,const struct ble_gatt_error *err,uint16_t,const struct ble_gatt_dsc *dsc,void *){
+  if(handle!=conn)return 0;
+  if(!err->status&&dsc){if(ble_uuid_u16(&dsc->uuid.u)==0x2902)mc_cccd=dsc->handle;return 0;}
+  if(err->status!=BLE_HS_EDONE||!mc_cccd){transport_failure("MeshCore TX notification descriptor missing");return 0;}
+  const uint8_t enable[2]={1,0};
+  if(ble_gattc_write_flat(handle,mc_cccd,enable,2,mc_subscribed,nullptr))transport_failure("Cannot subscribe to MeshCore TX");
+  return 0;
+}
+static int mc_characteristic(uint16_t handle,const struct ble_gatt_error *err,const struct ble_gatt_chr *chr,void *){
+  if(handle!=conn)return 0;
+  if(!err->status&&chr){
+    if(mc_tx&&chr->def_handle>mc_tx&&(!mc_tx_end||chr->def_handle-1<mc_tx_end))mc_tx_end=chr->def_handle-1;
+    if(ble_uuid_cmp(&chr->uuid.u,&MC_RX.u)==0&&(chr->properties&BLE_GATT_CHR_F_WRITE))mc_rx=chr->val_handle;
+    if(ble_uuid_cmp(&chr->uuid.u,&MC_TX.u)==0&&(chr->properties&BLE_GATT_CHR_F_NOTIFY)){mc_tx=chr->val_handle;mc_tx_end=mc_end;}
+    return 0;
+  }
+  if(err->status!=BLE_HS_EDONE||!mc_rx||!mc_tx||mc_tx_end<=mc_tx){transport_failure("MeshCore RX/TX characteristics missing");return 0;}
+  if(ble_gattc_disc_all_dscs(handle,mc_tx,mc_tx_end,mc_descriptor,nullptr))transport_failure("MeshCore descriptors discovery failed");return 0;
+}
+static int mc_mtu(uint16_t handle,const struct ble_gatt_error *err,uint16_t mtu,void *){
+  if(handle!=conn)return 0;
+  // Contact records are 148/152 bytes and must arrive in one notification.
+  if(err->status||mtu<155){transport_failure("MeshCore needs ATT MTU >=155; reconnect/update radio");return 0;}
+  if(ble_gattc_disc_all_chrs(handle,mc_start,mc_end,mc_characteristic,nullptr))transport_failure("MeshCore characteristic discovery failed");return 0;
+}
+static void start_meshcore(){
+  if(identified!=MESHCORE||mc_transport_started)return;
+  mc_rx=mc_tx=mc_tx_end=mc_cccd=0;
+  update(VERIFYING,"MeshCore: negotiating MTU / notifications...");
+  if(ble_gattc_exchange_mtu(conn,mc_mtu,nullptr))transport_failure("MeshCore MTU exchange failed");
+}
 static int service_cb(uint16_t handle,const struct ble_gatt_error *err,
                       const struct ble_gatt_svc *service,void *){
+  if(handle!=conn)return 0;
   if(err->status==0&&service){
     if(ble_uuid_cmp(&service->uuid.u,&MT_SERVICE.u)==0)identified=MESHTASTIC;
-    if(ble_uuid_cmp(&service->uuid.u,&MC_SERVICE.u)==0)identified=MESHCORE;
+    if(ble_uuid_cmp(&service->uuid.u,&MC_SERVICE.u)==0){identified=MESHCORE;mc_start=service->start_handle;mc_end=service->end_handle;}
     return 0;
   }
   if(err->status==BLE_HS_EDONE){
@@ -273,7 +331,12 @@ static int gap_event(struct ble_gap_event *event,void *){
         state.paired=true;state.pin_required=false;state.confirm_required=false;
         state.generation++;
         portEXIT_CRITICAL(&mux);
-        update(READY,"BLE secure link / GATT verified");
+        struct ble_gap_conn_desc desc={};
+        if(ble_gap_conn_find(conn,&desc)||!desc.sec_state.encrypted||!desc.sec_state.authenticated){
+          transport_failure("Authenticated BLE link required");return 0;
+        }
+        if(identified==MESHCORE)start_meshcore();
+        else update(READY,"BLE secure link / GATT verified");
       }else{
         char msg[64];snprintf(msg,sizeof(msg),"Pairing failed: %d",event->enc_change.status);
         update(FAILED,msg);
@@ -281,7 +344,7 @@ static int gap_event(struct ble_gap_event *event,void *){
       }
       return 0;
     case BLE_GAP_EVENT_DISCONNECT:{
-      conn=BLE_HS_CONN_HANDLE_NONE;
+      conn=BLE_HS_CONN_HANDLE_NONE;mc_transport_started=false;meshmc::transport_down();
       const Phase before=snapshot().phase;
       portENTER_CRITICAL(&mux);
       state.paired=false;state.pin_required=false;state.confirm_required=false;
@@ -289,6 +352,12 @@ static int gap_event(struct ble_gap_event *event,void *){
       portEXIT_CRITICAL(&mux);
       if(before!=FAILED)update(IDLE,"Radio disconnected");
       return 0;
+    }
+    case BLE_GAP_EVENT_NOTIFY_RX:{
+      if(event->notify_rx.conn_handle!=conn||event->notify_rx.attr_handle!=mc_tx||!mc_transport_started)return 0;
+      uint8_t data[meshmc::MAX_FRAME];const uint16_t n=OS_MBUF_PKTLEN(event->notify_rx.om);
+      if(n>sizeof(data)||os_mbuf_copydata(event->notify_rx.om,0,n,data)!=0){meshmc::overflow.store(true);return 0;}
+      meshmc::on_frame(data,n);return 0;
     }
     default:return 0;
   }
@@ -316,6 +385,7 @@ static void start_internal(){
     char msg[64];snprintf(msg,sizeof(msg),"NimBLE init failed: %d",(int)err);
     update(FAILED,msg);return;
   }
+  (void)ble_att_set_preferred_mtu(247);
   ble_hs_cfg.reset_cb=on_reset;
   ble_hs_cfg.sync_cb=on_sync;
   ble_hs_cfg.store_status_cb=ble_store_util_status_rr;
@@ -338,6 +408,8 @@ static void init_task(void *){
 }
 static bool request_start(){
   if(snapshot().phase!=OFF)return false; // Do not repeat a partial or failed init.
+  if(!meshmc::init()){update(FAILED,"No PSRAM for MeshCore session");return false;}
+  meshmc::send_frame=mc_write;meshmc::close_link=mc_close;
   debug_memory("BLE button pressed");
   update(STARTING,"BLE worker requested - standby...");
   const BaseType_t created=xTaskCreate(init_task,"mcx_ble_init",6144,nullptr,tskIDLE_PRIORITY+1,nullptr);

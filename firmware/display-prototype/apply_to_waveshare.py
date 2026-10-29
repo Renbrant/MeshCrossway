@@ -132,7 +132,8 @@ if 'meshble::start();' in source or 'meshble::request_start();' in source:
 if source.count('meshnetwork::start();') != 1:
     sys.exit('Missing or duplicate isolated Wi-Fi initialization')
 for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",
-             "meshcrossway_remote_page.h", "meshcrossway_network.h", "meshcrossway_ble.h"):
+             "meshcrossway_remote_page.h", "meshcrossway_network.h", "meshcrossway_ble.h", "meshcrossway_meshcore.h",
+             "meshcrossway_meshcore_protocol.h", "meshcrossway_meshcore_ui.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 
@@ -148,6 +149,7 @@ sdk.write_text(defaults)
 needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_FATFS_LFN_HEAP=y",
         "CONFIG_BT_ENABLED=y","CONFIG_BT_NIMBLE_ENABLED=y",
         "CONFIG_BT_NIMBLE_ROLE_CENTRAL=y","CONFIG_BT_NIMBLE_MAX_CONNECTIONS=2",
+        "CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU=247",
         "CONFIG_ESP_COEX_SW_COEXIST_ENABLE=y",
         "CONFIG_ESP_WIFI_TASK_PINNED_TO_CORE_0=y",
         "CONFIG_BT_CTRL_PINNED_TO_CORE_1=y",

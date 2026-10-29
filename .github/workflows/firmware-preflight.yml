@@ -12,6 +12,8 @@ on:
       - "scripts/check_ble_sdkconfig.py"
       - "scripts/test_ble_sdkconfig.py"
       - "scripts/test_ble_pairing_ui.py"
+      - "scripts/test_meshcore.py"
+      - "tests/meshcore_protocol_test.cpp"
       - "scripts/restore_reviewed_firmware.py"
       - ".github/workflows/firmware-preflight.yml"
   pull_request:
@@ -29,6 +31,8 @@ on:
       - "scripts/check_ble_sdkconfig.py"
       - "scripts/test_ble_sdkconfig.py"
       - "scripts/test_ble_pairing_ui.py"
+      - "scripts/test_meshcore.py"
+      - "tests/meshcore_protocol_test.cpp"
       - "scripts/restore_reviewed_firmware.py"
       - ".github/workflows/ui-pages.yml"
   workflow_dispatch:
@@ -52,6 +56,7 @@ jobs:
         run: |
           python3 scripts/preflight_display.py
           python3 scripts/test_ble_sdkconfig.py
+          python3 scripts/test_meshcore.py
 
       # The archive job below is the single authoritative ESP-IDF build.
       # This job checks syntax/patcher invariants only, avoiding a duplicate
@@ -72,7 +77,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: _site/flasher/firmware/versions
-          key: meshcrossway-current-${{ hashFiles('firmware/display-prototype/**', 'scripts/build_firmware_versions.sh', 'scripts/write_firmware_version.py', 'scripts/check_ble_sdkconfig.py', 'scripts/test_ble_pairing_ui.py') }}-idf532-bsp-d9ff7837-v2
+          key: meshcrossway-current-${{ hashFiles('firmware/display-prototype/**', 'scripts/build_firmware_versions.sh', 'scripts/write_firmware_version.py', 'scripts/check_ble_sdkconfig.py', 'scripts/test_ble_pairing_ui.py', 'scripts/test_meshcore.py', 'tests/meshcore_protocol_test.cpp') }}-idf532-bsp-d9ff7837-v2
       - name: Compile stable release and recent candidates
         run: bash scripts/build_firmware_versions.sh
       - name: Verify compiled catalog and manifests

@@ -96,3 +96,9 @@ This candidate stays on the pinned Waveshare BSP and ESP-IDF 5.3.2, and tests on
 The documented tested rollback is **v0.6.2**. Versions **v0.6.3** and **v0.6.4** are blocked from the Web Flasher selector. After flashing v0.6.5, check touch/Wi-Fi before choosing **More → Radios → ENABLE BLE / TEST**, and capture the **Web Flasher Logs**. Do not assume the new candidate fixes the display without hardware testing.
 
 Issue tracker: https://github.com/Renbrant/MeshCrossway/issues/30
+
+## v0.7.0 — MeshCore Companion (experimental)
+
+Implements the official Nordic-UART Companion protocol over authenticated BLE: negotiated MTU, discovered RX/TX/CCCD, notification subscription, serialized commands, automatic identity/contact/channel synchronization and message draining. Nodes, Groups and Chat use live MeshCore data. More → Radios → MeshCore Tools exposes typed forms for all 59 current official Companion command opcodes, with firmware-version gates and explicit confirmation for mutations. See [coverage, sources, limits and hardware test](../../docs/meshcore-v070.md).
+
+The owner-confirmed **v0.6.8** UI/manual-screenshot image is now the immutable default and rollback. **v0.7.0 has not been validated on hardware**. Message history is bounded in RAM; reconnect discards the prior radio session. No automatic resend or automatic radio configuration/location broadcast occurs.
