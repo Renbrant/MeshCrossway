@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.7.1: adaptive field-console layout, no remote touch.
+// MeshCrossway v0.7.2: adaptive field-console layout, no remote touch.
 // MeshCore is live over BLE. Meshtastic and navigation remain previews.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
@@ -914,7 +914,7 @@ static void init(){
   color_label(top,"MESH",7,7,55,white);
   color_label(top,"CROSSWAY",59,7,120,orange);
   top_wifi=color_label(top,"Wi-Fi: waiting",209,7,167,green);
-  color_label(top,"DEV 0.7.1",390,7,88,orange);
+  color_label(top,"DEV 0.7.2",390,7,88,orange);
   left_rail=panel_at(screen,0,34,79,286,panel,0);
   right_rail=panel_at(screen,355,34,125,286,panel,0);
   left_handle=action_button(left_rail,"",47,4,29,30,panel2,toggle_left,0);
