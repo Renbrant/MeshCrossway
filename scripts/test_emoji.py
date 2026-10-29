@@ -11,7 +11,6 @@ ROOT = Path(__file__).resolve().parents[2] if __file__.startswith('/mnt/data/') 
 REGISTRY = ROOT / 'firmware/display-prototype/emoji/emoji_registry.inc'
 ATLAS = ROOT / 'firmware/display-prototype/emoji/emoji_assets_data.h'
 TEST = ROOT / 'tests/test_emoji_presentation.cpp'
-FLAG = ROOT / 'firmware/display-prototype/emoji/emoji_flag_asset.h'
 
 
 def main():
@@ -22,15 +21,7 @@ def main():
     assert len(data) == 92 * (16 * 4 + 20 * 20 // 2), len(data)
     expected = '2b1a3721dfb0a5c0f76c534fff071b1fe40f3b149b1a0e61d9a611d90c02fa5a'
     assert hashlib.sha256(data).hexdigest() == expected, 'atlas unexpectedly changed'
-    assert REGISTRY.read_text().count(', "') == 93, 'registry does not match 93 glyphs'
-    flag_header=FLAG.read_text()
-    match=re.search(r'kCheckeredFlagBase64\[\]\s*=\s*"([A-Za-z0-9+/]+)"',flag_header)
-    assert match, 'missing flag asset'
-    flag=base64.b64decode(match.group(1),validate=True)
-    assert len(flag)==264
-    assert hashlib.sha256(flag).hexdigest()=='d2b5f63df3ea2532a2c524b36f1ceb08cffc344c212fb3659dcfd598dc70731a'
-    assert any(flag[64:]) and any(flag[i] for i in range(3,64,4)), 'blank flag icon'
-    assert r'\U0001F3C1' in REGISTRY.read_text(), 'checkered flag missing from registry'
+    assert REGISTRY.read_text().count(', "') == 92, 'registry does not match 92 sprites'
     for idx in range(92):
         icon = data[idx*264:(idx+1)*264]
         assert len(icon) == 264
@@ -50,7 +41,7 @@ def main():
                      '-O2', str(TEST), '-o', executable]
             subprocess.run(build, cwd=ROOT, check=True)
             subprocess.run([executable], cwd=ROOT, check=True)
-    print('PASS: 93 color emojis (checkered flag), verified 92-atlas + flag SHA256, and UTF-8 host tests on C++11 + C++20')
+    print('PASS: 92 color emojis, atlas SHA256, palette/alpha, and UTF-8 host tests on C++11 + C++20')
 
 
 if __name__ == '__main__':

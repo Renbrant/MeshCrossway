@@ -5,7 +5,6 @@ static lv_obj_t *dialog = nullptr, *scroller = nullptr, *feedback = nullptr, *ed
                 *edit_value = nullptr, *keyboard = nullptr, *edit_target = nullptr;
 static lv_obj_t *fields[10] = {};
 static lv_obj_t *radio_status = nullptr, *home_name = nullptr, *home_status = nullptr;
-static char home_name_source[80] = {};
 static uint8_t field_count = 0, selected_command = 0;
 static bool confirm_pending = false, group = false, conversation = false, reveal = false;
 static uint8_t target_key[32] = {};
@@ -45,36 +44,10 @@ static void on_close(lv_event_t *) {
 static void on_tools(lv_event_t *) {
   tools();
 }
-// Apply emoji font only to visible name labels. Protocol names and message
-// buffers remain untouched and are never written back as private-use glyphs.
-static lv_obj_t *emoji_txt(lv_obj_t *parent,const char *value,int x,int y,int width,lv_color_t color){
-  lv_obj_t *label=txt(parent,value,x,y,width,color);
-#if defined(MCX_EMOJI_RENDER_ENABLED)
-  mcxemoji::view::set_message_text(label,value);
-#endif
-  return label;
-}
-static void emoji_center_heading(const char *name,const char *subtitle){
-  const int width=lv_obj_get_width(body);
-  lv_obj_t *label=single_label(body,name,8,8,width-16,white);
-#if defined(MCX_EMOJI_RENDER_ENABLED)
-  mcxemoji::view::set_message_text(label,name);
-#endif
-  if(subtitle)single_label(body,subtitle,8,30,width-16,muted);
-}
-static void set_home_name(lv_obj_t *label,const char *name){
-  if(!label||!name)return;
-#if defined(MCX_EMOJI_RENDER_ENABLED)
-  mcxemoji::view::set_message_text(label,name);
-#else
-  lv_label_set_text(label,name);
-#endif
-  snprintf(home_name_source,sizeof(home_name_source),"%s",name);
-}
 static void base(const char *title) {
   close();
   dialog = panel_at(lv_scr_act(), 0, 0, 480, 320, bg, 0);
-  emoji_txt(dialog, title, 9, 12, 350, orange);
+  txt(dialog, title, 9, 12, 350, orange);
   action_button(dialog, "CLOSE", 377, 4, 96, 36, panel2, on_close, 0);
   scroller = panel_at(dialog, 0, 46, 480, 218, bg, 0);
   lv_obj_add_flag(scroller, LV_OBJ_FLAG_SCROLLABLE);
@@ -355,7 +328,7 @@ static void contact_details() {
            : c.type == 4 ? "Sensor"
                          : "Companion",
            c.path_len, (unsigned long)c.advert, c.lat / 1e6, c.lon / 1e6, key);
-  lv_obj_t *l = emoji_txt(scroller, text, 9, 0, 455, white);
+  lv_obj_t *l = txt(scroller, text, 9, 0, 455, white);
   lv_label_set_long_mode(l, LV_LABEL_LONG_WRAP);
   action_button(scroller, "CHAT", 8, 170, 215, 42, orange, contact_chat, 0);
   action_button(scroller, "LOGIN", 234, 170, 235, 42, panel2, choose_command, 26);
@@ -454,7 +427,7 @@ static void render() {
       }
       lv_obj_t *b =
           action_button(body, "", 8, y, w - 16, 60, panel, channels ? choose_channel : choose_contact, i);
-      emoji_txt(b, title, 7, 6, w - 30, white);
+      txt(b, title, 7, 6, w - 30, white);
       txt(b, detail, 7, 33, w - 30, muted);
       y += 67;
     }
@@ -467,7 +440,7 @@ static void render() {
     const char *title = group     ? s->channels[target_slot].name
                         : ci >= 0 ? s->contacts[ci].name
                                   : "Unknown contact";
-    emoji_center_heading(title[0] ? title : "Empty channel",
+    show_center_heading(title[0] ? title : "Empty channel",
                         ready() ? "MeshCore / live" : "MeshCore / disconnected history");
     action_button(body, "COMPOSE", 8, 53, (w - 24) / 2, 40, orange, compose_event, 0);
     action_button(body, "TOOLS", 16 + (w - 24) / 2, 53, (w - 24) / 2, 40, panel2, on_tools, 0);
@@ -514,8 +487,8 @@ static void poll(lv_timer_t *) {
     const char *state = s->initialized && !s->busy && !s->fault ? "MeshCore ready" : s->status;
     if (radio_status && strcmp(lv_label_get_text(radio_status), state))
       lv_label_set_text(radio_status, state);
-    if (home_name && s->initialized && strcmp(home_name_source, s->name))
-      set_home_name(home_name,s->name);
+    if (home_name && s->initialized && strcmp(lv_label_get_text(home_name), s->name))
+      lv_label_set_text(home_name, s->name);
     const char *summary = s->connected ? (s->initialized ? "MeshCore connected" : "Synchronizing...")
                                        : "Connect in More / Radios";
     if (home_status && strcmp(lv_label_get_text(home_status), summary))

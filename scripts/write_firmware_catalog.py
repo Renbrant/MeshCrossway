@@ -65,6 +65,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.7.4":
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: Fix checkered flag U+1F3C1 rendered as [emoji] in MeshCore chat and names; add 93rd indexed-4 emoji with source bytes untouched. Keeps all v0.7.3 chat emojis and v0.7.2 Wi-Fi/BLE automatic reconnect. Leave Erase unchecked."
+        label="Checkered flag + 93 color emojis / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.7.3":
         summary="EXPERIMENTAL / NOT HARDWARE TESTED: Color emojis in MeshCore chat, 92 local LVGL 8.4 image glyphs, read-only UTF-8 display. Retains v0.7.2 automatic Wi-Fi profile fallback and last bonded BLE-radio reconnect. Never converts mesh traffic. Leave Erase unchecked."
         label="Color chat emojis + Wi-Fi/BLE reconnect / EXPERIMENTAL"

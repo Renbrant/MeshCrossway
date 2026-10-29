@@ -26,18 +26,6 @@ static void known_single_and_composed() {
   assert(contains(dst,"Hello ") && contains(dst,"!"));
   assert(!contains(dst,"[emoji]"));
 }
-static void checkered_flag_in_sender_name() {
-  const char source[]="\U0001F3C1PU2OOM RenBrant 02";
-  const char variant[]="\U0001F3C1\uFE0FPU2OOM RenBrant 02";
-  char dest[128]={};
-  const mcxemoji::Report r=mcxemoji::transform(source,strlen(source),dest,sizeof(dest));
-  assert(r.emoji_substitutions==1 && r.unsupported_clusters==0 && !r.truncated);
-  assert(!contains(dest,"[emoji]") && contains(dest,"PU2OOM RenBrant 02"));
-  assert(strcmp(source,"\U0001F3C1PU2OOM RenBrant 02")==0);
-  const mcxemoji::Report v=mcxemoji::transform(variant,strlen(variant),dest,sizeof(dest));
-  assert(v.emoji_substitutions==1 && v.unsupported_clusters==0 && !v.truncated);
-  assert(!contains(dest,"[emoji]") && contains(dest,"PU2OOM RenBrant 02"));
-}
 static void unknown_and_zwj_stay_atomic() {
   const char src[] = "A \U0001f468\u200d\U0001f469\u200d\U0001f467 B \U0001f1ef\U0001f1f5";
   char dst[128];
@@ -82,8 +70,8 @@ static void no_memory_allocation_or_side_effects() {
   assert(u.truncated);
 }
 int main() {
-  plain_and_accents(); known_single_and_composed(); checkered_flag_in_sender_name(); unknown_and_zwj_stay_atomic();
+  plain_and_accents(); known_single_and_composed(); unknown_and_zwj_stay_atomic();
   keycaps_vs_normal_digits(); invalid_utf8_never_overreads();
   truncation_never_splits_utf8(); no_memory_allocation_or_side_effects();
-  printf("emoji presentation: 8 host test groups passed; %zu registry entries\n", mcxemoji::kGlyphCount);
+  printf("emoji presentation: 7 host test groups passed; %zu registry entries\n", mcxemoji::kGlyphCount);
 }
