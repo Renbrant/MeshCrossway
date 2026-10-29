@@ -129,11 +129,6 @@ inline const EmojiGlyph *lookup(const char *src, size_t length) {
     const size_t n = strlen(kGlyphs[i].utf8);
     if (n == length && !memcmp(src, kGlyphs[i].utf8, n)) return &kGlyphs[i];
   }
-  // Accept an optional presentation selector on already supported emoji.
-  // Do not create a new glyph ID or alter the original UTF-8 source.
-  if(length>3 && (uint8_t)src[length-3]==0xEF &&
-     (uint8_t)src[length-2]==0xB8 && (uint8_t)src[length-1]==0x8F)
-    return lookup(src,length-3);
   return nullptr;
 }
 

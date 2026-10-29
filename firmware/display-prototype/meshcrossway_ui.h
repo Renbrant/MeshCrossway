@@ -779,6 +779,7 @@ static void draw(){
     center_card(8,54,col,95,"MESHTASTIC",narrow?"BLE: OFF":"MX-M / BLE OFF",narrow?"No packets":"No live packets",green);
     lv_obj_t *mc_card=center_card(col+16,54,col,95,"MESHCORE",mcui::ready()?meshmc::client->name:"BLE: OFF",mcui::ready()?"MeshCore connected":"Connect in More / Radios",purple);
     mcui::home_name=lv_obj_get_child(mc_card,1);mcui::home_status=lv_obj_get_child(mc_card,2);
+    if(mcui::ready())mcui::set_home_name(mcui::home_name,meshmc::client->name);
     center_card(8,157,col,95,"POSITION","GNSS: OFFLINE","No valid fix",cyan);
     center_card(col+16,157,col,95,"CROSSWAY","Bridge: OFF",narrow?"Demo only":"Demo data only",orange);
   } else if(page==4){

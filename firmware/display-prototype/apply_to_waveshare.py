@@ -141,7 +141,7 @@ for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_he
 emoji_root = root / "firmware" / "display-prototype" / "emoji"
 emoji_target = project / "main" / "emoji"
 emoji_target.mkdir(parents=True, exist_ok=True)
-for name in ("emoji_presentation.h", "emoji_registry.inc", "emoji_assets_data.h", "emoji_flag_asset.h", "emoji_display.h"):
+for name in ("emoji_presentation.h", "emoji_registry.inc", "emoji_assets_data.h", "emoji_display.h"):
     shutil.copy2(emoji_root / name, emoji_target / name)
 
 sdk = project / "sdkconfig.defaults"

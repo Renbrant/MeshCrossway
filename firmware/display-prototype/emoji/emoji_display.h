@@ -5,15 +5,13 @@
 #include "esp_heap_caps.h"
 #include "emoji_presentation.h"
 #include "emoji_assets_data.h"
-#include "emoji_flag_asset.h"
 #include <string.h>
 
 namespace mcxemoji {
 namespace view {
 static lv_font_t *emoji_font = nullptr;
 static uint8_t *atlas = nullptr;
-static constexpr size_t kEmojiRenderedCount = kEmojiAssetCount + 1;
-static lv_img_dsc_t images[kEmojiRenderedCount];
+static lv_img_dsc_t images[kEmojiAssetCount];
 static bool attempted = false;
 
 inline int b64value(char c) {
@@ -25,12 +23,12 @@ inline int b64value(char c) {
   return -1;
 }
 // Decode into PSRAM once, outside BLE callbacks. No external PNG/SVG decoder.
-inline bool unpack(const char *encoded, uint8_t *out, size_t capacity, size_t expected) {
-  if (!encoded || !out || capacity < expected) return false;
+inline bool unpack(uint8_t *out, size_t out_capacity) {
+  if (!out || out_capacity < kEmojiAssetDecodedBytes) return false;
   size_t p = 0;
   uint32_t bits = 0;
   unsigned filled = 0;
-  for (const char *s = encoded; *s; ++s) {
+  for (const char *s = kEmojiAssetsBase64; *s; ++s) {
     const int v = b64value(*s);
     if (v < 0) return false;
     bits = (bits << 6) | (uint32_t)v;
@@ -42,14 +40,14 @@ inline bool unpack(const char *encoded, uint8_t *out, size_t capacity, size_t ex
       bits &= (1u << filled) - 1;
     }
   }
-  return p == expected;
+  return p == kEmojiAssetDecodedBytes;
 }
 
 inline bool image_cb(const lv_font_t *, void *img_src, uint16_t len,
                      uint32_t unicode, uint32_t unicode_next) {
   (void)unicode_next;
   if (!atlas || !img_src || len < sizeof(lv_img_dsc_t) ||
-      unicode < 0xE000u || unicode >= 0xE000u + kEmojiRenderedCount)
+      unicode < 0xE000u || unicode >= 0xE000u + kEmojiAssetCount)
     return false;
   memcpy(img_src, &images[unicode - 0xE000u], sizeof(lv_img_dsc_t));
   return true;
@@ -59,19 +57,16 @@ inline lv_font_t *font() {
   if (attempted) return emoji_font;
   attempted = true;
 #if LV_USE_IMGFONT
-  if (LV_COLOR_DEPTH != 16 || kGlyphCount != kEmojiRenderedCount ||
-      kCheckeredFlagAssetSize != kEmojiAssetSize) return nullptr;
-  const size_t total = kEmojiAssetDecodedBytes + kCheckeredFlagAssetSize;
-  atlas = (uint8_t *)heap_caps_malloc(total, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+  if (LV_COLOR_DEPTH != 16 || kGlyphCount != kEmojiAssetCount) return nullptr;
+  atlas = (uint8_t *)heap_caps_malloc(kEmojiAssetDecodedBytes,
+                                     MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   if (!atlas) return nullptr;
-  if (!unpack(kEmojiAssetsBase64, atlas, kEmojiAssetDecodedBytes, kEmojiAssetDecodedBytes) ||
-      !unpack(kCheckeredFlagBase64, atlas + kEmojiAssetDecodedBytes,
-              kCheckeredFlagAssetSize, kCheckeredFlagAssetSize)) {
+  if (!unpack(atlas, kEmojiAssetDecodedBytes)) {
     heap_caps_free(atlas);
     atlas = nullptr;
     return nullptr;
   }
-  for (size_t i = 0; i < kEmojiRenderedCount; ++i) {
+  for (size_t i = 0; i < kEmojiAssetCount; ++i) {
     memset(&images[i], 0, sizeof(images[i]));
     images[i].header.always_zero = 0;
     images[i].header.w = 20;
