@@ -275,7 +275,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert 'action_button(body, "COMPOSE", 8, 53' not in chat
         assert 'action_button(body, "TOOLS", 16 +' not in chat
         assert "int y = 57;" in chat
-        assert "if(!has_context_rail())return;" in current
+        assert ("if(!has_context_rail()){" if version=="v0.7.8" else "if(!has_context_rail())return;") in current
         if version=="v0.7.6":assert 'action_button(body,"HOME"' in current
         else:assert 'action_button(body,"HOME"' not in current
         assert 'action_button(body,"SETTINGS"' in current
@@ -291,7 +291,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert "static void edge_swipe_poll" in current
         assert "left_handle" not in current and "right_handle" not in current
         assert "toggle_left" not in current and "toggle_right" not in current
-        assert "context_actions,0,0" in current
+        assert ("context_actions,5,0" if version=="v0.7.8" else "context_actions,0,0") in current
         assert "lv_obj_set_pos(tabs[i],3,7+i*45)" in current
         assert "iabs(dx)<2*iabs(dy)" in swipe
         assert "if(overlay" in swipe
