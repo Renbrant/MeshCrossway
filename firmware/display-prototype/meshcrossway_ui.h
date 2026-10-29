@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.7.7: swipe-open sidebars without arrow buttons.
+// MeshCrossway v0.7.8: swipe-open sidebars without arrow buttons.
 // MeshCore is live over BLE. Meshtastic and navigation remain previews.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
@@ -255,8 +255,10 @@ static void wifi_setup(lv_event_t *){
 // Left navigation and contextual right drawer can be independently collapsed.
 // Keep Wi-Fi provisioning and the manual screen viewer independent of UI rebuilds.
 static lv_obj_t *left_rail=nullptr,*right_rail=nullptr,*context_actions=nullptr;
+static lv_obj_t *context_scroll_track=nullptr,*context_scroll_thumb=nullptr;
 static lv_obj_t *top_wifi=nullptr,*top_mt=nullptr,*top_mc=nullptr;
-static lv_obj_t *top_battery=nullptr,*top_charge=nullptr,*top_battery_percent=nullptr;
+static lv_obj_t *top_mt_name=nullptr,*top_mc_name=nullptr,*top_charge=nullptr;
+static lv_obj_t *top_battery=nullptr,*top_battery_fill=nullptr,*top_battery_percent=nullptr;
 static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
 static bool left_compact=true,right_compact=true;
 static int nodes_filter=0,groups_filter=0,active_thread=-1,more_view=0;
@@ -480,7 +482,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Location sharing and radio transmission are off. SD Wi-Fi backup is plaintext; protect your SD card.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.7.7","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
+      notice("MESH CROSSWAY v0.7.8","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -490,8 +492,9 @@ static void on_action(lv_event_t *e){
   if(edge_swipe_click_in_progress())return;
   lv_async_call(run_action,lv_event_get_user_data(e));
 }
+static bool suppress_left_nav_click=false;
 static void on_nav(lv_event_t *e){
-  if(edge_swipe_click_in_progress())return;
+  if(suppress_left_nav_click||edge_swipe_click_in_progress())return;
   page=(int)(intptr_t)lv_event_get_user_data(e);
   if(page==5)more_view=0;
   close_shade();draw();
@@ -501,6 +504,39 @@ static void on_nav(lv_event_t *e){
 // only edge-armed horizontal movements may change layout.
 static mcxswipe::State swipe_state={};
 static lv_indev_t *swipe_pointer=nullptr;
+static bool left_drag_detected=false;
+static lv_point_t left_drag_start={};
+static bool left_drag_was_compact=true;
+static void finish_left_drag(void *){
+  left_compact=!left_drag_was_compact;
+  left_drag_detected=false;
+  suppress_left_nav_click=false;
+  mcxswipe::reset(swipe_state);
+  draw();
+}
+static void left_tab_touch(lv_event_t *e){
+  const lv_event_code_t kind=lv_event_get_code(e);
+  lv_indev_t *dev=lv_indev_get_act();
+  if(!dev||lv_indev_get_type(dev)!=LV_INDEV_TYPE_POINTER)return;
+  lv_point_t p={};lv_indev_get_point(dev,&p);
+  if(kind==LV_EVENT_PRESSED){
+    left_drag_start=p;
+    left_drag_was_compact=left_compact;
+    left_drag_detected=false;
+    suppress_left_nav_click=false;
+  }else if(kind==LV_EVENT_PRESSING){
+    const int dx=int(p.x)-left_drag_start.x;
+    const int dy=int(p.y)-left_drag_start.y;
+    if(!left_drag_detected&&mcxswipe::iabs(dx)>=28 &&
+       mcxswipe::iabs(dx)>=2*mcxswipe::iabs(dy) &&
+       ((left_drag_was_compact&&dx>0)||(!left_drag_was_compact&&dx<0))){
+      left_drag_detected=true;
+      suppress_left_nav_click=true;
+    }
+  }else if(kind==LV_EVENT_RELEASED && left_drag_detected){
+    lv_async_call(finish_left_drag,nullptr);
+  }
+}
 static void edge_swipe_poll(lv_timer_t *){
   if(!swipe_pointer){
     for(lv_indev_t *d=lv_indev_get_next(nullptr);d;d=lv_indev_get_next(d))
@@ -674,10 +710,36 @@ static const char *context_glyph(int id){
     default:return LV_SYMBOL_SETTINGS;
   }
 }
+// Place a separate, thin scroll indicator LEFT of the action buttons.
+static void update_context_scroll_track(){
+  if(!context_scroll_track||!context_scroll_thumb||!context_actions)return;
+  if(page!=4||!has_context_rail()){
+    lv_obj_add_flag(context_scroll_track,LV_OBJ_FLAG_HIDDEN);return;
+  }
+  lv_obj_clear_flag(context_scroll_track,LV_OBJ_FLAG_HIDDEN);
+  // LVGL can temporarily report negative offsets during elastic overscroll.
+  // Clamp the thumb to its own gutter and size it to the visible fraction.
+  const int viewport=lv_obj_get_height(context_actions);
+  const int scroll_y=lv_obj_get_scroll_y(context_actions);
+  const int bottom=lv_obj_get_scroll_bottom(context_actions);
+  const int range=(scroll_y>0?scroll_y:0)+(bottom>0?bottom:0);
+  const int track=266;
+  const int content=viewport+range;
+  int thumb=content>0?(track*viewport)/content:track;
+  if(thumb<32)thumb=32;
+  if(thumb>track)thumb=track;
+  const int offset=scroll_y<0?0:(scroll_y>range?range:scroll_y);
+  const int thumb_y=range>0?(offset*(track-thumb))/range:0;
+  lv_obj_set_pos(context_scroll_thumb,0,thumb_y);
+  lv_obj_set_height(context_scroll_thumb,thumb);
+}
+static void context_scrolled(lv_event_t *){update_context_scroll_track();}
 static void rebuild_context(){
   lv_obj_clean(context_actions);
   lv_obj_scroll_to_y(context_actions,0,LV_ANIM_OFF);
-  if(!has_context_rail())return;
+  if(!has_context_rail()){
+    update_context_scroll_track();return;
+  }
   const ActionInfo *choices=page==3?chat_actions:map_actions;
   const size_t count=page==3?sizeof(chat_actions)/sizeof(chat_actions[0]):
                              sizeof(map_actions)/sizeof(map_actions[0]);
@@ -691,7 +753,7 @@ static void rebuild_context(){
        (id==A_TEAM&&map_view==4)||(id==A_SHARE&&map_view==5));
     lv_obj_t *button=action_button(context_actions,
                                    right_compact?context_glyph(id):choices[i].label,
-                                   4,y,right_compact?32:111,38,
+                                   right_compact?0:4,y,right_compact?32:111,38,
                                    selected?orange:panel2,on_action,(intptr_t)id);
     lv_obj_set_style_border_width(button,selected?0:1,0);
     // Match the left primary navigation palette: orange icons on dark panels,
@@ -700,6 +762,8 @@ static void rebuild_context(){
     lv_obj_set_style_text_color(lv_obj_get_child(button,0),selected?bg:orange,0);
     y+=41;
   }
+  lv_obj_update_layout(context_actions);
+  update_context_scroll_track();
 }
 static void ble_select_now(void *v){meshble::connect((int)(intptr_t)v);draw();}
 static void ble_select(lv_event_t *e){lv_async_call(ble_select_now,lv_event_get_user_data(e));}
@@ -788,7 +852,10 @@ static void draw(){
   lv_obj_set_pos(body,lw,34);lv_obj_set_size(body,cw,286);
   lv_obj_set_pos(right_rail,480-rw,34);lv_obj_set_size(right_rail,rw?rw:40,286);
   // All rail height is now available for icons; no arrow-button row.
-  lv_obj_set_pos(context_actions,0,0);lv_obj_set_size(context_actions,rw?rw:40,286);
+  // Reserve a dedicated 5px gutter at left of the contextual icons.
+  lv_obj_set_pos(context_actions,5,0);
+  lv_obj_set_size(context_actions,rw?rw-5:35,286);
+  if(context_scroll_track)lv_obj_set_pos(context_scroll_track,1,9);
   for(int i=0;i<6;i++){
     if(!lw){lv_obj_add_flag(tabs[i],LV_OBJ_FLAG_HIDDEN);continue;}
     lv_obj_clear_flag(tabs[i],LV_OBJ_FLAG_HIDDEN);
@@ -939,7 +1006,7 @@ static void refresh(lv_timer_t *){
   }
   // Compact status bar: real Wi-Fi STA IP state and actual current BLE
   // GATT identity. The current radio adapter has ONE active BLE session.
-  if(top_wifi&&top_mt&&top_mc){
+  if(top_wifi&&top_mt&&top_mc&&top_mt_name&&top_mc_name){
     char ip[16]={},state[30]={};
     meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
     const bool wifi_online=ip[0]!=0;
@@ -950,34 +1017,29 @@ static void refresh(lv_timer_t *){
     lv_obj_set_style_text_color(top_wifi,wifi_online?green:muted,0);
     lv_obj_set_style_text_color(top_mt,mt_online?orange:muted,0);
     lv_obj_set_style_text_color(top_mc,mc_online?orange:muted,0);
+    lv_obj_set_style_text_color(top_mt_name,mt_online?orange:muted,0);
+    lv_obj_set_style_text_color(top_mc_name,mc_online?orange:muted,0);
   }
-  // Read-only PMU worker publishes atomic snapshots; LVGL never performs I2C.
-  if(top_battery&&top_charge&&top_battery_percent){
+  // PMU readout never fabricates a level for an absent battery.
+  if(top_battery&&top_battery_fill&&top_battery_percent&&top_charge){
     const mcxbattery::Reading b=meshpower::snapshot();
-    const bool have_level=b.valid&&b.battery_present&&b.percent<=100;
-    const char *icon=LV_SYMBOL_BATTERY_EMPTY;
-    if(have_level){
-      icon=b.percent>=90?LV_SYMBOL_BATTERY_FULL:
-           b.percent>=65?LV_SYMBOL_BATTERY_3:
-           b.percent>=40?LV_SYMBOL_BATTERY_2:
-           b.percent>=15?LV_SYMBOL_BATTERY_1:LV_SYMBOL_BATTERY_EMPTY;
-    }
-    if(strcmp(lv_label_get_text(top_battery),icon))lv_label_set_text(top_battery,icon);
-    char percent[8];
-    if(have_level)snprintf(percent,sizeof(percent),"%u%%",(unsigned)b.percent);
-    else snprintf(percent,sizeof(percent),"--");
-    if(strcmp(lv_label_get_text(top_battery_percent),percent))
-      lv_label_set_text(top_battery_percent,percent);
-    lv_obj_set_style_text_color(top_battery,have_level?
+    const bool present=b.valid&&b.battery_present&&b.percent<=100;
+    char number[8];
+    if(present)snprintf(number,sizeof(number),"%u%%",(unsigned)b.percent);
+    else snprintf(number,sizeof(number),"--");
+    if(strcmp(lv_label_get_text(top_battery_percent),number))
+      lv_label_set_text(top_battery_percent,number);
+    lv_obj_set_style_border_color(top_battery,present?
       (b.percent<=15?red:green):muted,0);
-    lv_obj_set_style_text_color(top_battery_percent,have_level?white:muted,0);
+    lv_obj_set_width(top_battery_fill,present?int(b.percent)*34/100:0);
+    lv_obj_set_style_bg_color(top_battery_fill,b.percent<=15?red:green,0);
     const char *charging=b.charging?LV_SYMBOL_CHARGE:
                          (b.valid&&b.usb_present?LV_SYMBOL_USB:"");
     if(strcmp(lv_label_get_text(top_charge),charging))
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.7.7] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.7.8] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -997,7 +1059,7 @@ static void refresh(lv_timer_t *){
     if(strcmp(lv_label_get_text(objects[i]),values[i]))lv_label_set_text(objects[i],values[i]);
 }
 static void init(){
-  printf("[MCX-DIAG v0.7.7] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.7.8] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1009,29 +1071,49 @@ static void init(){
   lv_obj_t *brand=lv_img_create(top);
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
-  // Header retains official 180px SVG-raster brand at x=6..186.
-  // No IP printed in the top bar: IP and SSID remain in Settings / Wi-Fi.
-  top_wifi=color_label(top,LV_SYMBOL_WIFI,207,7,25,muted);
-  top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,241,7,19,muted);
-  color_label(top,"MT",260,10,20,muted);
-  top_mc=color_label(top,LV_SYMBOL_BLUETOOTH,289,7,19,muted);
-  color_label(top,"MC",308,10,20,muted);
-  top_battery=color_label(top,LV_SYMBOL_BATTERY_EMPTY,337,7,24,muted);
-  top_charge=color_label(top,"",357,7,15,muted);
-  top_battery_percent=color_label(top,"--",374,10,35,muted);
-  color_label(top,"DEV 0.7.7",409,7,71,orange);
+  // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
+  lv_obj_t *version=color_label(top,"0.7.8",187,11,43,muted);
+  lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
+  top_wifi=color_label(top,LV_SYMBOL_WIFI,242,7,22,muted);
+  top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,273,7,20,muted);
+  top_mt_name=color_label(top,"MT",293,10,27,muted);
+  top_mc=color_label(top,LV_SYMBOL_BLUETOOTH,323,7,20,muted);
+  top_mc_name=color_label(top,"MC",343,10,27,muted);
+  top_charge=color_label(top,"",403,8,23,muted);
+  top_battery=panel_at(top,430,7,44,20,panel,2);
+  lv_obj_set_style_border_width(top_battery,1,0);
+  lv_obj_set_style_border_color(top_battery,muted,0);
+  lv_obj_set_style_radius(top_battery,3,0);
+  panel_at(top,475,13,4,8,muted,1);
+  top_battery_fill=panel_at(top_battery,3,3,0,14,green,1);
+  lv_obj_set_style_bg_opa(top_battery_fill,LV_OPA_40,0);
+  top_battery_percent=color_label(top_battery,"--",2,1,40,white);
+  lv_obj_set_style_text_align(top_battery_percent,LV_TEXT_ALIGN_CENTER,0);
+  lv_obj_set_style_text_font(top_battery_percent,&lv_font_montserrat_10,0);
+  lv_label_set_long_mode(top_battery_percent,LV_LABEL_LONG_CLIP);
   left_rail=panel_at(screen,0,34,79,286,panel,0);
   right_rail=panel_at(screen,355,34,125,286,panel,0);
   for(int i=0;i<6;i++){
     tabs[i]=action_button(left_rail,"",3,7+i*45,73,38,panel2,on_nav,i);
+    // Keep tracking this finger after it leaves the icon bounds during drag.
+    lv_obj_add_flag(tabs[i],LV_OBJ_FLAG_PRESS_LOCK);
+    lv_obj_add_event_cb(tabs[i],left_tab_touch,LV_EVENT_PRESSED,nullptr);
+    lv_obj_add_event_cb(tabs[i],left_tab_touch,LV_EVENT_PRESSING,nullptr);
+    lv_obj_add_event_cb(tabs[i],left_tab_touch,LV_EVENT_RELEASED,nullptr);
     single_label(tabs[i],tab_names[i],0,19,73,white);
     make_nav_vector(i);
   }
-  context_actions=panel_at(right_rail,0,0,125,286,panel,0);
+  context_actions=panel_at(right_rail,5,0,120,286,panel,0);
+  context_scroll_track=panel_at(right_rail,1,9,3,266,muted,0);
+  lv_obj_set_style_bg_opa(context_scroll_track,LV_OPA_30,0);
+  context_scroll_thumb=panel_at(context_scroll_track,0,0,3,200,orange,1);
+  lv_obj_add_flag(context_scroll_track,LV_OBJ_FLAG_HIDDEN);
+  lv_obj_add_event_cb(context_actions,context_scrolled,LV_EVENT_SCROLL,nullptr);
   // The Map context has more actions than fit vertically; allow finger scrolling.
   lv_obj_add_flag(context_actions,LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_set_scroll_dir(context_actions,LV_DIR_VER);
-  lv_obj_set_scrollbar_mode(context_actions,LV_SCROLLBAR_MODE_AUTO);
+  // Keep touch scrolling, but never draw an overlay over the action icons.
+  lv_obj_set_scrollbar_mode(context_actions,LV_SCROLLBAR_MODE_OFF);
   body=panel_at(screen,79,34,276,286,bg,0);
   lv_obj_add_flag(body,LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_set_scroll_dir(body,LV_DIR_VER);

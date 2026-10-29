@@ -65,6 +65,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.7.8":
+        summary="EXPERIMENTAL / HARDWARE TEST PENDING: Fixed left swipe so dragging a nav icon no longer selects the page; Map right action scrolling no longer overlays action icons; header version small beside brand with no DEV; MT and MC Bluetooth status on one line; battery percentage inside a far-right battery silhouette, battery disappears when disconnected. Preserves Wi-Fi/BLE profiles and prior v0.7.7 chat/emoji updates. Erase unchecked."
+        label="Edge gesture and compact status bar fixes / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.7.7":
         summary="EXPERIMENTAL / NOT HARDWARE TESTED: Swipe horizontally from left edge to expand navigation and toward left edge to collapse; Chat/Map right edge swipe to expand/collapse contextual menu. No arrow buttons. Ignore overlays, short taps and vertical scroll. Preserves v0.7.6 logo, Wi-Fi and BLE. Leave Erase unchecked."
         label="Edge-swipe sidebar gestures / EXPERIMENTAL"

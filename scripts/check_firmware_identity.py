@@ -11,7 +11,7 @@ p.add_argument("--ui-header",default="firmware/display-prototype/meshcrossway_ui
 a=p.parse_args()
 version=Path(a.version_file).read_text().strip()
 header=Path(a.ui_header).read_text()
-expected="DEV "+version.lstrip("v")
+expected=version.lstrip("v") if version=="v0.7.8" else "DEV "+version.lstrip("v")
 if f'"{expected}"' not in header:
     p.error(f"Header does not contain the expected UI label {expected!r}")
 image_dir=Path(a.root)/"versions"/version
