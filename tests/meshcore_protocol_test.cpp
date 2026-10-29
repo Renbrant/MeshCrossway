@@ -30,7 +30,7 @@ int main(){
  assert(c.message_count==1&&c.messages[0].channel&&c.messages[0].slot==1&&!strcmp(c.messages[0].text,"hello")&&c.messages[0].snr==-16);
  recv(c,r,2000);assert(c.message_count==1);
  r=response(7,22);r.data[1]=0xab;r.data[8]=2;put32(r.data+9,1800000011);memcpy(r.data+13,"sign",4);memcpy(r.data+17,"world",5);recv(c,r,2000);
- assert(c.message_count==2&&!strcmp(c.messages[1].text,"world"));
+ assert(c.message_count==2&&!strcmp(c.messages[1].text,"world")&&!memcmp(c.messages[1].signer,"sign",4));
  c.waiting_messages=false;
  assert(c.send_text(false,0,"direct"));f=start(c,2200);assert(f.data[0]==2&&f.len==19&&f.data[7]==0xab);
  c.write_done(true);
@@ -73,6 +73,10 @@ int main(){
  assert(build(*command(51),nullptr,0,f,error,sizeof(error))&&f.len==6&&!memcmp(f.data+1,"reset",5));
  // Every catalog entry has a unique opcode. All official command families must remain reachable.
  assert(COMMAND_COUNT==59);for(size_t i=0;i<COMMAND_COUNT;i++)for(size_t j=i+1;j<COMMAND_COUNT;j++)assert(COMMANDS[i].code!=COMMANDS[j].code);
+ // Group text reserves sender prefix space; consecutive sends never reuse timestamps.
+ auto budget=make_client();bootstrap(*budget);memset(budget->name,'N',31);budget->name[31]=0;
+ assert(budget->text_limit(true)==127);char longtext[151];memset(longtext,'x',150);longtext[150]=0;assert(!budget->send_text(true,0,longtext));
+ assert(budget->send_text(false,0,"one")&&budget->send_text(false,0,"two"));assert(budget->by_id(2)->timestamp>budget->by_id(1)->timestamp);
  // Sanitizer corpus: all packet types and truncated lengths, plus random oversized/truncated frames.
  std::mt19937 random(7);auto fuzz=make_client();uint8_t bytes[MAX_FRAME+1];
  for(int code=0;code<256;code++)for(size_t n=0;n<=MAX_FRAME+1;n++){

@@ -284,7 +284,10 @@ static void compose() {
   }
   base("MESHCORE / COMPOSE");
   mode = 2;
-  field("Message (up to 150 UTF-8 bytes)", "", 0);
+  char limit[80];
+  snprintf(limit, sizeof(limit), "Message (up to %u UTF-8 bytes)",
+           (unsigned)(session() ? session()->text_limit(group) : 0));
+  field(limit, "", 0);
   feedback = txt(scroller, "The radio must be connected with a valid clock.", 10, 88, 450, muted);
   lv_label_set_long_mode(feedback, LV_LABEL_LONG_WRAP);
   action_button(dialog, "SEND", 10, 273, 460, 40, orange, compose_send, 0);
@@ -443,6 +446,11 @@ static void render() {
       char label[120];
       snprintf(label, sizeof(label), "%s / %s / %lu", m->outgoing ? "YOU" : "RX", delivery(m->delivery),
                (unsigned long)m->timestamp);
+      if (!m->outgoing && m->type == 2) {
+        char signer[9];
+        meshmc::hex(m->signer, 4, signer, sizeof(signer));
+        snprintf(label, sizeof(label), "RX / signer %s / %lu", signer, (unsigned long)m->timestamp);
+      }
       lv_obj_t *card = panel_at(body, 8, y, w - 16, 94, panel, 7);
       txt(card, label, 7, 5, w - 30, m->outgoing ? orange : green);
       lv_obj_t *text = txt(card, m->text, 7, 29, w - 30, white);

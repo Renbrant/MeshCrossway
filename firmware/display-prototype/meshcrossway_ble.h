@@ -176,7 +176,8 @@ static void transport_failure(const char *message){
   if(conn!=BLE_HS_CONN_HANDLE_NONE)(void)ble_gap_terminate(conn,BLE_ERR_REM_USER_CONN_TERM);
 }
 static int mc_write_cb(uint16_t handle,const struct ble_gatt_error *err,struct ble_gatt_attr *,void *){
-  if(handle==conn)meshmc::on_write(err->status==0);return 0;
+  if(handle==conn)meshmc::on_write(err->status==0);
+  return 0;
 }
 static bool mc_write(const uint8_t *p,size_t n){
   if(!mc_transport_started||conn==BLE_HS_CONN_HANDLE_NONE||!mc_rx||n>(size_t)(ble_att_mtu(conn)-3))return false;
@@ -206,13 +207,15 @@ static int mc_characteristic(uint16_t handle,const struct ble_gatt_error *err,co
     return 0;
   }
   if(err->status!=BLE_HS_EDONE||!mc_rx||!mc_tx||mc_tx_end<=mc_tx){transport_failure("MeshCore RX/TX characteristics missing");return 0;}
-  if(ble_gattc_disc_all_dscs(handle,mc_tx,mc_tx_end,mc_descriptor,nullptr))transport_failure("MeshCore descriptors discovery failed");return 0;
+  if(ble_gattc_disc_all_dscs(handle,mc_tx,mc_tx_end,mc_descriptor,nullptr))transport_failure("MeshCore descriptors discovery failed");
+  return 0;
 }
 static int mc_mtu(uint16_t handle,const struct ble_gatt_error *err,uint16_t mtu,void *){
   if(handle!=conn)return 0;
   // Contact records are 148/152 bytes and must arrive in one notification.
   if(err->status||mtu<155){transport_failure("MeshCore needs ATT MTU >=155; reconnect/update radio");return 0;}
-  if(ble_gattc_disc_all_chrs(handle,mc_start,mc_end,mc_characteristic,nullptr))transport_failure("MeshCore characteristic discovery failed");return 0;
+  if(ble_gattc_disc_all_chrs(handle,mc_start,mc_end,mc_characteristic,nullptr))transport_failure("MeshCore characteristic discovery failed");
+  return 0;
 }
 static void start_meshcore(){
   if(identified!=MESHCORE||mc_transport_started)return;

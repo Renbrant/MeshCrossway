@@ -369,7 +369,8 @@ static bool build(const Command &c, const char *const *values, size_t count, Fra
 // Cayenne LPP values are big endian, unlike the Companion envelope.
 static void telemetry_text(const uint8_t *p, size_t n, char *out, size_t cap) {
   size_t pos = 0, used = 0;
-  if (!cap) return;
+  if (!cap)
+    return;
   out[0] = 0;
   while (pos + 2 <= n && used + 80 < cap) {
     uint8_t channel = p[pos++], type = p[pos++];
@@ -519,7 +520,7 @@ enum Delivery : uint8_t { RECEIVED, QUEUED, ACCEPTED, DELIVERED, REJECTED, UNCER
 struct Message {
   uint32_t id = 0, timestamp = 0, ack = 0, ack_deadline = 0;
   bool channel = false, outgoing = false, read = false;
-  uint8_t slot = 0, key[6] = {}, type = 0, path = 255;
+  uint8_t slot = 0, key[6] = {}, signer[4] = {}, type = 0, path = 255;
   int8_t snr = 0;
   Delivery delivery = RECEIVED;
   char text[MAX_FRAME + 1] = {};
@@ -548,7 +549,7 @@ public:
   uint32_t clock = 0, clock_at = 0;
   Pending queue[12], active;
   uint8_t qhead = 0, qcount = 0;
-  uint32_t deadline = 0, last_send = 0, next_id = 1, now_ms = 0;
+  uint32_t deadline = 0, last_send = 0, next_id = 1, now_ms = 0, last_timestamp = 0;
   uint8_t remote_pending = 0, remote_key[6] = {};
   uint32_t remote_tag = 0, remote_deadline = 0;
   uint16_t bootstrap = 0, channel_next = 0;
@@ -570,6 +571,7 @@ public:
   }
   void detach() {
     connected = false;
+    remote_pending = 0;
     initialized = false;
     busy = false;
     qcount = 0;
@@ -588,6 +590,8 @@ public:
   }
   bool enqueue(const Frame &f, int32_t message = -1) {
     if (!connected || fault || !f.len || f.len > payload_limit || qcount >= 12)
+      return false;
+    if (f.data[0] == 3 && (f.len < 8 || size_t(f.len - 7) > text_limit(true)))
       return false;
     const Command *c = command(f.data[0]);
     if (!c || (protocol && c->min_version > protocol))
@@ -642,9 +646,18 @@ public:
       }
     return found;
   }
+  size_t text_limit(bool group) const {
+    size_t prefix = group ? strlen(name) + 2 : 0;
+    size_t limit = prefix < 160 ? 160 - prefix : 0;
+    if (limit > MAX_TEXT)
+      limit = MAX_TEXT;
+    size_t offset = group ? 7 : 13;
+    size_t wire = payload_limit > offset ? payload_limit - offset : 0;
+    return limit < wire ? limit : wire;
+  }
   bool send_text(bool group, uint16_t target, const char *text) {
     size_t n = strlen(text);
-    if (!initialized || !n || n > MAX_TEXT || timestamp() < 1577836800u)
+    if (!initialized || !n || n > text_limit(group) || timestamp() < 1577836800u)
       return false;
     if (group ? (target >= channel_count || !channels[target].loaded || !channels[target].name[0])
               : target >= contact_count)
@@ -654,6 +667,8 @@ public:
     f.data[1] = 0;
     f.data[2] = group ? target : 0;
     uint32_t stamp = timestamp();
+    if (stamp <= last_timestamp)
+      stamp = last_timestamp + 1;
     put32(f.data + 3, stamp);
     size_t offset = 7;
     if (!group) {
@@ -669,6 +684,7 @@ public:
     const uint32_t id = next_id;
     if (!enqueue(f, id))
       return false;
+    last_timestamp = stamp;
     Message &m = append();
     m.timestamp = stamp;
     m.outgoing = true;
@@ -894,6 +910,8 @@ public:
             if (!group)
               memcpy(m.key, p + start, 6);
             m.type = type;
+            if (type == 2)
+              memcpy(m.signer, p + start + meta + 4, 4);
             m.path = p[start + (group ? 1 : 6)];
             m.snr = v3 ? (int8_t)p[1] : 0;
             m.timestamp = u32(p + start + meta);

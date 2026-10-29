@@ -166,7 +166,7 @@ static lv_obj_t *mc_button(lv_obj_t *parent,const char *text){
     if(lv_obj_check_type(b,&lv_btn_class)&&lv_obj_get_child_cnt(b)&&!strcmp(lv_label_get_text(lv_obj_get_child(b,0)),text))return b;
   }fprintf(stderr,"Missing MeshCore button: %s\n",text);assert(false);return nullptr;
 }
-static void test_companion_ui(){
+static void test_companion_ui(const char *preview){
   meshmc::client=new meshmc::Client();auto &c=*meshmc::client;c.attach(173);c.initialized=true;c.protocol=14;c.channel_count=2;c.max_power=22;
   c.clock=1800000000;c.contacts[0].key[0]=0xab;c.contact_count=1;strcpy(c.contacts[0].name,"Heltec");
   mcui::form(32);advance();assert(mcui::field_count==3);
@@ -174,6 +174,7 @@ static void test_companion_ui(){
   lv_event_send(mcui::fields[1],LV_EVENT_CLICKED,nullptr);advance();
   lv_area_t kb;lv_obj_get_coords(mcui::keyboard,&kb);assert(kb.x1>=0&&kb.y1>=0&&kb.x2<480&&kb.y2<320);
   assert(lv_keyboard_get_textarea(mcui::keyboard)==mcui::edit_value);
+  if(preview){lv_refr_now(nullptr);FILE *f=fopen(preview,"wb");assert(f);fprintf(f,"P6\n480 320\n255\n");for(auto color:framebuffer){lv_color32_t c;c.full=lv_color_to32(color);unsigned char rgb[]={c.ch.red,c.ch.green,c.ch.blue};fwrite(rgb,1,3,f);}fclose(f);}
   tap_object(mc_button(mcui::editor,"DONE"));advance();assert(!mcui::editor);
   tap_object(mc_button(mcui::dialog,"APPLY"));advance();assert(c.qcount==0&&mcui::confirm_pending);
   tap_object(mc_button(mcui::dialog,"CONFIRM"));advance();assert(c.qcount==1&&c.queue[0].frame.data[0]==32&&c.queue[0].frame.len==50);
@@ -191,7 +192,7 @@ static void test_companion_ui(){
 }
 '''
     test = test.replace('int main(int argc,char **argv){', companion_setup + '\nint main(int argc,char **argv){')
-    test = test.replace('  puts("PASS: real LVGL', '  test_companion_ui();\n  puts("PASS: real LVGL')
+    test = test.replace('  puts("PASS: real LVGL', '  test_companion_ui(argc>2?argv[2]:nullptr);\n  puts("PASS: real LVGL')
 
     with tempfile.TemporaryDirectory() as temporary:
         temp = Path(temporary)
@@ -208,7 +209,7 @@ static void test_companion_ui(){
         args = [str(binary)]
         if render:
             render.parent.mkdir(parents=True, exist_ok=True)
-            args.append(str(render))
+            args.extend([str(render),str(render.with_name(render.stem+'-meshcore.ppm'))])
         subprocess.run(args,check=True)
 
 if __name__ == '__main__':
