@@ -143,7 +143,7 @@ namespace meshmt {
     uint16_t battery=0;
     bool has_battery=false;
   };
-  struct Channel {bool loaded=false;
+  struct Channel {bool loaded=false,aead=false;
     uint8_t role=0;
     char name[49]={};
     uint64_t identity=0;
@@ -346,7 +346,12 @@ namespace meshmt {
           c.identity=fingerprint(f.bytes);
           Reader settings(f.bytes);
           Field s;
-          while(settings.next(s))if(s.tag==3&&!string_field(s,c.name,sizeof(c.name)))return false;
+          while(settings.next(s)){
+            if(s.tag==3&&!string_field(s,c.name,sizeof(c.name)))return false;
+            if(s.tag==8){if(s.wire!=0||s.value>1)return false;
+              c.aead=s.value!=0;
+            }
+          }
         }
         if(f.tag==3){if(f.wire!=0||f.value>2)return false;
           c.role=f.value;
@@ -589,6 +594,13 @@ namespace meshmt {
         return empty;
       }return nullptr;
     }
+    size_t text_limit(const Target &t)const{
+      // SX1262 packet 255 - native header 16 - serialized Data overhead 5
+      // - radio-added optional bitfield 2 - PKI/AEAD expansion 12 when used.
+      const bool encrypted_dm=t.node!=BROADCAST&&has_pki;
+      const bool aead=t.channel<MAX_CHANNELS&&data.channels[t.channel].aead;
+      return encrypted_dm||aead?220:232;
+    }
     const char *send_problem(const Target &t,const char *text=nullptr){
       if(!connected||fault)return "Meshtastic radio disconnected. Draft kept locally.";
       if(!initialized||!history_ready)return "Meshtastic is synchronizing / restoring history.";
@@ -599,10 +611,12 @@ namespace meshmt {
       if(!c.loaded||!c.role||!t.channel_identity||c.identity!=t.channel_identity)return "Channel changed or is disabled. Select it again.";
       if(t.node!=BROADCAST){auto *n=node(t.node);
         if(!n||n->unmessagable||t.node==data.my_num)return "Node unavailable or cannot receive messages.";
+        if(has_pki&&!n->has_key)return "Wait for this node's public key before sending a PKI direct message.";
       }
       if(pending_ready||writing)return "Bluetooth write in progress. Wait before sending again.";
       if(text){size_t n=strlen(text);
-        if(!n||n>MAX_TEXT||!utf8(text,n))return "Enter valid UTF-8 text, up to 237 bytes.";
+        if(!n||n>MAX_TEXT||!utf8(text,n))return "Enter valid UTF-8 text.";
+        if(n>text_limit(t))return "Text exceeds the LoRa byte limit for this channel/encryption. Shorten it.";
       }
       return nullptr;
     }

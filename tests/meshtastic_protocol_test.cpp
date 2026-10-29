@@ -66,7 +66,11 @@ int main(int argc,char **argv){
   ack(c,n->num,501,3);assert(c.message(501)->delivery==REJECTED&&c.message(501)->error==3);
   std::string oversized(238,'x');assert(!c.send_text(target,oversized.c_str(),502,130000));
   assert(!utf8("\xc0\xaf",2)&&!utf8("\xed\xa0\x80",3)&&!utf8("\xf4\x90\x80\x80",4));
-  assert(c.send_text(target,std::string(237,'x').c_str(),502,130000));assert(c.next(130001,outgoing));c.write_done(true);
+  assert(c.text_limit(target)==220&&c.text_limit(broadcast)==232);
+  assert(!c.send_text(target,std::string(221,'x').c_str(),502,130000));
+  assert(c.send_text(target,std::string(220,'x').c_str(),502,130000));assert(c.next(130001,outgoing));c.write_done(true);
+  c.data.channels[0].aead=true;assert(c.text_limit(broadcast)==220);c.data.channels[0].aead=false;
+  n->has_key=false;assert(c.send_problem(target,"missing public key"));n->has_key=true;
   c.tx_enabled=false;assert(c.send_problem(target,"off"));c.tx_enabled=true;
   c.data.channels[0].identity++;assert(c.send_problem(target,"changed"));c.data.channels[0].identity--;
   // Zero coordinates are valid. Unknown fields do not reject future extensions.

@@ -78,7 +78,7 @@ namespace mtui {
     lv_textarea_set_one_line(value,true);
     if(auto *d=c->draft(selected))lv_textarea_set_text(value,d->text);
     else lv_textarea_set_text(value,"");
-    feedback=txt(dialog,"Up to 237 UTF-8 bytes / native Meshtastic",8,96,355,muted);
+    feedback=txt(dialog,"Checking native LoRa byte limit...",8,96,355,muted);
     send_button=action_button(dialog,"SEND",380,94,94,32,orange,send_event,0);
     keyboard=lv_keyboard_create(dialog);
     lv_obj_set_align(keyboard,LV_ALIGN_TOP_LEFT);
@@ -109,7 +109,7 @@ namespace mtui {
     lv_obj_add_flag(scroller,LV_OBJ_FLAG_SCROLLABLE);
     auto *label=txt(scroller,info,0,0,450,white);
     lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
-    auto *tip=txt(scroller,"Channel names/keys, modem and region are read from your radio. Change those settings with the official Meshtastic client. PKI is requested when the destination key is available; other DMs use channel encryption. Remote ACK does not mean read.",0,220,450,muted);
+    auto *tip=txt(scroller,"Channel names/keys, modem and region are read from your radio. Change those settings with the official Meshtastic client. PKI-capable radios require the destination key; other radios use native channel encryption. Remote ACK does not mean read.",0,220,450,muted);
     lv_label_set_long_mode(tip,LV_LABEL_LONG_WRAP);
   }
   static void tools_event(lv_event_t *){tools();
@@ -304,7 +304,7 @@ namespace mtui {
       if(problem)lv_obj_add_state(send_button,LV_STATE_DISABLED);
       else lv_obj_clear_state(send_button,LV_STATE_DISABLED);
       char detail[140];
-      snprintf(detail,sizeof(detail),"%u / 237 bytes%s%s",unsigned(strlen(lv_textarea_get_text(value))),problem?" / ":"",problem?problem:"");
+      snprintf(detail,sizeof(detail),"%u / %u bytes%s%s",unsigned(strlen(lv_textarea_get_text(value))),unsigned(c->text_limit(selected)),problem?" / ":"",problem?problem:"");
       lv_label_set_text(feedback,detail);
     }
     if(!showing_mt()||dialog||mcui::dialog||wifi_dialog||ble_dialog||info_dialog||page<1||page>3)return;
