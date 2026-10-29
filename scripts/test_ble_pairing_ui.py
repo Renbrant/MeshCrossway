@@ -168,7 +168,7 @@ enum Stage{PROTOCOL,HISTORY};struct Scope{explicit Scope(Stage){}};
 static void sample_ui_stack(){}
 }
 static lv_obj_t *body=nullptr,*wifi_dialog=nullptr;
-static int page=1,nodes_filter=0,groups_filter=0,chats_filter=0,redraws=0;
+static int page=1,nodes_filter=0,groups_filter=0,chats_filter=0,redraws=0,active_chat_network=2;
 static const lv_color_t green=lv_color_hex(0x72D8A5);
 static int content_width(){return 400;}
 static void draw(){++redraws;}
@@ -177,6 +177,16 @@ static void filter_tabs(int,int){}
 static void show_center_heading(const char *,const char *){}
 ''' + segment('// Static maps:', '#undef MCX_KEY_FLAGS') + '\n#undef MCX_KEY_FLAGS\n' + r'''
 #include "meshcrossway_meshcore_ui.h"
+#include "meshcrossway_meshtastic_protocol.h"
+namespace meshmt {
+static Client *client=nullptr;
+static void poll(){}
+static const char *history_status(){return "MT SD fixture";}
+}
+static uint32_t esp_random(){return 0x12345678;}
+static lv_obj_t *info_dialog=nullptr;
+static bool showing_mt(){return true;}
+#include "meshcrossway_meshtastic_ui.h"
 static lv_obj_t *mc_button(lv_obj_t *parent,const char *text){
   for(uint32_t i=0;i<lv_obj_get_child_cnt(parent);i++){
     lv_obj_t *b=lv_obj_get_child(parent,i);
@@ -243,6 +253,30 @@ static void test_companion_ui(const char *preview){
   assert(ui_live_bytes<=baseline+1024&&ui_alloc_calls>1000&&ui_resize_calls>0);
   lv_obj_del(body);body=nullptr;delete meshmc::client;meshmc::client=nullptr;
   puts("PASS: MeshCore real-LVGL forms, keyboard geometry, confirmation, channel command, compose/send, lists, history and firmware gating");
+  meshmt::client=new meshmt::Client();auto &mt=*meshmt::client;
+  const uint8_t identity[7]={0,1,2,3,4,5,6};mt.attach(identity,517,123,0);
+  mt.initialized=mt.history_ready=mt.have_lora=mt.tx_enabled=true;mt.region=1;mt.data.my_num=123;
+  mt.data.channels[0].loaded=true;mt.data.channels[0].role=1;mt.data.channels[0].identity=99;strcpy(mt.data.channels[0].name,"Primary");
+  auto *peer=mt.node(456,true);strcpy(peer->name,"T-Deck fixture");
+  body=panel_at(lv_scr_act(),0,34,400,286,bg);page=1;nodes_filter=1;mtui::render();advance();
+  mtui::select_node_now((void *)456);mtui::compose();advance();
+  assert(lv_keyboard_get_textarea(mtui::keyboard)==mtui::value);
+  lv_area_t area;lv_obj_get_coords(mtui::keyboard,&area);assert(area.x1>=0&&area.y1>=0&&area.x2<480&&area.y2<320);
+  lv_textarea_set_text(mtui::value,"Olá from T-Deck");mtui::poll(nullptr);
+  assert(!lv_obj_has_state(mtui::send_button,LV_STATE_DISABLED));
+  mtui::send_event(nullptr);assert(!mtui::dialog&&mt.pending_ready&&mt.data.message_count==1);
+  assert(mt.data.messages[0].to==456&&!strcmp(mt.data.messages[0].text,"Olá from T-Deck"));
+  mt.pending_ready=false;mtui::compose();lv_textarea_set_text(mtui::value,"saved draft");mt.connected=false;mtui::poll(nullptr);
+  assert(lv_obj_has_state(mtui::send_button,LV_STATE_DISABLED));mtui::close();
+  assert(!strcmp(mt.draft(mtui::selected)->text,"saved draft"));mt.connected=true;
+  mtui::compose();assert(!strcmp(lv_textarea_get_text(mtui::value),"saved draft"));mtui::close();
+  mtui::tools();advance();mtui::close();
+  page=2;groups_filter=1;lv_obj_clean(body);mtui::render();advance();
+  mtui::select_channel_now(nullptr);assert(mtui::selected.node==meshmt::BROADCAST&&active_chat_network==1);
+  page=3;lv_obj_clean(body);mtui::render();advance();
+  lv_obj_del(body);body=nullptr;delete meshmt::client;meshmt::client=nullptr;
+  puts("PASS: Meshtastic real-LVGL node/channel selection, compose, keyboard bounds, native send, offline gating, saved draft and compatibility dialog");
+
 }
 '''
     test = test.replace('int main(int argc,char **argv){', companion_setup + '\nint main(int argc,char **argv){')
@@ -319,3 +353,4 @@ if __name__ == '__main__':
     parser.add_argument('--render', type=Path, help='Optional PPM screenshot path')
     args = parser.parse_args()
     run(args.lvgl.resolve(), args.render)
+

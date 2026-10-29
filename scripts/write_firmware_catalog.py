@@ -66,6 +66,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.7.12":
+        summary="EXPERIMENTAL / T-DECK HARDWARE TEST PENDING: independent Meshtastic PhoneAPI over authenticated BLE; nodes, channels, text/DM, native PKI request, ACK/NAK, positions/metrics, drafts and separate plaintext SD history. T-Deck requires official Meshtastic 2.5+ (2.x), BaseUI or Bluetooth Programming Mode, Wi-Fi OFF and MTU >=512. One active BLE radio. Keep Erase unchecked; v0.7.8 remains recovery."
+        label="Meshtastic / T-Deck BLE radio / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.7.11":
         summary="EXPERIMENTAL / HARDWARE RETEST PENDING: PSRAM-only LVGL allocation/reallocation, bounded BLE burst handling, restored Bluetooth enabled preference, accurate send gating, cached SD journal with bounded retries, and reset/heap/latency diagnostics. Reads existing v0.7.9/v0.7.10 archives. Keep Erase unchecked; v0.7.8 remains recovery."
         label="SD history reliability and diagnostics / EXPERIMENTAL"
@@ -165,3 +169,4 @@ parts=tuple(part["path"] for part in json.loads((current/"manifest.json").read_t
 for filename in ("manifest.json","build-info.json","meshcrossway-display-dev.bin")+parts:
     shutil.copy2(current/filename,root/filename)
 print("Flasher versions:",", ".join(v["version"] for v in catalog),"; default:",stable)
+

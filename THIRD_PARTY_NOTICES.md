@@ -21,3 +21,8 @@ This is an initial source-level notice collection, **not a complete notice bundl
 Meshtastic and MeshCore native firmware keep their upstream licenses. Communication through BLE does not transfer their ownership or license to MeshCrossway, nor does it remove obligations when distributing those binaries.
 
 Product photographs, vendor CAD, map data and other third-party assets retain their own terms. See [image credits](docs/images/README.md) and [hardware sources](docs/hardware-sources.md). References to third-party names do not imply endorsement or an agreed partnership.
+
+
+## Meshtastic PhoneAPI research for v0.7.12
+
+The new Meshtastic codec, session, UI and store are original MeshCrossway code. No Meshtastic `.proto`, generated bindings or firmware/client source is linked or redistributed. The GPL-3.0 protocol/firmware sources were consulted only to understand interoperability. Exact reviewed revisions, paths and official documentation are recorded in [Meshtastic integration provenance](docs/meshtastic-v0712.md#primary-references-and-provenance). The user's T-Deck firmware remains independently installed.

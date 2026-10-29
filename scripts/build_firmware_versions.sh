@@ -90,6 +90,9 @@ build_version() {
   if [ -f "$source_root/scripts/test_conversations_history.py" ]; then
     python3 "$source_root/scripts/test_conversations_history.py"
   fi
+  if [ -f "$source_root/scripts/test_meshtastic.py" ]; then
+    python3 "$source_root/scripts/test_meshtastic.py"
+  fi
   if [ -f "$source_root/scripts/test_meshcore.py" ]; then
     python3 "$source_root/scripts/test_meshcore.py"
   fi
@@ -196,3 +199,4 @@ done
 python3 "$ROOT/scripts/write_firmware_catalog.py" \
   --root "$OUT" --latest "$LATEST_VERSION" --stable "$STABLE_VERSION"
 echo "Minimal firmware release line ready: stable $STABLE_VERSION, newest $LATEST_VERSION"
+

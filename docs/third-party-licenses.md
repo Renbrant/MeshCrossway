@@ -54,3 +54,8 @@ Use the existing [image-source register](images/README.md), [manufacturer refere
 - [ ] Record exact Pod firmware licenses and source obligations before distributing Pod binaries or assembled devices.
 - [ ] Review the actual schemas, bindings and libraries chosen when real BLE adapters are implemented.
 - [ ] Confirm redistribution permissions before adding vendor CAD, map data or other third-party assets to releases.
+
+
+## Meshtastic adapter review — v0.7.12
+
+The Core adapter now implements original bounded protobuf wire handling, session, UI and separate SD storage; it incorporates no upstream library, generated binding or `.proto` source. Research-only GPL-3.0 schema revision `ffd5ad428da6db4a7ddfe62e06548718cc2603e0` and firmware revision `6d41e279f1f51bd59f687b9d441c1bf47b1594fc` are identified with reviewed paths in the [provenance register](meshtastic-v0712.md#primary-references-and-provenance). No Pod firmware is redistributed by this change. Future bindings or copied upstream source require a new dependency/license review. Existing binary-release review items above remain open.

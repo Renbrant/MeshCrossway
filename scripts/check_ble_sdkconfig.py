@@ -11,7 +11,7 @@ REQUIRED = {
     'CONFIG_BT_NIMBLE_MAX_CONNECTIONS': '2',
     'CONFIG_BT_NIMBLE_NVS_PERSIST': 'y',
     'CONFIG_BT_NIMBLE_MAX_BONDS': '4',
-    'CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU': '247',
+    'CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU': '517',
     'CONFIG_ESP_COEX_SW_COEXIST_ENABLE': 'y',
     'CONFIG_ESP_WIFI_TASK_PINNED_TO_CORE_0': 'y',
     'CONFIG_BT_CTRL_PINNED_TO_CORE_1': 'y',
@@ -42,3 +42,4 @@ if __name__ == '__main__':
     except (OSError, ValueError) as error:
         parser.exit(1, f'{error}\n')
     print('PASS: generated sdkconfig enables BLE central, CPU affinity, coexistence and preserved features')
+

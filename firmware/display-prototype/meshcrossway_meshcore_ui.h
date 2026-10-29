@@ -459,6 +459,7 @@ static bool view_restored=false;
 static void chat_tools();
 static void room_menu();
 static void select(const mcxchat::Key &key){
+  active_chat_network=2;chats_filter=2;
   selected=key;group=key.kind==mcxchat::Kind::Channel;
   memcpy(target_key,key.native,32);target_slot=group?key.native[0]:0;conversation=true;
   mcxhistory::preferences().context=key;mcxhistory::preferences().has_context=true;++mcxhistory::preferences().revision;
@@ -871,3 +872,4 @@ static void poll(lv_timer_t *) {
   }
 }
 } // namespace mcui
+

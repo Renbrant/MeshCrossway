@@ -21,6 +21,9 @@ static bool init_workspace(){
 static mcxchat::Local &preferences(){return workspace()->local;}
 static TaskHandle_t worker=nullptr;
 static std::atomic<bool> ble_startup{false};
+// Optional second protocol work, executed by the SAME SD owner. No filesystem
+// access or waiting is allowed in LVGL/NimBLE callbacks.
+static std::atomic<void (*)()> extra_work{nullptr};
 static portMUX_TYPE lock=portMUX_INITIALIZER_UNLOCKED;
 struct Job {mcxstore::State *image=nullptr;bool load=false,offline=false;uint8_t radio[32]={};uint32_t epoch=0,ticket=0;};
 static Job jobs[4];static unsigned head=0,count=0;
@@ -86,6 +89,7 @@ static void worker_main(void *){
   Job retry;uint32_t retry_at=0;
   mcxstore::Cursor cursor;
   for(;;){
+    if(!ble_startup.load())if(auto work=extra_work.load())work();
     Job job;bool have=false;
     portENTER_CRITICAL(&lock);
     if(count){job=jobs[head];head=(head+1)%4;--count;have=true;}
@@ -227,3 +231,4 @@ static void poll(meshmc::Client &c,uint32_t now,uint32_t epoch){
 }
 static bool ready_for(const meshmc::Client &c){return !c.initialized||restored;}
 } // namespace mcxhistory
+

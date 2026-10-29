@@ -1,6 +1,5 @@
 #pragma once
-// MeshCrossway v0.7.11: swipe-open sidebars without arrow buttons.
-// MeshCore is live over BLE. Meshtastic and navigation remain previews.
+// MeshCrossway v0.7.12: independent MeshCore Companion and Meshtastic PhoneAPI.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -263,6 +262,9 @@ static lv_obj_t *top_battery=nullptr,*top_battery_fill=nullptr,*top_battery_perc
 static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
 static bool left_compact=true,right_compact=true;
 static int nodes_filter=0,groups_filter=0,chats_filter=0,active_thread=-1,more_view=0;
+static int active_chat_network=2; // 1 Meshtastic, 2 MeshCore; never infer a send protocol from text.
+static bool showing_mt();
+static void reset_conversation_view();
 static uint32_t ble_generation=0;
 static lv_obj_t *ble_dialog=nullptr,*ble_pin=nullptr,*ble_pin_keyboard=nullptr,*ble_pin_notice=nullptr;
 static lv_obj_t *tab_vectors[6]={};
@@ -395,8 +397,15 @@ static void notice(const char *title,const char *body_text){
   lv_obj_set_height(message,143);
 }
 namespace mcui {static void tools();static void compose();static void form(uint8_t);static void thread_info();static void chat_tools();static void show_list();}
+namespace mtui {static void tools();static void compose();static void node_details();static void close();}
 static void run_action(void *data){
   int id=(int)(intptr_t)data;
+  if(showing_mt()){
+    if(id==A_NEW){mtui::compose();return;}
+    if(id==A_GROUP_NEW){notice("MESHTASTIC / CHANNELS","Channels are synchronized from the T-Deck. Configure or import them with the official Meshtastic client, then reconnect.");return;}
+    if(id==A_THREAD_INFO||id==A_NODE_DETAILS){mtui::node_details();return;}
+    if(id==A_NETWORKS||id==A_PACKETS){mtui::tools();return;}
+  }
   if(id==A_NEW){mcui::compose();return;}
   if(id==A_GROUP_NEW){mcui::form(32);return;}
   if(id==A_THREAD_INFO){mcui::thread_info();return;}
@@ -415,7 +424,7 @@ static void run_action(void *data){
   if(id==A_RETURN_HOME){page=0;more_view=0;draw();return;}
   if(id==A_CHAT_ALL||id==A_CHAT_MT||id==A_CHAT_MC){
     int filter=id==A_CHAT_MT?1:(id==A_CHAT_MC?2:0);
-    if(page==1)nodes_filter=filter;else if(page==2)groups_filter=filter;
+    if(page==1)nodes_filter=filter;else if(page==2)groups_filter=filter;else if(page==3){chats_filter=filter;reset_conversation_view();}
     draw();return;
   }
   if(id==A_POSITION||id==A_POIS||id==A_TRACKS||id==A_RECORD||id==A_SHARE||
@@ -486,9 +495,9 @@ static void run_action(void *data){
       snprintf(summary,sizeof(summary),"Open http://DEVICE_IP/ on your trusted local network.\nNo PIN required.\nManual screenshots only; remote touch disabled.");
       notice("REMOTE VIEW / READ ONLY",summary);break;
     case A_PRIVACY:
-      notice("PRIVACY","Location sharing and radio transmission are off. SD Wi-Fi backup is plaintext; protect your SD card.");break;
+      notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.7.11","MeshCore over Bluetooth with local SD history. Meshtastic and GNSS integration pending.");break;
+      notice("MESH CROSSWAY v0.7.12","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. GNSS navigation remains a preview.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -593,7 +602,7 @@ static void apply_filter(void *value){
   const int filter=(int)(intptr_t)value;
   if(page==1)nodes_filter=filter;
   else if(page==2)groups_filter=filter;
-  else if(page==3)chats_filter=filter;
+  else if(page==3){chats_filter=filter;reset_conversation_view();}
   draw();
 }
 static void on_filter(lv_event_t *e){lv_async_call(apply_filter,lv_event_get_user_data(e));}
@@ -843,6 +852,14 @@ static void ble_show_pairing(){
 }
 // MeshCore workspace
 #include "meshcrossway_meshcore_ui.h"
+#include "meshcrossway_meshtastic_ui.h"
+static void reset_conversation_view(){mtui::conversation=false;mcui::conversation=false;}
+static bool showing_mt(){
+  if(page==1)return nodes_filter!=2;
+  if(page==2)return groups_filter!=2;
+  if(page==3)return chats_filter==1||(chats_filter==0&&(!mcui::conversation||active_chat_network==1));
+  return meshble::snapshot().radio==meshble::MESHTASTIC;
+}
 
 static void draw(){
   mcxruntime::Scope measured(mcxruntime::DRAW);
@@ -852,6 +869,7 @@ static void draw(){
   const int cw=480-lw-rw;
   uptime_value=nullptr;heap_value=nullptr;network_value=nullptr;backup_value=nullptr;
   mcui::radio_status=mcui::home_name=mcui::home_status=mcui::history_status=nullptr;
+  mtui::radio_status=mtui::home_name=mtui::home_status=nullptr;
   if(lw)lv_obj_clear_flag(left_rail,LV_OBJ_FLAG_HIDDEN);
   else lv_obj_add_flag(left_rail,LV_OBJ_FLAG_HIDDEN);
   if(rw)lv_obj_clear_flag(right_rail,LV_OBJ_FLAG_HIDDEN);
@@ -895,17 +913,18 @@ static void draw(){
   lv_obj_scroll_to_y(body,0,LV_ANIM_OFF);
   rebuild_context();
   const int w=cw;
-  if(page==1||page==2||page==3){mcui::render();return;}
+  if(page==1||page==2||page==3){if(showing_mt())mtui::render();else mcui::render();return;}
   if(page==0){
-    show_center_heading("FIELD CONSOLE","MeshCore Companion / Meshtastic planned");
+    show_center_heading("FIELD CONSOLE","Independent Meshtastic / MeshCore radios");
     const int col=(w-24)/2;
     const bool narrow=col<155;
-    center_card(8,54,col,95,"MESHTASTIC",narrow?"BLE: OFF":"MX-M / BLE OFF",narrow?"No packets":"No live packets",green);
+    auto *mt_card=center_card(8,54,col,95,"MESHTASTIC",mtui::ready()?mtui::name(meshmt::client->data.my_num):"BLE: OFF",mtui::ready()?"Meshtastic connected":"Connect in More / Radios",green);
+    mtui::home_name=lv_obj_get_child(mt_card,1);mtui::home_status=lv_obj_get_child(mt_card,2);
     lv_obj_t *mc_card=center_card(col+16,54,col,95,"MESHCORE",mcui::ready()?meshmc::client->name:"BLE: OFF",mcui::ready()?"MeshCore connected":"Connect in More / Radios",purple);
     mcui::home_name=lv_obj_get_child(mc_card,1);mcui::home_status=lv_obj_get_child(mc_card,2);
     if(mcui::ready())mcui::set_home_name(mcui::home_name,meshmc::client->name);
     center_card(8,157,col,95,"POSITION","GNSS: OFFLINE","No valid fix",cyan);
-    center_card(col+16,157,col,95,"CROSSWAY","Bridge: OFF",narrow?"Demo only":"Demo data only",orange);
+    center_card(col+16,157,col,95,"CROSSWAY","Separate networks","One active BLE radio",orange);
   } else if(page==4){
     static const char *modes[]={"MAP / OFFLINE","POINTS OF INTEREST","SAVED TRACKS",
                                 "GNSS STATUS","TEAM POSITIONS","LIVE LOCATION SHARE"};
@@ -936,7 +955,7 @@ static void draw(){
     if(more_view==1){
       action_button(body,"SETTINGS",w-112,5,104,35,panel2,on_action,A_SETTINGS);
       const meshble::Snapshot s=meshble::snapshot();
-      show_center_heading("BLE / RADIO PODS","Heltec V3 / service discovery");
+      show_center_heading("BLE / RADIO PODS","Meshtastic T-Deck / MeshCore Companion");
       const char *phase=s.phase==meshble::OFF?"DISABLED":s.phase==meshble::STARTING?"STARTING":s.phase==meshble::READY?"SECURE":s.phase==meshble::SCANNING?"SCANNING":s.phase==meshble::CONNECTING?"CONNECTING":s.phase==meshble::VERIFYING?"VERIFYING":s.phase==meshble::PAIRING?"PAIRING":s.phase==meshble::FAILED?"ERROR":"IDLE";
       char detail[64];snprintf(detail,sizeof(detail),"%s / %s",phase,meshble::protocol_name(s.radio));
       single_label(body,detail,8,53,w-16,s.phase==meshble::READY?green:orange);
@@ -949,10 +968,11 @@ static void draw(){
         single_label(body,"BLE starting in dedicated worker...",8,113,w-16,white);
         single_label(body,"Watch Wi-Fi / touch; report boot log.",8,152,w-16,muted);
       }else if(s.phase==meshble::READY){
-        lv_obj_t *mc_card=center_card(8,104,w-16,80,"CONNECTED",s.active_name,s.radio==meshble::MESHCORE&&meshmc::client?meshmc::client->status:"Meshtastic transport only",green);
+        lv_obj_t *mc_card=center_card(8,104,w-16,80,"CONNECTED",s.active_name,s.radio==meshble::MESHCORE&&meshmc::client?meshmc::client->status:meshmt::client?meshmt::client->status:"Meshtastic synchronizing",green);
         mcxemoji::view::set_message_text(lv_obj_get_child(mc_card,1),s.active_name);
         if(s.radio==meshble::MESHCORE)mcui::radio_status=lv_obj_get_child(mc_card,2);
-        action_button(body,"MESHCORE TOOLS",8,190,w-16,40,orange,mcui::on_tools,0);
+        else mtui::radio_status=lv_obj_get_child(mc_card,2);
+        action_button(body,s.radio==meshble::MESHTASTIC?"MESHTASTIC STATUS":"MESHCORE TOOLS",8,190,w-16,40,orange,s.radio==meshble::MESHTASTIC?mtui::tools_event:mcui::on_tools,0);
         action_button(body,"DISCONNECT",8,236,w-16,40,panel2,on_action,A_BLE_DISCONNECT);
       }else if(s.phase==meshble::CONNECTING||s.phase==meshble::VERIFYING||s.phase==meshble::PAIRING){
         single_label(body,"BLE handshake / PIN pairing",8,116,w-16,white);
@@ -1019,7 +1039,7 @@ static void refresh(lv_timer_t *){
     meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
     const bool wifi_online=ip[0]!=0;
     const bool mt_online=bs.phase==meshble::READY &&
-                         bs.radio==meshble::MESHTASTIC;
+                         bs.radio==meshble::MESHTASTIC && mtui::ready();
     const bool mc_online=bs.phase==meshble::READY &&
                          bs.radio==meshble::MESHCORE && mcui::ready();
     lv_obj_set_style_text_color(top_wifi,wifi_online?green:muted,0);
@@ -1047,7 +1067,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.7.11] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.7.12] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1068,7 +1088,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.7.11] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.7.12] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1081,7 +1101,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.7.11",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.7.12",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,242,7,22,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,273,7,20,muted);
@@ -1132,5 +1152,7 @@ static void init(){
   lv_timer_create(edge_swipe_poll,20,nullptr);
   lv_timer_create(refresh,3000,nullptr);
   lv_timer_create(mcui::poll,50,nullptr);
+  lv_timer_create(mtui::poll,50,nullptr);
 }
 } // namespace meshcrossway
+

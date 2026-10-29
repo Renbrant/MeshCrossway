@@ -1,5 +1,8 @@
 # MeshCrossway display-only firmware prototype
 
+**Current v0.7.12:** independent MeshCore Companion and Meshtastic PhoneAPI clients, one active BLE radio at a time. T-Deck / Plus is supported as an external Meshtastic radio with compatibility gates; physical qualification remains pending. The display-only descriptions below record earlier milestones. [Meshtastic setup, scope and acceptance](../../docs/meshtastic-v0712.md). v0.7.8 stays the owner-tested recovery image.
+
+
 > **Modular BLE software-first development (2026-10-28):** This firmware remains a **display-only / Wi-Fi screen-viewer prototype**, not a finished BLE Central implementation. The final MeshCrossway Core must connect to both autonomous Meshtastic and MeshCore Radio Pods over BLE. Retain this firmware's current behavior for UI tests, but evaluate Wi-Fi AP and BLE radio coexistence/memory before simultaneous operation. See [approved architecture](../../docs/modular-architecture.md). No PCB or wiring changes are required.
 
 This is an **early UI-only hardware test**, using the official Waveshare `ESP32-S3-Touch-LCD-3.5` ESP-IDF 8.4 LVGL example as its board-support baseline. No XIAO modules, GNSS receiver, antennas, or radio firmware are required. No network traffic is transmitted and all signal/satellite data is fictional.
@@ -166,3 +169,4 @@ pending; v0.7.8 remains recovery. See [evidence and retest](../../docs/sd-histor
 ## v0.7.10 — Bluetooth startup memory fix (experimental)
 
 v0.7.9 was withdrawn after the owner reproduced NimBLE error 257 (out of memory). Chat preferences and list/sort workspaces now use explicit PSRAM instead of 45,604 bytes of static internal RAM. CI audits the actual ELF to prevent a repeat. Phase-1 history and NVS pairing are preserved; v0.7.8 remains recommended recovery. [Diagnosis and retest](../../docs/ble-memory-fix-v0710.md).
+
