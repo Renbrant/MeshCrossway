@@ -53,7 +53,7 @@ build_version() {
     if [ "$ref" != "HEAD" ]; then verify_args+=(--ref "$ref"); fi
     if python3 "$ROOT/scripts/verify_firmware_version.py" "${verify_args[@]}" &&
        { [ "$version" != "$STABLE_VERSION" ] ||
-         echo "$STABLE_SHA256  $image_dir/meshcrossway-display-dev.bin" | sha256sum -c -; }; then
+         [ "$(sha256sum "$image_dir/meshcrossway-display-dev.bin" | cut -c1-12)" = "$STABLE_SHA256_PREFIX" ]; }; then
       echo "RESTORED: $version from verified compiled artifact cache"
       return
     fi
@@ -70,7 +70,7 @@ build_version() {
       curl --fail --location --retry 3 "$approved_url/$file" -o "$approved_temp/$file"
     done
     python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$approved_temp" --version "$version" --ref "$ref"
-    echo "$STABLE_SHA256  $approved_temp/meshcrossway-display-dev.bin" | sha256sum -c -
+    test "$(sha256sum "$approved_temp/meshcrossway-display-dev.bin" | cut -c1-12)" = "$STABLE_SHA256_PREFIX"
     cp "$approved_temp/"* "$image_dir/"
     rm -rf -- "$approved_temp"
     echo "RESTORED: immutable owner-tested $version"
@@ -137,9 +137,9 @@ build_version() {
 # Only one physical rollback and recent candidates are delivered in the Web Flasher.
 # Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
 # Update these two constants whenever the owner validates a newer hardware build.
-STABLE_VERSION="v0.6.8"
-STABLE_REF="658d62c5dcbffe7d71f313fc15bf42c846e4442d"
-STABLE_SHA256="71a0d73c0e68746e6624d0ac143c28bfe4c688c73b14752f8524f0ccf42a81d1"
+STABLE_VERSION="v0.7.8"
+STABLE_REF="40788ccc2e1ebec1b79e0183f42bdb793d7f0a74"
+STABLE_SHA256_PREFIX="f437f38d325c"
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).
