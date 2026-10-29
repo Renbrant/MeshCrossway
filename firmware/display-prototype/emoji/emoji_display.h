@@ -94,7 +94,7 @@ inline void set_message_text(lv_obj_t *label, const char *original_utf8) {
   if (!f) {
     // No font, image memory or imgfont Kconfig: preserve surrounding text and
     // replace each complete emoji cluster with a readable placeholder.
-    char out[1200];
+    char out[1200] = {}; // Empty messages must not expose uninitialized stack data.
     size_t used = 0;
     const size_t n = strlen(original_utf8);
     for (size_t pos = 0; pos < n;) {
