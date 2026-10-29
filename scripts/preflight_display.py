@@ -243,7 +243,8 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
             assert '#include "emoji/emoji_display.h"' in ui
             assert (FW / "emoji" / "emoji_display.h").is_file()
             assert '"emoji_display.h"' in patcher.read_text()
-            assert "set_message_text(text, m->text)" in (FW/"meshcrossway_meshcore_ui.h").read_text()
+            assert ("set_message_text(text, display_text)" if version=="v0.7.7" else
+                    "set_message_text(text, m->text)") in (FW/"meshcrossway_meshcore_ui.h").read_text()
         if version in ("v0.7.2","v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7"):
             wifi=(FW/"meshcrossway_network.h").read_text()
             assert all(marker in wifi for marker in ("MAX_PROFILES=5","remember_success(","known_network(","try_saved(","next_saved(","RETRY_KNOWN","WIFI_VAULT_MAGIC","60000000ULL","suppress_user_leave"))
