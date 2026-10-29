@@ -438,7 +438,7 @@ static void render() {
       single_label(body, "Meshtastic is not integrated yet.", 8, 107, w - 16, muted);
       return;
     }
-    if (!s || !s->initialized || !s->connected) {
+    if (!s || (!s->initialized && !s->contact_count && !s->channel_count)) {
       lv_obj_t *status = single_label(body,
           s ? s->status : "More > Radios > Enable BLE", 8, 107, w - 16, orange);
       // Diagnostic code/length must remain readable, not end in "...".
@@ -492,12 +492,13 @@ static void render() {
                         ready() ? "MeshCore / live" : "MeshCore / disconnected history");
     // Compose and Tools now live exclusively in the contextual right rail.
     int y = 57;
+    bool newly_read = false;
     for (uint32_t id = s->next_id > s->message_count ? s->next_id - s->message_count : 1; id < s->next_id;
          id++) {
       auto *m = s->by_id(id);
       if (!m || !in_conversation(*m))
         continue;
-      m->read = true;
+      if (!m->read && !m->outgoing) { m->read = true; newly_read = true; }
       // Chat cards contain sender, clean message body and genuine metadata.
       // The technical message id and RX/RECEIVED protocol state stay internal.
       char sender[65] = {};
@@ -551,8 +552,9 @@ static void render() {
       lv_obj_set_height(card, card_height);
       y += card_height + 8;
     }
+    if (newly_read) ++s->generation; // Persist unread state after a thread is opened.
     if (y == 57)
-      single_label(body, "No messages in this session.", 8, 65, w - 16, muted);
+      single_label(body, "No messages in saved history.", 8, 65, w - 16, muted);
     lv_obj_scroll_to_y(body, y, LV_ANIM_OFF);
   }
 }
