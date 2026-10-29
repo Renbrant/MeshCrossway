@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2] if __file__.startswith('/mnt/data/') 
 REGISTRY = ROOT / 'firmware/display-prototype/emoji/emoji_registry.inc'
 ATLAS = ROOT / 'firmware/display-prototype/emoji/emoji_assets_data.h'
 TEST = ROOT / 'tests/test_emoji_presentation.cpp'
+SPRITE_TEST = ROOT / 'tests/test_emoji_sprite.cpp'
 FLAG = ROOT / 'firmware/display-prototype/emoji/emoji_flag_asset.h'
 
 
@@ -46,11 +47,12 @@ def main():
     with tempfile.TemporaryDirectory(prefix='mcx-emoji-') as temp:
         executable = str(Path(temp)/'test_emoji')
         for standard in ('c++11', 'c++20'):
-            build = ['g++', '-std=' + standard, '-Wall', '-Wextra', '-Werror', '-pedantic',
-                     '-O2', str(TEST), '-o', executable]
-            subprocess.run(build, cwd=ROOT, check=True)
-            subprocess.run([executable], cwd=ROOT, check=True)
-    print('PASS: 93 color emojis (checkered flag), verified 92-atlas + flag SHA256, and UTF-8 host tests on C++11 + C++20')
+            for test in (TEST, SPRITE_TEST):
+                build = ['g++', '-std=' + standard, '-Wall', '-Wextra', '-Werror', '-pedantic',
+                         '-O2', str(test), '-o', executable]
+                subprocess.run(build, cwd=ROOT, check=True)
+                subprocess.run([executable], cwd=ROOT, check=True)
+    print('PASS: 93 color emojis (checkered flag), verified 92-atlas + flag SHA256, 14px sprite scaling and UTF-8 host tests on C++11 + C++20')
 
 
 if __name__ == '__main__':
