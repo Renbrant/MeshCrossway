@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.6.6: adaptive field-console layout, no remote touch.
+// MeshCrossway v0.6.7: adaptive field-console layout, no remote touch.
 // All radio and GNSS values remain simulated.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
@@ -253,7 +253,7 @@ static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
 static bool left_compact=false,right_compact=false,home_nav_open=false;
 static int nodes_filter=0,groups_filter=0,active_thread=-1,more_view=0;
 static uint32_t ble_generation=0;
-static lv_obj_t *ble_dialog=nullptr,*ble_pin=nullptr;
+static lv_obj_t *ble_dialog=nullptr,*ble_pin=nullptr,*ble_pin_keyboard=nullptr,*ble_pin_notice=nullptr;
 static lv_obj_t *tab_vectors[6]={};
 // Persistent selection is independent of Nodes/Groups filtering and page navigation.
 static const char *thread_names[]={"Alex","Jamie","LongFast","#public","Backcountry","SAR Room"};
@@ -480,7 +480,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Location sharing and radio transmission are off. SD Wi-Fi backup is plaintext; protect your SD card.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.6.6","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
+      notice("MESH CROSSWAY v0.6.7","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -648,39 +648,65 @@ static void rebuild_context(){
 static void ble_select_now(void *v){meshble::connect((int)(intptr_t)v);draw();}
 static void ble_select(lv_event_t *e){lv_async_call(ble_select_now,lv_event_get_user_data(e));}
 static void ble_dialog_close(){
-  if(ble_dialog){lv_obj_del(ble_dialog);ble_dialog=nullptr;ble_pin=nullptr;}
+  if(ble_pin_keyboard)lv_keyboard_set_textarea(ble_pin_keyboard,nullptr);
+  if(ble_dialog)lv_obj_del(ble_dialog);
+  ble_dialog=nullptr;ble_pin=nullptr;ble_pin_keyboard=nullptr;ble_pin_notice=nullptr;
 }
 static void ble_dialog_close_later(void *){ble_dialog_close();}
 static void ble_pin_action(lv_event_t *e){
   if((intptr_t)lv_event_get_user_data(e)==0){meshble::disconnect();lv_async_call(ble_dialog_close_later,nullptr);return;}
   if(!ble_pin)return;
   const char *p=lv_textarea_get_text(ble_pin);
-  if(strlen(p)!=6)return;
+  if(strlen(p)!=6){
+    if(ble_pin_notice)lv_label_set_text(ble_pin_notice,"Enter all six digits before pairing.");
+    return;
+  }
   uint32_t code=0;
   for(int i=0;i<6;i++){if(p[i]<'0'||p[i]>'9')return;code=code*10+(uint32_t)(p[i]-'0');}
   if(meshble::submit_pin(code))lv_async_call(ble_dialog_close_later,nullptr);
+  else if(ble_pin_notice)lv_label_set_text(ble_pin_notice,"PIN not submitted. Cancel and reconnect.");
 }
 static void ble_confirmation(lv_event_t *e){
   (void)meshble::confirm_number((intptr_t)lv_event_get_user_data(e)!=0);
   lv_async_call(ble_dialog_close_later,nullptr);
 }
+#define MCX_PIN_KEY (LV_BTNMATRIX_CTRL_NO_REPEAT | LV_BTNMATRIX_CTRL_CLICK_TRIG | 1)
+static const char *ble_pin_map[]={"1","2","3","\n","4","5","6","\n","7","8","9","\n",LV_SYMBOL_BACKSPACE,"0",LV_SYMBOL_OK,""};
+static const lv_btnmatrix_ctrl_t ble_pin_ctrl[]={MCX_PIN_KEY,MCX_PIN_KEY,MCX_PIN_KEY,MCX_PIN_KEY,MCX_PIN_KEY,MCX_PIN_KEY,
+                                               MCX_PIN_KEY,MCX_PIN_KEY,MCX_PIN_KEY,MCX_PIN_KEY,MCX_PIN_KEY,MCX_PIN_KEY};
+#undef MCX_PIN_KEY
 static void ble_show_pairing(){
   const meshble::Snapshot s=meshble::snapshot();
   if(ble_dialog||(!s.pin_required&&!s.confirm_required))return;
-  ble_dialog=panel_at(lv_scr_act(),12,42,456,236,panel,9);
+  ble_dialog=panel_at(lv_layer_top(),0,0,480,320,bg,0);
+  lv_obj_move_foreground(ble_dialog);
+  action_button(ble_dialog,"CANCEL",366,4,106,34,panel2,ble_pin_action,0);
   single_label(ble_dialog,"BLUETOOTH PAIRING",10,8,260,orange);
   if(s.pin_required){
-    single_label(ble_dialog,"Six-digit PIN shown on Heltec:",10,37,430,white);
+    ble_pin_notice=single_label(ble_dialog,"Enter your radio's six-digit Bluetooth PIN.",10,37,460,white);
     ble_pin=lv_textarea_create(ble_dialog);
-    lv_obj_set_pos(ble_pin,10,62);lv_obj_set_size(ble_pin,239,42);
+    lv_obj_set_pos(ble_pin,10,62);lv_obj_set_size(ble_pin,278,42);
     lv_textarea_set_one_line(ble_pin,true);
+    lv_obj_set_height(ble_pin,42);
     lv_textarea_set_accepted_chars(ble_pin,"0123456789");
     lv_textarea_set_max_length(ble_pin,6);
-    action_button(ble_dialog,"PAIR",258,62,184,42,orange,ble_pin_action,1);
-    lv_obj_t *kb=lv_keyboard_create(ble_dialog);
-    lv_obj_set_pos(kb,10,112);lv_obj_set_size(kb,432,112);
-    lv_keyboard_set_mode(kb,LV_KEYBOARD_MODE_NUMBER);
-    lv_keyboard_set_textarea(kb,ble_pin);
+    lv_textarea_set_password_mode(ble_pin,true);
+    lv_obj_add_state(ble_pin,LV_STATE_FOCUSED);
+    action_button(ble_dialog,"PAIR",300,62,172,42,orange,ble_pin_action,1);
+    ble_pin_keyboard=lv_keyboard_create(ble_dialog);
+    // lv_keyboard defaults to BOTTOM_MID: positive y offsets otherwise clip it.
+    lv_obj_set_align(ble_pin_keyboard,LV_ALIGN_TOP_LEFT);
+    lv_obj_set_pos(ble_pin_keyboard,4,112);lv_obj_set_size(ble_pin_keyboard,472,204);
+    lv_keyboard_set_map(ble_pin_keyboard,LV_KEYBOARD_MODE_NUMBER,ble_pin_map,ble_pin_ctrl);
+    lv_keyboard_set_mode(ble_pin_keyboard,LV_KEYBOARD_MODE_NUMBER);
+    lv_keyboard_set_textarea(ble_pin_keyboard,ble_pin);
+    lv_obj_set_style_bg_color(ble_pin_keyboard,panel,0);
+    lv_obj_set_style_text_font(ble_pin_keyboard,&lv_font_montserrat_20,LV_PART_ITEMS);
+    lv_obj_set_style_pad_all(ble_pin_keyboard,3,0);
+    lv_obj_set_style_pad_row(ble_pin_keyboard,4,0);
+    lv_obj_set_style_pad_column(ble_pin_keyboard,4,0);
+    lv_obj_add_event_cb(ble_pin_keyboard,ble_pin_action,LV_EVENT_READY,(void*)1);
+    lv_obj_add_event_cb(ble_pin_keyboard,ble_pin_action,LV_EVENT_CANCEL,(void*)0);
   }else{
     char number[48];snprintf(number,sizeof(number),"Verify: %06lu",(unsigned long)s.compare_number);
     single_label(ble_dialog,number,10,67,430,white);
@@ -885,7 +911,7 @@ static void refresh(lv_timer_t *){
     char label[54];snprintf(label,sizeof(label),"Wi-Fi: %s",ip[0]?ip:state);
     if(strcmp(lv_label_get_text(top_wifi),label)!=0)lv_label_set_text(top_wifi,label);
   }
-  printf("[MCX-DIAG v0.6.6] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.6.7] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -905,7 +931,7 @@ static void refresh(lv_timer_t *){
     if(strcmp(lv_label_get_text(objects[i]),values[i]))lv_label_set_text(objects[i],values[i]);
 }
 static void init(){
-  printf("[MCX-DIAG v0.6.6] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.6.7] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -916,7 +942,7 @@ static void init(){
   color_label(top,"MESH",7,7,55,white);
   color_label(top,"CROSSWAY",59,7,120,orange);
   top_wifi=color_label(top,"Wi-Fi: waiting",209,7,167,green);
-  color_label(top,"DEV 0.6.6",390,7,88,orange);
+  color_label(top,"DEV 0.6.7",390,7,88,orange);
   left_rail=panel_at(screen,0,34,79,286,panel,0);
   right_rail=panel_at(screen,355,34,125,286,panel,0);
   left_handle=action_button(left_rail,"",47,4,29,30,panel2,toggle_left,0);

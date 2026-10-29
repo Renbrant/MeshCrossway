@@ -88,6 +88,10 @@ build_version() {
     exit 1
   fi
   prepare_waveshare
+  if [ -f "$source_root/scripts/test_ble_pairing_ui.py" ]; then
+    python3 "$source_root/scripts/test_ble_pairing_ui.py" \
+      --lvgl "$TEMPLATE/examples/arduino/libraries/lvgl"
+  fi
   mkdir -p "$vendor"
   cp -a "$TEMPLATE/." "$vendor/"
   python3 "$source_root/firmware/display-prototype/apply_to_waveshare.py" "$vendor"

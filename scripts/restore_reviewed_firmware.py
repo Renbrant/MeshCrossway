@@ -11,7 +11,8 @@ import zipfile
 ROOT=Path(__file__).resolve().parents[1]
 REPO=os.environ.get('GITHUB_REPOSITORY','Renbrant/MeshCrossway')
 INPUTS=['firmware/display-prototype','scripts/build_firmware_versions.sh',
-        'scripts/write_firmware_version.py']
+        'scripts/write_firmware_version.py','scripts/check_ble_sdkconfig.py',
+        'scripts/test_ble_pairing_ui.py']
 
 def gh(path):
     return json.loads(subprocess.check_output(['gh','api',f'repos/{REPO}/{path}'],text=True))
