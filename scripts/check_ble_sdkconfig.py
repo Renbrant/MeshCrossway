@@ -18,6 +18,7 @@ REQUIRED = {
     'CONFIG_BT_NIMBLE_PINNED_TO_CORE_1': 'y',
     'CONFIG_FATFS_LFN_HEAP': 'y',
     'CONFIG_LV_USE_SNAPSHOT': 'y',
+    'CONFIG_LV_USE_IMGFONT': 'y',
 }
 
 def verify(path):
