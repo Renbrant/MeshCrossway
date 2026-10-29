@@ -58,6 +58,7 @@ jobs:
           python3 scripts/test_ble_sdkconfig.py
           python3 scripts/test_meshcore.py
           python3 scripts/test_emoji.py
+          python3 scripts/test_device_key_audit.py
 
       # The archive job below is the single authoritative ESP-IDF build.
       # This job checks syntax/patcher invariants only, avoiding a duplicate
