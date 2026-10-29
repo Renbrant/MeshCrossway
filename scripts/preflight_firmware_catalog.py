@@ -24,6 +24,8 @@ if 'firmware-picker' not in html or 'catalog.json' not in html:
     sys.exit("ERROR: version selection UI or catalog loader missing")
 if "select.value=recommended.version" not in html or "recommended.status!=='hardware-tested'" not in html:
     sys.exit("ERROR: The Web Flasher must select only a hardware-tested default")
+if 'manifest.new_install_prompt_erase!==true' not in html:
+    sys.exit("ERROR: Web Flasher must refuse manifests that silently erase NVS")
 if "entry.status!=='hardware-tested'" not in html:
     sys.exit("ERROR: Experimental installs must require opt-in")
 for file in ("build_firmware_versions.sh",):
@@ -59,6 +61,8 @@ if args.catalog is not None:
         assert entry["manifest"].startswith("/MeshCrossway/flasher/firmware/versions/")
         assert entry["binary"].startswith("/MeshCrossway/flasher/firmware/versions/")
         folder=path.parent/"versions"/entry["version"]
+        published_manifest=json.loads((folder/"manifest.json").read_text())
+        assert published_manifest.get("new_install_prompt_erase") is True,("Unsafe published manifest silently erases NVS",entry["version"])
         cmd=[sys.executable,str(root/"scripts/verify_firmware_version.py"),
              "--dir",str(folder),"--version",entry["version"]]
         subprocess.run(cmd,check=True)
