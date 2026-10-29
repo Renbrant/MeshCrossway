@@ -1,70 +1,32 @@
-# Color emoji in read-only message view - isolated preparation
+# Read-only color emoji rendering — MeshCrossway v0.7.2 candidate
 
-Status: **DRAFT / NOT ACTIVATED IN FIRMWARE**. See issue #40.
+**Implemented in branch `feature/color-emoji-rendering`, PR #41.** This is a **candidate**, not yet hardware-tested, merged or published. It adds 92 colored emoji images to the conversation view; it does **not** add an emoji picker or alter the keyboard, message payloads, BLE security or native radio protocols.
 
-This PR carries only a host-testable UTF-8 presentation transformer and a
-versioned registry of 92 candidate color glyph codes. It intentionally does
-NOT hook the firmware, change LVGL configuration, add assets, release firmware,
-change Meshtastic/MeshCore adapters, or activate emoji display yet. Do not merge
-until a subsequent hardware validation and explicit owner approval.
+## Rendering architecture
 
-## Current firmware seam
+1. `emoji_presentation.h` validates bounded UTF-8 and tokenizes supported emoji sequences, including basic smileys, flags, ZWJ, variants, skin tones and keycaps. The input bytes remain unmodified.
+2. The 92-entry `emoji_registry.inc` maps complete emoji sequences to internal private-use Unicode markers U+E000..U+E05B. Unsupported emoji sequences become `[emoji]` in the **temporary presentation string only**.
+3. `emoji_assets_data.h` contains 92 color Noto Color Emoji glyphs (20×20, 16-color palettes), pre-rasterized and bundled as an offline-only Base64 blob. There is **no network, font download or runtime PNG decoding**. Unpacked image data is 24,288 bytes in PSRAM; string source occupies approximately 32 KB in firmware flash.
+4. `emoji_display.h` decodes sprites into a shared PSRAM block once, configures each `lv_img_dsc_t` as `LV_IMG_CF_INDEXED_4BIT`, then creates one `lv_imgfont_create(20, image_cb)` font using LVGL 8.4 (not LVGL 9). Standard text uses the default font fallback. If initialization fails, individual emoji clusters fall back to `[emoji]` without hiding surrounding text.
+5. `meshcrossway_meshcore_ui.h` calls `set_message_text` only on the visible chat message body and uses each label’s calculated height for card sizing. The `m->text` field, identities, timestamps, queueing, delivery status and composer remain untouched. The future Meshtastic chat view can use the exact same display-only function with no inter-network traffic.
 
-- Main UI helper `txt()` uses LVGL labels in
-  `firmware/display-prototype/meshcrossway_ui.h`.
-- MeshCore chat in `firmware/display-prototype/meshcrossway_meshcore_ui.h`
-  currently renders `m->text` via `txt(card,m->text,...)`, with fixed-height
-  cards. Future integration must adjust card height and safe scrolling.
-- This preparation does not touch the original message, Bluetooth frames,
-  delivery status or the compose keyboard. Meshtastic and MeshCore NEVER bridge.
+## Source and licensing
 
-## Byte-safe display-only sequence
+Color artwork is derived from **Noto Color Emoji**, copyright Google Inc. and contributors, from the SIL Open Font License 1.1 font. The source font itself is **not included** in MeshCrossway: only pre-rasterized 20×20 bitmaps with 16-color palette reduction are bundled. See `THIRD_PARTY_NOTICES.md` and `LICENSES/NotoEmoji-OFL-1.1.txt`. The implementation is original MeshCrossway display logic and does not copy third-party messaging-app source code.
 
-`raw UTF-8 message` -> `mcxemoji::transform(src,len,dst,cap)` -> `temporary display
-UTF-8 string with U+E000.. glyphs` -> `LVGL 8.4 imgfont` -> `color assets`.
+## Validation and deployment gates
 
-`emoji_presentation.h` has no side effects or heap allocation; it accepts
-explicit byte lengths, validates UTF-8, recognizes composed clusters and uses
-whole-glyph truncation. Unknown pictographs produce `[emoji]` in the display
-copy, not in the original message. Every supported glyph must acquire a
-corresponding color asset before this transform can be wired into firmware.
-The registry is append-only to preserve stable codepoint assignments.
+- Run `python3 scripts/test_emoji.py`: verifies all 92 image palettes, decoded byte count, pinned SHA-256 and the independent C++11 Unicode parser tests.
+- `apply_to_waveshare.py` copies the four emoji files into the pinned vendor example. ESP-IDF `sdkconfig.defaults` requests `CONFIG_LV_USE_IMGFONT=y`; `scripts/check_ble_sdkconfig.py` requires this option in the **generated**, not merely requested, configuration.
+- GitHub Actions `Firmware preflight (no website deployment)` performs host validation and ESP32-S3 compilation. A successful CI compile is **not** physical validation.
+- On hardware, install only after CI succeeds, with **Erase unchecked** to preserve NVS Wi-Fi and Bluetooth bonds. Capture screenshots of mixed emoji text, multi-line and long chat; verify colored images, layout/scroll, BLE, Wi-Fi, touch and memory stability.
+- Do not merge or publish this PR until the user has inspected and approved the behavior on hardware.
 
-## To complete later (explicitly NOT part of this preparation PR)
-
-1. Review image-source licensing, attribution and asset adaptation, including
-   `CONTRIBUTING.md` and `THIRD_PARTY_NOTICES.md`; generate matching color
-   assets at 20-24px as LVGL 8.4 compatible `lv_img_dsc_t` objects in flash.
-   Do not bundle new third-party fonts/assets in this PR.
-2. Enable `LV_USE_IMGFONT` on the exact pinned Waveshare/LVGL 8.4 build.
-3. Create one shared `lv_font_t` via `lv_imgfont_create(height,callback)`.
-   The callback handles U+E000.. glyph IDs with static image descriptors;
-   set its fallback to the existing text font; use `lv_imgfont_destroy` only
-   after every dependent label has been destroyed.
-4. Apply to read-only message labels (and message previews), NOT global font
-   or keyboard; generate bounded temporary presentation copies and carefully
-   manage their lifetime. If assets/font init fail, show legible placeholders.
-5. Recalculate message-card heights/wrap/scroll and handle repeated redraws
-   without LVGL object leaks or UI stalls. Keep MT and MC source labels.
-6. Compile against the actual LVGL 8.4 build, run device-memory and pixel/
-   touchscreen tests with BLE and Wi-Fi concurrently, and obtain owner approval.
-
-## Host-only testing
-
-From repo root (without ESP-IDF or LVGL):
-
-```sh
-g++ -std=c++11 -Wall -Wextra -Werror -pedantic -O2 tests/test_emoji_presentation.cpp -o /tmp/mcx_emoji_test
-/tmp/mcx_emoji_test
-```
-
-Tests cover accented text, common and multi-codepoint emoji, skin tones, ZWJ,
-regional flags, keycaps, unsupported sequences, strict malformed UTF-8,
-byte-exact message immutability and bounded output/truncation. No device tests
-were run; successful host tests do not validate LCD performance or emoji color.
+**Scope excludes** emoji keyboard or picker, relaying between Meshtastic and MeshCore, automatic radio message conversion, global fonts and external downloads. The prior v0.7.1 firmware remains on `main` until review.
 
 ## References
 
-- LVGL 8.4 imgfont: https://lvgl.io/docs/open/8.4/others/imgfont
-- Unicode emoji: https://www.unicode.org/reports/tr51/
-- MeshCrossway issue: https://github.com/Renbrant/MeshCrossway/issues/40
+- LVGL 8.4 [imgfont API](https://lvgl.io/docs/open/8.4/others/imgfont)
+- [Unicode Emoji Technical Standard](https://www.unicode.org/reports/tr51/)
+- Noto Color Emoji [source](https://github.com/googlefonts/noto-emoji)
+- Tracking [Issue #40](https://github.com/Renbrant/MeshCrossway/issues/40), [PR #41](https://github.com/Renbrant/MeshCrossway/pull/41)
