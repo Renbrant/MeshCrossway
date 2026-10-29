@@ -46,6 +46,9 @@ static inline Result sample(State &s,bool down,int x,int y,int page,
     return NONE;
   }
   if(!s.down)return NONE;
+  // LVGL keeps the last pointer coordinate across RELEASED. Capture the
+  // final sample so a quick swipe does not depend on timer sampling phase.
+  if(x>=0&&x<480&&y>=0&&y<320){s.last_x=x;s.last_y=y;}
   const Origin from=s.origin;
   const int dx=int(s.last_x)-int(s.start_x);
   const int dy=int(s.last_y)-int(s.start_y);
