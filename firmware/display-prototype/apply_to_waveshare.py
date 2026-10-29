@@ -159,7 +159,7 @@ for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_he
              "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h", "meshcrossway_lvgl_alloc.h", "meshcrossway_runtime.h",
              "meshcrossway_power_status.h", "meshcrossway_battery_decode.h",
              "meshcrossway_chat_presentation.h", "meshcrossway_chat_view.h", "meshcrossway_offline_boot.h",
-             "meshcrossway_touch_queue.h", "meshcrossway_touch_input.h"):
+             "meshcrossway_touch_queue.h", "meshcrossway_touch_input.h", "meshcrossway_gnss.h", "meshcrossway_gnss_parser.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 
@@ -174,12 +174,12 @@ sdk = project / "sdkconfig.defaults"
 defaults = sdk.read_text()
 # Remove the invalid choice name used in the earlier candidate.
 defaults = "\n".join(line for line in defaults.splitlines()
-                     if not line.startswith("CONFIG_ESP_WIFI_TASK_CORE_ID=")) + "\n"
+                     if not line.startswith(("CONFIG_ESP_WIFI_TASK_CORE_ID=", "CONFIG_ESP_CONSOLE_UART", "CONFIG_ESP_CONSOLE_SECONDARY_"))) + "\n"
 sdk.write_text(defaults)
 # The Wi-Fi backup uses /sdcard/meshcrossway-wifi.{tmp,json,bak}.
 # ESP-IDF FatFs defaults to FATFS_LFN_NONE, so those paths otherwise fail
 # to open even on correctly mounted FAT32 cards.
-needed=["CONFIG_LV_USE_SNAPSHOT=y","CONFIG_LV_USE_IMGFONT=y","CONFIG_LV_FONT_MONTSERRAT_10=y",
+needed=["CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y", "# CONFIG_ESP_CONSOLE_UART_DEFAULT is not set", "# CONFIG_ESP_CONSOLE_UART_CUSTOM is not set", "# CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG is not set","CONFIG_LV_USE_SNAPSHOT=y","CONFIG_LV_USE_IMGFONT=y","CONFIG_LV_FONT_MONTSERRAT_10=y",
          "CONFIG_LV_MEM_CUSTOM=y",'CONFIG_LV_MEM_CUSTOM_INCLUDE="meshcrossway_lvgl_alloc.h"',
          "CONFIG_FREERTOS_CHECK_STACKOVERFLOW_CANARY=y","CONFIG_FREERTOS_WATCHPOINT_END_OF_STACK=y",
          "CONFIG_FATFS_LFN_HEAP=y",

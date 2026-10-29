@@ -66,6 +66,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.0":
+        summary="EXPERIMENTAL / GPS HARDWARE TEST PENDING: local MAX-M10S NMEA UART reception on GPIO44 RX / GPIO43 TX, 9600/38400 baud detection, checksum validation, fresh fix/coordinates/satellites/HDOP display. USB Serial/JTAG console frees GPS pins. Basemap remains a preview; no location transmission. Install without Erase; v0.7.8 remains recovery."
+        label="Local UART GPS / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.7.14":
         summary="EXPERIMENTAL / HELTEC AND OTHER RADIO TESTS PENDING: official Meshtastic BLE PhoneAPI compatibility, negotiated MTU with complete long GATT writes, receive counters and clearer send/history diagnostics. Includes touch/history fixes. Missing live RX is not yet confirmed resolved on hardware. One active BLE radio; MeshCore and Meshtastic remain independent. Install without Erase; v0.7.8 remains recovery."
         label="Meshtastic PhoneAPI compatibility + RX diagnostics / EXPERIMENTAL"

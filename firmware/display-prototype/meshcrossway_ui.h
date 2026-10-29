@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.7.14: independent MeshCore Companion and Meshtastic PhoneAPI.
+// MeshCrossway v0.8.0: independent MeshCore Companion and Meshtastic PhoneAPI.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -11,6 +11,7 @@
 #include <initializer_list>
 #include <new>
 #include "meshcrossway_power_status.h"
+#include "meshcrossway_gnss.h"
 #include "meshcrossway_chat_presentation.h"
 #include "emoji/emoji_display.h"
 #define MCX_EMOJI_RENDER_ENABLED 1
@@ -500,7 +501,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.7.14","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. GNSS navigation remains a preview.");break;
+      notice("MESH CROSSWAY v0.8.0","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. GNSS navigation remains a preview.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -637,6 +638,7 @@ static void open_thread_now(void *value){active_thread=(int)(intptr_t)value;page
 static void on_thread(lv_event_t *e){lv_async_call(open_thread_now,lv_event_get_user_data(e));}
 static void quick_action_run(void *value){
   int mode=(int)(intptr_t)value;
+  if(mode==0){close_shade();page=4;map_view=3;draw();return;}
   if(mode==2){close_shade();wifi_setup(nullptr);return;}
   if(mode==1){close_shade();page=5;more_view=1;draw();return;}
   const char *names[]={"GPS","Bluetooth","","Sound","Brightness"};
@@ -890,6 +892,17 @@ static bool showing_mt(){
   return meshble::snapshot().radio==meshble::MESHTASTIC;
 }
 
+static lv_obj_t *gps_position=nullptr,*gps_status=nullptr;
+static void gps_refresh(lv_timer_t *){
+  const auto f=mcxgnss::snapshot();char pos[96],state[120];
+  if(f.valid)snprintf(pos,sizeof(pos),"%.6f, %.6f",f.latitude,f.longitude);
+  else snprintf(pos,sizeof(pos),"Position unavailable / no fresh fix");
+  if(!f.frames)snprintf(state,sizeof(state),"Waiting for GPS data / RX44 TX43");
+  else if(f.have_hdop)snprintf(state,sizeof(state),"%s / Sats %u / HDOP %.1f",f.valid?"FIX":"NO FIX",f.satellites,f.hdop);
+  else snprintf(state,sizeof(state),"%s / Sats %u / HDOP --",f.valid?"FIX":"NO FIX",f.satellites);
+  if(gps_position)chatview::label(gps_position,pos);
+  if(gps_status)chatview::label(gps_status,state);
+}
 static void draw(){
   mcxruntime::Scope measured(mcxruntime::DRAW);
   if(!body||!left_rail||!right_rail||!context_actions)return;
@@ -938,6 +951,7 @@ static void draw(){
       update_nav_vector(i,tint);
     }
   }
+  gps_position=gps_status=nullptr;
   chatview::invalidate();
   lv_obj_clean(body);
   lv_obj_scroll_to_y(body,0,LV_ANIM_OFF);
@@ -953,16 +967,18 @@ static void draw(){
     lv_obj_t *mc_card=center_card(col+16,54,col,95,"MESHCORE",mcui::ready()?meshmc::client->name:"BLE: OFF",mcui::ready()?"MeshCore connected":"Connect in More / Radios",purple);
     mcui::home_name=lv_obj_get_child(mc_card,1);mcui::home_status=lv_obj_get_child(mc_card,2);
     if(mcui::ready())mcui::set_home_name(mcui::home_name,meshmc::client->name);
-    center_card(8,157,col,95,"POSITION","GNSS: OFFLINE","No valid fix",cyan);
+    auto *gps=center_card(8,157,col,95,"LOCAL GPS","Waiting for GPS","UART RX44 / TX43",cyan);
+    gps_position=lv_obj_get_child(gps,1);gps_status=lv_obj_get_child(gps,2);gps_refresh(nullptr);
     center_card(col+16,157,col,95,"CROSSWAY","Separate networks","One active BLE radio",orange);
   } else if(page==4){
     static const char *modes[]={"MAP / OFFLINE","POINTS OF INTEREST","SAVED TRACKS",
                                 "GNSS STATUS","TEAM POSITIONS","LIVE LOCATION SHARE"};
-    show_center_heading(modes[map_view],"Navigation workspace / DEMO");
+    show_center_heading(modes[map_view],"Local GPS / basemap preview");
     if(map_view==0){
       map_preview(w);
-      color_label(body,"Fix: NONE   Accuracy: --   Age: --",8,221,w-16,orange);
-      color_label(body,"Sharing OFF  /  demo basemap only",8,249,w-16,muted);
+      gps_position=color_label(body,"",8,221,w-16,orange);
+      gps_status=color_label(body,"",8,244,w-16,muted);gps_refresh(nullptr);
+
     }else if(map_view==1){
       center_card(8,58,w-16,66,"POI / DEMO","Camp Alpha  [sample]","Not saved to SD",orange);
       center_card(8,131,w-16,66,"WAYPOINT / DEMO","Trail Junction  [sample]","No coordinates recorded",orange);
@@ -972,7 +988,8 @@ static void draw(){
       center_card(8,134,w-16,69,"FOLDERS / DEMO","Expedition A  [sample]","No tracks stored",purple);
       color_label(body,"GPX import/export is not implemented.",8,232,w-16,muted);
     }else if(map_view==3){
-      center_card(8,58,w-16,98,"GNSS / OFFLINE","No MAX-M10S connected","Fix: NONE  /  Sats: --",cyan);
+      auto *gps=center_card(8,58,w-16,98,"LOCAL GPS / UART","Waiting for GPS","RX44 / TX43",cyan);
+      gps_position=lv_obj_get_child(gps,1);gps_status=lv_obj_get_child(gps,2);gps_refresh(nullptr);
       center_card(8,165,w-16,78,"SKY VIEW / OFF","No satellite observations",nullptr,cyan);
     }else if(map_view==4){
       center_card(8,58,w-16,78,"TEAM / DEMO","No nearby radios connected","All peer positions unavailable",green);
@@ -1097,7 +1114,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.7.14] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.8.0] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1118,7 +1135,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.7.14] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.8.0] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1131,7 +1148,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.7.14",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.8.0",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,242,7,22,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,273,7,20,muted);
@@ -1178,6 +1195,8 @@ static void init(){
   lv_obj_set_scroll_dir(body,LV_DIR_VER);
   lv_obj_set_scrollbar_mode(body,LV_SCROLLBAR_MODE_AUTO);
   draw();
+  mcxgnss::start();
+  lv_timer_create(gps_refresh,1000,nullptr);
   meshpower::start(); // Read-only 15s AXP2101 samples on a background task.
   mcxtouch::on_sample=buffered_swipe;
   lv_timer_create(edge_swipe_poll,20,nullptr);
