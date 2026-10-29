@@ -87,6 +87,9 @@ build_version() {
     echo "::error::Expected $version but source VERSION is $recorded"
     exit 1
   fi
+  if [ -f "$source_root/scripts/test_meshcore.py" ]; then
+    python3 "$source_root/scripts/test_meshcore.py"
+  fi
   prepare_waveshare
   if [ -f "$source_root/scripts/test_ble_pairing_ui.py" ]; then
     python3 "$source_root/scripts/test_ble_pairing_ui.py" \
@@ -122,9 +125,9 @@ build_version() {
 # Only one physical rollback and recent candidates are delivered in the Web Flasher.
 # Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
 # Update these two constants whenever the owner validates a newer hardware build.
-STABLE_VERSION="v0.6.2"
-STABLE_REF="a508c7d9a9eaf580061d2daca6838ecb78f89085"
-STABLE_SHA256="11b253c3102c9e7b8d07b8899faf8171e8ddffe9fa6f6c98aaddb288258999a5"
+STABLE_VERSION="v0.6.8"
+STABLE_REF="658d62c5dcbffe7d71f313fc15bf42c846e4442d"
+STABLE_SHA256="71a0d73c0e68746e6624d0ac143c28bfe4c688c73b14752f8524f0ccf42a81d1"
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).
