@@ -493,27 +493,56 @@ static void render() {
       if (!m || !in_conversation(*m))
         continue;
       m->read = true;
-      char label[120];
-      snprintf(label, sizeof(label), "%s / %s / %lu", m->outgoing ? "YOU" : "RX", delivery(m->delivery),
-               (unsigned long)m->timestamp);
-      if (!m->outgoing && m->type == 2) {
-        char signer[9];
-        meshmc::hex(m->signer, 4, signer, sizeof(signer));
-        snprintf(label, sizeof(label), "RX / signer %s / %lu", signer, (unsigned long)m->timestamp);
+      // Chat cards contain sender, clean message body and genuine metadata.
+      // The technical message id and RX/RECEIVED protocol state stay internal.
+      char sender[65] = {};
+      const char *display_text = m->text; // Never write back to radio buffers.
+      if (m->outgoing) {
+        snprintf(sender, sizeof(sender), "You");
+      } else if (m->channel) {
+        // MeshCore channel text commonly uses "Name: message". This is a
+        // sender claim in plaintext, not a verified cryptographic identity.
+        const mcxchat::Sender parsed = mcxchat::channel_sender(m->text);
+        if (parsed.claimed) {
+          snprintf(sender, sizeof(sender), "%s", parsed.name);
+          display_text = parsed.body;
+        } else {
+          snprintf(sender, sizeof(sender), "Unknown sender");
+        }
+      } else {
+        const int origin = s->find_contact(m->key, 6);
+        snprintf(sender, sizeof(sender), "%s",
+                 origin >= 0 && s->contacts[origin].name[0]
+                   ? s->contacts[origin].name : "Unknown sender");
       }
+      const lv_color_t sender_colors[6] = {
+        lv_color_hex(0x72D8A5), lv_color_hex(0x6CBDE6),
+        lv_color_hex(0xB99AFF), lv_color_hex(0xFFA36A),
+        lv_color_hex(0xE39CD4), lv_color_hex(0x83D5CF)
+      };
+      const lv_color_t sender_color = m->outgoing ? orange :
+                   sender_colors[mcxchat::color_index(sender)];
+      char metadata[96];
+      mcxchat::meta(m->observed_at, m->path, m->outgoing,
+                    m->outgoing ? delivery(m->delivery) : nullptr,
+                    metadata, sizeof(metadata));
       lv_obj_t *card = panel_at(body, 8, y, w - 16, 94, panel, 7);
-      txt(card, label, 7, 5, w - 30, m->outgoing ? orange : green);
-      lv_obj_t *text = txt(card, "", 7, 29, w - 30, white);
+      lv_obj_t *name = emoji_txt(card, sender, 8, 6, w - 32, sender_color);
+      lv_obj_set_height(name, 21);
+      lv_label_set_long_mode(name, LV_LABEL_LONG_DOT);
+      lv_obj_t *text = txt(card, "", 8, 34, w - 32, white);
       lv_label_set_long_mode(text, LV_LABEL_LONG_WRAP);
-      // Render emojis only in the UI. The radio's original UTF-8 message is untouched.
+      // Transform ONLY the visible text. The radio's UTF-8 bytes are untouched.
 #if defined(MCX_EMOJI_RENDER_ENABLED)
-      mcxemoji::view::set_message_text(text, m->text);
+      mcxemoji::view::set_message_text(text, display_text);
 #else
-      lv_label_set_text(text, m->text); // standalone non-firmware UI tests
+      lv_label_set_text(text, display_text);
 #endif
       lv_obj_update_layout(text);
-      const int card_height = lv_obj_get_height(text) + 39 > 94
-                                  ? lv_obj_get_height(text) + 39 : 94;
+      const int metadata_y = lv_obj_get_y(text) + lv_obj_get_height(text) + 9;
+      lv_obj_t *footer = single_label(card, metadata, 8, metadata_y, w - 32, muted);
+      lv_obj_set_height(footer, 18);
+      const int card_height = metadata_y + 23 > 94 ? metadata_y + 23 : 94;
       lv_obj_set_height(card, card_height);
       y += card_height + 8;
     }
