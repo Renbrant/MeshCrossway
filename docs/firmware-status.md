@@ -1,6 +1,9 @@
 # Waveshare firmware status — October 28, 2026
 
-## Current candidate — October 29, 2026
+## Current candidate — v0.7.13 (October 29, 2026)
+v0.7.13 integrates PR #63 on top of v0.7.12: a dedicated touch sampling task with bounded queue, PSRAM chat-card reuse, preserved reading position on radio updates, and offline history restore without waiting for the delayed BLE auto-resume. Preflight and full ESP-IDF build must pass before Pages publication. **Experimental, not yet hardware tested:** tap and rail scrolling during BLE traffic, absent/slow SD, internal memory and repeated cold starts must be checked. Retains one active Bluetooth radio at a time, independent MeshCore and Meshtastic network stores, and the unchanged tested v0.7.8 recovery. Install without Erase.
+
+## Previous candidate — October 29, 2026
 
 v0.7.12 implements the independent Meshtastic PhoneAPI client using an external T-Deck / T-Deck Plus BLE radio. See [setup, compatibility gates, tests and hardware acceptance](meshtastic-v0712.md). Only one BLE radio session is active at a time. Physical T-Deck qualification is pending; v0.7.8 remains the immutable owner-tested recovery. Earlier sections below are historical release records.
 
