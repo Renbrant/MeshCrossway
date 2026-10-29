@@ -25,7 +25,7 @@ constexpr size_t SALT_BYTES = 16;
 constexpr size_t STORE_ID_BYTES = 16;
 constexpr size_t RADIO_ID_BYTES = 32;
 constexpr size_t NONCE_BYTES = 12;
-constexpr size_t TAG_BYTES = 16;
+constexpr size_t GCM_TAG_SIZE = 16;
 constexpr size_t MAX_RECORD_BYTES = 512;
 constexpr uint8_t FORMAT_VERSION = 1;
 
@@ -131,20 +131,20 @@ inline bool mock_hmac(const uint8_t *data, size_t n, uint8_t out[KEY_BYTES], voi
 inline bool seal(const uint8_t key[KEY_BYTES], const uint8_t nonce[NONCE_BYTES],
                  const uint8_t *aad, size_t aad_len,
                  const uint8_t *plaintext, size_t len,
-                 uint8_t *ciphertext, uint8_t tag[TAG_BYTES]) {
+                 uint8_t *ciphertext, uint8_t tag[GCM_TAG_SIZE]) {
   if (!key || !nonce || !tag || !ciphertext || len > MAX_RECORD_BYTES ||
       (len && !plaintext) || (aad_len && !aad) || aad_len > 256 ||
       (len && plaintext == ciphertext)) return false;
-  memset(tag, 0, TAG_BYTES);
+  memset(tag, 0, GCM_TAG_SIZE);
 #if defined(ESP_PLATFORM)
   mbedtls_gcm_context ctx;
   mbedtls_gcm_init(&ctx);
   int status = mbedtls_gcm_setkey(&ctx, MBEDTLS_CIPHER_ID_AES, key, 256);
   if (status == 0) status = mbedtls_gcm_crypt_and_tag(
       &ctx, MBEDTLS_GCM_ENCRYPT, len, nonce, NONCE_BYTES,
-      aad, aad_len, plaintext, ciphertext, TAG_BYTES, tag);
+      aad, aad_len, plaintext, ciphertext, GCM_TAG_SIZE, tag);
   mbedtls_gcm_free(&ctx);
-  if (status != 0) { wipe(ciphertext, len); wipe(tag, TAG_BYTES); }
+  if (status != 0) { wipe(ciphertext, len); wipe(tag, GCM_TAG_SIZE); }
   return status == 0;
 #else
   EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
@@ -156,9 +156,9 @@ inline bool seal(const uint8_t key[KEY_BYTES], const uint8_t nonce[NONCE_BYTES],
       (!aad_len || EVP_EncryptUpdate(ctx, nullptr, &count, aad, (int)aad_len) > 0) &&
       (!len || EVP_EncryptUpdate(ctx, ciphertext, &count, plaintext, (int)len) > 0) &&
       EVP_EncryptFinal_ex(ctx, ciphertext + len, &tail) > 0 &&
-      EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, TAG_BYTES, tag) > 0;
+      EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, GCM_TAG_SIZE, tag) > 0;
   EVP_CIPHER_CTX_free(ctx);
-  if (!ok) { wipe(ciphertext, len); wipe(tag, TAG_BYTES); }
+  if (!ok) { wipe(ciphertext, len); wipe(tag, GCM_TAG_SIZE); }
   return ok;
 #endif
 }
@@ -166,7 +166,7 @@ inline bool seal(const uint8_t key[KEY_BYTES], const uint8_t nonce[NONCE_BYTES],
 inline bool open(const uint8_t key[KEY_BYTES], const uint8_t nonce[NONCE_BYTES],
                  const uint8_t *aad, size_t aad_len,
                  const uint8_t *ciphertext, size_t len,
-                 const uint8_t tag[TAG_BYTES], uint8_t *plaintext) {
+                 const uint8_t tag[GCM_TAG_SIZE], uint8_t *plaintext) {
   if (!key || !nonce || !tag || !plaintext || len > MAX_RECORD_BYTES ||
       (len && !ciphertext) || (aad_len && !aad) || aad_len > 256 ||
       (len && ciphertext == plaintext)) return false;
@@ -178,7 +178,7 @@ inline bool open(const uint8_t key[KEY_BYTES], const uint8_t nonce[NONCE_BYTES],
   int status = mbedtls_gcm_setkey(&ctx, MBEDTLS_CIPHER_ID_AES, key, 256);
   if (status == 0) status = mbedtls_gcm_auth_decrypt(
       &ctx, len, nonce, NONCE_BYTES, aad, aad_len,
-      tag, TAG_BYTES, ciphertext, plaintext);
+      tag, GCM_TAG_SIZE, ciphertext, plaintext);
   mbedtls_gcm_free(&ctx);
   if (status != 0) wipe(plaintext, len);
   return status == 0;
@@ -191,7 +191,7 @@ inline bool open(const uint8_t key[KEY_BYTES], const uint8_t nonce[NONCE_BYTES],
       EVP_DecryptInit_ex(ctx, nullptr, nullptr, key, nonce) > 0 &&
       (!aad_len || EVP_DecryptUpdate(ctx, nullptr, &count, aad, (int)aad_len) > 0) &&
       (!len || EVP_DecryptUpdate(ctx, plaintext, &count, ciphertext, (int)len) > 0) &&
-      EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, TAG_BYTES, const_cast<uint8_t *>(tag)) > 0 &&
+      EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, GCM_TAG_SIZE, const_cast<uint8_t *>(tag)) > 0 &&
       EVP_DecryptFinal_ex(ctx, plaintext + len, &tail) > 0;
   EVP_CIPHER_CTX_free(ctx);
   if (!ok) wipe(plaintext, len);
