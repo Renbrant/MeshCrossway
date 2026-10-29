@@ -13,6 +13,7 @@ static uint16_t target_slot = 0, list_offset = 0;
 static uint32_t rendered_generation = 0;
 static int mode = 0; // 0 menu, 1 typed command, 2 compose, 3 result, 4 contact details
 static void tools();
+static void thread_info();
 static void form(uint8_t code);
 static void render();
 static meshmc::Client *session() {
@@ -366,6 +367,20 @@ static void contact_details() {
   action_button(scroller, "RESET PATH", 234, 270, 235, 42, panel2, choose_command, 13);
   action_button(scroller, "REMOVE CONTACT", 8, 320, 460, 42, panel2, choose_command, 15);
 }
+// Chat context actions are deliberately in the right rail, not duplicated
+// above message history. Info opens contact details or safe channel metadata.
+static void thread_info() {
+  if (!conversation || !session()) {
+    notice("CHAT / NO SELECTION","Select a node or group to inspect its details.");
+    return;
+  }
+  if (!group) { contact_details(); return; }
+  const auto &channel=session()->channels[target_slot];
+  char detail[160];
+  snprintf(detail,sizeof(detail),"Channel slot: %u\nName: %.80s\nLoaded: %s\nMeshCore network only.",
+           (unsigned)target_slot,channel.name,channel.loaded?"yes":"no");
+  notice("MESHCORE / CHANNEL DETAILS",detail);
+}
 static void choose_contact_now(void *data) {
   int index = (int)(intptr_t)data;
   if (!session() || index < 0 || index >= session()->contact_count)
@@ -470,9 +485,8 @@ static void render() {
                                   : "Unknown contact";
     emoji_center_heading(title[0] ? title : "Empty channel",
                         ready() ? "MeshCore / live" : "MeshCore / disconnected history");
-    action_button(body, "COMPOSE", 8, 53, (w - 24) / 2, 40, orange, compose_event, 0);
-    action_button(body, "TOOLS", 16 + (w - 24) / 2, 53, (w - 24) / 2, 40, panel2, on_tools, 0);
-    int y = 104;
+    // Compose and Tools now live exclusively in the contextual right rail.
+    int y = 57;
     for (uint32_t id = s->next_id > s->message_count ? s->next_id - s->message_count : 1; id < s->next_id;
          id++) {
       auto *m = s->by_id(id);
@@ -503,8 +517,8 @@ static void render() {
       lv_obj_set_height(card, card_height);
       y += card_height + 8;
     }
-    if (y == 104)
-      single_label(body, "No messages in this session.", 8, 109, w - 16, muted);
+    if (y == 57)
+      single_label(body, "No messages in this session.", 8, 65, w - 16, muted);
     lv_obj_scroll_to_y(body, y, LV_ANIM_OFF);
   }
 }

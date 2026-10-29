@@ -65,6 +65,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.7.6":
+        summary="EXPERIMENTAL / HARDWARE TEST PENDING: Official traced MeshCrossway SVG brand in header, visible left icons on Home, Chat and Map right action rail with clickable icons when compact, no duplicate Nodes/Groups context rail, full-width Settings and Radios. Maintains v0.7.5 eFuse inventory, BLE/Wi-Fi and emoji. Leave Erase unchecked."
+        label="Official logo and contextual compact UI / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.7.5":
         summary="EXPERIMENTAL / HARDWARE TEST PENDING: Read-only ESP32-S3 eFuse HMAC key-block inventory in More > Diagnostics. Reports free blocks and storage-vault status without exposing or programming secret keys. Encrypted SD and persistent chat history are NOT implemented. Includes v0.7.4 emoji, Bluetooth and Wi-Fi behavior. Leave Erase unchecked."
         label="Read-only eFuse / secure-storage diagnostics / EXPERIMENTAL"
