@@ -1,3 +1,5 @@
+> **Release history, not an unmerged candidate anymore:** original 92-glyph PR #41 was followed by the merged 93-glyph v0.7.4 checkered-flag update. The v0.7.6 `main` source contains the 93-glyph presentation system. The **14px rendering and `$` unsupported-emoji fallback are only proposed in open PR #54 (v0.7.7)**. The original v0.7.3 20px sizing, fallback and pre-merge instructions below remain for reproducibility. [Current status](current-status.md).
+
 # Read-only color emoji rendering — MeshCrossway v0.7.3 candidate
 
 **Implemented in branch `feature/color-emoji-rendering`, PR #41.** This is a **candidate**, not yet hardware-tested, merged or published. It adds 92 colored emoji images to the conversation view; it does **not** add an emoji picker or alter the keyboard, message payloads, BLE security or native radio protocols.

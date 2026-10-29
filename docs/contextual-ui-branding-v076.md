@@ -1,3 +1,5 @@
+> **Version-scoped UI contract for merged experimental v0.7.6.** This document is accurate for **v0.7.6 only**: Settings has no main left sidebar and the top bar can show IP. **Open v0.7.7 PR #54** proposes the opposite: global left navigation **always** present (including Settings/Radios), no IP in the top bar, swipe-expanded rails and matched icons, along with battery/MT/MC indicators and refined chat formatting. Do not silently apply PR #54's contract to a v0.7.6 device. [Current status](current-status.md).
+
 # MeshCrossway v0.7.6 — contextual navigation and official branding
 
 **Status:** experimental; compile, visual and Waveshare touch tests are required before promotion.

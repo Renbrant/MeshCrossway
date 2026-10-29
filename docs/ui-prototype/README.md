@@ -1,3 +1,5 @@
+> **Browser design reference, not current firmware specification.** The physical LVGL code on `main` is v0.7.6; new proposed swipes, Settings navigation and chat indicators are tracked in [open v0.7.7 PR #54](https://github.com/Renbrant/MeshCrossway/pull/54). This HTML demo may intentionally lag native behavior. [Implementation status](../current-status.md).
+
 # MeshCrossway UI Prototype — Landscape Side Console
 
 > **Current architecture (2026-10-28):** The UI will connect via two concurrent BLE Central links to independent MX-M Meshtastic and MX-C MeshCore Radio Pods. Hardware remains separate; archived UART/PCB implementation references below are not current. [Approved design](../modular-architecture.md).

@@ -1,3 +1,5 @@
+> **Current implementation note (October 28, 2026):** the approved three-device/two-BLE-link design below is the **target**, not a claim of two working simultaneous GATT sessions. Firmware on `main` is v0.7.6 and has one active BLE radio session; Meshtastic PhoneAPI application messaging and dual-session reconnection are still future work. Strict isolation between Meshtastic and MeshCore is mandatory. [Current implementation](current-status.md).
+
 # MeshCrossway modular architecture — approved decision
 
 **Decision date:** 2026-10-28. **Status:** architecture approved; no electrical, BLE, mechanical, RF or environmental validation completed.

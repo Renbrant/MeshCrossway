@@ -26,3 +26,7 @@ After CI and candidate release approval, install **without Erase** and open More
 Read-only metadata reporting is not proof that history is encrypted. eFuse-HMAC alone protects removable-SD privacy but **does not defend against malicious firmware running on the same ESP32-S3** without trusted boot.
 
 References: [ESP-IDF 5.3 HMAC](https://docs.espressif.com/projects/esp-idf/en/v5.3/esp32s3/api-reference/peripherals/hmac.html), [ESP-IDF eFuse Manager](https://docs.espressif.com/projects/esp-idf/en/v5.3.4/esp32s3/api-reference/system/efuse.html).
+
+## Current security development status (2026-10-28 local)
+
+Stage A read-only diagnostics are merged in experimental v0.7.5+; this **does not** mean a key was provisioned or that history is durable. **Stage B cryptography draft [PR #50](https://github.com/Renbrant/MeshCrossway/pull/50) and unfinished journal draft [PR #52](https://github.com/Renbrant/MeshCrossway/pull/52) are intentionally PAUSED until ChatGPT Work is available and the owner authorizes resumption.** The journal code is not on `main`, must not be merged or installed as-is and has not been validated as a secure storage implementation. Never automatically burn eFuse. [Current status](current-status.md).

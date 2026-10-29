@@ -1,3 +1,5 @@
+> **Historical UI research for v0.6.x.** The `main` firmware has progressed to v0.7.6 with MeshCore live Companion screens; some six-tab display/chevron and DEMO wording below describes earlier versions. Proposed v0.7.7 interaction changes are still in [open PR #54](https://github.com/Renbrant/MeshCrossway/pull/54). See [current status](current-status.md) and [v0.7.6 UI](contextual-ui-branding-v076.md).
+
 # Field Console navigation — Meshtastic + MeshCore workflow research
 
 **Reference date:** 2026-10-28  
