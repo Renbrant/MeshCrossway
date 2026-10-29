@@ -79,3 +79,25 @@ A radio screenshot showed `RX / RECEIVED / 1793246599` above every received chat
 17. Show `HH:MM UTC` only when the companion radio has provided a valid clock, otherwise `--:--`. Compare actual BLE observation against a nearby UTC reference; there is deliberately no unconfigured local time zone.
 18. For flooded received routes verify numeric hops from the decoded path count; for direct `0xFF`, show `Direct route` rather than `255 hops`. For invalid path show `Hops --`. Outgoing messages show actual queued/accepted/delivered statuses.
 19. Test 10+ messages with long text, multiline text, accent/emoji sender names and both compact/expanded right sidebar. Footer must not overlap text or clip against sidebars; normal scrolling and screen capture stay stable.
+
+
+## v0.7.7 visual regression — compact emoji + unavailable glyphs
+
+- All **93 existing colored Noto emoji glyphs** are rendered as **14×14px pictures inside a 16px font line box** (previously 20×20px). This uses a bounded, tested 20→14 indexed-4 palette-preserving conversion in PSRAM, without modifying the existing source atlas or its two verified SHA-256 digests.
+- Where a Unicode emoji or composed emoji is not in the registered set, render a **single `$`** in its place. A literal `[emoji]` placeholder arriving from another client is also shown as `$` (visual-only). When the LVGL image font cannot load, **all** emoji become `$`, including otherwise recognized ones; never output PUA glyphs without a corresponding image.
+- The original text in the radio's in-memory messages, sender names, contact keys and transmitted packets must **not change**. If a remote client has already replaced the actual Unicode with the literal string `[emoji]`, the original drawing **cannot be recovered** and the user sees `$` instead.
+- Emoji conversion applies to chat message body, sender titles, Nodes/Groups names, contact details, radio name on Home and dialog titles; all must match normal text scale.
+- Verify mixed UTF-8 and emoji on actual Waveshare screen in compact/expanded bars. The replacement must not break text alignment, wrap or scroll and the same sender with unknown emoji still has readable name. Fallback for invalid UTF-8 bytes stays `?` to distinguish malformed encoding from unsupported emoji.
+
+## v0.7.7 T-Deck / MeshCore Companion compatibility and safe diagnostics
+
+- The firmware previously rejected documented `PACKET_OK (0x00)` with an optional 32-bit return value (5 bytes), and a `PACKET_ERROR (0x01)` without its optional error code (1 byte). Accept **only** the documented 1/5-byte and 1/2-byte formats respectively. Channel data packet `0x1B` can have an 8-byte header without payload; accept at least 8 bytes.
+- All other frame bounds, timeouts, handshake checks, command matching and radio network separation remain strict. Invalid frames still cause fail-safe disconnect; **do not blindly accept arbitrary unknown frames**, which might mask an incompatible firmware or corrupted payload.
+- On a malformed frame, the screen reports **only** `frame 0xXX`, received byte length, pending command number and connection phase. A firmware reporting protocol version older than 3 is explicitly identified as incompatible. Serial diagnostics print only code and length — **no raw packet, text, keys, channel secrets or PINs**.
+- The T-Deck must be running **MeshCore BLE Companion** firmware, not standalone T-Deck UI or Meshtastic firmware. As the user's screenshot did not include packet type/size, the exact offending frame is **not yet proven**. If it recurs on v0.7.7, use the new safe code/length to investigate and fix that exact format without changing unrelated radios.
+- Test fixtures cover valid short/extended acknowledgments, datagrams with no payload, truncated known frames, protocol v2 rejection, and the existing full bootstrap/contacts/messages corpus.
+
+### Additional physical acceptance
+20. Confirm a 14px glyph (approximately the text height) in the Home card, Nodes contact names and received chat. Send an unregistered emoji and an explicit literal `[emoji]`; both show `$` without changing stored/forwarded Unicode.
+21. Pair a T-Deck flashed with MeshCore **BLE Companion**: inspect handshake, contact loading and channels; verify no false “malformed” errors for the documented response variants. If rejected, capture ONLY diagnostic `0xXX` code, length, pending command and version (do not share raw packets). No hard-coded acceptance of non-Companion devices.
+22. Reboot with normal erase **unchecked**. Confirm saved Wi-Fi and Bluetooth pairings, UI and MeshCore chat work without regression.

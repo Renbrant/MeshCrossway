@@ -334,6 +334,25 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert "path==0xFFu" in presenter and "path&0x3Fu" in presenter
         assert 'snprintf(out,cap,"%02lu:%02lu UTC"' in presenter
         assert (FW/"meshcrossway_chat_presentation.h").is_file()
+        resize=(FW/"emoji"/"emoji_small_sprite.h").read_text()
+        emoji=(FW/"emoji"/"emoji_display.h").read_text()
+        parser=(FW/"emoji"/"emoji_presentation.h").read_text()
+        assert '"emoji_small_sprite.h"' in patcher.read_text()
+        assert (main.parent/"emoji"/"emoji_small_sprite.h").is_file() if False else (FW/"emoji"/"emoji_small_sprite.h").is_file()
+        assert "kEmojiDrawSide = 14" in resize
+        assert "kEmojiDrawBytes" in emoji and "lv_imgfont_create(16, image_cb)" in emoji
+        assert "downsample_emoji(source,sizeof(source)" in emoji
+        assert 'const char fallback[] = "$"' in parser
+        assert 'memcmp(src + pos, "[emoji]", 7)' in parser
+        assert 'transform(original_utf8,strlen(original_utf8)' in emoji
+        assert 'n == 1 || n == 5' in protocol
+        assert 'n == 1 || n == 2' in protocol
+        assert 'valid = n >= 8;' in protocol
+        assert 'MeshCore invalid frame 0x%02X len %u' in protocol
+        assert 'protocol v%u unsupported' in protocol
+        assert "see status on screen" in (FW/"meshcrossway_meshcore.h").read_text()
+        assert "source" not in ""  # No payload logged; only code and length.
+        print("PASS: v0.7.7 emoji sizing/fallback and bounded Companion response validation")
         print("PASS: v0.7.7 chat sender, UTC observed time and route hops without RX IDs")
         print("PASS: v0.7.7 gesture, permanent Settings navigation, real status icons and read-only AXP2101")
     if version in ("v0.7.5","v0.7.6","v0.7.7"):

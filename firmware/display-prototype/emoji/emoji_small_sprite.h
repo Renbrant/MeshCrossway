@@ -16,7 +16,9 @@ static inline bool downsample_emoji(const uint8_t *src, size_t src_len,
   if (!src || !dst || src_len < kEmojiOriginalBytes || dst_len < kEmojiDrawBytes)
     return false;
   // Caller allows overlap only by making one 264-byte local source copy.
-  if (!(dst + kEmojiDrawBytes <= src || src + kEmojiOriginalBytes <= dst))
+  const uintptr_t s=reinterpret_cast<uintptr_t>(src);
+  const uintptr_t d=reinterpret_cast<uintptr_t>(dst);
+  if (!(d+kEmojiDrawBytes<=s || s+kEmojiOriginalBytes<=d))
     return false;
   memcpy(dst,src,64);
   memset(dst+64,0,kEmojiDrawBytes-64);
