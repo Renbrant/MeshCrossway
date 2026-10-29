@@ -56,6 +56,7 @@ int main(int argc,char **argv){
   ack(c,c.data.my_num,0x10203040,0);assert(c.message(0x10203040)->delivery==RADIO_ACCEPTED);
   ack(c,n->num,0x10203040,0);assert(c.message(0x10203040)->delivery==REMOTE_ACK);
   auto incoming=text_packet(n->num,c.data.my_num,999,"Olá 😀");inject(c,2,incoming);
+  assert(c.rx_frames>0&&c.rx_packets>0&&c.rx_text==1);
   const auto messages=c.data.message_count;inject(c,2,incoming);assert(c.data.message_count==messages);
   auto alien=text_packet(n->num,123,1000,"not addressed to us");inject(c,2,alien);assert(c.data.message_count==messages);
   auto broadcast=c.target(BROADCAST,0);assert(c.send_text(broadcast,"channel",500,300));assert(c.next(301,outgoing));c.write_done(true);
@@ -71,6 +72,15 @@ int main(int argc,char **argv){
   assert(c.send_text(target,std::string(220,'x').c_str(),502,130000));assert(c.next(130001,outgoing));c.write_done(true);
   c.data.channels[0].aead=true;assert(c.text_limit(broadcast)==220);c.data.channels[0].aead=false;
   n->has_key=false;assert(c.send_problem(target,"missing public key"));n->has_key=true;
+  auto self=c.target(c.data.my_num,0);assert(strstr(c.send_problem(self,"self"),"own radio"));
+  auto missing=c.target(0x0badcafeu,0);assert(strstr(c.send_problem(missing,"peer"),"NodeDB"));
+  // A real Meshtastic peripheral may negotiate ATT MTU 247 or below.
+  // The transport must retain one complete protobuf for ATT long WRITE.
+  c.mtu=247;
+  assert(c.send_text(target,std::string(220,'y').c_str(),503,130002));
+  assert(c.pending.len>c.mtu-3&&c.pending.len<=MAX_FRAME);
+  assert(c.next(130003,outgoing));c.write_done(true);
+  c.mtu=517;
   c.tx_enabled=false;assert(c.send_problem(target,"off"));c.tx_enabled=true;
   c.data.channels[0].identity++;assert(c.send_problem(target,"changed"));c.data.channels[0].identity--;
   // Zero coordinates are valid. Unknown fields do not reject future extensions.
