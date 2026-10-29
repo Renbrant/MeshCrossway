@@ -92,20 +92,27 @@ inline void set_message_text(lv_obj_t *label, const char *original_utf8) {
   if (!original_utf8) original_utf8 = "";
   lv_font_t *f = font();
   if (!f) {
-    // If the image subsystem cannot start, use a legible text-only version.
-    // Do not expose invisible PUA characters without their image font.
+    // No font, image memory or imgfont Kconfig: preserve surrounding text and
+    // replace each complete emoji cluster with a readable placeholder.
     char out[1200];
-    const Report report = transform(original_utf8, strlen(original_utf8), out, sizeof(out));
-    (void)report;
-    for (char *c = out; *c;) {
-      // Decode PUA U+E000..U+E05B as a text placeholder, only on failure.
-      if ((uint8_t)c[0] == 0xEE && (uint8_t)c[1] >= 0x80 &&
-          (uint8_t)c[1] <= 0x81 && ((uint8_t)c[2] & 0xC0) == 0x80) {
-        // Avoid modifying variable-length string in place: fallback to raw.
-        lv_label_set_text(label, "[emoji unavailable]");
-        return;
+    size_t used = 0;
+    const size_t n = strlen(original_utf8);
+    for (size_t pos = 0; pos < n;) {
+      uint32_t cp;
+      size_t width;
+      if (!decode(original_utf8, n, pos, cp, width)) {
+        if (!append(out, sizeof(out), used, "?", 1)) break;
+        ++pos;
+        continue;
       }
-      ++c;
+      const size_t span = cluster_length(original_utf8, n, pos);
+      if (span) {
+        if (!append(out, sizeof(out), used, "[emoji]", 7)) break;
+        pos += span;
+      } else {
+        if (!append(out, sizeof(out), used, original_utf8 + pos, width)) break;
+        pos += width;
+      }
     }
     lv_label_set_text(label, out);
     return;
