@@ -518,11 +518,26 @@ struct Channel {
   char name[33] = {};
   uint8_t secret[16] = {};
 };
+static bool valid_utf8(const char *text,size_t n) {
+  const auto *p=(const uint8_t *)text;
+  for(size_t i=0;i<n;){uint32_t cp=p[i++];unsigned more=0;
+    if(!cp)return false;
+    if(cp<0x80)continue;
+    if(cp>=0xc2&&cp<=0xdf){cp&=31;more=1;}
+    else if(cp>=0xe0&&cp<=0xef){cp&=15;more=2;}
+    else if(cp>=0xf0&&cp<=0xf4){cp&=7;more=3;}else return false;
+    if(i+more>n)return false;
+    for(unsigned j=0;j<more;++j){if((p[i]&0xc0)!=0x80)return false;cp=(cp<<6)|(p[i++]&63);}
+    if((more==1&&cp<0x80)||(more==2&&cp<0x800)||(more==3&&cp<0x10000)||cp>0x10ffff||(cp>=0xd800&&cp<=0xdfff))return false;
+  }return true;
+}
+enum class RoomState : uint8_t { Unknown, Joining, Joined, Failed, Left, TimedOut };
+struct RoomSession {uint8_t key[6]={};RoomState state=RoomState::Unknown;};
 enum Delivery : uint8_t { RECEIVED, QUEUED, ACCEPTED, DELIVERED, REJECTED, UNCERTAIN };
 struct Message {
   uint32_t id = 0, timestamp = 0, observed_at = 0, ack = 0, ack_deadline = 0;
-  bool channel = false, outgoing = false, read = false;
-  uint8_t slot = 0, key[6] = {}, signer[4] = {}, type = 0, path = 255;
+  bool channel = false, outgoing = false, read = false, has_snr = false;
+  uint8_t slot = 0, key[6] = {}, signer[4] = {}, channel_identity[16] = {}, type = 0, path = 255;
   int8_t snr = 0;
   Delivery delivery = RECEIVED;
   char text[MAX_FRAME + 1] = {};
@@ -534,6 +549,13 @@ struct Pending {
 };
 class Client {
 public:
+  RoomSession rooms[16];
+  RoomSession *room(const uint8_t *key,bool create=false) {
+    RoomSession *empty=nullptr;
+    for(auto &r:rooms){if(!memcmp(r.key,key,6))return &r;
+      bool zero=true;for(auto b:r.key)if(b)zero=false;if(zero&&!empty)empty=&r;}
+    if(create&&empty){memcpy(empty->key,key,6);return empty;}return nullptr;
+  }
   Contact contacts[MAX_CONTACTS];
   Channel channels[MAX_CHANNELS];
   Message messages[MAX_MESSAGES];
@@ -541,6 +563,7 @@ public:
   uint8_t protocol = 0;
   bool connected = false, initialized = false, fault = false, busy = false, written = false,
        response_done = false, waiting_messages = false;
+  bool history_ready=true; // Transport gates user sends while an archive is being restored.
   uint16_t payload_limit = 0, battery_mv = 0;
   uint32_t used_kb = 0, total_kb = 0, generation = 0, rx_count = 0, tx_count = 0, invalid = 0;
   char name[33] = {}, firmware[21] = {}, model[41] = {}, status[128] = "Connect a MeshCore Companion radio",
@@ -570,7 +593,7 @@ public:
     busy = false;
     qcount = 0;
     for (auto &m : messages)
-      if (m.outgoing && m.delivery == QUEUED)
+      if (m.outgoing && (m.delivery == QUEUED || m.delivery == ACCEPTED))
         m.delivery = UNCERTAIN;
     change(s);
   }
@@ -584,7 +607,7 @@ public:
       if (m.outgoing && (m.delivery == QUEUED || m.delivery == ACCEPTED))
         m.delivery = UNCERTAIN;
     if (!fault)
-      change("Radio disconnected; history is from this session");
+      change("Radio disconnected; local history available");
   }
   void attach(uint16_t limit) {
     this->~Client();
@@ -665,7 +688,7 @@ public:
   }
   bool send_text(bool group, uint16_t target, const char *text) {
     size_t n = strlen(text);
-    if (!initialized || !n || n > text_limit(group) || timestamp() < 1577836800u)
+    if (!connected || fault || !initialized || !history_ready || !n || !valid_utf8(text,n) || n > text_limit(group) || timestamp() < 1577836800u)
       return false;
     if (group ? (target >= channel_count || !channels[target].loaded || !channels[target].name[0])
               : target >= contact_count)
@@ -700,6 +723,7 @@ public:
     m.channel = group;
     m.slot = target;
     m.delivery = QUEUED;
+    if(group)memcpy(m.channel_identity,channels[target].secret,16);
     if (!group)
       memcpy(m.key, contacts[target].key, 6);
     snprintf(m.text, sizeof(m.text), "%s", text);
@@ -707,7 +731,7 @@ public:
     return true;
   }
   // Returns one complete frame. Caller must provide its ATT write completion through write_done().
-  bool next(uint32_t now, Frame &f) {
+  bool next(uint32_t now, Frame &f, bool history_ready=true) {
     now_ms = now;
     if (!connected || fault)
       return false;
@@ -718,6 +742,7 @@ public:
         ++generation;
       }
     if (remote_pending && (int32_t)(now - remote_deadline) >= 0) {
+      if(remote_pending==26){auto *r=room(remote_key);if(r)r->state=RoomState::TimedOut;}
       remote_pending = 0;
       snprintf(result, sizeof(result), "Remote request timed out. No automatic retry.");
       change("Remote reply not received");
@@ -753,6 +778,7 @@ public:
       else if (channel_next >= channel_count && qcount && queue[qhead].frame.data[0] == 20)
         ++bootstrap;
     }
+    if(initialized&&!history_ready)return false;
     if (!qcount && initialized && waiting_messages) {
       waiting_messages = false;
       simple(10, -1, false);
@@ -915,23 +941,26 @@ public:
         uint8_t type = p[typepos];
         size_t offset = start + meta + 4 + (type == 2 ? 4 : 0);
         valid = n >= offset && (!group || p[start] < channel_count);
+        if(valid)valid=valid_utf8((const char *)p+offset,n-offset);
         if (valid) {
           bool duplicate = false;
           for (auto &m : messages)
             if (m.id && !m.outgoing && m.channel == group && m.timestamp == u32(p + start + meta) &&
-                (group ? m.slot == p[start] : !memcmp(m.key, p + start, 6)) &&
+                (group ? (m.slot == p[start]&&!memcmp(m.channel_identity,channels[p[start]].secret,16)) : !memcmp(m.key, p + start, 6)) &&
                 !strncmp(m.text, (const char *)p + offset, n - offset) && strlen(m.text) == n - offset)
               duplicate = true;
           if (!duplicate) {
             Message &m = append();
             m.channel = group;
             m.slot = group ? p[start] : 0;
+            if(group)memcpy(m.channel_identity,channels[m.slot].secret,16);
             if (!group)
               memcpy(m.key, p + start, 6);
             m.type = type;
             if (type == 2)
               memcpy(m.signer, p + start + meta + 4, 4);
             m.path = p[start + (group ? 1 : 6)];
+            m.has_snr=v3;
             m.snr = v3 ? (int8_t)p[1] : 0;
             m.timestamp = u32(p + start + meta); // Sender's clock, unchanged.
             // Observe time when this packet reaches the BLE-connected client.
@@ -1067,12 +1096,12 @@ public:
       break;
     case 130:
       valid = n >= 9;
-      if (valid)
-        for (auto &m : messages)
-          if (m.id && m.outgoing && m.ack && m.ack == u32(p + 1)) {
-            m.delivery = DELIVERED;
-            m.ack_deadline = 0;
-          }
+      if (valid) {
+        Message *match=nullptr;unsigned matches=0;
+        for(auto &m:messages)if(m.id&&m.outgoing&&!m.channel&&m.ack&&m.ack==u32(p+1)&&
+          (m.delivery==ACCEPTED||m.delivery==UNCERTAIN)){match=&m;++matches;}
+        if(matches==1){match->delivery=DELIVERED;match->ack_deadline=0;}
+      }
       break;
     case 131:
       valid = n == 1;
@@ -1165,7 +1194,10 @@ public:
           size_t key_offset = cmd == 39 ? 4 : cmd == 52 ? 2 : 1;
           if (cmd != 36)
             memcpy(remote_key, active.frame.data + key_offset, 6);
+          if(cmd==26){auto *r=room(remote_key,true);if(r)r->state=RoomState::Joining;}
         }
+        if(cmd==26&&error){auto *r=room(active.frame.data+1,true);if(r)r->state=RoomState::Failed;}
+        if(cmd==28||cmd==29){auto *r=room(active.frame.data+1,true);if(r)r->state=error?RoomState::Failed:cmd==28?RoomState::Joined:RoomState::Left;}
         Message *m = by_id(active.message);
         if (m) {
           if (error)
@@ -1243,8 +1275,12 @@ public:
                              (code == 137 && n >= 12 && u32(p + 4) == remote_tag) ||
                              ((code == 133 || code == 134 || code == 135 || code == 139 || code == 141) &&
                               n >= 8 && !memcmp(p + 2, remote_key, 6)));
-      if (remote_match)
+      if (remote_match) {
+        if(remote_pending==26&&(code==133||code==134)){
+          auto *r=room(remote_key,true);if(r)r->state=code==133?RoomState::Joined:RoomState::Failed;
+        }
         remote_pending = 0;
+      }
       const char *event = code == 130   ? "Delivery acknowledged"
                           : code == 133 ? "Remote login succeeded"
                           : code == 134 ? "Remote login failed"

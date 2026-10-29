@@ -44,6 +44,29 @@ int main(){
  assert(c.send_text(false,0,"uncertain"));f=start(c,2600);c.write_done(true);assert(!c.next(13000,f));assert(c.fault&&c.by_id(5)->delivery==UNCERTAIN);
  c.detach();assert(c.by_id(3)->delivery==DELIVERED); // confirmed history retained until a new session.
  bootstrap(c);
+ // No unrelated or ambiguous ACK token may produce a delivery claim.
+ auto ack_client=make_client();bootstrap(*ack_client);ack_client->waiting_messages=false;
+ assert(ack_client->send_text(false,0,"one"));f=start(*ack_client,2200);ack_client->write_done(true);
+ r=response(6,10);put32(r.data+2,0xaabb);put32(r.data+6,5000);recv(*ack_client,r,2201);
+ r=response(130,9);put32(r.data+1,0xdead);recv(*ack_client,r,2202);assert(ack_client->by_id(1)->delivery==ACCEPTED);
+ assert(ack_client->send_text(false,0,"two"));f=start(*ack_client,2400);ack_client->write_done(true);
+ r=response(6,10);put32(r.data+2,0xaabb);put32(r.data+6,5000);recv(*ack_client,r,2401);
+ r=response(130,9);put32(r.data+1,0xaabb);recv(*ack_client,r,2402);
+ assert(ack_client->by_id(1)->delivery==ACCEPTED&&ack_client->by_id(2)->delivery==ACCEPTED);
+ // Native room login success/failure is correlated to the requested room prefix.
+ auto rooms=make_client();bootstrap(*rooms);rooms->waiting_messages=false;
+ Frame login;login.data[0]=26;login.len=34;memcpy(login.data+1,rooms->contacts[0].key,32);login.data[33]='p';
+ assert(rooms->enqueue(login));f=start(*rooms,3000);rooms->write_done(true);
+ r=response(6,10);put32(r.data+6,5000);recv(*rooms,r,3001);
+ assert(rooms->room(rooms->contacts[0].key)->state==RoomState::Joining);
+ r=response(133,8);r.data[2]=0xcd;recv(*rooms,r,3002);assert(rooms->remote_pending==26);
+ r.data[2]=0xab;recv(*rooms,r,3003);assert(rooms->room(rooms->contacts[0].key)->state==RoomState::Joined);
+ assert(rooms->enqueue(login));f=start(*rooms,3200);rooms->write_done(true);
+ r=response(6,10);put32(r.data+6,5000);recv(*rooms,r,3201);
+ r=response(134,8);r.data[2]=0xab;recv(*rooms,r,3202);assert(rooms->room(rooms->contacts[0].key)->state==RoomState::Failed);
+ assert(rooms->enqueue(login));f=start(*rooms,3400);rooms->write_done(true);
+ r=response(6,10);put32(r.data+6,5000);recv(*rooms,r,3401);rooms->next(9000,f);
+ assert(rooms->room(rooms->contacts[0].key)->state==RoomState::TimedOut);
  // Full key identity, prefix collision rejection, queue limits and version gating.
  c.contacts[1]=c.contacts[0];c.contacts[1].key[31]=1;c.contact_count=2;assert(!c.send_text(false,0,"ambiguous"));
  c.contact_count=1;c.protocol=7;assert(!c.simple(56,0));c.protocol=14;

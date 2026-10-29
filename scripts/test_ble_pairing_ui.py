@@ -144,14 +144,22 @@ int main(int argc,char **argv){
 '''
     # Compile and exercise the actual MeshCore workspace with real LVGL too.
     companion_setup = r'''
-#include "meshcrossway_meshcore_protocol.h"
+#include "meshcrossway_conversations.h"
+#include <atomic>
+static int64_t esp_timer_get_time(){return 6000000;}
+namespace mcxhistory {
+static mcxchat::Local local;static bool restored=true;
+static const char *status(){return "SD: test fixture";}
+static void poll(meshmc::Client &,uint32_t,uint32_t){}
+}
 namespace meshmc {
+static std::atomic<uint32_t> connection_epoch{1};
 static Client *client=nullptr;
 static void poll(){}
 static bool channel_secret(const char *,uint8_t *p){memset(p,0xA5,16);return true;}
 }
 static lv_obj_t *body=nullptr,*wifi_dialog=nullptr;
-static int page=1,nodes_filter=0,groups_filter=0,redraws=0;
+static int page=1,nodes_filter=0,groups_filter=0,chats_filter=0,redraws=0;
 static const lv_color_t green=lv_color_hex(0x72D8A5);
 static int content_width(){return 400;}
 static void draw(){++redraws;}
@@ -164,7 +172,7 @@ static lv_obj_t *mc_button(lv_obj_t *parent,const char *text){
   for(uint32_t i=0;i<lv_obj_get_child_cnt(parent);i++){
     lv_obj_t *b=lv_obj_get_child(parent,i);
     if(lv_obj_check_type(b,&lv_btn_class)&&lv_obj_get_child_cnt(b)&&!strcmp(lv_label_get_text(lv_obj_get_child(b,0)),text))return b;
-  }fprintf(stderr,"Missing MeshCore button: %s\n",text);assert(false);return nullptr;
+  }fprintf(stderr,"Missing MeshCore button: %s / children %u\n",text,(unsigned)lv_obj_get_child_cnt(parent));for(uint32_t i=0;i<lv_obj_get_child_cnt(parent);++i){auto *b=lv_obj_get_child(parent,i);if(lv_obj_get_child_cnt(b))fprintf(stderr,"child %u: %s\n",i,lv_label_get_text(lv_obj_get_child(b,0)));}assert(false);return nullptr;
 }
 static void test_companion_ui(const char *preview){
   meshmc::client=new meshmc::Client();auto &c=*meshmc::client;c.attach(173);c.initialized=true;c.protocol=14;c.channel_count=2;c.max_power=22;
@@ -182,11 +190,24 @@ static void test_companion_ui(const char *preview){
   tap_object(mc_button(mcui::dialog,"APPLY"));advance();assert(c.qcount==0&&mcui::confirm_pending);
   tap_object(mc_button(mcui::dialog,"CONFIRM"));advance();assert(c.qcount==1&&c.queue[0].frame.data[0]==32&&c.queue[0].frame.len==50);
   assert(c.queue[0].frame.data[34]==0xa5);mcui::close();c.qcount=0;
-  memcpy(mcui::target_key,c.contacts[0].key,32);mcui::group=false;mcui::conversation=true;mcui::compose();advance();
+  mcui::select(mcxchat::key_for(c,false,0));mcui::compose();advance();
   lv_textarea_set_text(mcui::fields[0],"hello from display");tap_object(mc_button(mcui::dialog,"SEND"));advance();
   assert(!mcui::dialog&&c.qcount==1&&c.queue[0].frame.data[0]==2&&c.message_count==1);
   body=panel_at(lv_scr_act(),0,34,400,286,bg);page=1;mcui::render();advance();
   page=3;lv_obj_clean(body);mcui::render();advance();
+  // Exercise phase-1 controls against the real LVGL workspace and production model.
+  c.qcount=0;c.messages[0].delivery=meshmc::UNCERTAIN;
+  mcui::compose();lv_textarea_set_text(mcui::fields[0],"draft kept offline");mcui::close();
+  assert(!strcmp(mcxhistory::local.get(mcui::selected)->draft,"draft kept offline"));
+  assert(mcui::conversation);mcui::chat_tools();advance();tap_object(mc_button(mcui::scroller,"FAVORITE"));advance();
+  assert(mcxhistory::local.get(mcui::selected)->favorite);mcui::close();
+  mcui::alias_event(nullptr);advance();lv_textarea_set_text(mcui::fields[0],"Local Heltec");advance();
+  tap_object(mc_button(mcui::dialog,"SAVE"));advance();assert(!strcmp(mcui::thread_name(mcui::selected),"Local Heltec"));
+  mcui::message_details_now((void *)(intptr_t)1);advance();tap_object(mc_button(mcui::dialog,"RESEND"));advance();
+  assert(c.qcount==0&&mcui::confirm_pending);tap_object(mc_button(mcui::dialog,"RESEND"));advance();
+  assert(c.qcount==1&&c.message_count==2&&!mcui::dialog);
+  mcui::show_list();assert(!mcui::conversation);lv_obj_clean(body);mcui::render();advance();assert(mcui::thread_count==1);
+  c.qcount=0;mcui::select(mcxchat::key_for(c,false,0));
   for(int i=0;i<20;i++){mcui::form(26);assert(lv_textarea_get_password_mode(mcui::fields[1]));mcui::close();}
   mcui::tools();advance();assert(lv_obj_get_child_cnt(mcui::scroller)==meshmc::COMMAND_COUNT);mcui::close();
   c.protocol=7;mcui::tools();lv_obj_scroll_to_y(mcui::scroller,4000,LV_ANIM_OFF);advance();assert(!strcmp(lv_label_get_text(lv_obj_get_child(lv_obj_get_child(mcui::scroller,meshmc::COMMAND_COUNT-1),0)),"Local radio console"));assert(lv_obj_has_state(lv_obj_get_child(mcui::scroller,meshmc::COMMAND_COUNT-1),LV_STATE_DISABLED));mcui::close();

@@ -67,8 +67,8 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary,label=approved[version]
         status="hardware-tested"
     elif version=="v0.7.9":
-        summary="EXPERIMENTAL / HARDWARE TEST PENDING: SD snapshot prototype for MeshCore contact/channel/message history. Plaintext storage. Do not use for important data until crash, capacity, identity and durability tests pass."
-        label="MeshCore SD history / EXPERIMENTAL"
+        summary="EXPERIMENTAL / HARDWARE TEST PENDING: MeshCore conversations, native room sessions, local organization and versioned SD journal. Plaintext, bounded local history. Real-radio ACK, power-cut and coexistence validation remains pending."
+        label="Messaging phase 1 / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.7.8":
         summary="EXPERIMENTAL / HARDWARE TEST PENDING: Fixed left swipe so dragging a nav icon no longer selects the page; Map right action scrolling no longer overlays action icons; header version small beside brand with no DEV; MT and MC Bluetooth status on one line; battery percentage inside a far-right battery silhouette, battery disappears when disconnected. Preserves Wi-Fi/BLE profiles and prior v0.7.7 chat/emoji updates. Erase unchecked."

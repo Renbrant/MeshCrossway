@@ -6,6 +6,7 @@
 #include "freertos/FreeRTOS.h"
 #include "mbedtls/sha256.h"
 #include "meshcrossway_meshcore_protocol.h"
+#include "meshcrossway_sd_history.h"
 #include <atomic>
 #include <new>
 namespace meshmc {
@@ -93,7 +94,9 @@ static void poll() {
     return;
   }
   if (!client->connected || seen_epoch != connection_epoch.load()) {
+    mcxhistory::before_attach(*client,(uint32_t)(esp_timer_get_time()/1000));
     client->attach(negotiated_payload.load());
+    client->history_ready=false;
     seen_epoch = connection_epoch.load();
   }
   if (overflow.exchange(false)) {
@@ -127,8 +130,10 @@ static void poll() {
              (unsigned)f.data[0],(unsigned)f.len);
     }
   }
+  mcxhistory::poll(*client,now,seen_epoch);
+  if (!mcxhistory::ready_for(*client)) return; // Restore before draining the radio backlog.
   Frame f;
-  if (client->next(now, f) && (!send_frame || !send_frame(f.data, f.len)))
+  if (client->next(now, f,mcxhistory::restored) && (!send_frame || !send_frame(f.data, f.len)))
     client->write_done(false);
   if (client->fault && close_link)
     close_link();
