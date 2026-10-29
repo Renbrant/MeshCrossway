@@ -6,6 +6,7 @@
 #include "emoji_presentation.h"
 #include "emoji_assets_data.h"
 #include "emoji_flag_asset.h"
+#include "emoji_small_sprite.h"
 #include <string.h>
 
 namespace mcxemoji {
@@ -71,16 +72,30 @@ inline lv_font_t *font() {
     atlas = nullptr;
     return nullptr;
   }
+  // Use 14px pictures with a 16px font line box, close to the surrounding
+  // 14px UI text. Keep the original 20px assets byte-for-byte unchanged.
+  // The compact destination for glyph i ends before input i+1 begins;
+  // a local 264-byte copy avoids overwriting the current source sprite.
+  for (size_t i = 0; i < kEmojiRenderedCount; ++i) {
+    uint8_t source[kEmojiOriginalBytes];
+    memcpy(source, atlas+i*kEmojiOriginalBytes, sizeof(source));
+    if (!downsample_emoji(source,sizeof(source),
+                          atlas+i*kEmojiDrawBytes,kEmojiDrawBytes)) {
+      heap_caps_free(atlas);
+      atlas=nullptr;
+      return nullptr;
+    }
+  }
   for (size_t i = 0; i < kEmojiRenderedCount; ++i) {
     memset(&images[i], 0, sizeof(images[i]));
     images[i].header.always_zero = 0;
-    images[i].header.w = 20;
-    images[i].header.h = 20;
+    images[i].header.w = kEmojiDrawSide;
+    images[i].header.h = kEmojiDrawSide;
     images[i].header.cf = LV_IMG_CF_INDEXED_4BIT;
-    images[i].data_size = kEmojiAssetSize;
-    images[i].data = atlas + i * kEmojiAssetSize;
+    images[i].data_size = kEmojiDrawBytes;
+    images[i].data = atlas + i * kEmojiDrawBytes;
   }
-  emoji_font = lv_imgfont_create(20, image_cb);
+  emoji_font = lv_imgfont_create(16, image_cb);
   if (!emoji_font) {
     heap_caps_free(atlas);
     atlas = nullptr;
@@ -97,29 +112,12 @@ inline void set_message_text(lv_obj_t *label, const char *original_utf8) {
   if (!original_utf8) original_utf8 = "";
   lv_font_t *f = font();
   if (!f) {
-    // No font, image memory or imgfont Kconfig: preserve surrounding text and
-    // replace each complete emoji cluster with a readable placeholder.
-    char out[1200] = {}; // Empty messages must not expose uninitialized stack data.
-    size_t used = 0;
-    const size_t n = strlen(original_utf8);
-    for (size_t pos = 0; pos < n;) {
-      uint32_t cp;
-      size_t width;
-      if (!decode(original_utf8, n, pos, cp, width)) {
-        if (!append(out, sizeof(out), used, "?", 1)) break;
-        ++pos;
-        continue;
-      }
-      const size_t span = cluster_length(original_utf8, n, pos);
-      if (span) {
-        if (!append(out, sizeof(out), used, "[emoji]", 7)) break;
-        pos += span;
-      } else {
-        if (!append(out, sizeof(out), used, original_utf8 + pos, width)) break;
-        pos += width;
-      }
-    }
-    lv_label_set_text(label, out);
+    // No image font/PSRAM: show '$' even for recognized emoji rather than
+    // leaking invisible private-use codepoints. Source UTF-8 stays unchanged.
+    char out[1200] = {};
+    const Report r = transform(original_utf8,strlen(original_utf8),
+                               out,sizeof(out),false);
+    lv_label_set_text(label,r.truncated?"[message too long]":out);
     return;
   }
   char out[1200];
