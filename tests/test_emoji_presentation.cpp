@@ -1,4 +1,5 @@
 // Standalone host tests. No firmware or LVGL dependency.
+// Standard string literals contain UTF-8 bytes under GCC ESP-IDF/C++20.
 #include "../firmware/display-prototype/emoji/emoji_presentation.h"
 #include <assert.h>
 #include <stdio.h>
@@ -8,14 +9,14 @@ static bool contains(const char *haystack, const char *needle) {
   return strstr(haystack, needle) != nullptr;
 }
 static void plain_and_accents() {
-  const char src[] = u8"Acao / Sao / Caf\u00e9 123 # *!";
+  const char src[] = "Acao / Sao / Caf\u00e9 123 # *!";
   char dst[128];
   const mcxemoji::Report r = mcxemoji::transform(src, strlen(src), dst, sizeof(dst));
   assert(strcmp(src, dst) == 0);
   assert(r.emoji_substitutions == 0 && r.unsupported_clusters == 0 && !r.truncated);
 }
 static void known_single_and_composed() {
-  const char src[] = u8"Hello \U0001f604 / \u2764\ufe0f / \U0001f1e7\U0001f1f7 / \U0001f469\u200d\U0001f4bb / \U0001f44d\U0001f3fd!";
+  const char src[] = "Hello \U0001f604 / \u2764\ufe0f / \U0001f1e7\U0001f1f7 / \U0001f469\u200d\U0001f4bb / \U0001f44d\U0001f3fd!";
   char dst[256];
   char raw_copy[sizeof(src)]; memcpy(raw_copy, src, sizeof(src));
   const mcxemoji::Report r = mcxemoji::transform(src, strlen(src), dst, sizeof(dst));
@@ -26,14 +27,14 @@ static void known_single_and_composed() {
   assert(!contains(dst,"[emoji]"));
 }
 static void unknown_and_zwj_stay_atomic() {
-  const char src[] = u8"A \U0001f468\u200d\U0001f469\u200d\U0001f467 B \U0001f1ef\U0001f1f5";
+  const char src[] = "A \U0001f468\u200d\U0001f469\u200d\U0001f467 B \U0001f1ef\U0001f1f5";
   char dst[128];
   const mcxemoji::Report r = mcxemoji::transform(src, strlen(src), dst, sizeof(dst));
   assert(r.emoji_substitutions == 0 && r.unsupported_clusters == 2);
   assert(strcmp(dst, "A [emoji] B [emoji]") == 0);
 }
 static void keycaps_vs_normal_digits() {
-  const char src[] = u8"No. 1 & #, but \u0031\ufe0f\u20e3 \u0023\ufe0f\u20e3";
+  const char src[] = "No. 1 & #, but \u0031\ufe0f\u20e3 \u0023\ufe0f\u20e3";
   char dst[128];
   const mcxemoji::Report r = mcxemoji::transform(src, strlen(src), dst, sizeof(dst));
   assert(r.emoji_substitutions == 2);
@@ -49,7 +50,7 @@ static void invalid_utf8_never_overreads() {
   assert(strcmp(dst,"??") == 0 && t.invalid_bytes == 2);
 }
 static void truncation_never_splits_utf8() {
-  const char src[] = u8"\U0001f604\U0001f1fa\U0001f1f8X";
+  const char src[] = "\U0001f604\U0001f1fa\U0001f1f8X";
   char dst[5]; // one PUA (3 bytes) and trailing null; cannot fit second glyph
   const mcxemoji::Report r = mcxemoji::transform(src, strlen(src), dst, sizeof(dst));
   assert(r.emoji_substitutions == 1 && r.truncated && strlen(dst) == 3);
