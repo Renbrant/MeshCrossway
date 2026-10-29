@@ -16,7 +16,7 @@ def is_docs_only(paths: list[str]) -> bool:
     if not paths:
         return False
     for p in paths:
-        if (not isinstance(p, str) or not p or "\n" in p or "\\\" in p or
+        if (not isinstance(p, str) or not p or "\n" in p or chr(92) in p or
                 p.startswith("/") or ".." in PurePosixPath(p).parts):
             return False
         if p == "README.md":
