@@ -44,7 +44,8 @@ static void read(lv_indev_drv_t *,lv_indev_data_t *data){
   portEXIT_CRITICAL(&mux);
   if(got){delivered=next;++serial;
     if(next.cancel){lv_indev_reset(device,nullptr);lv_indev_wait_release(device);
-      if(on_sample)on_sample(false,0,0,next.ms,true);notified=serial;
+      if(on_sample)on_sample(false,0,0,next.ms,true);
+      notified=serial;
     }
   }
   data->point.x=delivered.x;data->point.y=delivered.y;

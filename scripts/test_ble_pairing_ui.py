@@ -410,7 +410,8 @@ using portMUX_TYPE=int;
 using TaskHandle_t=void *;
 static bool fake_task_failure=false;
 static int xTaskCreatePinnedToCore(void (*)(void *),const char *,unsigned,void *,int,TaskHandle_t *out,int){
-  if(fake_task_failure)return 0;*out=(void *)1;return pdPASS;
+  if(fake_task_failure)return 0;
+  *out=(void *)1;return pdPASS;
 }
 static void vTaskDelay(unsigned){}
 static unsigned uxTaskGetStackHighWaterMark(void *){return 2048;}
@@ -431,7 +432,7 @@ static bool esp_lcd_touch_get_coordinates(void *,uint16_t *,uint16_t *,uint16_t 
         touch=(ROOT/'tests/touch_input_test.cpp').read_text().replace('// PRODUCTION_EDGE_CODE',edge)
         source=temp/'touch.cpp';source.write_text(allocator+touch)
         binary=temp/'touch'
-        subprocess.run(['c++','-std=c++17',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
+        subprocess.run(['c++','-std=c++17','-Werror=misleading-indentation',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
         subprocess.run([str(binary)],check=True)
 
 
