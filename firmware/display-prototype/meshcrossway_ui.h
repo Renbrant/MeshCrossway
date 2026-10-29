@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.7.8: swipe-open sidebars without arrow buttons.
+// MeshCrossway v0.7.9: swipe-open sidebars without arrow buttons.
 // MeshCore is live over BLE. Meshtastic and navigation remain previews.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
@@ -261,7 +261,7 @@ static lv_obj_t *top_mt_name=nullptr,*top_mc_name=nullptr,*top_charge=nullptr;
 static lv_obj_t *top_battery=nullptr,*top_battery_fill=nullptr,*top_battery_percent=nullptr;
 static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
 static bool left_compact=true,right_compact=true;
-static int nodes_filter=0,groups_filter=0,active_thread=-1,more_view=0;
+static int nodes_filter=0,groups_filter=0,chats_filter=0,active_thread=-1,more_view=0;
 static uint32_t ble_generation=0;
 static lv_obj_t *ble_dialog=nullptr,*ble_pin=nullptr,*ble_pin_keyboard=nullptr,*ble_pin_notice=nullptr;
 static lv_obj_t *tab_vectors[6]={};
@@ -393,13 +393,14 @@ static void notice(const char *title,const char *body_text){
   lv_label_set_long_mode(message,LV_LABEL_LONG_WRAP);
   lv_obj_set_height(message,143);
 }
-namespace mcui {static void tools();static void compose();static void form(uint8_t);static void thread_info();}
+namespace mcui {static void tools();static void compose();static void form(uint8_t);static void thread_info();static void chat_tools();static void show_list();}
 static void run_action(void *data){
   int id=(int)(intptr_t)data;
   if(id==A_NEW){mcui::compose();return;}
   if(id==A_GROUP_NEW){mcui::form(32);return;}
   if(id==A_THREAD_INFO){mcui::thread_info();return;}
-  if(id==A_PACKETS||id==A_NETWORKS||id==A_NODE_DETAILS){mcui::tools();return;}
+  if(id==A_PACKETS){mcui::chat_tools();return;}
+  if(id==A_NETWORKS||id==A_NODE_DETAILS){mcui::tools();return;}
   if(id==A_WIFI){close_shade();wifi_setup(nullptr);return;}
   if(id==A_BLE_ENABLE){(void)meshble::request_start();page=5;more_view=1;draw();return;}
   if(id==A_BLE_SCAN){meshble::scan();page=5;more_view=1;draw();return;}
@@ -482,7 +483,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Location sharing and radio transmission are off. SD Wi-Fi backup is plaintext; protect your SD card.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.7.8","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
+      notice("MESH CROSSWAY v0.7.9","Dual mesh field console / demonstration. No operational radio or GNSS yet.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -587,6 +588,7 @@ static void apply_filter(void *value){
   const int filter=(int)(intptr_t)value;
   if(page==1)nodes_filter=filter;
   else if(page==2)groups_filter=filter;
+  else if(page==3)chats_filter=filter;
   draw();
 }
 static void on_filter(lv_event_t *e){lv_async_call(apply_filter,lv_event_get_user_data(e));}
@@ -1039,7 +1041,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.7.8] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.7.9] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1059,7 +1061,7 @@ static void refresh(lv_timer_t *){
     if(strcmp(lv_label_get_text(objects[i]),values[i]))lv_label_set_text(objects[i],values[i]);
 }
 static void init(){
-  printf("[MCX-DIAG v0.7.8] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.7.9] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1072,7 +1074,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.7.8",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.7.9",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,242,7,22,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,273,7,20,muted);
