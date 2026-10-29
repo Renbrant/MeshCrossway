@@ -25,6 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit owner approval.
 approved={
+    "v0.7.8":("Owner confirmed v0.7.8 works perfectly on Waveshare and explicitly chose it as recovery baseline on 2026-10-29; firmware bytes must remain unchanged.", "Owner-tested / recommended recovery"),
     "v0.6.8":("Owner confirmed normal operation and PIN-free manual web screenshots. Exact published image retained. MeshCore application traffic was not implemented in this release.", "Hardware-tested UI / screenshot rollback"),
     "v0.6.2":("Owner confirmed touchscreen, Wi-Fi and normal UI work on the Waveshare Rev2.0; confirmed working after v0.6.3 failed.", "Last hardware-tested / recommended"),
 }
@@ -65,6 +66,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.7.9":
+        summary="EXPERIMENTAL / HARDWARE TEST PENDING: SD snapshot prototype for MeshCore contact/channel/message history. Plaintext storage. Do not use for important data until crash, capacity, identity and durability tests pass."
+        label="MeshCore SD history / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.7.8":
         summary="EXPERIMENTAL / HARDWARE TEST PENDING: Fixed left swipe so dragging a nav icon no longer selects the page; Map right action scrolling no longer overlays action icons; header version small beside brand with no DEV; MT and MC Bluetooth status on one line; battery percentage inside a far-right battery silhouette, battery disappears when disconnected. Preserves Wi-Fi/BLE profiles and prior v0.7.7 chat/emoji updates. Erase unchecked."
         label="Edge gesture and compact status bar fixes / EXPERIMENTAL"
