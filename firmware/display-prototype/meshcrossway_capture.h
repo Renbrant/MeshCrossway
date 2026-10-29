@@ -3,7 +3,6 @@
 // Never register a second touch input or enable the legacy remote server.
 #include "esp_heap_caps.h"
 #include "esp_http_server.h"
-#include "esp_random.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -24,14 +23,11 @@ enum State { IDLE=0, QUEUED=1, RENDERING=2, READY=3, FAILED=4, CANCELLED=5, SEND
 static std::atomic<int> phase{IDLE};
 static uint8_t *frame=nullptr;
 static SemaphoreHandle_t completion=nullptr;
-static char pairing_pin[9]="";
 static int64_t earliest_capture=0;  // HTTP server task only.
-static int64_t deny_until=0;        // Throttle incorrect PIN attempts.
 static std::atomic<uint32_t> captures{0},failures{0},last_capture_ms{0};
 static std::atomic<bool> circuit_open{false};
 static constexpr uint32_t MAX_CAPTURE_MS=2000; // Disable future captures if redraw stalls excessively.
 
-static const char *pin(){return pairing_pin;}
 static bool available(){return frame!=nullptr&&completion!=nullptr&&!circuit_open.load();}
 static void capture_timer(lv_timer_t *){
   int expected=QUEUED;
@@ -56,8 +52,6 @@ static void capture_timer(lv_timer_t *){
   xSemaphoreGive(completion);
 }
 static void init(){
-  snprintf(pairing_pin,sizeof(pairing_pin),"%08lu",
-           (unsigned long)(10000000u+esp_random()%90000000u));
   completion=xSemaphoreCreateBinary();
   frame=(uint8_t*)heap_caps_malloc(FRAME_BYTES,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
   if(!available()){
@@ -76,17 +70,7 @@ static esp_err_t reject(httpd_req_t *req,const char *status,const char *message)
   httpd_resp_set_hdr(req,"Cache-Control","no-store");
   return httpd_resp_send(req,message,HTTPD_RESP_USE_STRLEN);
 }
-static bool authorized(httpd_req_t *req){
-  const int64_t now=esp_timer_get_time();
-  if(now<deny_until)return false;
-  char supplied[16]={};
-  if(httpd_req_get_hdr_value_str(req,"X-MCX-Pin",supplied,sizeof(supplied))==ESP_OK &&
-     strlen(supplied)==8&&strcmp(supplied,pairing_pin)==0)return true;
-  deny_until=now+800000;
-  return false;
-}
 static esp_err_t screenshot(httpd_req_t *req){
-  if(!authorized(req))return reject(req,"403 Forbidden","View PIN required");
   if(!available())return reject(req,"503 Service Unavailable","Capture disabled or allocation unavailable");
   const int64_t now=esp_timer_get_time();
   if(now<earliest_capture)return reject(req,"429 Too Many Requests","Manual capture: wait 5 seconds");

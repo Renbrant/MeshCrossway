@@ -1,5 +1,5 @@
 #pragma once
-// v0.6: unchanged HTTP status and PIN-protected manual read-only capture.
+// v0.6: HTTP status and PIN-free manual read-only capture.
 // No LVGL calls from HTTP thread and no remote input.
 #include "meshcrossway_network.h"
 #include "meshcrossway_capture.h"
@@ -19,16 +19,15 @@ body{background:#090c10;color:#f2f4f7;font:16px system-ui;max-width:720px;margin
 h1{color:#ff8a24}section{background:#181d24;padding:20px;border-radius:12px;margin:14px 0}
 dl{display:grid;grid-template-columns:1fr 1fr;gap:12px}dd{margin:0}small{color:#9aa6b4}
 .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-input{font:inherit;padding:12px;max-width:190px;background:#090c10;border:1px solid #9aa6b4;border-radius:6px;color:white}
 button{font:inherit;padding:12px 16px;background:#ff8a24;color:#090c10;border:0;border-radius:6px;cursor:pointer}
 button:disabled{opacity:.5;cursor:wait}canvas[hidden]{display:none}canvas{display:block;width:100%;max-width:480px;image-rendering:pixelated;border:1px solid #9aa6b4;margin-top:14px}
-</style><h1>MeshCrossway Remote</h1><p>Experimental manual screen view · v0.6.7</p>
+</style><h1>MeshCrossway Remote</h1><p>Experimental manual screen view · v0.6.8</p>
 <section><p id="connection" role="status">Connecting to device…</p><dl>
 <dt>Firmware</dt><dd id="version">—</dd><dt>Uptime</dt><dd id="uptime">—</dd>
 <dt>Free heap</dt><dd id="heap">—</dd><dt>Local IP</dt><dd id="ip">—</dd><dt>SD backup</dt><dd id="sd">—</dd><dt>Manual captures</dt><dd id="captures">—</dd><dt>Last capture</dt><dd id="latency">—</dd></dl></section>
 <section><h2>Read-only screen capture</h2>
-<p>Enter the eight-digit View PIN shown in device Settings. Captures are manual and limited to one every five seconds.</p>
-<div class="controls"><input type="password" id="pin" inputmode="numeric" maxlength="8" placeholder="View PIN" autocomplete="off" aria-label="View PIN"><button type="button" id="capture">Capture screen</button></div>
+<p>Press Capture screen to take a screenshot. No PIN is required. Captures are manual and limited to one every five seconds.</p>
+<div class="controls"><button type="button" id="capture">Capture screen</button></div>
 <p role="status" id="capture-status">No capture requested.</p><canvas id="screen" width="480" height="320" hidden></canvas></section>
 <p>Remote touch is disabled. Keep using the physical touchscreen normally.</p>
 <small>Development only: HTTP is unencrypted. Use a trusted local network; never forward device port 80 to the Internet.</small>
@@ -52,11 +51,9 @@ async function update(){
 const button=document.getElementById('capture'),message=document.getElementById('capture-status');
 let taking=false;
 button.addEventListener('click',async()=>{
- const pin=document.getElementById('pin').value;
- if(!/^\d{8}$/.test(pin)){message.textContent='Enter the eight-digit PIN shown on the device.';return;}
  taking=true;button.disabled=true;message.textContent='Capturing once…';
  try{
-  const response=await fetch('/screen.raw',{headers:{'X-MCX-Pin':pin},cache:'no-store'});
+  const response=await fetch('/screen.raw',{cache:'no-store'});
   if(!response.ok)throw Error((await response.text()).slice(0,100)||'Capture error '+response.status);
   const bytes=await response.arrayBuffer();
   if(bytes.byteLength!==480*320*2)throw Error('Unexpected image size');
@@ -90,7 +87,7 @@ static esp_err_t health(httpd_req_t *req){
   char ip[16],state[30],body[384];
   meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
   const int n=snprintf(body,sizeof(body),
-    "{\"version\":\"v0.6.7\",\"uptime_ms\":%llu,\"free_heap\":%lu,\"ip\":\"%s\",\"sd_backup\":\"%s\",\"sd_step\":\"%s\",\"sd_errno\":%d,\"screen\":%s,\"touch\":false,\"captures\":%lu,\"capture_failures\":%lu,\"capture_ms\":%lu}",
+    "{\"version\":\"v0.6.8\",\"uptime_ms\":%llu,\"free_heap\":%lu,\"ip\":\"%s\",\"sd_backup\":\"%s\",\"sd_step\":\"%s\",\"sd_errno\":%d,\"screen\":%s,\"touch\":false,\"captures\":%lu,\"capture_failures\":%lu,\"capture_ms\":%lu}",
     (unsigned long long)(esp_timer_get_time()/1000),(unsigned long)esp_get_free_heap_size(),ip,
     meshbackup::status(),meshbackup::step_name(meshbackup::failure_step.load()),
     meshbackup::failure_errno.load(),meshcapture::available()?"true":"false",
@@ -119,6 +116,6 @@ static void start(){
   if(result==ESP_OK)result=httpd_register_uri_handler(server,&screenshot);
   if(result!=ESP_OK){httpd_stop(server);printf("[MCX-HTTP] route setup failed err=%d\n",(int)result);return;}
   running.store(true);
-  printf("[MCX-HTTP v0.6.7] ready port=80 routes=/,/health,/screen.raw manual=ON touch=OFF\n");
+  printf("[MCX-HTTP v0.6.8] ready port=80 routes=/,/health,/screen.raw manual=ON touch=OFF\n");
 }
 } // namespace meshhealth
