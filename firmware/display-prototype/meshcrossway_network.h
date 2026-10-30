@@ -120,6 +120,16 @@ static void get_status(char *ip,size_t ip_len,char *state,size_t state_len){
   snprintf(state,state_len,"%s",wifi_state);
   portEXIT_CRITICAL(&guard);
 }
+struct HomeStatus {char ssid[33]={},state[30]={};bool connected=false;};
+static HomeStatus home_status(){
+  HomeStatus out;
+  portENTER_CRITICAL(&guard);
+  snprintf(out.ssid,sizeof(out.ssid),"%s",ssid_name);
+  snprintf(out.state,sizeof(out.state),"%s",wifi_state);
+  out.connected=local_ip[0]!=0;
+  portEXIT_CRITICAL(&guard);
+  return out;
+}
 static void timer_callback(void*){
   // Timer task must never reconfigure Wi-Fi itself.
   (void)esp_event_post(MCX_CONTROL_EVENT,RETRY_KNOWN,nullptr,0,0);
@@ -144,7 +154,7 @@ static bool configure_station(const credentials_t &c) {
   memcpy(station.sta.password,c.password,strlen(c.password));
   // Set only after a previous attempt has disconnected.
   if(esp_wifi_set_config(WIFI_IF_STA,&station)!=ESP_OK)return false;
-  snprintf(ssid_name,sizeof(ssid_name),"%s",c.ssid);
+  portENTER_CRITICAL(&guard);snprintf(ssid_name,sizeof(ssid_name),"%s",c.ssid);local_ip[0]=0;portEXIT_CRITICAL(&guard);
   wants_station=true;
   station_connected=false;
   retries=0;

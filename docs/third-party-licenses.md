@@ -67,3 +67,7 @@ Uses the existing pinned LVGL 8.4 LodePNG decoder (Lode Vandevenne, zlib-style n
 ## v0.8.10 remote companion
 
 The offline dashboard and mailbox are original MeshCrossway code; the unchanged logo comes from `docs/site/assets/meshcrossway-logo.svg`. No new firmware dependencies are added. SHA-256 uses the existing ESP-IDF mbedTLS component. The host-only `tests/remote_chat_test.cpp` links system OpenSSL ([source and license](https://github.com/openssl/openssl/tree/openssl-3.0.13), Apache-2.0 in OpenSSL 3.x), tested locally with OpenSSL 3.0.13. CI uses its runner-provided version; no OpenSSL source or binary is copied into firmware or distributed by this change. Runtime release dependency/license review items remain open.
+
+## v0.8.11 Home and GNSS accuracy
+
+Original presentation/parser code and existing math/UART/LVGL dependencies only. Research reference: u-blox M10 SPG 5.10 interface description, UBX-21035062 R03, sections PUBX,00, GST and NMEA position validity. The document is not bundled; no manufacturer code, schema or bindings were copied. [Reference and statistical interpretation](home-live-v0811.md).

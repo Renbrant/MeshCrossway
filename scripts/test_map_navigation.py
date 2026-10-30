@@ -48,7 +48,7 @@ static void esp_http_client_cleanup(void *){}
     task_header=temp/'freertos/task.h'
     task_header.write_text(task_header.read_text().replace('static void vTaskDelay(unsigned){}', 'static void (*fake_delay_hook)(unsigned)=nullptr;\nstatic void vTaskDelay(unsigned n){if(fake_delay_hook)fake_delay_hook(n);}'))
     ui=(ROOT/'firmware/display-prototype/meshcrossway_ui.h').read_text()
-    refresh=ui[ui.index('static void gps_refresh('):ui.index('static void draw(){',ui.index('static void gps_refresh('))]
+    refresh=ui[ui.index('static void gps_refresh('):ui.index('// Only this timer owns the Home cards.',ui.index('static void gps_refresh('))]
     header=ui[ui.index('  gps_icon=color_label(top,'):ui.index('  top_battery=panel_at(top,')]
     actions=ui[ui.index('enum Action {'):ui.index('static void draw(); // Forward-declared')]
     glyphs=ui[ui.index('static const char *context_glyph('):ui.index('// Place a separate, thin scroll indicator')]
@@ -77,6 +77,8 @@ static int uart_param_config(int,const uart_config_t *){return 0;}
 static int uart_set_pin(int,int tx,int rx,int,int){fake_uart_tx=tx;fake_uart_rx=rx;return 0;}
 static int uart_driver_install(int,int,int,int,void *,int){return 0;}
 static int uart_driver_delete(int){return 0;}
+static unsigned fake_uart_writes=0;
+static int uart_write_bytes(int,const void *p,size_t n){assert(n==13&&!memcmp(p,"$PUBX,00*33\r\n",13));++fake_uart_writes;return int(n);}
 static int uart_set_baudrate(int,int rate){++fake_baud_calls;fake_uart_baud=rate;return 0;}
 static int uart_flush_input(int){++fake_flush_calls;return 0;}
 static int uart_read_bytes(int,void *p,unsigned cap,unsigned){return fake_uart_read?fake_uart_read(p,cap):0;}
@@ -99,3 +101,11 @@ static void xSemaphoreGive(void *){}
     binary=temp/'navigation_runtime'
     subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
     subprocess.run([str(binary),str(temp/'navigation-card')],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+
+    # Exercise the exact Home adapter and card construction with real LVGL.
+    helpers=ui[ui.index('static void show_center_heading('):ui.index('static void chat_row(')]
+    home=ui[ui.index('// Only this timer owns the Home cards.'):ui.index('static void draw(){',ui.index('// Only this timer owns the Home cards.'))]
+    source=temp/'home_cards.cpp';source.write_text(allocator+(ROOT/'tests/home_cards_test.cpp').read_text().replace('// PRODUCTION_HOME',helpers+home))
+    binary=temp/'home_cards'
+    subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
+    subprocess.run([str(binary)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
