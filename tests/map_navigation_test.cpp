@@ -53,7 +53,8 @@ static lv_obj_t *color_label(lv_obj_t *p,const char *s,int x,int y,int w,lv_colo
 // PRODUCTION_GPS_REFRESH
 }
 static lv_color_t drawbuf[480*20];static bool down=false;static int pointer_x=0,pointer_y=0;
-static void flush(lv_disp_drv_t *d,const lv_area_t *,lv_color_t *){lv_disp_flush_ready(d);}
+static unsigned display_flushes=0;
+static void flush(lv_disp_drv_t *d,const lv_area_t *,lv_color_t *){++display_flushes;lv_disp_flush_ready(d); }
 static void read_pointer(lv_indev_drv_t *,lv_indev_data_t *d){d->state=down?LV_INDEV_STATE_PRESSED:LV_INDEV_STATE_RELEASED;d->point.x=pointer_x;d->point.y=pointer_y;}
 static void advance(unsigned ms=80){for(unsigned n=0;n<ms;n+=5){lv_tick_inc(5);lv_timer_handler();}}
 static void tap(lv_obj_t *obj){lv_area_t a;lv_obj_update_layout(obj);lv_obj_get_coords(obj,&a);pointer_x=(a.x1+a.x2)/2;pointer_y=(a.y1+a.y2)/2;down=true;advance();down=false;advance();}
@@ -137,7 +138,19 @@ int main(int argc,char **argv){
  lv_event_send(navui::zoom_slider,LV_EVENT_RELEASED,nullptr);navui::toggle_zoom();
  navui::zoom=14;restore.zoom=14;mcxmap::configure(restore);navui::request();
  current=mcxmap::requested;mcxmap::ready=mcxmap::render(current,restore);navui::poll();assert(lv_img_get_zoom(navui::picture)==256);
+ advance();const auto idle_builds=navui::overlay_builds;display_flushes=0;
+ for(unsigned i=0;i<3;++i){navui::poll();advance();}
+ assert(navui::overlay_builds==idle_builds&&display_flushes==0);
  const double before=navui::longitude;pointer_x=210;pointer_y=150;down=true;advance();for(int x=215;x<=265;x+=5){pointer_x=x;advance(35);}down=false;advance();assert(!navui::following&&navui::longitude<before);
+ assert(navui::inflight&&lv_obj_get_x(navui::picture)==navui::pan_x&&navui::pan_x!=0);
+ const auto first_pan=navui::pan_x;pointer_x=210;pointer_y=150;down=true;advance();pointer_x=240;advance(70);down=false;advance();
+ assert(navui::pan_x>first_pan&&navui::inflight); // A second gesture is accepted while tiles load.
+ current=mcxmap::requested;make_tiles(current);mcxmap::ready=mcxmap::render(current,mcxmap::config);navui::poll();advance();assert(!navui::pan_x&&!navui::pan_y&&lv_obj_get_x(navui::picture)==0);
+ mcxnav::mock_state.preview_id=7;mcxnav::mock_state.points=2;mcxnav::mock_state.preview_count=2;mcxnav::mock_state.preferences.styles[0].id=7;mcxnav::mock_state.preferences.styles[0].visible=true;
+ for(unsigned i=0;i<2;++i){mcxnav::mock_state.preview[i].latitude=navui::latitude;mcxnav::mock_state.preview[i].longitude=navui::longitude+i*.0001;}
+ navui::poll();advance();const auto cached_builds=navui::overlay_builds;assert(navui::overlay_cache->line_count==1);
+ for(unsigned i=0;i<3;++i){lv_obj_invalidate(navui::picture);advance();}assert(navui::overlay_builds==cached_builds);
+ ++mcxnav::mock_state.revision;navui::poll();advance();assert(navui::overlay_builds==cached_builds); // Status-only updates do not reproject geometry.
  gpsui::open();advance();assert(gpsui::enabled_button);tap(gpsui::enabled_button);assert(!mcxgnss::configuration().enabled);tap(gpsui::baud_button);assert(mcxgnss::configuration().baud==9600);tap(gpsui::timeout_button);assert(mcxgnss::configuration().timeout_ms==5000);
  gpsui::clock_settings(nullptr);advance();assert(gpsui::clock_status);
  auto *zone_picker=lv_obj_get_child(info_dialog,2);assert(lv_obj_check_type(zone_picker,&lv_dropdown_class));
