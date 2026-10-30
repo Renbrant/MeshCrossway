@@ -136,3 +136,7 @@ See the [licensing policy](docs/licensing.md), [initial dependency review and ou
 
 > **v0.7.4 emoji fix (experimental):** MeshCore checkered-flag names (🏁 U+1F3C1) and message bodies render the 93rd local color glyph instead of `[emoji]`, without touching transmitted UTF-8 or saved bonds. [Test procedure](docs/checkered-flag-emoji-v074.md). The Web Flasher retains v0.6.8 as tested rollback.
 
+
+### Track manager v0.8.5
+
+Multiple visible tracks, per-track colors, recording presets and local web GPX management are described in [the track manager guide](docs/track-manager-v085.md).

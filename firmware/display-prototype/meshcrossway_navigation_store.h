@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <initializer_list>
 namespace mcxnav {
 static constexpr unsigned MAX_POIS=64,MAX_TRACKS=32,MAX_PREVIEW=256;
 struct Sample {double latitude=0,longitude=0,altitude=0;int64_t epoch=0;uint32_t segment=0,flags=0,crc=0,reserved=0;};
@@ -18,9 +19,15 @@ struct Poi {Sample point;uint32_t id=0;char name[40]={};uint32_t crc=0;};
 struct Header {char magic[8]={};uint32_t id=0,crc=0;};
 static_assert(sizeof(Sample)==48&&sizeof(Poi)==96&&sizeof(Header)==16,"Navigation schema layout");
 struct Track {uint32_t id=0,points=0;double metres=0;Sample first;bool gpx=false,recovered=false;};
+static constexpr unsigned MAX_VISIBLE=8,OVERLAY_POINTS=128;
+static constexpr uint32_t TRACK_COLORS[]={0xFF8A24,0x4DB8FF,0x72D8A5,0xFF7777,0xB99AFF,0xFFE066};
+struct Preset {char name[24]="Walking";uint32_t distance_m=3,interval_s=2;};
+struct Style {uint32_t id=0,color=0xFF8A24;bool visible=false;};
+struct Overlay {uint32_t id=0,color=0xFF8A24;unsigned count=0;Sample points[OVERLAY_POINTS];};
+struct Preferences {uint32_t magic=0x4d435832,selected=0;Preset presets[4];Style styles[MAX_TRACKS+1];uint32_t crc=0;};
 enum Mode {STOPPED,RECORDING,PAUSED,STORAGE_ERROR};
-enum Action {NONE,START,PAUSE,RESUME,STOP,SAVE_POI,DELETE_POI,SHOW_TRACK};
-struct Command {Action action=NONE;uint32_t id=0;Sample point;char name[40]={};};
+enum Action {NONE,START,PAUSE,RESUME,STOP,SAVE_POI,DELETE_POI,SHOW_TRACK,SET_VISIBLE,SET_COLOR,SELECT_PRESET,SAVE_PRESET,EXPORT_TRACK};
+struct Command {Action action=NONE;uint32_t id=0;Sample point;char name[40]={};uint32_t value=0,distance_m=0,interval_s=0;};
 static uint32_t checksum(const void *p,size_t n){uint32_t c=2166136261u;auto *b=(const uint8_t *)p;for(size_t i=0;i<n;++i)c=(c^b[i])*16777619u;return c;}
 static bool valid(const Sample &p){return std::isfinite(p.latitude)&&std::isfinite(p.longitude)&&p.latitude>=-90&&p.latitude<=90&&p.longitude>=-180&&p.longitude<=180&&(!(p.flags&1)||std::isfinite(p.altitude))&&!(p.flags&~1u)&&!p.reserved;}
 static double distance(const Sample &a,const Sample &b){const double r=3.141592653589793/180,lat=(b.latitude-a.latitude)*r,lon=(b.longitude-a.longitude)*r;const double s=sin(lat/2)*sin(lat/2)+cos(a.latitude*r)*cos(b.latitude*r)*sin(lon/2)*sin(lon/2);return 12742000*asin(sqrt(fmin(1,fmax(0,s))));}
@@ -38,13 +45,14 @@ static bool commit_export(const char *tmp,const char *file){
  (void)remove(backup);return true;
 }
 static void xml(FILE *f,const char *s){for(;*s;++s){switch(*s){case '&':fputs("&amp;",f);break;case '<':fputs("&lt;",f);break;case '>':fputs("&gt;",f);break;case '\"':fputs("&quot;",f);break;case '\'':fputs("&apos;",f);break;default:fputc(*s,f);}}}
-struct Snapshot {Mode mode=STOPPED;uint32_t current=0,points=0,revision=0,preview_id=0;double metres=0;unsigned poi_count=0,track_count=0,preview_count=0;char status[96]="Navigation storage starting";Poi pois[MAX_POIS];Track tracks[MAX_TRACKS];Sample preview[MAX_PREVIEW];};
+struct Snapshot {Mode mode=STOPPED;uint32_t current=0,points=0,revision=0,preview_id=0;double metres=0;unsigned poi_count=0,track_count=0,preview_count=0;char status[96]="Navigation storage starting";Poi pois[MAX_POIS];Track tracks[MAX_TRACKS];Sample preview[MAX_PREVIEW];Preferences preferences;Overlay overlays[MAX_VISIBLE];unsigned overlay_count=0;};
 class Store {
 public:
  char root[160]={},status[96]="SD navigation starting";
  Mode mode=STOPPED;uint32_t current=0,point_count=0,segment=1,revision=0;double metres=0;
  Poi pois[MAX_POIS];unsigned poi_count=0;Track tracks[MAX_TRACKS];unsigned track_count=0;
  Sample preview[MAX_PREVIEW];unsigned preview_count=0;uint32_t preview_id=0;
+ Preferences preferences;Overlay overlays[MAX_VISIBLE];unsigned overlay_count=0;
  bool loaded=false;int error=0;
 private:
  FILE *active=nullptr;Sample previous;bool have_previous=false,gap=true;uint32_t last_ms=0,next_track=1,next_poi=1;
@@ -56,6 +64,23 @@ private:
  bool point_xml(FILE *f,const Sample &p,const char *tag){fprintf(f,"<%s lat=\"%.8f\" lon=\"%.8f\">",tag,p.latitude,p.longitude);if(p.flags&1)fprintf(f,"<ele>%.2f</ele>",p.altitude);if(p.epoch>1577836800){time_t t=time_t(p.epoch);struct tm utc={};if(gmtime_r(&t,&utc)){char text[32];strftime(text,sizeof(text),"%Y-%m-%dT%H:%M:%SZ",&utc);fprintf(f,"<time>%s</time>",text);}}return !ferror(f);}
  bool poi_export(){char tmp[192],file[192];snprintf(tmp,sizeof(tmp),"%s/pois.gpx.tmp",root);snprintf(file,sizeof(file),"%s/pois.gpx",root);FILE *f=fopen(tmp,"wb");if(!f)return false;fputs("<?xml version=\"1.0\"?><gpx version=\"1.1\" creator=\"MeshCrossway\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n",f);for(unsigned i=0;i<poi_count;++i){point_xml(f,pois[i].point,"wpt");fputs("<name>",f);xml(f,pois[i].name);fputs("</name></wpt>\n",f);}fputs("</gpx>\n",f);bool ok=!ferror(f)&&sync_file(f);if(fclose(f))ok=false;if(ok)ok=commit_export(tmp,file);if(!ok)remove(tmp);return ok;}
 public:
+ Store(){const char *names[]={"Walking","Cycling","Car","Custom"};const unsigned distances[]={3,8,20,5},intervals[]={2,3,5,2};for(unsigned i=0;i<4;++i){snprintf(preferences.presets[i].name,24,"%s",names[i]);preferences.presets[i].distance_m=distances[i];preferences.presets[i].interval_s=intervals[i];}}
+ Style *style(uint32_t id,bool create=false){for(auto &v:preferences.styles)if(v.id==id)return &v;if(create)for(auto &v:preferences.styles)if(!v.id){v.id=id;v.color=TRACK_COLORS[id%6];return &v;}return nullptr;}
+ bool save_preferences(){if(!loaded)return false;char file[192],tmp[192];snprintf(file,sizeof(file),"%s/preferences.bin",root);snprintf(tmp,sizeof(tmp),"%s/preferences.tmp",root);preferences.crc=checksum(&preferences,offsetof(Preferences,crc));FILE *f=fopen(tmp,"wb");if(!f)return false;bool ok=fwrite(&preferences,1,sizeof(preferences),f)==sizeof(preferences)&&sync_file(f);if(fclose(f))ok=false;if(ok)ok=commit_export(tmp,file);return ok;}
+ void load_preferences(){
+  for(const char *suffix:{"preferences.bin","preferences.bin.bak"}){
+   char file[192];snprintf(file,sizeof(file),"%s/%s",root,suffix);FILE *f=fopen(file,"rb");if(!f)continue;
+   Preferences candidate;bool ok=fread(&candidate,1,sizeof(candidate),f)==sizeof(candidate)&&fgetc(f)==EOF&&!ferror(f);fclose(f);
+   ok=ok&&candidate.magic==0x4d435832&&candidate.selected<4&&candidate.crc==checksum(&candidate,offsetof(Preferences,crc));
+   for(auto &p:candidate.presets)ok=ok&&memchr(p.name,0,sizeof(p.name))&&p.name[0]&&p.distance_m>=3&&p.distance_m<=1000&&p.interval_s>=1&&p.interval_s<=300;
+   if(ok){preferences=candidate;return;}
+  }
+ }
+ void rebuild_overlays(){overlay_count=0;for(auto &v:preferences.styles){if(!v.id||!v.visible||(v.id==current&&(mode==RECORDING||mode==PAUSED))||overlay_count==MAX_VISIBLE)continue;char file[192];path(file,sizeof(file),v.id,"trk");FILE *f=fopen(file,"rb");if(!f)continue;if(!header(f,v.id)){fclose(f);continue;}auto &o=overlays[overlay_count];o.id=v.id;o.color=v.color;o.count=0;struct stat st={};if(fstat(fileno(f),&st)||st.st_size>16*1024*1024){fclose(f);continue;}const unsigned total=unsigned((st.st_size-sizeof(Header))/sizeof(Sample)),n=total<OVERLAY_POINTS?total:OVERLAY_POINTS;for(unsigned i=0;i<n;++i){const unsigned index=n>1?unsigned(uint64_t(i)*(total-1)/(n-1)):0;Sample point;if(fseek(f,long(sizeof(Header)+index*sizeof(Sample)),SEEK_SET)||fread(&point,1,sizeof(point),f)!=sizeof(point)||!same_sample(point))break;o.points[o.count++]=point;}fclose(f);++overlay_count;}}
+ bool visible(uint32_t id,bool show){bool found=id==current;for(unsigned i=0;i<track_count;++i)found|=tracks[i].id==id;if(!found)return false;unsigned n=0;for(auto &v:preferences.styles)n+=v.visible&&v.id!=id;if(show&&n>=MAX_VISIBLE){tell("Map limit: hide a track first (8 visible)");return false;}auto *v=style(id,true);if(!v)return false;const auto old=*v;v->visible=show;if(!save_preferences()){*v=old;tell("Track visibility save failed");return false;}rebuild_overlays();tell("Track visibility saved");return true;}
+ bool color(uint32_t id,uint32_t rgb){auto *v=style(id);if(!v||rgb>0xffffff)return false;const auto old=v->color;v->color=rgb;if(!save_preferences()){v->color=old;return false;}rebuild_overlays();tell("Track color saved");return true;}
+ bool preset(unsigned slot,const char *name,uint32_t metres,uint32_t seconds){if(slot>=4||!name||!name[0]||strlen(name)>23||metres<3||metres>1000||seconds<1||seconds>300)return false;auto old=preferences.presets[slot];snprintf(preferences.presets[slot].name,24,"%s",name);preferences.presets[slot].distance_m=metres;preferences.presets[slot].interval_s=seconds;if(!save_preferences()){preferences.presets[slot]=old;return false;}tell("Recording preset saved");return true;}
+ bool select_preset(unsigned slot){if(slot>=4)return false;auto old=preferences.selected;preferences.selected=slot;if(!save_preferences()){preferences.selected=old;return false;}tell("Recording preset selected");return true;}
  ~Store(){if(active)fclose(active);}
  bool scan_track(uint32_t id,Track &out,bool draw=false){char file[192];path(file,sizeof(file),id,"trk");FILE *f=fopen(file,"rb");if(!f)return false;struct stat bounded={};if(fstat(fileno(f),&bounded)||bounded.st_size>16*1024*1024){fclose(f);return false;}if(!header(f,id)){fclose(f);return false;}out=Track{};out.id=id;Sample p,last;bool have=false;if(draw){preview_count=0;preview_id=id;}
   for(;;){const size_t n=fread(&p,1,sizeof(p),f);if(!n)break;if(n!=sizeof(p)||!same_sample(p)){out.recovered=true;break;}if(!out.points)out.first=p;if(have&&last.segment==p.segment)out.metres+=distance(last,p);last=p;have=true;++out.points;if(draw)add_preview(p);}
@@ -72,10 +97,16 @@ public:
    if(!strcmp(suffix,"poi")){if(id>=next_poi)next_poi=uint32_t(id)+1;if(poi_count>=MAX_POIS)continue;char file[192];path(file,sizeof(file),uint32_t(id),"poi");FILE *f=fopen(file,"rb");Poi p;if(f){const bool ok=fread(&p,1,sizeof(p),f)==sizeof(p)&&fgetc(f)==EOF&&!ferror(f);fclose(f);if(ok&&p.id==id&&memchr(p.name,0,sizeof(p.name))&&valid(p.point)&&p.crc==checksum(&p,offsetof(Poi,crc)))pois[poi_count++]=p;}}
   }
   closedir(dir);for(unsigned i=0;i<track_count;++i)for(unsigned j=i+1;j<track_count;++j)if(tracks[j].id>tracks[i].id){const auto t=tracks[i];tracks[i]=tracks[j];tracks[j]=t;}
-  loaded=true;mode=STOPPED;error=0;tell(poi_export()?"Navigation SD ready":"Navigation loaded / POI GPX export unavailable");return true;
+  loaded=true;mode=STOPPED;error=0;load_preferences();for(auto &v:preferences.styles){bool found=false;for(unsigned i=0;i<track_count;++i)found|=tracks[i].id==v.id;if(!found)v=Style{};}for(unsigned i=0;i<track_count;++i)style(tracks[i].id,true);rebuild_overlays();tell(poi_export()?"Navigation SD ready":"Navigation loaded / POI GPX export unavailable");return true;
  }
- bool start(){if(!loaded||mode==RECORDING||mode==PAUSED)return false;char file[192];uint32_t id=next_track;int fd=-1;for(unsigned n=0;n<128&&id&&id<0xffffffffu;++n,++id){path(file,sizeof(file),id,"trk");fd=open(file,O_WRONLY|O_CREAT|O_EXCL,0644);if(fd>=0)break;if(errno!=EEXIST)return failure("Cannot create track on SD");}if(fd<0)return failure("Track ID space unavailable");close(fd);active=fopen(file,"r+b");if(!active){const int saved=errno;remove(file);errno=saved;return failure("Track stream open failed");}Header h;memcpy(h.magic,"MCXTRK1",8);h.id=id;h.crc=checksum(&h,offsetof(Header,crc));if(fwrite(&h,1,sizeof(h),active)!=sizeof(h)||!sync_file(active))return failure("Track header save failed");next_track=id+1;current=id;point_count=0;metres=0;segment=1;gap=true;have_previous=false;preview_count=0;preview_id=id;mode=RECORDING;tell("Recording / waiting for GPS");return true;}
- bool sample(Sample p,bool fresh,uint32_t now){if(mode!=RECORDING)return false;if(!fresh||!valid(p)){gap=true;tell("Recording / waiting for GPS");return false;}if(have_previous&&uint32_t(now-last_ms)<2000)return false;if(have_previous&&!gap&&distance(previous,p)<3&&uint32_t(now-last_ms)<15000)return false;if(gap&&have_previous)++segment;p.segment=segment;p.reserved=0;p.crc=checksum(&p,offsetof(Sample,crc));
+ bool start(){if(!loaded||mode==RECORDING||mode==PAUSED)return false;char file[192];uint32_t id=next_track;int fd=-1;for(unsigned n=0;n<128&&id&&id<0xffffffffu;++n,++id){path(file,sizeof(file),id,"trk");fd=open(file,O_WRONLY|O_CREAT|O_EXCL,0644);if(fd>=0)break;if(errno!=EEXIST)return failure("Cannot create track on SD");}if(fd<0)return failure("Track ID space unavailable");close(fd);active=fopen(file,"r+b");if(!active){const int saved=errno;remove(file);errno=saved;return failure("Track stream open failed");}Header h;memcpy(h.magic,"MCXTRK1",8);h.id=id;h.crc=checksum(&h,offsetof(Header,crc));if(fwrite(&h,1,sizeof(h),active)!=sizeof(h)||!sync_file(active))return failure("Track header save failed");next_track=id+1;current=id;point_count=0;metres=0;segment=1;gap=true;have_previous=false;preview_count=0;preview_id=id;mode=RECORDING;style(id,true);visible(id,true);rebuild_overlays();tell("Recording / waiting for GPS");return true;}
+ bool sample(Sample p,bool fresh,uint32_t now,double speed_kmh=-1){if(mode!=RECORDING)return false;if(!fresh||!valid(p)){gap=true;tell("Recording / waiting for GPS");return false;}const auto &preset=preferences.presets[preferences.selected];
+  if(have_previous&&uint32_t(now-last_ms)<preset.interval_s*1000)return false;
+  // Never force a point merely because time elapsed. Reject low-speed drift;
+  // real slow movement is retained once displacement exceeds the preset spacing.
+  if(have_previous&&!gap&&(distance(previous,p)<preset.distance_m||(speed_kmh>=0&&speed_kmh<0.8)))return false;
+  if(gap&&have_previous)++segment;
+  p.segment=segment;p.reserved=0;p.crc=checksum(&p,offsetof(Sample,crc));
   struct stat st={};if(fstat(fileno(active),&st)||st.st_size+int(sizeof(Sample))>16*1024*1024)return failure("Track limit reached / saved prefix retained");
   if(fwrite(&p,1,sizeof(p),active)!=sizeof(p)||!sync_file(active))return failure("Track write failed / saved prefix retained");
   if(have_previous&&!gap)metres+=distance(previous,p);
