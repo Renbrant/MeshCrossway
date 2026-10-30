@@ -50,7 +50,10 @@ static void esp_http_client_cleanup(void *){}
     ui=(ROOT/'firmware/display-prototype/meshcrossway_ui.h').read_text()
     refresh=ui[ui.index('static void gps_refresh('):ui.index('static void draw(){',ui.index('static void gps_refresh('))]
     header=ui[ui.index('  gps_icon=color_label(top,'):ui.index('  top_battery=panel_at(top,')]
-    test=(ROOT/'tests/map_navigation_test.cpp').read_text().replace('// PRODUCTION_GPS_REFRESH',refresh).replace('// PRODUCTION_GPS_HEADER',header)
+    actions=ui[ui.index('enum Action {'):ui.index('static void draw(); // Forward-declared')]
+    glyphs=ui[ui.index('static const char *context_glyph('):ui.index('// Place a separate, thin scroll indicator')]
+    icons=ui[ui.index('static void context_icon('):ui.index('static void ble_select_now(')]
+    test=(ROOT/'tests/map_navigation_test.cpp').read_text().replace('// PRODUCTION_GPS_REFRESH',refresh).replace('// PRODUCTION_GPS_HEADER',header).replace('// PRODUCTION_ACTIONS',actions).replace('// PRODUCTION_CONTEXT',glyphs+icons)
     source=temp/'map_navigation.cpp';source.write_text(allocator+test)
     binary=temp/'map_navigation'
     subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
@@ -82,3 +85,17 @@ static int uart_read_bytes(int,void *p,unsigned cap,unsigned){return fake_uart_r
     binary=temp/'gnss_runtime'
     subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
     subprocess.run([str(binary)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+
+    (temp/'freertos/semphr.h').write_text(r'''#pragma once
+#include "FreeRTOS.h"
+#define pdTRUE 1
+#define portMAX_DELAY 0xffffffffu
+using SemaphoreHandle_t=void *;
+static SemaphoreHandle_t xSemaphoreCreateMutex(){return (void *)1;}
+static int xSemaphoreTake(void *,unsigned){return pdTRUE;}
+static void xSemaphoreGive(void *){}
+''')
+    source=temp/'navigation_runtime.cpp';source.write_text(allocator+(ROOT/'tests/navigation_runtime_test.cpp').read_text())
+    binary=temp/'navigation_runtime'
+    subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
+    subprocess.run([str(binary),str(temp/'navigation-card')],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

@@ -49,6 +49,15 @@ static bool valid_config(const Config &c){
   for(const char *p=c.url;*p;++p)if(uint8_t(*p)<=32||strchr("?#@{}",*p))return false;
   return true;
 }
+enum Provider {STREET=0,TOPO=1};
+static Provider provider(const Config &c){return !strcmp(c.url,"https://a.tile.opentopomap.org")?TOPO:STREET;}
+static unsigned max_zoom(const Config &c){return provider(c)==TOPO?17:19;}
+static const char *provider_name(const Config &c){return provider(c)==TOPO?"Topographic / OpenTopoMap":"Street / OpenStreetMap";}
+static void select_provider(Config &c,unsigned id){
+  snprintf(c.url,sizeof(c.url),"%s",id==TOPO?"https://a.tile.opentopomap.org":"https://tile.openstreetmap.org");
+  snprintf(c.attribution,sizeof(c.attribution),"%s",id==TOPO?"© OpenStreetMap contributors, SRTM | © OpenTopoMap (CC-BY-SA)":"© OpenStreetMap contributors");
+  if(c.zoom>max_zoom(c))c.zoom=uint8_t(max_zoom(c));
+}
 struct View {double latitude=0,longitude=0;uint32_t generation=0;unsigned zoom=14,width=400,height=155;};
 struct Frame {lv_img_dsc_t image={};View view;uint64_t source=0;unsigned loaded=0,missing=0;char status[96]={};};
 static portMUX_TYPE mux=portMUX_INITIALIZER_UNLOCKED;
@@ -72,13 +81,15 @@ static void load_config(){
   if(loaded_config)return;
   nvs_handle_t h;if(nvs_open("mcx_map",NVS_READONLY,&h)==ESP_OK){Config c;size_t n=sizeof(c);
     if(nvs_get_blob(h,"config",&c,&n)==ESP_OK&&n==sizeof(c)&&valid_config(c))config=c;
+    select_provider(config,provider(config));
     nvs_close(h);
   }loaded_config=true;
 }
 static uint32_t configuration_revision(){portENTER_CRITICAL(&mux);const auto r=revision;portEXIT_CRITICAL(&mux);return r;}
 static Config configuration(){portENTER_CRITICAL(&mux);auto c=config;portEXIT_CRITICAL(&mux);return c;}
 static void configure(const Config &c){if(!valid_config(c))return;
-  portENTER_CRITICAL(&mux);config=c;++revision;changed_ms=milliseconds();settings_saved=false;wanted.fetch_add(1);queued=false;portEXIT_CRITICAL(&mux);
+  Config chosen=c;select_provider(chosen,provider(chosen));
+  portENTER_CRITICAL(&mux);config=chosen;++revision;changed_ms=milliseconds();settings_saved=false;wanted.fetch_add(1);queued=false;portEXIT_CRITICAL(&mux);
 }
 static uint64_t source_hash(const Config &c){uint64_t hash=14695981039346656037ULL;for(const char *p=c.url;*p;++p)hash=(hash^uint8_t(*p))*1099511628211ULL;return hash;}
 static void paths(char *file,size_t cap,const Config &c,unsigned z,unsigned x,unsigned y){snprintf(file,cap,"%s/mcx-map-cache/%016llx/%u/%u/%u.png",SD_ROOT,(unsigned long long)source_hash(c),z,x,y);}
@@ -113,7 +124,7 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
   const auto cancelled=[generation](){return mcxpriority::ble_initializing.load()||(generation&&wanted.load()!=generation);};
   if(cancelled())return nullptr;
   if(esp_sdcard_port_get_size()==0)return nullptr;
-  char file[192];snprintf(file,sizeof(file),"%s/tiles/%u/%u/%u.png",SD_ROOT,z,x,y);
+  char file[192];snprintf(file,sizeof(file),"%s/tiles/%s%u/%u/%u.png",SD_ROOT,provider(c)==TOPO?"opentopo/":"",z,x,y);
   if(auto *p=checked_png(file,size,decoded))return p;
   paths(file,sizeof(file),c,z,x,y);if(auto *p=checked_png(file,size,decoded))return p;
   const uint32_t now=milliseconds();if(!c.online||!network_allowed())return nullptr;
@@ -134,7 +145,7 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
   char temporary[200];snprintf(temporary,sizeof(temporary),"%s.tmp",file);FILE *out=fopen(temporary,"wb");if(!out)return nullptr;
   char url[256];snprintf(url,sizeof(url),"%s%s%u/%u/%u.png",c.url,c.url[strlen(c.url)-1]=='/'?"":"/",z,x,y);
   esp_http_client_config_t http={};http.url=url;http.timeout_ms=2500;http.buffer_size=1024;http.buffer_size_tx=512;
-  http.user_agent="MeshCrossway/0.8.3 (+https://github.com/Renbrant/MeshCrossway)";http.crt_bundle_attach=esp_crt_bundle_attach;http.disable_auto_redirect=true;
+  http.user_agent="MeshCrossway/0.8.4 (+https://github.com/Renbrant/MeshCrossway)";http.crt_bundle_attach=esp_crt_bundle_attach;http.disable_auto_redirect=true;
   auto client=esp_http_client_init(&http);bool ok=false,valid_payload=false,decode_attempted=false;int response=0;unsigned char *png=nullptr;size=0;
   if(client&&esp_http_client_open(client,0)==ESP_OK){
     const auto length=esp_http_client_fetch_headers(client);const int status=esp_http_client_get_status_code(client);response=status;

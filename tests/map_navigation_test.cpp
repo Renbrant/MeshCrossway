@@ -2,6 +2,7 @@
 #include "meshcrossway_map_tiles.h"
 #include "meshcrossway_gnss_parser.h"
 #include "meshcrossway_gnss_settings.h"
+#include "meshcrossway_navigation_store.h"
 #include "meshcrossway_clock_runtime.h"
 #include <cassert>
 #include <cstdio>
@@ -17,8 +18,16 @@ static void configure(Settings c){assert(valid_settings(c));cfg=c;}
 static Diagnostics status(){return {};}
 static Fix snapshot(){return fix;}
 }
+namespace mcxnav {
+static Snapshot mock_state;static Action last_action=NONE;static uint32_t last_id=0;static char last_name[40]={};
+static bool start(){return true;}
+static bool snapshot(Snapshot &s){s=mock_state;return true;}
+static bool submit(Action a,uint32_t id=0,const char *name=nullptr){last_action=a;last_id=id;if(name)snprintf(last_name,sizeof(last_name),"%s",name);return a!=SAVE_POI||mcxgnss::fix.valid;}
+}
 namespace meshcrossway {
+static int page=4,map_view=0;static void draw();
 static lv_obj_t *body=nullptr,*info_dialog=nullptr;
+static const lv_color_t purple=lv_color_hex(0x9C88FF);
 static const lv_color_t green=lv_color_hex(0x72D8A5);
 static const lv_color_t bg=lv_color_hex(0x090C10),panel2=lv_color_hex(0x242B34),orange=lv_color_hex(0xFF8A24),white=lv_color_hex(0xF2F4F7),muted=lv_color_hex(0x9AA6B4),cyan=lv_color_hex(0x6CBDE6),red=lv_color_hex(0xFF7777);
 static void fill(lv_obj_t *o,lv_color_t c,int radius=0){lv_obj_set_style_bg_color(o,c,0);lv_obj_set_style_bg_opa(o,LV_OPA_COVER,0);lv_obj_set_style_pad_all(o,0,0);lv_obj_set_style_border_width(o,0,0);lv_obj_set_style_radius(o,radius,0);}
@@ -28,8 +37,15 @@ static lv_obj_t *action_button(lv_obj_t *p,const char *s,int x,int y,int w,int h
 static void info_close_now(void *){if(info_dialog){lv_obj_del(info_dialog);info_dialog=nullptr;}}
 static void info_close(lv_event_t *){info_close_now(nullptr);}
 namespace chatview {static void label(lv_obj_t *o,const char *s){if(o&&strcmp(lv_label_get_text(o),s))lv_label_set_text(o,s);}}
+// PRODUCTION_ACTIONS
+static lv_obj_t *context_actions=nullptr;static bool right_compact=false;static int clicked=-1;
+static bool has_context_rail(){return page==4;}
+static void update_context_scroll_track(){}
+static void on_action(lv_event_t *e){clicked=int(intptr_t(lv_event_get_user_data(e)));}
+// PRODUCTION_CONTEXT
 #include "meshcrossway_navigation_ui.h"
-static lv_obj_t *gps_position=nullptr,*gps_status=nullptr,*gps_icon=nullptr,*gps_satellites=nullptr,*top_charge=nullptr;
+static void draw(){navui::invalidate();lv_obj_clean(body);navui::after_clean();navui::create(lv_obj_get_width(body));}
+static lv_obj_t *gps_position=nullptr,*gps_status=nullptr,*gps_extra=nullptr,*gps_icon=nullptr,*gps_satellites=nullptr,*top_charge=nullptr,*top_clock=nullptr;
 static lv_obj_t *color_label(lv_obj_t *p,const char *s,int x,int y,int w,lv_color_t c){return single_label(p,s,x,y,w,c);}
 // PRODUCTION_GPS_REFRESH
 }
@@ -125,8 +141,14 @@ int main(int argc,char **argv){
  lv_dropdown_set_selected(zone_picker,1);lv_event_send(zone_picker,LV_EVENT_VALUE_CHANGED,nullptr);
  assert(mcxclock::selection(mcxgnss::configuration())==1);
  for(unsigned i=0;i<lv_obj_get_child_cnt(info_dialog);++i){lv_area_t a;lv_obj_get_coords(lv_obj_get_child(info_dialog,i),&a);assert(a.x1>=0&&a.x2<480&&a.y1>=0&&a.y2<320);}
- gpsui::map_options();advance();gpsui::edit(1);advance();lv_area_t area;lv_obj_get_coords(gpsui::edit_keyboard,&area);assert(area.x1>=0&&area.y1>=0&&area.x2<480&&area.y2<320);
- lv_textarea_set_text(gpsui::edit_value,"https://tiles.example.org/raster");gpsui::save_editor(nullptr);assert(!strcmp(mcxmap::configuration().url,"https://tiles.example.org/raster"));
+ gpsui::map_options();advance();assert(gpsui::provider_picker&&gpsui::online_switch);
+ lv_dropdown_set_selected(gpsui::provider_picker,1);lv_event_send(gpsui::provider_picker,LV_EVENT_VALUE_CHANGED,nullptr);
+ assert(mcxmap::provider(mcxmap::configuration())==mcxmap::TOPO&&strstr(mcxmap::configuration().attribution,"OpenTopoMap"));
+ lv_obj_clear_state(gpsui::online_switch,LV_STATE_CHECKED);lv_event_send(gpsui::online_switch,LV_EVENT_VALUE_CHANGED,nullptr);assert(!mcxmap::configuration().online);
+ gpsui::new_poi();advance();lv_textarea_set_text(gpsui::poi_name,"Trail start");gpsui::save_poi(nullptr);assert(mcxnav::last_action==mcxnav::SAVE_POI&&!strcmp(mcxnav::last_name,"Trail start"));
+ gpsui::recording();advance();
+ for(unsigned i=0;i<4;++i){tap(lv_obj_get_child(gpsui::dialog,i+3));assert(mcxnav::last_action==mcxnav::Action(i+1));}
+ gpsui::library(true);advance();assert(info_dialog);gpsui::library(false);advance();assert(info_dialog);
  gpsui::map_diagnostics();advance();assert(info_dialog);gpsui::map_credits();advance();assert(info_dialog);
  info_close_now(nullptr);navui::invalidate();lv_obj_clean(body);navui::after_clean();assert(!navui::front);
  // Full viewport/overlay geometry at all four left/right rail combinations.
@@ -139,6 +161,11 @@ int main(int argc,char **argv){
   navui::invalidate();lv_obj_clean(body);navui::after_clean();
   assert(navui::zoom_open);navui::create(width);assert(navui::zoom_overlay);navui::toggle_zoom();assert(!navui::zoom_overlay);
   navui::invalidate();lv_obj_clean(body);navui::after_clean();
+ }
+ info_close_now(nullptr);context_actions=panel_at(lv_scr_act(),355,34,125,286,panel2);lv_obj_add_flag(context_actions,LV_OBJ_FLAG_SCROLLABLE);
+ const int expected[]={A_MAP_HOME,A_MAP_ZOOM,A_MAP_CENTER,A_RECORD,A_TRACKS,A_POIS,A_MAP_DIAGNOSTICS,A_GNSS,A_MAP_OPTIONS};
+ for(bool compact:{false,true}){right_compact=compact;rebuild_context();advance();
+  for(unsigned i=0;i<9;++i){auto *button=lv_obj_get_child(context_actions,i);assert(lv_obj_get_style_border_width(button,0)==0);lv_event_send(button,LV_EVENT_CLICKED,nullptr);assert(clicked==expected[i]);}
  }
  mcxmap::clear_tiles();
  puts("PASS: HTTPS cache transactions, corrupt cache repair, 503 backoff, no-SD gating, real PNG SD tiles, Mercator raster crop, stale job cancellation, bad PNG/URL, real LVGL map drag, GPS settings and source editor geometry");

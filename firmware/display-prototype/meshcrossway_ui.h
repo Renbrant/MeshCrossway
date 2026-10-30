@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.8.3: independent MeshCore Companion and Meshtastic PhoneAPI.
+// MeshCrossway v0.8.4: independent MeshCore Companion and Meshtastic PhoneAPI.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -14,6 +14,7 @@
 #include "meshcrossway_gnss.h"
 #include "meshcrossway_clock_runtime.h"
 #include "meshcrossway_map_tiles.h"
+#include "meshcrossway_navigation.h"
 #include "meshcrossway_chat_presentation.h"
 #include "emoji/emoji_display.h"
 #define MCX_EMOJI_RENDER_ENABLED 1
@@ -301,9 +302,10 @@ static const ActionInfo chat_actions[]={
   {"Compose",A_NEW,orange},{"Chat tools",A_PACKETS,cyan},{"Chat info",A_THREAD_INFO,purple}
 };
 static const ActionInfo map_actions[]={
-  {"Zoom",A_MAP_ZOOM,orange},{"Center GPS",A_MAP_CENTER,orange},{"Map options",A_MAP_OPTIONS,orange},{"GNSS",A_GNSS,cyan},{"Map details",A_MAP_DIAGNOSTICS,cyan},{"Map view",A_MAP_HOME,orange},{"POIs",A_POIS,orange},{"Tracks",A_TRACKS,purple},
-  {"Record",A_RECORD,red},{"Live share",A_SHARE,green},
-  {"Team",A_TEAM,orange}
+  {"Map View",A_MAP_HOME,orange},{"Zoom",A_MAP_ZOOM,orange},{"Center GPS",A_MAP_CENTER,orange},
+  {"Record",A_RECORD,orange},{"Tracks",A_TRACKS,orange},{"POIs",A_POIS,orange},
+  {"Map Details",A_MAP_DIAGNOSTICS,orange},{"GNSS",A_GNSS,orange},{"Map Options",A_MAP_OPTIONS,orange},
+  {"Live Share",A_SHARE,orange},{"Team",A_TEAM,orange}
 };
 static void draw(); // Forward-declared above Wi-Fi editor callbacks.
 static bool edge_swipe_click_in_progress();
@@ -406,7 +408,7 @@ static void notice(const char *title,const char *body_text){
 }
 namespace mcui {static void tools();static void compose();static void form(uint8_t);static void thread_info();static void chat_tools();static void show_list();}
 namespace mtui {static void tools();static void compose();static void node_details();static void close();}
-namespace navui {static void toggle_zoom();static bool adjusting();static void recenter(lv_event_t *);static void options(lv_event_t *);static void diagnostics();}
+namespace navui {static void recording();static void library(bool);static void toggle_zoom();static bool adjusting();static void recenter(lv_event_t *);static void options(lv_event_t *);static void diagnostics();}
 static void run_action(void *data){
   int id=(int)(intptr_t)data;
   if(showing_mt()){
@@ -427,6 +429,9 @@ static void run_action(void *data){
   if(id==A_NODES){page=1;draw();return;}
   if(id==A_GROUPS||id==A_INBOX){page=2;draw();return;}
   if(id==A_CHAT_OPEN){page=3;draw();return;}
+  if(id==A_RECORD){navui::recording();return;}
+  if(id==A_TRACKS){navui::library(false);return;}
+  if(id==A_POIS){navui::library(true);return;}
   if(id==A_GPS_SETTINGS){gps_settings_open();return;}
   if(id==A_MAP_ZOOM||id==A_MAP_CENTER||id==A_MAP_OPTIONS||id==A_MAP_DIAGNOSTICS){
     if(page!=4||map_view!=0){page=4;map_view=0;draw();}
@@ -515,7 +520,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.8.3","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. Local GPS and XYZ maps; tracks and sharing remain previews.");break;
+      notice("MESH CROSSWAY v0.8.4","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. Local GPS and XYZ maps; tracks and sharing remain previews.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -760,6 +765,26 @@ static void update_context_scroll_track(){
   lv_obj_set_height(context_scroll_thumb,thumb);
 }
 static void context_scrolled(lv_event_t *){update_context_scroll_track();}
+// Native line icons: no emoji/font substitution, same palette as primary navigation.
+static void context_icon(lv_event_t *e){
+  auto *obj=lv_event_get_target(e);auto *ctx=lv_event_get_draw_ctx(e);const int id=int(intptr_t(lv_event_get_user_data(e)));lv_area_t a;lv_obj_get_coords(obj,&a);
+  const auto tint=lv_obj_get_style_text_color(obj,0);
+  auto line=[&](int x1,int y1,int x2,int y2){lv_point_t p={lv_coord_t(a.x1+x1),lv_coord_t(a.y1+y1)},q={lv_coord_t(a.x1+x2),lv_coord_t(a.y1+y2)};lv_draw_line_dsc_t d;lv_draw_line_dsc_init(&d);d.color=tint;d.width=2;d.round_start=d.round_end=1;lv_draw_line(ctx,&d,&p,&q);};
+  auto circle=[&](int x,int y,int size,bool fill_circle){lv_area_t r={lv_coord_t(a.x1+x),lv_coord_t(a.y1+y),lv_coord_t(a.x1+x+size),lv_coord_t(a.y1+y+size)};lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.radius=LV_RADIUS_CIRCLE;d.bg_color=tint;d.bg_opa=fill_circle?LV_OPA_COVER:LV_OPA_TRANSP;d.border_color=tint;d.border_width=2;lv_draw_rect(ctx,&d,&r);};
+  switch(id){
+    case A_MAP_ZOOM:circle(2,2,12,false);line(14,14,21,21);break;
+    case A_MAP_CENTER:circle(5,5,12,false);line(11,0,11,6);line(11,16,11,22);line(0,11,6,11);line(16,11,22,11);break;
+    case A_RECORD:circle(3,3,16,true);break;
+    case A_TRACKS:circle(1,16,4,false);line(4,15,9,10);line(9,10,17,13);line(17,13,19,5);circle(17,0,4,false);break;
+    case A_POIS:circle(5,1,12,false);circle(9,5,4,true);line(6,12,11,22);line(16,12,11,22);break;
+    case A_MAP_DIAGNOSTICS:circle(1,1,20,false);circle(10,5,2,true);line(11,10,11,17);break;
+    case A_GNSS:line(8,8,14,14);line(8,14,14,8);line(2,2,7,7);line(2,7,7,2);line(15,15,21,21);line(15,21,21,15);line(3,17,7,21);line(3,21,7,17);break;
+    case A_SHARE:circle(2,9,5,false);circle(15,1,5,false);circle(15,16,5,false);line(7,10,15,5);line(7,13,15,18);break;
+    case A_TEAM:circle(3,1,6,false);circle(13,1,6,false);line(1,19,1,14);line(1,14,5,10);line(5,10,10,14);line(10,14,10,20);line(12,20,12,14);line(12,14,17,10);line(17,10,22,14);line(22,14,22,19);break;
+    case A_MAP_OPTIONS:line(1,5,21,5);line(1,11,21,11);line(1,18,21,18);circle(5,3,4,true);circle(14,9,4,true);circle(8,16,4,true);break;
+    default:line(1,4,7,1);line(7,1,15,4);line(15,4,21,1);line(1,4,1,21);line(1,21,7,18);line(7,1,7,18);line(7,18,15,21);line(15,4,15,21);line(15,21,21,18);line(21,1,21,18);break;
+  }
+}
 static void rebuild_context(){
   lv_obj_clean(context_actions);
   lv_obj_scroll_to_y(context_actions,0,LV_ANIM_OFF);
@@ -769,8 +794,8 @@ static void rebuild_context(){
   const ActionInfo *choices=page==3?chat_actions:map_actions;
   const size_t count=page==3?sizeof(chat_actions)/sizeof(chat_actions[0]):
                              sizeof(map_actions)/sizeof(map_actions[0]);
-  if(!right_compact)single_label(context_actions,page==3?"CHAT":"MAP",7,6,109,orange);
-  int y=right_compact?4:32;
+  if(!right_compact&&page!=4)single_label(context_actions,"CHAT",7,6,109,orange);
+  int y=page==4?7:(right_compact?4:32);
   for(size_t i=0;i<count;i++){
     const int id=choices[i].id;
     const bool selected=page==4&&
@@ -778,15 +803,21 @@ static void rebuild_context(){
        (id==A_TRACKS&&map_view==2)||(id==A_GNSS&&map_view==3)||
        (id==A_TEAM&&map_view==4)||(id==A_SHARE&&map_view==5));
     lv_obj_t *button=action_button(context_actions,
-                                   right_compact?context_glyph(id):choices[i].label,
+                                   page==4?(right_compact?"":choices[i].label):(right_compact?context_glyph(id):choices[i].label),
                                    right_compact?0:4,y,right_compact?32:111,38,
                                    selected?orange:panel2,on_action,(intptr_t)id);
-    lv_obj_set_style_border_width(button,selected?0:1,0);
+    lv_obj_set_style_border_width(button,0,0);
     // Match the left primary navigation palette: orange icons on dark panels,
     // dark glyph on orange for the selected action.
-    lv_obj_set_style_border_color(button,orange,0);
+    lv_obj_set_style_radius(button,6,0);
     lv_obj_set_style_text_color(lv_obj_get_child(button,0),selected?bg:orange,0);
-    y+=41;
+    if(page==4){
+      auto *icon=panel_at(button,right_compact?4:44,right_compact?7:0,23,24,selected?orange:panel2,0);
+      lv_obj_set_style_bg_opa(icon,LV_OPA_TRANSP,0);lv_obj_clear_flag(icon,LV_OBJ_FLAG_CLICKABLE);
+      lv_obj_set_style_text_color(icon,selected?bg:orange,0);lv_obj_add_event_cb(icon,context_icon,LV_EVENT_DRAW_MAIN,(void *)(intptr_t)id);
+      auto *caption=lv_obj_get_child(button,0);if(!right_compact){lv_obj_set_pos(caption,0,21);lv_obj_set_size(caption,111,16);lv_obj_set_style_text_align(caption,LV_TEXT_ALIGN_CENTER,0);lv_obj_set_style_text_color(caption,selected?bg:white,0);}
+    }
+    y+=page==4?40:41;
   }
   lv_obj_update_layout(context_actions);
   update_context_scroll_track();
@@ -874,7 +905,7 @@ static bool showing_mt(){
 }
 
 #include "meshcrossway_navigation_ui.h"
-static lv_obj_t *gps_position=nullptr,*gps_status=nullptr,*gps_icon=nullptr,*gps_satellites=nullptr;
+static lv_obj_t *gps_position=nullptr,*gps_status=nullptr,*gps_extra=nullptr,*gps_icon=nullptr,*gps_satellites=nullptr;
 static void clock_refresh(lv_timer_t *){
   mcxclock::poll(mcxgnss::snapshot(),mcxgnss::configuration());
   char value[8];mcxclock::label(value,sizeof(value));
@@ -895,6 +926,12 @@ static void gps_refresh(lv_timer_t *){
   else snprintf(state,sizeof(state),"%s / Sats %u / HDOP --",f.valid?"FIX":"NO FIX",f.satellites);
   if(gps_position)chatview::label(gps_position,pos);
   if(gps_status)chatview::label(gps_status,state);
+  if(gps_extra){char detail[320],altitude[32]="--",speed[32]="--",utc[32]="unavailable";
+    if(f.valid&&f.have_altitude)snprintf(altitude,sizeof(altitude),"%.1f %s",f.altitude*(cfg.imperial?3.28084:1),cfg.imperial?"ft":"m");
+    if(f.valid&&f.have_speed)snprintf(speed,sizeof(speed),"%.1f %s",f.speed_kmh*(cfg.imperial?.621371:1),cfg.imperial?"mph":"km/h");
+    if(f.have_time){time_t stamp=time_t(f.utc_seconds);struct tm t={};if(gmtime_r(&stamp,&t))strftime(utc,sizeof(utc),"%Y-%m-%d %H:%M:%S",&t);}
+    snprintf(detail,sizeof(detail),"Altitude %s / Speed %s\nPosition age %.1f s\nUART %u / %lu bytes / error %d\nNMEA %lu valid / %lu invalid\nUTC %s",altitude,speed,f.frames?double(uint32_t(esp_timer_get_time()/1000)-f.position_ms)/1000:0,diag.baud,(unsigned long)diag.bytes,diag.error,(unsigned long)f.frames,(unsigned long)f.errors,utc);chatview::label(gps_extra,detail);
+  }
 }
 static void draw(){
   mcxruntime::Scope measured(mcxruntime::DRAW);
@@ -945,7 +982,7 @@ static void draw(){
     }
   }
   navui::invalidate();
-  gps_position=gps_status=nullptr;
+  gps_position=gps_status=gps_extra=nullptr;
   lv_obj_add_flag(body,LV_OBJ_FLAG_SCROLLABLE);
   chatview::invalidate();
   lv_obj_clean(body);
@@ -985,7 +1022,7 @@ static void draw(){
     }else if(map_view==3){
       auto *gps=center_card(8,58,w-16,98,"LOCAL GPS / UART","Waiting for GPS","RX44 / TX43",cyan);
       gps_position=lv_obj_get_child(gps,1);gps_status=lv_obj_get_child(gps,2);gps_refresh(nullptr);
-      center_card(8,165,w-16,78,"LOCAL GPS","HDOP is geometry, not metres","No location sent to mesh",cyan);
+      gps_extra=single_label(body,"",8,165,w-16,white);lv_label_set_long_mode(gps_extra,LV_LABEL_LONG_WRAP);lv_obj_set_style_text_font(gps_extra,&lv_font_montserrat_10,0);gps_refresh(nullptr);
       action_button(body,"GPS SETTINGS",8,250,w-16,32,panel2,on_action,A_GPS_SETTINGS);
     }else if(map_view==4){
       center_card(8,58,w-16,78,"TEAM / DEMO","No nearby radios connected","All peer positions unavailable",green);
@@ -1002,7 +1039,7 @@ static void draw(){
       const char *phase=s.phase==meshble::OFF?"DISABLED":s.phase==meshble::STARTING?"STARTING":s.phase==meshble::READY?"SECURE":s.phase==meshble::SCANNING?"SCANNING":s.phase==meshble::CONNECTING?"CONNECTING":s.phase==meshble::VERIFYING?"VERIFYING":s.phase==meshble::PAIRING?"PAIRING":s.phase==meshble::FAILED?"ERROR":"IDLE";
       char detail[64];snprintf(detail,sizeof(detail),"%s / %s",phase,meshble::protocol_name(s.radio));
       single_label(body,detail,8,53,w-16,s.phase==meshble::READY?green:orange);
-      single_label(body,s.phase==meshble::READY?(s.bonded?"BLE bond saved / PIN remembered":"Secure link / bond not supported"):s.status,8,76,w-16,muted);
+      single_label(body,s.phase==meshble::READY?(s.bonded?"Bluetooth bond saved":"Secure link / bond not supported"):s.status,8,76,w-16,muted);
       if(s.phase==meshble::OFF){
         single_label(body,"Safe boot: BLE is off until enabled.",8,106,w-16,green);
         action_button(body,"ENABLE BLE / TEST",8,151,w-16,49,orange,on_action,A_BLE_ENABLE);
@@ -1111,7 +1148,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.8.3] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.8.4] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1132,7 +1169,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.8.3] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.8.4] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1145,7 +1182,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.8.3",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.8.4",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);
@@ -1201,6 +1238,7 @@ static void init(){
   mcxmap::wifi_ready=[](){char ip[16]={},state[32]={};meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));return ip[0]!=0;};
   mcxmap::load_config();
   mcxgnss::start();
+  mcxnav::start();
   clock_refresh(nullptr);
   lv_timer_create(clock_refresh,1000,nullptr);
   lv_timer_create(gps_refresh,1000,nullptr);

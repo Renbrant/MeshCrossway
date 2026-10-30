@@ -1,3 +1,5 @@
+**v0.8.4 experimental:** tracks/GPX, saved POIs, map presets and contextual controls. [Guide and acceptance](gps-navigation-v084.md). **v0.8.2 replaces v0.7.8 as recovery** after owner-confirmed maps/GPS and MeshCore reconnection after reboot. Exact v0.8.2 bytes are pinned. Older sections below are historical.
+
 **v0.8.2 candidate:** full-height map and contextual zoom slider, decoded PSRAM cache, transparent attribution and BLE initialization mitigation/diagnostics. Hardware retest pending. [Acceptance](maps-gps-v082.md). v0.7.8 recovery unchanged.
 
 # Current candidate — v0.8.1

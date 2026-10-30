@@ -25,7 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit owner approval.
 approved={
-    "v0.8.2":("Owner confirmed GPS/map and Bluetooth working after hardware restart and selected v0.8.2 as rollback. Exact published firmware bytes retained.", "Owner-tested / recommended recovery"),
+    "v0.8.2":("Owner confirmed GPS/maps and MeshCore BLE pairing, then successful Bluetooth reconnection after a hardware restart on 2026-10-29. Selected v0.8.2 as recovery. Exact published bytes are retained; this is not full Meshtastic or dual-radio qualification.", "Owner-tested / recommended recovery"),
     "v0.7.8":("Owner confirmed v0.7.8 works perfectly on Waveshare and explicitly chose it as recovery baseline on 2026-10-29; firmware bytes must remain unchanged.", "Owner-tested / recommended recovery"),
     "v0.6.8":("Owner confirmed normal operation and PIN-free manual web screenshots. Exact published image retained. MeshCore application traffic was not implemented in this release.", "Hardware-tested UI / screenshot rollback"),
     "v0.6.2":("Owner confirmed touchscreen, Wi-Fi and normal UI work on the Waveshare Rev2.0; confirmed working after v0.6.3 failed.", "Last hardware-tested / recommended"),
@@ -67,6 +67,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.4":
+        summary="EXPERIMENTAL: local SD track recording with pause/resume, journal recovery and GPX export; named POIs with map markers and GPX; reorganized matching contextual controls, map-style picker and automatic attribution. Physical acceptance pending. Install without Erase; v0.8.2 is the exact owner-confirmed recovery."
+        label="Tracks + POIs + map controls / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.3":
         summary="EXPERIMENTAL / HARDWARE TEST PENDING: automatic GPS UTC clock, offline geographic timezone estimate with DST and saved manual override, compact HH:MM header and smaller battery. Clock keeps running through GPS loss; cached timezone survives reboot. Install without Erase; v0.8.2 remains exact recovery."
         label="GPS clock + offline time zones + compact battery / EXPERIMENTAL"
