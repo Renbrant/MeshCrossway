@@ -29,7 +29,7 @@ static void worker(void *){
    case SET_VISIBLE:store->visible(c.id,c.value!=0);break;
    case SET_COLOR:store->color(c.id,c.value);break;
    case SELECT_PRESET:store->select_preset(c.id);break;
-   case SAVE_PRESET:store->preset(c.id,c.name,c.distance_m,c.interval_s);break;
+   case SAVE_PRESET:if(store->preset(c.id,c.name,c.distance_m,c.interval_s)&&c.value==1)store->select_preset(c.id);break;
    case EXPORT_TRACK:{const bool allowed=c.id!=store->current||(store->mode!=RECORDING&&store->mode!=PAUSED);const bool ok=allowed&&store->export_track(c.id);if(ok)for(unsigned i=0;i<store->track_count;++i)if(store->tracks[i].id==c.id)store->tracks[i].gpx=true;snprintf(store->status,sizeof(store->status),"%s",ok?"GPX exported / ready to download":"GPX unavailable / finish recording first");++store->revision;break;}
    case SHOW_TRACK:store->visible(c.id,true);break;
 

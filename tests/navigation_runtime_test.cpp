@@ -40,6 +40,7 @@ int main(int argc,char **argv){assert(argc==2);lv_init();std::filesystem::create
  assert(request("11|3|0|0|2|Bad").code=="400 Bad Request");
  assert(request("11|3|0|12|4|Web preset").code=="202 Accepted");step();assert(mcxnav::store->preferences.presets[3].distance_m==12);
  assert(request("10|3|0|0|0|").code=="202 Accepted");step();assert(mcxnav::store->preferences.selected==3);
+ assert(request("11|2|1|30|7|Device preset").code=="202 Accepted");step();assert(mcxnav::store->preferences.selected==2&&mcxnav::store->preferences.presets[2].distance_m==30);
  assert(request("999|0|0|0|0|").code=="400 Bad Request");
  httpd_req_t bad;bad.query="id=../../secret";mcxnavhttp::download(&bad);assert(bad.code=="400 Bad Request");
  puts("PASS: HTTP navigation state, command header, numeric bounds, presets via worker and download path validation");

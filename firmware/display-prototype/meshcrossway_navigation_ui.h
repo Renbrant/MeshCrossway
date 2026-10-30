@@ -279,6 +279,7 @@ static void nav_refresh(){
   snprintf(text,sizeof(text),"%s\nTrack %08lx / %lu points / %.2f km\n%u saved tracks / %u POIs",s.status,(unsigned long)s.current,(unsigned long)s.points,s.metres/1000,s.track_count,s.poi_count);chatview::label(nav_detail,text);
 }
 static void nav_action(lv_event_t *e){const auto a=mcxnav::Action(intptr_t(lv_event_get_user_data(e)));if(!mcxnav::submit(a)&&nav_detail)chatview::label(nav_detail,"Storage worker unavailable or busy; try again.");}
+static void preset_list();
 static void recording(){
   base("RECORD TRACK");mcxnav::start();navui::poll();
   nav_dialog=1;nav_detail=single_label(dialog,"",8,45,440,white);lv_label_set_long_mode(nav_detail,LV_LABEL_LONG_WRAP);nav_refresh();
@@ -287,7 +288,84 @@ static void recording(){
   action_button(dialog,"RESUME",232,148,104,40,panel2,nav_action,mcxnav::RESUME);
   action_button(dialog,"FINISH",344,148,104,40,panel2,nav_action,mcxnav::STOP);
   if(navui::nav_state){auto *picker=lv_dropdown_create(dialog);char options[128]="";for(unsigned i=0;i<4;++i){if(i)strcat(options,"\n");strcat(options,navui::nav_state->preferences.presets[i].name);}lv_dropdown_set_options(picker,options);lv_dropdown_set_selected(picker,navui::nav_state->preferences.selected);lv_obj_add_event_cb(picker,[](lv_event_t *e){mcxnav::submit(mcxnav::SELECT_PRESET,lv_dropdown_get_selected(lv_event_get_target(e)));},LV_EVENT_VALUE_CHANGED,nullptr);}
+  action_button(dialog,"EDIT RECORDING PRESETS",8,195,300,40,panel2,[](lv_event_t *){lv_async_call([](void *){preset_list();},nullptr);},0);
   auto *help=single_label(dialog,"Valid GPS positions save to microSD.\nPause or lost fix creates a separate track segment.\nFinish writes a GPX file; no radio transmission.",8,207,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);
+}
+// Device settings use the same worker commands and SD preferences as HTTP.
+static unsigned preset_slot=0;
+static mcxnav::Preset preset_draft;
+static lv_obj_t *setting_value=nullptr,*settings_owner=nullptr;
+static unsigned setting_field=0;
+static uint32_t setting_track=0;
+static void preset_form();
+static void preset_list();
+static void setting_editor(unsigned field);
+static bool settings_send(const mcxnav::Command &command){
+  const bool queued=mcxnav::enqueue(command);
+  if(nav_detail)chatview::label(nav_detail,queued?"Queued / waiting for SD confirmation":"Storage busy / retry SAVE");
+  return queued;
+}
+static void setting_apply(){
+  if(!setting_value||settings_owner!=info_dialog)return;
+  const char *text=lv_textarea_get_text(setting_value);
+  if(setting_field==0){
+    if(!*text||strlen(text)>23){chatview::label(nav_detail,"Enter a name (1-23 characters).");return;}
+    snprintf(preset_draft.name,sizeof(preset_draft.name),"%s",text);
+  }else{
+    const unsigned length=unsigned(strlen(text));
+    bool valid=length>0&&length<=6;
+    for(const char *p=text;*p;++p)valid=valid&&((*p>='0'&&*p<='9')||(setting_field==3&&((*p>='a'&&*p<='f')||(*p>='A'&&*p<='F'))));
+    const unsigned long value=valid?strtoul(text,nullptr,setting_field==3?16:10):0;
+    if(setting_field==3){
+      if(!valid||length!=6){chatview::label(nav_detail,"Enter six hex digits, for example FF8A24.");return;}
+      mcxnav::Command command;command.action=mcxnav::SET_COLOR;command.id=setting_track;command.value=uint32_t(value);
+      if(settings_send(command)){setting_value=nullptr;base("TRACK COLOR / SAVING");nav_dialog=2;nav_detail=single_label(dialog,"Waiting for SD confirmation",8,40,300,muted);}
+      return;
+    }
+    const unsigned max=setting_field==1?1000:300,min=setting_field==1?3:1;
+    if(!valid||value<min||value>max){chatview::label(nav_detail,setting_field==1?"Distance must be 3-1000 metres.":"Interval must be 1-300 seconds.");return;}
+    if(setting_field==1)preset_draft.distance_m=uint32_t(value);else preset_draft.interval_s=uint32_t(value);
+  }
+  setting_value=nullptr;preset_form();
+}
+static void setting_editor(unsigned field){
+  setting_field=field;
+  base(field==0?"PRESET NAME":field==1?"DISTANCE / METRES":field==2?"INTERVAL / SECONDS":"TRACK COLOR / HEX");
+  settings_owner=dialog;lv_obj_set_style_pad_row(dialog,4,0);
+  char value[32];
+  if(field==0)snprintf(value,sizeof(value),"%s",preset_draft.name);
+  else if(field==3){uint32_t rgb=0xFF8A24;if(navui::nav_state)for(const auto &s:navui::nav_state->preferences.styles)if(s.id==setting_track)rgb=s.color;snprintf(value,sizeof(value),"%06lX",(unsigned long)rgb);}
+  else snprintf(value,sizeof(value),"%lu",(unsigned long)(field==1?preset_draft.distance_m:preset_draft.interval_s));
+  setting_value=lv_textarea_create(dialog);lv_textarea_set_one_line(setting_value,true);lv_obj_set_height(setting_value,40);lv_textarea_set_max_length(setting_value,field==0?23:field==3?6:4);
+  lv_textarea_set_accepted_chars(setting_value,field==0?"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-":field==3?"0123456789abcdefABCDEF":"0123456789");
+  lv_textarea_set_text(setting_value,value);
+  action_button(dialog,"APPLY",8,80,300,38,orange,[](lv_event_t *){lv_async_call([](void *){setting_apply();},nullptr);},0);
+  nav_detail=single_label(dialog,field==3?"Six hex digits; APPLY saves to SD.":field==1?"Distance: 3-1000 metres.":field==2?"Interval: 1-300 seconds.":"Draft: APPLY, then SAVE AND USE.",8,120,300,muted);lv_label_set_long_mode(nav_detail,LV_LABEL_LONG_WRAP);lv_obj_set_height(nav_detail,LV_SIZE_CONTENT);lv_obj_set_style_text_font(nav_detail,&lv_font_montserrat_10,0);
+  auto *keyboard=lv_keyboard_create(dialog);lv_obj_set_height(keyboard,130);
+  lv_keyboard_set_mode(keyboard,field==1||field==2?LV_KEYBOARD_MODE_NUMBER:LV_KEYBOARD_MODE_TEXT_UPPER);lv_keyboard_set_textarea(keyboard,setting_value);
+  lv_obj_add_event_cb(keyboard,[](lv_event_t *){lv_async_call([](void *){setting_apply();},nullptr);},LV_EVENT_READY,nullptr);
+  lv_async_call([](void *owner){if(owner==dialog&&setting_value)lv_obj_scroll_to_view(setting_value,LV_ANIM_OFF);},dialog);
+}
+static void preset_form(){
+  base("EDIT RECORDING PRESET");
+  char text[96];
+  snprintf(text,sizeof(text),"Name: %s",preset_draft.name);
+  action_button(dialog,text,8,40,300,40,panel2,[](lv_event_t *){lv_async_call([](void *){setting_editor(0);},nullptr);},0);
+  snprintf(text,sizeof(text),"Distance: %lu metres",(unsigned long)preset_draft.distance_m);
+  action_button(dialog,text,8,90,300,40,panel2,[](lv_event_t *){lv_async_call([](void *){setting_editor(1);},nullptr);},0);
+  snprintf(text,sizeof(text),"Interval: %lu seconds",(unsigned long)preset_draft.interval_s);
+  action_button(dialog,text,8,140,300,40,panel2,[](lv_event_t *){lv_async_call([](void *){setting_editor(2);},nullptr);},0);
+  action_button(dialog,"SAVE AND USE PRESET",8,190,300,40,orange,[](lv_event_t *){
+    mcxnav::Command command;command.action=mcxnav::SAVE_PRESET;command.id=preset_slot;command.value=1;command.distance_m=preset_draft.distance_m;command.interval_s=preset_draft.interval_s;snprintf(command.name,sizeof(command.name),"%s",preset_draft.name);settings_send(command);
+  },0);
+  nav_dialog=2;nav_detail=single_label(dialog,"Edit fields, then SAVE AND USE. Changes apply to recording immediately.",8,235,300,muted);lv_label_set_long_mode(nav_detail,LV_LABEL_LONG_WRAP);lv_obj_set_height(nav_detail,LV_SIZE_CONTENT);
+}
+static void preset_list(){
+  base("RECORDING PRESETS");navui::poll();if(!navui::nav_state)return;
+  for(unsigned i=0;i<4;++i){const auto &p=navui::nav_state->preferences.presets[i];char text[96];snprintf(text,sizeof(text),"%s%s / %lu m / %lu s",i==navui::nav_state->preferences.selected?"* ":"",p.name,(unsigned long)p.distance_m,(unsigned long)p.interval_s);
+    action_button(dialog,text,8,40+int(i)*46,300,40,panel2,[](lv_event_t *event){lv_async_call([](void *slot){preset_slot=unsigned(uintptr_t(slot));if(navui::nav_state){preset_draft=navui::nav_state->preferences.presets[preset_slot];preset_form();}},lv_event_get_user_data(event));},i);
+  }
+  auto *help=single_label(dialog,"Choose a slot to edit or create your own preset. All settings are stored on the device SD card.",8,240,300,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
 }
 static lv_obj_t *poi_name=nullptr;static uint32_t chosen_poi=0;
 static void save_poi(lv_event_t *){
@@ -319,6 +397,8 @@ static void track_details(uint32_t id){
   single_label(dialog,"Visible on map",8,80,300,muted);
   auto *colors=lv_dropdown_create(dialog);lv_dropdown_set_options(colors,"Orange\nBlue\nGreen\nRed\nPurple\nYellow");if(style)for(unsigned i=0;i<6;++i)if(style->color==mcxnav::TRACK_COLORS[i])lv_dropdown_set_selected(colors,i);
   lv_obj_add_event_cb(colors,[](lv_event_t *e){mcxnav::Command c;c.action=mcxnav::SET_COLOR;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));c.value=mcxnav::TRACK_COLORS[lv_dropdown_get_selected(lv_event_get_target(e))%6];mcxnav::enqueue(c);},LV_EVENT_VALUE_CHANGED,(void *)(uintptr_t)id);
+  action_button(dialog,"CUSTOM RGB COLOR",8,140,300,40,panel2,[](lv_event_t *e){setting_track=uint32_t(uintptr_t(lv_event_get_user_data(e)));lv_async_call([](void *){setting_editor(3);},nullptr);},id);
+  action_button(dialog,"EXPORT GPX TO SD",8,190,300,40,panel2,[](lv_event_t *e){mcxnav::Command command;command.action=mcxnav::EXPORT_TRACK;command.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));settings_send(command);},id);
   action_button(dialog,"CENTER ON TRACK",8,160,300,40,panel2,[](lv_event_t *e){const auto id=uint32_t(uintptr_t(lv_event_get_user_data(e)));if(navui::nav_state)for(unsigned i=0;i<navui::nav_state->track_count;++i)if(navui::nav_state->tracks[i].id==id&&navui::nav_state->tracks[i].points){show_location(navui::nav_state->tracks[i].first);break;}},id);
 }
 static void library(bool pois){
