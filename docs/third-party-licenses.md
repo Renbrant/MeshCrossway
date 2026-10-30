@@ -63,3 +63,7 @@ The Core adapter now implements original bounded protobuf wire handling, session
 ## Raster map implementation (v0.8.1 candidate)
 
 Uses the existing pinned LVGL 8.4 LodePNG decoder (Lode Vandevenne, zlib-style notice retained in the upstream library), now enabled through `LV_USE_PNG`. No external map application source was copied. Raster data is separate from firmware code: OpenStreetMap attribution is displayed; tile service terms apply. Offline XYZ packs must carry the provider's required attribution and permission for offline use. See [map guide](maps-gps-v081.md).
+
+## v0.8.10 remote companion
+
+The offline dashboard and mailbox are original MeshCrossway code; the unchanged logo comes from `docs/site/assets/meshcrossway-logo.svg`. No new firmware dependencies are added. SHA-256 uses the existing ESP-IDF mbedTLS component. The host-only `tests/remote_chat_test.cpp` links system OpenSSL ([source and license](https://github.com/openssl/openssl/tree/openssl-3.0.13), Apache-2.0 in OpenSSL 3.x), tested locally with OpenSSL 3.0.13. CI uses its runner-provided version; no OpenSSL source or binary is copied into firmware or distributed by this change. Runtime release dependency/license review items remain open.

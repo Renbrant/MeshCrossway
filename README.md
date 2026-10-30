@@ -1,18 +1,12 @@
 ![MeshCrossway — Meshtastic and MeshCore modular three-device system](docs/images/meshcrossway-modular-hero.jpg)
 
-**v0.8.4 experimental:** Local SD track recording and GPX, saved POIs and map overlays, reordered borderless contextual controls, map-style selection and automatic provider credits. [Operation and hardware acceptance](docs/gps-navigation-v084.md). **v0.8.2 is now the owner-confirmed recovery**, including Bluetooth reconnection after restart. Install without Erase.
+**Recommended stable: v0.8.9.** Owner confirmed normal operation on 2026-10-30 and selected it as the most stable revision. [Immutable recovery record](docs/stable-v089.md). v0.8.10 is a new experimental remote companion / Bluetooth reconnect candidate; install without Erase.
 
-**v0.8.3 candidate (experimental):** GPS-synchronized UTC clock, offline timezone estimate with automatic DST and saved manual selection, `HH:MM` header and a smaller battery indicator. [Clock guide and acceptance](docs/gps-clock-v083.md). **v0.8.2 is the owner-tested rollback**; new clock behavior requires hardware validation. Install without Erase.
-
-**v0.8.1 (experimental):** GPS fix/satellite indicator, saved GPS reading settings and real XYZ PNG maps with pan, zoom, GPS follow and microSD cache. Offline packs use `/tiles/z/x/y.png`; online viewing uses HTTPS OpenStreetMap tiles and visible attribution. No bulk download or automatic mesh location sharing. Map/SD/TLS/BLE coexistence still requires hardware validation. [Map and GPS guide](docs/maps-gps-v081.md). v0.7.8 remains recovery.
+**v0.8.10 candidate:** automatic last-radio Bluetooth resume and an offline customer remote dashboard with independent MeshCore/Meshtastic conversations, tracks, screenshots and service diagnostics. [Operation and acceptance](docs/remote-companion-v0810.md).
 
 MeshCrossway is an **open-source, offline-first modular communication system** with **three independent, battery-powered devices**: one touchscreen **Core** and two detachable LoRa **Radio Pods**, one for **Meshtastic** and one for **MeshCore**. The Core connects to both Pods over **two separate Bluetooth Low Energy (BLE) links**, bringing messaging, navigation, GNSS positioning, tracks and field diagnostics into a single interface without requiring cellular coverage or the internet.
 
-> **Development status:** **v0.8.2 is the owner-tested recovery**. Local GPS UART reception was observed on v0.8.0 with a live fix; v0.8.1 adds map rendering and GPS configuration pending hardware qualification. Meshtastic PhoneAPI and MeshCore remain independent, with one active BLE radio at a time. Full Meshtastic RX/TX hardware validation, concurrent BLE sessions, tracks and live sharing are still pending. The web simulator is separate from physical LVGL firmware.
-
-**v0.7.13 experimental (not hardware tested):** Includes PR #63 touch sampling on a separate task, retained PSRAM message cards and reading position, and earlier offline SD restore for MeshCore and Meshtastic. The two mesh networks remain completely independent; only one BLE radio is active at a time. Install from the [Web Flasher](https://renbrant.github.io/MeshCrossway/flasher/) with **Erase unchecked**. The owner-tested v0.7.8 remains the default recovery image; real hardware qualification is pending. [Touch/history acceptance notes](docs/touch-history-pr.md).
-
-**v0.7.12 experimental:** Meshtastic PhoneAPI integration now supports a T-Deck / T-Deck Plus as the external BLE radio: native nodes, channels, direct/channel messages, positions/metrics, drafts and separate plaintext SD history. Use **Bluetooth Programming Mode or BaseUI**, T-Deck Wi-Fi off, and the displayed PIN. One active BLE radio session; both networks remain independent. Physical T-Deck qualification is pending; **v0.7.8 remains recovery**. [Setup and compatibility checks](docs/meshtastic-v0712.md).
+> **Development status:** v0.8.9 is the current owner-tested stable release. The physical firmware supports MeshCore and Meshtastic with **one active BLE radio at a time**. Concurrent sessions and live position sharing remain future work. New v0.8.10 behavior requires hardware validation; the web simulator is separate from physical LVGL firmware.
 
 ## Current hardware — three independent BLE devices
 

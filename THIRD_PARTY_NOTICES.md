@@ -42,3 +42,7 @@ IANA TZ Database recurring POSIX rules were extracted from the official Python
 `tzdata` wheel, version and hashes recorded in the generated header. IANA timezone
 data is public domain; no country outline or timezone rule is original
 MeshCrossway data. Geographic lookup is approximate, as documented upstream.
+
+## v0.8.10 remote companion
+
+The offline dashboard and mailbox are original MeshCrossway code; the unchanged logo comes from `docs/site/assets/meshcrossway-logo.svg`. No new firmware dependencies are added. SHA-256 uses the existing ESP-IDF mbedTLS component. The host-only `tests/remote_chat_test.cpp` links system OpenSSL ([source and license](https://github.com/openssl/openssl/tree/openssl-3.0.13), Apache-2.0 in OpenSSL 3.x), tested locally with OpenSSL 3.0.13. CI uses its runner-provided version; no OpenSSL source or binary is copied into firmware or distributed by this change. Runtime release dependency/license review items remain open.

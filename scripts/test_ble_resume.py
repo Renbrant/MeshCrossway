@@ -13,6 +13,7 @@ preferences=section('static bool read_enabled(){','static void save_remembered()
 resume=section('static void auto_resume_task(void *){','static void schedule_auto_resume(){')
 test=r'''
 #include <atomic>
+#include <initializer_list>
 #include <cassert>
 #include <cstdio>
 #include <cstdint>
@@ -20,7 +21,10 @@ test=r'''
 using nvs_handle_t=int;using esp_err_t=int;
 static constexpr int ESP_OK=0,NVS_READONLY=0,NVS_READWRITE=1,BLE_HS_CONN_HANDLE_NONE=65535;
 static bool enabled=false,pending=false,nvs_error=false,known_peer=false,deleted=false;
-static int writes=0,starts=0,scans=0,waits=0;
+static int writes=0,starts=0,scans=0,directs=0,waits=0;
+static bool &have_remembered=known_peer;static int mux=0;
+#define portENTER_CRITICAL(p) (void)(p)
+#define portEXIT_CRITICAL(p) (void)(p)
 static uint32_t elapsed=0;
 static int nvs_open(const char *,int,nvs_handle_t *h){*h=1;return nvs_error?-1:0;}
 static int nvs_get_u8(nvs_handle_t,const char *key,uint8_t *v){assert(!strcmp(key,"enabled"));*v=enabled;return 0;}
@@ -35,6 +39,7 @@ enum Phase{IDLE,FAILED};struct Snapshot{Phase phase=IDLE;};
 static Snapshot snapshot(){return {};}
 static bool request_start(){++starts;return true;}
 static void scan(bool automatic){assert(automatic&&known_peer&&elapsed>=15000);++scans;}
+static bool reconnect_remembered(){assert(known_peer&&elapsed>=15000);++directs;return true;}
 struct Stop{};
 static void vTaskDelay(uint32_t n){elapsed+=n;if(++waits>2)throw Stop{};}
 static void vTaskDelete(void *){deleted=true;}
@@ -42,9 +47,9 @@ static void vTaskDelete(void *){deleted=true;}
 '''+preferences+resume+r'''
 static void scenario(bool saved_enabled,bool paired,bool paused,int want_start,int want_scan){
   enabled=saved_enabled;known_peer=paired;auto_paused=paused;
-  starts=scans=waits=elapsed=0;deleted=false;reconnect_worker=(void*)1;
+  starts=scans=directs=waits=elapsed=0;deleted=false;reconnect_worker=(void*)1;
   try{auto_resume_task(nullptr);}catch(Stop&){}
-  assert(starts==want_start&&scans==want_scan);
+  assert(starts==want_start&&directs==want_scan&&scans==0);
   if(!want_start)assert(deleted&&reconnect_worker==nullptr);
 }
 int main(){
@@ -94,5 +99,48 @@ int main(){
 with tempfile.TemporaryDirectory() as directory:
     cpp=Path(directory)/'startup.cpp';cpp.write_text(fixture)
     binary=Path(directory)/'startup'
+    subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror',str(cpp),'-o',str(binary)],check=True)
+    subprocess.run([str(binary)],check=True)
+
+# Actual direct-resume selection, including identity/base address normalization.
+reconnect=section('static bool reconnect_remembered(){','static void disconnect(){')
+fixture=r'''
+#include <cassert>
+#include <cstring>
+#include <cstdio>
+#include <cstdint>
+#include <atomic>
+#include <initializer_list>
+static constexpr int BLE_HS_CONN_HANDLE_NONE=65535;
+enum Phase{OFF,IDLE,FAILED,CONNECTING,READY};enum Radio{UNKNOWN,MESHTASTIC,MESHCORE};
+struct Address{uint8_t type=0,val[6]={};};struct Peer{Address addr;char name[29]={};Radio advertised=UNKNOWN;};
+struct Snapshot{Phase phase=IDLE;int count=0,selected=-1;Peer peers[8];};
+static Snapshot state;
+struct Saved{uint8_t addr_type=0,addr[6]={},radio=0;char name[29]={};};static Saved remembered;
+static bool have_remembered=false;static std::atomic<bool> auto_paused{false},synced{true};
+static int conn=BLE_HS_CONN_HANDLE_NONE,mux=0,calls=0;
+#define portENTER_CRITICAL(p) (void)(p)
+#define portEXIT_CRITICAL(p) (void)(p)
+static Snapshot snapshot(){return state;}
+static void connect(int i){assert(i==0);++calls;state.phase=CONNECTING;}
+'''+reconnect+r'''
+int main(){
+ assert(!reconnect_remembered()&&calls==0);
+ have_remembered=true;remembered.addr[5]=91;strcpy(remembered.name,"My radio");
+ for(auto radio:{MESHTASTIC,MESHCORE})for(uint8_t type=0;type<4;++type){
+  state.phase=IDLE;state.count=8;remembered.radio=radio;remembered.addr_type=type;
+  assert(reconnect_remembered());assert(state.count==1&&state.peers[0].addr.type==(type&1));
+  assert(state.peers[0].advertised==radio&&state.peers[0].addr.val[5]==91&&!strcmp(state.peers[0].name,"My radio"));
+ }
+ state.phase=READY;assert(!reconnect_remembered());state.phase=IDLE;
+ auto_paused=true;assert(!reconnect_remembered());auto_paused=false;
+ synced=false;assert(!reconnect_remembered());synced=true;
+ conn=1;assert(!reconnect_remembered());
+ puts("PASS: direct remembered peer selection for MC and MT, crowded lists, identity normalization and active/manual-disconnect gating");
+}
+'''
+with tempfile.TemporaryDirectory() as directory:
+    cpp=Path(directory)/'direct.cpp';cpp.write_text(fixture)
+    binary=Path(directory)/'direct'
     subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror',str(cpp),'-o',str(binary)],check=True)
     subprocess.run([str(binary)],check=True)

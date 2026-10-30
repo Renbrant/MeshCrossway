@@ -131,7 +131,7 @@ static void save_remembered(){
   if(handle==BLE_HS_CONN_HANDLE_NONE||identified==UNKNOWN)return;
   struct ble_gap_conn_desc desc={};
   if(ble_gap_conn_find(handle,&desc)!=0||
-     !desc.sec_state.encrypted||!desc.sec_state.authenticated||!desc.sec_state.bonded)return;
+     !desc.sec_state.encrypted||!desc.sec_state.authenticated)return;
   RememberedPeer p={};
   p.magic=LAST_PEER_MAGIC;p.version=1;p.radio=(uint8_t)identified;
   p.addr_type=desc.peer_id_addr.type;
@@ -224,6 +224,26 @@ static void connect(int index){
   update(CONNECTING,"Connecting to BLE radio...");
   const int rc=ble_gap_connect(own_addr,&found.peers[index].addr,20000,nullptr,gap_event,nullptr);
   if(rc){char msg[64];snprintf(msg,sizeof(msg),"Connect error: %d",rc);update(FAILED,msg);}
+}
+static bool reconnect_remembered(){
+  if(auto_paused.load()||!synced||conn!=BLE_HS_CONN_HANDLE_NONE)return false;
+  const Snapshot current=snapshot();
+  if(current.phase!=IDLE&&current.phase!=FAILED)return false;
+  portENTER_CRITICAL(&mux);
+  const bool known=have_remembered;
+  if(known){
+    state.count=1;state.selected=-1;
+    state.peers[0]={};
+    // Identity address type flags are not valid connection address types.
+    state.peers[0].addr.type=remembered.addr_type&1;
+    memcpy(state.peers[0].addr.val,remembered.addr,6);
+    snprintf(state.peers[0].name,sizeof(state.peers[0].name),"%s",remembered.name);
+    state.peers[0].advertised=Radio(remembered.radio);
+  }
+  portEXIT_CRITICAL(&mux);
+  if(!known)return false;
+  connect(0);
+  return true;
 }
 static void disconnect(){
   // A deliberate disconnect stops automatic retry until the next boot.
@@ -504,14 +524,15 @@ static int gap_event(struct ble_gap_event *event,void *){
         if(ble_uuid_cmp(&fields.uuids128[i].u,&MT_SERVICE.u)==0)hint=MESHTASTIC;
         if(ble_uuid_cmp(&fields.uuids128[i].u,&MC_SERVICE.u)==0)hint=MESHCORE;
       }
+      const bool last_peer=auto_scan.load()&&matching_remembered(disc.addr);
       portENTER_CRITICAL(&mux);
       int index=-1;
       for(int i=0;i<state.count;i++)
         if(!memcmp(state.peers[i].addr.val,disc.addr.val,6)&&
            state.peers[i].addr.type==disc.addr.type){index=i;break;}
-      if(index<0 && connectable && (fields.name_len>0 || hint!=UNKNOWN || (auto_scan&&matching_remembered(disc.addr))) &&
-         state.count<8){
-        index=state.count++;
+      if(index<0 && connectable && (fields.name_len>0 || hint!=UNKNOWN || last_peer) &&
+         (state.count<8||last_peer)){
+        index=state.count<8?state.count++:7;
         state.peers[index].addr=disc.addr;
         snprintf(state.peers[index].name,sizeof(state.peers[index].name),"BLE radio %02X:%02X",
                  disc.addr.val[1],disc.addr.val[0]);
@@ -716,13 +737,19 @@ static void auto_resume_task(void *){
     reconnect_worker=nullptr;vTaskDelete(nullptr);return;
   }
   (void)request_start();
-  bool first=true;
+  bool first=true,direct=true;
   while(!auto_paused.load()){
     vTaskDelay(pdMS_TO_TICKS(first?3000:30000));
     first=false;
     const Snapshot current=snapshot();
-    if(paired_before&&synced&&conn==BLE_HS_CONN_HANDLE_NONE&&
-       (current.phase==IDLE||current.phase==FAILED))scan(true);
+    // Re-read current RAM intent: a radio paired after boot must retry too.
+    bool known=false;
+    portENTER_CRITICAL(&mux);known=have_remembered;portEXIT_CRITICAL(&mux);
+    if(known&&synced&&conn==BLE_HS_CONN_HANDLE_NONE&&
+       (current.phase==IDLE||current.phase==FAILED)){
+      if(direct)(void)reconnect_remembered();else scan(true);
+      direct=!direct;
+    }
   }
   reconnect_worker=nullptr;vTaskDelete(nullptr);
 }
