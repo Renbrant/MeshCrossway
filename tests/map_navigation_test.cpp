@@ -53,6 +53,9 @@ int main(int argc,char **argv){
  lv_indev_drv_t input;lv_indev_drv_init(&input);input.type=LV_INDEV_TYPE_POINTER;input.read_cb=read_pointer;lv_indev_drv_register(&input);
  mcxmap::View v;v.latitude=45.123456;v.longitude=-110.654321;v.width=400;v.height=155;v.generation=1;mcxmap::wanted=1;mcxmap::Config c;c.online=0;make_tiles(v);
  auto *frame=mcxmap::render(v,c);assert(frame&&frame->loaded>=2&&!frame->missing);const auto *pixels=(const lv_color_t *)frame->image.data;assert(pixels[100].full==lv_color_make(25,150,75).full);mcxmap::release(frame);
+ const auto decoded=mcxmap::decode_count.load();
+ const auto hits=mcxmap::cache_hits.load();
+ frame=mcxmap::render(v,c);assert(frame&&!frame->missing&&mcxmap::decode_count.load()==decoded&&mcxmap::cache_hits.load()>hits);mcxmap::release(frame);
  mcxmap::wanted=2;assert(!mcxmap::render(v,c));
  assert(fake_http_calls==0);mcxmap::wifi_ready=[](){return true;};fake_http_enabled=true;c.online=1;
  auto online_view=v;online_view.latitude+=0.2;online_view.generation=3;mcxmap::wanted=3;
@@ -61,6 +64,7 @@ int main(int argc,char **argv){
  frame=mcxmap::render(online_view,c);assert(frame&&!frame->missing&&fake_http_calls==downloads);mcxmap::release(frame);
  const auto pc=mcxmap::project(online_view.latitude,online_view.longitude,online_view.zoom);char cached_file[192];
  mcxmap::paths(cached_file,sizeof(cached_file),c,online_view.zoom,unsigned(floor((pc.x-online_view.width/2.0)/256)),unsigned(floor((pc.y-online_view.height/2.0)/256)));
+ mcxmap::clear_tiles(); // Simulate cold cache before testing SD corruption.
  FILE *broken=fopen(cached_file,"wb");assert(broken);fputs("broken",broken);fclose(broken);
  c.online=1;online_view.generation=5;mcxmap::wanted=5;frame=mcxmap::render(online_view,c);
  assert(frame&&!frame->missing&&fake_http_calls==downloads+1);mcxmap::release(frame);
@@ -95,11 +99,41 @@ int main(int argc,char **argv){
  pointer_x=210;pointer_y=150;down=true;advance();pointer_x=260;advance();down=false;advance();
  navui::request();assert(!mcxmap::queued&&!navui::inflight&&!navui::centered);
  navui::invalidate();lv_obj_clean(body);navui::after_clean();mcxgnss::fix.valid=true;mcxgnss::fix.latitude=v.latitude;mcxgnss::fix.longitude=v.longitude;mcxgnss::fix.satellites=12;mcxgnss::fix.have_satellites=true;
- mcxmap::config.online=0;navui::create(400);advance();auto current=mcxmap::requested;make_tiles(current);mcxmap::ready=mcxmap::render(current,mcxmap::config);mcxmap::queued=false;navui::poll();assert(navui::front&&!navui::front->missing&&!lv_obj_has_flag(navui::marker,LV_OBJ_FLAG_HIDDEN));
+ mcxmap::config.online=0;navui::create(400);advance();
+ assert(lv_obj_get_x(navui::canvas)==0&&lv_obj_get_y(navui::canvas)==0&&lv_obj_get_height(navui::canvas)==286);
+ assert(lv_obj_get_child_cnt(body)==1); // Map owns the entire body; no heading/footer/buttons.
+ assert(lv_obj_get_style_bg_opa(navui::attribution,0)==LV_OPA_TRANSP);
+ navui::toggle_zoom();advance();assert(navui::zoom_overlay&&navui::zoom_slider&&navui::zoom_open);
+ const auto before_slider=mcxmap::wanted.load();
+ lv_event_send(navui::zoom_slider,LV_EVENT_PRESSED,nullptr);
+ for(int z=5;z<=17;++z){lv_slider_set_value(navui::zoom_slider,z,LV_ANIM_OFF);lv_event_send(navui::zoom_slider,LV_EVENT_VALUE_CHANGED,nullptr);}
+ assert(navui::zoom==14&&navui::pending_zoom==17&&mcxmap::wanted.load()==before_slider+1); // Only cancellation during drag.
+ lv_event_send(navui::zoom_slider,LV_EVENT_RELEASED,nullptr);assert(navui::zoom==17&&mcxmap::requested.zoom==17&&!navui::zoom_adjusting);
+ assert(navui::zoom_overlay);navui::toggle_zoom();assert(!navui::zoom_overlay&&!navui::zoom_open);
+ navui::zoom=14;auto restore=mcxmap::configuration();restore.zoom=14;mcxmap::configure(restore);navui::request();auto current=mcxmap::requested;make_tiles(current);mcxmap::ready=mcxmap::render(current,mcxmap::config);mcxmap::queued=false;navui::poll();assert(navui::front&&!navui::front->missing&&!lv_obj_has_flag(navui::marker,LV_OBJ_FLAG_HIDDEN));
+ navui::toggle_zoom();advance();
+ lv_event_send(navui::zoom_slider,LV_EVENT_PRESSED,nullptr);lv_slider_set_value(navui::zoom_slider,15,LV_ANIM_OFF);lv_event_send(navui::zoom_slider,LV_EVENT_VALUE_CHANGED,nullptr);
+ assert(lv_img_get_zoom(navui::picture)==512&&lv_obj_has_flag(navui::marker,LV_OBJ_FLAG_HIDDEN));
+ lv_event_send(navui::zoom_slider,LV_EVENT_RELEASED,nullptr);navui::toggle_zoom();
+ navui::zoom=14;restore.zoom=14;mcxmap::configure(restore);navui::request();
+ current=mcxmap::requested;mcxmap::ready=mcxmap::render(current,restore);navui::poll();assert(lv_img_get_zoom(navui::picture)==256);
  const double before=navui::longitude;pointer_x=210;pointer_y=150;down=true;advance();for(int x=215;x<=265;x+=5){pointer_x=x;advance(35);}down=false;advance();assert(!navui::following&&navui::longitude<before);
  gpsui::open();advance();assert(gpsui::enabled_button);tap(gpsui::enabled_button);assert(!mcxgnss::configuration().enabled);tap(gpsui::baud_button);assert(mcxgnss::configuration().baud==9600);tap(gpsui::timeout_button);assert(mcxgnss::configuration().timeout_ms==5000);
  gpsui::map_options();advance();gpsui::edit(1);advance();lv_area_t area;lv_obj_get_coords(gpsui::edit_keyboard,&area);assert(area.x1>=0&&area.y1>=0&&area.x2<480&&area.y2<320);
  lv_textarea_set_text(gpsui::edit_value,"https://tiles.example.org/raster");gpsui::save_editor(nullptr);assert(!strcmp(mcxmap::configuration().url,"https://tiles.example.org/raster"));
+ gpsui::map_diagnostics();advance();assert(info_dialog);gpsui::map_credits();advance();assert(info_dialog);
  info_close_now(nullptr);navui::invalidate();lv_obj_clean(body);navui::after_clean();assert(!navui::front);
+ // Full viewport/overlay geometry at all four left/right rail combinations.
+ mcxgnss::fix.valid=false;navui::centered=false;
+ for(const int width:{276,315,361,400}){
+  lv_obj_set_width(body,width);navui::create(width);navui::toggle_zoom();advance();
+  lv_area_t canvas_area,slider_area;lv_obj_get_coords(navui::canvas,&canvas_area);lv_obj_get_coords(navui::zoom_slider,&slider_area);
+  assert(canvas_area.y1==34&&canvas_area.y2==319&&canvas_area.x2==40+width-1);
+  assert(slider_area.x1>=canvas_area.x1&&slider_area.x2<=canvas_area.x2&&slider_area.y2<=canvas_area.y2);
+  navui::invalidate();lv_obj_clean(body);navui::after_clean();
+  assert(navui::zoom_open);navui::create(width);assert(navui::zoom_overlay);navui::toggle_zoom();assert(!navui::zoom_overlay);
+  navui::invalidate();lv_obj_clean(body);navui::after_clean();
+ }
+ mcxmap::clear_tiles();
  puts("PASS: HTTPS cache transactions, corrupt cache repair, 503 backoff, no-SD gating, real PNG SD tiles, Mercator raster crop, stale job cancellation, bad PNG/URL, real LVGL map drag, GPS settings and source editor geometry");
 }
