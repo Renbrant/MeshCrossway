@@ -15,5 +15,18 @@ int main(int argc,char **argv){assert(argc==2);std::filesystem::create_directori
  char path[256];snprintf(path,sizeof(path),"%s/%08x.trk",argv[1],interrupted);FILE *f=fopen(path,"ab");assert(f);fwrite("truncated",1,9,f);fclose(f);
  s=new Store;assert(s->load(argv[1])&&s->track_count==2);assert(s->tracks[0].id==interrupted&&s->tracks[0].points==1&&s->tracks[0].recovered&&s->tracks[0].gpx);Track t;assert(s->scan_track(id,t,true)&&t.points==3&&s->preview_count==3);assert(s->delete_poi(poi));
  delete s;s=new Store;assert(s->load(argv[1])&&s->poi_count==0);p.latitude=NAN;assert(!s->save_poi(p,"bad"));delete s;
+ // Stationary recordings do not accumulate timed points, and saved overlays
+ // remain available while a second track is recording.
+ s=new Store;assert(s->load(argv[1]));p.latitude=39.9;p.longitude=-104.9;
+ assert(s->preset(3,"Trail custom",4,2));assert(!s->preset(4,"bad",4,2));assert(!s->preset(3,"bad",0,2));
+ assert(s->select_preset(3));assert(s->visible(id,true));assert(s->color(id,0x4DB8FF));
+ assert(s->start());const auto active=s->current;assert(s->sample(p,true,20000,0));
+ assert(!s->sample(p,true,120000,0));assert(s->point_count==1);
+ p.longitude+=.0001;assert(!s->sample(p,true,122000,0.2));
+ assert(s->sample(p,true,124000,5));assert(s->overlay_count>=1);
+ bool earlier=false;for(unsigned i=0;i<s->overlay_count;++i)earlier|=s->overlays[i].id==id;assert(earlier);
+ assert(s->visible(id,false));for(unsigned i=0;i<s->overlay_count;++i)assert(s->overlays[i].id!=id);
+ assert(s->visible(id,true));assert(s->stop());delete s;
+ s=new Store;assert(s->load(argv[1]));assert(s->preferences.selected==3);assert(!strcmp(s->preferences.presets[3].name,"Trail custom"));assert(s->style(id)->visible&&s->style(id)->color==0x4DB8FF);assert(s->style(active));delete s;
  puts("PASS: track start/pause/resume/segments, sample cadence, durable journal, reboot/torn-tail recovery, GPX and escaped POI persistence/delete");
 }

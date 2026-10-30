@@ -21,6 +21,7 @@ static Fix snapshot(){return fix;}
 namespace mcxnav {
 static Snapshot mock_state;static Action last_action=NONE;static uint32_t last_id=0;static char last_name[40]={};
 static bool start(){return true;}
+static bool enqueue(const Command &c){last_action=c.action;last_id=c.id;return true;}
 static bool snapshot(Snapshot &s){s=mock_state;return true;}
 static bool submit(Action a,uint32_t id=0,const char *name=nullptr){last_action=a;last_id=id;if(name)snprintf(last_name,sizeof(last_name),"%s",name);return a!=SAVE_POI||mcxgnss::fix.valid;}
 }

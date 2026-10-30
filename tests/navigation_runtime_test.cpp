@@ -2,6 +2,22 @@
 #include "meshcrossway_navigation.h"
 #include <cassert>
 #include <filesystem>
+#include <map>
+#include <string>
+using esp_err_t=int;
+#define ESP_FAIL -1
+#define HTTPD_RESP_USE_STRLEN -1
+struct httpd_req_t {unsigned content_len=0;std::string input,output,code="200 OK",query;std::map<std::string,std::string> headers;};
+static int httpd_resp_set_status(httpd_req_t *r,const char *s){r->code=s;return 0;}
+static int httpd_resp_set_type(httpd_req_t *,const char *){return 0;}
+static int httpd_resp_set_hdr(httpd_req_t *,const char *,const char *){return 0;}
+static int httpd_resp_send(httpd_req_t *r,const char *s,int n){r->output.assign(s,n<0?strlen(s):size_t(n));return 0;}
+static int httpd_resp_send_chunk(httpd_req_t *r,const char *s,size_t n){if(s)r->output.append(s,n);return 0;}
+static int httpd_req_get_hdr_value_str(httpd_req_t *r,const char *key,char *out,size_t cap){auto p=r->headers.find(key);if(p==r->headers.end()||p->second.size()>=cap)return -1;snprintf(out,cap,"%s",p->second.c_str());return 0;}
+static int httpd_req_recv(httpd_req_t *r,char *out,size_t cap){size_t n=std::min(cap,r->input.size());memcpy(out,r->input.data(),n);r->input.erase(0,n);return int(n);}
+static int httpd_req_get_url_query_str(httpd_req_t *r,char *out,size_t cap){if(r->query.size()>=cap)return -1;snprintf(out,cap,"%s",r->query.c_str());return 0;}
+static int httpd_query_key_value(const char *query,const char *key,char *out,size_t cap){std::string prefix=std::string(key)+"=";if(strncmp(query,prefix.c_str(),prefix.size()))return -1;const char *value=query+prefix.size();if(strlen(value)>=cap)return -1;snprintf(out,cap,"%s",value);return 0;}
+#include "meshcrossway_navigation_http.h"
 struct StopTick {};
 static void step(){fake_delay_hook=[](unsigned){throw StopTick{};};try{mcxnav::worker(nullptr);}catch(StopTick&){}fake_delay_hook=nullptr;}
 int main(int argc,char **argv){assert(argc==2);lv_init();std::filesystem::create_directories(argv[1]);assert(mcxnav::start());assert(mcxnav::store->load(argv[1]));
@@ -16,5 +32,16 @@ int main(int argc,char **argv){assert(argc==2);lv_init();std::filesystem::create
  mcxgnss::settings.enabled=0;assert(!mcxnav::submit(mcxnav::SAVE_POI,0,"stale"));
  for(unsigned i=0;i<4;++i){assert(mcxnav::submit(mcxnav::NONE));}
  assert(!mcxnav::submit(mcxnav::NONE));step();assert(mcxnav::count==3);
+ while(mcxnav::count)step();
+ httpd_req_t state;assert(mcxnavhttp::state(&state)==0);assert(state.output.find("\"presets\"")!=std::string::npos&&state.output.find("\"tracks\"")!=std::string::npos);
+ auto request=[](const char *body,bool header=true){httpd_req_t r;r.input=body;r.content_len=r.input.size();if(header)r.headers["X-MCX-Request"]="1";mcxnavhttp::command(&r);return r;};
+ assert(request("10|0|0|0|0|",false).code=="403 Forbidden");
+ assert(request("10|99|0|0|0|").code=="400 Bad Request");
+ assert(request("11|3|0|0|2|Bad").code=="400 Bad Request");
+ assert(request("11|3|0|12|4|Web preset").code=="202 Accepted");step();assert(mcxnav::store->preferences.presets[3].distance_m==12);
+ assert(request("10|3|0|0|0|").code=="202 Accepted");step();assert(mcxnav::store->preferences.selected==3);
+ assert(request("999|0|0|0|0|").code=="400 Bad Request");
+ httpd_req_t bad;bad.query="id=../../secret";mcxnavhttp::download(&bad);assert(bad.code=="400 Bad Request");
+ puts("PASS: HTTP navigation state, command header, numeric bounds, presets via worker and download path validation");
  puts("PASS: production navigation worker, bounded command queue, button-time POI fix, stale-fix rejection, SD-space pause, snapshot and GPX completion");
 }

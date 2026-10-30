@@ -164,11 +164,18 @@ static void draw_overlays(lv_event_t *e){
   const auto origin=mcxmap::project(front->view.latitude,front->view.longitude,front->view.zoom);
   auto point=[&](const mcxnav::Sample &p){const auto v=mcxmap::project(p.latitude,p.longitude,front->view.zoom);return lv_point_t{lv_coord_t(lround(mcxmap::delta(v.x,origin.x,front->view.zoom)+front->view.width/2.0)+area.x1),lv_coord_t(lround(v.y-origin.y+front->view.height/2.0)+area.y1)};};
   lv_draw_line_dsc_t line;lv_draw_line_dsc_init(&line);line.color=orange;line.width=3;line.round_start=line.round_end=1;
-  for(unsigned i=1;i<nav_state->preview_count;++i){const auto &a=nav_state->preview[i-1],&b=nav_state->preview[i];if(a.segment!=b.segment)continue;
+  auto draw_track=[&](const mcxnav::Sample *points,unsigned count,uint32_t color){line.color=lv_color_hex(color);
+  for(unsigned i=1;i<count;++i){const auto &a=points[i-1],&b=points[i];if(a.segment!=b.segment)continue;
     // Skip far-away vertices before converting to LVGL's narrow screen coordinates.
     const auto pa=mcxmap::project(a.latitude,a.longitude,front->view.zoom),pb=mcxmap::project(b.latitude,b.longitude,front->view.zoom);
     if(fabs(mcxmap::delta(pa.x,origin.x,front->view.zoom))>10000||fabs(pa.y-origin.y)>10000||fabs(mcxmap::delta(pb.x,origin.x,front->view.zoom))>10000||fabs(pb.y-origin.y)>10000)continue;
     auto aa=point(a),bb=point(b);lv_draw_line(ctx,&line,&aa,&bb);
+  }
+  };
+  for(unsigned i=0;i<nav_state->overlay_count;++i){const auto &o=nav_state->overlays[i];draw_track(o.points,o.count,o.color);}
+  for(const auto &style:nav_state->preferences.styles)if(style.id==nav_state->preview_id&&style.visible){
+    bool saved=false;for(unsigned i=0;i<nav_state->overlay_count;++i)saved|=nav_state->overlays[i].id==style.id;
+    if(!saved)draw_track(nav_state->preview,nav_state->preview_count,style.color);
   }
   for(unsigned i=0;i<nav_state->poi_count;++i){const auto &p=nav_state->pois[i];const auto at=mcxmap::project(p.point.latitude,p.point.longitude,front->view.zoom);if(fabs(mcxmap::delta(at.x,origin.x,front->view.zoom))>double(front->view.width)/2+10||fabs(at.y-origin.y)>double(front->view.height)/2+10)continue;
     const auto q=point(p.point);lv_area_t a={lv_coord_t(q.x-4),lv_coord_t(q.y-4),lv_coord_t(q.x+4),lv_coord_t(q.y+4)};lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=cyan;d.border_color=white;d.border_width=1;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
@@ -279,6 +286,7 @@ static void recording(){
   action_button(dialog,"PAUSE",120,148,104,40,panel2,nav_action,mcxnav::PAUSE);
   action_button(dialog,"RESUME",232,148,104,40,panel2,nav_action,mcxnav::RESUME);
   action_button(dialog,"FINISH",344,148,104,40,panel2,nav_action,mcxnav::STOP);
+  if(navui::nav_state){auto *picker=lv_dropdown_create(dialog);char options[128]="";for(unsigned i=0;i<4;++i){if(i)strcat(options,"\n");strcat(options,navui::nav_state->preferences.presets[i].name);}lv_dropdown_set_options(picker,options);lv_dropdown_set_selected(picker,navui::nav_state->preferences.selected);lv_obj_add_event_cb(picker,[](lv_event_t *e){mcxnav::submit(mcxnav::SELECT_PRESET,lv_dropdown_get_selected(lv_event_get_target(e)));},LV_EVENT_VALUE_CHANGED,nullptr);}
   auto *help=single_label(dialog,"Valid GPS positions save to microSD.\nPause or lost fix creates a separate track segment.\nFinish writes a GPX file; no radio transmission.",8,207,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);
 }
 static lv_obj_t *poi_name=nullptr;static uint32_t chosen_poi=0;
@@ -303,6 +311,16 @@ static void poi_details(uint32_t id){
     action_button(dialog,"DELETE...",232,169,216,40,panel2,[](lv_event_t *){lv_async_call([](void *){base("DELETE THIS POI?");single_label(dialog,"This removes the saved POI from the SD card.",8,64,440,white);action_button(dialog,"CONFIRM DELETE",8,130,440,42,orange,[](lv_event_t *){mcxnav::submit(mcxnav::DELETE_POI,chosen_poi);info_close(nullptr);},0);},nullptr);},0);return;
   }
 }
+static void track_details(uint32_t id){
+  base("TRACK / DISPLAY");if(!navui::nav_state)return;nav_dialog=2;nav_detail=single_label(dialog,navui::nav_state->status,8,30,300,muted);lv_label_set_long_mode(nav_detail,LV_LABEL_LONG_WRAP);char title[64];snprintf(title,sizeof(title),"Track %08lx",(unsigned long)id);single_label(dialog,title,8,40,300,white);
+  const mcxnav::Style *style=nullptr;for(const auto &v:navui::nav_state->preferences.styles)if(v.id==id)style=&v;
+  auto *toggle=lv_switch_create(dialog);if(style&&style->visible)lv_obj_add_state(toggle,LV_STATE_CHECKED);
+  lv_obj_add_event_cb(toggle,[](lv_event_t *e){mcxnav::Command c;c.action=mcxnav::SET_VISIBLE;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));c.value=lv_obj_has_state(lv_event_get_target(e),LV_STATE_CHECKED);mcxnav::enqueue(c);},LV_EVENT_VALUE_CHANGED,(void *)(uintptr_t)id);
+  single_label(dialog,"Visible on map",8,80,300,muted);
+  auto *colors=lv_dropdown_create(dialog);lv_dropdown_set_options(colors,"Orange\nBlue\nGreen\nRed\nPurple\nYellow");if(style)for(unsigned i=0;i<6;++i)if(style->color==mcxnav::TRACK_COLORS[i])lv_dropdown_set_selected(colors,i);
+  lv_obj_add_event_cb(colors,[](lv_event_t *e){mcxnav::Command c;c.action=mcxnav::SET_COLOR;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));c.value=mcxnav::TRACK_COLORS[lv_dropdown_get_selected(lv_event_get_target(e))%6];mcxnav::enqueue(c);},LV_EVENT_VALUE_CHANGED,(void *)(uintptr_t)id);
+  action_button(dialog,"CENTER ON TRACK",8,160,300,40,panel2,[](lv_event_t *e){const auto id=uint32_t(uintptr_t(lv_event_get_user_data(e)));if(navui::nav_state)for(unsigned i=0;i<navui::nav_state->track_count;++i)if(navui::nav_state->tracks[i].id==id&&navui::nav_state->tracks[i].points){show_location(navui::nav_state->tracks[i].first);break;}},id);
+}
 static void library(bool pois){
   base(pois?"SAVED POIs":"SAVED TRACKS");mcxnav::start();navui::poll();
   if(pois)action_button(dialog,"SAVE CURRENT GPS AS POI",8,40,440,36,orange,[](lv_event_t *){lv_async_call([](void *){new_poi();},nullptr);},0);
@@ -312,7 +330,7 @@ static void library(bool pois){
   for(unsigned i=0;i<n;++i){char title[100];uint32_t id;
     if(pois){id=s->pois[i].id;snprintf(title,sizeof(title),"%s",s->pois[i].name);}
     else {const auto &t=s->tracks[i];id=t.id;snprintf(title,sizeof(title),"Track %08lx / %.2f km / %lu pts%s",(unsigned long)id,t.metres/1000,(unsigned long)t.points,t.recovered?" / recovered":"");}
-    action_button(list,title,0,int(i)*42,425,38,panel2,pois?+[](lv_event_t *e){lv_async_call([](void *p){poi_details(uint32_t(uintptr_t(p)));},lv_event_get_user_data(e));}:+[](lv_event_t *e){lv_async_call([](void *p){const uint32_t id=uint32_t(uintptr_t(p));if(navui::nav_state)for(unsigned j=0;j<navui::nav_state->track_count;++j)if(navui::nav_state->tracks[j].id==id){if(!navui::nav_state->tracks[j].points)break;const auto first=navui::nav_state->tracks[j].first;if(mcxnav::submit(mcxnav::SHOW_TRACK,id))show_location(first);break;}},lv_event_get_user_data(e));},id);
+    action_button(list,title,0,int(i)*42,425,38,panel2,pois?+[](lv_event_t *e){lv_async_call([](void *p){poi_details(uint32_t(uintptr_t(p)));},lv_event_get_user_data(e));}:+[](lv_event_t *e){lv_async_call([](void *p){const uint32_t id=uint32_t(uintptr_t(p));track_details(id);},lv_event_get_user_data(e));},id);
   }
   auto *help=single_label(dialog,pois?"POIs export automatically to navigation/pois.gpx.":"Finished/recovered tracks have a GPX beside the journal.",8,259,440,muted);lv_obj_set_style_text_font(help,&lv_font_montserrat_10,0);
 }
