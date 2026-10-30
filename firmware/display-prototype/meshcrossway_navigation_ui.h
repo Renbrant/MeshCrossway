@@ -14,6 +14,10 @@ static mcxnav::Snapshot *nav_state=nullptr;
 static lv_obj_t *record_badge=nullptr;
 static void diagnostics();
 static void credits();
+static void set_hidden(lv_obj_t *object,bool hidden){
+  if(!object||lv_obj_has_flag(object,LV_OBJ_FLAG_HIDDEN)==hidden)return;
+  if(hidden)lv_obj_add_flag(object,LV_OBJ_FLAG_HIDDEN);else lv_obj_clear_flag(object,LV_OBJ_FLAG_HIDDEN);
+}
 static void set_status(const char *s){snprintf(status_text,sizeof(status_text),"%s",s);}
 static void preview_zoom(unsigned level){
   if(!picture||!front)return;
@@ -24,7 +28,7 @@ static void preview_zoom(unsigned level){
   else if(difference<0)scale=256u>>unsigned(-difference>2?2:-difference);
   lv_img_set_pivot(picture,front->view.width/2,front->view.height/2);
   lv_img_set_antialias(picture,false);lv_img_set_zoom(picture,uint16_t(scale));
-  if(marker)lv_obj_add_flag(marker,LV_OBJ_FLAG_HIDDEN);
+  if(marker)set_hidden(marker,true);
 }
 static void toggle_zoom();
 static bool adjusting(){return zoom_adjusting;}
@@ -33,9 +37,21 @@ static double latitude=0,longitude=0;
 static unsigned zoom=14;
 static uint32_t generation=0,requested_at=0,completed_at=0,seen_config=0;
 static lv_point_t drag_start={};
-static int drag_x=0,drag_y=0;
+static int drag_x=0,drag_y=0,pan_x=0,pan_y=0;
+static constexpr unsigned MAX_DRAW_SEGMENTS=mcxnav::MAX_VISIBLE*(mcxnav::OVERLAY_POINTS-1)+mcxnav::MAX_PREVIEW-1;
+struct DrawSegment {lv_point_t a,b;uint32_t color;};
+struct OverlayCache {DrawSegment lines[MAX_DRAW_SEGMENTS];lv_point_t pois[mcxnav::MAX_POIS];unsigned line_count=0,poi_count=0;uint32_t generation=0,revision=0;bool ready=false;};
+static OverlayCache *overlay_cache=nullptr;
+static uint32_t overlay_builds=0;
+static uint32_t overlay_signature(){
+  if(!nav_state)return 0;
+  const uint32_t fields[]={nav_state->preview_id,nav_state->preview_count,nav_state->points,nav_state->overlay_count,nav_state->poi_count};
+  return mcxnav::checksum(fields,sizeof(fields))^mcxnav::checksum(nav_state->preferences.styles,sizeof(nav_state->preferences.styles))^mcxnav::checksum(nav_state->pois,nav_state->poi_count*sizeof(mcxnav::Poi));
+}
+static void rebuild_overlay_cache();
+
 static void invalidate(){
-  canvas=picture=marker=map_status=attribution=nullptr;zoom_overlay=zoom_slider=zoom_value=record_badge=nullptr;zoom_adjusting=false;inflight=false;dragging=false;mcxmap::stop();
+  canvas=picture=marker=map_status=attribution=nullptr;zoom_overlay=zoom_slider=zoom_value=record_badge=nullptr;zoom_adjusting=false;inflight=false;dragging=false;pan_x=pan_y=drag_x=drag_y=0;if(overlay_cache)overlay_cache->ready=false;mcxmap::stop();
 }
 static void after_clean(){if(front){lv_img_cache_invalidate_src(&front->image);mcxmap::release(front);front=nullptr;}}
 static void request(){
@@ -46,16 +62,16 @@ static void request(){
   set_status(generation?"Loading map...":"Map unavailable / memory");
 }
 static void pointer(lv_event_t *event){
-  if(!centered||zoom_adjusting||inflight)return;
+  if(!centered||zoom_adjusting||!front)return;
   auto *input=lv_indev_get_act();if(!input)return;
   lv_point_t p={};lv_indev_get_point(input,&p);const auto code=lv_event_get_code(event);
-  if(code==LV_EVENT_PRESSED){drag_start=p;drag_x=drag_y=0;dragging=true;}
-  else if(code==LV_EVENT_PRESSING&&dragging){drag_x=p.x-drag_start.x;drag_y=p.y-drag_start.y;
+  if(code==LV_EVENT_PRESSED){drag_start=p;drag_x=pan_x;drag_y=pan_y;dragging=true;}
+  else if(code==LV_EVENT_PRESSING&&dragging){drag_x=pan_x+p.x-drag_start.x;drag_y=pan_y+p.y-drag_start.y;
+    drag_x=drag_x<-8192?-8192:drag_x>8192?8192:drag_x;drag_y=drag_y<-8192?-8192:drag_y>8192?8192:drag_y;
     if(picture)lv_obj_set_pos(picture,drag_x,drag_y);
   }else if((code==LV_EVENT_RELEASED||code==LV_EVENT_PRESS_LOST)&&dragging){dragging=false;
-    if(abs(drag_x)+abs(drag_y)>8){following=false;auto at=mcxmap::project(latitude,longitude,zoom);auto geo=mcxmap::unproject(at.x-drag_x,at.y-drag_y,zoom);latitude=geo.x;longitude=geo.y;request();}
-    if(picture)lv_obj_set_pos(picture,0,0);
-    drag_x=drag_y=0;
+    if(abs(p.x-drag_start.x)+abs(p.y-drag_start.y)>8){following=false;auto at=mcxmap::project(front->view.latitude,front->view.longitude,zoom);auto geo=mcxmap::unproject(at.x-drag_x,at.y-drag_y,zoom);latitude=geo.x;longitude=geo.y;request();}
+    pan_x=drag_x;pan_y=drag_y;
   }
 }
 static void zoom_changed(lv_event_t *event){
@@ -100,9 +116,9 @@ static void create(int w){
   lv_obj_add_event_cb(canvas,pointer,LV_EVENT_ALL,nullptr);
   picture=lv_img_create(canvas);lv_obj_clear_flag(picture,LV_OBJ_FLAG_CLICKABLE);
   if(front){lv_img_cache_invalidate_src(&front->image);mcxmap::release(front);front=nullptr;}
-  marker=panel_at(canvas,0,0,12,12,orange,6);lv_obj_set_style_border_width(marker,2,0);lv_obj_set_style_border_color(marker,white,0);lv_obj_clear_flag(marker,LV_OBJ_FLAG_CLICKABLE);lv_obj_add_flag(marker,LV_OBJ_FLAG_HIDDEN);
+  marker=panel_at(canvas,0,0,12,12,orange,6);lv_obj_set_style_border_width(marker,2,0);lv_obj_set_style_border_color(marker,white,0);lv_obj_clear_flag(marker,LV_OBJ_FLAG_CLICKABLE);set_hidden(marker,true);
   lv_obj_add_event_cb(picture,draw_overlays,LV_EVENT_DRAW_POST,nullptr);
-  record_badge=single_label(canvas,"",5,5,60,red);lv_obj_set_style_text_font(record_badge,&lv_font_montserrat_10,0);lv_obj_add_flag(record_badge,LV_OBJ_FLAG_HIDDEN);
+  record_badge=single_label(canvas,"",5,5,60,red);lv_obj_set_style_text_font(record_badge,&lv_font_montserrat_10,0);set_hidden(record_badge,true);
   attribution=single_label(canvas,mcxmap::configuration().attribution,3,0,w-6,lv_color_hex(0x202020));
   lv_obj_set_style_text_font(attribution,&lv_font_montserrat_10,0);lv_label_set_long_mode(attribution,LV_LABEL_LONG_WRAP);
   // Tight text-only halo: no opaque strip across the map.
@@ -124,22 +140,24 @@ static void create(int w){
 static void poll(){
   if(!nav_state){auto *p=heap_caps_malloc(sizeof(mcxnav::Snapshot),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(p)nav_state=new(p) mcxnav::Snapshot();}
   if(nav_state)mcxnav::snapshot(*nav_state);
-  if(canvas&&nav_state){lv_obj_invalidate(canvas);if(record_badge){const bool active=nav_state->mode==mcxnav::RECORDING||nav_state->mode==mcxnav::PAUSED||nav_state->mode==mcxnav::STORAGE_ERROR;
-    if(active){chatview::label(record_badge,nav_state->mode==mcxnav::RECORDING?"REC":nav_state->mode==mcxnav::PAUSED?"PAUSED":"SD ERR");lv_obj_clear_flag(record_badge,LV_OBJ_FLAG_HIDDEN);}else lv_obj_add_flag(record_badge,LV_OBJ_FLAG_HIDDEN);}}
+  if(canvas&&nav_state&&!info_dialog){if(record_badge){const bool active=nav_state->mode==mcxnav::RECORDING||nav_state->mode==mcxnav::PAUSED||nav_state->mode==mcxnav::STORAGE_ERROR;
+    if(active){chatview::label(record_badge,nav_state->mode==mcxnav::RECORDING?"REC":nav_state->mode==mcxnav::PAUSED?"PAUSED":"SD ERR");set_hidden(record_badge,false);}else set_hidden(record_badge,true);}}
   const uint32_t now=uint32_t(esp_timer_get_time()/1000);
   if(auto *next=mcxmap::take()){
     if(next->view.generation==generation){inflight=false;completed_at=now;}
-    if(canvas&&next->view.generation==generation&&!zoom_adjusting){
-      auto *old=front;front=next;lv_img_set_zoom(picture,256);lv_img_set_src(picture,&front->image);lv_obj_clear_flag(picture,LV_OBJ_FLAG_HIDDEN);lv_obj_set_pos(picture,dragging?drag_x:0,dragging?drag_y:0);
+    if(canvas&&next->view.generation==generation&&!zoom_adjusting&&!dragging){
+      auto *old=front;front=next;pan_x=pan_y=drag_x=drag_y=0;lv_img_set_zoom(picture,256);lv_img_set_src(picture,&front->image);set_hidden(picture,false);lv_obj_set_pos(picture,dragging?drag_x:0,dragging?drag_y:0);
       if(old){lv_img_cache_invalidate_src(&old->image);mcxmap::release(old);}
       set_status(front->status);
     }else mcxmap::release(next);
   }
   if(!canvas||info_dialog||zoom_adjusting)return;
+  if(front&&nav_state&&(!overlay_cache||!overlay_cache->ready||overlay_cache->generation!=front->view.generation||overlay_cache->revision!=overlay_signature())){rebuild_overlay_cache();lv_obj_invalidate(picture);}
+
   if(seen_config!=mcxmap::configuration_revision()){
     seen_config=mcxmap::configuration_revision();const auto c=mcxmap::configuration();zoom=c.zoom;
     if(zoom_slider){lv_slider_set_range(zoom_slider,3,int(mcxmap::max_zoom(c)));lv_slider_set_value(zoom_slider,int(zoom),LV_ANIM_OFF);pending_zoom=zoom;}
-    if(front&&front->source!=mcxmap::source_hash(c))lv_obj_add_flag(picture,LV_OBJ_FLAG_HIDDEN);
+    if(front&&front->source!=mcxmap::source_hash(c))set_hidden(picture,true);
     chatview::label(attribution,c.attribution);lv_obj_update_layout(attribution);lv_obj_set_y(attribution,lv_obj_get_height(canvas)-lv_obj_get_height(attribution)-3);
     if(centered)request();
   }
@@ -150,35 +168,56 @@ static void poll(){
     if(!centered||fabs(mcxmap::delta(pos.x,old.x,zoom))+fabs(pos.y-old.y)>16){latitude=f.latitude;longitude=f.longitude;centered=true;request();}
   }
   if(!inflight&&centered&&(!front||front->missing)&&uint32_t(now-completed_at)>4000){completed_at=now;request();}
-  if(f.valid&&front&&!dragging&&front->view.zoom==zoom){
+  if(f.valid&&front&&!dragging&&!pan_x&&!pan_y&&front->view.zoom==zoom){
     const auto origin=mcxmap::project(front->view.latitude,front->view.longitude,front->view.zoom),pos=mcxmap::project(f.latitude,f.longitude,front->view.zoom);
     const int x=int(lround(mcxmap::delta(pos.x,origin.x,front->view.zoom)+double(front->view.width)/2));const int y=int(lround(pos.y-origin.y+double(front->view.height)/2));
-    if(x>=0&&x<int(front->view.width)&&y>=0&&y<int(front->view.height)){lv_obj_clear_flag(marker,LV_OBJ_FLAG_HIDDEN);lv_obj_set_pos(marker,x-6,y-6);}
-    else lv_obj_add_flag(marker,LV_OBJ_FLAG_HIDDEN);
-  }else lv_obj_add_flag(marker,LV_OBJ_FLAG_HIDDEN);
+    if(x>=0&&x<int(front->view.width)&&y>=0&&y<int(front->view.height)){set_hidden(marker,false);lv_obj_set_pos(marker,x-6,y-6);}
+    else set_hidden(marker,true);
+  }else set_hidden(marker,true);
 }
 static void center_position(const mcxnav::Sample &p){following=false;latitude=p.latitude;longitude=p.longitude;centered=true;request();}
-static void draw_overlays(lv_event_t *e){
-  if(!nav_state||!front||dragging||zoom_adjusting||front->view.zoom!=zoom)return;
-  auto *ctx=lv_event_get_draw_ctx(e);lv_area_t area;lv_obj_get_coords(canvas,&area);
+static void rebuild_overlay_cache(){
+  if(!front||!nav_state||front->view.zoom!=zoom)return;
+  if(!overlay_cache){auto *memory=heap_caps_malloc(sizeof(OverlayCache),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!memory)return;overlay_cache=new(memory) OverlayCache();}
+  auto &cache=*overlay_cache;
+  if(cache.ready&&cache.generation==front->view.generation&&cache.revision==overlay_signature())return;
+  cache.line_count=cache.poi_count=0;
   const auto origin=mcxmap::project(front->view.latitude,front->view.longitude,front->view.zoom);
-  auto point=[&](const mcxnav::Sample &p){const auto v=mcxmap::project(p.latitude,p.longitude,front->view.zoom);return lv_point_t{lv_coord_t(lround(mcxmap::delta(v.x,origin.x,front->view.zoom)+front->view.width/2.0)+area.x1),lv_coord_t(lround(v.y-origin.y+front->view.height/2.0)+area.y1)};};
-  lv_draw_line_dsc_t line;lv_draw_line_dsc_init(&line);line.color=orange;line.width=3;line.round_start=line.round_end=1;
-  auto draw_track=[&](const mcxnav::Sample *points,unsigned count,uint32_t color){line.color=lv_color_hex(color);
-  for(unsigned i=1;i<count;++i){const auto &a=points[i-1],&b=points[i];if(a.segment!=b.segment)continue;
-    // Skip far-away vertices before converting to LVGL's narrow screen coordinates.
-    const auto pa=mcxmap::project(a.latitude,a.longitude,front->view.zoom),pb=mcxmap::project(b.latitude,b.longitude,front->view.zoom);
-    if(fabs(mcxmap::delta(pa.x,origin.x,front->view.zoom))>10000||fabs(pa.y-origin.y)>10000||fabs(mcxmap::delta(pb.x,origin.x,front->view.zoom))>10000||fabs(pb.y-origin.y)>10000)continue;
-    auto aa=point(a),bb=point(b);lv_draw_line(ctx,&line,&aa,&bb);
-  }
+  auto project=[&](const mcxnav::Sample &sample,lv_point_t &point){
+    const auto p=mcxmap::project(sample.latitude,sample.longitude,front->view.zoom);
+    const double x=mcxmap::delta(p.x,origin.x,front->view.zoom),y=p.y-origin.y;
+    if(fabs(x)>10000||fabs(y)>10000)return false;
+    point={lv_coord_t(lround(x+front->view.width/2.0)),lv_coord_t(lround(y+front->view.height/2.0))};return true;
   };
-  for(unsigned i=0;i<nav_state->overlay_count;++i){const auto &o=nav_state->overlays[i];draw_track(o.points,o.count,o.color);}
+  auto track=[&](const mcxnav::Sample *points,unsigned count,uint32_t color){
+    lv_point_t previous={};bool previous_valid=false;
+    for(unsigned i=0;i<count;++i){lv_point_t point={};const bool valid=project(points[i],point);
+      if(i&&valid&&previous_valid&&points[i-1].segment==points[i].segment&&cache.line_count<MAX_DRAW_SEGMENTS)cache.lines[cache.line_count++]={previous,point,color};
+      previous=point;previous_valid=valid;
+    }
+  };
+  for(unsigned i=0;i<nav_state->overlay_count;++i){const auto &o=nav_state->overlays[i];track(o.points,o.count,o.color);}
   for(const auto &style:nav_state->preferences.styles)if(style.id==nav_state->preview_id&&style.visible){
     bool saved=false;for(unsigned i=0;i<nav_state->overlay_count;++i)saved|=nav_state->overlays[i].id==style.id;
-    if(!saved)draw_track(nav_state->preview,nav_state->preview_count,style.color);
+    if(!saved)track(nav_state->preview,nav_state->preview_count,style.color);
   }
-  for(unsigned i=0;i<nav_state->poi_count;++i){const auto &p=nav_state->pois[i];const auto at=mcxmap::project(p.point.latitude,p.point.longitude,front->view.zoom);if(fabs(mcxmap::delta(at.x,origin.x,front->view.zoom))>double(front->view.width)/2+10||fabs(at.y-origin.y)>double(front->view.height)/2+10)continue;
-    const auto q=point(p.point);lv_area_t a={lv_coord_t(q.x-4),lv_coord_t(q.y-4),lv_coord_t(q.x+4),lv_coord_t(q.y+4)};lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=cyan;d.border_color=white;d.border_width=1;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
+  for(unsigned i=0;i<nav_state->poi_count;++i){lv_point_t point={};if(project(nav_state->pois[i].point,point))cache.pois[cache.poi_count++]=point;}
+  cache.generation=front->view.generation;cache.revision=overlay_signature();cache.ready=true;++overlay_builds;
+}
+static void draw_overlays(lv_event_t *event){
+  // Called once per DMA stripe: use only integer coordinates cached outside draw.
+  if(!front||!overlay_cache||!overlay_cache->ready||zoom_adjusting||front->view.zoom!=zoom)return;
+  auto *ctx=lv_event_get_draw_ctx(event);lv_area_t area;lv_obj_get_coords(picture,&area);
+  const auto &clip=*ctx->clip_area;
+  lv_draw_line_dsc_t line;lv_draw_line_dsc_init(&line);line.width=3;line.round_start=line.round_end=1;
+  for(unsigned i=0;i<overlay_cache->line_count;++i){const auto &s=overlay_cache->lines[i];
+    lv_point_t a={lv_coord_t(s.a.x+area.x1),lv_coord_t(s.a.y+area.y1)},b={lv_coord_t(s.b.x+area.x1),lv_coord_t(s.b.y+area.y1)};
+    if((a.x<clip.x1-3&&b.x<clip.x1-3)||(a.x>clip.x2+3&&b.x>clip.x2+3)||(a.y<clip.y1-3&&b.y<clip.y1-3)||(a.y>clip.y2+3&&b.y>clip.y2+3))continue;
+    line.color=lv_color_hex(s.color);lv_draw_line(ctx,&line,&a,&b);
+  }
+  for(unsigned i=0;i<overlay_cache->poi_count;++i){const auto &p=overlay_cache->pois[i];lv_area_t a={lv_coord_t(p.x+area.x1-4),lv_coord_t(p.y+area.y1-4),lv_coord_t(p.x+area.x1+4),lv_coord_t(p.y+area.y1+4)};
+    if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
+    lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=cyan;d.border_color=white;d.border_width=1;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
   }
 }
 
