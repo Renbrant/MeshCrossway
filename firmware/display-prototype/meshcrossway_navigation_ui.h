@@ -37,7 +37,7 @@ static double latitude=0,longitude=0;
 static unsigned zoom=14;
 static uint32_t generation=0,requested_at=0,completed_at=0,seen_config=0;
 static lv_point_t drag_start={};
-static int drag_x=0,drag_y=0,pan_x=0,pan_y=0;
+static int drag_x=0,drag_y=0,pan_x=0,pan_y=0;static bool gesture_moved=false;
 static constexpr unsigned MAX_DRAW_SEGMENTS=mcxnav::MAX_VISIBLE*(mcxnav::OVERLAY_POINTS-1)+mcxnav::MAX_PREVIEW-1;
 struct DrawSegment {lv_point_t a,b;uint32_t color;};
 struct OverlayCache {DrawSegment lines[MAX_DRAW_SEGMENTS];lv_point_t pois[mcxnav::MAX_POIS];unsigned line_count=0,poi_count=0;uint32_t generation=0,revision=0;bool ready=false;};
@@ -65,12 +65,13 @@ static void pointer(lv_event_t *event){
   if(!centered||zoom_adjusting||!front)return;
   auto *input=lv_indev_get_act();if(!input)return;
   lv_point_t p={};lv_indev_get_point(input,&p);const auto code=lv_event_get_code(event);
-  if(code==LV_EVENT_PRESSED){drag_start=p;drag_x=pan_x;drag_y=pan_y;dragging=true;}
+  if(code==LV_EVENT_PRESSED){drag_start=p;drag_x=pan_x;drag_y=pan_y;dragging=true;gesture_moved=false;}
   else if(code==LV_EVENT_PRESSING&&dragging){drag_x=pan_x+p.x-drag_start.x;drag_y=pan_y+p.y-drag_start.y;
     drag_x=drag_x<-8192?-8192:drag_x>8192?8192:drag_x;drag_y=drag_y<-8192?-8192:drag_y>8192?8192:drag_y;
+    if(abs(p.x-drag_start.x)+abs(p.y-drag_start.y)>8)gesture_moved=true;
     if(picture)lv_obj_set_pos(picture,drag_x,drag_y);
   }else if((code==LV_EVENT_RELEASED||code==LV_EVENT_PRESS_LOST)&&dragging){dragging=false;
-    if(abs(p.x-drag_start.x)+abs(p.y-drag_start.y)>8){following=false;auto at=mcxmap::project(front->view.latitude,front->view.longitude,zoom);auto geo=mcxmap::unproject(at.x-drag_x,at.y-drag_y,zoom);latitude=geo.x;longitude=geo.y;request();}
+    if(gesture_moved){following=false;auto at=mcxmap::project(front->view.latitude,front->view.longitude,zoom);auto geo=mcxmap::unproject(at.x-drag_x,at.y-drag_y,zoom);latitude=geo.x;longitude=geo.y;request();}
     pan_x=drag_x;pan_y=drag_y;
   }
 }
@@ -119,6 +120,7 @@ static void create(int w){
   marker=panel_at(canvas,0,0,12,12,orange,6);lv_obj_set_style_border_width(marker,2,0);lv_obj_set_style_border_color(marker,white,0);lv_obj_clear_flag(marker,LV_OBJ_FLAG_CLICKABLE);set_hidden(marker,true);
   lv_obj_add_event_cb(picture,draw_overlays,LV_EVENT_DRAW_POST,nullptr);
   record_badge=single_label(canvas,"",5,5,60,red);lv_obj_set_style_text_font(record_badge,&lv_font_montserrat_10,0);set_hidden(record_badge,true);
+  map_status=single_label(canvas,"Loading map...",5,24,w-10,muted);lv_obj_set_style_text_font(map_status,&lv_font_montserrat_10,0);set_hidden(map_status,true);
   attribution=single_label(canvas,mcxmap::configuration().attribution,3,0,w-6,lv_color_hex(0x202020));
   lv_obj_set_style_text_font(attribution,&lv_font_montserrat_10,0);lv_label_set_long_mode(attribution,LV_LABEL_LONG_WRAP);
   // Tight text-only halo: no opaque strip across the map.
@@ -143,7 +145,7 @@ static void poll(){
   if(canvas&&nav_state&&!info_dialog){if(record_badge){const bool active=nav_state->mode==mcxnav::RECORDING||nav_state->mode==mcxnav::PAUSED||nav_state->mode==mcxnav::STORAGE_ERROR;
     if(active){chatview::label(record_badge,nav_state->mode==mcxnav::RECORDING?"REC":nav_state->mode==mcxnav::PAUSED?"PAUSED":"SD ERR");set_hidden(record_badge,false);}else set_hidden(record_badge,true);}}
   const uint32_t now=uint32_t(esp_timer_get_time()/1000);
-  if(auto *next=mcxmap::take()){
+  if(!dragging)if(auto *next=mcxmap::take()){
     if(next->view.generation==generation){inflight=false;completed_at=now;}
     if(canvas&&next->view.generation==generation&&!zoom_adjusting&&!dragging){
       auto *old=front;front=next;pan_x=pan_y=drag_x=drag_y=0;lv_img_set_zoom(picture,256);lv_img_set_src(picture,&front->image);set_hidden(picture,false);lv_obj_set_pos(picture,dragging?drag_x:0,dragging?drag_y:0);
@@ -151,6 +153,7 @@ static void poll(){
       set_status(front->status);
     }else mcxmap::release(next);
   }
+  if(map_status&&!info_dialog){const bool waiting=inflight||(front&&front->missing);if(waiting)chatview::label(map_status,inflight?"Loading map...":mcxmap::configuration().online?"Map tiles unavailable / retrying":"Offline / tiles not saved");set_hidden(map_status,!waiting);}
   if(!canvas||info_dialog||zoom_adjusting)return;
   if(front&&nav_state&&(!overlay_cache||!overlay_cache->ready||overlay_cache->generation!=front->view.generation||overlay_cache->revision!=overlay_signature())){rebuild_overlay_cache();lv_obj_invalidate(picture);}
 
@@ -167,7 +170,7 @@ static void poll(){
     const auto old=mcxmap::project(latitude,longitude,zoom),pos=mcxmap::project(f.latitude,f.longitude,zoom);
     if(!centered||fabs(mcxmap::delta(pos.x,old.x,zoom))+fabs(pos.y-old.y)>16){latitude=f.latitude;longitude=f.longitude;centered=true;request();}
   }
-  if(!inflight&&centered&&(!front||front->missing)&&uint32_t(now-completed_at)>4000){completed_at=now;request();}
+  if(!dragging&&!inflight&&centered&&(!front||front->missing||pan_x||pan_y)&&uint32_t(now-completed_at)>4000){completed_at=now;request();}
   if(f.valid&&front&&!dragging&&!pan_x&&!pan_y&&front->view.zoom==zoom){
     const auto origin=mcxmap::project(front->view.latitude,front->view.longitude,front->view.zoom),pos=mcxmap::project(f.latitude,f.longitude,front->view.zoom);
     const int x=int(lround(mcxmap::delta(pos.x,origin.x,front->view.zoom)+double(front->view.width)/2));const int y=int(lround(pos.y-origin.y+double(front->view.height)/2));
@@ -228,6 +231,14 @@ static lv_obj_t *map_save_label=nullptr,*clock_status=nullptr;
 static lv_obj_t *edit_value=nullptr,*edit_keyboard=nullptr,*edit_notice=nullptr;
 static int editing=0;
 static lv_obj_t *nav_detail=nullptr;static unsigned nav_dialog=0;
+static lv_obj_t *record_start=nullptr,*record_pause=nullptr,*record_resume=nullptr,*record_finish=nullptr,*record_mode=nullptr;
+static lv_obj_t *name_value=nullptr,*name_owner=nullptr,*name_save=nullptr,*name_default=nullptr,*delete_action=nullptr,*delete_cancel=nullptr;
+static bool record_pending=false,name_waiting=false,name_finishing=false,delete_waiting=false,start_editing=false;
+static mcxnav::Action pending_action=mcxnav::NONE;static uint32_t pending_since=0,name_track=0,start_color=0xFF8A24;static unsigned start_slot=0;
+static uint32_t name_revision=0,delete_revision=0;
+static char name_expected[40]={};
+static void recording();static void preset_list();static void start_setup();static void prepare_start();static void name_form(uint32_t,bool);static void track_details(uint32_t);static void library(bool);
+static void compact_base(const char *);static lv_obj_t *control_row(int height=36);static lv_obj_t *control_button(lv_obj_t *,const char *,lv_color_t,lv_event_cb_t,intptr_t);
 static void nav_refresh();
 static void open();
 static void map_options();
@@ -266,7 +277,7 @@ static void base(const char *title){
   // Apply after the page builder has populated its controls. Flex layout keeps
   // every control inside the centre column while both navigation rails remain live.
   lv_async_call([](void *object){
-    if(object!=info_dialog||!navigation_panel)return;
+    if(object!=info_dialog||!navigation_panel||lv_obj_has_flag(info_dialog,LV_OBJ_FLAG_USER_1))return;
     auto *parent=static_cast<lv_obj_t *>(object);
     const int width=lv_obj_get_width(body)-16;
     for(unsigned i=0;i<lv_obj_get_child_cnt(parent);++i){
@@ -281,6 +292,9 @@ static void base(const char *title){
   metrics_label=status_label=enabled_button=baud_button=timeout_button=units_button=nullptr;
   edit_value=edit_keyboard=edit_notice=nullptr;
 }
+static void compact_base(const char *title){base(title);lv_obj_add_flag(dialog,LV_OBJ_FLAG_USER_1);lv_obj_set_style_pad_row(dialog,6,0);lv_obj_set_width(lv_obj_get_child(dialog,0),LV_PCT(100));}
+static lv_obj_t *control_row(int height){auto *row=panel_at(dialog,0,0,lv_obj_get_width(body)-16,height,bg,0);lv_obj_set_width(row,LV_PCT(100));lv_obj_set_flex_flow(row,LV_FLEX_FLOW_ROW);lv_obj_set_flex_align(row,LV_FLEX_ALIGN_START,LV_FLEX_ALIGN_CENTER,LV_FLEX_ALIGN_CENTER);lv_obj_set_style_pad_column(row,8,0);return row;}
+static lv_obj_t *control_button(lv_obj_t *parent,const char *title,lv_color_t color,lv_event_cb_t cb,intptr_t data){auto *button=action_button(parent,title,0,0,100,36,color,cb,data);lv_obj_set_width(button,0);lv_obj_set_flex_grow(button,1);auto *label=lv_obj_get_child(button,0);lv_obj_set_x(label,0);lv_obj_set_width(label,LV_PCT(100));lv_obj_set_style_opa(button,LV_OPA_40,LV_STATE_DISABLED);lv_obj_set_style_bg_color(button,panel2,LV_STATE_DISABLED);lv_obj_set_style_bg_color(button,lv_color_hex(0xB65E12),LV_STATE_PRESSED);return button;}
 static void change(lv_event_t *event){auto c=mcxgnss::configuration();const int id=int(intptr_t(lv_event_get_user_data(event)));
   if(id==0)c.enabled=!c.enabled;
   if(id==1)c.baud=c.baud==0?9600:c.baud==9600?38400:c.baud==38400?115200:0;
@@ -312,23 +326,48 @@ static void open(){
   action_button(dialog,"CLOCK / TIME ZONE",8,241,440,34,panel2,clock_settings,0);refresh();
 }
 static void nav_refresh(){
-  if(!nav_detail||!navui::nav_state||!nav_dialog)return;
-  const auto &s=*navui::nav_state;char text[224];
-  if(nav_dialog==2){chatview::label(nav_detail,s.status);return;}
-  snprintf(text,sizeof(text),"%s\nTrack %08lx / %lu points / %.2f km\n%u saved tracks / %u POIs",s.status,(unsigned long)s.current,(unsigned long)s.points,s.metres/1000,s.track_count,s.poi_count);chatview::label(nav_detail,text);
+  if(!navui::nav_state||!dialog||dialog!=info_dialog)return;
+  const auto &s=*navui::nav_state;
+  if(nav_dialog==1){
+    const bool active=s.mode==mcxnav::RECORDING||s.mode==mcxnav::PAUSED;
+    if(record_pending&&((pending_action==mcxnav::START_CONFIGURED&&active)||(pending_action==mcxnav::PAUSE&&s.mode==mcxnav::PAUSED)||(pending_action==mcxnav::RESUME&&s.mode==mcxnav::RECORDING)||s.mode==mcxnav::STORAGE_ERROR))record_pending=false;
+    if(record_pending&&uint32_t(lv_tick_get()-pending_since)>5000){record_pending=false;}
+    char summary[128];const char *state=s.mode==mcxnav::RECORDING?"Recording":s.mode==mcxnav::PAUSED?"Paused":s.mode==mcxnav::STORAGE_ERROR?"SD error":"Ready to record";
+    if(active)snprintf(summary,sizeof(summary),"%s  /  %lu points  /  %.2f km",state,(unsigned long)s.points,s.metres/1000);else snprintf(summary,sizeof(summary),"%s",state);
+    chatview::label(nav_detail,record_pending?"Please wait...":summary);
+    if(record_mode){snprintf(summary,sizeof(summary),"Mode: %s",active?s.recording_preset.name:s.preferences.presets[s.preferences.selected].name);chatview::label(record_mode,summary);}
+    auto enabled=[](lv_obj_t *button,bool yes){if(!button)return;if(yes)lv_obj_clear_state(button,LV_STATE_DISABLED);else lv_obj_add_state(button,LV_STATE_DISABLED);};
+    enabled(record_start,!active&&!record_pending);enabled(record_pause,s.mode==mcxnav::RECORDING&&!record_pending);enabled(record_resume,s.mode==mcxnav::PAUSED&&!record_pending);enabled(record_finish,active&&!record_pending);
+    return;
+  }
+  if(nav_dialog==7&&name_waiting){
+    bool done=name_finishing?s.mode==mcxnav::STOPPED:false;
+    if(!name_finishing)for(unsigned i=0;i<s.track_count;++i)if(s.tracks[i].id==name_track&&!strcmp(s.tracks[i].name,name_expected))done=true;
+    if(done&&s.revision!=name_revision){name_waiting=false;lv_async_call([](void *owner){if(info_dialog!=owner||nav_dialog!=7)return;if(name_finishing)recording();else track_details(name_track);},dialog);return;}
+    if(s.revision!=name_revision&&(strstr(s.status,"failed")||s.mode==mcxnav::STORAGE_ERROR)){name_waiting=false;chatview::label(nav_detail,s.status);lv_obj_clear_state(name_save,LV_STATE_DISABLED);lv_obj_clear_state(name_default,LV_STATE_DISABLED);}
+    return;
+  }
+  if(nav_dialog==8&&delete_waiting){bool found=false;for(unsigned i=0;i<s.track_count;++i)found|=s.tracks[i].id==name_track;if(!found){delete_waiting=false;lv_async_call([](void *owner){if(info_dialog==owner&&nav_dialog==8)library(false);},dialog);}else if(s.revision!=delete_revision&&(strstr(s.status,"failed")||strstr(s.status,"before deleting"))){delete_waiting=false;chatview::label(nav_detail,s.status);lv_obj_clear_state(delete_action,LV_STATE_DISABLED);lv_obj_clear_state(delete_cancel,LV_STATE_DISABLED);}return;}
+  if(nav_dialog==6){if(nav_detail){const bool error=strstr(s.status,"failed")||strstr(s.status,"unavailable")||strstr(s.status,"limit:");navui::set_hidden(nav_detail,!error);if(error)chatview::label(nav_detail,s.status);}return;}
+  if(!nav_detail||!nav_dialog)return;
+  if(nav_dialog==2)chatview::label(nav_detail,s.status);
 }
-static void nav_action(lv_event_t *e){const auto a=mcxnav::Action(intptr_t(lv_event_get_user_data(e)));if(!mcxnav::submit(a)&&nav_detail)chatview::label(nav_detail,"Storage worker unavailable or busy; try again.");}
-static void preset_list();
+static void nav_action(lv_event_t *e){
+  const auto action=mcxnav::Action(intptr_t(lv_event_get_user_data(e)));
+  if(mcxnav::submit(action)){record_pending=true;pending_action=action;pending_since=lv_tick_get();nav_refresh();}
+  else if(nav_detail)chatview::label(nav_detail,"Storage busy / retry");
+}
 static void recording(){
-  base("RECORD TRACK");mcxnav::start();navui::poll();
-  nav_dialog=1;nav_detail=single_label(dialog,"",8,45,440,white);lv_label_set_long_mode(nav_detail,LV_LABEL_LONG_WRAP);nav_refresh();
-  action_button(dialog,"START",8,148,104,40,orange,nav_action,mcxnav::START);
-  action_button(dialog,"PAUSE",120,148,104,40,panel2,nav_action,mcxnav::PAUSE);
-  action_button(dialog,"RESUME",232,148,104,40,panel2,nav_action,mcxnav::RESUME);
-  action_button(dialog,"FINISH",344,148,104,40,panel2,nav_action,mcxnav::STOP);
-  if(navui::nav_state){auto *picker=lv_dropdown_create(dialog);char options[128]="";for(unsigned i=0;i<4;++i){if(i)strcat(options,"\n");strcat(options,navui::nav_state->preferences.presets[i].name);}lv_dropdown_set_options(picker,options);lv_dropdown_set_selected(picker,navui::nav_state->preferences.selected);lv_obj_add_event_cb(picker,[](lv_event_t *e){mcxnav::submit(mcxnav::SELECT_PRESET,lv_dropdown_get_selected(lv_event_get_target(e)));},LV_EVENT_VALUE_CHANGED,nullptr);}
-  action_button(dialog,"EDIT RECORDING PRESETS",8,195,300,40,panel2,[](lv_event_t *){lv_async_call([](void *){preset_list();},nullptr);},0);
-  auto *help=single_label(dialog,"Valid GPS positions save to microSD.\nPause or lost fix creates a separate track segment.\nFinish writes a GPX file; no radio transmission.",8,207,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);
+  compact_base("RECORD TRACK");mcxnav::start();navui::poll();nav_dialog=1;
+  nav_detail=single_label(dialog,"Ready to record",0,0,lv_obj_get_width(body)-16,white);lv_label_set_long_mode(nav_detail,LV_LABEL_LONG_WRAP);lv_obj_set_height(nav_detail,LV_SIZE_CONTENT);
+  record_mode=single_label(dialog,"",0,0,lv_obj_get_width(body)-16,muted);
+  auto *row=control_row();
+  record_start=control_button(row,"START",orange,[](lv_event_t *){lv_async_call([](void *){prepare_start();},nullptr);},0);
+  record_pause=control_button(row,"PAUSE",panel2,nav_action,mcxnav::PAUSE);
+  row=control_row();record_resume=control_button(row,"RESUME",panel2,nav_action,mcxnav::RESUME);
+  record_finish=control_button(row,"FINISH",orange,[](lv_event_t *){lv_async_call([](void *){if(!navui::nav_state)return;if(navui::nav_state->mode==mcxnav::RECORDING&&!mcxnav::submit(mcxnav::PAUSE)){chatview::label(nav_detail,"Storage busy / retry");return;}name_form(navui::nav_state->current,true);},nullptr);},0);
+  row=control_row();control_button(row,"PRESETS",panel2,[](lv_event_t *){lv_async_call([](void *){preset_list();},nullptr);},0);control_button(row,"TRACKS",panel2,[](lv_event_t *){lv_async_call([](void *){library(false);},nullptr);},0);
+  nav_refresh();
 }
 // Device settings use the same worker commands and SD preferences as HTTP.
 static unsigned preset_slot=0;
@@ -341,7 +380,8 @@ static void preset_list();
 static void setting_editor(unsigned field);
 static bool settings_send(const mcxnav::Command &command){
   const bool queued=mcxnav::enqueue(command);
-  if(nav_detail)chatview::label(nav_detail,queued?"Queued / waiting for SD confirmation":"Storage busy / retry SAVE");
+  if(!queued&&nav_detail&&nav_dialog==6){navui::set_hidden(nav_detail,false);chatview::label(nav_detail,"Storage busy / retry");}
+  if(nav_detail&&nav_dialog!=6)chatview::label(nav_detail,queued?"Queued / waiting for SD confirmation":"Storage busy / retry SAVE");
   return queued;
 }
 static void setting_apply(){
@@ -358,14 +398,14 @@ static void setting_apply(){
     if(setting_field==3){
       if(!valid||length!=6){chatview::label(nav_detail,"Enter six hex digits, for example FF8A24.");return;}
       mcxnav::Command command;command.action=mcxnav::SET_COLOR;command.id=setting_track;command.value=uint32_t(value);
-      if(settings_send(command)){setting_value=nullptr;base("TRACK COLOR / SAVING");nav_dialog=2;nav_detail=single_label(dialog,"Waiting for SD confirmation",8,40,300,muted);}
+      if(settings_send(command)){setting_value=nullptr;track_details(setting_track);}
       return;
     }
     const unsigned max=setting_field==1?1000:300,min=setting_field==1?3:1;
     if(!valid||value<min||value>max){chatview::label(nav_detail,setting_field==1?"Distance must be 3-1000 metres.":"Interval must be 1-300 seconds.");return;}
     if(setting_field==1)preset_draft.distance_m=uint32_t(value);else preset_draft.interval_s=uint32_t(value);
   }
-  setting_value=nullptr;preset_form();
+  setting_value=nullptr;if(start_editing)start_setup();else preset_form();
 }
 static void setting_editor(unsigned field){
   setting_field=field;
@@ -386,6 +426,7 @@ static void setting_editor(unsigned field){
   lv_async_call([](void *owner){if(owner==dialog&&setting_value)lv_obj_scroll_to_view(setting_value,LV_ANIM_OFF);},dialog);
 }
 static void preset_form(){
+  start_editing=false;
   base("EDIT RECORDING PRESET");
   char text[96];
   snprintf(text,sizeof(text),"Name: %s",preset_draft.name);
@@ -428,17 +469,66 @@ static void poi_details(uint32_t id){
     action_button(dialog,"DELETE...",232,169,216,40,panel2,[](lv_event_t *){lv_async_call([](void *){base("DELETE THIS POI?");single_label(dialog,"This removes the saved POI from the SD card.",8,64,440,white);action_button(dialog,"CONFIRM DELETE",8,130,440,42,orange,[](lv_event_t *){mcxnav::submit(mcxnav::DELETE_POI,chosen_poi);info_close(nullptr);},0);},nullptr);},0);return;
   }
 }
+static void prepare_start(){
+  navui::poll();if(!navui::nav_state)return;
+  start_slot=navui::nav_state->preferences.selected;start_color=0xFF8A24;
+  preset_draft=navui::nav_state->preferences.presets[start_slot];start_setup();
+}
+static void start_setup(){
+  compact_base("NEW TRACK");
+  single_label(dialog,"Recording mode",0,0,lv_obj_get_width(body)-16,muted);
+  auto *picker=lv_dropdown_create(dialog);lv_obj_set_width(picker,LV_PCT(100));lv_obj_set_height(picker,34);char options[160]="";
+  if(navui::nav_state)for(unsigned i=0;i<4;++i){if(i)strcat(options,"\n");strcat(options,navui::nav_state->preferences.presets[i].name);}
+  strcat(options,"\nCustom / this track");
+  lv_dropdown_set_options(picker,options);lv_dropdown_set_selected(picker,start_slot);
+  lv_obj_add_event_cb(picker,[](lv_event_t *e){start_slot=lv_dropdown_get_selected(lv_event_get_target(e));lv_async_call([](void *){start_setup();},nullptr);},LV_EVENT_VALUE_CHANGED,nullptr);
+  if(start_slot==4){auto *row=control_row();char text[48];snprintf(text,sizeof(text),"%lu m",(unsigned long)preset_draft.distance_m);control_button(row,text,panel2,[](lv_event_t *){start_editing=true;lv_async_call([](void *){setting_editor(1);},nullptr);},0);snprintf(text,sizeof(text),"%lu s",(unsigned long)preset_draft.interval_s);control_button(row,text,panel2,[](lv_event_t *){start_editing=true;lv_async_call([](void *){setting_editor(2);},nullptr);},0);}
+  single_label(dialog,"Track color",0,0,lv_obj_get_width(body)-16,muted);
+  auto *colors=lv_dropdown_create(dialog);lv_obj_set_width(colors,LV_PCT(100));lv_obj_set_height(colors,34);lv_dropdown_set_options(colors,"Orange\nBlue\nGreen\nRed\nPurple\nYellow");for(unsigned i=0;i<6;++i)if(start_color==mcxnav::TRACK_COLORS[i])lv_dropdown_set_selected(colors,i);
+  lv_obj_add_event_cb(colors,[](lv_event_t *e){start_color=mcxnav::TRACK_COLORS[lv_dropdown_get_selected(lv_event_get_target(e))%6];},LV_EVENT_VALUE_CHANGED,nullptr);
+  auto *row=control_row();control_button(row,"RECORD",orange,[](lv_event_t *){mcxnav::Command c;c.action=mcxnav::START_CONFIGURED;c.id=start_slot;c.value=start_color;c.distance_m=preset_draft.distance_m;c.interval_s=preset_draft.interval_s;if(mcxnav::enqueue(c)){record_pending=true;pending_action=c.action;pending_since=lv_tick_get();lv_async_call([](void *){recording();},nullptr);}else if(nav_detail)chatview::label(nav_detail,"Storage busy / retry");},0);
+  control_button(row,"CANCEL",panel2,[](lv_event_t *){lv_async_call([](void *){recording();},nullptr);},0);
+  nav_detail=single_label(dialog,"",0,0,lv_obj_get_width(body)-16,red);
+}
+static void commit_name(bool use_default){
+  if(name_waiting||!name_value||name_owner!=info_dialog)return;
+  char name[40];if(use_default)snprintf(name,sizeof(name),"Track %08lx",(unsigned long)name_track);else snprintf(name,sizeof(name),"%s",lv_textarea_get_text(name_value));
+  const auto bytes=strlen(lv_textarea_get_text(name_value));if(!use_default&&(!bytes||bytes>39)){chatview::label(nav_detail,"Name: 1-39 UTF-8 bytes");return;}
+  mcxnav::Command command;command.action=name_finishing?mcxnav::STOP:mcxnav::RENAME_TRACK;command.id=name_track;snprintf(command.name,sizeof(command.name),"%s",name);
+  if(!mcxnav::enqueue(command)){chatview::label(nav_detail,"Storage busy / retry");return;}
+  snprintf(name_expected,sizeof(name_expected),"%s",name);name_waiting=true;name_revision=navui::nav_state?navui::nav_state->revision:0;chatview::label(nav_detail,"Saving...");lv_obj_add_state(name_save,LV_STATE_DISABLED);lv_obj_add_state(name_default,LV_STATE_DISABLED);
+}
+static void name_form(uint32_t id,bool finish){
+  char name[40];snprintf(name,sizeof(name),"Track %08lx",(unsigned long)id);if(navui::nav_state)for(unsigned i=0;i<navui::nav_state->track_count;++i)if(navui::nav_state->tracks[i].id==id&&navui::nav_state->tracks[i].name[0])snprintf(name,sizeof(name),"%s",navui::nav_state->tracks[i].name);
+  compact_base(finish?"FINISH / SAVE TRACK":"RENAME TRACK");lv_obj_set_style_pad_row(dialog,4,0);name_track=id;name_finishing=finish;name_waiting=false;nav_dialog=7;name_owner=dialog;
+  name_value=lv_textarea_create(dialog);lv_obj_set_width(name_value,LV_PCT(100));lv_obj_set_height(name_value,36);lv_textarea_set_one_line(name_value,true);lv_textarea_set_max_length(name_value,39);lv_textarea_set_text(name_value,name);
+  auto *row=control_row();name_save=control_button(row,"SAVE",orange,[](lv_event_t *){lv_async_call([](void *){commit_name(false);},nullptr);},0);name_default=control_button(row,"USE DEFAULT",panel2,[](lv_event_t *){lv_async_call([](void *){commit_name(true);},nullptr);},0);
+  nav_detail=single_label(dialog,"Choose a name or keep the default.",0,0,lv_obj_get_width(body)-16,muted);lv_obj_set_style_text_font(nav_detail,&lv_font_montserrat_10,0);
+  auto *keyboard=lv_keyboard_create(dialog);lv_obj_set_width(keyboard,LV_PCT(100));lv_obj_set_height(keyboard,124);lv_keyboard_set_textarea(keyboard,name_value);
+  lv_obj_add_event_cb(keyboard,[](lv_event_t *){lv_async_call([](void *){commit_name(false);},nullptr);},LV_EVENT_READY,nullptr);
+}
+static void confirm_delete(uint32_t id){
+  compact_base("DELETE TRACK?");name_track=id;delete_waiting=false;nav_dialog=8;
+  single_label(dialog,"Delete this track and its GPX?",0,0,lv_obj_get_width(body)-16,white);
+  auto *row=control_row();delete_action=control_button(row,"DELETE",red,[](lv_event_t *e){if(delete_waiting)return;mcxnav::Command c;c.action=mcxnav::DELETE_TRACK;c.id=name_track;if(mcxnav::enqueue(c)){delete_waiting=true;delete_revision=navui::nav_state?navui::nav_state->revision:0;lv_obj_add_state(lv_event_get_target(e),LV_STATE_DISABLED);lv_obj_add_state(delete_cancel,LV_STATE_DISABLED);chatview::label(nav_detail,"Deleting...");}else chatview::label(nav_detail,"Storage busy / retry");},0);
+  delete_cancel=control_button(row,"CANCEL",panel2,[](lv_event_t *){lv_async_call([](void *){track_details(name_track);},nullptr);},0);nav_detail=single_label(dialog,"This cannot be undone.",0,0,lv_obj_get_width(body)-16,muted);
+}
 static void track_details(uint32_t id){
-  base("TRACK / DISPLAY");if(!navui::nav_state)return;nav_dialog=2;nav_detail=single_label(dialog,navui::nav_state->status,8,30,300,muted);lv_label_set_long_mode(nav_detail,LV_LABEL_LONG_WRAP);char title[64];snprintf(title,sizeof(title),"Track %08lx",(unsigned long)id);single_label(dialog,title,8,40,300,white);
+  compact_base("TRACK DETAILS");navui::poll();if(!navui::nav_state)return;nav_dialog=6;
+  const mcxnav::Track *track=nullptr;for(unsigned i=0;i<navui::nav_state->track_count;++i)if(navui::nav_state->tracks[i].id==id)track=&navui::nav_state->tracks[i];
+  char title[64];snprintf(title,sizeof(title),"Track %08lx",(unsigned long)id);auto *label=single_label(dialog,track&&track->name[0]?track->name:title,0,0,lv_obj_get_width(body)-16,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);lv_obj_set_height(label,LV_SIZE_CONTENT);
   const mcxnav::Style *style=nullptr;for(const auto &v:navui::nav_state->preferences.styles)if(v.id==id)style=&v;
-  auto *toggle=lv_switch_create(dialog);if(style&&style->visible)lv_obj_add_state(toggle,LV_STATE_CHECKED);
-  lv_obj_add_event_cb(toggle,[](lv_event_t *e){mcxnav::Command c;c.action=mcxnav::SET_VISIBLE;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));c.value=lv_obj_has_state(lv_event_get_target(e),LV_STATE_CHECKED);mcxnav::enqueue(c);},LV_EVENT_VALUE_CHANGED,(void *)(uintptr_t)id);
-  single_label(dialog,"Visible on map",8,80,300,muted);
-  auto *colors=lv_dropdown_create(dialog);lv_dropdown_set_options(colors,"Orange\nBlue\nGreen\nRed\nPurple\nYellow");if(style)for(unsigned i=0;i<6;++i)if(style->color==mcxnav::TRACK_COLORS[i])lv_dropdown_set_selected(colors,i);
-  lv_obj_add_event_cb(colors,[](lv_event_t *e){mcxnav::Command c;c.action=mcxnav::SET_COLOR;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));c.value=mcxnav::TRACK_COLORS[lv_dropdown_get_selected(lv_event_get_target(e))%6];mcxnav::enqueue(c);},LV_EVENT_VALUE_CHANGED,(void *)(uintptr_t)id);
-  action_button(dialog,"CUSTOM RGB COLOR",8,140,300,40,panel2,[](lv_event_t *e){setting_track=uint32_t(uintptr_t(lv_event_get_user_data(e)));lv_async_call([](void *){setting_editor(3);},nullptr);},id);
-  action_button(dialog,"EXPORT GPX TO SD",8,190,300,40,panel2,[](lv_event_t *e){mcxnav::Command command;command.action=mcxnav::EXPORT_TRACK;command.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));settings_send(command);},id);
-  action_button(dialog,"CENTER ON TRACK",8,160,300,40,panel2,[](lv_event_t *e){const auto id=uint32_t(uintptr_t(lv_event_get_user_data(e)));if(navui::nav_state)for(unsigned i=0;i<navui::nav_state->track_count;++i)if(navui::nav_state->tracks[i].id==id&&navui::nav_state->tracks[i].points){show_location(navui::nav_state->tracks[i].first);break;}},id);
+  auto *row=control_row(28);label=single_label(row,"Visible on map",0,0,120,muted);lv_obj_set_flex_grow(label,1);auto *toggle=lv_switch_create(row);lv_obj_set_size(toggle,44,24);if(style&&style->visible)lv_obj_add_state(toggle,LV_STATE_CHECKED);
+  lv_obj_add_event_cb(toggle,[](lv_event_t *e){mcxnav::Command c;c.action=mcxnav::SET_VISIBLE;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));c.value=lv_obj_has_state(lv_event_get_target(e),LV_STATE_CHECKED);settings_send(c);},LV_EVENT_VALUE_CHANGED,(void *)(uintptr_t)id);
+  auto *colors=lv_dropdown_create(dialog);lv_obj_set_width(colors,LV_PCT(100));lv_obj_set_height(colors,32);lv_dropdown_set_options(colors,"Orange\nBlue\nGreen\nRed\nPurple\nYellow");if(style)for(unsigned i=0;i<6;++i)if(style->color==mcxnav::TRACK_COLORS[i])lv_dropdown_set_selected(colors,i);
+  lv_obj_add_event_cb(colors,[](lv_event_t *e){mcxnav::Command c;c.action=mcxnav::SET_COLOR;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));c.value=mcxnav::TRACK_COLORS[lv_dropdown_get_selected(lv_event_get_target(e))%6];settings_send(c);},LV_EVENT_VALUE_CHANGED,(void *)(uintptr_t)id);
+  row=control_row();control_button(row,"RENAME",panel2,[](lv_event_t *e){const auto id=lv_event_get_user_data(e);lv_async_call([](void *id){name_form(uint32_t(uintptr_t(id)),false);},id);},id);
+  const bool active=id==navui::nav_state->current&&(navui::nav_state->mode==mcxnav::RECORDING||navui::nav_state->mode==mcxnav::PAUSED);
+  auto *remove=control_button(row,"DELETE",panel2,[](lv_event_t *e){lv_async_call([](void *id){confirm_delete(uint32_t(uintptr_t(id)));},lv_event_get_user_data(e));},id);if(active)lv_obj_add_state(remove,LV_STATE_DISABLED);
+  row=control_row();control_button(row,"CENTER",panel2,[](lv_event_t *e){const auto id=uint32_t(uintptr_t(lv_event_get_user_data(e)));if(navui::nav_state)for(unsigned i=0;i<navui::nav_state->track_count;++i)if(navui::nav_state->tracks[i].id==id&&navui::nav_state->tracks[i].points){show_location(navui::nav_state->tracks[i].first);break;}},id);
+  auto *export_button=control_button(row,"EXPORT GPX",panel2,[](lv_event_t *e){mcxnav::Command c;c.action=mcxnav::EXPORT_TRACK;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));settings_send(c);},id);if(active)lv_obj_add_state(export_button,LV_STATE_DISABLED);
+  row=control_row();control_button(row,"CUSTOM RGB",panel2,[](lv_event_t *e){start_editing=false;setting_track=uint32_t(uintptr_t(lv_event_get_user_data(e)));lv_async_call([](void *){setting_editor(3);},nullptr);},id);
+  nav_detail=single_label(dialog,"",0,0,lv_obj_get_width(body)-16,red);lv_label_set_long_mode(nav_detail,LV_LABEL_LONG_WRAP);lv_obj_set_height(nav_detail,LV_SIZE_CONTENT);lv_obj_add_flag(nav_detail,LV_OBJ_FLAG_HIDDEN);
 }
 static void library(bool pois){
   base(pois?"SAVED POIs":"SAVED TRACKS");mcxnav::start();navui::poll();
@@ -448,7 +538,7 @@ static void library(bool pois){
   if(!n)single_label(list,"No saved items yet / SD worker may be loading",4,8,425,muted);
   for(unsigned i=0;i<n;++i){char title[100];uint32_t id;
     if(pois){id=s->pois[i].id;snprintf(title,sizeof(title),"%s",s->pois[i].name);}
-    else {const auto &t=s->tracks[i];id=t.id;snprintf(title,sizeof(title),"Track %08lx / %.2f km / %lu pts%s",(unsigned long)id,t.metres/1000,(unsigned long)t.points,t.recovered?" / recovered":"");}
+    else {const auto &t=s->tracks[i];id=t.id;snprintf(title,sizeof(title),"%s / %.2f km",t.name[0]?t.name:"Track",t.metres/1000);}
     action_button(list,title,0,int(i)*42,425,38,panel2,pois?+[](lv_event_t *e){lv_async_call([](void *p){poi_details(uint32_t(uintptr_t(p)));},lv_event_get_user_data(e));}:+[](lv_event_t *e){lv_async_call([](void *p){const uint32_t id=uint32_t(uintptr_t(p));track_details(id);},lv_event_get_user_data(e));},id);
   }
   auto *help=single_label(dialog,pois?"POIs export automatically to navigation/pois.gpx.":"Finished/recovered tracks have a GPX beside the journal.",8,259,440,muted);lv_obj_set_style_text_font(help,&lv_font_montserrat_10,0);
