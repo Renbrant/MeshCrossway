@@ -181,6 +181,7 @@ jobs:
           path: |
             _firmware_version_build/vendor-v*/examples/esp-idf/02_lvgl_example/build/*.elf
             _firmware_version_build/vendor-v*/examples/esp-idf/02_lvgl_example/build/*.map
+            _firmware_version_build/vendor-v*/examples/esp-idf/02_lvgl_example/build/**/*.su
             _firmware_version_build/vendor-v*/examples/esp-idf/02_lvgl_example/sdkconfig
             _firmware_version_build/vendor-v*/examples/esp-idf/02_lvgl_example/dependencies.lock
           if-no-files-found: warn

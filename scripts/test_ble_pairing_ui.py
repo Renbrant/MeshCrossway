@@ -410,7 +410,9 @@ using portMUX_TYPE=int;
 #include "FreeRTOS.h"
 using TaskHandle_t=void *;
 static bool fake_task_failure=false;
-static int xTaskCreatePinnedToCore(void (*)(void *),const char *,unsigned,void *,int,TaskHandle_t *out,int){
+static unsigned fake_task_calls=0,fake_task_stack=0;
+static int xTaskCreatePinnedToCore(void (*)(void *),const char *,unsigned stack,void *,int,TaskHandle_t *out,int){
+  ++fake_task_calls;fake_task_stack=stack;
   if(fake_task_failure)return 0;
   *out=(void *)1;return pdPASS;
 }
