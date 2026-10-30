@@ -1,0 +1,90 @@
+#pragma once
+// Original local navigation storage. No radio APIs, credentials or network I/O.
+#include <cstdio>
+#include <cstring>
+#include <cstdint>
+#include <cstddef>
+#include <cmath>
+#include <cerrno>
+#include <ctime>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <dirent.h>
+namespace mcxnav {
+static constexpr unsigned MAX_POIS=64,MAX_TRACKS=32,MAX_PREVIEW=256;
+struct Sample {double latitude=0,longitude=0,altitude=0;int64_t epoch=0;uint32_t segment=0,flags=0,crc=0,reserved=0;};
+struct Poi {Sample point;uint32_t id=0;char name[40]={};uint32_t crc=0;};
+struct Header {char magic[8]={};uint32_t id=0,crc=0;};
+static_assert(sizeof(Sample)==48&&sizeof(Poi)==96&&sizeof(Header)==16,"Navigation schema layout");
+struct Track {uint32_t id=0,points=0;double metres=0;Sample first;bool gpx=false,recovered=false;};
+enum Mode {STOPPED,RECORDING,PAUSED,STORAGE_ERROR};
+enum Action {NONE,START,PAUSE,RESUME,STOP,SAVE_POI,DELETE_POI,SHOW_TRACK};
+struct Command {Action action=NONE;uint32_t id=0;Sample point;char name[40]={};};
+static uint32_t checksum(const void *p,size_t n){uint32_t c=2166136261u;auto *b=(const uint8_t *)p;for(size_t i=0;i<n;++i)c=(c^b[i])*16777619u;return c;}
+static bool valid(const Sample &p){return std::isfinite(p.latitude)&&std::isfinite(p.longitude)&&p.latitude>=-90&&p.latitude<=90&&p.longitude>=-180&&p.longitude<=180&&(!(p.flags&1)||std::isfinite(p.altitude))&&!(p.flags&~1u)&&!p.reserved;}
+static double distance(const Sample &a,const Sample &b){const double r=3.141592653589793/180,lat=(b.latitude-a.latitude)*r,lon=(b.longitude-a.longitude)*r;const double s=sin(lat/2)*sin(lat/2)+cos(a.latitude*r)*cos(b.latitude*r)*sin(lon/2)*sin(lon/2);return 12742000*asin(sqrt(fmin(1,fmax(0,s))));}
+static bool same_sample(const Sample &p){return valid(p)&&p.crc==checksum(&p,offsetof(Sample,crc));}
+static bool sync_file(FILE *f){return fflush(f)==0&&fsync(fileno(f))==0;}
+// FAT implementations may refuse rename over an existing file. Keep the old
+// export as a backup until the flushed replacement has its final name.
+static bool commit_export(const char *tmp,const char *file){
+ if(rename(tmp,file)==0)return true;
+ struct stat st={};if(stat(file,&st))return false;
+ char backup[208];snprintf(backup,sizeof(backup),"%s.bak",file);
+ if(remove(backup)&&errno!=ENOENT)return false;
+ if(rename(file,backup))return false;
+ if(rename(tmp,file)){(void)rename(backup,file);return false;}
+ (void)remove(backup);return true;
+}
+static void xml(FILE *f,const char *s){for(;*s;++s){switch(*s){case '&':fputs("&amp;",f);break;case '<':fputs("&lt;",f);break;case '>':fputs("&gt;",f);break;case '\"':fputs("&quot;",f);break;case '\'':fputs("&apos;",f);break;default:fputc(*s,f);}}}
+struct Snapshot {Mode mode=STOPPED;uint32_t current=0,points=0,revision=0,preview_id=0;double metres=0;unsigned poi_count=0,track_count=0,preview_count=0;char status[96]="Navigation storage starting";Poi pois[MAX_POIS];Track tracks[MAX_TRACKS];Sample preview[MAX_PREVIEW];};
+class Store {
+public:
+ char root[160]={},status[96]="SD navigation starting";
+ Mode mode=STOPPED;uint32_t current=0,point_count=0,segment=1,revision=0;double metres=0;
+ Poi pois[MAX_POIS];unsigned poi_count=0;Track tracks[MAX_TRACKS];unsigned track_count=0;
+ Sample preview[MAX_PREVIEW];unsigned preview_count=0;uint32_t preview_id=0;
+ bool loaded=false;int error=0;
+private:
+ FILE *active=nullptr;Sample previous;bool have_previous=false,gap=true;uint32_t last_ms=0,next_track=1,next_poi=1;
+ void path(char *out,size_t cap,uint32_t id,const char *suffix)const{snprintf(out,cap,"%s/%08lx.%s",root,(unsigned long)id,suffix);}
+ void tell(const char *s){snprintf(status,sizeof(status),"%s",s);++revision;}
+ bool failure(const char *s){error=errno?errno:EIO;if(active){fclose(active);active=nullptr;}mode=STORAGE_ERROR;tell(s);return false;}
+ bool header(FILE *f,uint32_t id){Header h;return fread(&h,1,sizeof(h),f)==sizeof(h)&&!memcmp(h.magic,"MCXTRK1",8)&&h.id==id&&h.crc==checksum(&h,offsetof(Header,crc));}
+ void add_preview(const Sample &p){if(preview_count==MAX_PREVIEW){unsigned out=0;for(unsigned i=0;i<preview_count;i+=2)preview[out++]=preview[i];preview_count=out;}preview[preview_count++]=p;}
+ bool point_xml(FILE *f,const Sample &p,const char *tag){fprintf(f,"<%s lat=\"%.8f\" lon=\"%.8f\">",tag,p.latitude,p.longitude);if(p.flags&1)fprintf(f,"<ele>%.2f</ele>",p.altitude);if(p.epoch>1577836800){time_t t=time_t(p.epoch);struct tm utc={};if(gmtime_r(&t,&utc)){char text[32];strftime(text,sizeof(text),"%Y-%m-%dT%H:%M:%SZ",&utc);fprintf(f,"<time>%s</time>",text);}}return !ferror(f);}
+ bool poi_export(){char tmp[192],file[192];snprintf(tmp,sizeof(tmp),"%s/pois.gpx.tmp",root);snprintf(file,sizeof(file),"%s/pois.gpx",root);FILE *f=fopen(tmp,"wb");if(!f)return false;fputs("<?xml version=\"1.0\"?><gpx version=\"1.1\" creator=\"MeshCrossway\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n",f);for(unsigned i=0;i<poi_count;++i){point_xml(f,pois[i].point,"wpt");fputs("<name>",f);xml(f,pois[i].name);fputs("</name></wpt>\n",f);}fputs("</gpx>\n",f);bool ok=!ferror(f)&&sync_file(f);if(fclose(f))ok=false;if(ok)ok=commit_export(tmp,file);if(!ok)remove(tmp);return ok;}
+public:
+ ~Store(){if(active)fclose(active);}
+ bool scan_track(uint32_t id,Track &out,bool draw=false){char file[192];path(file,sizeof(file),id,"trk");FILE *f=fopen(file,"rb");if(!f)return false;struct stat bounded={};if(fstat(fileno(f),&bounded)||bounded.st_size>16*1024*1024){fclose(f);return false;}if(!header(f,id)){fclose(f);return false;}out=Track{};out.id=id;Sample p,last;bool have=false;if(draw){preview_count=0;preview_id=id;}
+  for(;;){const size_t n=fread(&p,1,sizeof(p),f);if(!n)break;if(n!=sizeof(p)||!same_sample(p)){out.recovered=true;break;}if(!out.points)out.first=p;if(have&&last.segment==p.segment)out.metres+=distance(last,p);last=p;have=true;++out.points;if(draw)add_preview(p);}
+  const bool ok=!ferror(f);fclose(f);path(file,sizeof(file),id,"gpx");struct stat st={};out.gpx=stat(file,&st)==0;return ok;
+ }
+ bool export_track(uint32_t id){char input[192],tmp[192],file[192];path(input,sizeof(input),id,"trk");path(tmp,sizeof(tmp),id,"gpx.tmp");path(file,sizeof(file),id,"gpx");FILE *in=fopen(input,"rb");if(!in)return false;struct stat bounded={};if(fstat(fileno(in),&bounded)||bounded.st_size>16*1024*1024){fclose(in);return false;}if(!header(in,id)){fclose(in);return false;}FILE *f=fopen(tmp,"wb");if(!f){fclose(in);return false;}
+  fprintf(f,"<?xml version=\"1.0\"?><gpx version=\"1.1\" creator=\"MeshCrossway\" xmlns=\"http://www.topografix.com/GPX/1/1\"><trk><name>Track %08lx</name>\n",(unsigned long)id);Sample p;uint32_t last=0;bool open=false;
+  while(fread(&p,1,sizeof(p),in)==sizeof(p)){if(!same_sample(p))break;if(!open||p.segment!=last){if(open)fputs("</trkseg>\n",f);fputs("<trkseg>\n",f);open=true;}last=p.segment;point_xml(f,p,"trkpt");fputs("</trkpt>\n",f);}
+  const bool input_ok=!ferror(in);fclose(in);if(open)fputs("</trkseg>",f);fputs("</trk></gpx>\n",f);bool ok=input_ok&&!ferror(f)&&sync_file(f);if(fclose(f))ok=false;if(ok)ok=commit_export(tmp,file);if(!ok)remove(tmp);return ok;
+ }
+ bool load(const char *directory){if(active)return false;if(strlen(directory)>=sizeof(root))return false;if(directory!=root)snprintf(root,sizeof(root),"%s",directory);if(mkdir(root,0755)&&errno!=EEXIST){tell("Navigation SD directory unavailable");return false;}DIR *dir=opendir(root);if(!dir){tell("Cannot read navigation SD");return false;}poi_count=track_count=0;next_track=next_poi=1;errno=0;
+  while(auto *e=readdir(dir)){unsigned long id=0;char suffix[8]={},extra=0;if(sscanf(e->d_name,"%8lx.%7s%c",&id,suffix,&extra)!=2||!id||id>0xfffffffeUL)continue;char canonical[32];snprintf(canonical,sizeof(canonical),"%08lx.%s",id,suffix);if(strcmp(canonical,e->d_name))continue;
+   if(!strcmp(suffix,"trk")){if(id>=next_track)next_track=uint32_t(id)+1;unsigned slot=track_count;if(track_count==MAX_TRACKS){slot=0;for(unsigned i=1;i<track_count;++i)if(tracks[i].id<tracks[slot].id)slot=i;if(id<=tracks[slot].id)continue;}Track t;if(scan_track(uint32_t(id),t)){if(!t.gpx){t.recovered=true;t.gpx=export_track(uint32_t(id));}tracks[slot]=t;if(track_count<MAX_TRACKS)++track_count;}}
+   if(!strcmp(suffix,"poi")){if(id>=next_poi)next_poi=uint32_t(id)+1;if(poi_count>=MAX_POIS)continue;char file[192];path(file,sizeof(file),uint32_t(id),"poi");FILE *f=fopen(file,"rb");Poi p;if(f){const bool ok=fread(&p,1,sizeof(p),f)==sizeof(p)&&fgetc(f)==EOF&&!ferror(f);fclose(f);if(ok&&p.id==id&&memchr(p.name,0,sizeof(p.name))&&valid(p.point)&&p.crc==checksum(&p,offsetof(Poi,crc)))pois[poi_count++]=p;}}
+  }
+  closedir(dir);for(unsigned i=0;i<track_count;++i)for(unsigned j=i+1;j<track_count;++j)if(tracks[j].id>tracks[i].id){const auto t=tracks[i];tracks[i]=tracks[j];tracks[j]=t;}
+  loaded=true;mode=STOPPED;error=0;tell(poi_export()?"Navigation SD ready":"Navigation loaded / POI GPX export unavailable");return true;
+ }
+ bool start(){if(!loaded||mode==RECORDING||mode==PAUSED)return false;char file[192];uint32_t id=next_track;int fd=-1;for(unsigned n=0;n<128&&id&&id<0xffffffffu;++n,++id){path(file,sizeof(file),id,"trk");fd=open(file,O_WRONLY|O_CREAT|O_EXCL,0644);if(fd>=0)break;if(errno!=EEXIST)return failure("Cannot create track on SD");}if(fd<0)return failure("Track ID space unavailable");active=fdopen(fd,"wb");if(!active){close(fd);return failure("Track open failed");}Header h;memcpy(h.magic,"MCXTRK1",8);h.id=id;h.crc=checksum(&h,offsetof(Header,crc));if(fwrite(&h,1,sizeof(h),active)!=sizeof(h)||!sync_file(active))return failure("Track header save failed");next_track=id+1;current=id;point_count=0;metres=0;segment=1;gap=true;have_previous=false;preview_count=0;preview_id=id;mode=RECORDING;tell("Recording / waiting for GPS");return true;}
+ bool sample(Sample p,bool fresh,uint32_t now){if(mode!=RECORDING)return false;if(!fresh||!valid(p)){gap=true;tell("Recording / waiting for GPS");return false;}if(have_previous&&uint32_t(now-last_ms)<2000)return false;if(have_previous&&!gap&&distance(previous,p)<3&&uint32_t(now-last_ms)<15000)return false;if(gap&&have_previous)++segment;p.segment=segment;p.reserved=0;p.crc=checksum(&p,offsetof(Sample,crc));
+  struct stat st={};if(fstat(fileno(active),&st)||st.st_size+int(sizeof(Sample))>16*1024*1024)return failure("Track limit reached / saved prefix retained");
+  if(fwrite(&p,1,sizeof(p),active)!=sizeof(p)||!sync_file(active))return failure("Track write failed / saved prefix retained");
+  if(have_previous&&!gap)metres+=distance(previous,p);
+  previous=p;have_previous=true;gap=false;last_ms=now;++point_count;add_preview(p);tell("Recording / point saved");return true;
+ }
+ bool pause(){if(mode!=RECORDING)return false;mode=PAUSED;gap=true;tell("Recording paused / saved");return true;}
+ bool resume(){if(mode!=PAUSED)return false;mode=RECORDING;gap=true;tell("Recording resumed / waiting for GPS");return true;}
+ bool stop(){if(mode!=RECORDING&&mode!=PAUSED)return false;bool ok=sync_file(active);if(fclose(active))ok=false;active=nullptr;mode=STOPPED;if(!ok)return failure("Track close failed / prefix retained");const bool exported=export_track(current);const auto id=current;load(root);Track t;if(scan_track(id,t,true)){point_count=t.points;metres=t.metres;}tell(exported?"Track and GPX saved":"Track saved / GPX export failed");return exported;}
+ bool save_poi(const Sample &point,const char *name){if(!loaded||!valid(point)||poi_count>=MAX_POIS){tell("POI unavailable / invalid fix or list full");return false;}if(name&&strlen(name)>=sizeof(Poi::name)){tell("POI name is too long in UTF-8 bytes");return false;}Poi p;p.point=point;p.id=next_poi;if(!p.id||p.id==0xffffffffu)return false;snprintf(p.name,sizeof(p.name),"%s",name&&*name?name:"POI");for(char *c=p.name;*c;++c)if(uint8_t(*c)<32)*c=' ';p.crc=checksum(&p,offsetof(Poi,crc));char file[192];path(file,sizeof(file),p.id,"poi");const int fd=open(file,O_WRONLY|O_CREAT|O_EXCL,0644);if(fd<0){tell("POI ID conflict / restart to refresh");return false;}FILE *f=fdopen(fd,"wb");if(!f){close(fd);return false;}bool ok=fwrite(&p,1,sizeof(p),f)==sizeof(p)&&sync_file(f);if(fclose(f))ok=false;if(!ok){remove(file);tell("POI save failed");return false;}pois[poi_count++]=p;++next_poi;tell(poi_export()?"POI saved / GPX updated":"POI saved / GPX update failed");return true;}
+ bool delete_poi(uint32_t id){for(unsigned i=0;i<poi_count;++i)if(pois[i].id==id){char file[192];path(file,sizeof(file),id,"poi");if(remove(file)){tell("POI delete failed");return false;}for(unsigned j=i+1;j<poi_count;++j)pois[j-1]=pois[j];--poi_count;tell(poi_export()?"POI deleted / GPX updated":"POI deleted / GPX update failed");return true;}return false;}
+};
+}
