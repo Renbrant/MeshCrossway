@@ -28,5 +28,9 @@ int main(int argc,char **argv){assert(argc==2);std::filesystem::create_directori
  assert(s->visible(id,false));for(unsigned i=0;i<s->overlay_count;++i)assert(s->overlays[i].id!=id);
  assert(s->visible(id,true));assert(s->stop());delete s;
  s=new Store;assert(s->load(argv[1]));assert(s->preferences.selected==3);assert(!strcmp(s->preferences.presets[3].name,"Trail custom"));assert(s->style(id)->visible&&s->style(id)->color==0x4DB8FF);assert(s->style(active));delete s;
+ s=new Store;assert(s->load(argv[1]));assert(s->rename_track(id,"River & Ridge"));Track named;assert(s->scan_track(id,named)&&!strcmp(named.name,"River & Ridge"));
+ char named_path[256];snprintf(named_path,sizeof(named_path),"%s/%08x.gpx",argv[1],id);std::ifstream named_gpx(named_path);std::string named_xml((std::istreambuf_iterator<char>(named_gpx)),{});assert(named_xml.find("River &amp; Ridge")!=std::string::npos);
+ const auto old_custom=s->preferences.presets[3].distance_m;assert(s->start_configured(4,0x123456,12,4));const auto fresh_id=s->current;assert(s->recording_preset.distance_m==12&&s->preferences.presets[3].distance_m==old_custom&&s->style(fresh_id)->color==0x123456);assert(!s->delete_track(fresh_id));assert(s->sample(p,true,200000,5));assert(s->rename_track(fresh_id,"New recording"));assert(s->stop());assert(s->delete_track(id));assert(!s->scan_track(id,named));delete s;
+ s=new Store;assert(s->load(argv[1]));for(unsigned i=0;i<s->track_count;++i)assert(s->tracks[i].id!=id);assert(s->scan_track(fresh_id,named)&&!strcmp(named.name,"New recording"));assert(s->start());assert(s->current>fresh_id);assert(s->stop());delete s;
  puts("PASS: track start/pause/resume/segments, sample cadence, durable journal, reboot/torn-tail recovery, GPX and escaped POI persistence/delete");
 }

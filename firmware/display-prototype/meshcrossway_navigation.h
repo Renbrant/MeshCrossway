@@ -13,7 +13,7 @@ static Store *store=nullptr;static Snapshot *published=nullptr;static SemaphoreH
 static Command commands[4];static unsigned head=0,count=0;
 static bool snapshot(Snapshot &out){if(!guard||xSemaphoreTake(guard,0)!=pdTRUE)return false;out=*published;xSemaphoreGive(guard);return true;}
 static Sample position(const mcxgnss::Fix &f){Sample p;p.latitude=f.latitude;p.longitude=f.longitude;p.altitude=f.altitude;p.flags=f.have_altitude?1:0;p.epoch=f.have_time?f.utc_seconds:(time(nullptr)>1577836800?int64_t(time(nullptr)):0);return p;}
-static void publish(){xSemaphoreTake(guard,portMAX_DELAY);auto &o=*published;auto &s=*store;o.mode=s.mode;o.current=s.current;o.points=s.point_count;o.metres=s.metres;o.revision=s.revision;o.poi_count=s.poi_count;o.track_count=s.track_count;o.preview_count=s.preview_count;o.preview_id=s.preview_id;o.preferences=s.preferences;o.overlay_count=s.overlay_count;memcpy(o.overlays,s.overlays,sizeof(o.overlays));snprintf(o.status,sizeof(o.status),"%s",s.status);memcpy(o.pois,s.pois,sizeof(o.pois));memcpy(o.tracks,s.tracks,sizeof(o.tracks));if(s.mode==RECORDING||s.mode==PAUSED){unsigned i=o.track_count<MAX_TRACKS?o.track_count++:MAX_TRACKS-1;o.tracks[i]=Track{};o.tracks[i].id=s.current;if(s.preview_count)o.tracks[i].first=s.preview[0];o.tracks[i].points=s.point_count;o.tracks[i].metres=s.metres;}memcpy(o.preview,s.preview,sizeof(o.preview));xSemaphoreGive(guard);}
+static void publish(){xSemaphoreTake(guard,portMAX_DELAY);auto &o=*published;auto &s=*store;o.mode=s.mode;o.current=s.current;o.points=s.point_count;o.metres=s.metres;o.revision=s.revision;o.poi_count=s.poi_count;o.track_count=s.track_count;o.preview_count=s.preview_count;o.preview_id=s.preview_id;o.preferences=s.preferences;o.recording_preset=s.recording_preset;o.overlay_count=s.overlay_count;memcpy(o.overlays,s.overlays,sizeof(o.overlays));snprintf(o.status,sizeof(o.status),"%s",s.status);memcpy(o.pois,s.pois,sizeof(o.pois));memcpy(o.tracks,s.tracks,sizeof(o.tracks));if(s.mode==RECORDING||s.mode==PAUSED){unsigned i=o.track_count<MAX_TRACKS?o.track_count++:MAX_TRACKS-1;o.tracks[i]=Track{};o.tracks[i].id=s.current;snprintf(o.tracks[i].name,sizeof(o.tracks[i].name),"%s",s.current_name);if(s.preview_count)o.tracks[i].first=s.preview[0];o.tracks[i].points=s.point_count;o.tracks[i].metres=s.metres;}memcpy(o.preview,s.preview,sizeof(o.preview));xSemaphoreGive(guard);}
 static bool enqueue(const Command &c){if(!guard||xSemaphoreTake(guard,0)!=pdTRUE)return false;if(count==4){xSemaphoreGive(guard);return false;}commands[(head+count)%4]=c;++count;xSemaphoreGive(guard);return true;}
 static bool submit(Action action,uint32_t id=0,const char *name=nullptr){if(!guard||xSemaphoreTake(guard,0)!=pdTRUE)return false;if(count==4){xSemaphoreGive(guard);return false;}Command c;c.action=action;c.id=id;if(name&&strlen(name)>=sizeof(c.name)){xSemaphoreGive(guard);return false;}if(name)snprintf(c.name,sizeof(c.name),"%s",name);if(action==SAVE_POI){auto fix=mcxgnss::snapshot();if(!fix.valid){xSemaphoreGive(guard);return false;}c.point=position(fix);}commands[(head+count)%4]=c;++count;xSemaphoreGive(guard);return true;}
 static void worker(void *){
@@ -23,7 +23,7 @@ static void worker(void *){
   uint64_t total=0,free=0;const bool space=esp_sdcard_port_get_size()&&esp_vfs_fat_info("/sdcard",&total,&free)==ESP_OK&&free>8ULL*1024*1024;
   switch(c.action){
    case START:if(space)store->start();else {snprintf(store->status,sizeof(store->status),"Recording needs writable SD / 8 MiB free");++store->revision;}break;
-   case PAUSE:store->pause();break;case RESUME:store->resume();break;case STOP:store->stop();break;
+   case PAUSE:store->pause();break;case RESUME:store->resume();break;case STOP:if(c.id&&c.id!=store->current){snprintf(store->status,sizeof(store->status),"Save failed / recording changed; reopen track");++store->revision;}else if((store->mode==RECORDING||store->mode==PAUSED)&&(!c.name[0]||store->rename_track(store->current,c.name)))store->stop();break;
    case SAVE_POI:if(space)store->save_poi(c.point,c.name);else {snprintf(store->status,sizeof(store->status),"POI needs writable SD / 8 MiB free");++store->revision;}break;
    case DELETE_POI:store->delete_poi(c.id);break;
    case SET_VISIBLE:store->visible(c.id,c.value!=0);break;
@@ -31,6 +31,9 @@ static void worker(void *){
    case SELECT_PRESET:store->select_preset(c.id);break;
    case SAVE_PRESET:if(store->preset(c.id,c.name,c.distance_m,c.interval_s)&&c.value==1)store->select_preset(c.id);break;
    case EXPORT_TRACK:{const bool allowed=c.id!=store->current||(store->mode!=RECORDING&&store->mode!=PAUSED);const bool ok=allowed&&store->export_track(c.id);if(ok)for(unsigned i=0;i<store->track_count;++i)if(store->tracks[i].id==c.id)store->tracks[i].gpx=true;snprintf(store->status,sizeof(store->status),"%s",ok?"GPX exported / ready to download":"GPX unavailable / finish recording first");++store->revision;break;}
+   case START_CONFIGURED:if(space)store->start_configured(c.id,c.value,c.distance_m,c.interval_s);else {snprintf(store->status,sizeof(store->status),"Recording needs writable SD / 8 MiB free");++store->revision;}break;
+   case RENAME_TRACK:store->rename_track(c.id,c.name);break;
+   case DELETE_TRACK:store->delete_track(c.id);break;
    case SHOW_TRACK:store->visible(c.id,true);break;
 
    default:break;

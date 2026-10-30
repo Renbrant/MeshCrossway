@@ -53,8 +53,10 @@ static lv_obj_t *color_label(lv_obj_t *p,const char *s,int x,int y,int w,lv_colo
 // PRODUCTION_GPS_REFRESH
 }
 static lv_color_t drawbuf[480*20];static bool down=false;static int pointer_x=0,pointer_y=0;
-static unsigned display_flushes=0;
-static void flush(lv_disp_drv_t *d,const lv_area_t *,lv_color_t *){++display_flushes;lv_disp_flush_ready(d); }
+static unsigned display_flushes=0;static lv_color_t screenshot_frame[480*320];
+static void flush(lv_disp_drv_t *d,const lv_area_t *area,lv_color_t *pixels){++display_flushes;for(int y=area->y1;y<=area->y2;++y)for(int x=area->x1;x<=area->x2;++x)screenshot_frame[y*480+x]=*pixels++;lv_disp_flush_ready(d);}
+static void render_preview(const char *name){const char *directory=getenv("MCX_RENDER_DIR");if(!directory)return;std::filesystem::create_directories(directory);lv_refr_now(nullptr);const auto file=std::filesystem::path(directory)/(std::string(name)+".ppm");FILE *f=fopen(file.c_str(),"wb");assert(f);fprintf(f,"P6\n480 320\n255\n");for(auto pixel:screenshot_frame){lv_color32_t c;c.full=lv_color_to32(pixel);unsigned char rgb[]={c.ch.red,c.ch.green,c.ch.blue};fwrite(rgb,1,3,f);}fclose(f);}
+
 static void read_pointer(lv_indev_drv_t *,lv_indev_data_t *d){d->state=down?LV_INDEV_STATE_PRESSED:LV_INDEV_STATE_RELEASED;d->point.x=pointer_x;d->point.y=pointer_y;}
 static void advance(unsigned ms=80){for(unsigned n=0;n<ms;n+=5){lv_tick_inc(5);lv_timer_handler();}}
 static void tap(lv_obj_t *obj){lv_area_t a;lv_obj_update_layout(obj);lv_obj_get_coords(obj,&a);pointer_x=(a.x1+a.x2)/2;pointer_y=(a.y1+a.y2)/2;down=true;advance();down=false;advance();}
@@ -143,8 +145,10 @@ int main(int argc,char **argv){
  assert(navui::overlay_builds==idle_builds&&display_flushes==0);
  const double before=navui::longitude;pointer_x=210;pointer_y=150;down=true;advance();for(int x=215;x<=265;x+=5){pointer_x=x;advance(35);}down=false;advance();assert(!navui::following&&navui::longitude<before);
  assert(navui::inflight&&lv_obj_get_x(navui::picture)==navui::pan_x&&navui::pan_x!=0);
- const auto first_pan=navui::pan_x;pointer_x=210;pointer_y=150;down=true;advance();pointer_x=240;advance(70);down=false;advance();
+ const auto first_pan=navui::pan_x;pointer_x=210;pointer_y=150;down=true;advance();pointer_x=240;advance(70);pointer_x=210;down=false;advance();
  assert(navui::pan_x>first_pan&&navui::inflight); // A second gesture is accepted while tiles load.
+ current=mcxmap::requested;make_tiles(current);mcxmap::ready=mcxmap::render(current,mcxmap::config);auto *waiting=mcxmap::ready;auto *shown=navui::front;
+ pointer_x=210;pointer_y=150;down=true;advance();pointer_x=230;advance(60);navui::poll();assert(mcxmap::ready==waiting&&navui::front==shown);down=false;advance();navui::poll();assert(!mcxmap::ready);
  current=mcxmap::requested;make_tiles(current);mcxmap::ready=mcxmap::render(current,mcxmap::config);navui::poll();advance();assert(!navui::pan_x&&!navui::pan_y&&lv_obj_get_x(navui::picture)==0);
  mcxnav::mock_state.preview_id=7;mcxnav::mock_state.points=2;mcxnav::mock_state.preview_count=2;mcxnav::mock_state.preferences.styles[0].id=7;mcxnav::mock_state.preferences.styles[0].visible=true;
  for(unsigned i=0;i<2;++i){mcxnav::mock_state.preview[i].latitude=navui::latitude;mcxnav::mock_state.preview[i].longitude=navui::longitude+i*.0001;}
@@ -162,8 +166,16 @@ int main(int argc,char **argv){
  assert(mcxmap::provider(mcxmap::configuration())==mcxmap::TOPO&&strstr(mcxmap::configuration().attribution,"OpenTopoMap"));
  lv_obj_clear_state(gpsui::online_switch,LV_STATE_CHECKED);lv_event_send(gpsui::online_switch,LV_EVENT_VALUE_CHANGED,nullptr);assert(!mcxmap::configuration().online);
  gpsui::new_poi();advance();lv_textarea_set_text(gpsui::poi_name,"Trail start");gpsui::save_poi(nullptr);assert(mcxnav::last_action==mcxnav::SAVE_POI&&!strcmp(mcxnav::last_name,"Trail start"));
- gpsui::recording();advance();
- for(unsigned i=0;i<4;++i){auto *button=lv_obj_get_child(gpsui::dialog,i+2);lv_obj_scroll_to_view(button,LV_ANIM_OFF);advance();tap(button);assert(mcxnav::last_action==mcxnav::Action(i+1));}
+ mcxnav::mock_state.mode=mcxnav::STOPPED;gpsui::recording();advance();assert(!lv_obj_has_state(gpsui::record_start,LV_STATE_DISABLED));assert(lv_obj_has_state(gpsui::record_pause,LV_STATE_DISABLED));
+ lv_area_t start_area,pause_area;lv_obj_get_coords(gpsui::record_start,&start_area);lv_obj_get_coords(gpsui::record_pause,&pause_area);assert(start_area.x2<pause_area.x1&&start_area.y1==pause_area.y1);render_preview("record-ready");
+ tap(gpsui::record_start);advance();assert(lv_obj_has_flag(gpsui::dialog,LV_OBJ_FLAG_USER_1));gpsui::start_slot=4;gpsui::preset_draft.distance_m=20;gpsui::preset_draft.interval_s=5;gpsui::start_color=0x72D8A5;gpsui::start_setup();advance();render_preview("start-options");
+ // Locate the compact RECORD button by its text, without depending on row indexes.
+ lv_obj_t *record_button=nullptr;for(unsigned i=0;i<lv_obj_get_child_cnt(gpsui::dialog);++i){auto *row=lv_obj_get_child(gpsui::dialog,i);for(unsigned j=0;j<lv_obj_get_child_cnt(row);++j){auto *button=lv_obj_get_child(row,j);if(lv_obj_check_type(button,&lv_btn_class)&&lv_obj_get_child_cnt(button)&&!strcmp(lv_label_get_text(lv_obj_get_child(button,0)),"RECORD"))record_button=button;}}assert(record_button);tap(record_button);advance();assert(mcxnav::last_command.action==mcxnav::START_CONFIGURED&&mcxnav::last_command.id==4&&mcxnav::last_command.value==0x72D8A5);assert(lv_obj_has_state(gpsui::record_start,LV_STATE_DISABLED));
+ mcxnav::mock_state.mode=mcxnav::RECORDING;mcxnav::mock_state.current=9;mcxnav::mock_state.track_count=1;mcxnav::mock_state.tracks[0].id=9;strcpy(mcxnav::mock_state.tracks[0].name,"Track 00000009");navui::poll();gpsui::nav_refresh();advance();assert(lv_obj_has_state(gpsui::record_start,LV_STATE_DISABLED)&&!lv_obj_has_state(gpsui::record_pause,LV_STATE_DISABLED));render_preview("record-active");
+ tap(gpsui::record_pause);mcxnav::mock_state.mode=mcxnav::PAUSED;navui::poll();gpsui::nav_refresh();advance();assert(lv_obj_has_state(gpsui::record_pause,LV_STATE_DISABLED)&&!lv_obj_has_state(gpsui::record_resume,LV_STATE_DISABLED));
+ tap(gpsui::record_finish);advance();assert(gpsui::name_finishing);render_preview("finish-name");lv_textarea_set_text(gpsui::name_value,"Sunday drive");gpsui::commit_name(false);assert(mcxnav::last_command.action==mcxnav::STOP&&!strcmp(mcxnav::last_command.name,"Sunday drive"));mcxnav::mock_state.mode=mcxnav::STOPPED;++mcxnav::mock_state.revision;navui::poll();gpsui::nav_refresh();advance();assert(!lv_obj_has_state(gpsui::record_start,LV_STATE_DISABLED));
+ gpsui::name_form(9,false);advance();lv_textarea_set_text(gpsui::name_value,"Renamed route");gpsui::commit_name(false);assert(mcxnav::last_command.action==mcxnav::RENAME_TRACK&&!strcmp(mcxnav::last_command.name,"Renamed route"));
+ gpsui::name_form(9,false);advance();gpsui::commit_name(true);assert(!strcmp(mcxnav::last_command.name,"Track 00000009"));gpsui::track_details(9);advance();render_preview("track-details");gpsui::confirm_delete(9);advance();auto *delete_row=lv_obj_get_child(gpsui::dialog,2);tap(lv_obj_get_child(delete_row,0));assert(mcxnav::last_command.action==mcxnav::DELETE_TRACK&&mcxnav::last_command.id==9);
  gpsui::preset_list();advance();assert(navigation_panel&&lv_obj_get_parent(gpsui::dialog)==body);
  lv_event_send(lv_obj_get_child(gpsui::dialog,1),LV_EVENT_CLICKED,nullptr);advance();
  gpsui::setting_editor(1);advance();lv_textarea_set_text(gpsui::setting_value,"0");gpsui::setting_apply();assert(strstr(lv_label_get_text(gpsui::nav_detail),"3-1000"));
@@ -171,6 +183,7 @@ int main(int argc,char **argv){
  gpsui::setting_editor(2);advance();lv_textarea_set_text(gpsui::setting_value,"8");gpsui::setting_apply();advance();
  lv_event_send(lv_obj_get_child(gpsui::dialog,4),LV_EVENT_CLICKED,nullptr);assert(mcxnav::last_command.action==mcxnav::SAVE_PRESET&&mcxnav::last_command.value==1&&mcxnav::last_command.distance_m==25&&mcxnav::last_command.interval_s==8);
  gpsui::setting_track=1;gpsui::setting_editor(3);advance();lv_textarea_set_text(gpsui::setting_value,"12ABCD");gpsui::setting_apply();advance();assert(mcxnav::last_command.action==mcxnav::SET_COLOR&&mcxnav::last_command.value==0x12ABCD&&!gpsui::setting_value);
+ for(int width:{276,400}){lv_obj_set_width(body,width);gpsui::recording();advance();lv_area_t bounds;lv_obj_get_coords(gpsui::dialog,&bounds);for(auto *button:{gpsui::record_start,gpsui::record_pause,gpsui::record_resume,gpsui::record_finish}){lv_area_t a;lv_obj_get_coords(button,&a);assert(a.x1>=bounds.x1&&a.x2<=bounds.x2&&a.y2<=bounds.y2);}}
  gpsui::library(true);advance();assert(info_dialog);gpsui::library(false);advance();assert(info_dialog);
  gpsui::map_diagnostics();advance();assert(info_dialog);gpsui::map_credits();advance();assert(info_dialog);
  info_close_now(nullptr);navui::invalidate();lv_obj_clean(body);navui::after_clean();assert(!navui::front);

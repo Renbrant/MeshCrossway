@@ -43,6 +43,12 @@ int main(int argc,char **argv){assert(argc==2);lv_init();std::filesystem::create
  assert(request("11|2|1|30|7|Device preset").code=="202 Accepted");step();assert(mcxnav::store->preferences.selected==2&&mcxnav::store->preferences.presets[2].distance_m==30);
  assert(request("999|0|0|0|0|").code=="400 Bad Request");
  httpd_req_t bad;bad.query="id=../../secret";mcxnavhttp::download(&bad);assert(bad.code=="400 Bad Request");
+ const auto saved_id=mcxnav::store->tracks[0].id;
+ std::string rename_body="13|"+std::to_string(saved_id)+"|0|0|0|Web named route";assert(request(rename_body.c_str()).code=="202 Accepted");step();assert(!strcmp(mcxnav::store->tracks[0].name,"Web named route"));
+ assert(request("15|7|0|0|0|").code=="400 Bad Request");assert(request("15|4|1193046|20|5|").code=="202 Accepted");step();const auto running_id=mcxnav::store->current;assert(mcxnav::store->mode==mcxnav::RECORDING&&mcxnav::store->recording_preset.distance_m==20&&mcxnav::store->style(running_id)->color==1193046);
+ std::string active_delete="14|"+std::to_string(running_id)+"|0|0|0|";assert(request(active_delete.c_str()).code=="202 Accepted");step();assert(mcxnav::store->mode==mcxnav::RECORDING);
+ assert(request("4|0|0|0|0|Finished name").code=="202 Accepted");step();assert(mcxnav::store->mode==mcxnav::STOPPED&&!strcmp(mcxnav::store->tracks[0].name,"Finished name"));
+ std::string delete_body="14|"+std::to_string(saved_id)+"|0|0|0|";assert(request(delete_body.c_str()).code=="202 Accepted");step();for(unsigned i=0;i<mcxnav::store->track_count;++i)assert(mcxnav::store->tracks[i].id!=saved_id);
  puts("PASS: HTTP navigation state, command header, numeric bounds, presets via worker and download path validation");
  puts("PASS: production navigation worker, bounded command queue, button-time POI fix, stale-fix rejection, SD-space pause, snapshot and GPX completion");
 }

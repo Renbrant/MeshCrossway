@@ -43,7 +43,7 @@ namespace mcxnavhttp {
         color=v.color;
         visible=v.visible;
       }
-      body+="{\"id\":"+std::to_string(t.id)+",\"points\":"+std::to_string(t.points)+",\"metres\":"+std::to_string(t.metres)+",\"gpx\":"+(t.gpx?"true":"false")+",\"visible\":"+(visible?"true":"false")+",\"color\":"+std::to_string(color)+"}";
+      body+="{\"id\":"+std::to_string(t.id)+",\"name\":"+quote(t.name)+",\"points\":"+std::to_string(t.points)+",\"metres\":"+std::to_string(t.metres)+",\"gpx\":"+(t.gpx?"true":"false")+",\"visible\":"+(visible?"true":"false")+",\"color\":"+std::to_string(color)+"}";
     }
     body+="]}";
     s->~Snapshot();
@@ -91,12 +91,14 @@ namespace mcxnavhttp {
     uint32_t action=0;
     mcxnav::Command c;
     if(!number(fields[0],action)||!number(fields[1],c.id)||!number(fields[2],c.value)||!number(fields[3],c.distance_m)||!number(fields[4],c.interval_s))return fail(r,"400 Bad Request","Invalid number");
-    if(action!=mcxnav::START&&action!=mcxnav::PAUSE&&action!=mcxnav::RESUME&&action!=mcxnav::STOP&&action!=mcxnav::SET_VISIBLE&&action!=mcxnav::SET_COLOR&&action!=mcxnav::SELECT_PRESET&&action!=mcxnav::SAVE_PRESET&&action!=mcxnav::EXPORT_TRACK)return fail(r,"400 Bad Request","Unsupported action");
-    if(strlen(fields[5])>23)return fail(r,"400 Bad Request","Name too long");
-    for(char *p=fields[5];*p;++p)if(*p<32||*p>126)return fail(r,"400 Bad Request","Use ASCII preset names");
+    if(action!=mcxnav::START&&action!=mcxnav::PAUSE&&action!=mcxnav::RESUME&&action!=mcxnav::STOP&&action!=mcxnav::SET_VISIBLE&&action!=mcxnav::SET_COLOR&&action!=mcxnav::SELECT_PRESET&&action!=mcxnav::SAVE_PRESET&&action!=mcxnav::EXPORT_TRACK&&action!=mcxnav::RENAME_TRACK&&action!=mcxnav::DELETE_TRACK&&action!=mcxnav::START_CONFIGURED)return fail(r,"400 Bad Request","Unsupported action");
+    if(strlen(fields[5])>((action==mcxnav::RENAME_TRACK||action==mcxnav::STOP)?39u:23u))return fail(r,"400 Bad Request","Name too long");
+    for(const unsigned char *p=(const unsigned char *)fields[5];*p;++p)if(*p<32||(action==mcxnav::SAVE_PRESET&&*p>126))return fail(r,"400 Bad Request","Invalid name characters");
     c.action=mcxnav::Action(action);
     snprintf(c.name,sizeof(c.name),"%s",fields[5]);
     if((c.action==mcxnav::SET_COLOR&&c.value>0xffffff)||(c.action==mcxnav::SET_VISIBLE&&c.value>1)||(c.action==mcxnav::SELECT_PRESET&&c.id>=4)||(c.action==mcxnav::SAVE_PRESET&&(c.id>=4||!c.name[0]||c.distance_m<3||c.distance_m>1000||c.interval_s<1||c.interval_s>300)))return fail(r,"400 Bad Request","Settings outside supported range");
+    if(c.action==mcxnav::START_CONFIGURED&&(c.id>4||c.value>0xffffff||(c.id==4&&(c.distance_m<3||c.distance_m>1000||c.interval_s<1||c.interval_s>300))))return fail(r,"400 Bad Request","Invalid recording mode");
+    if((c.action==mcxnav::RENAME_TRACK||c.action==mcxnav::DELETE_TRACK||c.action==mcxnav::SET_COLOR||c.action==mcxnav::SET_VISIBLE||c.action==mcxnav::EXPORT_TRACK)&&!c.id)return fail(r,"400 Bad Request","Invalid track ID");
     if(!mcxnav::enqueue(c))return fail(r,"503 Service Unavailable","Navigation command queue busy");
     httpd_resp_set_status(r,"202 Accepted");
     return httpd_resp_send(r,"Command queued; check device status",HTTPD_RESP_USE_STRLEN);
@@ -107,6 +109,7 @@ namespace mcxnavhttp {
     if(httpd_req_get_url_query_str(r,query,sizeof(query))!=ESP_OK||httpd_query_key_value(query,"id",id_text,sizeof(id_text))!=ESP_OK||!number(id_text,id)||!id)return fail(r,"400 Bad Request","Invalid track ID");
     char file[128];
     snprintf(file,sizeof(file),"/sdcard/meshcrossway/navigation/%08lx.gpx",(unsigned long)id);
+    char marker[128];snprintf(marker,sizeof(marker),"/sdcard/meshcrossway/navigation/%08lx.del",(unsigned long)id);struct stat deleted={};if(stat(marker,&deleted)==0)return fail(r,"404 Not Found","Track deleted");
     FILE *f=fopen(file,"rb");
     if(!f)return fail(r,"404 Not Found","GPX unavailable; finish or export the track first");
     httpd_resp_set_type(r,"application/gpx+xml");
