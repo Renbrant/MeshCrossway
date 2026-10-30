@@ -27,6 +27,7 @@ static bool submit(Action a,uint32_t id=0,const char *name=nullptr){last_action=
 namespace meshcrossway {
 static int page=4,map_view=0;static void draw();
 static lv_obj_t *body=nullptr,*info_dialog=nullptr;
+static bool navigation_panel=false;
 static const lv_color_t purple=lv_color_hex(0x9C88FF);
 static const lv_color_t green=lv_color_hex(0x72D8A5);
 static const lv_color_t bg=lv_color_hex(0x090C10),panel2=lv_color_hex(0x242B34),orange=lv_color_hex(0xFF8A24),white=lv_color_hex(0xF2F4F7),muted=lv_color_hex(0x9AA6B4),cyan=lv_color_hex(0x6CBDE6),red=lv_color_hex(0xFF7777);
@@ -147,7 +148,7 @@ int main(int argc,char **argv){
  lv_obj_clear_state(gpsui::online_switch,LV_STATE_CHECKED);lv_event_send(gpsui::online_switch,LV_EVENT_VALUE_CHANGED,nullptr);assert(!mcxmap::configuration().online);
  gpsui::new_poi();advance();lv_textarea_set_text(gpsui::poi_name,"Trail start");gpsui::save_poi(nullptr);assert(mcxnav::last_action==mcxnav::SAVE_POI&&!strcmp(mcxnav::last_name,"Trail start"));
  gpsui::recording();advance();
- for(unsigned i=0;i<4;++i){tap(lv_obj_get_child(gpsui::dialog,i+3));assert(mcxnav::last_action==mcxnav::Action(i+1));}
+ for(unsigned i=0;i<4;++i){tap(lv_obj_get_child(gpsui::dialog,i+2));assert(mcxnav::last_action==mcxnav::Action(i+1));}
  gpsui::library(true);advance();assert(info_dialog);gpsui::library(false);advance();assert(info_dialog);
  gpsui::map_diagnostics();advance();assert(info_dialog);gpsui::map_credits();advance();assert(info_dialog);
  info_close_now(nullptr);navui::invalidate();lv_obj_clean(body);navui::after_clean();assert(!navui::front);
