@@ -55,6 +55,7 @@ static std::atomic<int> error_step{12},error_number{-2147483647};
 static std::atomic<uint32_t> failures{UINT32_MAX},operation_ms{UINT32_MAX},max_operation_ms{UINT32_MAX};
 }
 namespace mcxstore {static const char *step_name(int){return "directory";}}
+namespace mcxnav {static std::atomic<uint32_t> stack_min{UINT32_MAX};}
 namespace meshmc {static std::atomic<uint32_t> mailbox_peak{128},mailbox_overflows{UINT32_MAX};}
 namespace meshcapture {
 static bool available(){return false;}
@@ -73,7 +74,9 @@ int main(){
   reset=4;mcxruntime::retained.stage=mcxruntime::CAPTURE;mcxruntime::begin();
   assert(mcxruntime::boots==2&&mcxruntime::previous_stage==mcxruntime::CAPTURE);
   reset=ESP_RST_POWERON;mcxruntime::begin();assert(mcxruntime::boots==1&&mcxruntime::previous_stage==0);
-  fake_us=INT64_MAX;httpd_req_t request;assert(health(&request)==ESP_OK&&result.size()<1152);
+  fake_us=INT64_MAX;httpd_req_t request;assert(health(&request)==ESP_OK&&result.size()<1280);
+  assert(result.find("\"navigation_stack_min\":0")!=std::string::npos);
+  mcxnav::stack_min=UINT32_MAX-1;assert(health(&request)==ESP_OK&&result.size()<1280);
   puts(result.c_str());
 }
 '''
@@ -81,6 +84,7 @@ int main(){
     subprocess.run(['c++','-std=c++17','-O1','-Wall','-Wextra','-Wformat=2','-Werror',
                     '-I'+str(temp),'-I'+str(ROOT/'firmware/display-prototype'),str(cpp),'-o',str(binary)],check=True)
     result=json.loads(subprocess.check_output([str(binary)],text=True))
+    assert result['navigation_stack_min']==4294967294
     assert result['history_failures']==4294967295 and result['mailbox_peak']==128
     assert result['reset_reason']==1 and result['ui_max_ms']==12 and result['internal_largest']==4294967295
     print('PASS: production warm/cold reset breadcrumbs, nested latency, allocation failure/stack metrics and worst-case health JSON')
