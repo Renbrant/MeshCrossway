@@ -159,7 +159,7 @@ for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_he
              "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h", "meshcrossway_lvgl_alloc.h", "meshcrossway_runtime.h",
              "meshcrossway_power_status.h", "meshcrossway_battery_decode.h",
              "meshcrossway_chat_presentation.h", "meshcrossway_chat_view.h", "meshcrossway_offline_boot.h",
-             "meshcrossway_touch_queue.h", "meshcrossway_touch_input.h", "meshcrossway_gnss.h", "meshcrossway_gnss_parser.h", "meshcrossway_gnss_settings.h", "meshcrossway_map_projection.h", "meshcrossway_map_tiles.h", "meshcrossway_navigation_ui.h"):
+             "meshcrossway_touch_queue.h", "meshcrossway_touch_input.h", "meshcrossway_gnss.h", "meshcrossway_gnss_parser.h", "meshcrossway_gnss_settings.h", "meshcrossway_radio_priority.h", "meshcrossway_map_projection.h", "meshcrossway_map_tiles.h", "meshcrossway_navigation_ui.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 
@@ -174,7 +174,7 @@ sdk = project / "sdkconfig.defaults"
 defaults = sdk.read_text()
 # Remove the invalid choice name used in the earlier candidate.
 defaults = "\n".join(line for line in defaults.splitlines()
-                     if not line.startswith(("CONFIG_ESP_WIFI_TASK_CORE_ID=", "CONFIG_ESP_CONSOLE_UART", "CONFIG_ESP_CONSOLE_SECONDARY_", "CONFIG_MBEDTLS_INTERNAL_MEM_ALLOC=", "CONFIG_MBEDTLS_DEFAULT_MEM_ALLOC=", "CONFIG_MBEDTLS_IRAM_8BIT_MEM_ALLOC="))) + "\n"
+                     if not line.startswith(("CONFIG_ESP_WIFI_TASK_CORE_ID=", "CONFIG_ESP_CONSOLE_UART", "CONFIG_ESP_CONSOLE_SECONDARY_", "CONFIG_MBEDTLS_INTERNAL_MEM_ALLOC=", "CONFIG_MBEDTLS_DEFAULT_MEM_ALLOC=", "CONFIG_MBEDTLS_IRAM_8BIT_MEM_ALLOC=", "CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_INTERNAL=", "CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_DEFAULT=", "CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_IRAM_8BIT="))) + "\n"
 sdk.write_text(defaults)
 # The Wi-Fi backup uses /sdcard/meshcrossway-wifi.{tmp,json,bak}.
 # ESP-IDF FatFs defaults to FATFS_LFN_NONE, so those paths otherwise fail
@@ -183,7 +183,7 @@ needed=["CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y", "CONFIG_MBEDTLS_HAVE_TIME_DATE=y"
          "CONFIG_LV_MEM_CUSTOM=y",'CONFIG_LV_MEM_CUSTOM_INCLUDE="meshcrossway_lvgl_alloc.h"',
          "CONFIG_FREERTOS_CHECK_STACKOVERFLOW_CANARY=y","CONFIG_FREERTOS_WATCHPOINT_END_OF_STACK=y",
          "CONFIG_FATFS_LFN_HEAP=y",
-        "CONFIG_BT_ENABLED=y","CONFIG_BT_NIMBLE_ENABLED=y",
+        "CONFIG_BT_ENABLED=y","CONFIG_BT_NIMBLE_ENABLED=y","CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL=y",
         "CONFIG_BT_NIMBLE_ROLE_CENTRAL=y","CONFIG_BT_NIMBLE_MAX_CONNECTIONS=2",
         "CONFIG_BT_NIMBLE_NVS_PERSIST=y","CONFIG_BT_NIMBLE_MAX_BONDS=4",
         "CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU=517",

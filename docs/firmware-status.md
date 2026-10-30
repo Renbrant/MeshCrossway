@@ -1,3 +1,5 @@
+**v0.8.2 candidate:** full-height map and contextual zoom slider, decoded PSRAM cache, transparent attribution and BLE initialization mitigation/diagnostics. Hardware retest pending. [Acceptance](maps-gps-v082.md). v0.7.8 recovery unchanged.
+
 # Current candidate — v0.8.1
 
 GPS fix/satellite header status, persistent receiver-reading settings, and georeferenced XYZ raster maps. Host and firmware checks are tracked on the implementation PR. Physical map/SD/Wi-Fi/BLE acceptance remains pending. The owner supplied v0.8.0 photos showing a live UART fix and 12 satellites; that confirms the initial reader/display path, not all new map behavior. v0.7.8 remains recovery. [Guide](maps-gps-v081.md).

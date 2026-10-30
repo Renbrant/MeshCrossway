@@ -66,6 +66,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.2":
+        summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: full-height map, contextual controls, toggle zoom slider with release-to-load and immediate preview, discreet attribution, decoded PSRAM tile cache and BLE host PSRAM allocation with startup diagnostics. Install without Erase; v0.7.8 remains recovery."
+        label="Full map + zoom slider + BLE startup / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.1":
         summary="EXPERIMENTAL / MAP HARDWARE TEST PENDING: local GPS fix/satellite header indicator, persistent GPS reading/baud/units/expiry settings, Web Mercator XYZ PNG maps from microSD or visible-view HTTPS tiles with SD cache. Pan, zoom and GPS follow. No bulk downloads or mesh position sharing. Install without Erase; v0.7.8 remains recovery."
         label="GPS status + XYZ maps + GPS settings / EXPERIMENTAL"

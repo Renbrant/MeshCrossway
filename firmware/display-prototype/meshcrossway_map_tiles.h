@@ -1,5 +1,6 @@
 #pragma once
 #include "meshcrossway_map_projection.h"
+#include "meshcrossway_radio_priority.h"
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
 #include "esp_crt_bundle.h"
@@ -25,6 +26,22 @@ extern "C" {
 #include <unistd.h>
 namespace mcxmap {
 static constexpr size_t MAX_PNG=256*1024;
+// Worker-owned bounded LRU: twelve RGB565 tiles, 1.5 MiB of PSRAM at most.
+struct Tile {uint64_t source=0;unsigned z=0,x=0,y=0;uint32_t used=0;lv_color_t *pixels=nullptr;};
+static Tile tile_cache[12];static uint32_t tile_clock=0;
+static std::atomic<uint32_t> cache_hits{0},decode_count{0},last_render_ms{0};
+static void clear_tiles(){for(auto &t:tile_cache){heap_caps_free(t.pixels);t=Tile{};}}
+static lv_color_t *cached_tile(uint64_t source,unsigned z,unsigned x,unsigned y){
+  for(auto &t:tile_cache)if(t.pixels&&t.source==source&&t.z==z&&t.x==x&&t.y==y){t.used=++tile_clock;++cache_hits;return t.pixels;}
+  return nullptr;
+}
+static lv_color_t *keep_tile(uint64_t source,unsigned z,unsigned x,unsigned y,const unsigned char *rgba){
+  auto *slot=&tile_cache[0];for(auto &t:tile_cache){if(!t.pixels){slot=&t;break;}if(t.used<slot->used)slot=&t;}
+  if(!slot->pixels)slot->pixels=(lv_color_t *)heap_caps_malloc(256*256*sizeof(lv_color_t),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+  if(!slot->pixels)return nullptr;
+  for(unsigned i=0;i<256*256;++i){const auto *p=rgba+4*i;const unsigned a=p[3];slot->pixels[i]=lv_color_make((p[0]*a+230*(255-a))/255,(p[1]*a+230*(255-a))/255,(p[2]*a+230*(255-a))/255);}
+  slot->source=source;slot->z=z;slot->x=x;slot->y=y;slot->used=++tile_clock;return slot->pixels;
+}
 static const char *SD_ROOT="/sdcard";
 struct Config {uint32_t version=1;uint8_t online=1,zoom=14;uint8_t reserved[2]={};char url[192]="https://tile.openstreetmap.org";char attribution[128]="© OpenStreetMap contributors";};
 static bool valid_config(const Config &c){
@@ -83,19 +100,22 @@ static bool decode(unsigned char *png,size_t size,unsigned char **rgba){
   const unsigned char signature[]={137,80,78,71,13,10,26,10};
   if(size<33||memcmp(png,signature,8)||memcmp(png+12,"IHDR",4))return false;
   const unsigned char dimension[]={0,0,1,0};if(memcmp(png+16,dimension,4)||memcmp(png+20,dimension,4))return false;
-  LodePNGState state;lodepng_state_init(&state);state.decoder.zlibsettings.max_output_size=300000;
+  ++decode_count;LodePNGState state;lodepng_state_init(&state);state.decoder.zlibsettings.max_output_size=300000;
   state.decoder.read_text_chunks=0;state.decoder.max_text_size=1024;state.decoder.max_icc_size=1024;
   unsigned width=0,height=0;const unsigned err=lodepng_decode(rgba,&width,&height,&state,png,size);lodepng_state_cleanup(&state);
   if(err||width!=256||height!=256){lv_mem_free(*rgba);*rgba=nullptr;return false;}return true;
 }
 static bool (*wifi_ready)()=nullptr;
 static bool network_allowed(){return wifi_ready&&wifi_ready();}
-static unsigned char *checked_png(const char *file,size_t &size);
-static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,size_t &size){
+static unsigned char *checked_png(const char *file,size_t &size,unsigned char **decoded=nullptr);
+static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,size_t &size,unsigned char **decoded=nullptr,uint32_t generation=0){
+  if(decoded)*decoded=nullptr;
+  const auto cancelled=[generation](){return mcxpriority::ble_initializing.load()||(generation&&wanted.load()!=generation);};
+  if(cancelled())return nullptr;
   if(esp_sdcard_port_get_size()==0)return nullptr;
   char file[192];snprintf(file,sizeof(file),"%s/tiles/%u/%u/%u.png",SD_ROOT,z,x,y);
-  if(auto *p=checked_png(file,size))return p;
-  paths(file,sizeof(file),c,z,x,y);if(auto *p=checked_png(file,size))return p;
+  if(auto *p=checked_png(file,size,decoded))return p;
+  paths(file,sizeof(file),c,z,x,y);if(auto *p=checked_png(file,size,decoded))return p;
   const uint32_t now=milliseconds();if(!c.online||!network_allowed())return nullptr;
   if(backing_off){if(uint32_t(now-backoff_started)<backoff_ms)return nullptr;backing_off=false;}
   if(time(nullptr)<1700000000){
@@ -109,11 +129,12 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
   if(esp_vfs_fat_info(SD_ROOT,&total,&free_space)!=ESP_OK||free_space<8ULL*1024*1024+MAX_PNG){cache_full=true;return nullptr;}
   if(!directories(c,z,x))return nullptr;
   if(uint32_t(now-last_request)<1000)vTaskDelay(pdMS_TO_TICKS(1000-uint32_t(now-last_request)));
+  if(cancelled())return nullptr;
   last_request=milliseconds();
   char temporary[200];snprintf(temporary,sizeof(temporary),"%s.tmp",file);FILE *out=fopen(temporary,"wb");if(!out)return nullptr;
   char url[256];snprintf(url,sizeof(url),"%s%s%u/%u/%u.png",c.url,c.url[strlen(c.url)-1]=='/'?"":"/",z,x,y);
   esp_http_client_config_t http={};http.url=url;http.timeout_ms=2500;http.buffer_size=1024;http.buffer_size_tx=512;
-  http.user_agent="MeshCrossway/0.8.1 (+https://github.com/Renbrant/MeshCrossway)";http.crt_bundle_attach=esp_crt_bundle_attach;http.disable_auto_redirect=true;
+  http.user_agent="MeshCrossway/0.8.2 (+https://github.com/Renbrant/MeshCrossway)";http.crt_bundle_attach=esp_crt_bundle_attach;http.disable_auto_redirect=true;
   auto client=esp_http_client_init(&http);bool ok=false,valid_payload=false,decode_attempted=false;int response=0;unsigned char *png=nullptr;size=0;
   if(client&&esp_http_client_open(client,0)==ESP_OK){
     const auto length=esp_http_client_fetch_headers(client);const int status=esp_http_client_get_status_code(client);response=status;
@@ -121,35 +142,39 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
     if(status==200&&length<=int64_t(MAX_PNG)){
       png=(unsigned char *)heap_caps_malloc(MAX_PNG,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
       if(png){int n=0;ok=true;
-        while(size<MAX_PNG){n=esp_http_client_read(client,(char *)png+size,int(fmin(size_t(4096),MAX_PNG-size)));if(n<0){ok=false;break;}if(!n)break;size+=n;}
+        while(size<MAX_PNG){if(cancelled()){ok=false;break;}n=esp_http_client_read(client,(char *)png+size,int(fmin(size_t(4096),MAX_PNG-size)));if(n<0){ok=false;break;}if(!n)break;size+=n;}
         ok=ok&&size>32&&esp_http_client_is_complete_data_received(client);
       }
     }
   }
   if(client){esp_http_client_close(client);esp_http_client_cleanup(client);}
-  unsigned char *test=nullptr;if(ok){decode_attempted=true;valid_payload=decode(png,size,&test);ok=valid_payload;}lv_mem_free(test);
+  unsigned char *test=nullptr;if(ok&&!cancelled()){decode_attempted=true;valid_payload=decode(png,size,&test);ok=valid_payload;}else ok=false;
   if(ok)ok=fwrite(png,1,size,out)==size&&fflush(out)==0&&fsync(fileno(out))==0;
   if(fclose(out))ok=false;
   if(ok&&remove(file)&&errno!=ENOENT)ok=false;
   if(ok)ok=rename(temporary,file)==0;
   if(!ok){
+    lv_mem_free(test);test=nullptr;
     const bool missing=response==404||response==410||(response==200&&decode_attempted&&!valid_payload);
     remove(temporary);heap_caps_free(png);png=nullptr;
     if(missing){misses[miss_slot]={z,x,y,now,true};miss_slot=(miss_slot+1)%12;}
-    else if(!backing_off){backoff_started=now;backoff_ms=10000;backing_off=true;}
+    else if(!cancelled()&&!backing_off){backoff_started=now;backoff_ms=10000;backing_off=true;}
   }
   // Bound demand from an interactive viewport; never prefetch adjacent regions.
 
+  if(decoded)*decoded=test;else lv_mem_free(test);
   return png;
 }
-static unsigned char *checked_png(const char *file,size_t &size){
+static unsigned char *checked_png(const char *file,size_t &size,unsigned char **decoded){
   auto *png=read_png(file,size);unsigned char *rgba=nullptr;
   if(!png)return nullptr;
-  const bool ok=decode(png,size,&rgba);lv_mem_free(rgba);
-  if(!ok){heap_caps_free(png);return nullptr;}return png;
+  const bool ok=decode(png,size,&rgba);
+  if(!ok){heap_caps_free(png);return nullptr;}
+  if(decoded)*decoded=rgba;else lv_mem_free(rgba);return png;
 }
 static Frame *render(const View &v,const Config &c){
-  waiting_clock=cache_full=false;
+  const auto begun=milliseconds();waiting_clock=cache_full=false;
+  if(!esp_sdcard_port_get_size())clear_tiles();
   auto *f=(Frame *)heap_caps_malloc(sizeof(Frame),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!f)return nullptr;new(f) Frame();f->view=v;f->source=source_hash(c);
   const size_t count=v.width*v.height;auto *pixels=(lv_color_t *)heap_caps_malloc(count*sizeof(lv_color_t),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
   if(!pixels){release(f);return nullptr;}
@@ -161,31 +186,39 @@ static Frame *render(const View &v,const Config &c){
     for(int tx=first_x;tx<=int(floor(double(left+int(v.width)-1)/256));++tx){
       if(wanted.load()!=v.generation){release(f);return nullptr;}
       if(ty<0||ty>=tiles){++f->missing;continue;}
-      size_t size=0;auto *png=obtain(c,v.zoom,unsigned((tx%tiles+tiles)%tiles),unsigned(ty),size);unsigned char *rgba=nullptr;
-      const bool ok=png&&decode(png,size,&rgba);heap_caps_free(png);
-      if(ok){++f->loaded;
+      const unsigned tile_x=unsigned((tx%tiles+tiles)%tiles),tile_y=unsigned(ty);
+      auto *tile=esp_sdcard_port_get_size()?cached_tile(f->source,v.zoom,tile_x,tile_y):nullptr;
+      unsigned char *rgba=nullptr;
+      if(!tile){size_t size=0;auto *png=obtain(c,v.zoom,tile_x,tile_y,size,&rgba,v.generation);heap_caps_free(png);
+        if(rgba)tile=keep_tile(f->source,v.zoom,tile_x,tile_y,rgba);
+      }
+      if(wanted.load()!=v.generation){lv_mem_free(rgba);release(f);return nullptr;}
+      if(tile||rgba){++f->loaded;
         const int dx=tx*256-left,dy=ty*256-top;
         for(int y=fmax(0,dy);y<int(v.height)&&y<dy+256;++y)for(int x=fmax(0,dx);x<int(v.width)&&x<dx+256;++x){
-          const auto *p=rgba+4*((y-dy)*256+x-dx);const unsigned alpha=p[3];
-          pixels[y*v.width+x]=lv_color_make((p[0]*alpha+230*(255-alpha))/255,(p[1]*alpha+230*(255-alpha))/255,(p[2]*alpha+230*(255-alpha))/255);
+          const unsigned i=(y-dy)*256+x-dx;
+          if(tile)pixels[y*v.width+x]=tile[i];
+          else {const auto *p=rgba+4*i;const unsigned a=p[3];pixels[y*v.width+x]=lv_color_make((p[0]*a+230*(255-a))/255,(p[1]*a+230*(255-a))/255,(p[2]*a+230*(255-a))/255);}
         }
       }else ++f->missing;
       lv_mem_free(rgba);
     }
   }
-  snprintf(f->status,sizeof(f->status),"z%u / %u tiles / %u missing%s",v.zoom,f->loaded,f->missing,!esp_sdcard_port_get_size()?" / SD unavailable":waiting_clock?" / clock sync":cache_full?" / cache reserve":"");return f;
+  snprintf(f->status,sizeof(f->status),"z%u / %u tiles / %u missing%s",v.zoom,f->loaded,f->missing,!esp_sdcard_port_get_size()?" / SD unavailable":waiting_clock?" / clock sync":cache_full?" / cache reserve":"");last_render_ms=milliseconds()-begun;return f;
 }
 static void worker(void *){
   uint32_t saved=0,last_save=0;uint64_t previous_source=0;
   for(;;){
-    portENTER_CRITICAL(&mux);const Config c=config;const uint32_t rev=revision,at=changed_ms;const bool work=queued&&!ready;View v=requested;if(work)queued=false;portEXIT_CRITICAL(&mux);
+    portENTER_CRITICAL(&mux);const Config c=config;const uint32_t rev=revision,at=changed_ms;const bool work=queued&&!ready&&!mcxpriority::ble_initializing.load();View v=requested;if(work)queued=false;portEXIT_CRITICAL(&mux);
     const uint32_t now=milliseconds();
     if(rev!=saved&&uint32_t(now-at)>700&&(!last_save||uint32_t(now-last_save)>5000)){last_save=now;nvs_handle_t h;
       if(nvs_open("mcx_map",NVS_READWRITE,&h)==ESP_OK){if(nvs_set_blob(h,"config",&c,sizeof(c))==ESP_OK&&nvs_commit(h)==ESP_OK){saved=rev;portENTER_CRITICAL(&mux);if(revision==rev)settings_saved=true;portEXIT_CRITICAL(&mux);}
         nvs_close(h);}
     }
-    if(work){if(source_hash(c)!=previous_source){for(auto &miss:misses)miss=Miss{};backing_off=false;previous_source=source_hash(c);}
-      auto *f=render(v,c);if(f&&wanted.load()==v.generation){portENTER_CRITICAL(&mux);ready=f;portEXIT_CRITICAL(&mux);}else release(f);}
+    if(work){mcxpriority::map_busy=true;
+      if(mcxpriority::ble_initializing.load()){mcxpriority::map_busy=false;continue;}
+      if(source_hash(c)!=previous_source){clear_tiles();for(auto &miss:misses)miss=Miss{};backing_off=false;previous_source=source_hash(c);}
+      auto *f=render(v,c);if(f&&wanted.load()==v.generation){portENTER_CRITICAL(&mux);ready=f;portEXIT_CRITICAL(&mux);}else release(f);mcxpriority::map_busy=false;}
     vTaskDelay(pdMS_TO_TICKS(50));
   }
 }
@@ -194,7 +227,7 @@ static bool start(){
   load_config();if(xTaskCreatePinnedToCore(worker,"mcx_map",6144,nullptr,1,&task,0)!=pdPASS){last_error=ESP_ERR_NO_MEM;return false;}return true;
 }
 static uint32_t request(View v){
-  if(v.zoom<3||v.zoom>19||v.width<64||v.width>480||v.height<64||v.height>220||!isfinite(v.latitude)||!isfinite(v.longitude))return 0;
+  if(v.zoom<3||v.zoom>19||v.width<64||v.width>480||v.height<64||v.height>286||!isfinite(v.latitude)||!isfinite(v.longitude))return 0;
   if(!start())return 0;
   v.generation=wanted.fetch_add(1)+1;
   portENTER_CRITICAL(&mux);requested=v;queued=true;portEXIT_CRITICAL(&mux);return v.generation;

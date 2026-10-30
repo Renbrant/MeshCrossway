@@ -16,6 +16,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
+#include "esp_bt.h"
+#include "meshcrossway_radio_priority.h"
 #include "esp_heap_caps.h"
 #include "nvs.h"
 #include "meshcrossway_meshcore.h"
@@ -628,16 +630,29 @@ static void debug_memory(const char *phase){
          (unsigned long)esp_get_free_heap_size());
   fflush(stdout);
 }
+// Separate SDK stages: nimble_port_init() collapses HCI allocation failures
+// into ESP_FAIL. Keep the actual stage visible; never retry partial host init.
+static const char *init_stage="not started";
+static esp_err_t initialize_stack(){
+  init_stage="controller init";
+  esp_bt_controller_config_t cfg=BT_CONTROLLER_INIT_CONFIG_DEFAULT();
+  esp_err_t rc=esp_bt_controller_init(&cfg);if(rc!=ESP_OK)return rc;
+  init_stage="controller enable";rc=esp_bt_controller_enable(ESP_BT_MODE_BLE);
+  if(rc!=ESP_OK){(void)esp_bt_controller_deinit();return rc;}
+  init_stage="host / HCI";rc=esp_nimble_init();
+  if(rc!=ESP_OK){(void)esp_bt_controller_disable();(void)esp_bt_controller_deinit();return rc;}
+  init_stage="host ready";return ESP_OK;
+}
 static void start_internal(){
   printf("[MCX-BLE] worker entered; heap=%lu\n",(unsigned long)esp_get_free_heap_size());
   debug_memory("before nimble");
   update(STARTING,"Initializing NimBLE in worker...");
-  const esp_err_t err=nimble_port_init();
-  printf("[MCX-BLE] nimble_port_init result=%d heap=%lu\n",(int)err,(unsigned long)esp_get_free_heap_size());
+  const esp_err_t err=initialize_stack();
+  printf("[MCX-BLE] init stage=%s result=%s (%d) heap=%lu\n",init_stage,esp_err_to_name(err),(int)err,(unsigned long)esp_get_free_heap_size());
   debug_memory("after nimble init");
   if(err!=ESP_OK){
     mcxhistory::ble_startup.store(false);
-    char msg[64];snprintf(msg,sizeof(msg),"NimBLE: %s (%d)",esp_err_to_name(err),(int)err);
+    char msg[96];snprintf(msg,sizeof(msg),"BLE %s: %s (%d); restart",init_stage,esp_err_to_name(err),(int)err);
     update(FAILED,msg);return;
   }
   (void)ble_att_set_preferred_mtu(517);
@@ -662,7 +677,13 @@ static void init_task(void *){
   // Never initialize controller/host in LVGL or the early app_main boot path.
   // A short delay allows LVGL, the Wi-Fi AP/STA and HTTP to become responsive.
   vTaskDelay(pdMS_TO_TICKS(500));
-  start_internal();
+  // In-flight HTTPS releases TLS/socket allocations before controller/HCI init.
+  for(unsigned wait=0;mcxpriority::map_busy.load()&&wait<80;++wait)vTaskDelay(pdMS_TO_TICKS(50));
+  if(mcxpriority::map_busy.load()){
+    mcxhistory::ble_startup.store(false);mcxpriority::ble_initializing=false;
+    update(FAILED,"Map worker busy; restart before BLE");vTaskDelete(nullptr);return;
+  }
+  start_internal();mcxpriority::ble_initializing=false;
   if(read_remembered()){
     RememberedPeer peer;portENTER_CRITICAL(&mux);peer=remembered;portEXIT_CRITICAL(&mux);
     if(peer.radio==MESHTASTIC){uint8_t id[7];id[0]=peer.addr_type&1;memcpy(id+1,peer.addr,6);meshmt::request_offline(id);}
@@ -676,11 +697,13 @@ static bool request_start(){
   if(!meshmt::init()){mcxhistory::ble_startup.store(false);update(FAILED,"No PSRAM for Meshtastic session");return false;}
   meshmc::send_frame=mc_write;meshmc::close_link=mc_close;
   meshmt::send_frame=mt_write;meshmt::can_write=mt_can_write;meshmt::pump_read=mt_pump_read;meshmt::close_link=mt_close;
+  mcxpriority::ble_initializing=true;
   debug_memory("BLE requested");
   update(STARTING,"BLE worker requested - standby...");
-  const BaseType_t created=xTaskCreate(init_task,"mcx_ble_init",6144,nullptr,tskIDLE_PRIORITY+1,nullptr);
+  const BaseType_t created=xTaskCreatePinnedToCore(init_task,"mcx_ble_init",6144,nullptr,tskIDLE_PRIORITY+1,nullptr,1);
   if(created!=pdPASS){
     mcxhistory::ble_startup.store(false);
+    mcxpriority::ble_initializing=false;
     update(FAILED,"No memory for BLE worker; restart");return false;
   }
   return true;

@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.8.1: independent MeshCore Companion and Meshtastic PhoneAPI.
+// MeshCrossway v0.8.2: independent MeshCore Companion and Meshtastic PhoneAPI.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -290,7 +290,7 @@ enum Action {
   A_MAP_HOME,A_INBOX,A_NEW,A_POSITION,A_NETWORKS,A_WIFI,A_POIS,A_TRACKS,A_RECORD,A_SHARE,
   A_GPS_SETTINGS,A_GNSS,A_TEAM,A_PATHS,A_SCANNER,A_PACKETS,A_REPEATERS,A_SETUP,A_DIAGNOSTIC,
   A_VIEW,A_PRIVACY,A_ABOUT,A_CHAT_MT,A_CHAT_MC,A_CHAT_ALL,A_QUICK,
-  A_NODES,A_GROUPS,A_CHAT_OPEN,A_RADIOS,A_GROUP_NEW,A_THREAD_INFO,A_NODE_DETAILS,A_BLE_SCAN,A_BLE_DISCONNECT,A_BLE_ENABLE,A_SETTINGS,A_RETURN_HOME
+  A_NODES,A_GROUPS,A_CHAT_OPEN,A_RADIOS,A_GROUP_NEW,A_THREAD_INFO,A_NODE_DETAILS,A_BLE_SCAN,A_BLE_DISCONNECT,A_BLE_ENABLE,A_SETTINGS,A_RETURN_HOME,A_MAP_ZOOM,A_MAP_CENTER,A_MAP_OPTIONS,A_MAP_DIAGNOSTICS
 };
 struct ActionInfo {const char *label;int id;lv_color_t color;};
 // No right rail on Home, Nodes, Groups or Settings. Those screens already
@@ -299,9 +299,9 @@ static const ActionInfo chat_actions[]={
   {"Compose",A_NEW,orange},{"Chat tools",A_PACKETS,cyan},{"Chat info",A_THREAD_INFO,purple}
 };
 static const ActionInfo map_actions[]={
-  {"Map view",A_MAP_HOME,orange},{"POIs",A_POIS,orange},{"Tracks",A_TRACKS,purple},
+  {"Zoom",A_MAP_ZOOM,orange},{"Center GPS",A_MAP_CENTER,orange},{"Map options",A_MAP_OPTIONS,orange},{"GNSS",A_GNSS,cyan},{"Map details",A_MAP_DIAGNOSTICS,cyan},{"Map view",A_MAP_HOME,orange},{"POIs",A_POIS,orange},{"Tracks",A_TRACKS,purple},
   {"Record",A_RECORD,red},{"Live share",A_SHARE,green},
-  {"GNSS",A_GNSS,cyan},{"Team",A_TEAM,orange}
+  {"Team",A_TEAM,orange}
 };
 static void draw(); // Forward-declared above Wi-Fi editor callbacks.
 static bool edge_swipe_click_in_progress();
@@ -404,6 +404,7 @@ static void notice(const char *title,const char *body_text){
 }
 namespace mcui {static void tools();static void compose();static void form(uint8_t);static void thread_info();static void chat_tools();static void show_list();}
 namespace mtui {static void tools();static void compose();static void node_details();static void close();}
+namespace navui {static void toggle_zoom();static bool adjusting();static void recenter(lv_event_t *);static void options(lv_event_t *);static void diagnostics();}
 static void run_action(void *data){
   int id=(int)(intptr_t)data;
   if(showing_mt()){
@@ -425,6 +426,14 @@ static void run_action(void *data){
   if(id==A_GROUPS||id==A_INBOX){page=2;draw();return;}
   if(id==A_CHAT_OPEN){page=3;draw();return;}
   if(id==A_GPS_SETTINGS){gps_settings_open();return;}
+  if(id==A_MAP_ZOOM||id==A_MAP_CENTER||id==A_MAP_OPTIONS||id==A_MAP_DIAGNOSTICS){
+    if(page!=4||map_view!=0){page=4;map_view=0;draw();}
+    if(id==A_MAP_ZOOM)navui::toggle_zoom();
+    else if(id==A_MAP_CENTER)navui::recenter(nullptr);
+    else if(id==A_MAP_OPTIONS)navui::options(nullptr);
+    else navui::diagnostics();
+    return;
+  }
   if(id==A_MAP_HOME){page=4;map_view=0;draw();return;}
   if(id==A_RADIOS){page=5;more_view=1;draw();return;}
   if(id==A_SETTINGS){page=5;more_view=0;draw();return;}
@@ -504,7 +513,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.8.1","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. Local GPS and XYZ maps; tracks and sharing remain previews.");break;
+      notice("MESH CROSSWAY v0.8.2","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. Local GPS and XYZ maps; tracks and sharing remain previews.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -711,6 +720,10 @@ static const char *context_glyph(int id){
     case A_NEW:return LV_SYMBOL_EDIT;
     case A_PACKETS:return LV_SYMBOL_LIST;
     case A_THREAD_INFO:return LV_SYMBOL_FILE;
+    case A_MAP_ZOOM:return LV_SYMBOL_PLUS;
+    case A_MAP_CENTER:return LV_SYMBOL_GPS;
+    case A_MAP_OPTIONS:return LV_SYMBOL_SETTINGS;
+    case A_MAP_DIAGNOSTICS:return LV_SYMBOL_FILE;
     case A_MAP_HOME:return LV_SYMBOL_GPS;
     case A_POIS:return LV_SYMBOL_HOME;
     case A_TRACKS:return LV_SYMBOL_LIST;
@@ -849,7 +862,7 @@ static void ble_show_pairing(){
 #include "meshcrossway_chat_view.h"
 #include "meshcrossway_meshcore_ui.h"
 #include "meshcrossway_meshtastic_ui.h"
-static bool touch_modal(){return wifi_dialog||wifi_editor||ble_dialog||info_dialog||shade||mcui::dialog||mtui::dialog;}
+static bool touch_modal(){return navui::adjusting()||wifi_dialog||wifi_editor||ble_dialog||info_dialog||shade||mcui::dialog||mtui::dialog;}
 static void reset_conversation_view(){mtui::conversation=false;mcui::conversation=false;}
 static bool showing_mt(){
   if(page==1)return nodes_filter!=2;
@@ -948,10 +961,10 @@ static void draw(){
   } else if(page==4){
     static const char *modes[]={"MAP / LOCAL GPS","POINTS OF INTEREST","SAVED TRACKS",
                                 "GNSS STATUS","TEAM POSITIONS","LIVE LOCATION SHARE"};
-    show_center_heading(modes[map_view],"Local GPS / OpenStreetMap XYZ");
+    if(map_view!=0)show_center_heading(modes[map_view],nullptr);
     if(map_view==0){
       navui::create(w);
-      gps_status=color_label(body,"",8,230,w-16,muted);lv_obj_set_style_text_font(gps_status,&lv_font_montserrat_10,0);gps_refresh(nullptr);
+
 
     }else if(map_view==1){
       center_card(8,58,w-16,66,"POI / DEMO","Camp Alpha  [sample]","Not saved to SD",orange);
@@ -1090,7 +1103,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.8.1] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.8.2] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1111,7 +1124,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.8.1] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.8.2] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1124,7 +1137,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.8.1",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.8.2",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,242,7,22,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,273,7,20,muted);
