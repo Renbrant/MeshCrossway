@@ -140,6 +140,11 @@ build_version() {
       python3 "$source_root/scripts/check_chat_memory.py" "$candidate_elf"
     done
   fi
+  if [ -f "$source_root/scripts/check_navigation_stack.py" ]; then
+    python3 "$source_root/scripts/check_navigation_stack.py" \
+      "$vendor/examples/esp-idf/02_lvgl_example/build" \
+      --header "$source_root/firmware/display-prototype/meshcrossway_navigation.h"
+  fi
   # Defaults are requests; only the generated file proves these choices took effect.
   if [ -f "$source_root/scripts/check_ble_sdkconfig.py" ]; then
     python3 "$source_root/scripts/check_ble_sdkconfig.py" \

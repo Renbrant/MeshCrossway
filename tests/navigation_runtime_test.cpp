@@ -20,9 +20,15 @@ static int httpd_query_key_value(const char *query,const char *key,char *out,siz
 #include "meshcrossway_navigation_http.h"
 struct StopTick {};
 static void step(){fake_delay_hook=[](unsigned){throw StopTick{};};try{mcxnav::worker(nullptr);}catch(StopTick&){}fake_delay_hook=nullptr;}
-int main(int argc,char **argv){assert(argc==2);lv_init();std::filesystem::create_directories(argv[1]);assert(mcxnav::start());assert(mcxnav::store->load(argv[1]));
+int main(int argc,char **argv){assert(argc==2);lv_init();std::filesystem::create_directories(argv[1]);// A failed internal stack allocation must leave a retryable service, not a
+ // phantom running task or reset. PSRAM state survives the retry.
+ fake_task_failure=true;assert(!mcxnav::start()&&!mcxnav::worker_task);
+ auto *retained_store=mcxnav::store;assert(retained_store);fake_task_failure=false;
+ assert(mcxnav::start()&&mcxnav::store==retained_store&&fake_task_stack==8192);
+ const auto calls=fake_task_calls;assert(mcxnav::start()&&fake_task_calls==calls);
+ assert(mcxnav::store->load(argv[1]));
  mcxgnss::latest.valid=true;mcxgnss::latest.latitude=39.9;mcxgnss::latest.longitude=-104.9;mcxgnss::latest.position_ms=lv_tick_get();
- assert(mcxnav::submit(mcxnav::START));step();assert(mcxnav::store->mode==mcxnav::RECORDING&&mcxnav::store->point_count==1);
+ assert(mcxnav::submit(mcxnav::START));step();assert(mcxnav::store->mode==mcxnav::RECORDING&&mcxnav::store->point_count==1);assert(mcxnav::stack_min.load()==2048);
  lv_tick_inc(2500);mcxgnss::latest.position_ms=lv_tick_get();mcxgnss::latest.latitude+=.0001;step();assert(mcxnav::store->point_count==2);
  const auto captured=mcxgnss::latest.latitude;assert(mcxnav::submit(mcxnav::SAVE_POI,0,"At button press"));mcxgnss::latest.latitude+=.01;step();assert(mcxnav::store->poi_count==1&&mcxnav::store->pois[0].point.latitude==captured);
  assert(mcxnav::submit(mcxnav::PAUSE));step();assert(mcxnav::store->mode==mcxnav::PAUSED);
