@@ -1,4 +1,4 @@
-**v0.8.3 experimental:** local tracks/GPX and POIs, map presets and revised controls. [Guide](../../docs/gps-navigation-v083.md). Hardware acceptance pending; v0.8.2 is the owner-tested recovery.
+**v0.8.4 experimental:** local tracks/GPX and POIs, map presets and revised controls. [Guide](../../docs/gps-navigation-v084.md). Hardware acceptance pending; v0.8.2 is the owner-tested recovery.
 
 **v0.8.1 candidate (experimental):** GPS header status, persistent local GPS settings and real XYZ PNG maps. [Configuration, SD tiles and limits](../../docs/maps-gps-v081.md). Map hardware acceptance pending; v0.7.8 recovery unchanged.
 

@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.8.3: independent MeshCore Companion and Meshtastic PhoneAPI.
+// MeshCrossway v0.8.4: independent MeshCore Companion and Meshtastic PhoneAPI.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -12,6 +12,7 @@
 #include <new>
 #include "meshcrossway_power_status.h"
 #include "meshcrossway_gnss.h"
+#include "meshcrossway_clock_runtime.h"
 #include "meshcrossway_map_tiles.h"
 #include "meshcrossway_navigation.h"
 #include "meshcrossway_chat_presentation.h"
@@ -265,6 +266,7 @@ static lv_obj_t *left_rail=nullptr,*right_rail=nullptr,*context_actions=nullptr;
 static lv_obj_t *context_scroll_track=nullptr,*context_scroll_thumb=nullptr;
 static lv_obj_t *top_wifi=nullptr,*top_mt=nullptr,*top_mc=nullptr;
 static lv_obj_t *top_mt_name=nullptr,*top_mc_name=nullptr,*top_charge=nullptr;
+static lv_obj_t *top_clock=nullptr;
 static lv_obj_t *top_battery=nullptr,*top_battery_fill=nullptr,*top_battery_percent=nullptr;
 static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
 static bool left_compact=true,right_compact=true;
@@ -518,7 +520,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.8.3","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. Local GPS and XYZ maps; tracks and sharing remain previews.");break;
+      notice("MESH CROSSWAY v0.8.4","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. Local GPS and XYZ maps; tracks and sharing remain previews.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -904,6 +906,12 @@ static bool showing_mt(){
 
 #include "meshcrossway_navigation_ui.h"
 static lv_obj_t *gps_position=nullptr,*gps_status=nullptr,*gps_extra=nullptr,*gps_icon=nullptr,*gps_satellites=nullptr;
+static void clock_refresh(lv_timer_t *){
+  mcxclock::poll(mcxgnss::snapshot(),mcxgnss::configuration());
+  char value[8];mcxclock::label(value,sizeof(value));
+  chatview::label(top_clock,value);
+  if(top_clock)lv_obj_set_style_text_color(top_clock,mcxclock::state.zone<0?muted:white,0);
+}
 static void gps_refresh(lv_timer_t *){
   const auto f=mcxgnss::snapshot();const auto cfg=mcxgnss::configuration();const auto diag=mcxgnss::status();char pos[96],state[120];
   if(gps_icon)lv_obj_set_style_text_color(gps_icon,!cfg.enabled?muted:f.valid?green:orange,0);
@@ -921,7 +929,7 @@ static void gps_refresh(lv_timer_t *){
   if(gps_extra){char detail[320],altitude[32]="--",speed[32]="--",utc[32]="unavailable";
     if(f.valid&&f.have_altitude)snprintf(altitude,sizeof(altitude),"%.1f %s",f.altitude*(cfg.imperial?3.28084:1),cfg.imperial?"ft":"m");
     if(f.valid&&f.have_speed)snprintf(speed,sizeof(speed),"%.1f %s",f.speed_kmh*(cfg.imperial?.621371:1),cfg.imperial?"mph":"km/h");
-    if(f.have_utc){time_t stamp=time_t(f.utc_epoch);struct tm t={};if(gmtime_r(&stamp,&t))strftime(utc,sizeof(utc),"%Y-%m-%d %H:%M:%S",&t);}
+    if(f.have_time){time_t stamp=time_t(f.utc_seconds);struct tm t={};if(gmtime_r(&stamp,&t))strftime(utc,sizeof(utc),"%Y-%m-%d %H:%M:%S",&t);}
     snprintf(detail,sizeof(detail),"Altitude %s / Speed %s\nPosition age %.1f s\nUART %u / %lu bytes / error %d\nNMEA %lu valid / %lu invalid\nUTC %s",altitude,speed,f.frames?double(uint32_t(esp_timer_get_time()/1000)-f.position_ms)/1000:0,diag.baud,(unsigned long)diag.bytes,diag.error,(unsigned long)f.frames,(unsigned long)f.errors,utc);chatview::label(gps_extra,detail);
   }
 }
@@ -1132,7 +1140,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_battery_percent,number);
     lv_obj_set_style_border_color(top_battery,present?
       (b.percent<=15?red:green):muted,0);
-    lv_obj_set_width(top_battery_fill,present?int(b.percent)*34/100:0);
+    lv_obj_set_width(top_battery_fill,present?int(b.percent)*30/100:0);
     lv_obj_set_style_bg_color(top_battery_fill,b.percent<=15?red:green,0);
     const char *charging=b.charging?LV_SYMBOL_CHARGE:
                          (b.valid&&b.usb_present?LV_SYMBOL_USB:"");
@@ -1140,7 +1148,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.8.3] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.8.4] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1161,7 +1169,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.8.3] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.8.4] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1174,25 +1182,28 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.8.3",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.8.4",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
-  top_wifi=color_label(top,LV_SYMBOL_WIFI,242,7,22,muted);
-  top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,273,7,20,muted);
-  top_mt_name=color_label(top,"MT",293,10,27,muted);
-  top_mc=color_label(top,LV_SYMBOL_BLUETOOTH,323,7,20,muted);
-  top_mc_name=color_label(top,"MC",343,10,27,muted);
-  gps_icon=color_label(top,LV_SYMBOL_GPS,373,9,15,muted);
-  gps_satellites=color_label(top,"--",389,10,17,muted);
+  top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
+  top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);
+  top_mt_name=color_label(top,"MT",267,10,21,muted);
+  top_mc=color_label(top,LV_SYMBOL_BLUETOOTH,291,8,13,muted);
+  top_mc_name=color_label(top,"MC",304,10,21,muted);
+  for(auto *small:{top_wifi,top_mt,top_mt_name,top_mc,top_mc_name})lv_obj_set_style_text_font(small,&lv_font_montserrat_10,0);
+  top_clock=color_label(top,"--:--",382,9,45,white);
+  lv_obj_set_style_text_font(top_clock,&lv_font_montserrat_14,0);
+  gps_icon=color_label(top,LV_SYMBOL_GPS,329,10,13,muted);
+  gps_satellites=color_label(top,"--",343,10,17,muted);
   lv_obj_set_style_text_font(gps_icon,&lv_font_montserrat_10,0);lv_obj_set_style_text_font(gps_satellites,&lv_font_montserrat_10,0);
-  top_charge=color_label(top,"",407,8,19,muted);
-  top_battery=panel_at(top,430,7,44,20,panel,2);
+  top_charge=color_label(top,"",365,10,13,muted);
+  top_battery=panel_at(top,435,11,36,13,panel,2);
   lv_obj_set_style_border_width(top_battery,1,0);
   lv_obj_set_style_border_color(top_battery,muted,0);
   lv_obj_set_style_radius(top_battery,3,0);
-  panel_at(top,475,13,4,8,muted,1);
-  top_battery_fill=panel_at(top_battery,3,3,0,14,green,1);
+  panel_at(top,472,15,3,5,muted,1);
+  top_battery_fill=panel_at(top_battery,2,2,0,9,green,1);
   lv_obj_set_style_bg_opa(top_battery_fill,LV_OPA_40,0);
-  top_battery_percent=color_label(top_battery,"--",2,1,40,white);
+  top_battery_percent=color_label(top_battery,"--",0,0,34,white);
   lv_obj_set_style_text_align(top_battery_percent,LV_TEXT_ALIGN_CENTER,0);
   lv_obj_set_style_text_font(top_battery_percent,&lv_font_montserrat_10,0);
   lv_label_set_long_mode(top_battery_percent,LV_LABEL_LONG_CLIP);
@@ -1228,6 +1239,8 @@ static void init(){
   mcxmap::load_config();
   mcxgnss::start();
   mcxnav::start();
+  clock_refresh(nullptr);
+  lv_timer_create(clock_refresh,1000,nullptr);
   lv_timer_create(gps_refresh,1000,nullptr);
   meshpower::start(); // Read-only 15s AXP2101 samples on a background task.
   mcxtouch::on_sample=buffered_swipe;

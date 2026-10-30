@@ -67,9 +67,13 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
-    elif version=="v0.8.3":
+    elif version=="v0.8.4":
         summary="EXPERIMENTAL: local SD track recording with pause/resume, journal recovery and GPX export; named POIs with map markers and GPX; reorganized matching contextual controls, map-style picker and automatic attribution. Physical acceptance pending. Install without Erase; v0.8.2 is the exact owner-confirmed recovery."
         label="Tracks + POIs + map controls / EXPERIMENTAL"
+        status="experimental"
+    elif version=="v0.8.3":
+        summary="EXPERIMENTAL / HARDWARE TEST PENDING: automatic GPS UTC clock, offline geographic timezone estimate with DST and saved manual override, compact HH:MM header and smaller battery. Clock keeps running through GPS loss; cached timezone survives reboot. Install without Erase; v0.8.2 remains exact recovery."
+        label="GPS clock + offline time zones + compact battery / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.8.2":
         summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: full-height map, contextual controls, toggle zoom slider with release-to-load and immediate preview, discreet attribution, decoded PSRAM tile cache and BLE host PSRAM allocation with startup diagnostics. Install without Erase; v0.7.8 remains recovery."

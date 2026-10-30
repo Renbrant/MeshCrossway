@@ -1,4 +1,4 @@
-# v0.8.3 — local tracks, POIs and map controls
+# v0.8.4 — local tracks, POIs and map controls
 
 ## Confirmed recovery
 
@@ -108,3 +108,5 @@ OpenTopoMap TLS/tiles, and responsive BLE/touch/Wi-Fi during recording. Monitor
 internal RAM and the new 4096-byte navigation-worker stack; bulk state is in
 PSRAM. Routes and POIs never transmit automatically on either mesh network.
 No bridge, relay, conversion, cross-send or automatic GPX sharing is introduced.
+
+The v0.8.4 integration preserves the v0.8.3 GPS clock/timezone feature and shares its `utc_seconds`/`have_time` receiver fields rather than introducing a second UTC parser.

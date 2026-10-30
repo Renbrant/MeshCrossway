@@ -3,6 +3,7 @@
 #include "meshcrossway_gnss_parser.h"
 #include "meshcrossway_gnss_settings.h"
 #include "meshcrossway_navigation_store.h"
+#include "meshcrossway_clock_runtime.h"
 #include <cassert>
 #include <cstdio>
 #include <cstring>
@@ -44,7 +45,7 @@ static void on_action(lv_event_t *e){clicked=int(intptr_t(lv_event_get_user_data
 // PRODUCTION_CONTEXT
 #include "meshcrossway_navigation_ui.h"
 static void draw(){navui::invalidate();lv_obj_clean(body);navui::after_clean();navui::create(lv_obj_get_width(body));}
-static lv_obj_t *gps_position=nullptr,*gps_status=nullptr,*gps_extra=nullptr,*gps_icon=nullptr,*gps_satellites=nullptr,*top_charge=nullptr;
+static lv_obj_t *gps_position=nullptr,*gps_status=nullptr,*gps_extra=nullptr,*gps_icon=nullptr,*gps_satellites=nullptr,*top_charge=nullptr,*top_clock=nullptr;
 static lv_obj_t *color_label(lv_obj_t *p,const char *s,int x,int y,int w,lv_color_t c){return single_label(p,s,x,y,w,c);}
 // PRODUCTION_GPS_REFRESH
 }
@@ -135,6 +136,11 @@ int main(int argc,char **argv){
  current=mcxmap::requested;mcxmap::ready=mcxmap::render(current,restore);navui::poll();assert(lv_img_get_zoom(navui::picture)==256);
  const double before=navui::longitude;pointer_x=210;pointer_y=150;down=true;advance();for(int x=215;x<=265;x+=5){pointer_x=x;advance(35);}down=false;advance();assert(!navui::following&&navui::longitude<before);
  gpsui::open();advance();assert(gpsui::enabled_button);tap(gpsui::enabled_button);assert(!mcxgnss::configuration().enabled);tap(gpsui::baud_button);assert(mcxgnss::configuration().baud==9600);tap(gpsui::timeout_button);assert(mcxgnss::configuration().timeout_ms==5000);
+ gpsui::clock_settings(nullptr);advance();assert(gpsui::clock_status);
+ auto *zone_picker=lv_obj_get_child(info_dialog,3);assert(lv_obj_check_type(zone_picker,&lv_dropdown_class));
+ lv_dropdown_set_selected(zone_picker,1);lv_event_send(zone_picker,LV_EVENT_VALUE_CHANGED,nullptr);
+ assert(mcxclock::selection(mcxgnss::configuration())==1);
+ for(unsigned i=0;i<lv_obj_get_child_cnt(info_dialog);++i){lv_area_t a;lv_obj_get_coords(lv_obj_get_child(info_dialog,i),&a);assert(a.x1>=0&&a.x2<480&&a.y1>=0&&a.y2<320);}
  gpsui::map_options();advance();assert(gpsui::provider_picker&&gpsui::online_switch);
  lv_dropdown_set_selected(gpsui::provider_picker,1);lv_event_send(gpsui::provider_picker,LV_EVENT_VALUE_CHANGED,nullptr);
  assert(mcxmap::provider(mcxmap::configuration())==mcxmap::TOPO&&strstr(mcxmap::configuration().attribution,"OpenTopoMap"));

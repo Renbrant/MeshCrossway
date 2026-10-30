@@ -26,3 +26,19 @@ Product photographs, vendor CAD, map data and other third-party assets retain th
 ## Meshtastic PhoneAPI research for v0.7.12
 
 The new Meshtastic codec, session, UI and store are original MeshCrossway code. No Meshtastic `.proto`, generated bindings or firmware/client source is linked or redistributed. The GPL-3.0 protocol/firmware sources were consulted only to understand interoperability. Exact reviewed revisions, paths and official documentation are recorded in [Meshtastic integration provenance](docs/meshtastic-v0712.md#primary-references-and-provenance). The user's T-Deck firmware remains independently installed.
+
+## Offline timezone lookup and rules
+
+`firmware/display-prototype/timezone/zone_data.h` contains a C++ adaptation of
+[PhotoStructure tz-lookup](https://github.com/photostructure/tz-lookup), derived
+from Dark Sky's implementation. Code and compact lookup data are offered under
+CC0-1.0; see `LICENSES/tz-lookup-CC0-1.0.txt`. Geographic input originates from
+[timezone-boundary-builder](https://github.com/evansiroky/timezone-boundary-builder)
+and © OpenStreetMap contributors (ODbL). The generated compact geographic table
+and regeneration script are distributed in source form here. Attribution:
+https://www.openstreetmap.org/copyright and https://opendatacommons.org/licenses/odbl/1-0/.
+
+IANA TZ Database recurring POSIX rules were extracted from the official Python
+`tzdata` wheel, version and hashes recorded in the generated header. IANA timezone
+data is public domain; no country outline or timezone rule is original
+MeshCrossway data. Geographic lookup is approximate, as documented upstream.
