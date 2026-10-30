@@ -155,9 +155,9 @@ build_version() {
 # Only one physical rollback and recent candidates are delivered in the Web Flasher.
 # Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
 # Update these two constants whenever the owner validates a newer hardware build.
-STABLE_VERSION="v0.7.8"
-STABLE_REF="40788ccc2e1ebec1b79e0183f42bdb793d7f0a74"
-STABLE_SHA256="483b7da13ddb8c394ecb20bd92d312cb707c59a5ed538016fb7be10399432d45"
+STABLE_VERSION="v0.8.2"
+STABLE_REF="72abc3bed5353319f6c32a15781d0e419b6937d7"
+STABLE_SHA256="60aa1e431ffaf5270130608a6ad401e017b1b0f3822933e36485c7066790256c"
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).

@@ -25,6 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit owner approval.
 approved={
+    "v0.8.2":("Owner confirmed GPS/map and Bluetooth working after hardware restart and selected v0.8.2 as rollback. Exact published firmware bytes retained.", "Owner-tested / recommended recovery"),
     "v0.7.8":("Owner confirmed v0.7.8 works perfectly on Waveshare and explicitly chose it as recovery baseline on 2026-10-29; firmware bytes must remain unchanged.", "Owner-tested / recommended recovery"),
     "v0.6.8":("Owner confirmed normal operation and PIN-free manual web screenshots. Exact published image retained. MeshCore application traffic was not implemented in this release.", "Hardware-tested UI / screenshot rollback"),
     "v0.6.2":("Owner confirmed touchscreen, Wi-Fi and normal UI work on the Waveshare Rev2.0; confirmed working after v0.6.3 failed.", "Last hardware-tested / recommended"),
@@ -66,6 +67,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.3":
+        summary="EXPERIMENTAL / HARDWARE TEST PENDING: automatic GPS UTC clock, offline geographic timezone estimate with DST and saved manual override, compact HH:MM header and smaller battery. Clock keeps running through GPS loss; cached timezone survives reboot. Install without Erase; v0.8.2 remains exact recovery."
+        label="GPS clock + offline time zones + compact battery / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.2":
         summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: full-height map, contextual controls, toggle zoom slider with release-to-load and immediate preview, discreet attribution, decoded PSRAM tile cache and BLE host PSRAM allocation with startup diagnostics. Install without Erase; v0.7.8 remains recovery."
         label="Full map + zoom slider + BLE startup / EXPERIMENTAL"
