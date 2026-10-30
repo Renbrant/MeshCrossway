@@ -208,8 +208,29 @@ static void refresh(){
   if(units_button)chatview::label(lv_obj_get_child(units_button,0),c.imperial?"Units: ft / mph":"Units: m / km/h");
 }
 static void base(const char *title){
-  info_close_now(nullptr);dialog=info_dialog=panel_at(lv_layer_top(),10,26,460,286,bg,0);
-  single_label(dialog,title,8,8,330,orange);action_button(dialog,"CLOSE",358,2,96,32,panel2,info_close,0);
+  info_close_now(nullptr);
+  dialog=info_dialog=panel_at(body,0,0,lv_obj_get_width(body),286,bg,0);
+  navigation_panel=true;
+  lv_obj_add_flag(dialog,LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_set_scroll_dir(dialog,LV_DIR_VER);
+  lv_obj_set_flex_flow(dialog,LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_style_pad_all(dialog,8,0);
+  lv_obj_set_style_pad_row(dialog,10,0);
+  single_label(dialog,title,0,0,lv_obj_get_width(body)-16,orange);
+  // Apply after the page builder has populated its controls. Flex layout keeps
+  // every control inside the centre column while both navigation rails remain live.
+  lv_async_call([](void *object){
+    if(object!=info_dialog||!navigation_panel)return;
+    auto *parent=static_cast<lv_obj_t *>(object);
+    const int width=lv_obj_get_width(body)-16;
+    for(unsigned i=0;i<lv_obj_get_child_cnt(parent);++i){
+      auto *child=lv_obj_get_child(parent,i);lv_obj_set_width(child,width);
+      if(lv_obj_check_type(child,&lv_label_class)){
+        lv_label_set_long_mode(child,LV_LABEL_LONG_WRAP);
+        lv_obj_set_height(child,LV_SIZE_CONTENT);
+      }
+    }
+  },dialog);
   map_save_label=clock_status=nav_detail=nullptr;nav_dialog=0;
   metrics_label=status_label=enabled_button=baud_button=timeout_button=units_button=nullptr;
   edit_value=edit_keyboard=edit_notice=nullptr;

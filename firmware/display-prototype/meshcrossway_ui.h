@@ -269,6 +269,7 @@ static lv_obj_t *top_mt_name=nullptr,*top_mc_name=nullptr,*top_charge=nullptr;
 static lv_obj_t *top_clock=nullptr;
 static lv_obj_t *top_battery=nullptr,*top_battery_fill=nullptr,*top_battery_percent=nullptr;
 static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
+static bool navigation_panel=false;
 static bool left_compact=true,right_compact=true;
 static int nodes_filter=0,groups_filter=0,chats_filter=0,active_thread=-1,more_view=0;
 static int active_chat_network=2; // 1 Meshtastic, 2 MeshCore; never infer a send protocol from text.
@@ -386,7 +387,7 @@ static void update_nav_vector(int index,lv_color_t tint){
 }
 static void info_close_now(void *){
   if(!info_dialog)return;
-  lv_obj_t *old=info_dialog;info_dialog=nullptr;lv_obj_del(old);
+  lv_obj_t *old=info_dialog;info_dialog=nullptr;navigation_panel=false;lv_obj_del(old);
 }
 static void info_close(lv_event_t *){lv_async_call(info_close_now,nullptr);}
 static void close_shade(){
@@ -608,7 +609,7 @@ static void edge_swipe_poll(lv_timer_t *){
   // ESP-IDF's pinned LVGL 8.4 has no lv_indev_get_state() API (LVGL 9 only).
   // The v8 public lv_hal_indev.h exposes the current state in proc.state.
   const bool pressed=swipe_pointer->proc.state==LV_INDEV_STATE_PRESSED;
-  const bool modal=wifi_dialog||wifi_editor||ble_dialog||info_dialog||shade;
+  const bool modal=wifi_dialog||wifi_editor||ble_dialog||(info_dialog&&!navigation_panel)||shade;
   const int lw=has_left_rail()?(left_compact?40:79):0;
   const int rw=has_context_rail()?(right_compact?40:125):0;
   const mcxswipe::Result gesture=mcxswipe::sample(
@@ -895,7 +896,7 @@ static void ble_show_pairing(){
 #include "meshcrossway_chat_view.h"
 #include "meshcrossway_meshcore_ui.h"
 #include "meshcrossway_meshtastic_ui.h"
-static bool touch_modal(){return navui::adjusting()||wifi_dialog||wifi_editor||ble_dialog||info_dialog||shade||mcui::dialog||mtui::dialog;}
+static bool touch_modal(){return navui::adjusting()||wifi_dialog||wifi_editor||ble_dialog||(info_dialog&&!navigation_panel)||shade||mcui::dialog||mtui::dialog;}
 static void reset_conversation_view(){mtui::conversation=false;mcui::conversation=false;}
 static bool showing_mt(){
   if(page==1)return nodes_filter!=2;
@@ -981,6 +982,7 @@ static void draw(){
       update_nav_vector(i,tint);
     }
   }
+  if(navigation_panel)info_close_now(nullptr);
   navui::invalidate();
   gps_position=gps_status=gps_extra=nullptr;
   lv_obj_add_flag(body,LV_OBJ_FLAG_SCROLLABLE);

@@ -27,6 +27,7 @@ static bool submit(Action a,uint32_t id=0,const char *name=nullptr){last_action=
 namespace meshcrossway {
 static int page=4,map_view=0;static void draw();
 static lv_obj_t *body=nullptr,*info_dialog=nullptr;
+static bool navigation_panel=false;
 static const lv_color_t purple=lv_color_hex(0x9C88FF);
 static const lv_color_t green=lv_color_hex(0x72D8A5);
 static const lv_color_t bg=lv_color_hex(0x090C10),panel2=lv_color_hex(0x242B34),orange=lv_color_hex(0xFF8A24),white=lv_color_hex(0xF2F4F7),muted=lv_color_hex(0x9AA6B4),cyan=lv_color_hex(0x6CBDE6),red=lv_color_hex(0xFF7777);
@@ -137,17 +138,17 @@ int main(int argc,char **argv){
  const double before=navui::longitude;pointer_x=210;pointer_y=150;down=true;advance();for(int x=215;x<=265;x+=5){pointer_x=x;advance(35);}down=false;advance();assert(!navui::following&&navui::longitude<before);
  gpsui::open();advance();assert(gpsui::enabled_button);tap(gpsui::enabled_button);assert(!mcxgnss::configuration().enabled);tap(gpsui::baud_button);assert(mcxgnss::configuration().baud==9600);tap(gpsui::timeout_button);assert(mcxgnss::configuration().timeout_ms==5000);
  gpsui::clock_settings(nullptr);advance();assert(gpsui::clock_status);
- auto *zone_picker=lv_obj_get_child(info_dialog,3);assert(lv_obj_check_type(zone_picker,&lv_dropdown_class));
+ auto *zone_picker=lv_obj_get_child(info_dialog,2);assert(lv_obj_check_type(zone_picker,&lv_dropdown_class));
  lv_dropdown_set_selected(zone_picker,1);lv_event_send(zone_picker,LV_EVENT_VALUE_CHANGED,nullptr);
  assert(mcxclock::selection(mcxgnss::configuration())==1);
- for(unsigned i=0;i<lv_obj_get_child_cnt(info_dialog);++i){lv_area_t a;lv_obj_get_coords(lv_obj_get_child(info_dialog,i),&a);assert(a.x1>=0&&a.x2<480&&a.y1>=0&&a.y2<320);}
+ for(unsigned i=0;i<lv_obj_get_child_cnt(info_dialog);++i){lv_area_t a;lv_obj_get_coords(lv_obj_get_child(info_dialog,i),&a);assert(a.x1>=40&&a.x2<440);}
  gpsui::map_options();advance();assert(gpsui::provider_picker&&gpsui::online_switch);
  lv_dropdown_set_selected(gpsui::provider_picker,1);lv_event_send(gpsui::provider_picker,LV_EVENT_VALUE_CHANGED,nullptr);
  assert(mcxmap::provider(mcxmap::configuration())==mcxmap::TOPO&&strstr(mcxmap::configuration().attribution,"OpenTopoMap"));
  lv_obj_clear_state(gpsui::online_switch,LV_STATE_CHECKED);lv_event_send(gpsui::online_switch,LV_EVENT_VALUE_CHANGED,nullptr);assert(!mcxmap::configuration().online);
  gpsui::new_poi();advance();lv_textarea_set_text(gpsui::poi_name,"Trail start");gpsui::save_poi(nullptr);assert(mcxnav::last_action==mcxnav::SAVE_POI&&!strcmp(mcxnav::last_name,"Trail start"));
  gpsui::recording();advance();
- for(unsigned i=0;i<4;++i){tap(lv_obj_get_child(gpsui::dialog,i+3));assert(mcxnav::last_action==mcxnav::Action(i+1));}
+ for(unsigned i=0;i<4;++i){auto *button=lv_obj_get_child(gpsui::dialog,i+2);lv_obj_scroll_to_view(button,LV_ANIM_OFF);advance();tap(button);assert(mcxnav::last_action==mcxnav::Action(i+1));}
  gpsui::library(true);advance();assert(info_dialog);gpsui::library(false);advance();assert(info_dialog);
  gpsui::map_diagnostics();advance();assert(info_dialog);gpsui::map_credits();advance();assert(info_dialog);
  info_close_now(nullptr);navui::invalidate();lv_obj_clean(body);navui::after_clean();assert(!navui::front);

@@ -168,6 +168,7 @@ enum Stage{PROTOCOL,HISTORY};struct Scope{explicit Scope(Stage){}};
 static void sample_ui_stack(){}
 }
 static lv_obj_t *body=nullptr,*wifi_dialog=nullptr,*info_dialog=nullptr;
+static bool navigation_panel=false;
 static int page=1,nodes_filter=0,groups_filter=0,chats_filter=0,redraws=0,active_chat_network=2;
 static const lv_color_t green=lv_color_hex(0x72D8A5);
 static int content_width(){return 400;}

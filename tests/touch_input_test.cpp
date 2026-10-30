@@ -1,3 +1,4 @@
+static bool navigation_panel=false;
 // Compiled against real LVGL 8.4 and the production input adapter. Only the
 // hardware/RTOS boundary is mocked; samples model physical acquisition times.
 #include "lvgl.h"
