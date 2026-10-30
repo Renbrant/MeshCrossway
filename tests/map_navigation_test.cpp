@@ -21,7 +21,8 @@ static Fix snapshot(){return fix;}
 namespace mcxnav {
 static Snapshot mock_state;static Action last_action=NONE;static uint32_t last_id=0;static char last_name[40]={};
 static bool start(){return true;}
-static bool enqueue(const Command &c){last_action=c.action;last_id=c.id;return true;}
+static Command last_command;
+static bool enqueue(const Command &c){last_action=c.action;last_id=c.id;last_command=c;return true;}
 static bool snapshot(Snapshot &s){s=mock_state;return true;}
 static bool submit(Action a,uint32_t id=0,const char *name=nullptr){last_action=a;last_id=id;if(name)snprintf(last_name,sizeof(last_name),"%s",name);return a!=SAVE_POI||mcxgnss::fix.valid;}
 }
@@ -150,6 +151,13 @@ int main(int argc,char **argv){
  gpsui::new_poi();advance();lv_textarea_set_text(gpsui::poi_name,"Trail start");gpsui::save_poi(nullptr);assert(mcxnav::last_action==mcxnav::SAVE_POI&&!strcmp(mcxnav::last_name,"Trail start"));
  gpsui::recording();advance();
  for(unsigned i=0;i<4;++i){auto *button=lv_obj_get_child(gpsui::dialog,i+2);lv_obj_scroll_to_view(button,LV_ANIM_OFF);advance();tap(button);assert(mcxnav::last_action==mcxnav::Action(i+1));}
+ gpsui::preset_list();advance();assert(navigation_panel&&lv_obj_get_parent(gpsui::dialog)==body);
+ lv_event_send(lv_obj_get_child(gpsui::dialog,1),LV_EVENT_CLICKED,nullptr);advance();
+ gpsui::setting_editor(1);advance();lv_textarea_set_text(gpsui::setting_value,"0");gpsui::setting_apply();assert(strstr(lv_label_get_text(gpsui::nav_detail),"3-1000"));
+ lv_textarea_set_text(gpsui::setting_value,"25");gpsui::setting_apply();advance();assert(gpsui::preset_draft.distance_m==25);
+ gpsui::setting_editor(2);advance();lv_textarea_set_text(gpsui::setting_value,"8");gpsui::setting_apply();advance();
+ lv_event_send(lv_obj_get_child(gpsui::dialog,4),LV_EVENT_CLICKED,nullptr);assert(mcxnav::last_command.action==mcxnav::SAVE_PRESET&&mcxnav::last_command.value==1&&mcxnav::last_command.distance_m==25&&mcxnav::last_command.interval_s==8);
+ gpsui::setting_track=1;gpsui::setting_editor(3);advance();lv_textarea_set_text(gpsui::setting_value,"12ABCD");gpsui::setting_apply();advance();assert(mcxnav::last_command.action==mcxnav::SET_COLOR&&mcxnav::last_command.value==0x12ABCD&&!gpsui::setting_value);
  gpsui::library(true);advance();assert(info_dialog);gpsui::library(false);advance();assert(info_dialog);
  gpsui::map_diagnostics();advance();assert(info_dialog);gpsui::map_credits();advance();assert(info_dialog);
  info_close_now(nullptr);navui::invalidate();lv_obj_clean(body);navui::after_clean();assert(!navui::front);
