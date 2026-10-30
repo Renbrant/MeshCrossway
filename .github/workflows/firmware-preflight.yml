@@ -126,6 +126,7 @@ jobs:
           python3 scripts/test_ble_sdkconfig.py
           python3 scripts/test_ble_resume.py
           python3 scripts/test_runtime_diagnostics.py
+          python3 scripts/test_remote_chat.py
           python3 scripts/test_conversations_history.py
           python3 scripts/test_meshtastic.py
           python3 scripts/test_meshcore.py

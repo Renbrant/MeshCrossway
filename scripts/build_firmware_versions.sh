@@ -87,6 +87,9 @@ build_version() {
     echo "::error::Expected $version but source VERSION is $recorded"
     exit 1
   fi
+  if [ -f "$source_root/scripts/test_remote_chat.py" ]; then
+    python3 "$source_root/scripts/test_remote_chat.py"
+  fi
   if [ -f "$source_root/scripts/test_conversations_history.py" ]; then
     python3 "$source_root/scripts/test_conversations_history.py"
   fi
@@ -160,9 +163,9 @@ build_version() {
 # Only one physical rollback and recent candidates are delivered in the Web Flasher.
 # Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
 # Update these two constants whenever the owner validates a newer hardware build.
-STABLE_VERSION="v0.8.2"
-STABLE_REF="72abc3bed5353319f6c32a15781d0e419b6937d7"
-STABLE_SHA256="60aa1e431ffaf5270130608a6ad401e017b1b0f3822933e36485c7066790256c"
+STABLE_VERSION="v0.8.9"
+STABLE_REF="172f4c2f406d72d3ac3651d55eb5a1b6e3e068e0"
+STABLE_SHA256="2adcdebdc91902b2ce0a2e36439dd8162b92ab96e1a3129e9400440e839709d6"
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).

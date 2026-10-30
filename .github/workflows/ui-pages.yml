@@ -101,7 +101,7 @@ jobs:
       - name: Verify selectable manifests and binaries
         run: |
           set -euo pipefail
-          python3 scripts/verify_firmware_version.py --dir _site/flasher/firmware/versions/v0.8.2 --version v0.8.2 --ref 72abc3bed5353319f6c32a15781d0e419b6937d7
+          python3 scripts/verify_firmware_version.py --dir _site/flasher/firmware/versions/v0.8.9 --version v0.8.9 --ref 172f4c2f406d72d3ac3651d55eb5a1b6e3e068e0
           python3 scripts/preflight_firmware_catalog.py --catalog _site/flasher/firmware/catalog.json
           python3 scripts/verify_firmware_version.py --dir "_site/flasher/firmware/versions/$(cat firmware/display-prototype/VERSION)" --version "$(cat firmware/display-prototype/VERSION)"
       - name: Verify embedded firmware UI version
