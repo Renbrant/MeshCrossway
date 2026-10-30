@@ -35,7 +35,7 @@ static void vTaskDelay(unsigned){if(owner_poll)mcxremotechat::poll();}
 #define pdMS_TO_TICKS(n) (n)
 #include "remote_http.h"
 using namespace mcxremotechat;
-static std::string snapshot(const char *network,const char *target="",unsigned page=0){Request r;strcpy(r.network,network);strcpy(r.target,target);r.page=page;work->request=r;phase=1;poll();assert(phase==3);auto out=std::string(work->response,work->length);phase=0;return out;}
+static std::string snapshot(const char *network,const char *target="",unsigned page=0,unsigned category=0){Request r;strcpy(r.network,network);strcpy(r.target,target);r.page=page;r.category=category;work->request=r;phase=1;poll();assert(phase==3);auto out=std::string(work->response,work->length);phase=0;return out;}
 static httpd_req_t submit(const std::string &net,const std::string &target,const std::string &text,const std::string &header="1"){
  httpd_req_t r;r.body=net+'|'+target+'|'+text;r.content_len=r.body.size();r.header=header;send(&r);return r;
 }
@@ -50,7 +50,10 @@ int main(){
  auto k=mcxchat::key_for(c,false,0);char alice[65];mc_token(k,alice);char repeated[65];mc_token(k,repeated);assert(!strcmp(alice,repeated));
  auto &rx=c.append();memcpy(rx.key,c.contacts[0].key,6);strcpy(rx.text,"Olá \"friend\" | 😀\n<script>alert(1)</script>");
  auto &bob=c.append();memcpy(bob.key,c.contacts[1].key,6);strcpy(bob.text,"Bob private text");
- auto body=snapshot("mc",alice);assert(body.find("Olá")!=body.npos&&body.find("Bob private text")==body.npos&&body.find("private-channel!")==body.npos);puts(body.c_str());
+ auto body=snapshot("mc",alice);assert(body.find("Olá")!=body.npos&&body.find("Bob private text")==body.npos&&body.find("private-channel!")==body.npos);puts(body.c_str());assert(rx.read&&!bob.read);
+ auto groups=snapshot("mc","",0,2);assert(groups.find("Trail")!=groups.npos&&groups.find("Alice")==groups.npos);
+ auto nodes=snapshot("mc","",0,3);assert(nodes.find("Alice")!=nodes.npos&&nodes.find("Trail")==nodes.npos);
+ auto chats=snapshot("mc","",0,1);assert(chats.find("Alice")!=chats.npos&&chats.find("Trail")==chats.npos);
  auto bad=submit("mc",alice,"Hi","");assert(bad.status=="403 Forbidden"&&c.qcount==0);
  bad=submit("xx",alice,"Hi");assert(bad.status=="400 Bad Request");
  bad=submit("mc",alice,std::string(151,'x'));assert(bad.status=="409 Conflict"&&c.qcount==0);

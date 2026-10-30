@@ -209,9 +209,8 @@ static void scan(bool automatic=false){
   if(rc==0)update(SCANNING,automatic?"Finding last paired radio...":"Searching nearby BLE radios...");
   else {auto_scan=false;char msg[64];snprintf(msg,sizeof(msg),"Scan error: %d",rc);update(FAILED,msg);}
 }
-static void connect(int index){
+static void connect_selected(const Peer &peer,int index){
   const Snapshot found=snapshot();
-  if(index<0||index>=found.count)return;
   if(found.phase==READY||found.phase==PAIRING||found.phase==VERIFYING||found.phase==CONNECTING)return;
   (void)ble_gap_disc_cancel();
   identified=UNKNOWN;mc_start=mc_end=mc_rx=mc_tx=mc_cccd=0;mc_transport_started=false;meshmc::transport_down();
@@ -219,11 +218,22 @@ static void connect(int index){
   portENTER_CRITICAL(&mux);
   state.selected=index;state.radio=UNKNOWN;state.paired=false;state.bonded=false;
   state.pin_required=false;state.confirm_required=false;
-  snprintf(state.active_name,sizeof(state.active_name),"%s",found.peers[index].name);
+  snprintf(state.active_name,sizeof(state.active_name),"%s",peer.name);
   portEXIT_CRITICAL(&mux);
   update(CONNECTING,"Connecting to BLE radio...");
-  const int rc=ble_gap_connect(own_addr,&found.peers[index].addr,20000,nullptr,gap_event,nullptr);
+  const int rc=ble_gap_connect(own_addr,&peer.addr,20000,nullptr,gap_event,nullptr);
   if(rc){char msg[64];snprintf(msg,sizeof(msg),"Connect error: %d",rc);update(FAILED,msg);}
+}
+static void connect(int index){
+  const Snapshot found=snapshot();if(index<0||index>=found.count)return;
+  connect_selected(found.peers[index],index);
+}
+static void connect_peer(const Peer &expected){
+  // Keep the verified address across asynchronous scan-table changes.
+  const Snapshot found=snapshot();int index=-1;
+  for(unsigned i=0;i<found.count;++i)if(found.peers[i].addr.type==expected.addr.type&&!memcmp(found.peers[i].addr.val,expected.addr.val,6)){index=int(i);break;}
+  if(index<0){return;}
+  connect_selected(expected,index);
 }
 static bool reconnect_remembered(){
   if(auto_paused.load()||!synced||conn!=BLE_HS_CONN_HANDLE_NONE)return false;

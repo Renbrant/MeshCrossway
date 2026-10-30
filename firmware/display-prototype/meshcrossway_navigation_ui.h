@@ -325,9 +325,19 @@ static void open(){
   single_label(dialog,"RX44 / TX43 fixed. Reading OFF does not power off GPS.",8,216,440,muted);
   action_button(dialog,"CLOCK / TIME ZONE",8,241,440,34,panel2,clock_settings,0);refresh();
 }
+static uint32_t library_folder=0xffffffffu,folder_filter_ids[mcxnav::MAX_FOLDERS+2]={},folder_move_ids[mcxnav::MAX_FOLDERS+1]={};
+static lv_obj_t *folder_value=nullptr,*folder_owner=nullptr,*folder_save=nullptr;
+static uint32_t folder_edit_id=0,folder_revision=0;static mcxnav::Action folder_action=mcxnav::NONE;static bool folder_waiting=false;static char folder_expected[32]={};
 static void nav_refresh(){
   if(!navui::nav_state||!dialog||dialog!=info_dialog)return;
   const auto &s=*navui::nav_state;
+  if(nav_dialog==9&&folder_waiting){bool done=false;
+    if(folder_action==mcxnav::DELETE_FOLDER){done=true;for(const auto &f:s.folders)if(f.id==folder_edit_id)done=false;}
+    else for(const auto &f:s.folders)if(f.id&&(!folder_edit_id||f.id==folder_edit_id)&&!strcmp(f.name,folder_expected)){done=true;library_folder=f.id;}
+    if(done&&s.revision!=folder_revision){folder_waiting=false;lv_async_call([](void *owner){if(info_dialog==owner&&nav_dialog==9)library(false);},dialog);}
+    else if(s.revision!=folder_revision&&(strstr(s.status,"failed")||strstr(s.status,"exists")||strstr(s.status,"limit")||strstr(s.status,"unavailable"))){folder_waiting=false;chatview::label(nav_detail,s.status);lv_obj_clear_state(folder_save,LV_STATE_DISABLED);}
+    return;
+  }
   if(nav_dialog==1){
     const bool active=s.mode==mcxnav::RECORDING||s.mode==mcxnav::PAUSED;
     if(record_pending&&((pending_action==mcxnav::START_CONFIGURED&&active)||(pending_action==mcxnav::PAUSE&&s.mode==mcxnav::PAUSED)||(pending_action==mcxnav::RESUME&&s.mode==mcxnav::RECORDING)||s.mode==mcxnav::STORAGE_ERROR))record_pending=false;
@@ -513,10 +523,44 @@ static void confirm_delete(uint32_t id){
   auto *row=control_row();delete_action=control_button(row,"DELETE",red,[](lv_event_t *e){if(delete_waiting)return;mcxnav::Command c;c.action=mcxnav::DELETE_TRACK;c.id=name_track;if(mcxnav::enqueue(c)){delete_waiting=true;delete_revision=navui::nav_state?navui::nav_state->revision:0;lv_obj_add_state(lv_event_get_target(e),LV_STATE_DISABLED);lv_obj_add_state(delete_cancel,LV_STATE_DISABLED);chatview::label(nav_detail,"Deleting...");}else chatview::label(nav_detail,"Storage busy / retry");},0);
   delete_cancel=control_button(row,"CANCEL",panel2,[](lv_event_t *){lv_async_call([](void *){track_details(name_track);},nullptr);},0);nav_detail=single_label(dialog,"This cannot be undone.",0,0,lv_obj_get_width(body)-16,muted);
 }
+static void folder_form(uint32_t id){
+  compact_base(id?"RENAME FOLDER":"NEW FOLDER");nav_dialog=9;folder_edit_id=id;folder_owner=dialog;folder_waiting=false;folder_action=id?mcxnav::RENAME_FOLDER:mcxnav::CREATE_FOLDER;
+  folder_value=lv_textarea_create(dialog);lv_obj_set_width(folder_value,LV_PCT(100));lv_obj_set_height(folder_value,36);lv_textarea_set_one_line(folder_value,true);lv_textarea_set_max_length(folder_value,31);
+  if(id&&navui::nav_state)for(const auto &f:navui::nav_state->folders)if(f.id==id)lv_textarea_set_text(folder_value,f.name);
+  auto save=[](lv_event_t *){if(folder_owner!=info_dialog||folder_waiting)return;const char *name=lv_textarea_get_text(folder_value);if(!mcxnav::Store::folder_name_valid(name)){chatview::label(nav_detail,"Name: 1-31 bytes / no slashes");return;}mcxnav::Command c;c.action=folder_action;c.id=folder_edit_id;snprintf(c.name,sizeof(c.name),"%s",name);if(!mcxnav::enqueue(c)){chatview::label(nav_detail,"Storage busy / retry");return;}snprintf(folder_expected,sizeof(folder_expected),"%s",name);folder_waiting=true;folder_revision=navui::nav_state?navui::nav_state->revision:0;lv_obj_add_state(folder_save,LV_STATE_DISABLED);chatview::label(nav_detail,"Saving folder...");};
+  auto *row=control_row();folder_save=control_button(row,"SAVE",orange,save,0);control_button(row,"CANCEL",panel2,[](lv_event_t *){lv_async_call([](void *){library(false);},nullptr);},0);
+  nav_detail=single_label(dialog,"Folder names stay on your SD card.",0,0,lv_obj_get_width(body)-16,muted);lv_obj_set_style_text_font(nav_detail,&lv_font_montserrat_10,0);
+  auto *keyboard=lv_keyboard_create(dialog);lv_obj_set_width(keyboard,LV_PCT(100));lv_obj_set_height(keyboard,124);lv_keyboard_set_textarea(keyboard,folder_value);lv_obj_add_event_cb(keyboard,save,LV_EVENT_READY,nullptr);
+}
+static void remove_folder(){
+  if(!library_folder||library_folder==0xffffffffu)return;
+  compact_base("REMOVE FOLDER?");nav_dialog=9;folder_owner=dialog;folder_edit_id=library_folder;folder_action=mcxnav::DELETE_FOLDER;folder_waiting=false;
+  auto *label=single_label(dialog,"Tracks are kept in Unfiled.",0,0,lv_obj_get_width(body)-16,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);lv_obj_set_height(label,LV_SIZE_CONTENT);
+  auto *row=control_row();folder_save=control_button(row,"REMOVE",red,[](lv_event_t *){if(folder_waiting)return;mcxnav::Command c;c.action=mcxnav::DELETE_FOLDER;c.id=folder_edit_id;if(mcxnav::enqueue(c)){folder_waiting=true;folder_revision=navui::nav_state?navui::nav_state->revision:0;lv_obj_add_state(folder_save,LV_STATE_DISABLED);chatview::label(nav_detail,"Removing folder...");}},0);control_button(row,"CANCEL",panel2,[](lv_event_t *){lv_async_call([](void *){library(false);},nullptr);},0);nav_detail=single_label(dialog,"",0,0,lv_obj_get_width(body)-16,muted);
+}
+static void track_folders(){
+  compact_base("SAVED TRACKS");mcxnav::start();navui::poll();const auto *s=navui::nav_state;
+  auto *picker=lv_dropdown_create(dialog);lv_obj_set_width(picker,LV_PCT(100));lv_obj_set_height(picker,32);lv_dropdown_clear_options(picker);lv_dropdown_add_option(picker,"All tracks",LV_DROPDOWN_POS_LAST);lv_dropdown_add_option(picker,"Unfiled",LV_DROPDOWN_POS_LAST);folder_filter_ids[0]=0xffffffffu;folder_filter_ids[1]=0;unsigned options=2,selected=0;
+  if(s)for(const auto &f:s->folders)if(f.id){folder_filter_ids[options]=f.id;lv_dropdown_add_option(picker,f.name,LV_DROPDOWN_POS_LAST);if(f.id==library_folder)selected=options;++options;}
+  if(!library_folder){selected=1;}
+  if(selected==0){library_folder=0xffffffffu;}
+  lv_dropdown_set_selected(picker,selected);
+  lv_obj_add_event_cb(picker,[](lv_event_t *e){library_folder=folder_filter_ids[lv_dropdown_get_selected(lv_event_get_target(e))];lv_async_call([](void *){library(false);},nullptr);},LV_EVENT_VALUE_CHANGED,nullptr);
+  auto *row=control_row();control_button(row,"NEW FOLDER",panel2,[](lv_event_t *){lv_async_call([](void *){folder_form(0);},nullptr);},0);control_button(row,"REFRESH",panel2,[](lv_event_t *){lv_async_call([](void *){library(false);},nullptr);},0);
+  if(library_folder&&library_folder!=0xffffffffu){row=control_row();control_button(row,"RENAME",panel2,[](lv_event_t *){lv_async_call([](void *){folder_form(library_folder);},nullptr);},0);control_button(row,"REMOVE",panel2,[](lv_event_t *){lv_async_call([](void *){remove_folder();},nullptr);},0);}
+  auto *list=panel_at(dialog,0,0,lv_obj_get_width(body)-16,150,bg,0);lv_obj_set_width(list,LV_PCT(100));lv_obj_add_flag(list,LV_OBJ_FLAG_SCROLLABLE);lv_obj_set_scroll_dir(list,LV_DIR_VER);unsigned shown=0;
+  if(s)for(unsigned i=0;i<s->track_count;++i){const auto &t=s->tracks[i];if(library_folder!=0xffffffffu&&t.folder!=library_folder)continue;char text[80];snprintf(text,sizeof(text),"%s / %.2f km",t.name,t.metres/1000);auto *button=action_button(list,text,0,shown++*42,lv_obj_get_width(body)-16,38,panel2,[](lv_event_t *e){lv_async_call([](void *id){track_details(uint32_t(uintptr_t(id)));},lv_event_get_user_data(e));},t.id);lv_obj_set_width(button,LV_PCT(100));lv_obj_set_width(lv_obj_get_child(button,0),LV_PCT(100));}
+  if(!shown)single_label(list,"No tracks in this folder.",0,0,lv_obj_get_width(body)-16,muted);
+}
+
 static void track_details(uint32_t id){
   compact_base("TRACK DETAILS");navui::poll();if(!navui::nav_state)return;nav_dialog=6;
   const mcxnav::Track *track=nullptr;for(unsigned i=0;i<navui::nav_state->track_count;++i)if(navui::nav_state->tracks[i].id==id)track=&navui::nav_state->tracks[i];
   char title[64];snprintf(title,sizeof(title),"Track %08lx",(unsigned long)id);auto *label=single_label(dialog,track&&track->name[0]?track->name:title,0,0,lv_obj_get_width(body)-16,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);lv_obj_set_height(label,LV_SIZE_CONTENT);
+  single_label(dialog,"Folder",0,0,lv_obj_get_width(body)-16,muted);
+  auto *folders=lv_dropdown_create(dialog);lv_obj_set_width(folders,LV_PCT(100));lv_obj_set_height(folders,32);lv_dropdown_clear_options(folders);lv_dropdown_add_option(folders,"Unfiled",LV_DROPDOWN_POS_LAST);folder_move_ids[0]=0;unsigned folder_count=1,folder_selected=0;
+  for(const auto &f:navui::nav_state->folders)if(f.id){folder_move_ids[folder_count]=f.id;lv_dropdown_add_option(folders,f.name,LV_DROPDOWN_POS_LAST);if(track&&track->folder==f.id)folder_selected=folder_count;++folder_count;}
+  lv_dropdown_set_selected(folders,folder_selected);lv_obj_add_event_cb(folders,[](lv_event_t *e){mcxnav::Command c;c.action=mcxnav::MOVE_TRACK;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));c.value=folder_move_ids[lv_dropdown_get_selected(lv_event_get_target(e))];settings_send(c);},LV_EVENT_VALUE_CHANGED,(void*)(uintptr_t)id);
   const mcxnav::Style *style=nullptr;for(const auto &v:navui::nav_state->preferences.styles)if(v.id==id)style=&v;
   auto *row=control_row(28);label=single_label(row,"Visible on map",0,0,120,muted);lv_obj_set_flex_grow(label,1);auto *toggle=lv_switch_create(row);lv_obj_set_size(toggle,44,24);if(style&&style->visible)lv_obj_add_state(toggle,LV_STATE_CHECKED);
   lv_obj_add_event_cb(toggle,[](lv_event_t *e){mcxnav::Command c;c.action=mcxnav::SET_VISIBLE;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));c.value=lv_obj_has_state(lv_event_get_target(e),LV_STATE_CHECKED);settings_send(c);},LV_EVENT_VALUE_CHANGED,(void *)(uintptr_t)id);
@@ -531,6 +575,7 @@ static void track_details(uint32_t id){
   nav_detail=single_label(dialog,"",0,0,lv_obj_get_width(body)-16,red);lv_label_set_long_mode(nav_detail,LV_LABEL_LONG_WRAP);lv_obj_set_height(nav_detail,LV_SIZE_CONTENT);lv_obj_add_flag(nav_detail,LV_OBJ_FLAG_HIDDEN);
 }
 static void library(bool pois){
+  if(!pois){track_folders();return;}
   base(pois?"SAVED POIs":"SAVED TRACKS");mcxnav::start();navui::poll();
   if(pois)action_button(dialog,"SAVE CURRENT GPS AS POI",8,40,440,36,orange,[](lv_event_t *){lv_async_call([](void *){new_poi();},nullptr);},0);
   auto *list=panel_at(dialog,8,pois?82:44,440,pois?170:208,bg,0);lv_obj_add_flag(list,LV_OBJ_FLAG_SCROLLABLE);lv_obj_set_scroll_dir(list,LV_DIR_VER);

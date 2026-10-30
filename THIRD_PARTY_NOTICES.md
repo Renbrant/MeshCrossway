@@ -46,3 +46,7 @@ MeshCrossway data. Geographic lookup is approximate, as documented upstream.
 ## v0.8.10 remote companion
 
 The offline dashboard and mailbox are original MeshCrossway code; the unchanged logo comes from `docs/site/assets/meshcrossway-logo.svg`. No new firmware dependencies are added. SHA-256 uses the existing ESP-IDF mbedTLS component. The host-only `tests/remote_chat_test.cpp` links system OpenSSL ([source and license](https://github.com/openssl/openssl/tree/openssl-3.0.13), Apache-2.0 in OpenSSL 3.x), tested locally with OpenSSL 3.0.13. CI uses its runner-provided version; no OpenSSL source or binary is copied into firmware or distributed by this change. Runtime release dependency/license review items remain open.
+
+## v0.8.12 browser map and folders
+
+The folder/geometry/viewer code is original MeshCrossway code. No map JavaScript library, copied schema or new firmware dependency is incorporated. OpenStreetMap raster tiles are fetched directly by the browser for visible interactive views, attributed in the map, and governed by the [OSMF Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/). Browser tests intercept tile requests and serve synthetic fixtures; they do not contact the tile service. Existing dependency and binary-release review items remain open.
