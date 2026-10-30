@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.8.10: independent MeshCore Companion and Meshtastic PhoneAPI.
+// MeshCrossway v0.8.11: independent MeshCore Companion and Meshtastic PhoneAPI.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -12,6 +12,7 @@
 #include <new>
 #include "meshcrossway_power_status.h"
 #include "meshcrossway_gnss.h"
+#include "meshcrossway_home_status.h"
 #include "meshcrossway_clock_runtime.h"
 #include "meshcrossway_map_tiles.h"
 #include "meshcrossway_navigation.h"
@@ -522,7 +523,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.8.10","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. Local GPS, XYZ maps, tracks and POIs. Automatic location sharing is off.");break;
+      notice("MESH CROSSWAY v0.8.11","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. Local GPS, XYZ maps, tracks and POIs. Automatic location sharing is off.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -935,8 +936,74 @@ static void gps_refresh(lv_timer_t *){
     snprintf(detail,sizeof(detail),"Altitude %s / Speed %s\nPosition age %.1f s\nUART %u / %lu bytes / error %d\nNMEA %lu valid / %lu invalid\nUTC %s",altitude,speed,f.frames?double(uint32_t(esp_timer_get_time()/1000)-f.position_ms)/1000:0,diag.baud,(unsigned long)diag.bytes,diag.error,(unsigned long)f.frames,(unsigned long)f.errors,utc);chatview::label(gps_extra,detail);
   }
 }
+// Only this timer owns the Home cards. Native chat timers keep their own UI.
+static lv_obj_t *home_mesh[2][3]={},*home_wifi_name=nullptr,*home_wifi_state=nullptr,*home_gps_state=nullptr,*home_gps_accuracy=nullptr;
+static char home_wifi_source[33]={};
+static void home_clear(){
+  home_wifi_source[0]=0;
+  for(auto &network:home_mesh)for(auto &label:network)label=nullptr;
+  home_wifi_name=home_wifi_state=home_gps_state=home_gps_accuracy=nullptr;
+}
+static mcxhome::Network home_network(unsigned protocol){
+  mcxhome::Network n;
+  if(protocol==meshble::MESHCORE){auto *c=meshmc::client;if(!c)return n;
+    n.nodes=c->contact_count;n.known=c->initialized||c->contact_count||c->message_count;
+    n.connected=meshmc::link.load()&&c->connected;n.initialized=c->initialized;n.history=c->history_ready;n.fault=c->fault;
+    for(const auto &m:c->messages)if(m.id&&!m.outgoing&&!m.read)++n.unread;
+  }else {auto *c=meshmt::client;if(!c)return n;
+    n.nodes=c->data.node_count;n.known=c->initialized||c->data.node_count||c->data.message_count;
+    n.connected=meshmt::link.load()&&c->connected;n.initialized=c->initialized;n.history=c->history_ready;n.fault=c->fault;
+    for(const auto &m:c->data.messages)if(m.seq&&!m.outgoing&&!m.read)++n.unread;
+  }
+  return n;
+}
+static void home_color(lv_obj_t *label,lv_color_t color){if(label&&lv_obj_get_style_text_color(label,0).full!=color.full)lv_obj_set_style_text_color(label,color,0);}
+static void home_refresh(lv_timer_t *){
+  if(page!=0||!home_mesh[0][0])return;
+  const auto bs=meshble::snapshot();unsigned target=bs.radio;
+  if(target==meshble::UNKNOWN&&bs.selected>=0&&bs.selected<bs.count)target=bs.peers[bs.selected].advertised;
+  static_assert(int(mcxhome::Phase::FAILED)==int(meshble::FAILED),"Home BLE phases must match");
+  for(unsigned i=0;i<2;++i){const unsigned protocol=i==0?meshble::MESHTASTIC:meshble::MESHCORE;
+    const auto n=home_network(protocol);const auto card=mcxhome::radio(n,protocol,mcxhome::Phase(bs.phase),target,bs.pin_required||bs.confirm_required);
+    chatview::label(home_mesh[i][0],card.state);chatview::label(home_mesh[i][1],card.nodes);chatview::label(home_mesh[i][2],card.unread);
+    home_color(home_mesh[i][0],card.online?green:card.working?orange:muted);
+    home_color(home_mesh[i][2],n.unread?orange:muted);
+  }
+  const auto wifi=meshnetwork::home_status();
+  if(strcmp(home_wifi_source,wifi.ssid)){
+    lv_label_set_text(home_wifi_name,wifi.ssid[0]?wifi.ssid:"No Wi-Fi selected");
+    snprintf(home_wifi_source,sizeof(home_wifi_source),"%s",wifi.ssid);
+  }
+  chatview::label(home_wifi_state,wifi.state);
+  home_color(home_wifi_state,wifi.connected?green:muted);
+  const auto fix=mcxgnss::snapshot();const auto cfg=mcxgnss::configuration();
+  const auto gps=mcxhome::gps(fix,cfg.enabled,mcxgnss::status().error,cfg.imperial);
+  chatview::label(home_gps_state,gps.state);chatview::label(home_gps_accuracy,gps.accuracy);
+  home_color(home_gps_state,gps.valid?green:orange);
+}
+static void home_cards(int w){
+  lv_obj_update_layout(body);
+  show_center_heading("FIELD STATUS","Radios, Wi-Fi and local GPS");
+  const int col=(w-24)/2;
+  for(unsigned i=0;i<2;++i){auto *card=center_card(8+i*(col+8),54,col,101,i==0?"MESHTASTIC":"MESHCORE","Checking radio...","Nodes: --",i==0?green:purple);
+    home_mesh[i][0]=lv_obj_get_child(card,1);home_mesh[i][1]=lv_obj_get_child(card,2);
+    lv_obj_set_y(home_mesh[i][0],29);lv_obj_set_y(home_mesh[i][1],53);
+    home_mesh[i][2]=single_label(card,"Unread: --",8,76,col-16,muted);
+    for(auto *label:home_mesh[i])lv_obj_set_style_text_font(label,&lv_font_montserrat_14,0);
+  }
+  auto *gps=center_card(8,164,col,101,"LOCAL GPS","Waiting for GPS","Accuracy unavailable",cyan);
+  home_gps_state=lv_obj_get_child(gps,1);home_gps_accuracy=lv_obj_get_child(gps,2);
+  lv_obj_set_style_text_font(home_gps_accuracy,&lv_font_montserrat_14,0);
+  auto *wifi=center_card(col+16,164,col,101,"WI-FI","No Wi-Fi selected","Checking connection...",orange);
+  home_wifi_name=lv_obj_get_child(wifi,1);home_wifi_state=lv_obj_get_child(wifi,2);
+  lv_label_set_long_mode(home_wifi_name,LV_LABEL_LONG_DOT);lv_obj_set_height(home_wifi_name,38);
+  lv_obj_set_style_text_font(home_wifi_name,&lv_font_montserrat_14,0);lv_obj_set_style_text_font(home_wifi_state,&lv_font_montserrat_14,0);
+  home_refresh(nullptr);
+}
+
 static void draw(){
   mcxruntime::Scope measured(mcxruntime::DRAW);
+  home_clear();
   if(!body||!left_rail||!right_rail||!context_actions)return;
   const int lw=has_left_rail()?(left_compact?40:79):0;
   const int rw=has_context_rail()?(right_compact?40:125):0;
@@ -995,17 +1062,7 @@ static void draw(){
   const int w=cw;
   if(page==1||page==2||page==3){if(showing_mt())mtui::render();else mcui::render();return;}
   if(page==0){
-    show_center_heading("FIELD CONSOLE","Independent Meshtastic / MeshCore radios");
-    const int col=(w-24)/2;
-    const bool narrow=col<155;
-    auto *mt_card=center_card(8,54,col,95,"MESHTASTIC",mtui::ready()?mtui::name(meshmt::client->data.my_num):"BLE: OFF",mtui::ready()?"Meshtastic connected":"Connect in More / Radios",green);
-    mtui::home_name=lv_obj_get_child(mt_card,1);mtui::home_status=lv_obj_get_child(mt_card,2);
-    lv_obj_t *mc_card=center_card(col+16,54,col,95,"MESHCORE",mcui::ready()?meshmc::client->name:"BLE: OFF",mcui::ready()?"MeshCore connected":"Connect in More / Radios",purple);
-    mcui::home_name=lv_obj_get_child(mc_card,1);mcui::home_status=lv_obj_get_child(mc_card,2);
-    if(mcui::ready())mcui::set_home_name(mcui::home_name,meshmc::client->name);
-    auto *gps=center_card(8,157,col,95,"LOCAL GPS","Waiting for GPS","UART RX44 / TX43",cyan);
-    gps_position=lv_obj_get_child(gps,1);gps_status=lv_obj_get_child(gps,2);gps_refresh(nullptr);
-    center_card(col+16,157,col,95,"CROSSWAY","Separate networks","One active BLE radio",orange);
+    home_cards(w);
   } else if(page==4){
     static const char *modes[]={"MAP / LOCAL GPS","POINTS OF INTEREST","SAVED TRACKS",
                                 "GNSS STATUS","TEAM POSITIONS","LIVE LOCATION SHARE"};
@@ -1151,7 +1208,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.8.10] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.8.11] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1172,7 +1229,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.8.10] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.8.11] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1185,7 +1242,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.8.10",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.8.11",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);
@@ -1249,6 +1306,7 @@ static void init(){
   mcxtouch::on_sample=buffered_swipe;
   lv_timer_create(edge_swipe_poll,20,nullptr);
   lv_timer_create(refresh,3000,nullptr);
+  lv_timer_create(home_refresh,250,nullptr);
   lv_timer_create(mcui::poll,50,nullptr);
   lv_timer_create(mtui::poll,50,nullptr);
   (void)mcxremotechat::init();

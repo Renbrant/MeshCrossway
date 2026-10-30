@@ -27,10 +27,18 @@ static Fix snapshot(){portENTER_CRITICAL(&mutex);Fix out=latest;const auto cfg=s
   if(!cfg.enabled||uint32_t(now-out.satellites_ms)>cfg.timeout_ms){out.have_satellites=out.have_hdop=out.have_altitude=false;}
   if(!cfg.enabled||uint32_t(now-out.speed_ms)>cfg.timeout_ms)out.have_speed=false;
   if(!cfg.enabled||uint32_t(now-out.time_ms)>cfg.timeout_ms)out.have_time=false;
+  if(!out.valid||uint32_t(now-out.accuracy_ms)>cfg.timeout_ms)out.have_accuracy=false;
+  if(!out.valid||uint32_t(now-out.quality_ms)>cfg.timeout_ms)out.have_quality=false;
   return out;
 }
+static bool poll_accuracy(const Parser &parser,const Settings &cfg,uint32_t now,uint32_t switched,uint32_t &last_poll,int io_error){
+  if(!cfg.enabled||io_error||!parser.fix.frames||uint32_t(now-switched)<2000||uint32_t(now-last_poll)<2000||
+     (parser.fix.have_accuracy&&uint32_t(now-parser.fix.accuracy_ms)<2000))return false;
+  static const char poll[]="$PUBX,00*33\r\n";
+  last_poll=now;return uart_write_bytes(UART_NUM_1,poll,sizeof(poll)-1)==int(sizeof(poll)-1);
+}
 static void worker(void *){
-  Parser parser;Settings applied;bool have_applied=false;int io_error=0;uint8_t bytes[128];uint32_t switched=0,seen=UINT32_MAX,persisted=0,last_save=0;
+  Parser parser;Settings applied;bool have_applied=false;int io_error=0;uint8_t bytes[128];uint32_t switched=0,seen=UINT32_MAX,persisted=0,last_save=0,last_accuracy_poll=0;
   for(;;){
     const uint32_t now=uint32_t(esp_timer_get_time()/1000);
     portENTER_CRITICAL(&mutex);const auto cfg=settings;const uint32_t rev=revision,edited=changed_ms;portEXIT_CRITICAL(&mutex);
@@ -54,6 +62,10 @@ static void worker(void *){
     if(n<0){io_error=-1;vTaskDelay(pdMS_TO_TICKS(100));}
     if(n>0)io_error=0;
     for(int i=0;i<n;++i)parser.feed(char(bytes[i]),now);
+    // Read-only measurement poll, not a receiver configuration command.
+    // Requires display TX43 -> receiver RX. RX-only wiring still works;
+    // unsupported/non-responding receivers simply leave accuracy unavailable.
+    (void)poll_accuracy(parser,cfg,now,switched,last_accuracy_poll,io_error);
     if(cfg.enabled&&!cfg.baud&&uint32_t(now-switched)>5000&&(!parser.fix.frames||uint32_t(now-parser.fix.received_ms)>5000)){
       baud=baud==9600?38400:9600;io_error=uart_set_baudrate(UART_NUM_1,baud);uart_flush_input(UART_NUM_1);
       parser.collecting=false;parser.used=0;parser.fix.valid=false;switched=now;
@@ -70,11 +82,11 @@ static void start(){
   }
   uart_config_t config={};config.baud_rate=9600;config.data_bits=UART_DATA_8_BITS;config.parity=UART_PARITY_DISABLE;config.stop_bits=UART_STOP_BITS_1;config.flow_ctrl=UART_HW_FLOWCTRL_DISABLE;config.source_clk=UART_SCLK_DEFAULT;
   esp_err_t rc=uart_param_config(UART_NUM_1,&config);
-  // UART1 is routed to the header's RXD44/TXD43. No configuration is sent to the GPS.
+  // UART1 uses RXD44/TXD43. Only an optional measurement poll is sent; no GPS configuration writes.
   if(rc==ESP_OK)rc=uart_set_pin(UART_NUM_1,43,44,UART_PIN_NO_CHANGE,UART_PIN_NO_CHANGE);
   if(rc==ESP_OK)rc=uart_driver_install(UART_NUM_1,2048,0,0,nullptr,0);
   if(rc==ESP_OK&&xTaskCreatePinnedToCore(worker,"mcx_gnss",4096,nullptr,1,&task,0)!=pdPASS){uart_driver_delete(UART_NUM_1);rc=ESP_ERR_NO_MEM;}
   portENTER_CRITICAL(&mutex);diagnostics.error=rc;portEXIT_CRITICAL(&mutex);
-  printf("[MCX-GNSS] UART1 RX44 TX43 start=%d; receive only\n",int(rc));
+  printf("[MCX-GNSS] UART1 RX44 TX43 start=%d; position RX / accuracy poll\n",int(rc));
 }
 }

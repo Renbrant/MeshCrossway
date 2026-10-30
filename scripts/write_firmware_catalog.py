@@ -68,6 +68,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.11":
+        summary="EXPERIMENTAL / HARDWARE TEST PENDING: live Home cards with per-network BLE phase, known nodes/unread messages, Wi-Fi SSID/status and GPS fix state with receiver-reported horizontal accuracy. Read-only PUBX measurement polling requires TX43 to GPS RX; no permanent receiver configuration changes. Exact v0.8.9 remains stable."
+        label="Live Home + GNSS accuracy / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.10":
         summary="EXPERIMENTAL / HARDWARE TEST PENDING: last-radio automatic Bluetooth reconnection, customer remote dashboard with independent MeshCore and Meshtastic messaging, tracks and service diagnostics. One active BLE radio. Install without Erase; exact v0.8.9 remains recommended stable."
         label="Remote companion + auto reconnect / EXPERIMENTAL"

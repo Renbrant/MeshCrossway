@@ -1,12 +1,12 @@
 ![MeshCrossway — Meshtastic and MeshCore modular three-device system](docs/images/meshcrossway-modular-hero.jpg)
 
-**Recommended stable: v0.8.9.** Owner confirmed normal operation on 2026-10-30 and selected it as the most stable revision. [Immutable recovery record](docs/stable-v089.md). v0.8.10 is a new experimental remote companion / Bluetooth reconnect candidate; install without Erase.
+**Recommended stable: v0.8.9.** Owner confirmed normal operation on 2026-10-30 and selected it as the most stable revision. [Immutable recovery record](docs/stable-v089.md). v0.8.11 is a new experimental live Home / GPS accuracy candidate; install without Erase.
 
-**v0.8.10 candidate:** automatic last-radio Bluetooth resume and an offline customer remote dashboard with independent MeshCore/Meshtastic conversations, tracks, screenshots and service diagnostics. [Operation and acceptance](docs/remote-companion-v0810.md).
+**v0.8.11 candidate:** live Home cards with each network’s connection state, known nodes and unread messages; Wi-Fi name/status; simplified GPS with receiver-reported horizontal accuracy. [Operation, accuracy and acceptance](docs/home-live-v0811.md). The v0.8.10 remote companion and automatic reconnect remain included.
 
 MeshCrossway is an **open-source, offline-first modular communication system** with **three independent, battery-powered devices**: one touchscreen **Core** and two detachable LoRa **Radio Pods**, one for **Meshtastic** and one for **MeshCore**. The Core connects to both Pods over **two separate Bluetooth Low Energy (BLE) links**, bringing messaging, navigation, GNSS positioning, tracks and field diagnostics into a single interface without requiring cellular coverage or the internet.
 
-> **Development status:** v0.8.9 is the current owner-tested stable release. The physical firmware supports MeshCore and Meshtastic with **one active BLE radio at a time**. Concurrent sessions and live position sharing remain future work. New v0.8.10 behavior requires hardware validation; the web simulator is separate from physical LVGL firmware.
+> **Development status:** v0.8.9 is the current owner-tested stable release. The physical firmware supports MeshCore and Meshtastic with **one active BLE radio at a time**. Concurrent sessions and live position sharing remain future work. New v0.8.11 behavior requires hardware validation; the web simulator is separate from physical LVGL firmware.
 
 ## Current hardware — three independent BLE devices
 
