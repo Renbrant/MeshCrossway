@@ -42,7 +42,7 @@
 <h2>Recovery: touchscreen freezes or display reboots</h2>
 <div class="steps">
 <div class="step">Connect the Waveshare Rev2.0 display to your computer with a USB data cable. Leave the computer on its normal Wi-Fi network.</div>
-<div class="step">Select <b>v0.7.8 — hardware-tested</b> for rollback after an experimental build. Older versions are no longer listed in the Web Flasher.</div>
+<div class="step">Select <b>v0.8.2 — hardware-tested</b> for rollback after an experimental build. Older versions are no longer listed in the Web Flasher.</div>
 <div class="step">If the USB serial port is unavailable because the new firmware keeps restarting, enter ESP32-S3 download mode using the board's <b>BOOT</b> and <b>RESET</b> controls, then retry connecting.</div>
 <div class="step">Always leave the <b>Erase device</b> checkbox <b>unchecked</b> for normal updates. An erase resets NVS and deletes saved Wi-Fi and BLE bonds. From v0.5.8, the split image writes bootloader, partition table and application without targeting NVS. Older merged installers can overwrite settings even without Erase. An SD Wi-Fi backup is plaintext and should be created before erasing. For a clean downgrade, you can choose <b>Erase device</b> in the installer. This will also erase saved Wi-Fi credentials and other settings.</div>
 </div>

@@ -148,7 +148,7 @@ static void poll(){
 }
 namespace gpsui {
 static lv_obj_t *dialog=nullptr,*status_label=nullptr,*metrics_label=nullptr,*enabled_button=nullptr,*baud_button=nullptr,*timeout_button=nullptr,*units_button=nullptr;
-static lv_obj_t *map_save_label=nullptr;
+static lv_obj_t *map_save_label=nullptr,*clock_status=nullptr;
 static lv_obj_t *edit_value=nullptr,*edit_keyboard=nullptr,*edit_notice=nullptr;
 static int editing=0;
 static void open();
@@ -158,6 +158,9 @@ static void map_credits();
 static void refresh(){
   if(dialog!=info_dialog||!dialog){dialog=nullptr;return;}
   if(map_save_label)chatview::label(map_save_label,mcxmap::settings_saved.load()?"Settings saved / visible tiles only":"Settings pending / save failed");
+  if(clock_status){char clock[8],detail[160];mcxclock::label(clock,sizeof(clock));
+    snprintf(detail,sizeof(detail),"%s / %s\n%s",clock,mcxclock::zone_name(),mcxclock::state.synced?"GPS UTC synchronized / continues without signal":"Waiting for valid GPS UTC date and time");chatview::label(clock_status,detail);
+  }
   if(!status_label)return;
   const auto c=mcxgnss::configuration();const auto d=mcxgnss::status();const auto f=mcxgnss::snapshot();char state[160],label[64];
   snprintf(state,sizeof(state),"UART %u / error %d / %lu bytes\nNMEA %lu / bad %lu / settings %s",d.baud,d.error,(unsigned long)d.bytes,(unsigned long)f.frames,(unsigned long)f.errors,d.saved?"saved":"pending / save failed");chatview::label(status_label,state);
@@ -174,7 +177,7 @@ static void refresh(){
 static void base(const char *title){
   info_close_now(nullptr);dialog=info_dialog=panel_at(lv_layer_top(),10,26,460,286,bg,0);
   single_label(dialog,title,8,8,330,orange);action_button(dialog,"CLOSE",358,2,96,32,panel2,info_close,0);
-  map_save_label=nullptr;
+  map_save_label=clock_status=nullptr;
   metrics_label=status_label=enabled_button=baud_button=timeout_button=units_button=nullptr;
   edit_value=edit_keyboard=edit_notice=nullptr;
 }
@@ -185,6 +188,20 @@ static void change(lv_event_t *event){auto c=mcxgnss::configuration();const int 
   if(id==3)c.imperial=!c.imperial;
   mcxgnss::configure(c);refresh();
 }
+static void clock_settings(lv_event_t *){
+  base("CLOCK / TIME ZONE");
+  single_label(dialog,"Time: automatic GPS UTC / 24-hour display",8,44,440,white);
+  auto *zones=lv_dropdown_create(dialog);lv_obj_set_pos(zones,8,77);lv_obj_set_size(zones,440,38);
+  lv_dropdown_clear_options(zones);lv_dropdown_add_option(zones,"Automatic / GPS location",LV_DROPDOWN_POS_LAST);
+  for(unsigned i=0;i<mcxtz::count;++i)lv_dropdown_add_option(zones,mcxtz::zones[i].name,LV_DROPDOWN_POS_LAST);
+  const unsigned selected=mcxclock::selection(mcxgnss::configuration());
+  lv_dropdown_set_selected(zones,selected<=mcxtz::count?selected:0);
+  lv_obj_add_event_cb(zones,[](lv_event_t *event){auto c=mcxgnss::configuration();mcxclock::select(c,lv_dropdown_get_selected(lv_event_get_target(event)));mcxgnss::configure(c);mcxclock::poll(mcxgnss::snapshot(),c);refresh();},LV_EVENT_VALUE_CHANGED,nullptr);
+  clock_status=single_label(dialog,"",8,126,440,cyan);lv_label_set_long_mode(clock_status,LV_LABEL_LONG_WRAP);
+  single_label(dialog,"DST follows the selected zone automatically.",8,197,440,white);
+  single_label(dialog,"GPS zone estimates can differ near borders.",8,225,440,muted);
+  single_label(dialog,"Select a zone manually when needed. No internet required.",8,251,440,muted);refresh();
+}
 static void open(){
   base("LOCAL GPS / SETTINGS");
   enabled_button=action_button(dialog,"",8,42,216,34,panel2,change,0);baud_button=action_button(dialog,"",232,42,216,34,panel2,change,1);
@@ -192,7 +209,7 @@ static void open(){
   status_label=single_label(dialog,"",8,126,440,white);lv_label_set_long_mode(status_label,LV_LABEL_LONG_WRAP);
   metrics_label=single_label(dialog,"",8,177,440,cyan);
   single_label(dialog,"RX44 / TX43 fixed. Reading OFF does not power off GPS.",8,216,440,muted);
-  single_label(dialog,"Host UART only; receiver configuration unchanged.",8,244,440,muted);refresh();
+  action_button(dialog,"CLOCK / TIME ZONE",8,241,440,34,panel2,clock_settings,0);refresh();
 }
 static void online(lv_event_t *){auto c=mcxmap::configuration();c.online=!c.online;mcxmap::configure(c);map_options();}
 static void save_editor(lv_event_t *){

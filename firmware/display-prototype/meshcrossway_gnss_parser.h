@@ -4,12 +4,29 @@
 #include <string.h>
 #include <math.h>
 namespace mcxgnss {
-struct Fix {double latitude=0,longitude=0,altitude=0,hdop=0,speed_kmh=0;unsigned satellites=0;uint32_t position_ms=0,received_ms=0,satellites_ms=0,speed_ms=0,frames=0,errors=0;bool valid=false,have_altitude=false,have_hdop=false,have_satellites=false,have_speed=false;};
+struct Fix {double latitude=0,longitude=0,altitude=0,hdop=0,speed_kmh=0;unsigned satellites=0;uint64_t utc_seconds=0;uint32_t time_ms=0;bool have_time=false;uint32_t position_ms=0,received_ms=0,satellites_ms=0,speed_ms=0,frames=0,errors=0;bool valid=false,have_altitude=false,have_hdop=false,have_satellites=false,have_speed=false;};
 struct Parser {
   Fix fix;char line[160]={};unsigned used=0;bool collecting=false;
   static int hex(char c){return c>='0'&&c<='9'?c-'0':c>='A'&&c<='F'?c-'A'+10:c>='a'&&c<='f'?c-'a'+10:-1;}
   static bool number(const char *s,double &out){if(!*s)return false;char *end=nullptr;out=strtod(s,&end);return end!=s&&!*end&&isfinite(out);}
   static bool coordinate(const char *s,const char *hem,bool lat,double &out){double raw;if(!number(s,raw)||raw<0||strlen(hem)!=1)return false;double deg=floor(raw/100),minutes=raw-deg*100;out=deg+minutes/60;if(minutes>=60||out>(lat?90:180))return false;if(*hem==(lat?'S':'W'))out=-out;else if(*hem!=(lat?'N':'E'))return false;return true;}
+  // RMC supplies a complete UTC calendar. Reject impossible dates and leap-second
+  // samples rather than normalizing bad data into a plausible system clock.
+  static bool utc(const char *clock,const char *date,uint64_t &out){
+    if(strlen(clock)<6||strlen(date)!=6)return false;
+    for(unsigned i=0;i<6;++i)if(clock[i]<'0'||clock[i]>'9'||date[i]<'0'||date[i]>'9')return false;
+    if(clock[6]){if(clock[6]!='.'||!clock[7])return false;for(unsigned i=7;clock[i];++i)if(clock[i]<'0'||clock[i]>'9')return false;}
+    auto two=[](const char *p){return (p[0]-'0')*10+p[1]-'0';};
+    const int hour=two(clock),minute=two(clock+2),second=two(clock+4);
+    const int day=two(date),month=two(date+2),year=2000+two(date+4);
+    if(year<2020||month<1||month>12||hour>23||minute>59||second>59)return false;
+    static const int lengths[]={31,28,31,30,31,30,31,31,30,31,30,31};
+    auto leap=[](int y){return y%4==0&&(y%100!=0||y%400==0);};
+    if(day<1||day>lengths[month-1]+(month==2&&leap(year)))return false;
+    uint64_t days=0;for(int y=1970;y<year;++y)days+=leap(y)?366:365;
+    for(int m=1;m<month;++m)days+=lengths[m-1]+(m==2&&leap(year));
+    days+=day-1;out=days*86400+hour*3600+minute*60+second;return true;
+  }
   bool parse(uint32_t now){
     char *star=strchr(line,'*');if(!star||strlen(star)!=3)return false;
     unsigned checksum=0;for(char *p=line;p<star;++p)checksum^=uint8_t(*p);
@@ -33,6 +50,8 @@ struct Parser {
       const bool valid=*f[2]=='A';
       if(valid&&(!coordinate(f[3],f[4],true,lat)||!coordinate(f[5],f[6],false,lon)))return false;
       fix.valid=valid;if(valid){fix.latitude=lat;fix.longitude=lon;fix.position_ms=now;}
+      uint64_t stamp=0;
+      if(valid&&utc(f[1],f[9],stamp)){fix.utc_seconds=stamp;fix.time_ms=now;fix.have_time=true;}
       double knots;fix.have_speed=valid&&number(f[7],knots)&&knots>=0;if(fix.have_speed){fix.speed_kmh=knots*1.852;fix.speed_ms=now;}
     }
     fix.received_ms=now;++fix.frames;return true;

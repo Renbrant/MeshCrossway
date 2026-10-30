@@ -1,5 +1,7 @@
 ![MeshCrossway — Meshtastic and MeshCore modular three-device system](docs/images/meshcrossway-modular-hero.jpg)
 
+**v0.8.3 candidate (experimental):** GPS-synchronized UTC clock, offline timezone estimate with automatic DST and saved manual selection, `HH:MM` header and a smaller battery indicator. [Clock guide and acceptance](docs/gps-clock-v083.md). **v0.8.2 is the owner-tested rollback**; new clock behavior requires hardware validation. Install without Erase.
+
 **v0.8.2 candidate (experimental):** Full-height map, right-rail controls, toggle zoom slider, discreet visible attribution and decoded PSRAM tile cache. BLE startup mitigation and stage diagnostics require hardware retest. [Changes and acceptance](docs/maps-gps-v082.md). Install without Erase; v0.7.8 remains recovery.
 
 **v0.8.1 (experimental):** GPS fix/satellite indicator, saved GPS reading settings and real XYZ PNG maps with pan, zoom, GPS follow and microSD cache. Offline packs use `/tiles/z/x/y.png`; online viewing uses HTTPS OpenStreetMap tiles and visible attribution. No bulk download or automatic mesh location sharing. Map/SD/TLS/BLE coexistence still requires hardware validation. [Map and GPS guide](docs/maps-gps-v081.md). v0.7.8 remains recovery.
