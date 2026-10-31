@@ -77,6 +77,10 @@ build_version() {
     echo "::error::Expected $version but source VERSION is $recorded"
     exit 1
   fi
+  if [ -f "$source_root/scripts/test_navigation_http.py" ]; then
+    python3 "$source_root/scripts/test_navigation_http.py"
+    node "$source_root/scripts/test_remote_folders.cjs"
+  fi
   if [ -f "$source_root/scripts/test_remote_chat.py" ]; then
     python3 "$source_root/scripts/test_remote_chat.py"
   fi
@@ -142,6 +146,12 @@ build_version() {
     python3 "$source_root/scripts/check_ble_resume_stack.py" \
       "$vendor/examples/esp-idf/02_lvgl_example/build" \
       --header "$source_root/firmware/display-prototype/meshcrossway_ble.h"
+  fi
+  if [ -f "$source_root/scripts/check_http_stack.py" ]; then
+    python3 "$source_root/scripts/check_http_stack.py" \
+      "$vendor/examples/esp-idf/02_lvgl_example/build" \
+      --health "$source_root/firmware/display-prototype/meshcrossway_health.h" \
+      --navigation "$source_root/firmware/display-prototype/meshcrossway_navigation_http.h"
   fi
   # Defaults are requests; only the generated file proves these choices took effect.
   if [ -f "$source_root/scripts/check_ble_sdkconfig.py" ]; then
