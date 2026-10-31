@@ -25,6 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit owner approval.
 approved={
+    "v0.8.11":("Owner selected v0.8.11 as the stable release on 2026-10-31 after reporting periodic restarts on v0.8.12. Exact previously published v0.8.11 binary retained unchanged.", "Owner-selected / recommended stable"),
     "v0.8.9":("Owner confirmed everything works perfectly on 2026-10-30 and explicitly selected this revision as the most stable baseline. Exact tested binary retained unchanged. New remote messaging and auto-reconnect changes require separate hardware validation.", "Owner-tested / recommended stable"),
     "v0.8.2":("Owner confirmed GPS/maps and MeshCore BLE pairing, then successful Bluetooth reconnection after a hardware restart on 2026-10-29. Selected v0.8.2 as recovery. Exact published bytes are retained; this is not full Meshtastic or dual-radio qualification.", "Owner-tested / recommended recovery"),
     "v0.7.8":("Owner confirmed v0.7.8 works perfectly on Waveshare and explicitly chose it as recovery baseline on 2026-10-29; firmware bytes must remain unchanged.", "Owner-tested / recommended recovery"),
@@ -69,9 +70,9 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary,label=approved[version]
         status="hardware-tested"
     elif version=="v0.8.12":
-        summary="EXPERIMENTAL / HARDWARE TEST PENDING: persistent track folders on device and remote, browser route previews with interactive map, Home Wi-Fi IP, separate communication categories and remote Bluetooth scan/connect/pair/disconnect. Exact v0.8.9 remains stable."
-        label="Track folders + browser maps + remote radio controls / EXPERIMENTAL"
-        status="experimental"
+        summary="KNOWN ISSUE: owner logs show repeated stack-canary crashes in mcx_ble_resume followed by automatic restarts. Do not install; use stable v0.8.11."
+        label="Repeated Bluetooth resume crashes / DO NOT INSTALL"
+        status="known-issue"
     elif version=="v0.8.11":
         summary="EXPERIMENTAL / HARDWARE TEST PENDING: live Home cards with per-network BLE phase, known nodes/unread messages, Wi-Fi SSID/status and GPS fix state with receiver-reported horizontal accuracy. Read-only PUBX measurement polling requires TX43 to GPS RX; no permanent receiver configuration changes. Exact v0.8.9 remains stable."
         label="Live Home + GNSS accuracy / EXPERIMENTAL"
@@ -205,8 +206,8 @@ catalog_info={
 }
 (root/"catalog.json").write_text(json.dumps(catalog_info,indent=2)+"\n")
 
-# Keep legacy direct URLs pointing at the newest binary only (no old archives).
-current=root/"versions"/latest
+# Keep legacy installer URLs on the recommended stable binary.
+current=root/"versions"/stable
 parts=tuple(part["path"] for part in json.loads((current/"manifest.json").read_text())["builds"][0]["parts"] if part["path"]!="meshcrossway-display-dev.bin")
 for filename in ("manifest.json","build-info.json","meshcrossway-display-dev.bin")+parts:
     shutil.copy2(current/filename,root/filename)

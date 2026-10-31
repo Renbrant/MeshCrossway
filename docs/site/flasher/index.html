@@ -95,7 +95,7 @@
     installer.hidden=false;
     const blocked=entry.status==='known-issue';
     const experimental=entry.status==='experimental';
-    if(blocked)button.textContent='Installation blocked — known boot failure';
+    if(blocked)button.textContent='Installation blocked — known restart failure';
     button.disabled=blocked || (experimental && !allowUnstable.checked);
     allowUnstable.onchange=()=>{button.disabled=blocked || (experimental && !allowUnstable.checked);};
   }
@@ -114,7 +114,7 @@
     if(entry.status!=='hardware-tested'){
       warning.hidden=false;verifyRisk.hidden=entry.status==='known-issue';
       if(entry.status==='known-issue'){
-        warningTitle.textContent='KNOWN CRITICAL BOOT FAILURE — DO NOT INSTALL.';
+        warningTitle.textContent='KNOWN CRITICAL RESTART FAILURE — DO NOT INSTALL.';
         warningText.textContent=entry.description+' Installation of this known-broken image is blocked; use the tested release instead.';
       }else{
         warningTitle.textContent='EXPERIMENTAL / NOT HARDWARE TESTED.';

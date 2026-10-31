@@ -62,17 +62,7 @@ build_version() {
   # Preserve the exact owner-tested bytes. Rebuilding an old source revision
   # with newly resolved component versions is not an approved rollback image.
   if [ "$version" = "$STABLE_VERSION" ] && [ "$ref" = "$STABLE_REF" ]; then
-    local approved_temp
-    approved_temp="$(mktemp -d "$TEMP/approved-XXXXXX")"
-    local approved_url="https://renbrant.github.io/MeshCrossway/flasher/firmware/versions/$version"
-    local file
-    for file in build-info.json manifest.json meshcrossway-display-dev.bin bootloader.bin partition-table.bin application.bin; do
-      curl --fail --location --retry 3 "$approved_url/$file" -o "$approved_temp/$file"
-    done
-    python3 "$ROOT/scripts/verify_firmware_version.py" --dir "$approved_temp" --version "$version" --ref "$ref"
-    test "$(sha256sum "$approved_temp/meshcrossway-display-dev.bin" | cut -d' ' -f1)" = "$STABLE_SHA256"
-    cp "$approved_temp/"* "$image_dir/"
-    rm -rf -- "$approved_temp"
+    python3 "$ROOT/scripts/restore_stable_firmware.py" --destination "$image_dir"
     echo "RESTORED: immutable owner-tested $version"
     return
   fi
@@ -163,9 +153,9 @@ build_version() {
 # Only one physical rollback and recent candidates are delivered in the Web Flasher.
 # Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
 # Update these two constants whenever the owner validates a newer hardware build.
-STABLE_VERSION="v0.8.9"
-STABLE_REF="172f4c2f406d72d3ac3651d55eb5a1b6e3e068e0"
-STABLE_SHA256="2adcdebdc91902b2ce0a2e36439dd8162b92ab96e1a3129e9400440e839709d6"
+STABLE_VERSION="v0.8.11"
+STABLE_REF="411c8a3c7b9da6d5703f2f8c1cffa7dde9584c5c"
+STABLE_SHA256="dbbdf7ed69b04f134517566053cca9eccca80c0d6be5ffc0f4ef53bc636c81b8"
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).

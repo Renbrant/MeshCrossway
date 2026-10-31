@@ -1,12 +1,12 @@
 ![MeshCrossway — Meshtastic and MeshCore modular three-device system](docs/images/meshcrossway-modular-hero.jpg)
 
-**Recommended stable: v0.8.9.** Owner confirmed normal operation on 2026-10-30 and selected it as the most stable revision. [Immutable recovery record](docs/stable-v089.md). v0.8.12 is a new experimental track-folder / remote workspace candidate; install without Erase.
+**Recommended stable: v0.8.11.** Owner-selected recovery on 2026-10-31. The exact tested image is preserved. v0.8.12 has confirmed repeated Bluetooth-resume crashes and its installation is blocked. [Stable release record](docs/stable-v0811.md).
 
 **v0.8.12 candidate:** persistent track folders, browser route list/map preview, Home Wi-Fi IP, separate communication views and remote radio scan/connect/pair/disconnect. [Operation and validation](docs/track-folders-remote-v0812.md).
 
 MeshCrossway is an **open-source, offline-first modular communication system** with **three independent, battery-powered devices**: one touchscreen **Core** and two detachable LoRa **Radio Pods**, one for **Meshtastic** and one for **MeshCore**. The Core connects to both Pods over **two separate Bluetooth Low Energy (BLE) links**, bringing messaging, navigation, GNSS positioning, tracks and field diagnostics into a single interface without requiring cellular coverage or the internet.
 
-> **Development status:** v0.8.9 is the current owner-tested stable release. The physical firmware supports MeshCore and Meshtastic with **one active BLE radio at a time**. Concurrent sessions and live position sharing remain future work. New v0.8.12 behavior requires hardware validation; the web simulator is separate from physical LVGL firmware.
+> **Development status:** v0.8.11 is the current owner-selected stable release. The physical firmware supports MeshCore and Meshtastic with **one active BLE radio at a time**. Concurrent sessions and live position sharing remain future work. v0.8.12 is withdrawn from installation after confirmed repeated restarts; the web simulator is separate from physical LVGL firmware.
 
 ## Current hardware — three independent BLE devices
 
