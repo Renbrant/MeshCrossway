@@ -26,7 +26,7 @@ INPUTS = [
     "tests/navigation_store_test.cpp", "tests/navigation_runtime_test.cpp", "scripts/test_map_navigation.py", "tests/map_navigation_test.cpp", "tests/gnss_parser_test.cpp",
     "scripts/check_chat_memory.py",
     "scripts/test_conversations_history.py",
-    "tests/conversations_history_test.cpp", "tests/sd_history_worker_test.cpp", "tests/meshcore_transport_test.cpp", "scripts/test_ble_resume.py", "scripts/test_runtime_diagnostics.py",
+    "tests/conversations_history_test.cpp", "tests/sd_history_worker_test.cpp", "tests/meshcore_transport_test.cpp", "scripts/check_ble_resume_stack.py", "scripts/test_ble_resume.py", "scripts/test_runtime_diagnostics.py",
     "firmware/display-prototype",
     "scripts/build_firmware_versions.sh",
     "scripts/write_firmware_version.py",

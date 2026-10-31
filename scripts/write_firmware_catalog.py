@@ -69,6 +69,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.13":
+        summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: fixes v0.8.12 Bluetooth auto-resume stack exhaustion by removing nested full snapshots, adding measured stack headroom and a target-compiler stack guard. Track folders and remote workspaces retained. v0.8.11 remains recommended stable."
+        label="Bluetooth resume stack fix / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.12":
         summary="KNOWN ISSUE: owner logs show repeated stack-canary crashes in mcx_ble_resume followed by automatic restarts. Do not install; use stable v0.8.11."
         label="Repeated Bluetooth resume crashes / DO NOT INSTALL"

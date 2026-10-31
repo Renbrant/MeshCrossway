@@ -98,6 +98,18 @@ static Snapshot snapshot(){
   portENTER_CRITICAL(&mux);copy=state;portEXIT_CRITICAL(&mux);
   return copy;
 }
+// Control paths need only a phase or one peer, never the full scan snapshot.
+static Phase phase(){
+  portENTER_CRITICAL(&mux);const Phase value=state.phase;portEXIT_CRITICAL(&mux);
+  return value;
+}
+static bool copy_peer(int index,Peer &peer){
+  portENTER_CRITICAL(&mux);
+  const bool valid=index>=0&&index<state.count;
+  if(valid)peer=state.peers[index];
+  portEXIT_CRITICAL(&mux);
+  return valid;
+}
 static const char *protocol_name(Radio r){
   return r==MESHTASTIC?"Meshtastic":r==MESHCORE?"MeshCore":"Unknown";
 }
@@ -137,8 +149,9 @@ static void save_remembered(){
   p.addr_type=desc.peer_id_addr.type;
   if(p.addr_type>3)return;
   memcpy(p.addr,desc.peer_id_addr.val,6);
-  const Snapshot current=snapshot();
-  snprintf(p.name,sizeof(p.name),"%s",current.active_name);
+  portENTER_CRITICAL(&mux);
+  memcpy(p.name,state.active_name,sizeof(p.name));
+  portEXIT_CRITICAL(&mux);
   bool unchanged=false;
   portENTER_CRITICAL(&mux);
   unchanged=have_remembered&&!memcmp(&remembered,&p,sizeof(p));
@@ -187,13 +200,13 @@ static void host_task(void *){
 }
 static void scan(bool automatic=false){
   if(!synced){
-    if(snapshot().phase==OFF)update(OFF,"Enable BLE before scanning");
-    else if(snapshot().phase==STARTING)update(STARTING,"Bluetooth is still starting");
-    else if(snapshot().phase!=FAILED)update(FAILED,"BLE host not ready"); // Keep the original init error visible.
+    if(phase()==OFF)update(OFF,"Enable BLE before scanning");
+    else if(phase()==STARTING)update(STARTING,"Bluetooth is still starting");
+    else if(phase()!=FAILED)update(FAILED,"BLE host not ready"); // Keep the original init error visible.
     return;
   }
-  const Snapshot current=snapshot();
-  if(current.phase==CONNECTING||current.phase==VERIFYING||current.phase==PAIRING||current.phase==READY)return;
+  const Phase current=phase();
+  if(current==CONNECTING||current==VERIFYING||current==PAIRING||current==READY)return;
   (void)ble_gap_disc_cancel();
   auto_scan=automatic;auto_candidate=-1;
   portENTER_CRITICAL(&mux);
@@ -210,8 +223,8 @@ static void scan(bool automatic=false){
   else {auto_scan=false;char msg[64];snprintf(msg,sizeof(msg),"Scan error: %d",rc);update(FAILED,msg);}
 }
 static void connect_selected(const Peer &peer,int index){
-  const Snapshot found=snapshot();
-  if(found.phase==READY||found.phase==PAIRING||found.phase==VERIFYING||found.phase==CONNECTING)return;
+  const Phase current=phase();
+  if(current==READY||current==PAIRING||current==VERIFYING||current==CONNECTING)return;
   (void)ble_gap_disc_cancel();
   identified=UNKNOWN;mc_start=mc_end=mc_rx=mc_tx=mc_cccd=0;mc_transport_started=false;meshmc::transport_down();
   mt_down();mt_start=mt_end=mt_to=mt_from=mt_num=mt_num_end=mt_cccd=0;
@@ -225,20 +238,25 @@ static void connect_selected(const Peer &peer,int index){
   if(rc){char msg[64];snprintf(msg,sizeof(msg),"Connect error: %d",rc);update(FAILED,msg);}
 }
 static void connect(int index){
-  const Snapshot found=snapshot();if(index<0||index>=found.count)return;
-  connect_selected(found.peers[index],index);
+  Peer peer={};if(!copy_peer(index,peer))return;
+  connect_selected(peer,index);
 }
 static void connect_peer(const Peer &expected){
-  // Keep the verified address across asynchronous scan-table changes.
-  const Snapshot found=snapshot();int index=-1;
-  for(unsigned i=0;i<found.count;++i)if(found.peers[i].addr.type==expected.addr.type&&!memcmp(found.peers[i].addr.val,expected.addr.val,6)){index=int(i);break;}
-  if(index<0){return;}
-  connect_selected(expected,index);
+  // Capture the selected peer under the lock; a later scan reorder cannot
+  // redirect either the native UI or a remote command to another address.
+  Peer peer={};int index=-1;
+  portENTER_CRITICAL(&mux);
+  for(unsigned i=0;i<state.count;++i)if(state.peers[i].addr.type==expected.addr.type&&!memcmp(state.peers[i].addr.val,expected.addr.val,6)){
+    index=int(i);peer=state.peers[i];break;
+  }
+  portEXIT_CRITICAL(&mux);
+  if(index>=0)connect_selected(peer,index);
 }
 static bool reconnect_remembered(){
   if(auto_paused.load()||!synced||conn!=BLE_HS_CONN_HANDLE_NONE)return false;
-  const Snapshot current=snapshot();
-  if(current.phase!=IDLE&&current.phase!=FAILED)return false;
+  const Phase current=phase();
+  if(current!=IDLE&&current!=FAILED)return false;
+  Peer peer={};
   portENTER_CRITICAL(&mux);
   const bool known=have_remembered;
   if(known){
@@ -249,25 +267,26 @@ static bool reconnect_remembered(){
     memcpy(state.peers[0].addr.val,remembered.addr,6);
     snprintf(state.peers[0].name,sizeof(state.peers[0].name),"%s",remembered.name);
     state.peers[0].advertised=Radio(remembered.radio);
+    peer=state.peers[0];
   }
   portEXIT_CRITICAL(&mux);
   if(!known)return false;
-  connect(0);
+  connect_selected(peer,0);
   return true;
 }
 static void disconnect(){
   // A deliberate disconnect stops automatic retry until the next boot.
   auto_paused.store(true);auto_scan=false;auto_candidate=-1;
-  const Phase phase=snapshot().phase;
-  if(phase==OFF){update(OFF,"Bluetooth is off; enable before scan");return;}
-  if(phase==STARTING){update(STARTING,"Bluetooth is still starting");return;}
+  const Phase current=phase();
+  if(current==OFF){update(OFF,"Bluetooth is off; enable before scan");return;}
+  if(current==STARTING){update(STARTING,"Bluetooth is still starting");return;}
   const uint16_t handle=conn;
   if(handle!=BLE_HS_CONN_HANDLE_NONE){
     (void)ble_gap_terminate(handle,BLE_ERR_REM_USER_CONN_TERM);
     update(IDLE,"Disconnect requested");
-  }else if(snapshot().phase==SCANNING){
+  }else if(phase()==SCANNING){
     (void)ble_gap_disc_cancel();update(IDLE,"Scan cancelled");
-  }else if(snapshot().phase==CONNECTING){
+  }else if(phase()==CONNECTING){
     (void)ble_gap_conn_cancel();update(IDLE,"Connection cancelled");
   }else update(IDLE,"Ready to scan");
 }
@@ -570,7 +589,7 @@ static int gap_event(struct ble_gap_event *event,void *){
     case BLE_GAP_EVENT_DISC_COMPLETE:{
       const int candidate=auto_candidate.exchange(-1);
       const bool resume=auto_scan.exchange(false)&&!auto_paused.load();
-      if(snapshot().phase==SCANNING)update(IDLE,"Scan complete - choose a device");
+      if(phase()==SCANNING)update(IDLE,"Scan complete - choose a device");
       if(resume&&candidate>=0)connect(candidate);
       return 0;
     }
@@ -628,7 +647,7 @@ static int gap_event(struct ble_gap_event *event,void *){
     case BLE_GAP_EVENT_DISCONNECT:{
       mt_down();
       conn=BLE_HS_CONN_HANDLE_NONE;mc_transport_started=false;meshmc::transport_down();
-      const Phase before=snapshot().phase;
+      const Phase before=phase();
       portENTER_CRITICAL(&mux);
       state.paired=false;state.bonded=false;state.pin_required=false;state.confirm_required=false;
       state.generation++;
@@ -722,7 +741,7 @@ static void init_task(void *){
   vTaskDelete(nullptr);
 }
 static bool request_start(){
-  if(snapshot().phase!=OFF)return false; // Do not repeat a partial or failed init.
+  if(phase()!=OFF)return false; // Do not repeat a partial or failed init.
   mcxhistory::ble_startup.store(true);
   if(!meshmc::init()){mcxhistory::ble_startup.store(false);update(FAILED,"No PSRAM for MeshCore session");return false;}
   if(!meshmt::init()){mcxhistory::ble_startup.store(false);update(FAILED,"No PSRAM for Meshtastic session");return false;}
@@ -739,6 +758,12 @@ static bool request_start(){
   }
   return true;
 }
+static constexpr unsigned RESUME_STACK_BYTES=6144;
+static void resume_stack_diagnostic(){
+  // ESP-IDF reports bytes, unlike upstream FreeRTOS's word-based API.
+  printf("[MCX-BLE] resume stack_free_min=%lu bytes / %u\n",
+         (unsigned long)uxTaskGetStackHighWaterMark(nullptr),RESUME_STACK_BYTES);
+}
 static void auto_resume_task(void *){
   // Keep BLE completely OFF while LVGL, AP+STA and HTTP initialize.
   vTaskDelay(pdMS_TO_TICKS(12000));
@@ -751,14 +776,15 @@ static void auto_resume_task(void *){
   while(!auto_paused.load()){
     vTaskDelay(pdMS_TO_TICKS(first?3000:30000));
     first=false;
-    const Snapshot current=snapshot();
+    const Phase current=phase();
     // Re-read current RAM intent: a radio paired after boot must retry too.
     bool known=false;
     portENTER_CRITICAL(&mux);known=have_remembered;portEXIT_CRITICAL(&mux);
     if(known&&synced&&conn==BLE_HS_CONN_HANDLE_NONE&&
-       (current.phase==IDLE||current.phase==FAILED)){
+       (current==IDLE||current==FAILED)){
       if(direct)(void)reconnect_remembered();else scan(true);
       direct=!direct;
+      resume_stack_diagnostic();
     }
   }
   reconnect_worker=nullptr;vTaskDelete(nullptr);
@@ -766,7 +792,7 @@ static void auto_resume_task(void *){
 static void schedule_auto_resume(){
   // An unpaired new Core never enables BLE on its own.
   if(reconnect_worker)return;
-  (void)xTaskCreate(auto_resume_task,"mcx_ble_resume",4096,nullptr,
+  (void)xTaskCreate(auto_resume_task,"mcx_ble_resume",RESUME_STACK_BYTES,nullptr,
                     tskIDLE_PRIORITY+1,&reconnect_worker);
 }
 } // namespace meshble

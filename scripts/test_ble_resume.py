@@ -36,7 +36,8 @@ static std::atomic<bool> auto_paused{false},synced{true};
 static int conn=BLE_HS_CONN_HANDLE_NONE;
 static void *reconnect_worker=(void*)1;
 enum Phase{IDLE,FAILED};struct Snapshot{Phase phase=IDLE;};
-static Snapshot snapshot(){return {};}
+static Phase phase(){return IDLE;}
+static void resume_stack_diagnostic(){}
 static bool request_start(){++starts;return true;}
 static void scan(bool automatic){assert(automatic&&known_peer&&elapsed>=15000);++scans;}
 static bool reconnect_remembered(){assert(known_peer&&elapsed>=15000);++directs;return true;}
@@ -121,8 +122,8 @@ static bool have_remembered=false;static std::atomic<bool> auto_paused{false},sy
 static int conn=BLE_HS_CONN_HANDLE_NONE,mux=0,calls=0;
 #define portENTER_CRITICAL(p) (void)(p)
 #define portEXIT_CRITICAL(p) (void)(p)
-static Snapshot snapshot(){return state;}
-static void connect(int i){assert(i==0);++calls;state.phase=CONNECTING;}
+static Phase phase(){return state.phase;}
+static void connect_selected(const Peer &p,int i){assert(i==0&&p.addr.val[5]==91);++calls;state.phase=CONNECTING;}
 '''+reconnect+r'''
 int main(){
  assert(!reconnect_remembered()&&calls==0);
@@ -144,3 +145,93 @@ with tempfile.TemporaryDirectory() as directory:
     binary=Path(directory)/'direct'
     subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror',str(cpp),'-o',str(binary)],check=True)
     subprocess.run([str(binary)],check=True)
+
+# Exercise the actual nested connection path, not a mocked connect wrapper.
+# No snapshot() exists in this fixture: control paths must copy at most one peer.
+helpers=section('static Phase phase(){','static const char *protocol_name(')
+connections=section('static void connect_selected(', 'static void disconnect(){')
+fixture=r'''
+#include <atomic>
+#include <cassert>
+#include <cstdio>
+#include <cstring>
+#include <cstdint>
+#include <initializer_list>
+enum Phase{OFF,IDLE,FAILED,CONNECTING,VERIFYING,PAIRING,READY};
+enum Radio{UNKNOWN,MESHTASTIC,MESHCORE};
+struct Address{uint8_t type=0,val[6]={};};
+struct Peer{Address addr;char name[29]={};int8_t rssi=0;Radio advertised=UNKNOWN;};
+struct Snapshot{Phase phase=IDLE;uint8_t count=0;int selected=-1;Peer peers[8];Radio radio=UNKNOWN;
+ bool paired=false,bonded=false,pin_required=false,confirm_required=false;char active_name[29]={};};
+static Snapshot state;
+struct Saved{uint8_t addr_type=0,addr[6]={},radio=0;char name[29]={};};static Saved remembered;
+static bool have_remembered=false,synced=true;
+static std::atomic<bool> auto_paused{false};
+static constexpr int BLE_HS_CONN_HANDLE_NONE=65535;
+static int conn=BLE_HS_CONN_HANDLE_NONE,mux=0,calls=0,rc=0,lock_depth=0;
+static Radio identified=UNKNOWN;
+static int mc_start,mc_end,mc_rx,mc_tx,mc_cccd,mt_start,mt_end,mt_to,mt_from,mt_num,mt_num_end,mt_cccd;
+static bool mc_transport_started=false;
+#define portENTER_CRITICAL(p) do{(void)(p);assert(lock_depth++==0);}while(0)
+#define portEXIT_CRITICAL(p) do{(void)(p);assert(--lock_depth==0);}while(0)
+namespace meshmc{static void transport_down(){assert(!lock_depth);}}
+static void mt_down(){assert(!lock_depth);}
+static void update(Phase p,const char *){assert(!lock_depth);state.phase=p;}
+static Address dialed;
+static bool reorder=false;
+static int ble_gap_disc_cancel(){
+ assert(!lock_depth);
+ if(reorder){state.peers[0].addr.val[5]=222;state.peers[1].addr.val[5]=223;}
+ return 0;
+}
+static int own_addr=0;
+static void gap_event(){}
+static int ble_gap_connect(int,const Address *a,int timeout,void *,void(*)(),void *){
+ assert(!lock_depth&&timeout==20000);++calls;dialed=*a;return rc;
+}
+'''+helpers+connections+r'''
+int main(){
+ for(auto radio:{MESHTASTIC,MESHCORE})for(int repeat=0;repeat<100;++repeat){
+  state={};have_remembered=true;remembered.radio=radio;remembered.addr_type=repeat%4;
+  remembered.addr[5]=91;strcpy(remembered.name,"Remembered");
+  reorder=true;rc=repeat%2?0:5;
+  assert(reconnect_remembered());
+  assert(dialed.val[5]==91&&dialed.type==(repeat%4&1));
+  assert(!strcmp(state.active_name,"Remembered"));
+  assert(state.phase==(rc?FAILED:CONNECTING));
+ }
+ state={};state.count=2;state.peers[1].addr.val[5]=72;strcpy(state.peers[1].name,"Native");
+ rc=0;connect(1);assert(dialed.val[5]==72&&!strcmp(state.active_name,"Native"));
+ state={};state.count=2;state.peers[1].addr.val[5]=81;strcpy(state.peers[1].name,"Remote");
+ Peer expected=state.peers[1];connect_peer(expected);assert(dialed.val[5]==81&&!strcmp(state.active_name,"Remote"));
+ state.phase=IDLE;int before=calls;expected.addr.val[5]=201;connect_peer(expected);assert(calls==before);
+ connect(-1);connect(8);assert(calls==before);
+ for(auto p:{READY,VERIFYING,PAIRING,CONNECTING}){
+  state.phase=p;connect_selected(expected,0);assert(calls==before);
+ }
+ state.phase=IDLE;auto_paused=true;assert(!reconnect_remembered()&&calls==before);
+ puts("PASS: actual MC/MT reconnect chain, 200 retries, error handling, native/remote peer reorder, active-link guards, no full snapshots or GAP calls under lock");
+}
+'''
+with tempfile.TemporaryDirectory() as directory:
+    cpp=Path(directory)/'connection.cpp';cpp.write_text(fixture)
+    binary=Path(directory)/'connection'
+    subprocess.run(['c++','-std=c++17','-O1','-Wall','-Wextra','-Werror','-fsanitize=address,undefined',str(cpp),'-o',str(binary)],check=True)
+    subprocess.run([str(binary)],check=True)
+
+# The target frame checker must reject the exact old failure shape.
+from check_ble_resume_stack import check
+old='\n'.join(f'file:1:1:void meshble::{name}()\t{size}\tstatic' for name,size in
+              [('auto_resume_task',512),('reconnect_remembered',512),('connect',512),('connect_selected',576),('scan',1008),('request_start',528)])
+try:
+    check(old,'RESUME_STACK_BYTES=4096;')
+except ValueError:
+    pass
+else:
+    raise AssertionError('Original v0.8.12 stack regression accepted')
+assert 'PASS' in check(old.replace('512','64').replace('576','96').replace('1008','80').replace('528','80'),'RESUME_STACK_BYTES=6144;')
+for reports in ('', 'file:1:1:void meshble::auto_resume_task()\t64\tdynamic'):
+    try:check(reports,'RESUME_STACK_BYTES=6144;')
+    except ValueError:pass
+    else:raise AssertionError('Missing/unbounded compiler report accepted')
+print('PASS: stack checker rejects original overflow, absent reports and unbounded frames')
