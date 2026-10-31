@@ -168,9 +168,9 @@ build_version() {
 # Only one physical rollback and recent candidates are delivered in the Web Flasher.
 # Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
 # Update these two constants whenever the owner validates a newer hardware build.
-STABLE_VERSION="v0.8.11"
-STABLE_REF="411c8a3c7b9da6d5703f2f8c1cffa7dde9584c5c"
-STABLE_SHA256="dbbdf7ed69b04f134517566053cca9eccca80c0d6be5ffc0f4ef53bc636c81b8"
+STABLE_VERSION="v0.8.14"
+STABLE_REF="9a232921ab3543d6221fc6eeee56678ad374dc28"
+STABLE_SHA256="8f3b70fedb2c8c4c2432dbe0d00801197cfe1d08ddf6c52d02668a0835f03c31"
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).
@@ -186,15 +186,10 @@ if [ "$LATEST_VERSION" = "v0.6.3" ] || [ "$LATEST_VERSION" = "v0.6.4" ] || [ "$L
   exit 1
 fi
 
-# Version pin for an owner-approved image. The file and SHA remain immutable.
+# Always restore the pinned tested bytes, including when stable == latest.
+# Never rebuild an owner-approved version from the publishing commit.
+build_version "$STABLE_VERSION" "$STABLE_REF"
 if [ "$LATEST_VERSION" != "$STABLE_VERSION" ]; then
-  build_version "$STABLE_VERSION" "$STABLE_REF"
-fi
-
-# Compile or reuse the latest image (may be stable or experimental).
-if [ "$LATEST_VERSION" = "$STABLE_VERSION" ]; then
-  build_version "$STABLE_VERSION" HEAD
-else
   build_version "$LATEST_VERSION" HEAD
 fi
 

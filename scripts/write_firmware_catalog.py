@@ -25,6 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit owner approval.
 approved={
+    "v0.8.14":("Owner reported very good and apparently stable operation on 2026-10-31 and explicitly selected this release as the latest stable. Includes Bluetooth/HTTP stack fixes, track folders and remote workspaces. Exact tested binary retained unchanged.", "Owner-tested / recommended stable"),
     "v0.8.11":("Owner selected v0.8.11 as the stable release on 2026-10-31 after reporting periodic restarts on v0.8.12. Exact previously published v0.8.11 binary retained unchanged.", "Owner-selected / recommended stable"),
     "v0.8.9":("Owner confirmed everything works perfectly on 2026-10-30 and explicitly selected this revision as the most stable baseline. Exact tested binary retained unchanged. New remote messaging and auto-reconnect changes require separate hardware validation.", "Owner-tested / recommended stable"),
     "v0.8.2":("Owner confirmed GPS/maps and MeshCore BLE pairing, then successful Bluetooth reconnection after a hardware restart on 2026-10-29. Selected v0.8.2 as recovery. Exact published bytes are retained; this is not full Meshtastic or dual-radio qualification.", "Owner-tested / recommended recovery"),

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restore exact owner-approved v0.8.11; never rebuild a tested image."""
+"""Restore exact owner-approved v0.8.14; never rebuild a tested image."""
 import argparse
 import hashlib
 import json
@@ -9,11 +9,11 @@ import tempfile
 import urllib.request
 import zipfile
 
-VERSION = 'v0.8.11'
-REF = '411c8a3c7b9da6d5703f2f8c1cffa7dde9584c5c'
-SHA = 'dbbdf7ed69b04f134517566053cca9eccca80c0d6be5ffc0f4ef53bc636c81b8'
-ARTIFACT = 13014125812
-ARCHIVE_SHA = 'd5eee7cdf4c614494edab3ebfd6c9025c61166840bd7693ff44d3c28e9f87b87'
+VERSION = 'v0.8.14'
+REF = '9a232921ab3543d6221fc6eeee56678ad374dc28'
+SHA = '8f3b70fedb2c8c4c2432dbe0d00801197cfe1d08ddf6c52d02668a0835f03c31'
+ARTIFACT = 13048058040
+ARCHIVE_SHA = 'b1e461549d8d3c122dd15cdb68021d3f8a406ec9bf289a12316d1b3c0209109b'
 NAMES = ('manifest.json', 'build-info.json', 'meshcrossway-display-dev.bin',
          'bootloader.bin', 'partition-table.bin', 'application.bin')
 ROOT = Path(__file__).resolve().parents[1]

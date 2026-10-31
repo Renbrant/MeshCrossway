@@ -1,12 +1,12 @@
 ![MeshCrossway — Meshtastic and MeshCore modular three-device system](docs/images/meshcrossway-modular-hero.jpg)
 
-**Recommended stable: v0.8.11.** Owner-selected recovery on 2026-10-31. The exact tested image is preserved. v0.8.12 has confirmed repeated Bluetooth-resume crashes and its installation is blocked. v0.8.13 also has confirmed HTTP navigation crashes; v0.8.14 is the experimental remote-navigation fix, pending hardware retest. [Crash analysis](docs/ble-resume-stack-v0813.md). [Stable release record](docs/stable-v0811.md).
+**Recommended stable: v0.8.14.** Owner reported stable operation on 2026-10-31 and selected it as the latest stable release. The exact tested binary is retained unchanged. [Immutable stable record](docs/stable-v0814.md).
 
 **v0.8.12 candidate:** persistent track folders, browser route list/map preview, Home Wi-Fi IP, separate communication views and remote radio scan/connect/pair/disconnect. [Operation and validation](docs/track-folders-remote-v0812.md).
 
 MeshCrossway is an **open-source, offline-first modular communication system** with **three independent, battery-powered devices**: one touchscreen **Core** and two detachable LoRa **Radio Pods**, one for **Meshtastic** and one for **MeshCore**. The Core connects to both Pods over **two separate Bluetooth Low Energy (BLE) links**, bringing messaging, navigation, GNSS positioning, tracks and field diagnostics into a single interface without requiring cellular coverage or the internet.
 
-> **Development status:** v0.8.11 is the current owner-selected stable release. The physical firmware supports MeshCore and Meshtastic with **one active BLE radio at a time**. Concurrent sessions and live position sharing remain future work. v0.8.12 is withdrawn from installation after confirmed repeated restarts; the web simulator is separate from physical LVGL firmware.
+> **Development status:** v0.8.14 is the current owner-tested stable release. The physical firmware supports MeshCore and Meshtastic with **one active BLE radio at a time**. Concurrent sessions and live position sharing remain future work. v0.8.12 is withdrawn from installation after confirmed repeated restarts; the web simulator is separate from physical LVGL firmware.
 
 ## Current hardware — three independent BLE devices
 
