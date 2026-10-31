@@ -2,7 +2,7 @@
 // Included inside meshcrossway. Only the LVGL owner task touches this cache.
 namespace chatview {
 struct Row {uint32_t id=0;uint64_t hash=0;lv_obj_t *object=nullptr;bool used=false;};
-struct Cache {Row rows[96];lv_obj_t *parent=nullptr,*empty=nullptr,*title=nullptr,*subtitle=nullptr,*history=nullptr;
+struct Cache {Row rows[96];uint16_t order[96]={};lv_obj_t *parent=nullptr,*empty=nullptr,*title=nullptr,*subtitle=nullptr,*history=nullptr;
   uint64_t title_hash=0;uint32_t anchor=0;int offset=0,y=96;bool follow=true;};
 static Cache *cache=nullptr;
 static void invalidate(){if(cache)new(cache) Cache();} // Reset in PSRAM, no full Cache temporary on the UI stack.

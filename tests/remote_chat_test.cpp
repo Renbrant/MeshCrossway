@@ -1,4 +1,5 @@
 #include "meshcrossway_conversations.h"
+#include "meshcrossway_chat_presentation.h"
 #include "meshcrossway_meshtastic_protocol.h"
 #include <atomic>
 #include <cassert>
@@ -40,6 +41,7 @@ static httpd_req_t submit(const std::string &net,const std::string &target,const
  httpd_req_t r;r.body=net+'|'+target+'|'+text;r.content_len=r.body.size();r.header=header;send(&r);return r;
 }
 int main(){
+ setenv("TZ","MST7MDT,M3.2.0,M11.1.0",1);tzset();
  memory_ok=false;assert(!init());memory_ok=true;assert(init());
  assert(snapshot("mc").find("Connect this network")!=std::string::npos);
  auto cp=std::make_unique<meshmc::Client>();auto mp=std::make_unique<meshmt::Client>();auto &c=*cp;auto &m=*mp;
@@ -48,9 +50,9 @@ int main(){
  c.contacts[0].key[0]=9;strcpy(c.contacts[0].name,"Alice <script>");c.contacts[1].key[0]=10;strcpy(c.contacts[1].name,"Bob");
  c.channel_count=1;c.channels[0].loaded=true;strcpy(c.channels[0].name,"Trail");memcpy(c.channels[0].secret,"private-channel!",16);
  auto k=mcxchat::key_for(c,false,0);char alice[65];mc_token(k,alice);char repeated[65];mc_token(k,repeated);assert(!strcmp(alice,repeated));
- auto &rx=c.append();memcpy(rx.key,c.contacts[0].key,6);strcpy(rx.text,"Olá \"friend\" | 😀\n<script>alert(1)</script>");
+ auto &rx=c.append();rx.timestamp=1704067200u;rx.observed_at=1704070800u;memcpy(rx.key,c.contacts[0].key,6);strcpy(rx.text,"Olá \"friend\" | 😀\n<script>alert(1)</script>");
  auto &bob=c.append();memcpy(bob.key,c.contacts[1].key,6);strcpy(bob.text,"Bob private text");
- auto body=snapshot("mc",alice);assert(body.find("Olá")!=body.npos&&body.find("Bob private text")==body.npos&&body.find("private-channel!")==body.npos);puts(body.c_str());assert(rx.read&&!bob.read);
+ auto body=snapshot("mc",alice);assert(body.find("Olá")!=body.npos&&body.find("Bob private text")==body.npos&&body.find("private-channel!")==body.npos);puts(body.c_str());assert(rx.read&&!bob.read);assert(body.find("2023-12-31 17:00 MST")!=body.npos);
  auto groups=snapshot("mc","",0,2);assert(groups.find("Trail")!=groups.npos&&groups.find("Alice")==groups.npos);
  auto nodes=snapshot("mc","",0,3);assert(nodes.find("Alice")!=nodes.npos&&nodes.find("Trail")==nodes.npos);
  auto chats=snapshot("mc","",0,1);assert(chats.find("Alice")!=chats.npos&&chats.find("Trail")==chats.npos);
@@ -66,9 +68,9 @@ int main(){
  auto channel=mcxchat::key_for(c,true,0);char group[65];mc_token(channel,group);c.channels[0].secret[0]^=1;bad=submit("mc",group,"Changed channel");assert(bad.status=="409 Conflict");
  m.connected=m.initialized=m.history_ready=m.tx_enabled=true;m.region=1;m.mtu=517;memcpy(m.data.radio,"1234567",7);m.data.my_num=42;m.data.channels[0].loaded=true;m.data.channels[0].role=1;m.data.channels[0].identity=123;strcpy(m.data.channels[0].name,"Adventure");
  auto *node=m.node(99,true);strcpy(node->name,"Trail peer");auto mt=m.target(99,0);char peer[65];mt_token(mt,peer);
- auto &incoming=m.append();incoming.from=99;incoming.to=42;incoming.channel=0;incoming.channel_identity=123;strcpy(incoming.text,"Meshtastic incoming");
+ auto &incoming=m.append();incoming.time=1719792000u;incoming.from=99;incoming.to=42;incoming.channel=0;incoming.channel_identity=123;strcpy(incoming.text,"Meshtastic incoming");
  auto &foreign=m.append();foreign.from=99;foreign.to=88;foreign.channel=0;foreign.channel_identity=123;strcpy(foreign.text,"Not our DM");
- body=snapshot("mt",peer);assert(body.find("Meshtastic incoming")!=body.npos&&body.find("Not our DM")==body.npos);puts(body.c_str());
+ body=snapshot("mt",peer);assert(body.find("Meshtastic incoming")!=body.npos&&body.find("Not our DM")==body.npos);assert(body.find("2024-06-30 18:00 MDT")!=body.npos);puts(body.c_str());
  ok=submit("mt",peer,"Meshtastic reply");assert(ok.status=="202 Accepted"&&m.data.message_count==3&&c.qcount==1);
  bad=submit("mc",peer,"Do not cross networks");assert(bad.status=="409 Conflict"&&c.qcount==1);
  m.data.channels[0].identity++;bad=submit("mt",peer,"Old channel");assert(bad.status=="409 Conflict");

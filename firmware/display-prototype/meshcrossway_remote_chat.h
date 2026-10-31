@@ -5,6 +5,7 @@
 #include "meshcrossway_meshtastic.h"
 #include "meshcrossway_conversations.h"
 #include "mbedtls/sha256.h"
+#include "meshcrossway_chat_presentation.h"
 #include <atomic>
 #include <new>
 namespace mcxremotechat {
@@ -45,8 +46,7 @@ static void mt_token(const meshmt::Target &t,char out[65]){
 }
 static const char *mc_delivery(meshmc::Delivery d){switch(d){case meshmc::QUEUED:return "Queued locally";case meshmc::ACCEPTED:return "Radio accepted";case meshmc::DELIVERED:return "Remote ACK";case meshmc::REJECTED:return "Rejected";case meshmc::UNCERTAIN:return "Unconfirmed";default:return "Received";}}
 static bool mt_belongs(const meshmt::Message &m,const meshmt::Target &t,uint32_t self){
-  return m.seq&&m.channel==t.channel&&m.channel_identity==t.channel_identity&&
-    (t.node==meshmt::BROADCAST?m.to==meshmt::BROADCAST:(m.outgoing?m.to==t.node:(m.from==t.node&&m.to==self)));
+  return meshmt::message_belongs(m,t,self);
 }
 static void result(const char *message,int code){
   Json j{work->response,sizeof(work->response)};j.add("{\"message\":");j.text(message);j.add("}");work->length=j.used;work->code=code;
@@ -120,7 +120,7 @@ static void process(){
     if(mc&&!outgoing){int n=c->find_contact(cm[i]->key,6);if(n>=0)sender=c->contacts[n].name;}
     if(!mc&&!outgoing){auto *n=m->node(mm[i]->from);if(n)sender=n->name;}
     j.add("{\"id\":");j.number(mc?cm[i]->id:mm[i]->seq);j.add(",\"outgoing\":");j.add(outgoing?"true":"false");j.add(",\"sender\":");j.text(sender);
-    j.add(",\"text\":");j.text(mc?cm[i]->text:mm[i]->text);j.add(",\"time\":");j.number(mc?cm[i]->timestamp:mm[i]->time);j.add(",\"delivery\":");j.text(mc?mc_delivery(cm[i]->delivery):meshmt::delivery_name(mm[i]->delivery));j.add("}");
+    j.add(",\"text\":");j.text(mc?cm[i]->text:mm[i]->text);j.add(",\"time\":");const uint32_t stamp=mc?mcxchat::message_stamp(cm[i]->timestamp,cm[i]->observed_at):mm[i]->time;j.number(stamp);char local[48];mcxchat::time_local(stamp,local,sizeof(local),true);j.add(",\"local_time\":");j.text(local);j.add(",\"delivery\":");j.text(mc?mc_delivery(cm[i]->delivery):meshmt::delivery_name(mm[i]->delivery));j.add("}");
     if(!outgoing){if(mc&&!cm[i]->read){cm[i]->read=true;read_changed=true;}else if(!mc&&!mm[i]->read){mm[i]->read=true;read_changed=true;}}
   }
   if(read_changed){if(mc)++c->generation;else ++m->generation;}
