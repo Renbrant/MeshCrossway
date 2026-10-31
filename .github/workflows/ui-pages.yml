@@ -101,6 +101,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: python3 scripts/restore_reviewed_firmware.py
       - name: Assemble supported releases (compile only when cache misses)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: bash scripts/build_firmware_versions.sh
       - name: Verify selectable manifests and binaries
         run: |
