@@ -1,6 +1,6 @@
 ![MeshCrossway — Meshtastic and MeshCore modular three-device system](docs/images/meshcrossway-modular-hero.jpg)
 
-**Recommended stable: v0.8.11.** Owner-selected recovery on 2026-10-31. The exact tested image is preserved. v0.8.12 has confirmed repeated Bluetooth-resume crashes and its installation is blocked. [Stable release record](docs/stable-v0811.md).
+**Recommended stable: v0.8.11.** Owner-selected recovery on 2026-10-31. The exact tested image is preserved. v0.8.12 has confirmed repeated Bluetooth-resume crashes and its installation is blocked. v0.8.13 is the experimental stack fix, pending hardware retest. [Crash analysis](docs/ble-resume-stack-v0813.md). [Stable release record](docs/stable-v0811.md).
 
 **v0.8.12 candidate:** persistent track folders, browser route list/map preview, Home Wi-Fi IP, separate communication views and remote radio scan/connect/pair/disconnect. [Operation and validation](docs/track-folders-remote-v0812.md).
 
