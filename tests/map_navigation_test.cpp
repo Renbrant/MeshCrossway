@@ -185,6 +185,10 @@ int main(int argc,char **argv){
  gpsui::setting_track=1;gpsui::setting_editor(3);advance();lv_textarea_set_text(gpsui::setting_value,"12ABCD");gpsui::setting_apply();advance();assert(mcxnav::last_command.action==mcxnav::SET_COLOR&&mcxnav::last_command.value==0x12ABCD&&!gpsui::setting_value);
  for(int width:{276,400}){lv_obj_set_width(body,width);gpsui::recording();advance();lv_area_t bounds;lv_obj_get_coords(gpsui::dialog,&bounds);for(auto *button:{gpsui::record_start,gpsui::record_pause,gpsui::record_resume,gpsui::record_finish}){lv_area_t a;lv_obj_get_coords(button,&a);assert(a.x1>=bounds.x1&&a.x2<=bounds.x2&&a.y2<=bounds.y2);}}
  gpsui::library(true);advance();assert(info_dialog);gpsui::library(false);advance();assert(info_dialog);
+ gpsui::folder_form(0);advance();lv_textarea_set_text(gpsui::folder_value,"Trail folder");tap(gpsui::folder_save);assert(mcxnav::last_command.action==mcxnav::CREATE_FOLDER&&!strcmp(mcxnav::last_command.name,"Trail folder"));
+ mcxnav::mock_state.folders[0].id=5;strcpy(mcxnav::mock_state.folders[0].name,"Trail folder");++mcxnav::mock_state.revision;navui::poll();gpsui::nav_refresh();advance();assert(gpsui::library_folder==5);render_preview("track-folders");
+ gpsui::track_details(9);advance();lv_obj_t *folder_picker=nullptr;for(unsigned i=0;i<lv_obj_get_child_cnt(gpsui::dialog);++i){auto *o=lv_obj_get_child(gpsui::dialog,i);if(lv_obj_check_type(o,&lv_dropdown_class)){folder_picker=o;break;}}assert(folder_picker);lv_dropdown_set_selected(folder_picker,1);lv_event_send(folder_picker,LV_EVENT_VALUE_CHANGED,nullptr);assert(mcxnav::last_command.action==mcxnav::MOVE_TRACK&&mcxnav::last_command.id==9&&mcxnav::last_command.value==5);
+
  gpsui::map_diagnostics();advance();assert(info_dialog);gpsui::map_credits();advance();assert(info_dialog);
  info_close_now(nullptr);navui::invalidate();lv_obj_clean(body);navui::after_clean();assert(!navui::front);
  // Full viewport/overlay geometry at all four left/right rail combinations.

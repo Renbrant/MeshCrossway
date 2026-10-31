@@ -15,7 +15,7 @@ static Snapshot current;static Snapshot snapshot(){return current;}
 }
 namespace meshmc {static Client *client=nullptr;static std::atomic<bool> link{false};}
 namespace meshmt {static Client *client=nullptr;static std::atomic<bool> link{false};}
-namespace meshnetwork {struct HomeStatus{char ssid[33]={},state[30]={};bool connected=false;};static HomeStatus wifi;static HomeStatus home_status(){return wifi;}}
+namespace meshnetwork {struct HomeStatus{char ssid[33]={},state[30]={},ip[16]={};bool connected=false;};static HomeStatus wifi;static HomeStatus home_status(){return wifi;}}
 namespace mcxgnss {static Fix fix;static Settings settings;struct Diagnostics{int error=0;};static Diagnostics diagnostics;static Fix snapshot(){return fix;}static Settings configuration(){return settings;}static Diagnostics status(){return diagnostics;}}
 namespace meshcrossway {
 static int page=0;static lv_obj_t *body=nullptr;
@@ -37,12 +37,13 @@ int main(){
  c.messages[0].id=1;c.messages[0].read=false;c.messages[1].id=2;c.messages[1].outgoing=true;c.messages[2].id=3;c.messages[2].read=true;
  m.data.node_count=8;m.data.message_count=2;m.data.messages[0].seq=1;m.data.messages[1].seq=2;m.data.messages[1].outgoing=true;
  meshble::current.phase=meshble::READY;meshble::current.radio=meshble::MESHCORE;
- strcpy(meshnetwork::wifi.ssid,"My home Wi-Fi network name");strcpy(meshnetwork::wifi.state,"Connected to Wi-Fi");meshnetwork::wifi.connected=true;
+ strcpy(meshnetwork::wifi.ssid,"My home Wi-Fi network name");strcpy(meshnetwork::wifi.state,"Connected to Wi-Fi");meshnetwork::wifi.connected=true;strcpy(meshnetwork::wifi.ip,"192.168.1.22");
  mcxgnss::fix.valid=true;mcxgnss::fix.frames=10;mcxgnss::fix.have_accuracy=true;mcxgnss::fix.horizontal_accuracy=2.1;mcxgnss::fix.accuracy_source=1;
  home_cards(401);lv_obj_update_layout(body);lv_refr_now(nullptr);
  assert(!strcmp(lv_label_get_text(home_mesh[1][0]),"Connected"));assert(!strcmp(lv_label_get_text(home_mesh[1][1]),"23 nodes"));assert(!strcmp(lv_label_get_text(home_mesh[1][2]),"1 unread"));
  assert(!strcmp(lv_label_get_text(home_mesh[0][0]),"Disconnected"));assert(!strcmp(lv_label_get_text(home_mesh[0][1]),"8 nodes (saved)"));assert(!strcmp(lv_label_get_text(home_mesh[0][2]),"1 unread"));
- assert(!strcmp(lv_label_get_text(home_wifi_name),meshnetwork::wifi.ssid));assert(!strcmp(lv_label_get_text(home_gps_state),"FIX GNSS"));assert(!strcmp(lv_label_get_text(home_gps_accuracy),"Est. accuracy 2.1 m"));
+ assert(!strcmp(home_wifi_source,meshnetwork::wifi.ssid));assert(!strcmp(lv_label_get_text(home_gps_state),"FIX GNSS"));assert(!strcmp(lv_label_get_text(home_gps_accuracy),"Est. accuracy 2.1 m"));
+ assert(!strcmp(lv_label_get_text(home_wifi_ip),"IP: 192.168.1.22"));
  render("home-live");
  memset(meshnetwork::wifi.ssid,'W',32);meshnetwork::wifi.ssid[32]=0;home_refresh(nullptr);lv_refr_now(nullptr);render("home-long-ssid");
  const auto idle_flushes=flushes;for(unsigned i=0;i<4;++i){home_refresh(nullptr);lv_refr_now(nullptr);}assert(flushes==idle_flushes); // No idle repaint or rebuild.
@@ -54,6 +55,7 @@ int main(){
  meshble::current.radio=meshble::MESHTASTIC;meshble::current.phase=meshble::READY;meshmt::link=true;m.connected=true;home_refresh(nullptr);assert(!strcmp(lv_label_get_text(home_mesh[0][0]),"Synchronizing radio"));
  m.initialized=m.history_ready=true;home_refresh(nullptr);assert(!strcmp(lv_label_get_text(home_mesh[0][0]),"Connected"));
  mcxgnss::fix.valid=false;strcpy(meshnetwork::wifi.state,"Reconnecting...");meshnetwork::wifi.connected=false;home_refresh(nullptr);assert(!strcmp(lv_label_get_text(home_gps_accuracy),"Accuracy unavailable"));
+ assert(!strcmp(lv_label_get_text(home_wifi_ip),"IP: --"));
  for(unsigned i=0;i<2;++i)for(auto *label:home_mesh[i]){lv_area_t box,parent;lv_obj_get_coords(label,&box);lv_obj_get_coords(lv_obj_get_parent(label),&parent);assert(box.y1>=parent.y1&&box.y2<=parent.y2&&box.x2<=parent.x2);}
  // Recreate with the left rail compact, then safely leave the page.
  home_clear();lv_obj_clean(body);lv_obj_set_width(body,440);home_cards(440);lv_obj_update_layout(body);render("home-wide");

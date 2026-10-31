@@ -120,12 +120,13 @@ static void get_status(char *ip,size_t ip_len,char *state,size_t state_len){
   snprintf(state,state_len,"%s",wifi_state);
   portEXIT_CRITICAL(&guard);
 }
-struct HomeStatus {char ssid[33]={},state[30]={};bool connected=false;};
+struct HomeStatus {char ssid[33]={},state[30]={},ip[16]={};bool connected=false;};
 static HomeStatus home_status(){
   HomeStatus out;
   portENTER_CRITICAL(&guard);
   snprintf(out.ssid,sizeof(out.ssid),"%s",ssid_name);
   snprintf(out.state,sizeof(out.state),"%s",wifi_state);
+  snprintf(out.ip,sizeof(out.ip),"%s",local_ip);
   out.connected=local_ip[0]!=0;
   portEXIT_CRITICAL(&guard);
   return out;

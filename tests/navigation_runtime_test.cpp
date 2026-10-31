@@ -50,8 +50,15 @@ int main(int argc,char **argv){assert(argc==2);lv_init();std::filesystem::create
  assert(request("999|0|0|0|0|").code=="400 Bad Request");
  httpd_req_t bad;bad.query="id=../../secret";mcxnavhttp::download(&bad);assert(bad.code=="400 Bad Request");
  const auto saved_id=mcxnav::store->tracks[0].id;
+ assert(request("16|0|0|0|0|Hikes").code=="202 Accepted");step();const auto folder_id=mcxnav::store->folders.folders[0].id;assert(folder_id);
+ assert(request("16|0|0|0|0|../bad").code=="400 Bad Request");
+ std::string move_body="19|"+std::to_string(saved_id)+"|"+std::to_string(folder_id)+"|0|0|";assert(request(move_body.c_str()).code=="202 Accepted");step();assert(mcxnav::store->track_folder(saved_id)==folder_id);
+ httpd_req_t grouped;mcxnavhttp::state(&grouped);assert(grouped.output.find("\"folders\"")!=std::string::npos&&grouped.output.find("Hikes")!=std::string::npos);
+ httpd_req_t geometry;geometry.query="id="+std::to_string(saved_id);mcxnavhttp::geometry_from(&geometry,argv[1]);assert(geometry.code=="200 OK"&&geometry.output.find("\"points\":[[")!=std::string::npos);
+ geometry={};geometry.query="id=4294967295";mcxnavhttp::geometry_from(&geometry,argv[1]);assert(geometry.code=="404 Not Found");
+
  std::string rename_body="13|"+std::to_string(saved_id)+"|0|0|0|Web named route";assert(request(rename_body.c_str()).code=="202 Accepted");step();assert(!strcmp(mcxnav::store->tracks[0].name,"Web named route"));
- assert(request("15|7|0|0|0|").code=="400 Bad Request");assert(request("15|4|1193046|20|5|").code=="202 Accepted");step();const auto running_id=mcxnav::store->current;assert(mcxnav::store->mode==mcxnav::RECORDING&&mcxnav::store->recording_preset.distance_m==20&&mcxnav::store->style(running_id)->color==1193046);
+ assert(request("15|7|0|0|0|").code=="400 Bad Request");assert(request("15|4|1193046|20|5|").code=="202 Accepted");step();const auto running_id=mcxnav::store->current;httpd_req_t live;live.query="id="+std::to_string(running_id);mcxnavhttp::geometry_from(&live,argv[1]);assert(live.code=="409 Conflict");assert(mcxnav::store->mode==mcxnav::RECORDING&&mcxnav::store->recording_preset.distance_m==20&&mcxnav::store->style(running_id)->color==1193046);
  std::string active_delete="14|"+std::to_string(running_id)+"|0|0|0|";assert(request(active_delete.c_str()).code=="202 Accepted");step();assert(mcxnav::store->mode==mcxnav::RECORDING);
  assert(request("4|0|0|0|0|Finished name").code=="202 Accepted");step();assert(mcxnav::store->mode==mcxnav::STOPPED&&!strcmp(mcxnav::store->tracks[0].name,"Finished name"));
  std::string delete_body="14|"+std::to_string(saved_id)+"|0|0|0|";assert(request(delete_body.c_str()).code=="202 Accepted");step();for(unsigned i=0;i<mcxnav::store->track_count;++i)assert(mcxnav::store->tracks[i].id!=saved_id);

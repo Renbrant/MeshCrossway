@@ -21,12 +21,14 @@ static esp_err_t exchange(httpd_req_t *r,const Request &request){
   const esp_err_t rc=httpd_resp_send(r,work->response,work->length);phase.store(0);return rc;
 }
 static esp_err_t state(httpd_req_t *r){
-  char query[160]={},page[5]={};Request request;
+  char query[180]={},page[5]={},category[8]={};Request request;
   if(httpd_req_get_url_query_str(r,query,sizeof(query))!=ESP_OK||httpd_query_key_value(query,"network",request.network,sizeof(request.network))!=ESP_OK||
      (strcmp(request.network,"mc")&&strcmp(request.network,"mt")))return error(r,"400 Bad Request","Select mc or mt network.");
   // Optional fields must be bounded, not silently ignored when too long.
   if(strstr(query,"target=")){if(httpd_query_key_value(query,"target",request.target,sizeof(request.target))!=ESP_OK||!valid_target(request.target))return error(r,"400 Bad Request","Invalid conversation.");}
   if(strstr(query,"page=")){if(httpd_query_key_value(query,"page",page,sizeof(page))!=ESP_OK)return error(r,"400 Bad Request","Invalid page.");for(const char *p=page;*p;++p)if(*p<'0'||*p>'9')return error(r,"400 Bad Request","Invalid page.");request.page=unsigned(atoi(page));if(request.page>33)return error(r,"400 Bad Request","Invalid page.");}
+  if(strstr(query,"category=")){if(httpd_query_key_value(query,"category",category,sizeof(category))!=ESP_OK)return error(r,"400 Bad Request","Invalid category.");
+    if(!strcmp(category,"chats"))request.category=1;else if(!strcmp(category,"groups"))request.category=2;else if(!strcmp(category,"nodes"))request.category=3;else if(strcmp(category,"all"))return error(r,"400 Bad Request","Invalid category.");}
   return exchange(r,request);
 }
 static esp_err_t send(httpd_req_t *r){

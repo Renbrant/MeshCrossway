@@ -43,9 +43,10 @@ namespace mcxnavhttp {
         color=v.color;
         visible=v.visible;
       }
-      body+="{\"id\":"+std::to_string(t.id)+",\"name\":"+quote(t.name)+",\"points\":"+std::to_string(t.points)+",\"metres\":"+std::to_string(t.metres)+",\"gpx\":"+(t.gpx?"true":"false")+",\"visible\":"+(visible?"true":"false")+",\"color\":"+std::to_string(color)+"}";
+      body+="{\"id\":"+std::to_string(t.id)+",\"name\":"+quote(t.name)+",\"folder\":"+std::to_string(t.folder)+",\"points\":"+std::to_string(t.points)+",\"metres\":"+std::to_string(t.metres)+",\"gpx\":"+(t.gpx?"true":"false")+",\"visible\":"+(visible?"true":"false")+",\"color\":"+std::to_string(color)+"}";
     }
-    body+="]}";
+    body+="],\"folders_ready\":"+std::string(s->folders_ready?"true":"false")+",\"folders\":[";
+    bool first_folder=true;for(const auto &f:s->folders)if(f.id){if(!first_folder)body+=',';first_folder=false;body+="{\"id\":"+std::to_string(f.id)+",\"name\":"+quote(f.name)+"}";}body+="]}";
     s->~Snapshot();
     heap_caps_free(s);
     httpd_resp_set_type(r,"application/json");
@@ -91,9 +92,11 @@ namespace mcxnavhttp {
     uint32_t action=0;
     mcxnav::Command c;
     if(!number(fields[0],action)||!number(fields[1],c.id)||!number(fields[2],c.value)||!number(fields[3],c.distance_m)||!number(fields[4],c.interval_s))return fail(r,"400 Bad Request","Invalid number");
-    if(action!=mcxnav::START&&action!=mcxnav::PAUSE&&action!=mcxnav::RESUME&&action!=mcxnav::STOP&&action!=mcxnav::SET_VISIBLE&&action!=mcxnav::SET_COLOR&&action!=mcxnav::SELECT_PRESET&&action!=mcxnav::SAVE_PRESET&&action!=mcxnav::EXPORT_TRACK&&action!=mcxnav::RENAME_TRACK&&action!=mcxnav::DELETE_TRACK&&action!=mcxnav::START_CONFIGURED)return fail(r,"400 Bad Request","Unsupported action");
-    if(strlen(fields[5])>((action==mcxnav::RENAME_TRACK||action==mcxnav::STOP)?39u:23u))return fail(r,"400 Bad Request","Name too long");
+    if(action!=mcxnav::START&&action!=mcxnav::PAUSE&&action!=mcxnav::RESUME&&action!=mcxnav::STOP&&action!=mcxnav::SET_VISIBLE&&action!=mcxnav::SET_COLOR&&action!=mcxnav::SELECT_PRESET&&action!=mcxnav::SAVE_PRESET&&action!=mcxnav::EXPORT_TRACK&&action!=mcxnav::RENAME_TRACK&&action!=mcxnav::DELETE_TRACK&&action!=mcxnav::START_CONFIGURED&&action!=mcxnav::CREATE_FOLDER&&action!=mcxnav::RENAME_FOLDER&&action!=mcxnav::DELETE_FOLDER&&action!=mcxnav::MOVE_TRACK)return fail(r,"400 Bad Request","Unsupported action");
+    if(strlen(fields[5])>((action==mcxnav::RENAME_TRACK||action==mcxnav::STOP)?39u:(action==mcxnav::CREATE_FOLDER||action==mcxnav::RENAME_FOLDER)?31u:23u))return fail(r,"400 Bad Request","Name too long");
     for(const unsigned char *p=(const unsigned char *)fields[5];*p;++p)if(*p<32||(action==mcxnav::SAVE_PRESET&&*p>126))return fail(r,"400 Bad Request","Invalid name characters");
+    if((action==mcxnav::CREATE_FOLDER||action==mcxnav::RENAME_FOLDER)&&!mcxnav::Store::folder_name_valid(fields[5]))return fail(r,"400 Bad Request","Folder name: 1-31 bytes; no slashes or separators");
+    if((action==mcxnav::RENAME_FOLDER||action==mcxnav::DELETE_FOLDER||action==mcxnav::MOVE_TRACK)&&!c.id)return fail(r,"400 Bad Request","Invalid folder or track ID");
     c.action=mcxnav::Action(action);
     snprintf(c.name,sizeof(c.name),"%s",fields[5]);
     if((c.action==mcxnav::SET_COLOR&&c.value>0xffffff)||(c.action==mcxnav::SET_VISIBLE&&c.value>1)||(c.action==mcxnav::SELECT_PRESET&&c.id>=4)||(c.action==mcxnav::SAVE_PRESET&&(c.id>=4||!c.name[0]||c.distance_m<3||c.distance_m>1000||c.interval_s<1||c.interval_s>300)))return fail(r,"400 Bad Request","Settings outside supported range");
@@ -103,6 +106,34 @@ namespace mcxnavhttp {
     httpd_resp_set_status(r,"202 Accepted");
     return httpd_resp_send(r,"Command queued; check device status",HTTPD_RESP_USE_STRLEN);
   }
+  static esp_err_t geometry_from(httpd_req_t *r,const char *root){
+    char query[48],id_text[16];uint32_t id=0;
+    if(httpd_req_get_url_query_str(r,query,sizeof(query))!=ESP_OK||httpd_query_key_value(query,"id",id_text,sizeof(id_text))!=ESP_OK||!number(id_text,id)||!id)return fail(r,"400 Bad Request","Invalid track ID");
+    auto *s=(mcxnav::Snapshot*)heap_caps_malloc(sizeof(mcxnav::Snapshot),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+    if(!s){return fail(r,"503 Service Unavailable","Memory unavailable");}
+    new(s) mcxnav::Snapshot();
+    bool found=false,active=false;uint32_t total=0;
+    if(mcxnav::snapshot(*s)){active=s->current==id&&(s->mode==mcxnav::RECORDING||s->mode==mcxnav::PAUSED);for(unsigned i=0;i<s->track_count;++i)if(s->tracks[i].id==id){found=true;total=s->tracks[i].points;}}
+    s->~Snapshot();heap_caps_free(s);
+    if(!found)return fail(r,"404 Not Found","Track unavailable");
+    if(active)return fail(r,"409 Conflict","Finish recording before previewing this track");
+    auto *g=(mcxnav::Geometry*)heap_caps_malloc(sizeof(mcxnav::Geometry),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+    if(!g){return fail(r,"503 Service Unavailable","Memory unavailable");}
+    new(g) mcxnav::Geometry();
+    if(!mcxnav::read_geometry(root,id,total,*g)){g->~Geometry();heap_caps_free(g);return fail(r,"404 Not Found","Track geometry unavailable or damaged");}
+    static constexpr size_t CAPACITY=96*1024;
+    char *json=(char*)heap_caps_malloc(CAPACITY,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+    if(!json){g->~Geometry();heap_caps_free(g);return fail(r,"503 Service Unavailable","Memory unavailable");}
+    size_t used=0;bool ok=true;
+    int n=snprintf(json,CAPACITY,"{\"id\":%lu,\"total\":%lu,\"simplified\":%s,\"points\":[",(unsigned long)id,(unsigned long)total,g->count<total?"true":"false");used=size_t(n);
+    for(unsigned i=0;i<g->count;++i){const auto &p=g->points[i];n=snprintf(json+used,CAPACITY-used,"%s[%.7f,%.7f,%lu]",i?",":"",p.latitude,p.longitude,(unsigned long)p.segment);if(n<0||size_t(n)>=CAPACITY-used){ok=false;break;}used+=size_t(n);}
+    if(ok){json[used++]=']';json[used++]='}';json[used]=0;}
+    g->~Geometry();heap_caps_free(g);
+    esp_err_t rc;
+    if(ok){httpd_resp_set_type(r,"application/json");httpd_resp_set_hdr(r,"Cache-Control","no-store");rc=httpd_resp_send(r,json,used);}else rc=fail(r,"503 Service Unavailable","Geometry response limit");
+    heap_caps_free(json);return rc;
+  }
+  static esp_err_t geometry(httpd_req_t *r){return geometry_from(r,"/sdcard/meshcrossway/navigation");}
   static esp_err_t download(httpd_req_t *r){
     char query[48],id_text[16];
     uint32_t id=0;

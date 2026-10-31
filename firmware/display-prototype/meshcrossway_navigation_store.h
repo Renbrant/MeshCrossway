@@ -18,15 +18,22 @@ struct Sample {double latitude=0,longitude=0,altitude=0;int64_t epoch=0;uint32_t
 struct Poi {Sample point;uint32_t id=0;char name[40]={};uint32_t crc=0;};
 struct Header {char magic[8]={};uint32_t id=0,crc=0;};
 static_assert(sizeof(Sample)==48&&sizeof(Poi)==96&&sizeof(Header)==16,"Navigation schema layout");
-struct Track {uint32_t id=0,points=0;double metres=0;Sample first;bool gpx=false,recovered=false;char name[40]={};};
+struct Track {uint32_t folder=0;uint32_t id=0,points=0;double metres=0;Sample first;bool gpx=false,recovered=false;char name[40]={};};
 static constexpr unsigned MAX_VISIBLE=8,OVERLAY_POINTS=128;
 static constexpr uint32_t TRACK_COLORS[]={0xFF8A24,0x4DB8FF,0x72D8A5,0xFF7777,0xB99AFF,0xFFE066};
 struct Preset {char name[24]="Walking";uint32_t distance_m=3,interval_s=2;};
 struct Style {uint32_t id=0,color=0xFF8A24;bool visible=false;};
 struct Overlay {uint32_t id=0,color=0xFF8A24;unsigned count=0;Sample points[OVERLAY_POINTS];};
 struct Preferences {uint32_t magic=0x4d435832,selected=0;Preset presets[4];Style styles[MAX_TRACKS+1];uint32_t crc=0;};
+static constexpr unsigned MAX_FOLDERS=16,MAX_FOLDER_LINKS=128,GEOMETRY_POINTS=1024;
+struct Folder {uint32_t id=0;char name[32]={};};
+struct FolderLink {uint32_t track=0,folder=0;};
+struct FolderCatalog {uint32_t magic=0x4d435846,version=1,next_id=1;Folder folders[MAX_FOLDERS];FolderLink links[MAX_FOLDER_LINKS];uint32_t crc=0;};
+static_assert(sizeof(FolderCatalog)==1616,"Folder metadata layout");
+struct GeometryPoint {double latitude=0,longitude=0;uint32_t segment=0;};
+struct Geometry {uint32_t id=0,total=0;unsigned count=0;GeometryPoint points[GEOMETRY_POINTS];};
 enum Mode {STOPPED,RECORDING,PAUSED,STORAGE_ERROR};
-enum Action {NONE,START,PAUSE,RESUME,STOP,SAVE_POI,DELETE_POI,SHOW_TRACK,SET_VISIBLE,SET_COLOR,SELECT_PRESET,SAVE_PRESET,EXPORT_TRACK,RENAME_TRACK,DELETE_TRACK,START_CONFIGURED};
+enum Action {NONE,START,PAUSE,RESUME,STOP,SAVE_POI,DELETE_POI,SHOW_TRACK,SET_VISIBLE,SET_COLOR,SELECT_PRESET,SAVE_PRESET,EXPORT_TRACK,RENAME_TRACK,DELETE_TRACK,START_CONFIGURED,CREATE_FOLDER,RENAME_FOLDER,DELETE_FOLDER,MOVE_TRACK};
 struct Command {Action action=NONE;uint32_t id=0;Sample point;char name[40]={};uint32_t value=0,distance_m=0,interval_s=0;};
 static uint32_t checksum(const void *p,size_t n){uint32_t c=2166136261u;auto *b=(const uint8_t *)p;for(size_t i=0;i<n;++i)c=(c^b[i])*16777619u;return c;}
 static bool valid(const Sample &p){return std::isfinite(p.latitude)&&std::isfinite(p.longitude)&&p.latitude>=-90&&p.latitude<=90&&p.longitude>=-180&&p.longitude<=180&&(!(p.flags&1)||std::isfinite(p.altitude))&&!(p.flags&~1u)&&!p.reserved;}
@@ -45,7 +52,7 @@ static bool commit_export(const char *tmp,const char *file){
  (void)remove(backup);return true;
 }
 static void xml(FILE *f,const char *s){for(;*s;++s){switch(*s){case '&':fputs("&amp;",f);break;case '<':fputs("&lt;",f);break;case '>':fputs("&gt;",f);break;case '\"':fputs("&quot;",f);break;case '\'':fputs("&apos;",f);break;default:fputc(*s,f);}}}
-struct Snapshot {Mode mode=STOPPED;uint32_t current=0,points=0,revision=0,preview_id=0;double metres=0;unsigned poi_count=0,track_count=0,preview_count=0;Preset recording_preset;char status[96]="Navigation storage starting";Poi pois[MAX_POIS];Track tracks[MAX_TRACKS];Sample preview[MAX_PREVIEW];Preferences preferences;Overlay overlays[MAX_VISIBLE];unsigned overlay_count=0;};
+struct Snapshot {Folder folders[MAX_FOLDERS];bool folders_ready=true;Mode mode=STOPPED;uint32_t current=0,points=0,revision=0,preview_id=0;double metres=0;unsigned poi_count=0,track_count=0,preview_count=0;Preset recording_preset;char status[96]="Navigation storage starting";Poi pois[MAX_POIS];Track tracks[MAX_TRACKS];Sample preview[MAX_PREVIEW];Preferences preferences;Overlay overlays[MAX_VISIBLE];unsigned overlay_count=0;};
 class Store {
 public:
  char root[160]={},status[96]="SD navigation starting";
@@ -54,6 +61,8 @@ public:
  Sample preview[MAX_PREVIEW];unsigned preview_count=0;uint32_t preview_id=0;
  Preferences preferences;Overlay overlays[MAX_VISIBLE];unsigned overlay_count=0;
  Preset recording_preset;char current_name[40]={};
+ FolderCatalog folders,folder_scratch;bool folders_ready=true,folder_from_backup=false;
+
  bool loaded=false;int error=0;
 private:
  FILE *active=nullptr;Sample previous;bool have_previous=false,gap=true;uint32_t last_ms=0,next_track=1,next_poi=1;
@@ -65,7 +74,9 @@ private:
  bool header(FILE *f,uint32_t id){Header h;return fread(&h,1,sizeof(h),f)==sizeof(h)&&!memcmp(h.magic,"MCXTRK1",8)&&h.id==id&&h.crc==checksum(&h,offsetof(Header,crc));}
  void add_preview(const Sample &p){if(preview_count==MAX_PREVIEW){unsigned out=0;for(unsigned i=0;i<preview_count;i+=2)preview[out++]=preview[i];preview_count=out;}preview[preview_count++]=p;}
  bool point_xml(FILE *f,const Sample &p,const char *tag){fprintf(f,"<%s lat=\"%.8f\" lon=\"%.8f\">",tag,p.latitude,p.longitude);if(p.flags&1)fprintf(f,"<ele>%.2f</ele>",p.altitude);if(p.epoch>1577836800){time_t t=time_t(p.epoch);struct tm utc={};if(gmtime_r(&t,&utc)){char text[32];strftime(text,sizeof(text),"%Y-%m-%dT%H:%M:%SZ",&utc);fprintf(f,"<time>%s</time>",text);}}return !ferror(f);}
- bool poi_export(){char tmp[192],file[192];snprintf(tmp,sizeof(tmp),"%s/pois.gpx.tmp",root);snprintf(file,sizeof(file),"%s/pois.gpx",root);FILE *f=fopen(tmp,"wb");if(!f)return false;fputs("<?xml version=\"1.0\"?><gpx version=\"1.1\" creator=\"MeshCrossway\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n",f);for(unsigned i=0;i<poi_count;++i){point_xml(f,pois[i].point,"wpt");fputs("<name>",f);xml(f,pois[i].name);fputs("</name></wpt>\n",f);}fputs("</gpx>\n",f);bool ok=!ferror(f)&&sync_file(f);if(fclose(f))ok=false;if(ok)ok=commit_export(tmp,file);if(!ok)remove(tmp);return ok;}
+ bool poi_export(){char tmp[192],file[192];snprintf(tmp,sizeof(tmp),"%s/pois.gpx.tmp",root);snprintf(file,sizeof(file),"%s/pois.gpx",root);FILE *f=fopen(tmp,"wb");if(!f)return false;fputs("<?xml version=\"1.0\"?><gpx version=\"1.1\" creator=\"MeshCrossway\" xmlns=\"http://www.topografix.com/GPX/1/1\">\n",f);for(unsigned i=0;i<poi_count;++i){point_xml(f,pois[i].point,"wpt");fputs("<name>",f);xml(f,pois[i].name);fputs("</name></wpt>\n",f);}fputs("</gpx>\n",f);bool ok=!ferror(f)&&sync_file(f);if(fclose(f))ok=false;if(ok){if(folder_from_backup){if(remove(file)&&errno!=ENOENT)ok=false;if(ok)ok=rename(tmp,file)==0;}else ok=commit_export(tmp,file);}
+  if(!ok){remove(tmp);}else folder_from_backup=false;
+  return ok;}
 public:
  Store(){const char *names[]={"Walking","Cycling","Car","Custom"};const unsigned distances[]={3,8,20,5},intervals[]={2,3,5,2};for(unsigned i=0;i<4;++i){snprintf(preferences.presets[i].name,24,"%s",names[i]);preferences.presets[i].distance_m=distances[i];preferences.presets[i].interval_s=intervals[i];}}
  Style *style(uint32_t id,bool create=false){for(auto &v:preferences.styles)if(v.id==id)return &v;if(create)for(auto &v:preferences.styles)if(!v.id){v.id=id;v.color=TRACK_COLORS[id%6];return &v;}return nullptr;}
@@ -84,6 +95,81 @@ public:
  bool color(uint32_t id,uint32_t rgb){auto *v=style(id);if(!v||rgb>0xffffff)return false;const auto old=v->color;v->color=rgb;if(!save_preferences()){v->color=old;return false;}rebuild_overlays();tell("Track color saved");return true;}
  bool preset(unsigned slot,const char *name,uint32_t metres,uint32_t seconds){if(slot>=4||!name||!name[0]||strlen(name)>23||metres<3||metres>1000||seconds<1||seconds>300)return false;auto old=preferences.presets[slot];snprintf(preferences.presets[slot].name,24,"%s",name);preferences.presets[slot].distance_m=metres;preferences.presets[slot].interval_s=seconds;if(!save_preferences()){preferences.presets[slot]=old;return false;}tell("Recording preset saved");return true;}
  bool select_preset(unsigned slot){if(slot>=4)return false;auto old=preferences.selected;preferences.selected=slot;if(!save_preferences()){preferences.selected=old;return false;}if(mode==RECORDING||mode==PAUSED)recording_preset=preferences.presets[slot];tell("Recording preset selected");return true;}
+
+ const Folder *folder(uint32_t id)const{for(const auto &f:folders.folders)if(f.id==id&&id)return &f;return nullptr;}
+ uint32_t track_folder(uint32_t id)const{for(const auto &v:folders.links)if(v.track==id&&id&&folder(v.folder))return v.folder;return 0;}
+ static bool folder_utf8(const char *s){const auto *p=(const unsigned char*)s;while(*p){uint32_t cp=*p++;unsigned n=0;if(cp<128)continue;if(cp>=0xc2&&cp<=0xdf){cp&=31;n=1;}else if(cp>=0xe0&&cp<=0xef){cp&=15;n=2;}else if(cp>=0xf0&&cp<=0xf4){cp&=7;n=3;}else return false;for(unsigned i=0;i<n;++i){if((*p&0xc0)!=0x80)return false;cp=(cp<<6)|(*p++&63);}if((n==1&&cp<128)||(n==2&&cp<2048)||(n==3&&cp<65536)||cp>0x10ffff||(cp>=0xd800&&cp<=0xdfff))return false;}return true;}
+ static bool folder_name_valid(const char *name){if(!name||!name[0]||strlen(name)>31)return false;bool text=false;for(const unsigned char *p=(const unsigned char*)name;*p;++p){if(*p<32||*p=='|'||*p=='/'||*p=='\\')return false;if(*p!=' ')text=true;}return text&&strcmp(name,".")&&strcmp(name,"..")&&folder_utf8(name);}
+ bool catalog_valid(const FolderCatalog &c)const{
+  if(c.magic!=0x4d435846||c.version!=1||!c.next_id||c.crc!=checksum(&c,offsetof(FolderCatalog,crc)))return false;
+  for(unsigned i=0;i<MAX_FOLDERS;++i){const auto &f=c.folders[i];if(!f.id)continue;
+   if(f.id>=c.next_id||!memchr(f.name,0,sizeof(f.name))||!folder_name_valid(f.name))return false;
+   for(unsigned j=0;j<i;++j)if(c.folders[j].id&&(c.folders[j].id==f.id||!strcmp(c.folders[j].name,f.name)))return false;
+  }
+  for(unsigned i=0;i<MAX_FOLDER_LINKS;++i){const auto &v=c.links[i];if(!v.track){if(v.folder)return false;continue;}
+   bool found=false;for(const auto &f:c.folders)found|=f.id&&f.id==v.folder;if(!found)return false;
+   for(unsigned j=0;j<i;++j)if(c.links[j].track==v.track)return false;
+  }return true;
+ }
+ void load_folders(){
+  // Bulk candidates live in the Store's existing PSRAM allocation, never on
+  // the small navigation worker stack. Existing preferences schema is untouched.
+  folders.magic=0x4d435846;folders.version=1;folders.next_id=1;folders.crc=0;for(auto &f:folders.folders){f.id=0;memset(f.name,0,sizeof(f.name));}for(auto &v:folders.links){v.track=0;v.folder=0;}folders_ready=true;folder_from_backup=false;bool damaged=false;
+  for(const char *suffix:{"folders.bin","folders.bin.bak"}){
+   char file[192];snprintf(file,sizeof(file),"%s/%s",root,suffix);FILE *f=fopen(file,"rb");if(!f){if(errno!=ENOENT)damaged=true;continue;}
+   const bool ok=fread(&folder_scratch,1,sizeof(folder_scratch),f)==sizeof(folder_scratch)&&fgetc(f)==EOF&&!ferror(f);fclose(f);
+   if(ok&&catalog_valid(folder_scratch)){folders=folder_scratch;folder_from_backup=strstr(suffix,".bak")!=nullptr;return;}damaged=true;
+  }
+  folders_ready=!damaged;
+ }
+ bool save_folders(){
+  if(!loaded||!folders_ready)return false;
+  char file[192],tmp[192];snprintf(file,sizeof(file),"%s/folders.bin",root);snprintf(tmp,sizeof(tmp),"%s/folders.tmp",root);
+  folders.crc=checksum(&folders,offsetof(FolderCatalog,crc));FILE *f=fopen(tmp,"wb");if(!f)return false;
+  bool ok=fwrite(&folders,1,sizeof(folders),f)==sizeof(folders)&&sync_file(f);if(fclose(f))ok=false;
+  if(ok){if(folder_from_backup){if(remove(file)&&errno!=ENOENT)ok=false;if(ok)ok=rename(tmp,file)==0;}else ok=commit_export(tmp,file);}
+  if(!ok){remove(tmp);}else folder_from_backup=false;
+  return ok;
+ }
+ bool folder_change_ok(){if(!loaded||!folders_ready){tell("Folder data unavailable / SD");return false;}return true;}
+ bool create_folder(const char *name){
+  if(!folder_change_ok())return false;
+  if(!folder_name_valid(name)){tell("Folder name: 1-31 bytes / no slashes");return false;}
+  for(const auto &f:folders.folders)if(f.id&&!strcmp(f.name,name)){tell("Folder name already exists");return false;}
+  for(auto &f:folders.folders)if(!f.id){if(folders.next_id==0xffffffffu){tell("Folder ID limit reached");return false;}
+   folder_scratch=folders;f.id=folders.next_id++;snprintf(f.name,sizeof(f.name),"%s",name);
+   if(!save_folders()){folders=folder_scratch;tell("Folder save failed");return false;}tell("Folder created");return true;
+  }tell("Folder limit: 16");return false;
+ }
+ bool rename_folder(uint32_t id,const char *name){
+  if(!folder_change_ok())return false;
+  if(!folder(id)||!folder_name_valid(name)){tell("Invalid folder name or ID");return false;}
+  for(const auto &f:folders.folders)if(f.id&&f.id!=id&&!strcmp(f.name,name)){tell("Folder name already exists");return false;}
+  folder_scratch=folders;for(auto &f:folders.folders)if(f.id==id)snprintf(f.name,sizeof(f.name),"%s",name);
+  if(!save_folders()){folders=folder_scratch;tell("Folder rename failed");return false;}tell("Folder renamed");return true;
+ }
+ bool delete_folder(uint32_t id){
+  if(!folder_change_ok()){return false;}
+  if(!folder(id)){tell("Folder unavailable");return false;}
+  folder_scratch=folders;for(auto &f:folders.folders)if(f.id==id)f=Folder{};
+  for(auto &v:folders.links)if(v.folder==id)v=FolderLink{};
+  if(!save_folders()){folders=folder_scratch;tell("Folder delete failed");return false;}
+  for(auto &t:tracks)if(t.folder==id)t.folder=0;
+  tell("Folder removed / tracks kept in Unfiled");return true;
+ }
+ bool move_track(uint32_t id,uint32_t destination){
+  if(!folder_change_ok())return false;
+  bool found=id&&id==current;for(unsigned i=0;i<track_count;++i)found|=id&&tracks[i].id==id;
+  if(!found||deleted(id)||(destination&&!folder(destination))){tell("Track or folder unavailable");return false;}
+  FolderLink *entry=nullptr;for(auto &v:folders.links)if(v.track==id)entry=&v;
+  if(!entry&&destination)for(auto &v:folders.links)if(!v.track){entry=&v;break;}
+  if(!entry&&!destination){tell("Track is in Unfiled");return true;}
+  if(!entry){tell("Folder assignment limit reached");return false;}
+  folder_scratch=folders;entry->track=destination?id:0;entry->folder=destination;
+  if(!save_folders()){folders=folder_scratch;tell("Track folder save failed");return false;}
+  for(unsigned i=0;i<track_count;++i)if(tracks[i].id==id)tracks[i].folder=destination;
+  tell("Track moved");return true;
+ }
  ~Store(){if(active)fclose(active);}
  bool rename_track(uint32_t id,const char *name){
   bool found=id==current;for(unsigned i=0;i<track_count;++i)found|=tracks[i].id==id;
@@ -99,6 +185,7 @@ public:
   char file[192];path(file,sizeof(file),id,"del");Header marker;memcpy(marker.magic,"MCXDEL1",8);marker.id=id;marker.crc=checksum(&marker,offsetof(Header,crc));FILE *f=fopen(file,"wb");if(!f){tell("Track delete failed");return false;}bool ok=fwrite(&marker,1,sizeof(marker),f)==sizeof(marker)&&sync_file(f);if(fclose(f))ok=false;if(!ok){remove(file);tell("Track delete failed");return false;}
   bool cleaned=true;for(const char *suffix:{"gpx","gpx.tmp","gpx.bak","name","name.bak","name.tmp","trk"}){path(file,sizeof(file),id,suffix);if(remove(file)&&errno!=ENOENT)cleaned=false;}
   for(unsigned i=0;i<track_count;++i)if(tracks[i].id==id){for(unsigned j=i+1;j<track_count;++j)tracks[j-1]=tracks[j];--track_count;break;}
+  for(auto &v:folders.links)if(v.track==id){v=FolderLink{};(void)save_folders();break;}
   if(auto *v=style(id))*v=Style{};
   if(preview_id==id){preview_count=0;preview_id=0;}if(current==id){current=0;point_count=0;metres=0;current_name[0]=0;}save_preferences();rebuild_overlays();tell(cleaned?"Track deleted":"Track deleted / file cleanup pending");return true;
  }
@@ -108,16 +195,18 @@ public:
   if(!start(color))return false;
   if(slot==4){snprintf(recording_preset.name,24,"Custom");recording_preset.distance_m=metres;recording_preset.interval_s=seconds;}return true;
  }
- bool scan_track(uint32_t id,Track &out,bool draw=false){char file[192];path(file,sizeof(file),id,"trk");if(deleted(id))return false;FILE *f=fopen(file,"rb");if(!f)return false;struct stat bounded={};if(fstat(fileno(f),&bounded)||bounded.st_size>16*1024*1024){fclose(f);return false;}if(!header(f,id)){fclose(f);return false;}out=Track{};out.id=id;track_name(id,out.name,sizeof(out.name));Sample p,last;bool have=false;if(draw){preview_count=0;preview_id=id;}
+ bool scan_track(uint32_t id,Track &out,bool draw=false){char file[192];path(file,sizeof(file),id,"trk");if(deleted(id))return false;FILE *f=fopen(file,"rb");if(!f)return false;struct stat bounded={};if(fstat(fileno(f),&bounded)||bounded.st_size>16*1024*1024){fclose(f);return false;}if(!header(f,id)){fclose(f);return false;}out=Track{};out.id=id;out.folder=track_folder(id);track_name(id,out.name,sizeof(out.name));Sample p,last;bool have=false;if(draw){preview_count=0;preview_id=id;}
   for(;;){const size_t n=fread(&p,1,sizeof(p),f);if(!n)break;if(n!=sizeof(p)||!same_sample(p)){out.recovered=true;break;}if(!out.points)out.first=p;if(have&&last.segment==p.segment)out.metres+=distance(last,p);last=p;have=true;++out.points;if(draw)add_preview(p);}
   const bool ok=!ferror(f);fclose(f);path(file,sizeof(file),id,"gpx");struct stat st={};out.gpx=stat(file,&st)==0;return ok;
  }
  bool export_track(uint32_t id){if(deleted(id))return false;char input[192],tmp[192],file[192];path(input,sizeof(input),id,"trk");path(tmp,sizeof(tmp),id,"gpx.tmp");path(file,sizeof(file),id,"gpx");FILE *in=fopen(input,"rb");if(!in)return false;struct stat bounded={};if(fstat(fileno(in),&bounded)||bounded.st_size>16*1024*1024){fclose(in);return false;}if(!header(in,id)){fclose(in);return false;}FILE *f=fopen(tmp,"wb");if(!f){fclose(in);return false;}
   char name[40];track_name(id,name,sizeof(name));fputs("<?xml version=\"1.0\"?><gpx version=\"1.1\" creator=\"MeshCrossway\" xmlns=\"http://www.topografix.com/GPX/1/1\"><trk><name>",f);xml(f,name);fputs("</name>\n",f);Sample p;uint32_t last=0;bool open=false;
   while(fread(&p,1,sizeof(p),in)==sizeof(p)){if(!same_sample(p))break;if(!open||p.segment!=last){if(open)fputs("</trkseg>\n",f);fputs("<trkseg>\n",f);open=true;}last=p.segment;point_xml(f,p,"trkpt");fputs("</trkpt>\n",f);}
-  const bool input_ok=!ferror(in);fclose(in);if(open)fputs("</trkseg>",f);fputs("</trk></gpx>\n",f);bool ok=input_ok&&!ferror(f)&&sync_file(f);if(fclose(f))ok=false;if(ok)ok=commit_export(tmp,file);if(!ok)remove(tmp);return ok;
+  const bool input_ok=!ferror(in);fclose(in);if(open)fputs("</trkseg>",f);fputs("</trk></gpx>\n",f);bool ok=input_ok&&!ferror(f)&&sync_file(f);if(fclose(f))ok=false;if(ok){if(folder_from_backup){if(remove(file)&&errno!=ENOENT)ok=false;if(ok)ok=rename(tmp,file)==0;}else ok=commit_export(tmp,file);}
+  if(!ok){remove(tmp);}else folder_from_backup=false;
+  return ok;
  }
- bool load(const char *directory){if(active)return false;if(strlen(directory)>=sizeof(root))return false;if(directory!=root)snprintf(root,sizeof(root),"%s",directory);if(mkdir(root,0755)&&errno!=EEXIST){tell("Navigation SD directory unavailable");return false;}DIR *dir=opendir(root);if(!dir){tell("Cannot read navigation SD");return false;}poi_count=track_count=0;next_track=next_poi=1;errno=0;
+ bool load(const char *directory){if(active)return false;if(strlen(directory)>=sizeof(root))return false;if(directory!=root)snprintf(root,sizeof(root),"%s",directory);if(mkdir(root,0755)&&errno!=EEXIST){tell("Navigation SD directory unavailable");return false;}DIR *dir=opendir(root);if(!dir){tell("Cannot read navigation SD");return false;}poi_count=track_count=0;next_track=next_poi=1;load_folders();errno=0;
   while(auto *e=readdir(dir)){unsigned long id=0;char suffix[8]={},extra=0;if(sscanf(e->d_name,"%8lx.%7s%c",&id,suffix,&extra)!=2||!id||id>0xfffffffeUL)continue;char canonical[32];snprintf(canonical,sizeof(canonical),"%08lx.%s",id,suffix);if(strcmp(canonical,e->d_name))continue;
    if(!strcmp(suffix,"del")&&id>=next_track)next_track=uint32_t(id)+1;
    if(!strcmp(suffix,"trk")){if(id>=next_track)next_track=uint32_t(id)+1;unsigned slot=track_count;if(track_count==MAX_TRACKS){slot=0;for(unsigned i=1;i<track_count;++i)if(tracks[i].id<tracks[slot].id)slot=i;if(id<=tracks[slot].id)continue;}Track t;if(scan_track(uint32_t(id),t)){if(!t.gpx){t.recovered=true;t.gpx=export_track(uint32_t(id));}tracks[slot]=t;if(track_count<MAX_TRACKS)++track_count;}}
@@ -145,4 +234,17 @@ public:
  bool save_poi(const Sample &point,const char *name){if(!loaded||!valid(point)||poi_count>=MAX_POIS){tell("POI unavailable / invalid fix or list full");return false;}if(name&&strlen(name)>=sizeof(Poi::name)){tell("POI name is too long in UTF-8 bytes");return false;}Poi p;p.point=point;p.id=next_poi;if(!p.id||p.id==0xffffffffu)return false;snprintf(p.name,sizeof(p.name),"%s",name&&*name?name:"POI");for(char *c=p.name;*c;++c)if(uint8_t(*c)<32)*c=' ';p.crc=checksum(&p,offsetof(Poi,crc));char file[192];path(file,sizeof(file),p.id,"poi");const int fd=open(file,O_WRONLY|O_CREAT|O_EXCL,0644);if(fd<0){tell("POI ID conflict / restart to refresh");return false;}close(fd);FILE *f=fopen(file,"r+b");if(!f){const int saved=errno;remove(file);error=saved;char message[96];snprintf(message,sizeof(message),"POI open failed (%d)",saved);tell(message);return false;}bool ok=fwrite(&p,1,sizeof(p),f)==sizeof(p)&&sync_file(f);if(fclose(f))ok=false;if(!ok){remove(file);tell("POI save failed");return false;}pois[poi_count++]=p;++next_poi;tell(poi_export()?"POI saved / GPX updated":"POI saved / GPX update failed");return true;}
  bool delete_poi(uint32_t id){for(unsigned i=0;i<poi_count;++i)if(pois[i].id==id){char file[192];path(file,sizeof(file),id,"poi");if(remove(file)){tell("POI delete failed");return false;}for(unsigned j=i+1;j<poi_count;++j)pois[j-1]=pois[j];--poi_count;tell(poi_export()?"POI deleted / GPX updated":"POI deleted / GPX update failed");return true;}return false;}
 };
+[[maybe_unused]] static bool read_geometry(const char *root,uint32_t id,uint32_t valid_points,Geometry &out){
+ char file[192];snprintf(file,sizeof(file),"%s/%08lx.del",root,(unsigned long)id);struct stat st={};if(stat(file,&st)==0)return false;
+ snprintf(file,sizeof(file),"%s/%08lx.trk",root,(unsigned long)id);FILE *f=fopen(file,"rb");if(!f)return false;
+ Header h;bool ok=!fstat(fileno(f),&st)&&st.st_size>=long(sizeof(Header))&&st.st_size<=16*1024*1024&&fread(&h,1,sizeof(h),f)==sizeof(h)&&!memcmp(h.magic,"MCXTRK1",8)&&h.id==id&&h.crc==checksum(&h,offsetof(Header,crc));
+ if(!ok||valid_points>uint64_t(st.st_size-sizeof(Header))/sizeof(Sample)){fclose(f);return false;}
+ out.id=id;out.total=valid_points;out.count=valid_points<GEOMETRY_POINTS?valid_points:GEOMETRY_POINTS;
+ for(unsigned i=0;i<out.count;++i){const uint32_t index=out.count>1?uint32_t(uint64_t(i)*(valid_points-1)/(out.count-1)):0;Sample p;
+  if(fseek(f,long(sizeof(Header)+uint64_t(index)*sizeof(Sample)),SEEK_SET)||fread(&p,1,sizeof(p),f)!=sizeof(p)||!same_sample(p)){ok=false;break;}
+  out.points[i].latitude=p.latitude;out.points[i].longitude=p.longitude;out.points[i].segment=p.segment;
+ }
+ fclose(f);snprintf(file,sizeof(file),"%s/%08lx.del",root,(unsigned long)id);if(stat(file,&st)==0)ok=false;return ok;
+}
+
 }

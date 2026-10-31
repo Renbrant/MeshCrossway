@@ -71,3 +71,7 @@ The offline dashboard and mailbox are original MeshCrossway code; the unchanged 
 ## v0.8.11 Home and GNSS accuracy
 
 Original presentation/parser code and existing math/UART/LVGL dependencies only. Research reference: u-blox M10 SPG 5.10 interface description, UBX-21035062 R03, sections PUBX,00, GST and NMEA position validity. The document is not bundled; no manufacturer code, schema or bindings were copied. [Reference and statistical interpretation](home-live-v0811.md).
+
+## v0.8.12 browser map and folders
+
+The folder/geometry/viewer code is original MeshCrossway code. No map JavaScript library, copied schema or new firmware dependency is incorporated. OpenStreetMap raster tiles are fetched directly by the browser for visible interactive views, attributed in the map, and governed by the [OSMF Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/). Browser tests intercept tile requests and serve synthetic fixtures; they do not contact the tile service. Existing dependency and binary-release review items remain open.

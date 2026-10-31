@@ -153,7 +153,7 @@ if 'meshble::start();' in source or 'meshble::request_start();' in source:
 if source.count('meshnetwork::start();') != 1:
     sys.exit('Missing or duplicate isolated Wi-Fi initialization')
 for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",
-             "meshcrossway_remote_page.h", "meshcrossway_companion_page.h", "meshcrossway_remote_chat.h", "meshcrossway_remote_chat_http.h", "meshcrossway_network.h", "meshcrossway_ble.h", "meshcrossway_meshcore.h",
+             "meshcrossway_remote_page.h", "meshcrossway_companion_page.h", "meshcrossway_track_map_js.h", "meshcrossway_remote_chat.h", "meshcrossway_remote_chat_http.h", "meshcrossway_remote_radio.h", "meshcrossway_network.h", "meshcrossway_ble.h", "meshcrossway_meshcore.h",
              "meshcrossway_meshtastic_protocol.h", "meshcrossway_meshtastic.h", "meshcrossway_meshtastic_store.h", "meshcrossway_meshtastic_ui.h",
              "meshcrossway_meshcore_protocol.h", "meshcrossway_meshcore_ui.h", "meshcrossway_sd_history.h", "meshcrossway_history_store.h", "meshcrossway_conversations.h",
              "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h", "meshcrossway_lvgl_alloc.h", "meshcrossway_runtime.h",

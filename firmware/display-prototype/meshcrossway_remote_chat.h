@@ -9,7 +9,7 @@
 #include <new>
 namespace mcxremotechat {
 static constexpr unsigned PAGE_SIZE=32, MESSAGE_LIMIT=40, RESPONSE_SIZE=96*1024;
-struct Request {bool sending=false;char network[3]={},target[65]={},text[meshmt::MAX_TEXT+1]={};unsigned page=0;};
+struct Request {bool sending=false;char network[3]={},target[65]={},text[meshmt::MAX_TEXT+1]={};unsigned page=0,category=0;};
 struct Workspace {Request request;char response[RESPONSE_SIZE];size_t length=0;int code=200;uint8_t salt[16]={};};
 static Workspace *work=nullptr;
 static std::atomic<unsigned> phase{0}; // 0 idle, 1 submitted, 2 processing, 3 complete
@@ -60,30 +60,32 @@ static void process(){
   mcxchat::Key mk;meshmt::Target mt;bool found=false;unsigned total=0,shown=0;
   const unsigned begin=r.page*PAGE_SIZE;
   const char *problem=nullptr;
-  auto row=[&](const char *id,const char *name,bool group){
+  auto row=[&](const char *id,const char *name,bool group,unsigned unread,uint32_t last,bool node_entry=true){
+    if((r.category==1&&!last)||(r.category==2&&!group)||(r.category==3&&(group||!node_entry)))return;
     unsigned pos=total++;
     if(r.sending||pos<begin||shown>=PAGE_SIZE)return;
     if(shown++)j.add(",");
-    j.add("{\"id\":");j.text(id);j.add(",\"name\":");j.text(name);j.add(",\"kind\":");j.text(group?"Channel":"Direct");j.add("}");
+    j.add("{\"id\":");j.text(id);j.add(",\"name\":");j.text(name);j.add(",\"kind\":");j.text(group?"Group":"Node");j.add(",\"unread\":");j.number(unread);j.add(",\"last\":");j.number(last);j.add("}");
   };
   j.add("{\"network\":");j.text(mc?"mc":"mt");j.add(",\"connected\":");j.add((mc?meshmc::link.load()&&c->connected:meshmt::link.load()&&m->connected)?"true":"false");
   j.add(",\"status\":");j.text(mc?c->status:m->status);j.add(",\"targets\":[");
   if(mc){
     for(unsigned i=0;i<c->channel_count;++i)if(c->channels[i].loaded&&c->channels[i].name[0]){
-      auto k=mcxchat::key_for(*c,true,uint16_t(i));auto *pref=mcxhistory::preferences().get(k);if(pref&&pref->blocked)continue;char id[65];mc_token(k,id);row(id,c->channels[i].name,true);if(!strcmp(id,r.target)){mk=k;found=true;}
+      auto k=mcxchat::key_for(*c,true,uint16_t(i));auto *pref=mcxhistory::preferences().get(k);if(pref&&pref->blocked)continue;char id[65];mc_token(k,id);unsigned unread=0;uint32_t last=0;for(const auto &msg:c->messages)if(mcxchat::belongs(msg,k)){last=msg.id>last?msg.id:last;unread+=!msg.outgoing&&!msg.read;}row(id,c->channels[i].name,true,unread,last);if(!strcmp(id,r.target)){mk=k;found=true;}
     }
     for(unsigned i=0;i<c->contact_count;++i){auto k=mcxchat::key_for(*c,false,uint16_t(i));
       auto *pref=mcxhistory::preferences().get(k);if(pref&&pref->blocked)continue;
-      char id[65];mc_token(k,id);row(id,pref&&pref->alias[0]?pref->alias:c->contacts[i].name,false);if(!strcmp(id,r.target)){mk=k;found=true;}
+      char id[65];mc_token(k,id);unsigned unread=0;uint32_t last=0;for(const auto &msg:c->messages)if(mcxchat::belongs(msg,k)){last=msg.id>last?msg.id:last;unread+=!msg.outgoing&&!msg.read;}row(id,pref&&pref->alias[0]?pref->alias:c->contacts[i].name,c->contacts[i].type==3,unread,last);if(!strcmp(id,r.target)){mk=k;found=true;}
     }
     if(found)problem=mcxchat::send_problem(*c,mk,r.sending?r.text:nullptr);
     if(!meshmc::link.load())problem="MeshCore radio disconnected. Reconnect to send.";
   }else{
+    unsigned primary=meshmt::MAX_CHANNELS;for(unsigned ch=0;ch<meshmt::MAX_CHANNELS;++ch)if(m->data.channels[ch].loaded&&m->data.channels[ch].role){if(primary==meshmt::MAX_CHANNELS||m->data.channels[ch].role==1)primary=ch;if(m->data.channels[ch].role==1)break;}
     for(unsigned ch=0;ch<meshmt::MAX_CHANNELS;++ch)if(m->data.channels[ch].loaded&&m->data.channels[ch].role){
-      auto t=m->target(meshmt::BROADCAST,uint8_t(ch));char id[65];mt_token(t,id);row(id,m->data.channels[ch].name[0]?m->data.channels[ch].name:"Primary channel",true);if(!strcmp(id,r.target)){mt=t;found=true;}
+      auto t=m->target(meshmt::BROADCAST,uint8_t(ch));char id[65];mt_token(t,id);unsigned unread=0;uint32_t last=0;for(const auto &msg:m->data.messages)if(mt_belongs(msg,t,m->data.my_num)){last=msg.seq>last?msg.seq:last;unread+=!msg.outgoing&&!msg.read;}row(id,m->data.channels[ch].name[0]?m->data.channels[ch].name:"Primary channel",true,unread,last);if(!strcmp(id,r.target)){mt=t;found=true;}
       // A DM is bound to its native channel, including secondary channels.
       for(unsigned i=0;i<m->data.node_count;++i){auto &n=m->data.nodes[i];if(n.num==m->data.my_num)continue;
-        t=m->target(n.num,uint8_t(ch));mt_token(t,id);char name[104];snprintf(name,sizeof(name),"%.48s · %.48s",n.name[0]?n.name:"Unknown node",m->data.channels[ch].name);row(id,name,false);if(!strcmp(id,r.target)){mt=t;found=true;}
+        t=m->target(n.num,uint8_t(ch));mt_token(t,id);char name[104];snprintf(name,sizeof(name),"%.48s · %.48s",n.name[0]?n.name:"Unknown node",m->data.channels[ch].name);unread=0;last=0;for(const auto &msg:m->data.messages)if(mt_belongs(msg,t,m->data.my_num)){last=msg.seq>last?msg.seq:last;unread+=!msg.outgoing&&!msg.read;}row(id,name,false,unread,last,ch==primary);if(!strcmp(id,r.target)){mt=t;found=true;}
       }
     }
     if(found)problem=m->send_problem(mt,r.sending?r.text:nullptr);
@@ -97,15 +99,21 @@ static void process(){
   }
   j.add("],\"total\":");j.number(total);j.add(",\"page\":");j.number(r.page);j.add(",\"selected\":");j.add(found?"true":"false");
   j.add(",\"send_problem\":");j.text(!found?"Choose a conversation.":problem?problem:"");j.add(",\"limit\":");j.number(found?(mc?c->text_limit(mk.kind==mcxchat::Kind::Channel):m->text_limit(mt)):0);
+  j.add(",\"details\":");
+  char details[192]={};
+  if(found&&mc){if(mk.kind==mcxchat::Kind::Channel)snprintf(details,sizeof(details),"MeshCore channel %u",unsigned(mk.native[0]));else {int index=c->find_contact(mk.native);if(index>=0){const auto &n=c->contacts[index];snprintf(details,sizeof(details),"MeshCore node %02X%02X%02X%02X%02X%02X · type %u · last heard %lu",n.key[0],n.key[1],n.key[2],n.key[3],n.key[4],n.key[5],unsigned(n.type),(unsigned long)n.advert);}}}
+  else if(found){if(mt.node==meshmt::BROADCAST)snprintf(details,sizeof(details),"Meshtastic channel %u",unsigned(mt.channel));else {auto *node=m->node(mt.node);if(node)snprintf(details,sizeof(details),"Meshtastic node !%08lx · channel %u · last heard %lu%s",(unsigned long)mt.node,unsigned(mt.channel),(unsigned long)node->last_heard,node->unmessagable?" · messages unavailable":"");}}
+  j.text(details);
   j.add(",\"messages\":[");
-  // Sort pointers only; no archive copies or history mutation on the UI stack.
-  const meshmc::Message *cm[meshmc::MAX_MESSAGES];const meshmt::Message *mm[meshmt::MAX_MESSAGES];unsigned count=0;
-  if(found&&mc){for(const auto &msg:c->messages)if(mcxchat::belongs(msg,mk))cm[count++]=&msg;
+  // Sort pointers only; owner marks just the displayed incoming messages read.
+  meshmc::Message *cm[meshmc::MAX_MESSAGES];meshmt::Message *mm[meshmt::MAX_MESSAGES];unsigned count=0;
+  if(found&&mc){for(auto &msg:c->messages)if(mcxchat::belongs(msg,mk))cm[count++]=&msg;
     for(unsigned i=1;i<count;++i){auto *v=cm[i];unsigned x=i;while(x&&cm[x-1]->id>v->id){cm[x]=cm[x-1];--x;}cm[x]=v;}
-  }else if(found){for(const auto &msg:m->data.messages)if(mt_belongs(msg,mt,m->data.my_num))mm[count++]=&msg;
+  }else if(found){for(auto &msg:m->data.messages)if(mt_belongs(msg,mt,m->data.my_num))mm[count++]=&msg;
     for(unsigned i=1;i<count;++i){auto *v=mm[i];unsigned x=i;while(x&&mm[x-1]->seq>v->seq){mm[x]=mm[x-1];--x;}mm[x]=v;}
   }
   const unsigned start=count>MESSAGE_LIMIT?count-MESSAGE_LIMIT:0;
+  bool read_changed=false;
   for(unsigned i=start;i<count;++i){if(i!=start)j.add(",");
     const bool outgoing=mc?cm[i]->outgoing:mm[i]->outgoing;
     const char *sender=outgoing?"You":"Peer";
@@ -113,7 +121,9 @@ static void process(){
     if(!mc&&!outgoing){auto *n=m->node(mm[i]->from);if(n)sender=n->name;}
     j.add("{\"id\":");j.number(mc?cm[i]->id:mm[i]->seq);j.add(",\"outgoing\":");j.add(outgoing?"true":"false");j.add(",\"sender\":");j.text(sender);
     j.add(",\"text\":");j.text(mc?cm[i]->text:mm[i]->text);j.add(",\"time\":");j.number(mc?cm[i]->timestamp:mm[i]->time);j.add(",\"delivery\":");j.text(mc?mc_delivery(cm[i]->delivery):meshmt::delivery_name(mm[i]->delivery));j.add("}");
+    if(!outgoing){if(mc&&!cm[i]->read){cm[i]->read=true;read_changed=true;}else if(!mc&&!mm[i]->read){mm[i]->read=true;read_changed=true;}}
   }
+  if(read_changed){if(mc)++c->generation;else ++m->generation;}
   j.add("],\"older\":");j.number(start);j.add("}");work->length=j.used;work->code=200;
   if(!j.ok)result("Conversation response exceeded the available buffer.",503);
 }

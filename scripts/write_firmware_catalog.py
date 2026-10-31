@@ -68,6 +68,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.12":
+        summary="EXPERIMENTAL / HARDWARE TEST PENDING: persistent track folders on device and remote, browser route previews with interactive map, Home Wi-Fi IP, separate communication categories and remote Bluetooth scan/connect/pair/disconnect. Exact v0.8.9 remains stable."
+        label="Track folders + browser maps + remote radio controls / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.11":
         summary="EXPERIMENTAL / HARDWARE TEST PENDING: live Home cards with per-network BLE phase, known nodes/unread messages, Wi-Fi SSID/status and GPS fix state with receiver-reported horizontal accuracy. Read-only PUBX measurement polling requires TX43 to GPS RX; no permanent receiver configuration changes. Exact v0.8.9 remains stable."
         label="Live Home + GNSS accuracy / EXPERIMENTAL"
