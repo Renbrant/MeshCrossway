@@ -69,10 +69,14 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
-    elif version=="v0.8.13":
-        summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: fixes v0.8.12 Bluetooth auto-resume stack exhaustion by removing nested full snapshots, adding measured stack headroom and a target-compiler stack guard. Track folders and remote workspaces retained. v0.8.11 remains recommended stable."
-        label="Bluetooth resume stack fix / EXPERIMENTAL"
+    elif version=="v0.8.14":
+        summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: fixes the confirmed v0.8.13 remote-navigation HTTP stack crash; bounded PSRAM JSON without libc floating formatting, HTTP stack guard, and folder save confirmation with retained lists through temporary failures. v0.8.11 remains stable."
+        label="Remote navigation crash + folder refresh fix / EXPERIMENTAL"
         status="experimental"
+    elif version=="v0.8.13":
+        summary="KNOWN ISSUE: owner logs confirm HTTP stack-canary crashes while serializing saved track distances in the remote navigation list. Use stable v0.8.11."
+        label="Remote navigation HTTP crashes / DO NOT INSTALL"
+        status="known-issue"
     elif version=="v0.8.12":
         summary="KNOWN ISSUE: owner logs show repeated stack-canary crashes in mcx_ble_resume followed by automatic restarts. Do not install; use stable v0.8.11."
         label="Repeated Bluetooth resume crashes / DO NOT INSTALL"

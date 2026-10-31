@@ -1,6 +1,7 @@
 #pragma once
 #include "meshcrossway_navigation.h"
 #include <string>
+#include <cmath>
 namespace mcxnavhttp {
   static std::string quote(const char *s){
     std::string o="\"";
@@ -18,40 +19,47 @@ namespace mcxnavhttp {
     httpd_resp_set_status(r,code);
     return httpd_resp_send(r,text,HTTPD_RESP_USE_STRLEN);
   }
+  // Bounded PSRAM JSON; avoid chained string temporaries and libstdc++'s
+  // floating to_string() alloca + newlib float formatter on the HTTP stack.
+  class Json {
+    char *buffer;size_t capacity,used=0;bool valid=true;
+  public:
+    explicit Json(size_t size):buffer((char*)heap_caps_malloc(size,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT)),capacity(size){if(!buffer)valid=false;}
+    ~Json(){heap_caps_free(buffer);}
+    Json(const Json&)=delete;Json& operator=(const Json&)=delete;
+    void add(const char *text){const size_t length=strlen(text);if(!valid||length>=capacity-used){valid=false;return;}memcpy(buffer+used,text,length);used+=length;buffer[used]=0;}
+    void integer(uint64_t value){char text[21];unsigned length=0;do{text[length++]=char('0'+value%10);value/=10;}while(value);while(length){char digit[2]={text[--length],0};add(digit);}}
+    void fixed(double value,unsigned decimals){
+      if(!std::isfinite(value)||std::fabs(value)>1e12||decimals>7){add("null");return;}
+      uint64_t scale=1;for(unsigned i=0;i<decimals;++i)scale*=10;
+      const uint64_t rounded=uint64_t(std::fabs(value)*double(scale)+0.5);
+      if(value<0&&rounded)add("-");
+      integer(rounded/scale);
+      if(decimals){add(".");uint64_t fraction=rounded%scale;for(uint64_t place=scale/10;place;place/=10){char digit[2]={char('0'+fraction/place),0};add(digit);fraction%=place;}}
+    }
+    void text(const char *text){add("\"");for(const unsigned char *p=(const unsigned char*)text;*p;++p){char escaped[7]={};if(*p=='"'||*p=='\\'){escaped[0]='\\';escaped[1]=char(*p);}else if(*p<32){static const char hex[]="0123456789abcdef";memcpy(escaped,"\\u00",4);escaped[4]=hex[*p>>4];escaped[5]=hex[*p&15];}else escaped[0]=char(*p);add(escaped);}add("\"");}
+    esp_err_t send(httpd_req_t *r){if(!valid)return fail(r,"503 Service Unavailable","Navigation response memory limit");httpd_resp_set_type(r,"application/json");httpd_resp_set_hdr(r,"Cache-Control","no-store");return httpd_resp_send(r,buffer,used);}
+  };
   static esp_err_t state(httpd_req_t *r){
     auto *s=(mcxnav::Snapshot *)heap_caps_malloc(sizeof(mcxnav::Snapshot),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
     if(!s)return fail(r,"503 Service Unavailable","Memory unavailable");
     new(s) mcxnav::Snapshot();
-    if(!mcxnav::snapshot(*s)){
-      s->~Snapshot();
-      heap_caps_free(s);
-      return fail(r,"503 Service Unavailable","Navigation busy");
-    }
-    std::string body="{\"revision\":"+std::to_string(s->revision)+",\"mode\":"+std::to_string(s->mode)+",\"current\":"+std::to_string(s->current)+",\"status\":"+quote(s->status)+",\"selected\":"+std::to_string(s->preferences.selected)+",\"presets\":[";
-    for(unsigned i=0;i<4;++i){
-      if(i)body+=',';
-      auto &p=s->preferences.presets[i];
-      body+="{\"name\":"+quote(p.name)+",\"distance\":"+std::to_string(p.distance_m)+",\"interval\":"+std::to_string(p.interval_s)+"}";
-    }
-    body+="],\"tracks\":[";
+    if(!mcxnav::snapshot(*s)){s->~Snapshot();heap_caps_free(s);return fail(r,"503 Service Unavailable","Navigation busy");}
+    Json body(32*1024);
+    body.add("{\"revision\":");body.integer(s->revision);body.add(",\"mode\":");body.integer(s->mode);body.add(",\"current\":");body.integer(s->current);body.add(",\"status\":");body.text(s->status);body.add(",\"selected\":");body.integer(s->preferences.selected);body.add(",\"presets\":[");
+    for(unsigned i=0;i<4;++i){if(i)body.add(",");const auto &p=s->preferences.presets[i];body.add("{\"name\":");body.text(p.name);body.add(",\"distance\":");body.integer(p.distance_m);body.add(",\"interval\":");body.integer(p.interval_s);body.add("}");}
+    body.add("],\"tracks\":[");
     for(unsigned i=0;i<s->track_count;++i){
-      if(i)body+=',';
-      const auto &t=s->tracks[i];
-      uint32_t color=0xff8a24;
-      bool visible=false;
-      for(const auto &v:s->preferences.styles)if(v.id==t.id){
-        color=v.color;
-        visible=v.visible;
-      }
-      body+="{\"id\":"+std::to_string(t.id)+",\"name\":"+quote(t.name)+",\"folder\":"+std::to_string(t.folder)+",\"points\":"+std::to_string(t.points)+",\"metres\":"+std::to_string(t.metres)+",\"gpx\":"+(t.gpx?"true":"false")+",\"visible\":"+(visible?"true":"false")+",\"color\":"+std::to_string(color)+"}";
+      if(i){body.add(",");}
+      const auto &t=s->tracks[i];uint32_t color=0xff8a24;bool visible=false;
+      for(const auto &v:s->preferences.styles)if(v.id==t.id){color=v.color;visible=v.visible;}
+      body.add("{\"id\":");body.integer(t.id);body.add(",\"name\":");body.text(t.name);body.add(",\"folder\":");body.integer(t.folder);body.add(",\"points\":");body.integer(t.points);body.add(",\"metres\":");body.fixed(t.metres,3);body.add(",\"gpx\":");body.add(t.gpx?"true":"false");body.add(",\"visible\":");body.add(visible?"true":"false");body.add(",\"color\":");body.integer(color);body.add("}");
     }
-    body+="],\"folders_ready\":"+std::string(s->folders_ready?"true":"false")+",\"folders\":[";
-    bool first_folder=true;for(const auto &f:s->folders)if(f.id){if(!first_folder)body+=',';first_folder=false;body+="{\"id\":"+std::to_string(f.id)+",\"name\":"+quote(f.name)+"}";}body+="]}";
-    s->~Snapshot();
-    heap_caps_free(s);
-    httpd_resp_set_type(r,"application/json");
-    httpd_resp_set_hdr(r,"Cache-Control","no-store");
-    return httpd_resp_send(r,body.c_str(),body.size());
+    body.add("],\"folders_ready\":");body.add(s->folders_ready?"true":"false");body.add(",\"folders\":[");bool first=true;
+    for(const auto &f:s->folders)if(f.id){if(!first)body.add(",");first=false;body.add("{\"id\":");body.integer(f.id);body.add(",\"name\":");body.text(f.name);body.add("}");}
+    body.add("]}");
+    s->~Snapshot();heap_caps_free(s);
+    return body.send(r);
   }
   static bool number(const char *s,uint32_t &v){
     if(!s||!*s)return false;
@@ -121,17 +129,11 @@ namespace mcxnavhttp {
     if(!g){return fail(r,"503 Service Unavailable","Memory unavailable");}
     new(g) mcxnav::Geometry();
     if(!mcxnav::read_geometry(root,id,total,*g)){g->~Geometry();heap_caps_free(g);return fail(r,"404 Not Found","Track geometry unavailable or damaged");}
-    static constexpr size_t CAPACITY=96*1024;
-    char *json=(char*)heap_caps_malloc(CAPACITY,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
-    if(!json){g->~Geometry();heap_caps_free(g);return fail(r,"503 Service Unavailable","Memory unavailable");}
-    size_t used=0;bool ok=true;
-    int n=snprintf(json,CAPACITY,"{\"id\":%lu,\"total\":%lu,\"simplified\":%s,\"points\":[",(unsigned long)id,(unsigned long)total,g->count<total?"true":"false");used=size_t(n);
-    for(unsigned i=0;i<g->count;++i){const auto &p=g->points[i];n=snprintf(json+used,CAPACITY-used,"%s[%.7f,%.7f,%lu]",i?",":"",p.latitude,p.longitude,(unsigned long)p.segment);if(n<0||size_t(n)>=CAPACITY-used){ok=false;break;}used+=size_t(n);}
-    if(ok){json[used++]=']';json[used++]='}';json[used]=0;}
+    Json json(96*1024);
+    json.add("{\"id\":");json.integer(id);json.add(",\"total\":");json.integer(total);json.add(",\"simplified\":");json.add(g->count<total?"true":"false");json.add(",\"points\":[");
+    for(unsigned i=0;i<g->count;++i){const auto &p=g->points[i];if(i)json.add(",");json.add("[");json.fixed(p.latitude,7);json.add(",");json.fixed(p.longitude,7);json.add(",");json.integer(p.segment);json.add("]");}json.add("]}");
     g->~Geometry();heap_caps_free(g);
-    esp_err_t rc;
-    if(ok){httpd_resp_set_type(r,"application/json");httpd_resp_set_hdr(r,"Cache-Control","no-store");rc=httpd_resp_send(r,json,used);}else rc=fail(r,"503 Service Unavailable","Geometry response limit");
-    heap_caps_free(json);return rc;
+    return json.send(r);
   }
   static esp_err_t geometry(httpd_req_t *r){return geometry_from(r,"/sdcard/meshcrossway/navigation");}
   static esp_err_t download(httpd_req_t *r){
