@@ -17,6 +17,11 @@
   <img src="docs/site/media/v0.8.16/06-remote-messages.png" width="49%" alt="Local browser companion showing conversations, groups, nodes and message composer">
 </p>
 
+## 3D hardware model
+
+The current Waveshare ESP32-S3 enclosure and 10,000 mAh battery case are committed as editable FreeCAD source and printable exports. Open the [STL model in GitHub's 3D viewer](<hardware/3D/Waveshare esp32-s3 case.stl>) or download the [3MF print file](<hardware/3D/Waveshare esp32-s3 case.3mf>) and [FreeCAD source for the battery case](<hardware/3D/Case bat 10000mA.FCStd>).
+
+**The repository currently contains the 3D model files, but no separate PNG/JPG render images of this case.** The links above open the committed model/export files.
 
 **Recommended stable: v0.8.16.** The owner confirmed that both radio networks work simultaneously and approved this version as definitive on 2026-11-01. Map tiles and saved routes are currently failing; that issue is under investigation. The exact published image is pinned, with v0.8.14 retained as rollback. [Stable record](docs/stable-v0816.md). [Coverage and validation](docs/dual-radio-settings-v0816.md).
 
