@@ -12,8 +12,8 @@ import zipfile
 VERSION = 'v0.8.16'
 REF = '1b86b1db5d08a793fca2ee64f1d32e040383119a'
 SHA = 'a3ac7f83061c8c9932662540a48173432f70fb392ac44e4ee0400d90d130321f'
-ARTIFACT = 13048058040
-ARCHIVE_SHA = 'b1e461549d8d3c122dd15cdb68021d3f8a406ec9bf289a12316d1b3c0209109b'
+ARTIFACT = 13088250124
+ARCHIVE_SHA = 'a472448c1a78b559defacd180259e603cb697a4c6e353a197c5c70e509ed91f4'
 NAMES = ('manifest.json', 'build-info.json', 'meshcrossway-display-dev.bin',
          'bootloader.bin', 'partition-table.bin', 'application.bin')
 ROOT = Path(__file__).resolve().parents[1]
