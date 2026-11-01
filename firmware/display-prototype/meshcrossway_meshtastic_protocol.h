@@ -172,6 +172,11 @@ namespace meshmt {
     uint8_t channel=0;
     uint64_t channel_identity=0;
   };
+  // One read-only destination predicate for native and remote conversations.
+  static bool message_belongs(const Message &m,const Target &t,uint32_t self){
+    return m.seq&&m.channel==t.channel&&m.channel_identity==t.channel_identity&&
+      (t.node==BROADCAST?m.to==BROADCAST:(m.outgoing?m.to==t.node:(m.from==t.node&&m.to==self)));
+  }
   struct Draft {bool used=false;
     Target target;
     char text[MAX_TEXT+1]={};

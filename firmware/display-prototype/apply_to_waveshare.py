@@ -158,7 +158,7 @@ for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_he
              "meshcrossway_meshcore_protocol.h", "meshcrossway_meshcore_ui.h", "meshcrossway_sd_history.h", "meshcrossway_history_store.h", "meshcrossway_conversations.h",
              "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h", "meshcrossway_lvgl_alloc.h", "meshcrossway_runtime.h",
              "meshcrossway_power_status.h", "meshcrossway_battery_decode.h",
-             "meshcrossway_chat_presentation.h", "meshcrossway_chat_view.h", "meshcrossway_offline_boot.h",
+             "meshcrossway_chat_presentation.h", "meshcrossway_message_order.h", "meshcrossway_chat_view.h", "meshcrossway_offline_boot.h",
              "meshcrossway_touch_queue.h", "meshcrossway_touch_input.h", "meshcrossway_gnss.h", "meshcrossway_home_status.h", "meshcrossway_clock.h", "meshcrossway_clock_runtime.h", "meshcrossway_gnss_parser.h", "meshcrossway_gnss_settings.h", "meshcrossway_radio_priority.h", "meshcrossway_map_projection.h", "meshcrossway_map_tiles.h", "meshcrossway_navigation_ui.h", "meshcrossway_navigation.h", "meshcrossway_navigation_store.h", "meshcrossway_navigation_http.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)

@@ -1,6 +1,6 @@
 ![MeshCrossway — Meshtastic and MeshCore modular three-device system](docs/images/meshcrossway-modular-hero.jpg)
 
-**Recommended stable: v0.8.14.** Owner reported stable operation on 2026-10-31 and selected it as the latest stable release. The exact tested binary is retained unchanged. [Immutable stable record](docs/stable-v0814.md).
+**Recommended stable: v0.8.14.** Owner reported stable operation on 2026-10-31 and selected it as the latest stable release. The exact tested binary is retained unchanged. [Immutable stable record](docs/stable-v0814.md). The experimental v0.8.15 candidate improves message visibility and uses device-local message times on screen and in remote access. [Details](docs/chat-visibility-local-time-v0815.md).
 
 **v0.8.12 candidate:** persistent track folders, browser route list/map preview, Home Wi-Fi IP, separate communication views and remote radio scan/connect/pair/disconnect. [Operation and validation](docs/track-folders-remote-v0812.md).
 

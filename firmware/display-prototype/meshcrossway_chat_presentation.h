@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+#include <stdlib.h>
 namespace mcxchat {
 struct Sender {
   char name[65];
@@ -61,10 +63,21 @@ static inline void time_utc(uint32_t stamp,char *out,size_t cap){
   const uint32_t hour=(stamp/3600u)%24u;
   snprintf(out,cap,"%02lu:%02lu UTC",(unsigned long)hour,(unsigned long)min);
 }
+static inline uint32_t message_stamp(uint32_t sent,uint32_t observed){return sent>=1577836800u?sent:observed;}
+static inline uint32_t time_zone_key(){
+  const char *zone=getenv("TZ");uint32_t hash=2166136261u;
+  for(const unsigned char *p=(const unsigned char*)(zone?zone:"");*p;++p){hash^=*p;hash*=16777619u;}return hash;
+}
+static inline void time_local(uint32_t stamp,char *out,size_t cap,bool date=false){
+  if(!out||!cap)return;
+  if(stamp<1577836800u){snprintf(out,cap,"--:--");return;}
+  const time_t value=time_t(stamp);struct tm local={};
+  if(!localtime_r(&value,&local)||!strftime(out,cap,date?"%Y-%m-%d %H:%M %Z":"%H:%M",&local))snprintf(out,cap,"--:--");
+}
 static inline void meta(uint32_t observed_at,uint8_t path,bool outgoing,
                         const char *outgoing_status,char *out,size_t cap){
   if(!out||!cap)return;
-  char clock[16];time_utc(observed_at,clock,sizeof(clock));
+  char clock[16];time_local(observed_at,clock,sizeof(clock));
   if(outgoing){snprintf(out,cap,"%s  |  %s",clock,outgoing_status?outgoing_status:"Sent");return;}
   uint8_t hops=0;
   const Route route=route_hops(path,hops);

@@ -11,7 +11,7 @@ static uint8_t field_count = 0, selected_command = 0;
 static bool confirm_pending = false, group = false, conversation = false, reveal = false;
 static uint8_t target_key[32] = {};
 static uint16_t target_slot = 0, list_offset = 0;
-static uint32_t rendered_generation = 0;
+static uint32_t rendered_generation = 0,rendered_zone=0;
 static uint32_t last_redraw=0;
 static mcxchat::Key selected;
 static int mode = 0; // 0 menu, 1 typed command, 2 compose, 3 result, 4 contact details
@@ -460,6 +460,7 @@ static void chat_tools();
 static void room_menu();
 static void select(const mcxchat::Key &key){
   active_chat_network=2;chats_filter=2;
+  search_text[0]=0; // List search must not silently hide messages inside a thread.
   selected=key;group=key.kind==mcxchat::Kind::Channel;
   memcpy(target_key,key.native,32);target_slot=group?key.native[0]:0;conversation=true;
   mcxhistory::preferences().context=key;mcxhistory::preferences().has_context=true;++mcxhistory::preferences().revision;
@@ -629,7 +630,7 @@ static void message_details_now(void *data){
     m->outgoing?"You":thread_name(selected),(unsigned long)m->timestamp,(unsigned long)m->observed_at,
     delivery(m->delivery),"Accepting a message is not delivery or reading.");
   auto *details=txt(scroller,detail,10,0,450,white);lv_label_set_long_mode(details,LV_LABEL_LONG_WRAP);
-  char signal[90],route[96];mcxchat::meta(m->observed_at,m->path,m->outgoing,nullptr,route,sizeof(route));
+  char signal[90],route[96];mcxchat::meta(mcxchat::message_stamp(m->timestamp,m->observed_at),m->path,m->outgoing,nullptr,route,sizeof(route));
   if(m->has_snr)snprintf(signal,sizeof(signal),"SNR: %.2f dB / %.65s",m->snr/4.0,route);
   else snprintf(signal,sizeof(signal),"SNR not provided / %.65s",route);
   txt(scroller,signal,10,130,450,muted);
@@ -655,7 +656,7 @@ static void conversation_list(int w){
   for(size_t i=0;i<thread_count;++i){auto &t=thread_rows[i];auto *m=s->by_id(t.last);
     auto *p=mcxhistory::preferences().get(t.key);char heading[105],sub[190],meta[96];
     snprintf(heading,sizeof(heading),"MC / %s%s / %u unread",p&&p->favorite?"* ":"",thread_name(t.key),t.unread);
-    if(m){mcxchat::meta(m->observed_at,m->path,m->outgoing,m->outgoing?delivery(m->delivery):nullptr,meta,sizeof(meta));
+    if(m){mcxchat::meta(mcxchat::message_stamp(m->timestamp,m->observed_at),m->path,m->outgoing,m->outgoing?delivery(m->delivery):nullptr,meta,sizeof(meta));
       snprintf(sub,sizeof(sub),"%.80s\n%s / %s",m->text,meta,ready()?"connected":"offline");}
     else snprintf(sub,sizeof(sub),"DRAFT / %.100s",p?p->draft:"");
     auto *b=action_button(body,"",8,y,w-16,90,panel,open_row,i);
@@ -672,6 +673,7 @@ static void render() {
   const int w = content_width();
   auto *s = session();
   rendered_generation = s ? s->generation : 0;
+  rendered_zone=mcxchat::time_zone_key();
   if (page == 1 || page == 2) {
     const bool channels = page == 2;
     show_center_heading(channels ? "GROUPS / CHANNELS" : "NODES / MESHCORE",
@@ -756,9 +758,9 @@ static void render() {
     if(!cached)action_button(body,"< CHATS",8,54,100,32,panel2,list_event,0);
     history_status=chatview::cache->history;
     bool newly_read = false;
-    for (uint32_t id = s->next_id > s->message_count ? s->next_id - s->message_count : 1; id < s->next_id;
-         id++) {
-      auto *m = s->by_id(id);
+    const unsigned stored=mcxchat::ordered_indices(s->messages,chatview::cache->order,96,[](const meshmc::Message &m){return m.id;});
+    for(unsigned row=0;row<stored;++row){
+      auto *m=&s->messages[chatview::cache->order[row]];
       if (!m || !in_conversation(*m) || !mcxchat::contains(m->text,search_text))
         continue;
       if (!m->read && !m->outgoing) { m->read = true; newly_read = true; }
@@ -792,7 +794,7 @@ static void render() {
       const lv_color_t sender_color = m->outgoing ? orange :
                    sender_colors[mcxchat::color_index(sender)];
       char metadata[96];
-      mcxchat::meta(m->observed_at, m->path, m->outgoing,
+      mcxchat::meta(mcxchat::message_stamp(m->timestamp,m->observed_at), m->path, m->outgoing,
                     m->outgoing ? delivery(m->delivery) : nullptr,
                     metadata, sizeof(metadata));
       const unsigned color=unsigned(sender_color.full)^unsigned(mcxchat::mention(m->text,s->name));
@@ -861,7 +863,7 @@ static void poll(lv_timer_t *) {
       lv_label_set_text(feedback, s->result[0] ? s->result : s->status);
     rendered_generation = s->generation;
   }
-  if (!showing_mt() && !dialog && !wifi_dialog && !ble_dialog && !info_dialog && s && s->generation != rendered_generation &&
+  if (!showing_mt() && !dialog && !wifi_dialog && !ble_dialog && !info_dialog && s && (s->generation != rendered_generation||rendered_zone!=mcxchat::time_zone_key()) &&
       (page == 1 || page == 2 || page == 3)) {
     // Do not delete a finger's current target. Redraw only when the input is released.
     bool pressed = false;

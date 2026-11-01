@@ -145,6 +145,8 @@ int main(int argc,char **argv){
     # Compile and exercise the actual MeshCore workspace with real LVGL too.
     companion_setup = r'''
 #include "meshcrossway_conversations.h"
+#include "meshcrossway_chat_presentation.h"
+#include "meshcrossway_message_order.h"
 #include <atomic>
 static int64_t esp_timer_get_time(){return int64_t(lv_tick_get())*1000;}
 namespace mcxhistory {
@@ -213,7 +215,7 @@ static void test_companion_ui(const char *preview){
   tap_object(mc_button(mcui::dialog,"APPLY"));advance();assert(c.qcount==0&&mcui::confirm_pending);
   tap_object(mc_button(mcui::dialog,"CONFIRM"));advance();assert(c.qcount==1&&c.queue[0].frame.data[0]==32&&c.queue[0].frame.len==50);
   assert(c.queue[0].frame.data[34]==0xa5);mcui::close();c.qcount=0;
-  mcui::select(mcxchat::key_for(c,false,0));mcui::compose();advance();
+  strcpy(mcui::search_text,"Old list search");mcui::select(mcxchat::key_for(c,false,0));assert(!mcui::search_text[0]);mcui::compose();advance();
   lv_textarea_set_text(mcui::fields[0],"hello from display");tap_object(mc_button(mcui::dialog,"SEND"));advance();
   assert(!mcui::dialog&&c.qcount==1&&c.queue[0].frame.data[0]==2&&c.message_count==1);
   body=panel_at(lv_scr_act(),0,34,400,286,bg);page=1;mcui::render();advance();
@@ -291,6 +293,12 @@ static void test_companion_ui(const char *preview){
   ++c.generation;advance(300);mcui::poll(nullptr);advance();
   assert(lv_obj_get_scroll_bottom(body)<=0);
   puts("PASS: status refresh allocates no cards; buffered touch defers updates; ring eviction/ACK preserve reading; bottom follows new messages; idle composer allocates nothing");
+  // A valid stored entry must not disappear due to gaps/counters/ring layout.
+  for(auto &m:c.messages)m=meshmc::Message{};
+  c.next_id=8;c.message_count=1;auto &sparse=c.messages[37];sparse.id=4;sparse.timestamp=1704067200u;memcpy(sparse.key,c.contacts[0].key,6);strcpy(sparse.text,"Sparse MC message");
+  mcui::select(mcxchat::key_for(c,false,0));page=3;chatview::invalidate();lv_obj_clean(body);mcui::render();advance();
+  bool sparse_seen=false;for(const auto &row:chatview::cache->rows)if(row.id==4&&row.object)sparse_seen=true;assert(sparse_seen&&sparse.read);
+  setenv("TZ","IST-5:30",1);tzset();mcui::last_redraw=0;advance();mcui::poll(nullptr);assert(mcui::rendered_zone==mcxchat::time_zone_key());
   chatview::invalidate();lv_obj_del(body);body=nullptr;delete meshmc::client;meshmc::client=nullptr;
   puts("PASS: MeshCore real-LVGL forms, keyboard geometry, confirmation, channel command, compose/send, lists, history and firmware gating");
   meshmt::client=new meshmt::Client();auto &mt=*meshmt::client;
@@ -323,6 +331,9 @@ static void test_companion_ui(const char *preview){
   page=2;groups_filter=1;chatview::invalidate();lv_obj_clean(body);mtui::render();advance();
   mtui::select_channel_now(nullptr);assert(mtui::selected.node==meshmt::BROADCAST&&active_chat_network==1);
   page=3;chatview::invalidate();lv_obj_clean(body);mtui::render();advance();
+  for(auto &m:mt.data.messages)m=meshmt::Message{};
+  mt.data.next_seq=8;mt.data.message_count=1;auto &sparse_mt=mt.data.messages[37];sparse_mt.seq=4;sparse_mt.from=456;sparse_mt.to=meshmt::BROADCAST;sparse_mt.channel=0;sparse_mt.channel_identity=99;strcpy(sparse_mt.text,"Sparse MT message");
+  chatview::invalidate();lv_obj_clean(body);mtui::render();advance();bool sparse_mt_seen=false;for(const auto &row:chatview::cache->rows)if(row.id==4&&row.object)sparse_mt_seen=true;assert(sparse_mt_seen&&sparse_mt.read);
   chatview::invalidate();lv_obj_del(body);body=nullptr;delete meshmt::client;meshmt::client=nullptr;
   puts("PASS: Meshtastic real-LVGL node/channel selection, compose, keyboard bounds, native send, offline gating, saved draft and compatibility dialog");
 

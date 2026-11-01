@@ -70,6 +70,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.15":
+        summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: device-local message times on screen and remote, common native/remote destination matching, complete stored-message enumeration and cleared stale list search when opening a MeshCore conversation. Exact v0.8.14 remains stable."
+        label="Message visibility + device-local times / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.14":
         summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: fixes the confirmed v0.8.13 remote-navigation HTTP stack crash; bounded PSRAM JSON without libc floating formatting, HTTP stack guard, and folder save confirmation with retained lists through temporary failures. v0.8.11 remains stable."
         label="Remote navigation crash + folder refresh fix / EXPERIMENTAL"

@@ -5,7 +5,7 @@ namespace mtui {
   static lv_obj_t *home_name=nullptr,*home_status=nullptr,*radio_status=nullptr;
   static meshmt::Target selected;
   static bool conversation=false;
-  static uint32_t drawn=UINT32_MAX,last_draw=0;
+  static uint32_t drawn=UINT32_MAX,last_draw=0,drawn_zone=0;
   static unsigned offset=0;
   static bool ready(){auto *c=meshmt::client;
     return c&&c->connected&&c->initialized&&c->history_ready&&!c->fault;
@@ -181,13 +181,12 @@ namespace mtui {
     notice("MESHTASTIC / NODE",info);
   }
   static bool belongs(const meshmt::Message &m){
-    return m.seq&&m.channel==selected.channel&&m.channel_identity==selected.channel_identity&&
-    (selected.node==meshmt::BROADCAST?m.to==meshmt::BROADCAST:m.to!=meshmt::BROADCAST&&(m.outgoing?m.to:m.from)==selected.node);
+    return meshmt::client&&meshmt::message_belongs(m,selected,meshmt::client->data.my_num);
   }
   static void render(){
     const int w=lv_obj_get_width(body);
     auto *c=meshmt::client;
-    drawn=c?c->generation:0;
+    drawn=c?c->generation:0;drawn_zone=mcxchat::time_zone_key();
     mcui::rendered_generation=meshmc::client?meshmc::client->generation:0;
     if(page==3&&conversation&&active_chat_network==1&&chats_filter!=2){
       const char *title=selected.node==meshmt::BROADCAST&&c&&selected.channel<meshmt::MAX_CHANNELS?c->data.channels[selected.channel].name:name(selected.node);
@@ -196,15 +195,15 @@ namespace mtui {
       chatview::header(title,ready()?"Meshtastic / live":"Meshtastic / saved history",meshmt::history_status());
       if(!cached)action_button(body,"< CHATS",8,54,100,32,panel2,list_event,0);
       if(c&&!memcmp(selected.radio,c->data.radio,7)){
-        uint32_t first=c->data.next_seq>meshmt::MAX_MESSAGES?c->data.next_seq-meshmt::MAX_MESSAGES:1;
-        for(uint32_t seq=first;seq<c->data.next_seq;++seq){auto &m=c->data.messages[(seq-1)%meshmt::MAX_MESSAGES];
-          if(m.seq!=seq||!belongs(m))continue;
+        const unsigned stored=mcxchat::ordered_indices(c->data.messages,chatview::cache->order,96,[](const meshmt::Message &m){return m.seq;});
+        for(unsigned row=0;row<stored;++row){auto &m=c->data.messages[chatview::cache->order[row]];
+          if(!belongs(m))continue;
           if(!m.read){m.read=true;
             ++c->generation;
           }
           char meta[112];
           char clock[16];
-          mcxchat::time_utc(m.time,clock,sizeof(clock));
+          mcxchat::time_local(m.time,clock,sizeof(clock));
           snprintf(meta,sizeof(meta),"%s / %s / %s%s",clock,meshmt::delivery_name(m.delivery),m.pki?"PKI":"channel",m.via_mqtt?" / MQTT":"");
           chatview::row(m.seq,chatview::hash(m.outgoing?"You":name(m.from),m.text,meta,m.outgoing),[&](int y){
             auto *card=panel_at(body,8,y,w-16,104,panel,7);
@@ -219,7 +218,7 @@ namespace mtui {
           });
         }
       }
-      drawn=c?c->generation:0;
+      drawn=c?c->generation:0;drawn_zone=mcxchat::time_zone_key();
       chatview::end("No messages in this conversation.");
       return;
     }
@@ -316,7 +315,7 @@ namespace mtui {
     }
     if(!showing_mt()||dialog||mcui::dialog||wifi_dialog||ble_dialog||info_dialog||page<1||page>3)return;
     const uint32_t generation=c?c->generation:0;
-    if(generation==drawn&&(!meshmc::client||meshmc::client->generation==mcui::rendered_generation))return;
+    if(generation==drawn&&drawn_zone==mcxchat::time_zone_key()&&(!meshmc::client||meshmc::client->generation==mcui::rendered_generation))return;
     for(lv_indev_t *input=lv_indev_get_next(nullptr);input;input=lv_indev_get_next(input))if(input->proc.state==LV_INDEV_STATE_PRESSED)return;
     const uint32_t now=uint32_t(esp_timer_get_time()/1000);
     if(!chatview::interacting(body)&&uint32_t(now-last_draw)>=250){last_draw=now;
