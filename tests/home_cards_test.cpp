@@ -11,13 +11,15 @@
 namespace meshble {
 enum Phase{OFF,STARTING,IDLE,SCANNING,CONNECTING,VERIFYING,PAIRING,READY,FAILED};enum Radio{UNKNOWN,MESHTASTIC,MESHCORE};
 struct Peer{Radio advertised=UNKNOWN;};struct Snapshot{Phase phase=OFF;Radio radio=UNKNOWN;int selected=-1,count=0;Peer peers[8];bool pin_required=false,confirm_required=false;};
-static Snapshot current;static Snapshot snapshot(){return current;}
+static Snapshot current;static Snapshot snapshot(Radio r){auto s=current;s.radio=r;const auto target=current.radio==UNKNOWN&&current.selected>=0?current.peers[current.selected].advertised:current.radio;if(target!=r)s.phase=IDLE;return s;}
+static bool select(Radio){return true;}
 }
 namespace meshmc {static Client *client=nullptr;static std::atomic<bool> link{false};}
 namespace meshmt {static Client *client=nullptr;static std::atomic<bool> link{false};}
 namespace meshnetwork {struct HomeStatus{char ssid[33]={},state[30]={},ip[16]={};bool connected=false;};static HomeStatus wifi;static HomeStatus home_status(){return wifi;}}
 namespace mcxgnss {static Fix fix;static Settings settings;struct Diagnostics{int error=0;};static Diagnostics diagnostics;static Fix snapshot(){return fix;}static Settings configuration(){return settings;}static Diagnostics status(){return diagnostics;}}
 namespace meshcrossway {
+static void draw(){}
 static int page=0;static lv_obj_t *body=nullptr;
 static const lv_color_t bg=lv_color_hex(0x090C10),panel=lv_color_hex(0x181D24),white=lv_color_hex(0xF2F4F7),muted=lv_color_hex(0x9AA6B4),orange=lv_color_hex(0xFF8A24),green=lv_color_hex(0x72D8A5),purple=lv_color_hex(0x9C88FF),cyan=lv_color_hex(0x6CBDE6);
 static void fill(lv_obj_t *o,lv_color_t c,int radius=0){lv_obj_set_style_bg_color(o,c,0);lv_obj_set_style_bg_opa(o,LV_OPA_COVER,0);lv_obj_set_style_pad_all(o,0,0);lv_obj_set_style_border_width(o,0,0);lv_obj_set_style_radius(o,radius,0);}

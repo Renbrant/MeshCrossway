@@ -100,7 +100,7 @@ namespace mtui {
     if(!c){notice("MESHTASTIC / RADIO","More > Radios > Enable BLE > Scan. Use official Meshtastic BLE PhoneAPI with Bluetooth enabled, radio Wi-Fi off, and a compatible pairing mode. Close any competing clients.");
       return;
     }
-    snprintf(info,sizeof(info),"%.105s\nFirmware: %.48s / HW: %lu / MTU: %u\nNode: !%08lx / region: %u / TX: %s\n%u nodes / %u messages / dropped nodes: %lu\nFromRadio: %lu frames / %lu packets / %lu text / %lu ignored\n%s\nOfficial Meshtastic BLE PhoneAPI required. For ESP32 radios, turn Wi-Fi OFF. One active BLE radio.",
+    snprintf(info,sizeof(info),"%.105s\nFirmware: %.48s / HW: %lu / MTU: %u\nNode: !%08lx / region: %u / TX: %s\n%u nodes / %u messages / dropped nodes: %lu\nFromRadio: %lu frames / %lu packets / %lu text / %lu ignored\n%s\nOfficial Meshtastic BLE PhoneAPI required. For ESP32 radios, turn Wi-Fi OFF. Independent Meshtastic and MeshCore BLE sessions.",
     c->status,c->firmware,(unsigned long)c->hardware,c->mtu,(unsigned long)c->data.my_num,c->region,c->tx_enabled?"enabled":"disabled",
     c->data.node_count,c->data.message_count,(unsigned long)c->dropped_nodes,
     (unsigned long)c->rx_frames,(unsigned long)c->rx_packets,(unsigned long)c->rx_text,(unsigned long)c->ignored,
@@ -113,10 +113,10 @@ namespace mtui {
     lv_obj_add_flag(scroller,LV_OBJ_FLAG_SCROLLABLE);
     auto *label=txt(scroller,info,0,0,450,white);
     lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
-    auto *tip=txt(scroller,"Channel names/keys, modem and region are read from your radio. Change those settings with the official Meshtastic client. PKI-capable radios require the destination key; other radios use native channel encryption. Remote ACK does not mean read.",0,220,450,muted);
+    auto *tip=txt(scroller,"Channel names/keys, modem and region are read from your radio. Open Meshtastic Settings to read and change supported radio settings. PKI-capable radios require the destination key; other radios use native channel encryption. Remote ACK does not mean read.",0,220,450,muted);
     lv_label_set_long_mode(tip,LV_LABEL_LONG_WRAP);
   }
-  static void tools_event(lv_event_t *){tools();
+  static void tools_event(lv_event_t *e){cfgui::open_mt(e);
   }
   static void select_node_now(void *data){
     auto *c=meshmt::client;

@@ -11,6 +11,7 @@
 #include "meshcrossway_navigation_http.h"
 #include "meshcrossway_remote_chat_http.h"
 #include "meshcrossway_remote_radio.h"
+#include "meshcrossway_remote_settings.h"
 #include <atomic>
 #include <stdio.h>
 
@@ -43,7 +44,7 @@ static esp_err_t health(httpd_req_t *req){
   mcxhistory::describe(history,sizeof(history));
   meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
   const int n=snprintf(body,sizeof(body),
-    "{\"version\":\"v0.8.15\",\"uptime_ms\":%llu,\"free_heap\":%lu,\"ip\":\"%s\",\"sd_backup\":\"%s\",\"sd_step\":\"%s\",\"sd_errno\":%d,\"screen\":%s,\"touch\":false,\"captures\":%lu,\"capture_failures\":%lu,\"capture_ms\":%lu,\"history\":\"%s\",\"history_step\":\"%s\",\"history_errno\":%d,\"history_failures\":%lu,\"history_ms\":%lu,\"history_max_ms\":%lu,\"internal_free\":%lu,\"internal_largest\":%lu,\"internal_min\":%lu,\"reset_reason\":%d,\"boot_count\":%lu,\"previous_activity\":\"%s\",\"ui_max_ms\":%lu,\"ui_stack_min\":%lu,\"navigation_stack_min\":%lu,\"allocation_failures\":%lu,\"allocation_bytes\":%lu,\"allocation_caps\":%lu,\"mailbox_peak\":%lu,\"mailbox_overflows\":%lu}",
+    "{\"version\":\"v0.8.16\",\"uptime_ms\":%llu,\"free_heap\":%lu,\"ip\":\"%s\",\"sd_backup\":\"%s\",\"sd_step\":\"%s\",\"sd_errno\":%d,\"screen\":%s,\"touch\":false,\"captures\":%lu,\"capture_failures\":%lu,\"capture_ms\":%lu,\"history\":\"%s\",\"history_step\":\"%s\",\"history_errno\":%d,\"history_failures\":%lu,\"history_ms\":%lu,\"history_max_ms\":%lu,\"internal_free\":%lu,\"internal_largest\":%lu,\"internal_min\":%lu,\"reset_reason\":%d,\"boot_count\":%lu,\"previous_activity\":\"%s\",\"ui_max_ms\":%lu,\"ui_stack_min\":%lu,\"navigation_stack_min\":%lu,\"allocation_failures\":%lu,\"allocation_bytes\":%lu,\"allocation_caps\":%lu,\"mailbox_peak\":%lu,\"mailbox_overflows\":%lu}",
     (unsigned long long)(esp_timer_get_time()/1000),(unsigned long)esp_get_free_heap_size(),ip,
     meshbackup::status(),meshbackup::step_name(meshbackup::failure_step.load()),
     meshbackup::failure_errno.load(),meshcapture::available()?"true":"false",
@@ -69,10 +70,11 @@ static void start(){
   if(running.load())return;
   httpd_config_t config=HTTPD_DEFAULT_CONFIG();
   config.server_port=80;config.stack_size=HTTP_STACK_BYTES;
-  config.max_open_sockets=2;config.max_uri_handlers=12;
+  config.max_open_sockets=2;config.max_uri_handlers=14;
   config.recv_wait_timeout=2;config.send_wait_timeout=2;
   config.lru_purge_enable=true;
   if(!mcxremotechat::work)printf("[MCX-HTTP] messaging PSRAM unavailable\n");
+  if(!mcxsettingshttp::init())printf("[MCX-HTTP] settings PSRAM unavailable\n");
   httpd_handle_t server=nullptr;
   esp_err_t result=httpd_start(&server,&config);
   if(result!=ESP_OK){printf("[MCX-HTTP] start failed err=%d\n",(int)result);return;}
@@ -101,9 +103,13 @@ static void start(){
   if(result==ESP_OK)result=httpd_register_uri_handler(server,&radios);
   httpd_uri_t radio_command={};radio_command.uri="/radios/command";radio_command.method=HTTP_POST;radio_command.handler=observe<mcxremoteradio::send>;
   if(result==ESP_OK)result=httpd_register_uri_handler(server,&radio_command);
+  httpd_uri_t settings={};settings.uri="/settings";settings.method=HTTP_GET;settings.handler=observe<mcxsettingshttp::state>;
+  if(result==ESP_OK)result=httpd_register_uri_handler(server,&settings);
+  httpd_uri_t settings_command={};settings_command.uri="/settings/command";settings_command.method=HTTP_POST;settings_command.handler=observe<mcxsettingshttp::send>;
+  if(result==ESP_OK)result=httpd_register_uri_handler(server,&settings_command);
   if(result!=ESP_OK){httpd_stop(server);printf("[MCX-HTTP] route setup failed err=%d\n",(int)result);return;}
   running.store(true);
-  printf("[MCX-HTTP v0.8.15] ready port=80 routes=/,/health,/screen.raw manual=ON touch=OFF\n");
+  printf("[MCX-HTTP v0.8.16] ready port=80 routes=/,/health,/screen.raw manual=ON touch=OFF\n");
 }
 } // namespace meshhealth
 

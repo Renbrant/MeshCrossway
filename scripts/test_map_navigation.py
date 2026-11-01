@@ -52,7 +52,7 @@ static void esp_http_client_cleanup(void *){}
     header=ui[ui.index('  gps_icon=color_label(top,'):ui.index('  top_battery=panel_at(top,')]
     actions=ui[ui.index('enum Action {'):ui.index('static void draw(); // Forward-declared')]
     glyphs=ui[ui.index('static const char *context_glyph('):ui.index('// Place a separate, thin scroll indicator')]
-    icons=ui[ui.index('static void context_icon('):ui.index('static void ble_select_now(')]
+    icons=ui[ui.index('static void context_icon('):ui.index('static meshble::Peer pending_ble_peer')]
     test=(ROOT/'tests/map_navigation_test.cpp').read_text().replace('// PRODUCTION_GPS_REFRESH',refresh).replace('// PRODUCTION_GPS_HEADER',header).replace('// PRODUCTION_ACTIONS',actions).replace('// PRODUCTION_CONTEXT',glyphs+icons)
     source=temp/'map_navigation.cpp';source.write_text(allocator+test)
     binary=temp/'map_navigation'

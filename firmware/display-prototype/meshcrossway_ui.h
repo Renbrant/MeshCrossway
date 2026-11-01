@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.8.15: independent MeshCore Companion and Meshtastic PhoneAPI.
+// MeshCrossway v0.8.16: independent MeshCore Companion and Meshtastic PhoneAPI.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -524,7 +524,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.8.15","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. Local GPS, XYZ maps, tracks and POIs. Automatic location sharing is off.");break;
+      notice("MESH CROSSWAY v0.8.16","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. Local GPS, XYZ maps, tracks and POIs. Automatic location sharing is off.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
     default:break;
@@ -826,8 +826,10 @@ static void rebuild_context(){
   lv_obj_update_layout(context_actions);
   update_context_scroll_track();
 }
-static void ble_select_now(void *v){meshble::connect((int)(intptr_t)v);draw();}
-static void ble_select(lv_event_t *e){lv_async_call(ble_select_now,lv_event_get_user_data(e));}
+static meshble::Peer pending_ble_peer;static meshble::Radio pending_ble_radio;static bool pending_ble_selection=false;
+static void ble_select_now(void *){if(meshble::select(pending_ble_radio))meshble::connect_peer(pending_ble_peer);pending_ble_selection=false;draw();}
+static void ble_select(lv_event_t *e){if(pending_ble_selection)return;const auto s=meshble::snapshot();const int i=int((intptr_t)lv_event_get_user_data(e));if(i<0||i>=s.count)return;pending_ble_peer=s.peers[i];pending_ble_radio=s.radio;pending_ble_selection=true;lv_async_call(ble_select_now,nullptr);}
+static meshble::Radio ble_dialog_radio=meshble::MESHTASTIC;
 static void ble_dialog_close(){
   if(ble_pin_keyboard)lv_keyboard_set_textarea(ble_pin_keyboard,nullptr);
   if(ble_dialog)lv_obj_del(ble_dialog);
@@ -835,7 +837,7 @@ static void ble_dialog_close(){
 }
 static void ble_dialog_close_later(void *){ble_dialog_close();}
 static void ble_pin_action(lv_event_t *e){
-  if((intptr_t)lv_event_get_user_data(e)==0){meshble::disconnect();lv_async_call(ble_dialog_close_later,nullptr);return;}
+  if((intptr_t)lv_event_get_user_data(e)==0){meshble::disconnect(ble_dialog_radio);lv_async_call(ble_dialog_close_later,nullptr);return;}
   if(!ble_pin)return;
   const char *p=lv_textarea_get_text(ble_pin);
   if(strlen(p)!=6){
@@ -844,11 +846,11 @@ static void ble_pin_action(lv_event_t *e){
   }
   uint32_t code=0;
   for(int i=0;i<6;i++){if(p[i]<'0'||p[i]>'9')return;code=code*10+(uint32_t)(p[i]-'0');}
-  if(meshble::submit_pin(code))lv_async_call(ble_dialog_close_later,nullptr);
+  if(meshble::submit_pin(ble_dialog_radio,code))lv_async_call(ble_dialog_close_later,nullptr);
   else if(ble_pin_notice)lv_label_set_text(ble_pin_notice,"PIN not submitted. Cancel and reconnect.");
 }
 static void ble_confirmation(lv_event_t *e){
-  (void)meshble::confirm_number((intptr_t)lv_event_get_user_data(e)!=0);
+  (void)meshble::confirm_number(ble_dialog_radio,(intptr_t)lv_event_get_user_data(e)!=0);
   lv_async_call(ble_dialog_close_later,nullptr);
 }
 #define MCX_PIN_KEY (LV_BTNMATRIX_CTRL_NO_REPEAT | LV_BTNMATRIX_CTRL_CLICK_TRIG | 1)
@@ -859,6 +861,7 @@ static const lv_btnmatrix_ctrl_t ble_pin_ctrl[]={MCX_PIN_KEY,MCX_PIN_KEY,MCX_PIN
 static void ble_show_pairing(){
   const meshble::Snapshot s=meshble::snapshot();
   if(ble_dialog||(!s.pin_required&&!s.confirm_required))return;
+  ble_dialog_radio=s.radio;
   ble_dialog=panel_at(lv_layer_top(),0,0,480,320,bg,0);
   lv_obj_move_foreground(ble_dialog);
   action_button(ble_dialog,"CANCEL",366,4,106,34,panel2,ble_pin_action,0);
@@ -898,8 +901,10 @@ static void ble_show_pairing(){
 // MeshCore workspace
 #include "meshcrossway_chat_view.h"
 #include "meshcrossway_meshcore_ui.h"
+namespace cfgui {static void open_mt(lv_event_t *);}
 #include "meshcrossway_meshtastic_ui.h"
-static bool touch_modal(){return navui::adjusting()||wifi_dialog||wifi_editor||ble_dialog||(info_dialog&&!navigation_panel)||shade||mcui::dialog||mtui::dialog;}
+#include "meshcrossway_settings_ui.h"
+static bool touch_modal(){return navui::adjusting()||wifi_dialog||wifi_editor||ble_dialog||(info_dialog&&!navigation_panel)||shade||mcui::dialog||mtui::dialog||cfgui::dialog;}
 static void reset_conversation_view(){mtui::conversation=false;mcui::conversation=false;}
 static bool showing_mt(){
   if(page==1)return nodes_filter!=2;
@@ -959,12 +964,12 @@ static mcxhome::Network home_network(unsigned protocol){
   return n;
 }
 static void home_color(lv_obj_t *label,lv_color_t color){if(label&&lv_obj_get_style_text_color(label,0).full!=color.full)lv_obj_set_style_text_color(label,color,0);}
+static void choose_ble_slot(lv_event_t *e){if(meshble::select(meshble::Radio((intptr_t)lv_event_get_user_data(e))))draw();}
 static void home_refresh(lv_timer_t *){
   if(page!=0||!home_mesh[0][0])return;
-  const auto bs=meshble::snapshot();unsigned target=bs.radio;
-  if(target==meshble::UNKNOWN&&bs.selected>=0&&bs.selected<bs.count)target=bs.peers[bs.selected].advertised;
   static_assert(int(mcxhome::Phase::FAILED)==int(meshble::FAILED),"Home BLE phases must match");
   for(unsigned i=0;i<2;++i){const unsigned protocol=i==0?meshble::MESHTASTIC:meshble::MESHCORE;
+    const auto bs=meshble::snapshot(meshble::Radio(protocol));const unsigned target=protocol;
     const auto n=home_network(protocol);const auto card=mcxhome::radio(n,protocol,mcxhome::Phase(bs.phase),target,bs.pin_required||bs.confirm_required);
     chatview::label(home_mesh[i][0],card.state);chatview::label(home_mesh[i][1],card.nodes);chatview::label(home_mesh[i][2],card.unread);
     home_color(home_mesh[i][0],card.online?green:card.working?orange:muted);
@@ -1100,30 +1105,32 @@ static void draw(){
       action_button(body,"SETTINGS",w-112,5,104,35,panel2,on_action,A_SETTINGS);
       const meshble::Snapshot s=meshble::snapshot();
       show_center_heading("BLE / RADIO PODS","Meshtastic PhoneAPI / MeshCore Companion");
+      action_button(body,"MESHTASTIC",8,52,(w-24)/2,34,meshble::selected()==meshble::MESHTASTIC?orange:panel2,choose_ble_slot,meshble::MESHTASTIC);
+      action_button(body,"MESHCORE",(w+8)/2,52,(w-24)/2,34,meshble::selected()==meshble::MESHCORE?orange:panel2,choose_ble_slot,meshble::MESHCORE);
       const char *phase=s.phase==meshble::OFF?"DISABLED":s.phase==meshble::STARTING?"STARTING":s.phase==meshble::READY?"SECURE":s.phase==meshble::SCANNING?"SCANNING":s.phase==meshble::CONNECTING?"CONNECTING":s.phase==meshble::VERIFYING?"VERIFYING":s.phase==meshble::PAIRING?"PAIRING":s.phase==meshble::FAILED?"ERROR":"IDLE";
       char detail[64];snprintf(detail,sizeof(detail),"%s / %s",phase,meshble::protocol_name(s.radio));
-      single_label(body,detail,8,53,w-16,s.phase==meshble::READY?green:orange);
-      single_label(body,s.phase==meshble::READY?(s.bonded?"Bluetooth bond saved":"Secure link / bond not supported"):s.status,8,76,w-16,muted);
+      single_label(body,detail,8,95,w-16,s.phase==meshble::READY?green:orange);
+      single_label(body,s.phase==meshble::READY?(s.bonded?"Bluetooth bond saved":"Secure link / bond not supported"):s.status,8,118,w-16,muted);
       if(s.phase==meshble::OFF){
-        single_label(body,"Safe boot: BLE is off until enabled.",8,106,w-16,green);
-        action_button(body,"ENABLE BLE / TEST",8,151,w-16,49,orange,on_action,A_BLE_ENABLE);
-        single_label(body,"Wi-Fi and touch should work before BLE.",8,219,w-16,muted);
+        single_label(body,"Safe boot: BLE is off until enabled.",8,148,w-16,green);
+        action_button(body,"ENABLE BLE / TEST",8,193,w-16,49,orange,on_action,A_BLE_ENABLE);
+        single_label(body,"Wi-Fi and touch should work before BLE.",8,261,w-16,muted);
       }else if(s.phase==meshble::STARTING){
-        single_label(body,"BLE starting in dedicated worker...",8,113,w-16,white);
-        single_label(body,"Watch Wi-Fi / touch; report boot log.",8,152,w-16,muted);
+        single_label(body,"BLE starting in dedicated worker...",8,155,w-16,white);
+        single_label(body,"Watch Wi-Fi / touch; report boot log.",8,194,w-16,muted);
       }else if(s.phase==meshble::READY){
         lv_obj_t *mc_card=center_card(8,104,w-16,80,"CONNECTED",s.active_name,s.radio==meshble::MESHCORE&&meshmc::client?meshmc::client->status:meshmt::client?meshmt::client->status:"Meshtastic synchronizing",green);
         mcxemoji::view::set_message_text(lv_obj_get_child(mc_card,1),s.active_name);
         if(s.radio==meshble::MESHCORE)mcui::radio_status=lv_obj_get_child(mc_card,2);
         else mtui::radio_status=lv_obj_get_child(mc_card,2);
-        action_button(body,s.radio==meshble::MESHTASTIC?"MESHTASTIC STATUS":"MESHCORE TOOLS",8,190,w-16,40,orange,s.radio==meshble::MESHTASTIC?mtui::tools_event:mcui::on_tools,0);
-        action_button(body,"DISCONNECT",8,236,w-16,40,panel2,on_action,A_BLE_DISCONNECT);
+        action_button(body,s.radio==meshble::MESHTASTIC?"MESHTASTIC SETTINGS":"MESHCORE SETTINGS",8,232,w-16,40,orange,s.radio==meshble::MESHTASTIC?mtui::tools_event:mcui::on_tools,0);
+        action_button(body,"DISCONNECT",8,278,w-16,40,panel2,on_action,A_BLE_DISCONNECT);
       }else if(s.phase==meshble::CONNECTING||s.phase==meshble::VERIFYING||s.phase==meshble::PAIRING){
-        single_label(body,"BLE handshake / PIN pairing",8,116,w-16,white);
-        action_button(body,"DISCONNECT",8,179,w-16,43,panel2,on_action,A_BLE_DISCONNECT);
+        single_label(body,"BLE handshake / PIN pairing",8,158,w-16,white);
+        action_button(body,"DISCONNECT",8,221,w-16,43,panel2,on_action,A_BLE_DISCONNECT);
       }else{
-        action_button(body,"SCAN NEARBY BLE",8,105,w-16,40,orange,on_action,A_BLE_SCAN);
-        int y=155;
+        action_button(body,"SCAN NEARBY BLE",8,147,w-16,40,orange,on_action,A_BLE_SCAN);
+        int y=197;
         for(int k=0;k<s.count;k++){
           char name[60];snprintf(name,sizeof(name),"%s / %d dBm",s.peers[k].name,s.peers[k].rssi);
           lv_obj_t *b=action_button(body,"",8,y,w-16,52,panel,ble_select,k);
@@ -1178,15 +1185,13 @@ static void refresh(lv_timer_t *){
     if(strcmp(lv_label_get_text(wifi_sd_status),backup))lv_label_set_text(wifi_sd_status,backup);
   }
   // Compact status bar: real Wi-Fi STA IP state and actual current BLE
-  // GATT identity. The current radio adapter has ONE active BLE session.
+  // independent GATT identities. Both indicators may be online together.
   if(top_wifi&&top_mt&&top_mc&&top_mt_name&&top_mc_name){
     char ip[16]={},state[30]={};
     meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
     const bool wifi_online=ip[0]!=0;
-    const bool mt_online=bs.phase==meshble::READY &&
-                         bs.radio==meshble::MESHTASTIC && mtui::ready();
-    const bool mc_online=bs.phase==meshble::READY &&
-                         bs.radio==meshble::MESHCORE && mcui::ready();
+    const bool mt_online=mtui::ready();
+    const bool mc_online=mcui::ready();
     lv_obj_set_style_text_color(top_wifi,wifi_online?green:muted,0);
     lv_obj_set_style_text_color(top_mt,mt_online?orange:muted,0);
     lv_obj_set_style_text_color(top_mc,mc_online?orange:muted,0);
@@ -1212,7 +1217,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.8.15] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.8.16] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1233,7 +1238,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.8.15] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.8.16] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1246,7 +1251,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.8.15",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.8.16",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);
@@ -1314,7 +1319,7 @@ static void init(){
   lv_timer_create(mcui::poll,50,nullptr);
   lv_timer_create(mtui::poll,50,nullptr);
   (void)mcxremotechat::init();
-  lv_timer_create([](lv_timer_t *){mcxremotechat::poll();mcxremoteradio::poll();},50,nullptr);
+  lv_timer_create([](lv_timer_t *){mcxremotechat::poll();mcxremoteradio::poll();mcxsettingshttp::poll();},50,nullptr);
 }
 } // namespace meshcrossway
 

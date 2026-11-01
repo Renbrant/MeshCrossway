@@ -29,3 +29,11 @@ with tempfile.TemporaryDirectory() as directory:
  binary=p/'radio'
  subprocess.run(['c++','-std=c++17','-O1','-Wall','-Wextra','-Wno-unused-function','-Werror=misleading-indentation','-fsanitize=address,undefined','-I'+str(p),'-I'+str(ROOT/'firmware/display-prototype'),str(cpp),'-lcrypto','-o',str(binary)],check=True)
  subprocess.run([str(binary)],check=True,env={**__import__('os').environ,'ASAN_OPTIONS':'detect_leaks=0'})
+
+ # Run the settings handlers against the real protocol models and owner mailbox.
+ settings=(ROOT/'firmware/display-prototype/meshcrossway_remote_settings.h').read_text()
+ (p/'remote_settings.h').write_text('\n'.join(line for line in settings.splitlines() if not line.startswith('#include "')))
+ cpp=p/'settings.cpp';cpp.write_text(source+(ROOT/'tests/remote_settings_test.cpp').read_text().replace('// PRODUCTION_HTTP_HELPERS',quote+number))
+ binary=p/'settings'
+ subprocess.run(['c++','-std=c++17','-O1','-Wall','-Wextra','-Wno-unused-function','-Werror=misleading-indentation','-fsanitize=address,undefined','-I'+str(p),'-I'+str(ROOT/'firmware/display-prototype'),str(cpp),'-lcrypto','-o',str(binary)],check=True)
+ subprocess.run([str(binary)],check=True,env={**__import__('os').environ,'ASAN_OPTIONS':'detect_leaks=0'})

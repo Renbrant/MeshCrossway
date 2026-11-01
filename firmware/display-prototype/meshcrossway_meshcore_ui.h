@@ -156,11 +156,13 @@ static void result() {
   action_button(dialog, "TOOLS", 10, 273, 220, 40, panel2, on_tools, 0);
   action_button(dialog, "SHOW / HIDE DATA", 240, 273, 230, 40, panel2, show_data, 0);
 }
+static uint8_t form_radio_key[32]={};
 static void apply(lv_event_t *e) {
   if (!ready()) {
     lv_label_set_text(feedback, "Connect and finish synchronization first.");
     return;
   }
+  if(memcmp(form_radio_key,session()->public_key,32)){lv_label_set_text(feedback,"Radio changed. Reopen this form before applying.");return;}
   const meshmc::Command *c = meshmc::command(selected_command);
   if (!c)
     return;
@@ -204,6 +206,7 @@ static void apply(lv_event_t *e) {
   lv_label_set_text(feedback, "Command queued. Waiting for radio response...");
 }
 static void form(uint8_t code) {
+  if(session())memcpy(form_radio_key,session()->public_key,32);else memset(form_radio_key,0,32);
   const meshmc::Command *c = meshmc::command(code);
   if (!c)
     return;
@@ -286,10 +289,22 @@ static void form(uint8_t code) {
 static void choose_command(lv_event_t *e) {
   form((uint8_t)(intptr_t)lv_event_get_user_data(e));
 }
+static void choose_preset(lv_event_t *e) {
+  const unsigned index=unsigned((intptr_t)lv_event_get_user_data(e));if(index>=meshmc::RADIO_PRESET_COUNT)return;
+  const auto &p=meshmc::RADIO_PRESETS[index];form(11);
+  const unsigned values[]={p.frequency,p.bandwidth,p.sf,p.cr,session()&&session()->repeat_enabled?1u:0u};
+  for(unsigned i=0;i<5&&i<unsigned(field_count);++i){char value[16];snprintf(value,sizeof(value),"%u",values[i]);lv_textarea_set_text(fields[i],value);}
+  char hint[120];snprintf(hint,sizeof(hint),p.hash_bytes?"%s: review LoRa values. Set path hash separately to %u bytes.":"%s: review LoRa values before applying.",p.name,p.hash_bytes);lv_label_set_text(feedback,hint);
+}
+static void presets(lv_event_t *) {
+  base("MESHCORE / LORA REGION PRESETS");mode=0;int y=0;
+  for(unsigned i=0;i<meshmc::RADIO_PRESET_COUNT;++i){action_button(scroller,meshmc::RADIO_PRESETS[i].name,8,y,460,43,panel2,choose_preset,i);y+=49;}
+}
 static void tools() {
   base("MESHCORE / TOOLS & SETTINGS");
   mode = 0;
-  int y = 0;
+  action_button(scroller,"LoRa region presets",8,0,460,43,orange,presets,0);
+  int y = 49;
   for (auto &c : meshmc::COMMANDS) {
     // Messaging has dedicated forms; include binary/expert tools without pretending they are
     // board-independent.

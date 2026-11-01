@@ -7,6 +7,10 @@
 #include <string.h>
 #include <math.h>
 #include <new>
+#include <errno.h>
+#include <stdlib.h>
+#include <limits.h>
+#include "meshcrossway_settings_schema.h"
 
 namespace meshmt {
   static constexpr size_t MAX_FRAME=512, MAX_TEXT=237, MAX_NODES=128, MAX_CHANNELS=8, MAX_MESSAGES=96;
@@ -124,6 +128,7 @@ namespace meshmt {
     void message(uint32_t tag,const Frame &s){bytes(tag,s.data,s.len);
     }
   };
+#include "meshcrossway_settings_codec.inc"
   static uint64_t fingerprint(View v){uint64_t h=14695981039346656037ull;
     for(size_t i=0;i<v.len;++i)h=(h^v.data[i])*1099511628211ull;
     return h?h:1;
@@ -191,7 +196,9 @@ namespace meshmt {
     Message messages[MAX_MESSAGES];
     Draft drafts[16];
   };
+  #include "meshcrossway_mt_settings.inc"
   struct Client {
+    Settings settings;
     Archive data;
     bool connected=false,initialized=false,fault=false,history_ready=false,have_my_info=false,have_metadata=false,have_lora=false,tx_enabled=false,has_pki=false;
     uint8_t region=0,hop_limit=3;
@@ -234,6 +241,7 @@ namespace meshmt {
       return m;
     }
     void detach(){
+      settings.disconnect();
       connected=initialized=false;
       writing=pending_ready=false;
       pending_id=0;
@@ -241,6 +249,7 @@ namespace meshmt {
       status_text("Meshtastic disconnected / saved history");
     }
     void attach(const uint8_t identity[7],uint16_t payload_mtu,uint32_t nonce,uint32_t now){
+      settings.disconnect();
       new(&data) Archive();
       memcpy(data.radio,identity,7);
       connected=true;
@@ -445,6 +454,7 @@ namespace meshmt {
           error_seen=true;
         }
         if(!route.ok)return false;
+        if(error_seen&&m.from==data.my_num&&m.to==data.my_num)settings.routing(request,error);
         auto *sent=message(request);
         if(sent&&error_seen&&m.to==data.my_num&&(m.from==data.my_num||m.from==sent->to)){
           if(error){sent->delivery=REJECTED;
@@ -458,6 +468,18 @@ namespace meshmt {
             ++generation;
           }
         }return true;
+      }
+      if(port==6){
+        if(m.from!=data.my_num||m.to!=data.my_num)return true;
+        const auto before=settings.revision;const bool ok=settings.receive(payload,request);
+        if(ok&&before!=settings.revision&&settings.loaded){
+          const auto &section=settings::sections[settings.section];
+          if(section.family==0){Writer wrapper(settings.work[2]);wrapper.message(section.tag,settings.current);if(wrapper.ok)parse_config({settings.work[2].data,settings.work[2].len});}
+          if(section.family==3)parse_channel({settings.current.data,settings.current.len});
+          if(section.family==2){if(auto *self=node(data.my_num,true))parse_user({settings.current.data,settings.current.len},*self);}
+          ++generation;
+        }
+        return ok;
       }
       if(port==1){
         if(!payload.len||payload.len>MAX_TEXT||!utf8((const char *)payload.data,payload.len)){++ignored;
@@ -523,10 +545,6 @@ namespace meshmt {
           if(f.wire!=0)return false;
           if(f.value!=config_nonce)continue;
           if(!have_my_info||!have_metadata||!have_lora){fail("Incomplete Meshtastic PhoneAPI config. Check radio Bluetooth mode.");
-            return false;
-          }
-          unsigned major=0,minor=0;
-          if(sscanf(firmware,"%u.%u",&major,&minor)!=2||major!=2||minor<5){fail("Unsupported Meshtastic firmware: use official 2.5+ / 2.x PhoneAPI.");
             return false;
           }
           initialized=true;
@@ -692,6 +710,18 @@ namespace meshmt {
         writing=true;
         last_tx=now;
         return true;
+      }
+      if(initialized&&history_ready){
+        // Work frames live in the PSRAM client, not the LVGL stack.
+        auto &admin=settings.work[3];auto &payload=settings.work[4];auto &packet=settings.work[5];
+        uint32_t id=config_nonce^(now*2654435761u)^0x41444d49u;if(!id)id=1;
+        if(settings.next(now,id,admin)){
+          Writer d(payload);d.scalar(1,6);d.message(2,admin);d.scalar(3,1);
+          Writer p(packet);p.fixed(2,data.my_num);p.message(4,payload);p.fixed(6,id);p.scalar(9,0);p.scalar(10,1);p.scalar(11,70);
+          Writer w(out);w.message(1,packet);
+          if(!d.ok||!p.ok||!w.ok){settings.say(Settings::ERROR,"Cannot encode settings request.");return false;}
+          writing=true;pending_id=0;last_tx=now;return true;
+        }
       }
       if(initialized&&(uint32_t)(now-last_tx)>30000){Writer w(out);
         w.bytes(7,nullptr,0);

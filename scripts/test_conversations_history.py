@@ -3,7 +3,7 @@
 from pathlib import Path
 import subprocess
 import tempfile
-from check_chat_memory import check
+from check_chat_memory import check, writable_ram_sections
 
 for size in (33188, 7296, 4096):
     try:
@@ -12,6 +12,25 @@ for size in (33188, 7296, 4096):
         pass
     else:
         raise AssertionError("ELF guard accepted a large static chat buffer")
+
+# Actual ESP32-S3 section flags: mapped flash rodata is WA, unlike host ELF.
+sections = writable_ram_sections("""
+ [ 9] .dram0.data PROGBITS 3fca3100 0a7100 0063c0 00 WA 0 0 16
+ [11] .dram0.bss NOBITS 3fca94c0 0ad4c0 0083e0 00 WA 0 0 8
+ [15] .flash.rodata PROGBITS 3c150120 001120 08a3f4 00 WA 0 0 16
+""")
+assert sections == {'9', '11'}
+assert check("""
+1: 3c150120 9600 OBJECT LOCAL DEFAULT 15 meshmt::settings::schema
+2: 3fca3100 4 OBJECT LOCAL DEFAULT 9 meshmt::client
+3: 3fca94c0 100 OBJECT LOCAL DEFAULT 11 mcxhistory::state
+""", sections) == 104
+try:
+    check('1: 3fca94c0 9600 OBJECT LOCAL DEFAULT 11 meshmt::regression', sections)
+except ValueError:
+    pass
+else:
+    raise AssertionError('Flash exclusion bypassed the SRAM guard')
 
 def compile_worker(temp, root):
     stubs=temp/'stubs';(stubs/'freertos').mkdir(parents=True)
