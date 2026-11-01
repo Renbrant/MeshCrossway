@@ -994,10 +994,18 @@ static void home_cards(int w){
   show_center_heading("FIELD STATUS","Radios, Wi-Fi and local GPS");
   const int col=(w-24)/2;
   for(unsigned i=0;i<2;++i){auto *card=center_card(8+i*(col+8),54,col,101,i==0?"MESHTASTIC":"MESHCORE","Checking radio...","Nodes: --",i==0?green:purple);
+    lv_obj_add_flag(card,LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(card,i==0?mtui::tools_event:mcui::on_tools,LV_EVENT_CLICKED,nullptr);
+    lv_obj_set_style_bg_color(card,panel2,LV_STATE_PRESSED);
     home_mesh[i][0]=lv_obj_get_child(card,1);home_mesh[i][1]=lv_obj_get_child(card,2);
     lv_obj_set_y(home_mesh[i][0],29);lv_obj_set_y(home_mesh[i][1],53);
     home_mesh[i][2]=single_label(card,"Unread: --",8,76,col-16,muted);
     for(auto *label:home_mesh[i])lv_obj_set_style_text_font(label,&lv_font_montserrat_14,0);
+    // Labels must not intercept taps anywhere inside the card.
+    for(unsigned child=0;child<lv_obj_get_child_cnt(card);++child)
+      lv_obj_clear_flag(lv_obj_get_child(card,child),LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_set_width(lv_obj_get_child(card,0),col-40);
+    single_label(card,LV_SYMBOL_SETTINGS,col-26,8,18,muted);
   }
   auto *gps=center_card(8,164,col,101,"LOCAL GPS","Waiting for GPS","Accuracy unavailable",cyan);
   home_gps_state=lv_obj_get_child(gps,1);home_gps_accuracy=lv_obj_get_child(gps,2);

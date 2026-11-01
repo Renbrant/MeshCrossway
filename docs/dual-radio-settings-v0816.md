@@ -16,7 +16,7 @@ No bridging, relaying, message conversion, cross-network sending or shared proto
 
 ## Settings available
 
-Both the device and browser expose network-specific settings. Browser: **Messages → network → Network → Radio settings**. Settings remain local to the selected attached radio; Meshtastic admin packets explicitly target that radio's own node with zero mesh hops.
+Both the device and browser expose network-specific settings. Touch either radio card on Home to open that network's settings directly; the gear icon marks the shortcut. Closing settings returns to Home. Disconnected radios keep the same connection/synchronization checks as the Radios-page settings. Browser: **Messages → network → Network → Radio settings**. Settings remain local to the selected attached radio; Meshtastic admin packets explicitly target that radio's own node with zero mesh hops.
 
 Meshtastic provides 37 groups:
 

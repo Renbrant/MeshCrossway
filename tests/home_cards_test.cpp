@@ -21,10 +21,12 @@ namespace mcxgnss {static Fix fix;static Settings settings;struct Diagnostics{in
 namespace meshcrossway {
 static void draw(){}
 static int page=0;static lv_obj_t *body=nullptr;
-static const lv_color_t bg=lv_color_hex(0x090C10),panel=lv_color_hex(0x181D24),white=lv_color_hex(0xF2F4F7),muted=lv_color_hex(0x9AA6B4),orange=lv_color_hex(0xFF8A24),green=lv_color_hex(0x72D8A5),purple=lv_color_hex(0x9C88FF),cyan=lv_color_hex(0x6CBDE6);
+static const lv_color_t bg=lv_color_hex(0x090C10),panel=lv_color_hex(0x181D24),panel2=lv_color_hex(0x242B33),white=lv_color_hex(0xF2F4F7),muted=lv_color_hex(0x9AA6B4),orange=lv_color_hex(0xFF8A24),green=lv_color_hex(0x72D8A5),purple=lv_color_hex(0x9C88FF),cyan=lv_color_hex(0x6CBDE6);
 static void fill(lv_obj_t *o,lv_color_t c,int radius=0){lv_obj_set_style_bg_color(o,c,0);lv_obj_set_style_bg_opa(o,LV_OPA_COVER,0);lv_obj_set_style_pad_all(o,0,0);lv_obj_set_style_border_width(o,0,0);lv_obj_set_style_radius(o,radius,0);}
 static lv_obj_t *panel_at(lv_obj_t *p,int x,int y,int w,int h,lv_color_t c,int r=0){auto *o=lv_obj_create(p);fill(o,c,r);lv_obj_set_pos(o,x,y);lv_obj_set_size(o,w,h);lv_obj_clear_flag(o,LV_OBJ_FLAG_SCROLLABLE);return o;}
 static lv_obj_t *single_label(lv_obj_t *p,const char *s,int x,int y,int w,lv_color_t c){auto *o=lv_label_create(p);lv_label_set_text(o,s);lv_obj_set_pos(o,x,y);lv_obj_set_size(o,w,19);lv_label_set_long_mode(o,LV_LABEL_LONG_DOT);lv_obj_set_style_text_color(o,c,0);return o;}
+namespace mtui {static unsigned opens=0;static void tools_event(lv_event_t *){++opens;}}
+namespace mcui {static unsigned opens=0;static void on_tools(lv_event_t *){++opens;}}
 namespace chatview {static void label(lv_obj_t *o,const char *s){if(o&&strcmp(lv_label_get_text(o),s))lv_label_set_text(o,s);}}
 // PRODUCTION_HOME
 }
