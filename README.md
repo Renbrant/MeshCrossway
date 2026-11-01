@@ -19,7 +19,7 @@
 
 ## 3D hardware model
 
-The current Waveshare ESP32-S3 enclosure and 10,000 mAh battery case are committed as editable FreeCAD source and printable exports. Open the [STL model in GitHub's 3D viewer](<hardware/3D/Waveshare esp32-s3 case.stl>) or download the [3MF print file](<hardware/3D/Waveshare esp32-s3 case.3mf>) and [FreeCAD source for the battery case](<hardware/3D/Case bat 10000mA.FCStd>).
+The repository includes printable STL/3MF exports for the Waveshare ESP32-S3 enclosure and an editable FreeCAD source model for the 10,000 mAh battery case. Open the [STL model in GitHub's 3D viewer](<hardware/3D/Waveshare esp32-s3 case.stl>) or download the [3MF print file](<hardware/3D/Waveshare esp32-s3 case.3mf>) and [FreeCAD source for the battery case](<hardware/3D/Case bat 10000mA.FCStd>).
 
 **The repository currently contains the 3D model files, but no separate PNG/JPG render images of this case.** The links above open the committed model/export files.
 
