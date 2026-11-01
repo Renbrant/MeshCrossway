@@ -1,6 +1,6 @@
 # v0.8.16: independent dual BLE radios and radio configuration
 
-Status: experimental candidate. On 2026-11-01, the owner supplied v0.8.16 screenshots showing both radios connected concurrently on the device and showing radio settings entry points plus the local browser companion working. These captures confirm those functions in the demonstrated setup; they are not exhaustive hardware acceptance. The exact owner-tested v0.8.14 image remains the recommended stable release. This change does not replace its immutable source reference or binary checksum. v0.8.15 message visibility and device-local time fixes remain included.
+Status: owner-approved stable release as of 2026-11-01. The owner confirms simultaneous dual-radio operation works. A reported regression prevents map tiles and saved routes from loading; investigation remains open. v0.8.14 is retained as rollback.
 
 ## Connection behavior
 
