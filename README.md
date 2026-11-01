@@ -1,5 +1,23 @@
 ![MeshCrossway — Meshtastic and MeshCore modular three-device system](docs/images/meshcrossway-modular-hero.jpg)
 
+## See MeshCrossway in operation
+
+**v0.8.16 owner-provided screenshots · November 1, 2026.** The images below show the device interface and the local browser companion already running: both radio connections, node and message views, track folders and route preview, and remote conversations.
+
+<p align="center">
+  <img src="docs/site/media/v0.8.16/01-device-home-radio-gps.png" width="49%" alt="Device home screen with Meshtastic and MeshCore connected, local GPS and Wi-Fi status">
+  <img src="docs/site/media/v0.8.16/02-device-network-nodes.png" width="49%" alt="Device node list with Meshtastic network filter">
+</p>
+<p align="center">
+  <img src="docs/site/media/v0.8.16/03-device-message-list.png" width="49%" alt="Messages displayed on the MeshCrossway device">
+  <img src="docs/site/media/v0.8.16/04-device-conversation.png" width="49%" alt="Conversation view on the MeshCrossway device">
+</p>
+<p align="center">
+  <img src="docs/site/media/v0.8.16/05-remote-tracks-map.png" width="49%" alt="Local browser companion showing track folders, recorded tracks and route map preview">
+  <img src="docs/site/media/v0.8.16/06-remote-messages.png" width="49%" alt="Local browser companion showing conversations, groups, nodes and message composer">
+</p>
+
+
 **Recommended stable: v0.8.14.** Owner reported stable operation on 2026-10-31 and selected it as the latest stable release. The exact tested binary is retained unchanged. [Immutable stable record](docs/stable-v0814.md). The v0.8.16 build now has owner-provided screenshots showing both radios connected at once, device-side node/message views, radio-settings shortcuts and the working local browser companion for messages and track management. v0.8.14 remains the recommended stable release; broader acceptance remains ongoing. [Coverage and validation](docs/dual-radio-settings-v0816.md).
 
 **v0.8.12 candidate:** persistent track folders, browser route list/map preview, Home Wi-Fi IP, separate communication views and remote radio scan/connect/pair/disconnect. [Operation and validation](docs/track-folders-remote-v0812.md).
