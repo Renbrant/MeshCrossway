@@ -1,6 +1,6 @@
 # v0.8.16: independent dual BLE radios and radio configuration
 
-Status: experimental candidate; not hardware accepted. The exact owner-tested v0.8.14 image remains the recommended stable release. This change does not replace its immutable source reference or binary checksum. v0.8.15 message visibility and device-local time fixes remain included.
+Status: experimental candidate. On 2026-11-01, the owner supplied v0.8.16 screenshots showing both radios connected concurrently on the device and showing radio settings entry points plus the local browser companion working. These captures confirm those functions in the demonstrated setup; they are not exhaustive hardware acceptance. The exact owner-tested v0.8.14 image remains the recommended stable release. This change does not replace its immutable source reference or binary checksum. v0.8.15 message visibility and device-local time fixes remain included.
 
 ## Connection behavior
 
@@ -57,4 +57,4 @@ Automated validation:
 - Actual browser functions: enum selection, confirmation, per-network destinations, preserved edits and stale-radio replacement.
 - Real LVGL forms: group selection, settings read, enum editor, confirmation, keypad and existing message/map/Home regressions.
 
-Hardware acceptance still needs two real radios: receive/send on both at once; reconnect each while the other exchanges messages; reboot the Core with either/both radios missing; PIN pairing for each; repeat while refreshing remote tracks/settings; verify region/channel changes and observe minimum task stack/internal heap. Record both radio firmware versions and exact candidate binary identity. Automated tests cannot establish RF coexistence, long-duration stability or physical firmware compatibility.
+Remaining hardware acceptance includes bidirectional receive/send traffic on both radios at once; reconnect each while the other exchanges messages; reboot the Core with either/both radios missing; PIN pairing for each; repeat while refreshing remote tracks/settings; verify region/channel changes and observe minimum task stack/internal heap. Record both radio firmware versions and exact candidate binary identity. The owner screenshots document connected state, device views and browser access, not this full test matrix. Automated tests cannot establish RF coexistence, long-duration stability or compatibility with every radio firmware.
