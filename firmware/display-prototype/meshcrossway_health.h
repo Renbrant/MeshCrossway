@@ -70,7 +70,7 @@ static void start(){
   if(running.load())return;
   httpd_config_t config=HTTPD_DEFAULT_CONFIG();
   config.server_port=80;config.stack_size=HTTP_STACK_BYTES;
-  config.max_open_sockets=2;config.max_uri_handlers=14;
+  config.max_open_sockets=4;config.max_uri_handlers=14;
   config.recv_wait_timeout=2;config.send_wait_timeout=2;
   config.lru_purge_enable=true;
   if(!mcxremotechat::work)printf("[MCX-HTTP] messaging PSRAM unavailable\n");

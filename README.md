@@ -18,7 +18,7 @@
 </p>
 
 
-**Recommended stable: v0.8.16.** The owner confirmed that both radio networks work simultaneously and approved this version as definitive on 2026-11-01. Map tiles and saved routes are currently failing; that issue is under investigation. The exact published image is pinned, with v0.8.14 retained as rollback. [Stable record](docs/stable-v0816.md). [Coverage and validation](docs/dual-radio-settings-v0816.md).
+**Recommended stable: v0.8.16.** The owner confirms both radio networks work simultaneously and approved this version. Map tiles and saved routes are currently failing. Candidate v0.8.17 increases remote request capacity to address map/track loading contention; verification remains pending. [Stable record](docs/stable-v0816.md). [v0.8.17 diagnosis and validation](docs/map-route-reliability-v0817.md).
 
 **v0.8.12 candidate:** persistent track folders, browser route list/map preview, Home Wi-Fi IP, separate communication views and remote radio scan/connect/pair/disconnect. [Operation and validation](docs/track-folders-remote-v0812.md).
 
@@ -26,7 +26,7 @@
 
 MeshCrossway is an **open-source, offline-first modular communication system** with **three independent, battery-powered devices**: one touchscreen **Core** and two detachable LoRa **Radio Pods**, one for **Meshtastic** and one for **MeshCore**. The Core connects to both Pods over **two separate Bluetooth Low Energy (BLE) links**, bringing messaging, navigation, GNSS positioning, tracks and field diagnostics into a single interface without requiring cellular coverage or the internet.
 
-> **Development status:** v0.8.16 is the owner-approved stable release, with a known map and route loading issue under investigation. It supports two independent simultaneous BLE sessions for Meshtastic and MeshCore; live position sharing remains future work. v0.8.12 is withdrawn from installation after confirmed repeated restarts; the web simulator is separate from physical LVGL firmware.
+> **Development status:** v0.8.16 remains the owner-approved stable release. v0.8.17 is an experimental fix for map and route loading under simultaneous remote requests. Live position sharing remains future work. v0.8.12 is withdrawn from installation after confirmed repeated restarts; the web simulator is separate from physical LVGL firmware.
 
 ## Current hardware — three independent BLE devices
 
