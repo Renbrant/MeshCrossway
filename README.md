@@ -19,9 +19,20 @@
 
 ## 3D hardware model
 
-The repository includes printable STL/3MF exports for the Waveshare ESP32-S3 enclosure and an editable FreeCAD source model for the 10,000 mAh battery case. Open the [STL model in GitHub's 3D viewer](<hardware/3D/Waveshare esp32-s3 case.stl>) or download the [3MF print file](<hardware/3D/Waveshare esp32-s3 case.3mf>) and [FreeCAD source for the battery case](<hardware/3D/Case bat 10000mA.FCStd>).
+The gallery below shows the committed 3D hardware renders. The repository also includes printable STL/3MF exports for the Waveshare ESP32-S3 enclosure and an editable FreeCAD source model for the 10,000 mAh battery case. Open the [STL model in GitHub's 3D viewer](<hardware/3D/Waveshare esp32-s3 case.stl>), download the [3MF print file](<hardware/3D/Waveshare esp32-s3 case.3mf>) or view the [FreeCAD battery-case source](<hardware/3D/Case bat 10000mA.FCStd>).
 
-**The repository currently contains the 3D model files, but no separate PNG/JPG render images of this case.** The links above open the committed model/export files.
+<p align="center">
+  <img src="hardware/3D/Render/Captura%20de%20tela%202026-11-01%20144917.png" width="49%" alt="MeshCrossway hardware 3D render, view 1">
+  <img src="hardware/3D/Render/Captura%20de%20tela%202026-11-01%20145119.png" width="49%" alt="MeshCrossway hardware 3D render, view 2">
+</p>
+<p align="center">
+  <img src="hardware/3D/Render/Captura%20de%20tela%202026-11-01%20145203.png" width="49%" alt="MeshCrossway hardware 3D render, view 3">
+  <img src="hardware/3D/Render/Captura%20de%20tela%202026-11-01%20145300.png" width="49%" alt="MeshCrossway hardware 3D render, view 4">
+</p>
+<p align="center">
+  <img src="hardware/3D/Render/Captura%20de%20tela%202026-11-01%20145317.png" width="49%" alt="MeshCrossway hardware 3D render, view 5">
+  <img src="hardware/3D/Render/Captura%20de%20tela%202026-11-01%20145336.png" width="49%" alt="MeshCrossway hardware 3D render, view 6">
+</p>
 
 **Recommended stable: v0.8.16.** The owner confirmed that both radio networks work simultaneously and approved this version as definitive on 2026-11-01. Map tiles and saved routes are currently failing; that issue is under investigation. The exact published image is pinned, with v0.8.14 retained as rollback. [Stable record](docs/stable-v0816.md). [Coverage and validation](docs/dual-radio-settings-v0816.md).
 
