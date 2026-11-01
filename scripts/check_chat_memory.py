@@ -23,17 +23,24 @@ def check(symbols, writable_sections=None):
         raise ValueError(f'Chat/history static RAM regression: total={total}, oversized={oversized}')
     return total
 
+def writable_ram_sections(sections):
+    writable=set()
+    for line in sections.splitlines():
+        row=re.match(r'\s*\[\s*(\d+)\]\s+(\S+)\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+(\S+)',line)
+        # ESP-IDF's linker marks mapped flash rodata WA despite its physical
+        # placement in flash. ELF flags alone therefore overcount SRAM.
+        if row and 'W' in row[3] and 'A' in row[3] and not row[2].startswith('.flash'):
+            writable.add(row[1])
+    if not writable:raise ValueError('Cannot identify writable allocated RAM sections')
+    return writable
+
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('elf')
     args=parser.parse_args()
     try:
         sections=subprocess.check_output(['readelf','-SW',args.elf],text=True)
-        writable=set()
-        for line in sections.splitlines():
-            row=re.match(r'\s*\[\s*(\d+)\]\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+(\S+)',line)
-            if row and 'W' in row[2] and 'A' in row[2]:writable.add(row[1])
-        if not writable:raise ValueError('Cannot identify writable allocated ELF sections')
+        writable=writable_ram_sections(sections)
         total=check(subprocess.check_output(['readelf','--syms','--wide','--demangle',args.elf],text=True),writable)
     except (ValueError,subprocess.CalledProcessError) as error:
         parser.exit(1,f'{error}\n')
