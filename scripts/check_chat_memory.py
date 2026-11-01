@@ -4,13 +4,15 @@ import argparse
 import re
 import subprocess
 
-def check(symbols):
+def check(symbols, writable_sections=None):
     objects=[]
     for line in symbols.splitlines():
-        match=re.match(r'\s*\d+:\s+[0-9a-fA-F]+\s+(\d+)\s+OBJECT\s+\S+\s+\S+\s+\S+\s+(.+)',line)
+        match=re.match(r'\s*\d+:\s+[0-9a-fA-F]+\s+(\d+)\s+OBJECT\s+\S+\s+\S+\s+(\S+)\s+(.+)',line)
         if not match:
             continue
-        size,name=int(match[1]),match[2]
+        size,section,name=int(match[1]),match[2],match[3]
+        if writable_sections is not None and section not in writable_sections:
+            continue
         if any(scope in name for scope in ('mcxhistory::','meshcrossway::mcui::','meshmt::','meshcrossway::mtui::')):
             objects.append((size,name))
     if not objects:
@@ -26,7 +28,13 @@ if __name__=='__main__':
     parser.add_argument('elf')
     args=parser.parse_args()
     try:
-        total=check(subprocess.check_output(['readelf','--syms','--wide','--demangle',args.elf],text=True))
+        sections=subprocess.check_output(['readelf','-SW',args.elf],text=True)
+        writable=set()
+        for line in sections.splitlines():
+            row=re.match(r'\s*\[\s*(\d+)\]\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+(\S+)',line)
+            if row and 'W' in row[2] and 'A' in row[2]:writable.add(row[1])
+        if not writable:raise ValueError('Cannot identify writable allocated ELF sections')
+        total=check(subprocess.check_output(['readelf','--syms','--wide','--demangle',args.elf],text=True),writable)
     except (ValueError,subprocess.CalledProcessError) as error:
         parser.exit(1,f'{error}\n')
     print(f'PASS: chat/history static objects total {total} bytes (budget 2048); bulk state uses PSRAM')

@@ -14,7 +14,7 @@ def check(reports, health, navigation):
         fields=line.split('\t')
         if len(fields)!=3:continue
         name=fields[0]
-        if not any(n in name for n in ('mcxnavhttp::','mcxremoteradio::','mcxremotechat::','meshhealth::','meshcapture::')):continue
+        if not any(n in name for n in ('mcxnavhttp::','mcxremoteradio::','mcxremotechat::','meshhealth::','meshcapture::','mcxsettingshttp::')):continue
         if 'httpd_req_t' in name:
             if fields[2] not in ('static','dynamic,bounded'):raise ValueError('Unbounded HTTP handler: '+name)
             handlers.append(int(fields[1]));seen.add(name)

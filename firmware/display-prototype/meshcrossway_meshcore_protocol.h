@@ -2,6 +2,7 @@
 // Independent Companion wire-format implementation. See docs/meshcore-v070.md for pinned sources.
 // No upstream firmware/library code is linked or copied. All integers on this wire are little endian.
 #include <errno.h>
+#include "meshcrossway_radio_presets.h"
 #include <limits.h>
 #include <new>
 #include <stddef.h>

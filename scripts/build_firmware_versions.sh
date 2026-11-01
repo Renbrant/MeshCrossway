@@ -95,6 +95,7 @@ build_version() {
   fi
   if [ -f "$source_root/scripts/test_ble_resume.py" ]; then
     python3 "$source_root/scripts/test_ble_resume.py"
+    if [ -f "$source_root/scripts/test_radio_settings.py" ]; then python3 "$source_root/scripts/test_radio_settings.py"; node "$source_root/scripts/test_remote_settings.cjs"; fi
   fi
   if [ -f "$source_root/scripts/test_runtime_diagnostics.py" ]; then
     python3 "$source_root/scripts/test_runtime_diagnostics.py"

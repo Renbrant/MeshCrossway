@@ -70,6 +70,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.16":
+        summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: independent simultaneous Meshtastic + MeshCore BLE sessions, separate reconnect identities, native and browser radio settings with local-only Meshtastic administration and readback verification. Exact v0.8.14 remains stable."
+        label="Dual radios + radio settings / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.15":
         summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: device-local message times on screen and remote, common native/remote destination matching, complete stored-message enumeration and cleared stale list search when opening a MeshCore conversation. Exact v0.8.14 remains stable."
         label="Message visibility + device-local times / EXPERIMENTAL"

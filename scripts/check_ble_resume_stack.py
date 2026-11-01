@@ -10,7 +10,7 @@ import re
 
 NAMES = ('auto_resume_task', 'reconnect_remembered', 'connect', 'connect_peer',
          'connect_selected', 'scan', 'request_start', 'read_remembered',
-         'read_enabled', 'phase', 'copy_peer', 'resume_stack_diagnostic')
+         'read_enabled', 'phase', 'copy_peer', 'resume_stack_diagnostic', 'resume_once')
 
 def check(reports, header):
     match = re.search(r'RESUME_STACK_BYTES\s*=\s*(\d+)', header)
@@ -23,11 +23,13 @@ def check(reports, header):
         if len(fields) != 3:
             continue
         for name in NAMES:
-            if f'meshble::{name}(' not in fields[0]:
+            match = re.search(r'meshble::(?:(?:mt|mc)::)?'+name+r'\(', fields[0])
+            if not match:
                 continue
             if fields[2] not in ('static', 'dynamic,bounded'):
                 raise ValueError(f'Unbounded BLE resume frame: {name}')
-            frames[name] = max(frames.get(name, 0), int(fields[1]))
+            key = ("link::" if "::mt::" in match[0] or "::mc::" in match[0] else "") + name
+            frames[key] = max(frames.get(key, 0), int(fields[1]))
     if 'auto_resume_task' not in frames:
         raise ValueError('Missing BLE resume target compiler report')
     # Sum even mutually exclusive control paths conservatively. GCC-inlined

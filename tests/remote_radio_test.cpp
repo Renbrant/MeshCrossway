@@ -3,7 +3,8 @@ enum Phase{OFF,STARTING,IDLE,SCANNING,CONNECTING,VERIFYING,PAIRING,READY,FAILED}
 struct Address{uint8_t type=0,val[6]={};};struct Peer{Address addr;char name[29]={};int rssi=-50;Radio advertised=UNKNOWN;};
 struct Snapshot{Phase phase=OFF;Radio radio=UNKNOWN;Peer peers[8];unsigned count=0;char active_name[29]={},status[64]="Bluetooth off";bool pin_required=false,confirm_required=false;uint32_t compare_number=0;};
 static Snapshot current;static int connected=-1;static uint32_t submitted=0;
-static Snapshot snapshot(){return current;}
+static Snapshot snapshot(Radio=UNKNOWN){return current;}
+static bool select(Radio){return true;}
 static bool request_start(){current.phase=STARTING;return true;}
 static void scan(bool automatic){assert(!automatic);current.phase=SCANNING;}
 static void connect(unsigned i){connected=int(i);current.phase=CONNECTING;}
@@ -17,7 +18,7 @@ namespace mcxnavhttp {
 }
 #include "remote_radio.h"
 static httpd_req_t radio_request(const std::string &body,const std::string &header="1"){
- httpd_req_t r;r.header=header;r.body=body;r.content_len=body.size();mcxremoteradio::send(&r);return r;
+ httpd_req_t r;r.header=header;r.body="mt|"+body;r.content_len=r.body.size();mcxremoteradio::send(&r);return r;
 }
 int main(){
  meshmc::client=new meshmc::Client();meshmt::client=new meshmt::Client();
@@ -34,6 +35,6 @@ int main(){
  s.confirm_required=true;s.compare_number=123456;r=radio_request("6||1");assert(r.status=="202 Accepted"&&!s.confirm_required);
  r=radio_request("6||2");assert(r.status=="400 Bad Request");
  owner_poll=false;r=radio_request("1||0");assert(r.status=="503 Service Unavailable"&&mcxremoteradio::phase==0);owner_poll=true;
- httpd_req_t state;mcxremoteradio::state(&state);assert(state.response.find("My radio")!=state.response.npos&&state.response.find(token)!=state.response.npos);
+ httpd_req_t state;state.query="network=mt";mcxremoteradio::state(&state);assert(state.response.find("My radio")!=state.response.npos&&state.response.find(token)!=state.response.npos);
  puts("PASS remote radio: action/header bounds, stale-index-safe identity, scan/connect/disconnect, PIN/confirmation state gates, secret clearing and cancelled timeout");
 }
