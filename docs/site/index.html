@@ -1,1 +1,200 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Meshtastic and MeshCore, simultaneously, in one open-source touchscreen field communicator."><title>MeshCrossway — Two Mesh Networks. One Device.</title><link rel="stylesheet" href="/MeshCrossway/assets/site.css"></head><body><nav class="nav"><div class="wrap navin"><a class="brand" href="/MeshCrossway/" aria-label="MeshCrossway home"><img src="/MeshCrossway/assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44"></a><div class="links"><a href="/MeshCrossway/about/">About</a><a href="/MeshCrossway/hardware/">Hardware</a><a href="/MeshCrossway/software/">Software</a><a href="/MeshCrossway/roadmap/">Roadmap</a><a href="/MeshCrossway/faq/">FAQ</a><a href="/MeshCrossway/ui/">UI Demo</a></div><a class="cta" href="/MeshCrossway/flasher/">Web Flasher</a></div></nav><main><section class="hero"><div class="wrap"><div class="eyebrow">Open-source · Offline-first · Field-ready vision</div><h1>Two mesh networks.<br><span>One device.</span> More reach.</h1><p class="lead">MeshCrossway brings <b>Meshtastic + MeshCore</b> together in one portable touchscreen communicator — using two independent LoRa radios simultaneously while preserving each network's native identity, routing and security.</p><div class="actions"><a class="button primary" href="/MeshCrossway/ui/">Explore the UI</a><a class="button secondary" href="/MeshCrossway/flasher/">Flash firmware</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway">View on GitHub</a></div><div class="heroimg"><img src="/MeshCrossway/media/meshcrossway-modular-hero.jpg" alt="MeshCrossway — Meshtastic and MeshCore modular three-device system"></div></div></section><div class="wrap"><div class="strip"><div class="stat"><strong>2× LoRa</strong><span>Independent SX1262 radios</span></div><div class="stat"><strong>2 networks</strong><span>Meshtastic + MeshCore</span></div><div class="stat"><strong>1 UI</strong><span>Unified touchscreen experience</span></div><div class="stat"><strong>Offline</strong><span>No cellular service required</span></div></div></div><section class="section"><div class="wrap"><div class="eyebrow">The idea</div><h2>Stop choosing one mesh.</h2><p class="sectionintro">Different communities, routes and deployments use different LoRa mesh ecosystems. MeshCrossway is designed to carry both at the same time, without pretending they are the same network.</p><div class="network"><div class="card"><div class="num">NETWORK A</div><h3>Meshtastic</h3><p>Dedicated XIAO ESP32-S3 + Wio-SX1262 radio, connected to the host through its own serial interface.</p></div><div class="plus">+</div><div class="card"><div class="num">NETWORK B</div><h3>MeshCore</h3><p>A second independent XIAO ESP32-S3 + Wio-SX1262 running the MeshCore Companion stack in parallel.</p></div></div></div></section><section class="section"><div class="wrap"><div class="eyebrow">One field console</div><h2>Messaging. Navigation. Awareness.</h2><div class="grid3"><div class="card"><div class="num">01</div><h3>Unified messaging</h3><p>One inbox with explicit network identity, channels, groups and private conversations.</p></div><div class="card"><div class="num">02</div><h3>GNSS & navigation</h3><p>Local positioning, POIs, tracks, GPX workflows and location-sharing controls.</p></div><div class="card"><div class="num">03</div><h3>Field diagnostics</h3><p>Independent radio health, connectivity and system information designed for real-world testing.</p></div></div></div></section><section class="section"><div class="wrap"><div class="notice"><b>Development project.</b> Rev A is currently moving from design into bench testing. The web UI uses simulated data, and hardware, RF coexistence, power and protocol integration still require validation.</div></div></section></main><footer><div class="wrap">MeshCrossway is an independent open-source experimental project. Meshtastic, MeshCore and referenced hardware brands remain the property of their respective projects and owners. Not a certified emergency device.</div></footer></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="MeshCrossway is an offline-first touchscreen communicator for independent Meshtastic and MeshCore networks. See the current development and hardware status.">
+  <title>MeshCrossway — Project and Development Status</title>
+  <link rel="stylesheet" href="/MeshCrossway/assets/site.css">
+  <style>
+    .evidence-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:28px}
+    .evidence-grid figure{margin:0;min-width:0}
+    .evidence-grid img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:#0b0d10}
+    .evidence-grid figcaption{padding:12px 2px 4px;color:var(--muted);font-size:14px}
+    @media(max-width:800px){.evidence-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="wrap navin">
+      <a class="brand" href="/MeshCrossway/" aria-label="MeshCrossway home">
+        <img src="/MeshCrossway/assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44">
+      </a>
+      <div class="links">
+        <a href="/MeshCrossway/about/">About</a>
+        <a href="/MeshCrossway/hardware/">Hardware</a>
+        <a href="/MeshCrossway/software/">Software</a>
+        <a href="/MeshCrossway/roadmap/">Roadmap</a>
+        <a href="/MeshCrossway/faq/">FAQ</a>
+        <a href="/MeshCrossway/ui/">UI Demo</a>
+      </div>
+      <a class="cta" href="/MeshCrossway/flasher/">Web Flasher</a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <div class="wrap">
+        <div class="eyebrow">Open-source · Offline-first · v0.8.16 in operation</div>
+        <h1>Two independent mesh networks.<br><span>One field communicator.</span></h1>
+        <p class="lead">MeshCrossway brings Meshtastic and MeshCore into one touchscreen experience while preserving each network's identity, security and routing. The v0.8.16 build shown here connects to both radios and provides device-side and local browser access.</p>
+        <div class="actions">
+          <a class="button primary" href="/MeshCrossway/ui/">Explore the UI demo</a>
+          <a class="button secondary" href="/MeshCrossway/flasher/">Web Flasher</a>
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway">View source on GitHub</a>
+        </div>
+        <div class="heroimg">
+          <img src="/MeshCrossway/media/meshcrossway-modular-hero.jpg" alt="MeshCrossway modular Core and independent Meshtastic and MeshCore radio devices">
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap">
+      <section class="notice" aria-labelledby="release-status">
+        <span class="status">Project status · 1 November 2026</span>
+        <h2 id="release-status">v0.8.14 remains the recommended stable release</h2>
+        <p>The owner-confirmed stable firmware is v0.8.14. The newer v0.8.16 build is running on the device; the screenshots below document simultaneous Meshtastic and MeshCore connections, node and conversation views, and the working browser companion for messages and track management.</p>
+        <p><b>Release status:</b> v0.8.16 adds the dual-radio and configuration experience, but has not replaced v0.8.14 as the recommended stable firmware.</p>
+        <div class="actions">
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/stable-v0814.md">Stable firmware record</a>
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/dual-radio-settings-v0816.md">v0.8.16 dual-radio notes</a>
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/field-evidence-v0816.md">Screenshots and working features</a>
+        </div>
+      </section>
+    </div>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="eyebrow">Product architecture</div>
+        <h2>Three devices. Two separate networks.</h2>
+        <p class="sectionintro">The selected design has one touchscreen Core and two detachable LoRa Radio Pods. Meshtastic and MeshCore remain independent; MeshCrossway does not automatically bridge or relay messages between them.</p>
+        <div class="network">
+          <article class="card">
+            <div class="num">CORE</div>
+            <h3>Waveshare ESP32-S3 touchscreen</h3>
+            <p>LVGL interface, local storage, GNSS, maps and BLE central connections to both Radio Pods.</p>
+          </article>
+          <div class="plus" aria-hidden="true">+</div>
+          <div>
+            <article class="card">
+              <div class="num">RADIO PODS</div>
+              <h3>Two independent XIAO + SX1262 radios</h3>
+            <p>One Pod runs native Meshtastic; the other runs MeshCore Companion. v0.8.16 shows both connected at once, while each network keeps its own identity and traffic.</p>
+            </article>
+            <p class="sectionintro">The two networks remain independent; MeshCrossway does not bridge messages between them.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="eyebrow">Running functionality</div>
+        <h2>Device and browser workflows</h2>
+        <div class="grid3">
+          <article class="card">
+            <div class="num">01 · COMMUNICATION</div>
+            <h3>Protocol-specific radio support</h3>
+            <p>Meshtastic and MeshCore connect at the same time in the v0.8.16 build. Each has its own status, nodes, conversations and configuration entry points; traffic remains separate by protocol.</p>
+          </article>
+          <article class="card">
+            <div class="num">02 · NAVIGATION</div>
+            <h3>GNSS, maps and clock</h3>
+            <p>The device displays live radio and node state, local GNSS fix and Wi-Fi status. GPS maps, clock and timezone support are included in the v0.8.x firmware line.</p>
+          </article>
+          <article class="card">
+            <div class="num">03 · TRACKS</div>
+            <h3>On-device recording and backup</h3>
+            <p>Tracks are stored locally. The touchscreen and local browser interface provide track management; the browser shows a route preview and supports GPX download for backup.</p>
+          </article>
+        </div>
+        <p class="sectionintro">The separate UI demo uses simulated data. The screenshots below are captures of the running v0.8.16 device and its local browser interface.</p>
+      </div>
+    </section>
+
+    <section class="section" id="working-screenshots">
+      <div class="wrap">
+        <div class="eyebrow">Owner-provided operation evidence · v0.8.16</div>
+        <h2>Working on the device and over the local network</h2>
+        <p class="sectionintro">These captures show the touchscreen firmware and the browser companion connected to the same device. Remote access is available on the user's local network; it is not a cloud service.</p>
+
+        <h3>Touchscreen device</h3>
+        <div class="evidence-grid">
+          <figure class="card">
+            <img src="/MeshCrossway/media/v0.8.16/01-device-home-radio-gps.png" alt="MeshCrossway home screen showing Meshtastic and MeshCore connected, local GPS fix and Wi-Fi status">
+            <figcaption>Home status shows both Meshtastic and MeshCore connected at the same time, with node counts, GNSS fix and Wi-Fi state.</figcaption>
+          </figure>
+          <figure class="card">
+            <img src="/MeshCrossway/media/v0.8.16/02-device-network-nodes.png" alt="MeshCrossway node list with All, Meshtastic and MeshCore filters">
+            <figcaption>Nodes and networks view with All, Meshtastic and MeshCore filters and a live Meshtastic node list.</figcaption>
+          </figure>
+          <figure class="card">
+            <img src="/MeshCrossway/media/v0.8.16/03-device-message-list.png" alt="MeshCrossway device message feed showing sender, time and hop count">
+            <figcaption>On-device message feed with sender identity, local message time and hop information.</figcaption>
+          </figure>
+          <figure class="card">
+            <img src="/MeshCrossway/media/v0.8.16/04-device-conversation.png" alt="MeshCrossway device conversation showing received and unconfirmed message states">
+            <figcaption>Conversation history on the touchscreen with received and unconfirmed message states.</figcaption>
+          </figure>
+        </div>
+
+        <h3 style="margin-top:44px">Remote browser companion</h3>
+        <div class="evidence-grid">
+          <figure class="card">
+            <img src="/MeshCrossway/media/v0.8.16/05-remote-tracks-map.png" alt="Remote Tracks and recording page showing track folders, saved routes and a map preview">
+            <figcaption>Tracks and recording page shows saved routes, folder controls, route details and an interactive map preview. GPX downloads provide portable track backups.</figcaption>
+          </figure>
+          <figure class="card">
+            <img src="/MeshCrossway/media/v0.8.16/06-remote-messages.png" alt="Remote Messages page showing MeshCore conversations, groups, nodes and message composer">
+            <figcaption>Remote Messages page shows MeshCore conversations, groups, nodes, message history and the message composer.</figcaption>
+          </figure>
+        </div>
+        <div class="actions">
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/field-evidence-v0816.md">Read the screenshot evidence record</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="eyebrow">Hardware status</div>
+        <h2>Modular design; hardware qualification remains</h2>
+        <div class="grid3">
+          <article class="card">
+            <div class="num">SELECTED CORE</div>
+            <h3>Waveshare ESP32-S3-Touch-LCD-3.5</h3>
+            <p>The touchscreen Core is the active firmware development target. MAX-M10S GNSS and microSD support the local navigation workflow.</p>
+          </article>
+          <article class="card">
+            <div class="num">SELECTED RADIO HARDWARE</div>
+            <h3>Seeed XIAO ESP32-S3 + Wio-SX1262</h3>
+            <p>Two independent Radio Pods are the modular architecture baseline. Battery and charging, RF coexistence and runtime still need broader system-level validation.</p>
+          </article>
+          <article class="card">
+            <div class="num">MECHANICAL DESIGN</div>
+            <h3>Prototype cases; modular packaging in progress</h3>
+            <p>The repository contains 3D case files for the Waveshare Core and a 10,000 mAh battery case. Final fit, separate Pod enclosures and a dock still need mechanical validation. KiCad Rev A is an archived integrated variant.</p>
+          </article>
+        </div>
+        <div class="actions">
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/modular-architecture.md">Modular architecture</a>
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/navigation-and-sharing.md">Navigation and track workflow</a>
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/track-folders-remote-v0812.md">Track folders and remote workspace</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="wrap">
+        <div class="notice">
+          <b>Experimental development project.</b> v0.8.16 is demonstrated in operation, but v0.8.14 remains the recommended stable release. Broader radio, RF coexistence, battery, runtime and mechanical qualification is ongoing. MeshCrossway is not a certified emergency or safety device.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">MeshCrossway is an independent open-source project. Meshtastic, MeshCore and referenced hardware brands remain the property of their respective projects and owners.</div>
+  </footer>
+</body>
+</html>
