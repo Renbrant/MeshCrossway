@@ -25,7 +25,8 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit owner approval.
 approved={
-    "v0.8.14":("Owner reported very good and apparently stable operation on 2026-10-31 and explicitly selected this release as the latest stable. Includes Bluetooth/HTTP stack fixes, track folders and remote workspaces. Exact tested binary retained unchanged.", "Owner-tested / recommended stable"),
+    "v0.8.16":("Owner approved v0.8.16 as the definitive release on 2026-11-01 after confirming both mesh radios work simultaneously. Includes independent BLE links and radio settings. Current report: map tiles and routes are not loading; this known issue is being investigated. Exact published binary is retained.", "Owner-approved stable / map issue under investigation"),
+    "v0.8.14":("Previous owner-tested stable release, retained as rollback. Includes Bluetooth/HTTP stack fixes, track folders and remote workspaces. Exact tested binary retained unchanged.", "Previous stable / rollback"),
     "v0.8.11":("Owner selected v0.8.11 as the stable release on 2026-10-31 after reporting periodic restarts on v0.8.12. Exact previously published v0.8.11 binary retained unchanged.", "Owner-selected / recommended stable"),
     "v0.8.9":("Owner confirmed everything works perfectly on 2026-10-30 and explicitly selected this revision as the most stable baseline. Exact tested binary retained unchanged. New remote messaging and auto-reconnect changes require separate hardware validation.", "Owner-tested / recommended stable"),
     "v0.8.2":("Owner confirmed GPS/maps and MeshCore BLE pairing, then successful Bluetooth reconnection after a hardware restart on 2026-10-29. Selected v0.8.2 as recovery. Exact published bytes are retained; this is not full Meshtastic or dual-radio qualification.", "Owner-tested / recommended recovery"),
@@ -71,9 +72,9 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary,label=approved[version]
         status="hardware-tested"
     elif version=="v0.8.16":
-        summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: independent simultaneous Meshtastic + MeshCore BLE sessions, separate reconnect identities, native and browser radio settings with local-only Meshtastic administration and readback verification. Exact v0.8.14 remains stable."
-        label="Dual radios + radio settings / EXPERIMENTAL"
-        status="experimental"
+        summary="OWNER-APPROVED STABLE: independent simultaneous Meshtastic + MeshCore BLE sessions, separate reconnect identities, and native/browser radio settings. User confirms both radio links work. Known issue under investigation: map tiles and saved routes are not loading."
+        label="Dual radios + settings / STABLE; maps issue"
+        status="hardware-tested"
     elif version=="v0.8.15":
         summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: device-local message times on screen and remote, common native/remote destination matching, complete stored-message enumeration and cleared stale list search when opening a MeshCore conversation. Exact v0.8.14 remains stable."
         label="Message visibility + device-local times / EXPERIMENTAL"
