@@ -109,7 +109,7 @@ static void start(){
   if(result==ESP_OK)result=httpd_register_uri_handler(server,&settings_command);
   if(result!=ESP_OK){httpd_stop(server);printf("[MCX-HTTP] route setup failed err=%d\n",(int)result);return;}
   running.store(true);
-  printf("[MCX-HTTP v0.8.16] ready port=80 routes=/,/health,/screen.raw manual=ON touch=OFF\n");
+  printf("[MCX-HTTP v0.8.17] ready port=80 routes=/,/health,/screen.raw manual=ON touch=OFF\n");
 }
 } // namespace meshhealth
 
