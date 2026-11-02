@@ -25,6 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit release approval.
 approved={
+    "v0.8.23":("v0.8.23 is the user-selected stable release. It retains the exact previously published firmware image; the 0.8.24 configuration redesign is a separate candidate.", "Recommended stable / dual-network maps and tracks"),
     "v0.8.17":("The v0.8.17 dual-radio and remote map/route release is confirmed working well on the device and is the recommended stable image. Exact published binary is retained.", "Recommended stable / maps and tracks"),
     "v0.8.14":("Previous hardware-tested stable release, retained as rollback. Includes Bluetooth/HTTP stack fixes, track folders and remote workspaces. Exact tested binary retained unchanged.", "Previous stable / rollback"),
     "v0.8.11":("v0.8.11 was selected as the stable release on 2026-10-31 after periodic restarts on v0.8.12 were reported. Exact previously published v0.8.11 binary retained unchanged.", "Selected / recommended stable"),
@@ -71,9 +72,9 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
-    elif version=="v0.8.23":
-        summary="EXPERIMENTAL: adds independent map node icon shapes and colors for Meshtastic and MeshCore, with migration of saved v0.8.22 preferences. v0.8.17 remains recommended stable."
-        label="Per-network map node styles / EXPERIMENTAL"
+    elif version=="v0.8.24":
+        summary="EXPERIMENTAL: reorganized Meshtastic and MeshCore settings into categories, added search in the remote settings workspace, and fixed remote node distance sorting dependency. v0.8.23 remains stable."
+        label="Radio settings navigation redesign / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.8.22":
         summary="EXPERIMENTAL: adds a persistent node-marker color selector with Auto network colors plus orange, cyan, green, red, purple, yellow and white. v0.8.17 remains recommended stable."

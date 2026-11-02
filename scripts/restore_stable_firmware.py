@@ -11,11 +11,11 @@ import tempfile
 import urllib.request
 import zipfile
 
-VERSION = 'v0.8.17'
-REF = '6619b9ffaf51972f6f927431732caa7faab2f822'
-SHA = '0f13bc213ee07729a917ba73426cc3fb85813eef69575ea78fe03f5af677b18b'
-ARTIFACT = 13108534134
-ARCHIVE_SHA = 'd912d217e3643d0f2d4c184215eb274e6390a79897db386c512996a0ebcb0157'
+VERSION = 'v0.8.23'
+REF = 'cd17768eed1cd07830295c6130c245f22e8991c0'
+SHA = '26a1ab1a0d2002837d021bee89c0ece70d8e5a13c020bf02cbb60899de38c414'
+ARTIFACT = 13160597329
+ARCHIVE_SHA = 'a9db284513017c0ea125272176e437ddf40c48e03d94562cb17d6e919bad81dd'
 NAMES = ('manifest.json', 'build-info.json', 'meshcrossway-display-dev.bin',
          'bootloader.bin', 'partition-table.bin', 'application.bin')
 ROOT = Path(__file__).resolve().parents[1]

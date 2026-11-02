@@ -6,12 +6,11 @@
 #include "meshcrossway_conversations.h"
 #include "mbedtls/sha256.h"
 #include "meshcrossway_chat_presentation.h"
-#include "meshcrossway_gnss.h"
 #include <atomic>
 #include <new>
 namespace mcxremotechat {
 static constexpr unsigned PAGE_SIZE=32, MESSAGE_LIMIT=40, RESPONSE_SIZE=128*1024;
-struct Request {bool sending=false;char network[3]={},target[65]={},text[meshmt::MAX_TEXT+1]={};unsigned page=0,category=0;};
+struct Request {bool sending=false,origin_valid=false;double origin_lat=0,origin_lon=0;char network[3]={},target[65]={},text[meshmt::MAX_TEXT+1]={};unsigned page=0,category=0;};
 struct Workspace {Request request;char response[RESPONSE_SIZE];size_t length=0;int code=200;uint8_t salt[16]={};};
 static Workspace *work=nullptr;
 static std::atomic<unsigned> phase{0}; // 0 idle, 1 submitted, 2 processing, 3 complete
@@ -70,7 +69,7 @@ static void process(){
     j.add("{\"id\":");j.text(id);j.add(",\"name\":");j.text(name);j.add(",\"kind\":");j.text(group?"Group":"Node");j.add(",\"unread\":");j.number(unread);j.add(",\"last\":");j.number(last);j.add(",\"last_seen\":");j.number(seen);j.add(",\"has_position\":");j.add(has_position?"true":"false");if(has_position){char b[32];snprintf(b,sizeof(b),"%.6f",latitude);j.add(",\"lat\":");j.add(b);snprintf(b,sizeof(b),"%.6f",longitude);j.add(",\"lon\":");j.add(b);}j.add("}");
   };
   j.add("{\"network\":");j.text(mc?"mc":"mt");j.add(",\"connected\":");j.add((mc?meshmc::link.load()&&c->connected:meshmt::link.load()&&m->connected)?"true":"false");
-  j.add(",\"status\":");j.text(mc?c->status:m->status);const auto fix=mcxgnss::snapshot();j.add(",\"origin_valid\":");j.add(fix.valid?"true":"false");if(fix.valid){char b[32];snprintf(b,sizeof(b),"%.6f",fix.latitude);j.add(",\"origin_lat\":");j.add(b);snprintf(b,sizeof(b),"%.6f",fix.longitude);j.add(",\"origin_lon\":");j.add(b);}j.add(",\"targets\":[");
+  j.add(",\"status\":");j.text(mc?c->status:m->status);j.add(",\"origin_valid\":");j.add(r.origin_valid?"true":"false");if(r.origin_valid){char b[32];snprintf(b,sizeof(b),"%.6f",r.origin_lat);j.add(",\"origin_lat\":");j.add(b);snprintf(b,sizeof(b),"%.6f",r.origin_lon);j.add(",\"origin_lon\":");j.add(b);}j.add(",\"targets\":[");
   if(mc){
     for(unsigned i=0;i<c->channel_count;++i)if(c->channels[i].loaded&&c->channels[i].name[0]){
       auto k=mcxchat::key_for(*c,true,uint16_t(i));auto *pref=mcxhistory::preferences().get(k);if(pref&&pref->blocked)continue;char id[65];mc_token(k,id);unsigned unread=0;uint32_t last=0;for(const auto &msg:c->messages)if(mcxchat::belongs(msg,k)){last=msg.id>last?msg.id:last;unread+=!msg.outgoing&&!msg.read;}row(id,c->channels[i].name,true,unread,last);if(!strcmp(id,r.target)){mk=k;found=true;}

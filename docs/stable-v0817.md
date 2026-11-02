@@ -11,3 +11,6 @@ The Web Flasher preserves this exact image as the stable version while newer fun
 - Original successful Pages deployment run: `41371366326`
 
 The image is restored from its published files and verified by source ref and SHA-256. The next candidate, v0.8.18, does not replace the stable selection until separately accepted on hardware.
+
+
+**Superseded:** v0.8.23 was later selected as stable; see [the current stable release record](stable-v0823.md).
