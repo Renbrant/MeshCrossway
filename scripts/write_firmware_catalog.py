@@ -71,6 +71,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.22":
+        summary="EXPERIMENTAL: adds a persistent node-marker color selector with Auto network colors plus orange, cyan, green, red, purple, yellow and white. v0.8.17 remains recommended stable."
+        label="Configurable map node colors / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.21":
         summary="EXPERIMENTAL: adds selectable 18/22/26/30 px radio-node markers, with the map settings shortcut directly below Zoom. v0.8.17 remains recommended stable."
         label="Larger configurable map markers / EXPERIMENTAL"
