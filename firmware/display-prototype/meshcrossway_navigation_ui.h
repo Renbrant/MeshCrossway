@@ -247,16 +247,17 @@ static void draw_overlays(lv_event_t *event){
     if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
     lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=cyan;d.border_color=white;d.border_width=1;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
   }
-  const auto config=mcxmap::configuration();
-  for(unsigned i=0;i<overlay_cache->node_count;++i){const auto &node=overlay_cache->nodes[i];lv_area_t a={lv_coord_t(node.point.x+area.x1-4),lv_coord_t(node.point.y+area.y1-4),lv_coord_t(node.point.x+area.x1+4),lv_coord_t(node.point.y+area.y1+4)};
+  const auto config=mcxmap::configuration();const int node_size=int(mcxmap::node_size(config));
+  for(unsigned i=0;i<overlay_cache->node_count;++i){const auto &node=overlay_cache->nodes[i];const int x=lv_coord_t(node.point.x+area.x1),y=lv_coord_t(node.point.y+area.y1);lv_area_t a={lv_coord_t(x-(node_size-1)/2),lv_coord_t(y-(node_size-1)/2),lv_coord_t(x+node_size/2),lv_coord_t(y+node_size/2)};
     if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
     const auto color=lv_color_hex(node.meshcore?0x9C88FF:0x72D8A5);
     if(mcxmap::node_icon(config)==mcxmap::NODE_CROSS){
-      lv_draw_line_dsc_t icon;lv_draw_line_dsc_init(&icon);icon.color=color;icon.width=3;
-      lv_point_t p1={lv_coord_t(node.point.x+area.x1-4),lv_coord_t(node.point.y+area.y1)},p2={lv_coord_t(node.point.x+area.x1+4),lv_coord_t(node.point.y+area.y1)};lv_draw_line(ctx,&icon,&p1,&p2);
-      p1={lv_coord_t(node.point.x+area.x1),lv_coord_t(node.point.y+area.y1-4)};p2={lv_coord_t(node.point.x+area.x1),lv_coord_t(node.point.y+area.y1+4)};lv_draw_line(ctx,&icon,&p1,&p2);
+      lv_point_t h1={lv_coord_t(a.x1+3),lv_coord_t(y)},h2={lv_coord_t(a.x2-3),lv_coord_t(y)};
+      lv_point_t v1={lv_coord_t(x),lv_coord_t(a.y1+3)},v2={lv_coord_t(x),lv_coord_t(a.y2-3)};
+      lv_draw_line_dsc_t icon;lv_draw_line_dsc_init(&icon);icon.color=white;icon.width=6;lv_draw_line(ctx,&icon,&h1,&h2);lv_draw_line(ctx,&icon,&v1,&v2);
+      icon.color=color;icon.width=3;lv_draw_line(ctx,&icon,&h1,&h2);lv_draw_line(ctx,&icon,&v1,&v2);
     }else{
-      lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=color;d.border_color=white;d.border_width=1;d.radius=mcxmap::node_icon(config)==mcxmap::NODE_CIRCLE?LV_RADIUS_CIRCLE:0;lv_draw_rect(ctx,&d,&a);
+      lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=color;d.border_color=white;d.border_width=2;d.radius=mcxmap::node_icon(config)==mcxmap::NODE_CIRCLE?LV_RADIUS_CIRCLE:0;lv_draw_rect(ctx,&d,&a);
     }
     if(config.show_node_names&&node.name[0]){lv_draw_label_dsc_t label;lv_draw_label_dsc_init(&label);label.color=white;label.font=&lv_font_montserrat_10;
       lv_area_t text={lv_coord_t(a.x2+2),lv_coord_t(a.y1-5),lv_coord_t(a.x2+76),lv_coord_t(a.y2+7)};lv_draw_label(ctx,&label,&text,node.name,nullptr);}
@@ -627,9 +628,10 @@ static void library(bool pois){
   }
   auto *help=single_label(dialog,pois?"POIs export automatically to navigation/pois.gpx.":"Finished/recovered tracks have a GPX beside the journal.",8,259,440,muted);lv_obj_set_style_text_font(help,&lv_font_montserrat_10,0);
 }
-static lv_obj_t *provider_picker=nullptr,*icon_picker=nullptr,*online_switch=nullptr,*nodes_switch=nullptr,*names_switch=nullptr;
+static lv_obj_t *provider_picker=nullptr,*icon_picker=nullptr,*size_picker=nullptr,*online_switch=nullptr,*nodes_switch=nullptr,*names_switch=nullptr;
 static void provider_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::select_provider(c,lv_dropdown_get_selected(provider_picker));mcxmap::configure(c);}
 static void icon_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::set_node_icon(c,lv_dropdown_get_selected(icon_picker));mcxmap::configure(c);}
+static void size_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::set_node_size(c,lv_dropdown_get_selected(size_picker));mcxmap::configure(c);}
 static void online_changed(lv_event_t *){auto c=mcxmap::configuration();c.online=lv_obj_has_state(online_switch,LV_STATE_CHECKED);mcxmap::configure(c);}
 static void nodes_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::set_nodes_hidden(c,!lv_obj_has_state(nodes_switch,LV_STATE_CHECKED));mcxmap::configure(c);}
 static void names_changed(lv_event_t *){auto c=mcxmap::configuration();c.show_node_names=lv_obj_has_state(names_switch,LV_STATE_CHECKED);mcxmap::configure(c);}
@@ -662,10 +664,14 @@ static void map_options(){
   icon_picker=lv_dropdown_create(row);lv_obj_set_size(icon_picker,278,34);
   lv_dropdown_set_options(icon_picker,"Circle\nSquare\nCross");lv_dropdown_set_selected(icon_picker,unsigned(mcxmap::node_icon(c)));
   lv_obj_add_event_cb(icon_picker,icon_changed,LV_EVENT_VALUE_CHANGED,nullptr);
+  row=control_row(38);row_label=single_label(row,"Node size",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
+  size_picker=lv_dropdown_create(row);lv_obj_set_size(size_picker,278,34);
+  lv_dropdown_set_options(size_picker,"Large / 18 px\nLarger / 22 px\nExtra large / 26 px\nMaximum / 30 px");
+  lv_dropdown_set_selected(size_picker,unsigned((c.hide_nodes>>3)&3));lv_obj_add_event_cb(size_picker,size_changed,LV_EVENT_VALUE_CHANGED,nullptr);
   row=control_row(30);row_label=single_label(row,"Download visible map tiles",0,0,330,white);lv_obj_set_flex_grow(row_label,1);
   online_switch=lv_switch_create(row);lv_obj_set_size(online_switch,44,24);if(c.online)lv_obj_add_state(online_switch,LV_STATE_CHECKED);
   lv_obj_add_event_cb(online_switch,online_changed,LV_EVENT_VALUE_CHANGED,nullptr);
-  auto *help=single_label(dialog,"OFF uses SD maps and cached tiles only.\nNode names and icon style apply to both radios.",0,0,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
+  auto *help=single_label(dialog,"OFF uses SD maps and cached tiles only.\nNode icon, size and names apply to both radios.",0,0,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
   map_save_label=single_label(dialog,"",0,0,440,muted);refresh();
 }
 }
