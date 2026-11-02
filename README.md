@@ -4,7 +4,7 @@
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Project status — v0.8.23 stable; v0.8.24 and v0.8.25 candidates.** v0.8.23 is the user-selected stable release and preserves its exact published firmware image. v0.8.24 redesigns Meshtastic/MeshCore settings navigation. v0.8.25 restores map rendering around saved radio-node positions when local GPS has no current fix. See the [v0.8.23 stable record](docs/stable-v0823.md), [v0.8.24 settings notes](docs/settings-navigation-v0824.md), and [v0.8.25 map notes](docs/map-node-centering-v0825.md).
+> **Project status — v0.8.23 stable; v0.8.24 through v0.8.26 candidates.** v0.8.23 is the user-selected stable release and preserves its exact published firmware image. v0.8.24 redesigns Meshtastic/MeshCore settings navigation. v0.8.25 restores map rendering around saved radio-node positions when local GPS has no current fix. See the [v0.8.23 stable record](docs/stable-v0823.md), [v0.8.24 settings notes](docs/settings-navigation-v0824.md), [v0.8.25 map notes](docs/map-node-centering-v0825.md), and [v0.8.26 remote MeshCore chat notes](docs/remote-meshcore-sender-v0826.md).
 
 ## See it in operation
 
@@ -109,6 +109,7 @@ The current software work adds settings navigation on top of the stable v0.8.23 
 | v0.8.23 Separate node icon and color settings by network | [Feature notes](docs/map-node-style-v0823.md) |
 | v0.8.24 Meshtastic and MeshCore settings navigation redesign | [Candidate notes](docs/settings-navigation-v0824.md) |
 | v0.8.25 map fallback centering when local GPS has no current fix | [Candidate notes](docs/map-node-centering-v0825.md) |
+| v0.8.26 remote MeshCore chat shows sender names and clean message bodies | [Candidate notes](docs/remote-meshcore-sender-v0826.md) |
 | Simultaneous BLE radios and per-network settings | [Dual-radio implementation notes](docs/dual-radio-settings-v0816.md) |
 | Device and browser operation screenshots | [Field evidence](docs/field-evidence-v0816.md) |
 | Modular Core and Radio Pod design | [Modular architecture](docs/modular-architecture.md) |

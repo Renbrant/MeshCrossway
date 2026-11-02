@@ -72,6 +72,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.26":
+        summary="EXPERIMENTAL: remote MeshCore chat now shows channel sender names from the message prefix and removes the prefix from the displayed body; direct messages use the contact name. v0.8.23 remains stable."
+        label="Remote MeshCore sender names / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.25":
         summary="EXPERIMENTAL / HARDWARE VALIDATION PENDING: map opens on positioned Meshtastic or MeshCore nodes when local GPS has no current fix; Center GPS remains available when a fix arrives. v0.8.23 remains stable."
         label="Map fallback centering / EXPERIMENTAL"
