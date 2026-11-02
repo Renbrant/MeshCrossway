@@ -49,8 +49,8 @@ static uint32_t overlay_signature(){
   if(!nav_state)return 0;
   const auto map=mcxmap::configuration();
   const uint32_t fields[]={nav_state->preview_id,nav_state->preview_count,nav_state->points,nav_state->overlay_count,nav_state->poi_count,
-    map.hide_nodes,meshmt::client?meshmt::client->generation:0,meshmt::client?meshmt::client->data.node_count:0,
-    meshmc::client?meshmc::client->generation:0,meshmc::client?meshmc::client->contact_count:0};
+    uint32_t(map.hide_nodes),meshmt::client?meshmt::client->generation:0u,uint32_t(meshmt::client?meshmt::client->data.node_count:0),
+    meshmc::client?meshmc::client->generation:0u,uint32_t(meshmc::client?meshmc::client->contact_count:0)};
   return mcxnav::checksum(fields,sizeof(fields))^mcxnav::checksum(nav_state->preferences.styles,sizeof(nav_state->preferences.styles))^mcxnav::checksum(nav_state->pois,nav_state->poi_count*sizeof(mcxnav::Poi));
 }
 static void rebuild_overlay_cache();
