@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restore the exact pinned stable v0.8.17 image; never rebuild a tested image."""
+"""Restore the exact pinned stable v0.8.23 image; never rebuild a tested image."""
 import argparse
 import hashlib
 import io
