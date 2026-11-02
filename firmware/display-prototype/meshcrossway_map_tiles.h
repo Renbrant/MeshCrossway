@@ -43,16 +43,19 @@ static lv_color_t *keep_tile(uint64_t source,unsigned z,unsigned x,unsigned y,co
   slot->source=source;slot->z=z;slot->x=x;slot->y=y;slot->used=++tile_clock;return slot->pixels;
 }
 static const char *SD_ROOT="/sdcard";
-// Keep the persisted blob size/layout stable: the node byte stores visibility + icon style,
+// Keep the persisted blob size/layout stable: the node byte stores visibility + icon + size,
 // while the former reserved byte now stores the optional name-label preference.
 struct Config {uint32_t version=1;uint8_t online=1,zoom=14,hide_nodes=0,show_node_names=0;char url[192]="https://tile.openstreetmap.org";char attribution[128]="© OpenStreetMap contributors";};
 enum NodeIcon {NODE_CIRCLE=0,NODE_SQUARE=1,NODE_CROSS=2};
+static constexpr unsigned NODE_SIZES[]={18,22,26,30};
 static bool nodes_hidden(const Config &c){return c.hide_nodes&1;}
 static NodeIcon node_icon(const Config &c){return NodeIcon((c.hide_nodes>>1)&3);}
+static unsigned node_size(const Config &c){return NODE_SIZES[(c.hide_nodes>>3)&3];}
 static void set_nodes_hidden(Config &c,bool hidden){c.hide_nodes=uint8_t((c.hide_nodes&~1u)|(hidden?1u:0u));}
-static void set_node_icon(Config &c,unsigned icon){c.hide_nodes=uint8_t((c.hide_nodes&1u)|((icon%3u)<<1));}
+static void set_node_icon(Config &c,unsigned icon){c.hide_nodes=uint8_t((c.hide_nodes&0x19u)|((icon%3u)<<1));}
+static void set_node_size(Config &c,unsigned size){c.hide_nodes=uint8_t((c.hide_nodes&0x07u)|((size%4u)<<3));}
 static bool valid_config(const Config &c){
-  if(c.version!=1||c.online>1||(c.hide_nodes&0xF8)||((c.hide_nodes>>1)&3)>NODE_CROSS||c.show_node_names>1||c.zoom<3||c.zoom>19||!memchr(c.url,0,sizeof(c.url))||!memchr(c.attribution,0,sizeof(c.attribution))||!c.attribution[0]||strncmp(c.url,"https://",8)||!c.url[8])return false;
+  if(c.version!=1||c.online>1||(c.hide_nodes&0xE0)||((c.hide_nodes>>1)&3)>NODE_CROSS||c.show_node_names>1||c.zoom<3||c.zoom>19||!memchr(c.url,0,sizeof(c.url))||!memchr(c.attribution,0,sizeof(c.attribution))||!c.attribution[0]||strncmp(c.url,"https://",8)||!c.url[8])return false;
   for(const char *p=c.url;*p;++p)if(uint8_t(*p)<=32||strchr("?#@{}",*p))return false;
   return true;
 }

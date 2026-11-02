@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.8.20: saved/recent node status, map node overlays and network ordering.
+// MeshCrossway v0.8.21: saved/recent node status, map node overlays and network ordering.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -308,9 +308,9 @@ static const ActionInfo chat_actions[]={
   {"Compose",A_NEW,orange},{"Chat tools",A_PACKETS,cyan},{"Chat info",A_THREAD_INFO,purple}
 };
 static const ActionInfo map_actions[]={
-  {"Map View",A_MAP_HOME,orange},{"Zoom",A_MAP_ZOOM,orange},{"Center GPS",A_MAP_CENTER,orange},
+  {"Map View",A_MAP_HOME,orange},{"Zoom",A_MAP_ZOOM,orange},{"Map Options",A_MAP_OPTIONS,orange},{"Center GPS",A_MAP_CENTER,orange},
   {"Record",A_RECORD,orange},{"Tracks",A_TRACKS,orange},{"POIs",A_POIS,orange},
-  {"Map Details",A_MAP_DIAGNOSTICS,orange},{"GNSS",A_GNSS,orange},{"Map Options",A_MAP_OPTIONS,orange},
+  {"Map Details",A_MAP_DIAGNOSTICS,orange},{"GNSS",A_GNSS,orange},
   {"Live Share",A_SHARE,orange},{"Team",A_TEAM,orange}
 };
 static void draw(); // Forward-declared above Wi-Fi editor callbacks.
@@ -526,7 +526,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.8.20","Meshtastic and MeshCore run over independent Bluetooth radios. Home shows saved/recent nodes and GPS satellites; the map can display positioned nodes from both networks.");break;
+      notice("MESH CROSSWAY v0.8.21","Meshtastic and MeshCore run over independent Bluetooth radios. Home shows saved/recent nodes and GPS satellites; the map can display positioned nodes from both networks.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Adjust brightness, screen timeout and connectivity.");break;
     default:break;
@@ -1246,7 +1246,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.8.20] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.8.21] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1267,7 +1267,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.8.20] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.8.21] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1280,7 +1280,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.8.20",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.8.21",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);
