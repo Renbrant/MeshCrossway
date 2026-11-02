@@ -71,6 +71,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.19":
+        summary="EXPERIMENTAL: real backlight brightness and persistent screen timeout controls in quick settings. Touch wakes the display; radio and navigation processing continue. v0.8.17 remains recommended stable."
+        label="Display brightness + timeout / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.18":
         summary="EXPERIMENTAL / HARDWARE VALIDATION PENDING: independent Meshtastic and MeshCore positioned-node map markers with a persistent visibility toggle; Home shows stored and recently heard node counts plus GNSS satellite count; node, group and channel lists are ordered by latest activity. v0.8.17 remains the recommended stable image."
         label="Node map + recent activity / EXPERIMENTAL"

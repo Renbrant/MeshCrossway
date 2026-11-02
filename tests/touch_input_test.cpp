@@ -6,6 +6,7 @@ static bool navigation_panel=false;
 #include "meshcrossway_edge_swipe.h"
 #include <cassert>
 #include <cstdio>
+namespace mcxdisplay {static lv_obj_t *cover=nullptr;}
 static bool left_compact=true,right_compact=true,suppress_left_nav_click=false;
 static lv_obj_t *wifi_dialog=nullptr,*wifi_editor=nullptr,*ble_dialog=nullptr,*info_dialog=nullptr,*shade=nullptr;
 static int page=3,clicks=0,feedbacks=0,draws=0;
