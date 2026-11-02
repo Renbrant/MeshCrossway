@@ -4,7 +4,7 @@
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Project status — v0.8.16 stable.** The owner confirmed simultaneous Meshtastic and MeshCore connections and approved v0.8.16 as the stable release on November 1, 2026. The local browser companion is also running. A known issue prevents map tiles and saved routes from loading in the device interface; it is under investigation. The exact v0.8.16 image is pinned, with v0.8.14 retained as rollback. See the [stable release record](docs/stable-v0816.md).
+> **Project status — v0.8.16 stable; v0.8.17 candidate.** v0.8.17 increases remote HTTP request capacity to reduce contention during navigation, message and radio refreshes. The map and route loading diagnosis is based on code review; device validation remains pending. See [v0.8.17 notes](docs/map-route-reliability-v0817.md) and the [stable release record](docs/stable-v0816.md).
 
 ## See it in operation
 

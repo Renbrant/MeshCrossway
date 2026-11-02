@@ -26,6 +26,7 @@ if version_key(stable)>version_key(latest):
 # Only include releases with explicit owner approval.
 approved={
     "v0.8.16":("Owner approved v0.8.16 as the definitive release on 2026-11-01 after confirming both mesh radios work simultaneously. Includes independent BLE links and radio settings. Current report: map tiles and routes are not loading; this known issue is being investigated. Exact published binary is retained.", "Owner-approved stable / map issue under investigation"),
+    "v0.8.17":("Candidate fixing remote map and saved-route loading reliability after the v0.8.16 dual-radio release. Hardware validation pending.", "Map and route loading fix / EXPERIMENTAL"),
     "v0.8.14":("Previous owner-tested stable release, retained as rollback. Includes Bluetooth/HTTP stack fixes, track folders and remote workspaces. Exact tested binary retained unchanged.", "Previous stable / rollback"),
     "v0.8.11":("Owner selected v0.8.11 as the stable release on 2026-10-31 after reporting periodic restarts on v0.8.12. Exact previously published v0.8.11 binary retained unchanged.", "Owner-selected / recommended stable"),
     "v0.8.9":("Owner confirmed everything works perfectly on 2026-10-30 and explicitly selected this revision as the most stable baseline. Exact tested binary retained unchanged. New remote messaging and auto-reconnect changes require separate hardware validation.", "Owner-tested / recommended stable"),
