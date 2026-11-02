@@ -49,8 +49,8 @@ static uint32_t overlay_signature(){
   if(!nav_state)return 0;
   const auto map=mcxmap::configuration();
   const uint32_t fields[]={nav_state->preview_id,nav_state->preview_count,nav_state->points,nav_state->overlay_count,nav_state->poi_count,
-    map.hide_nodes,meshmt::client?meshmt::client->generation:0,meshmt::client?meshmt::client->data.node_count:0,
-    meshmc::client?meshmc::client->generation:0,meshmc::client?meshmc::client->contact_count:0};
+    uint32_t(map.hide_nodes),meshmt::client?meshmt::client->generation:0u,uint32_t(meshmt::client?meshmt::client->data.node_count:0),
+    meshmc::client?meshmc::client->generation:0u,uint32_t(meshmc::client?meshmc::client->contact_count:0)};
   return mcxnav::checksum(fields,sizeof(fields))^mcxnav::checksum(nav_state->preferences.styles,sizeof(nav_state->preferences.styles))^mcxnav::checksum(nav_state->pois,nav_state->poi_count*sizeof(mcxnav::Poi));
 }
 static void rebuild_overlay_cache();
@@ -212,11 +212,18 @@ static void rebuild_overlay_cache(){
   }
   for(unsigned i=0;i<nav_state->poi_count;++i){lv_point_t point={};if(project(nav_state->pois[i].point,point))cache.pois[cache.poi_count++]=point;}
   if(!mcxmap::configuration().hide_nodes){
-    if(auto *radio=meshmt::client)for(unsigned i=0;i<radio->data.node_count&&cache.node_count<MAX_NODE_MARKERS;++i){const auto &node=radio->data.nodes[i];
-      if(!node.position||!node.has_lat||!node.has_lon)continue;lv_point_t point={};if(project_geo(node.latitude/1e7,node.longitude/1e7,point))cache.nodes[cache.node_count++]={point,false};}
-    if(auto *radio=meshmc::client)for(unsigned i=0;i<radio->contact_count&&cache.node_count<MAX_NODE_MARKERS;++i){const auto &node=radio->contacts[i];
-      if(!(node.flags&0x10)||(!node.lat&&!node.lon)||node.lat<-90000000||node.lat>90000000||node.lon<-180000000||node.lon>180000000)continue;
-      lv_point_t point={};if(project_geo(node.lat/1e6,node.lon/1e6,point))cache.nodes[cache.node_count++]={point,true};}
+    if(auto *radio=meshmt::client){
+      for(unsigned i=0;i<radio->data.node_count&&cache.node_count<MAX_NODE_MARKERS;++i){const auto &node=radio->data.nodes[i];
+        if(!node.position||!node.has_lat||!node.has_lon)continue;
+        lv_point_t point={};if(project_geo(node.latitude/1e7,node.longitude/1e7,point))cache.nodes[cache.node_count++]={point,false};
+      }
+    }
+    if(auto *radio=meshmc::client){
+      for(unsigned i=0;i<radio->contact_count&&cache.node_count<MAX_NODE_MARKERS;++i){const auto &node=radio->contacts[i];
+        if(!(node.flags&0x10)||(!node.lat&&!node.lon)||node.lat<-90000000||node.lat>90000000||node.lon<-180000000||node.lon>180000000)continue;
+        lv_point_t point={};if(project_geo(node.lat/1e6,node.lon/1e6,point))cache.nodes[cache.node_count++]={point,true};
+      }
+    }
   }
   cache.generation=front->view.generation;cache.revision=overlay_signature();cache.ready=true;++overlay_builds;
 }
