@@ -1,6 +1,6 @@
 # v0.8.13 remote navigation resets and missing browser folders
 
-The owner's new log contains two stack-canary crashes on CPU1 while using the remote interface. Both have the same application chain. ELF SHA-256 `4088aab935f600152f0aa4edccff1d16cc70d9586c9901f63eba4839eed55b02` from PR #80 run `41214134672`, artifact `13047413408`, matches the device's `4088aab93`.
+The submitted log contains two stack-canary crashes on CPU1 while using the remote interface. Both have the same application chain. ELF SHA-256 `4088aab935f600152f0aa4edccff1d16cc70d9586c9901f63eba4839eed55b02` from PR #80 run `41214134672`, artifact `13047413408`, matches the device's `4088aab93`.
 
 Decoded chain:
 

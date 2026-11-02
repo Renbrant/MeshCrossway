@@ -8,7 +8,7 @@ is introduced. Maps/GNSS and other preview-only features remain outside this fix
 
 ## Evidence and confidence
 
-The owner reports intermittent resets, Bluetooth returning off, failed sends,
+Reports describe intermittent resets, Bluetooth returning off, failed sends,
 temporary unresponsiveness and inconsistent SD status. A screenshot shows
 `Message (up to 0 UTF-8 bytes)` with an enabled SEND button. The submitted SD
 archive validates as four complete transactions containing five messages.

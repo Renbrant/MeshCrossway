@@ -1,6 +1,6 @@
 # MeshCrossway v0.8.16 — screenshots of working features
 
-**Evidence supplied by the owner on 1 November 2026.** These captures show the
+**Evidence supplied for the project record on 1 November 2026.** These captures show the
 v0.8.16 firmware running on the MeshCrossway touchscreen and the device's local
 browser companion. They record point-in-time operation; they are not a claim of
 long-duration testing or universal compatibility with every radio firmware.

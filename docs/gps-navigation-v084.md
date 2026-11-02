@@ -2,14 +2,14 @@
 
 ## Confirmed recovery
 
-On 29 October 2026 the owner confirmed v0.8.2 GPS/map operation and MeshCore BLE
-connection after fresh pairing, then reconnection after restarting the hardware.
+On 29 October 2026, v0.8.2 GPS/map operation and MeshCore BLE connection were
+confirmed after fresh pairing, followed by reconnection after a hardware restart.
 It is now the recommended recovery. The original published binary is retained:
 
 - compiled source: `72abc3bed5353319f6c32a15781d0e419b6937d7`
 - SHA-256: `60aa1e431ffaf5270130608a6ad401e017b1b0f3822933e36485c7066790256c`
 
-This is owner acceptance of the observed functions, not certification of all
+This records confirmation of the observed functions, not certification of all
 Meshtastic features, two simultaneous radios or long-term reliability. Existing
 bonds must be preserved during normal updates; install without Erase.
 

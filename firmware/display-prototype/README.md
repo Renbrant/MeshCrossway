@@ -1,4 +1,4 @@
-**v0.8.4 experimental:** local tracks/GPX and POIs, map presets and revised controls. [Guide](../../docs/gps-navigation-v084.md). Hardware acceptance pending; v0.8.2 is the owner-tested recovery.
+**v0.8.4 experimental:** local tracks/GPX and POIs, map presets and revised controls. [Guide](../../docs/gps-navigation-v084.md). Hardware acceptance pending; v0.8.2 is the hardware-tested recovery.
 
 **v0.8.1 candidate (experimental):** GPS header status, persistent local GPS settings and real XYZ PNG maps. [Configuration, SD tiles and limits](../../docs/maps-gps-v081.md). Map hardware acceptance pending; v0.7.8 recovery unchanged.
 
@@ -6,7 +6,7 @@
 
 # MeshCrossway display-only firmware prototype
 
-**Current v0.7.13 (experimental):** PR #63 adds queued touchscreen sampling, retained PSRAM chat cards, scroll-position preservation, and earlier offline history restore. Physical touch/SD/BLE testing is pending. Inherits v0.7.12 protocol support.  independent MeshCore Companion and Meshtastic PhoneAPI clients, one active BLE radio at a time. T-Deck / Plus is supported as an external Meshtastic radio with compatibility gates; physical qualification remains pending. The display-only descriptions below record earlier milestones. [Meshtastic setup, scope and acceptance](../../docs/meshtastic-v0712.md). v0.7.8 stays the owner-tested recovery image.
+**Current v0.7.13 (experimental):** PR #63 adds queued touchscreen sampling, retained PSRAM chat cards, scroll-position preservation, and earlier offline history restore. Physical touch/SD/BLE testing is pending. Inherits v0.7.12 protocol support.  independent MeshCore Companion and Meshtastic PhoneAPI clients, one active BLE radio at a time. T-Deck / Plus is supported as an external Meshtastic radio with compatibility gates; physical qualification remains pending. The display-only descriptions below record earlier milestones. [Meshtastic setup, scope and acceptance](../../docs/meshtastic-v0712.md). v0.7.8 stays the hardware-tested recovery image.
 
 
 > **Modular BLE software-first development (2026-10-28):** This firmware remains a **display-only / Wi-Fi screen-viewer prototype**, not a finished BLE Central implementation. The final MeshCrossway Core must connect to both autonomous Meshtastic and MeshCore Radio Pods over BLE. Retain this firmware's current behavior for UI tests, but evaluate Wi-Fi AP and BLE radio coexistence/memory before simultaneous operation. See [approved architecture](../../docs/modular-architecture.md). No PCB or wiring changes are required.
@@ -79,7 +79,7 @@ The v0.5 Settings refresh destroyed/recreated every Settings card every 3 second
 
 ## v0.6.3 — critical boot regression (DO NOT INSTALL)
 
-On Oct 28, 2026 the owner installed v0.6.3 twice: boot logo/UI `DEV 0.6.3` displayed, but touch froze and Wi-Fi stayed `waiting`. Reflashing v0.6.2 restored normal operation. The underlying cause has **not been established** (serial logs were not captured); starting NimBLE unconditionally at boot is a leading hypothesis. The Web Flasher must block this known-broken image. [Issue #30](https://github.com/Renbrant/MeshCrossway/issues/30).
+On Oct 28, 2026 v0.6.3 was installed twice: boot logo/UI `DEV 0.6.3` displayed, but touch froze and Wi-Fi stayed `waiting`. Reflashing v0.6.2 restored normal operation. The underlying cause has **not been established** (serial logs were not captured); starting NimBLE unconditionally at boot is a leading hypothesis. The Web Flasher must block this known-broken image. [Issue #30](https://github.com/Renbrant/MeshCrossway/issues/30).
 
 ## v0.6.4 — staged BLE initialization (experimental, NOT hardware tested)
 
@@ -94,7 +94,7 @@ Test sequence:
 
 ## v0.6.5 — LVGL / SPI coexistence diagnostic (EXPERIMENTAL / not tested)
 
-The owner provided detailed v0.6.4 Web Flasher serial logs. BLE startup **completed** (`nimble_port_init result=0`, host created), immediately followed by `lcd_panel.io.spi: spi transmit (queue) color failed`. The task watchdog repeatedly reported `IDLE0` starved with `taskLVGL` running on CPU0; CPU1 was idle. The triggering issue is in LCD SPI transfers / LVGL progress, not a failed BLE connection or MeshCore pairing. Root cause of the SPI queue error is not yet proven.
+Detailed v0.6.4 Web Flasher serial logs show BLE startup **completed** (`nimble_port_init result=0`, host created), immediately followed by `lcd_panel.io.spi: spi transmit (queue) color failed`. The task watchdog repeatedly reported `IDLE0` starved with `taskLVGL` running on CPU0; CPU1 was idle. The triggering issue is in LCD SPI transfers / LVGL progress, not a failed BLE connection or MeshCore pairing. Root cause of the SPI queue error is not yet proven.
 
 This candidate stays on the pinned Waveshare BSP and ESP-IDF 5.3.2, and tests only a targeted resource adjustment:
 - Pins LVGL task to CPU1 rather than an unpinned task that was observed on CPU0.
@@ -110,7 +110,7 @@ Issue tracker: https://github.com/Renbrant/MeshCrossway/issues/30
 
 Implements the official Nordic-UART Companion protocol over authenticated BLE: negotiated MTU, discovered RX/TX/CCCD, notification subscription, serialized commands, automatic identity/contact/channel synchronization and message draining. Nodes, Groups and Chat use live MeshCore data. More → Radios → MeshCore Tools exposes typed forms for all 59 current official Companion command opcodes, with firmware-version gates and explicit confirmation for mutations. See [coverage, sources, limits and hardware test](../../docs/meshcore-v070.md).
 
-The owner-confirmed **v0.6.8** UI/manual-screenshot image is now the immutable default and rollback. **v0.7.0 has not been validated on hardware**. Message history is bounded in RAM; reconnect discards the prior radio session. No automatic resend or automatic radio configuration/location broadcast occurs.
+The confirmed **v0.6.8** UI/manual-screenshot image is now the immutable default and rollback. **v0.7.0 has not been validated on hardware**. Message history is bounded in RAM; reconnect discards the prior radio session. No automatic resend or automatic radio configuration/location broadcast occurs.
 
 ## v0.7.1 — Bluetooth pairing remembered (experimental)
 
@@ -122,13 +122,13 @@ On boot, the Core first attempts the most recent successfully connected Wi-Fi ne
 
 For Bluetooth, after the UI and Wi-Fi server have initialized, a deferred worker checks the last authenticated **bonded** radio identity stored in NVS, starts NimBLE only if such a record exists, scans for that identity and attempts a secure reconnection. It never matches by advertised name alone. A user-requested Disconnect pauses auto-scanning for that boot; a reboot re-enables automatic resume. On first updating from v0.7.1, connect the radio **manually once** to establish the saved last-radio reference, then test auto resume after restarting. Peer-side bonding keys must remain intact. A rotating private BLE address may require additional identity resolution, and no automatic replay of messages occurs. The adapter currently has only **one active BLE connection**, with Meshtastic transport not yet implemented; this does not bridge the two mesh networks.
 
-**Not yet hardware tested.** Keep `Erase device` unchecked to preserve NVS and use owner-verified v0.6.8 as recovery. [Implementation limitations and physical test checklist](../../docs/auto-reconnect-v072.md). The separately planned encrypted microSD security backup is tracked for **v0.7.3** and is not part of this release.
+**Not yet hardware tested.** Keep `Erase device` unchecked to preserve NVS and use verified v0.6.8 as recovery. [Implementation limitations and physical test checklist](../../docs/auto-reconnect-v072.md). The separately planned encrypted microSD security backup is tracked for **v0.7.3** and is not part of this release.
 
 ## v0.7.4 — checkered flag glyph and name rendering (experimental)
 
 The color emoji renderer now recognizes the checkered flag (`U+1F3C1`, with or without optional `U+FE0F`) and draws its real 20×20 Noto Emoji bitmap rather than the `[emoji]` fallback in MeshCore messages. The same display-only mapping also applies to contact names in node lists/details, chat headings, tool dialogs, and the Home radio name. The underlying transmitted text, keys and contacts remain unmodified. The original 92-emoji atlas checksum is unchanged; a separately hashed 264-byte indexed-4 image supplies glyph #93. C++11/20 tests include the exact reported sender-name pattern.
 
-**Physical hardware verification is still required** for color/spacing, power-cycle and Bluetooth coexistence. v0.6.8 remains the immutable owner-tested rollback, and normal updates must leave Web Flasher **Erase device unchecked**. [Regression and acceptance steps](../../docs/checkered-flag-emoji-v074.md).
+**Physical hardware verification is still required** for color/spacing, power-cycle and Bluetooth coexistence. v0.6.8 remains the immutable hardware-tested rollback, and normal updates must leave Web Flasher **Erase device unchecked**. [Regression and acceptance steps](../../docs/checkered-flag-emoji-v074.md).
 
 ## v0.7.7 — swipe-to-expand sidebars (experimental)
 
@@ -153,7 +153,7 @@ A touch PRESSING handler on each left nav tab detects a horizontal swipe before 
 
 ## v0.7.9 — messaging phase 1 (experimental)
 
-MeshCore conversation lists, native room session flow, local search/aliases/favorites, notification and mute controls, editable quick replies, draft persistence and manually confirmed resend now use a bounded transaction journal on microSD. Filesystem work runs outside LVGL. The SD is plaintext by owner choice. Meshtastic remains unavailable pending its adapter. **v0.7.8 is the recommended recovery image**; v0.7.9 still requires physical RX/TX/ACK, SD failure and coexistence acceptance. See [implementation, resource limits and verification](../../docs/messaging-phase-1-v079.md). Earlier release sections describe historical behavior.
+MeshCore conversation lists, native room session flow, local search/aliases/favorites, notification and mute controls, editable quick replies, draft persistence and manually confirmed resend now use a bounded transaction journal on microSD. Filesystem work runs outside LVGL. The SD stores data in plaintext. Meshtastic remains unavailable pending its adapter. **v0.7.8 is the recommended recovery image**; v0.7.9 still requires physical RX/TX/ACK, SD failure and coexistence acceptance. See [implementation, resource limits and verification](../../docs/messaging-phase-1-v079.md). Earlier release sections describe historical behavior.
 
 
 ## v0.7.11 — Application stability audit (experimental)
@@ -174,5 +174,5 @@ pending; v0.7.8 remains recovery. See [evidence and retest](../../docs/sd-histor
 
 ## v0.7.10 — Bluetooth startup memory fix (experimental)
 
-v0.7.9 was withdrawn after the owner reproduced NimBLE error 257 (out of memory). Chat preferences and list/sort workspaces now use explicit PSRAM instead of 45,604 bytes of static internal RAM. CI audits the actual ELF to prevent a repeat. Phase-1 history and NVS pairing are preserved; v0.7.8 remains recommended recovery. [Diagnosis and retest](../../docs/ble-memory-fix-v0710.md).
+v0.7.9 was withdrawn after NimBLE error 257 was reproduced (out of memory). Chat preferences and list/sort workspaces now use explicit PSRAM instead of 45,604 bytes of static internal RAM. CI audits the actual ELF to prevent a repeat. Phase-1 history and NVS pairing are preserved; v0.7.8 remains recommended recovery. [Diagnosis and retest](../../docs/ble-memory-fix-v0710.md).
 

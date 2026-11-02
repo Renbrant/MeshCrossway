@@ -3,7 +3,7 @@
 > **Status:** Parked idea / research note — not committed to implementation.
 > **Decision gate:** Do not contact MeshMapper maintainers or begin integration work until a functional, viable MeshCrossway hardware prototype has been built and validated.
 > **Recorded:** 2026-10-27.
-> **Visibility:** Standalone repository note only. Do not add links from README, site navigation, roadmap, or other documents unless the project owner later requests it.
+> **Visibility:** Standalone repository note only. Do not add links from README, site navigation, roadmap, or other documents unless explicitly requested for this project.
 
 ## Purpose
 
@@ -106,4 +106,4 @@ Only after validated interoperability and explicit upstream agreement, document 
 
 ---
 
-**Project-owner direction:** Keep this idea quietly in the repository. **Once a viable hardware version is ready**, consider contacting the people responsible for MeshMapper regarding a possible partnership. Until then, this document is only a future reference.
+**Project direction:** Keep this idea quietly in the repository. **Once a viable hardware version is ready**, consider contacting the people responsible for MeshMapper regarding a possible partnership. Until then, this document is only a future reference.

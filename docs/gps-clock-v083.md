@@ -53,4 +53,4 @@ Hardware acceptance: install without Erase, acquire GPS outdoors, compare local
 zone and return to Auto, disable GPS reading and confirm clock continuation,
 reboot and check saved selection plus fresh-time acquisition. Check the header
 with 100%, low battery, charging and no battery. Retest BLE and map interaction.
-**v0.8.2 remains the exact owner-tested rollback.** v0.8.3 requires physical testing.
+**v0.8.2 remains the exact hardware-tested rollback.** v0.8.3 requires physical testing.

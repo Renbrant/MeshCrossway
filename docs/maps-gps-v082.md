@@ -1,6 +1,6 @@
 # v0.8.2 — map workspace and BLE startup retest
 
-The owner confirmed v0.8.1 renders real maps and the correct local GPS position.
+Testing confirmed that v0.8.1 renders real maps and the correct local GPS position.
 The same hardware showed `NimBLE: ESP_FAIL (-1)` before scanning. No serial log
 from that failure is available, so its underlying cause is not established.
 
@@ -39,7 +39,7 @@ last composition time. No measured hardware speed-up is claimed yet.
 
 ESP-IDF 5.3.2's pinned NimBLE port maps failures from HCI initialization to
 `ESP_FAIL`, which can conceal allocation failures. This does not prove that the
-owner's failure was memory exhaustion. The candidate selects the SDK-supported
+observed failure was caused by memory exhaustion. The candidate selects the SDK-supported
 external-PSRAM allocation mode for NimBLE host buffers; controller/DMA/task stacks
 remain internal. Generated sdkconfig must confirm this choice before publication.
 
@@ -67,7 +67,7 @@ clear, HTTP backoff, SD absence, cancellation, GPS settings and startup failure
 injection/cleanup. Existing touch, chat/protocol and configuration tests apply.
 Full ESP-IDF preflight and publication checks are required before installation.
 
-Install **without Erase**. Keep the owner-confirmed v0.7.8 recovery bytes unchanged.
+Install **without Erase**. Keep the confirmed v0.7.8 recovery bytes unchanged.
 On the Waveshare, verify:
 
 1. Cold boot and BLE scan/pair/reconnect, both before and after opening maps.

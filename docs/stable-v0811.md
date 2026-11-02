@@ -1,6 +1,6 @@
 # Stable firmware v0.8.11
 
-On 2026-10-31 the owner requested v0.8.11 as the stable website release after v0.8.12 repeatedly restarted. The attached device log repeatedly reports `Stack canary watchpoint triggered (mcx_ble_resume)` and subsequent reboot. This identifies the crashing task; the underlying call-chain cause is not yet repaired.
+On 2026-10-31, v0.8.11 was selected as the stable website release after repeated restarts on v0.8.12. The attached device log repeatedly reports `Stack canary watchpoint triggered (mcx_ble_resume)` and subsequent reboot. This identifies the crashing task; the underlying call-chain cause is not yet repaired.
 
 The Web Flasher defaults to v0.8.11. v0.8.12 is marked known-issue and installation is blocked. Legacy installer URLs also use v0.8.11. Install without Erase to retain settings.
 

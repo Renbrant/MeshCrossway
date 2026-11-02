@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restore exact owner-approved v0.8.16; never rebuild a tested image."""
+"""Restore the exact pinned stable v0.8.16 image; never rebuild a tested image."""
 import argparse
 import hashlib
 import json
@@ -22,7 +22,7 @@ def verify(folder):
     subprocess.run(['python3', str(ROOT/'scripts/verify_firmware_version.py'),
                     '--dir', str(folder), '--version', VERSION, '--ref', REF], check=True)
     if hashlib.sha256((folder/'meshcrossway-display-dev.bin').read_bytes()).hexdigest() != SHA:
-        raise ValueError('Owner-approved binary checksum mismatch')
+        raise ValueError('Stable binary checksum mismatch')
 
 def restore(destination):
     with tempfile.TemporaryDirectory(prefix='mcx-stable-') as tmp:

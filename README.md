@@ -8,7 +8,7 @@
 
 ## See it in operation
 
-These owner-provided screenshots show v0.8.16 running on the touchscreen and in the device's local browser companion. The browser interface is served by the device over the local network; it is not a cloud service or a web simulator.
+These v0.8.16 screenshots show v0.8.16 running on the touchscreen and in the device's local browser companion. The browser interface is served by the device over the local network; it is not a cloud service or a web simulator.
 
 <p align="center">
   <img src="docs/site/media/v0.8.16/01-device-home-radio-gps.png" width="49%" alt="Device home screen with Meshtastic and MeshCore connected, local GPS and Wi-Fi status">
@@ -49,14 +49,14 @@ The renders below show the committed case design. The Waveshare ESP32-S3 enclosu
 | Capability | Current status |
 |---|---|
 | **Dual radio connections** | Meshtastic and MeshCore can connect simultaneously through separate BLE sessions. Network identities, settings and traffic remain independent. |
-| **Touchscreen interface** | Home status, radio connection cards, node lists, network filters, message lists and conversations are shown working in the owner-provided v0.8.16 screenshots. |
+| **Touchscreen interface** | Home status, radio connection cards, node lists, network filters, message lists and conversations are shown working in the v0.8.16 screenshots. |
 | **Remote browser companion** | Running on the device's local network. It provides separate network views for messages, conversations, groups, nodes and radio settings. |
 | **Track workspace** | The browser shows track folders, saved tracks and route previews. GPX downloads provide a portable backup of tracks. |
 | **Radio settings shortcuts** | Radio cards on Home open their own settings; the selected radio can also be configured through the browser interface. |
 | **Device maps and saved routes** | Known v0.8.16 regression: map tiles and saved routes fail to load on the device. Fix work is the next software priority. |
 | **Live position sharing** | Not implemented; remains future work. |
 
-See the [v0.8.16 field evidence](docs/field-evidence-v0816.md) and [dual-radio implementation and validation notes](docs/dual-radio-settings-v0816.md). Current compatibility evidence comes from the owner's hardware and does not establish compatibility with every radio board or firmware version.
+See the [v0.8.16 field evidence](docs/field-evidence-v0816.md) and [dual-radio implementation and validation notes](docs/dual-radio-settings-v0816.md). Current compatibility evidence comes from the tested hardware and does not establish compatibility with every radio board or firmware version.
 
 ## Remote interface and track backup
 
@@ -101,7 +101,7 @@ The immediate software task is to investigate the map tile and saved-route loadi
 |---|---|
 | v0.8.16 stable image and known issue | [Stable release record](docs/stable-v0816.md) |
 | Simultaneous BLE radios and per-network settings | [Dual-radio implementation notes](docs/dual-radio-settings-v0816.md) |
-| Owner screenshots of device and browser operation | [Field evidence](docs/field-evidence-v0816.md) |
+| Device and browser operation screenshots | [Field evidence](docs/field-evidence-v0816.md) |
 | Modular Core and Radio Pod design | [Modular architecture](docs/modular-architecture.md) |
 | Native firmware and protocol boundary | [Radio firmware strategy](docs/radio-firmware-strategy.md) |
 | Maps and map-rendering investigation | [Maps/GPS notes](docs/maps-gps-v081.md) · [Map rendering latency](docs/map-render-latency-v087.md) |

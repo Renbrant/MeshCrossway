@@ -1,10 +1,10 @@
-**v0.8.4 experimental:** tracks/GPX, saved POIs, map presets and contextual controls. [Guide and acceptance](gps-navigation-v084.md). **v0.8.2 replaces v0.7.8 as recovery** after owner-confirmed maps/GPS and MeshCore reconnection after reboot. Exact v0.8.2 bytes are pinned. Older sections below are historical.
+**v0.8.4 experimental:** tracks/GPX, saved POIs, map presets and contextual controls. [Guide and acceptance](gps-navigation-v084.md). **v0.8.2 replaces v0.7.8 as recovery** after maps/GPS operation and MeshCore reconnection after reboot were confirmed. Exact v0.8.2 bytes are pinned. Older sections below are historical.
 
 **v0.8.2 candidate:** full-height map and contextual zoom slider, decoded PSRAM cache, transparent attribution and BLE initialization mitigation/diagnostics. Hardware retest pending. [Acceptance](maps-gps-v082.md). v0.7.8 recovery unchanged.
 
 # Current candidate — v0.8.1
 
-GPS fix/satellite header status, persistent receiver-reading settings, and georeferenced XYZ raster maps. Host and firmware checks are tracked on the implementation PR. Physical map/SD/Wi-Fi/BLE acceptance remains pending. The owner supplied v0.8.0 photos showing a live UART fix and 12 satellites; that confirms the initial reader/display path, not all new map behavior. v0.7.8 remains recovery. [Guide](maps-gps-v081.md).
+GPS fix/satellite header status, persistent receiver-reading settings, and georeferenced XYZ raster maps. Host and firmware checks are tracked on the implementation PR. Physical map/SD/Wi-Fi/BLE acceptance remains pending. Submitted v0.8.0 photos show a live UART fix and 12 satellites; that confirms the initial reader/display path, not all new map behavior. v0.7.8 remains recovery. [Guide](maps-gps-v081.md).
 
 **v0.7.14 experimental:** PR #65 improves Meshtastic PhoneAPI GATT compatibility and RX/send diagnostics. Physical Heltec V3 RX/TX validation is pending; do not treat missing RX as confirmed fixed. Install without Erase. v0.7.8 remains the unchanged recovery.
 
@@ -15,7 +15,7 @@ v0.7.13 integrates PR #63 on top of v0.7.12: a dedicated touch sampling task wit
 
 ## Previous candidate — October 29, 2026
 
-v0.7.12 implements the independent Meshtastic PhoneAPI client using an external T-Deck / T-Deck Plus BLE radio. See [setup, compatibility gates, tests and hardware acceptance](meshtastic-v0712.md). Only one BLE radio session is active at a time. Physical T-Deck qualification is pending; v0.7.8 remains the immutable owner-tested recovery. Earlier sections below are historical release records.
+v0.7.12 implements the independent Meshtastic PhoneAPI client using an external T-Deck / T-Deck Plus BLE radio. See [setup, compatibility gates, tests and hardware acceptance](meshtastic-v0712.md). Only one BLE radio session is active at a time. Physical T-Deck qualification is pending; v0.7.8 remains the immutable hardware-tested recovery. Earlier sections below are historical release records.
 
 
 Target: Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0, non-B, 480 × 320. ESP-IDF 5.3.2; LVGL 8.4.0; Waveshare BSP `d9ff7837148b47b33edadc4b87775c341cf35bbe`.
@@ -25,7 +25,7 @@ Target: Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0, non-B, 480 × 320. ESP-IDF 5.3.
 | v0.4.0 | Screen/touch repeatedly tested | Recommended historical recovery |
 | v0.3.0 | Screen/touch baseline tested | Older recovery |
 | v0.5.0 / v0.5.1 | Display blackouts/flickering reported | Do not reinstall for this test |
-| v0.5.2 | Owner reported stable screen and accessible menus on October 28 | Display-tested rollback; Wi-Fi provisioning unverified |
+| v0.5.2 | Stable screen and accessible menus were reported on October 28 | Display-tested rollback; Wi-Fi provisioning unverified |
 | v0.5.3 | Hardware test pending | Experimental touchscreen Wi-Fi provisioning |
 
 ## v0.5.3 behavior
@@ -52,15 +52,15 @@ The archive retains the exact physically tested v0.5.2 image from commit `ce221f
 6. Confirm Settings shows a local IP, then navigate for several minutes and watch for blackouts/freezes.
 7. Restart once to check credential persistence and reconnection. If connection fails, retry through the dialog.
 
-Report the visible firmware version, scan/keyboard result, connection/IP result and whether blackouts occurred. Roll back directly to v0.5.2 or v0.4.0 if necessary. Do not mark v0.5.3 hardware-tested until the owner confirms the results.
+Report the visible firmware version, scan/keyboard result, connection/IP result and whether blackouts occurred. Roll back directly to v0.5.2 or v0.4.0 if necessary. Do not mark v0.5.3 hardware-tested until the results are confirmed.
 
 ## v0.5.4 keyboard correction
 
-The owner confirmed v0.5.3 installation, network scan and SSID selection. Password input was blocked because the keyboard was not visible. LVGL 8.4 creates keyboards with bottom-center alignment; applying the dialog coordinates without resetting that anchor places the keyboard below the screen. v0.5.4 sets top-left alignment before positioning it at (4, 185), size 472 × 131, inside the 480 × 320 dialog. The Wi-Fi logic and disabled remote subsystem remain unchanged. Keyboard visibility/typing, connection and display stability require a new hardware test.
+Installation of v0.5.3, network scanning and SSID selection were confirmed. Password input was blocked because the keyboard was not visible. LVGL 8.4 creates keyboards with bottom-center alignment; applying the dialog coordinates without resetting that anchor places the keyboard below the screen. v0.5.4 sets top-left alignment before positioning it at (4, 185), size 472 × 131, inside the 480 × 320 dialog. The Wi-Fi logic and disabled remote subsystem remain unchanged. Keyboard visibility/typing, connection and display stability require a new hardware test.
 
 ## v0.5.4 physical result and next layout
 
-The owner confirmed successful Wi-Fi connection and normal operation on v0.5.4. Preserve it as the landscape reference while developing portrait separately. Portrait (320 × 480) is the requested direction, but simply compressing the current ten-column keyboard would reduce key width from roughly 47 to 31 pixels. Use a dedicated text-entry view; consider a reduced-column keyboard or optional landscape entry rather than shrinking existing keys. Portrait firmware is not yet implemented or tested.
+Successful Wi-Fi connection and normal operation were confirmed on v0.5.4. Preserve it as the landscape reference while developing portrait separately. Portrait (320 × 480) is the requested direction, but simply compressing the current ten-column keyboard would reduce key width from roughly 47 to 31 pixels. Use a dedicated text-entry view; consider a reduced-column keyboard or optional landscape entry rather than shrinking existing keys. Portrait firmware is not yet implemented or tested.
 
 ## Build once, publish verified bytes
 
@@ -68,17 +68,17 @@ Pages first looks for an artifact from successful same-repository PR preflight. 
 
 ## v0.5.5 full-screen landscape QWERTY
 
-The agreed orientation remains landscape for every screen; portrait and ABC keyboard proposals are superseded. Tap the SSID/password field to open an editor with text at the top and the native QWERTY keyboard below. Keyboard area grows from 472 × 131 to 472 × 218 pixels. Native uppercase/numeric/symbol modes remain available. DONE (or keyboard checkmark) applies the edit; CANCEL (or keyboard close key) discards it. Password is masked on opening, with a SHOW/HIDE control. Connection still requires CONNECT on the provisioning screen. v0.5.5 requires hardware testing; exact owner-tested v0.5.4 bytes remain available as rollback.
+The agreed orientation remains landscape for every screen; portrait and ABC keyboard proposals are superseded. Tap the SSID/password field to open an editor with text at the top and the native QWERTY keyboard below. Keyboard area grows from 472 × 131 to 472 × 218 pixels. Native uppercase/numeric/symbol modes remain available. DONE (or keyboard checkmark) applies the edit; CANCEL (or keyboard close key) discards it. Password is masked on opening, with a SHOW/HIDE control. Connection still requires CONNECT on the provisioning screen. v0.5.5 requires hardware testing; exact hardware-tested v0.5.4 bytes remain available as rollback.
 
 ## v0.5.5 typing freeze / v0.5.6 controlled input change
 
-The owner reported one freeze **during typing** on v0.5.5, requiring restart; typing worked after reboot. Ergonomics improved but letter keys remained too narrow. Root cause is unconfirmed; do not mark v0.5.5 stable.
+One freeze was reported **during typing** on v0.5.5, requiring restart; typing worked after reboot. Ergonomics improved but letter keys remained too narrow. Root cause is unconfirmed; do not mark v0.5.5 stable.
 
 v0.5.6 keeps the same editor, Wi-Fi driver, landscape orientation and disabled remote features. QWERTY letter rows give their width to letters; mode/backspace commands move to other rows. Lowercase, uppercase and all printable ASCII symbols remain available. Every key uses CLICK_TRIG and NO_REPEAT: insert on completed release, never repeat while held. This reduces repeated textarea updates but is **not a proven freeze fix**. Existing periodic diagnostics add key event count and last/maximum processing duration, with no key labels or input contents logged and no serial printing in the key callback. Test touch-down/hold/release, mode switching, long credentials, backspace, confirm/cancel and stability on hardware. Exact tested v0.5.4 remains rollback.
 
 ## v0.5.6 confirmed baseline / v0.5.7 remote experiment B
 
-The owner confirmed on October 28 that v0.5.6 keyboard sizing is usable and the version functions normally. This confirms the tested keyboard/Wi-Fi scope, not BLE, radios, GNSS or mapping. Preserve the exact v0.5.6 binary SHA-256 `a52490616a960709b3f476fe1fae7b2d98e68a0d447c7980f10efe60d098967d`, compiled source `0d1193d427926529615e1bd24f60d5d34d267fa4`. The earlier typing-freeze root cause is still unproven.
+Testing on October 28 confirmed usable v0.5.6 keyboard sizing and normal operation. This confirms the tested keyboard/Wi-Fi scope, not BLE, radios, GNSS or mapping. Preserve the exact v0.5.6 binary SHA-256 `a52490616a960709b3f476fe1fae7b2d98e68a0d447c7980f10efe60d098967d`, compiled source `0d1193d427926529615e1bd24f60d5d34d267fa4`. The earlier typing-freeze root cause is still unproven.
 
 v0.5.7 introduces only a bounded HTTP server: GET `/` shows status; GET `/health` returns version, uptime, free heap, IP and screen/touch capability flags. No LVGL calls, screenshots, framebuffer allocations, pointer devices or credential-changing endpoints are present in this service. Status is readable by clients on the local network without a PIN; it exposes no SSID/password. Two client sockets, two routes and short socket timeouts bound resource use. Server startup/route failure is logged and the server stops on partial registration failure rather than restarting the UI.
 
@@ -86,7 +86,7 @@ After successful deployment, connect to home Wi-Fi as usual, note Settings' IP, 
 
 ## v0.5.8 Wi-Fi persistence and optional plaintext SD backup
 
-The owner explicitly authorized unencrypted SD storage. Insert a FAT-compatible SD card **before boot**. No formatting is performed; no card, mount failure or invalid backup must prevent internal Wi-Fi provisioning. After successful DHCP, a lower-priority worker saves `/sdcard/meshcrossway-wifi.json` with format=1, ssid and password in plaintext. It never logs their contents. Unchanged credentials skip rewriting. A temporary file is flushed/synced before replacement; the previous valid file is retained as `.bak`. This reduces interruption risk but is not a guarantee against FAT/card damage or removal during writing.
+Unencrypted SD storage was explicitly authorized. Insert a FAT-compatible SD card **before boot**. No formatting is performed; no card, mount failure or invalid backup must prevent internal Wi-Fi provisioning. After successful DHCP, a lower-priority worker saves `/sdcard/meshcrossway-wifi.json` with format=1, ssid and password in plaintext. It never logs their contents. Unchanged credentials skip rewriting. A temporary file is flushed/synced before replacement; the previous valid file is retained as `.bak`. This reduces interruption risk but is not a guarantee against FAT/card damage or removal during writing.
 
 At startup, internal NVS takes precedence. Only when no SSID exists internally does the firmware validate and restore the SD JSON (or its `.bak` fallback) into NVS. Invalid/oversized/nested data is rejected. There is no hot-insert support in this version; restart with the card inserted. The Wi-Fi setup dialog displays SD backup status. To remove a saved SD configuration, delete both JSON and BAK files; erasing internal flash alone deliberately allows SD restore. Nothing is encrypted.
 
@@ -97,9 +97,9 @@ Physical tests pending: first boot/card mount and backup creation, reboot withou
 
 ## v0.5.8 SD write failure on physical FAT32 / v0.5.9 fix candidate
 
-On October 28 the owner first attempted a 64 GB exFAT card (not mountable by the current FatFs configuration). Switching to 32 GB FAT32 changed the device's SD backup status to **ready**, confirming mount success. After entering home Wi-Fi credentials, Settings reported **write failed**. The expected root-level file `meshcrossway-wifi.json` was absent, and owner previously saw only unrelated files on the card.
+The first October 28 test used a 64 GB exFAT card (not mountable by the current FatFs configuration). Switching to 32 GB FAT32 changed the device's SD backup status to **ready**, confirming mount success. After entering home Wi-Fi credentials, Settings reported **write failed**. The expected root-level file `meshcrossway-wifi.json` was absent, and only unrelated files had previously been seen on the card.
 
-**Root-cause candidate strongly supported by source:** The pinned ESP-IDF v5.3.2 FatFs Kconfig defaults to `CONFIG_FATFS_LFN_NONE=y`; the original Waveshare `sdkconfig.defaults` does not override it. Yet the backup opens `/sdcard/meshcrossway-wifi.tmp`, renames to `meshcrossway-wifi.json`, and may create `meshcrossway-wifi.bak` — all filenames longer than FAT 8.3. The card can mount successfully while these operations fail (likely an invalid filename error). Actual failed syscall and errno in the owner's v0.5.8 binary are not available because that build logs only a generic status.
+**Root-cause candidate strongly supported by source:** The pinned ESP-IDF v5.3.2 FatFs Kconfig defaults to `CONFIG_FATFS_LFN_NONE=y`; the original Waveshare `sdkconfig.defaults` does not override it. Yet the backup opens `/sdcard/meshcrossway-wifi.tmp`, renames to `meshcrossway-wifi.json`, and may create `meshcrossway-wifi.bak` — all filenames longer than FAT 8.3. The card can mount successfully while these operations fail (likely an invalid filename error). Actual failed syscall and errno in the available v0.5.8 binary are not available because that build logs only a generic status.
 
 v0.5.9 (not physically tested) explicitly enables `CONFIG_FATFS_LFN_HEAP=y` in the patched ESP-IDF build. It also reports the exact failing stage/errno (open, write, flush, sync, close, rotate, rename, etc.) in serial diagnostics, on the main Settings overview, in the Wi-Fi setup dialog, and via `/health`; never logs SSID/password. HTTP remains **status only**, with no LVGL screenshot or remote input.
 
@@ -109,16 +109,16 @@ Physical test: insert FAT32 card before boot; install **without Erase**; verify 
 
 ## v0.5.9 physical verification — FAT32 SD write and no-Erase Wi-Fi update
 
-On October 28, the owner reported **SD backup: saved** on v0.5.9 with a **32 GB FAT32 microSD**. The same device was then reinstalled with v0.5.9 and **automatically reconnected to the home Wi-Fi** after restarting. This physically validates successful backup-write reporting and Wi-Fi credential persistence across that reinstall. The v0.5.8 FAT32 write failure is no longer present in this test. Source-level cause was likely ESP-IDF FatFs long-filename support being disabled; a hardware errno trace from the failing v0.5.8 image was not captured, so avoid claiming conclusive syscall-level proof.
+On October 28, the device reported **SD backup: saved** on v0.5.9 with a **32 GB FAT32 microSD**. The same device was then reinstalled with v0.5.9 and **automatically reconnected to the home Wi-Fi** after restarting. This physically validates successful backup-write reporting and Wi-Fi credential persistence across that reinstall. The v0.5.8 FAT32 write failure is no longer present in this test. Source-level cause was likely ESP-IDF FatFs long-filename support being disabled; a hardware errno trace from the failing v0.5.8 image was not captured, so avoid claiming conclusive syscall-level proof.
 
-**Confirmed additionally on October 28:** the owner powered off the unit, removed the 32 GB FAT32 card and verified on Windows that root-level `meshcrossway-wifi.json` exists and contains a syntactically valid JSON object with keys `format` (value `1`), `ssid`, and `password`; the password was hidden in the shared evidence. **Still not validated:** a complete **Erase → SD restore with NVS empty** was not performed. Reconnection after normal reflashing can come from preserved internal NVS, not necessarily SD restoration. Do not mark full SD recovery as tested or suggest Erase until a valid external backup has been confirmed. The plaintext JSON holds the Wi-Fi password; do not request screenshots or contents.
+**Additional confirmation on October 28:** the unit was powered off, removed the 32 GB FAT32 card and verified on Windows that root-level `meshcrossway-wifi.json` exists and contains a syntactically valid JSON object with keys `format` (value `1`), `ssid`, and `password`; the password was hidden in the shared evidence. **Still not validated:** a complete **Erase → SD restore with NVS empty** was not performed. Reconnection after normal reflashing can come from preserved internal NVS, not necessarily SD restoration. Do not mark full SD recovery as tested or suggest Erase until a valid external backup has been confirmed. The plaintext JSON holds the Wi-Fi password; do not request screenshots or contents.
 
 The v0.5.9 firmware remains HTTP status-only. The draft screen-viewer experiment PR #21 must be rebased and renumbered to **v0.5.10 or later** before merging to avoid version collisions.
 
 
 ## v0.5.10 experiment C — manual read-only remote screen (hardware test pending)
 
-The v0.5.9 binary was physically validated with a 32 GB FAT32 microSD: the owner saw `SD backup: saved`, inspected the real `meshcrossway-wifi.json` (credentials hidden in shared evidence), then reinstalled without Erase and saw automatic home-Wi-Fi reconnection. This is **not** proof of full Erase → SD recovery; leave that as a separate test. The exact v0.5.9 split installer and merged firmware are archived for recovery.
+Physical validation of v0.5.9 with a 32 GB FAT32 microSD showed `SD backup: saved`, inspected the real `meshcrossway-wifi.json` (credentials hidden in shared evidence), then reinstalled without Erase and saw automatic home-Wi-Fi reconnection. This is **not** proof of full Erase → SD recovery; leave that as a separate test. The exact v0.5.9 split installer and merged firmware are archived for recovery.
 
 v0.5.10 introduces a deliberately narrow version of remote display viewing:
 
@@ -136,14 +136,14 @@ The future step (experiment D) may consider bidirectional touch only after exper
 
 ### October 28, 2026 — v0.5.10 manual screenshot physically verified (first capture)
 
-The owner installed v0.5.10 and provided a browser screenshot showing **Device online / manual view available** plus **Read-only snapshot received** and a correctly rendered **480 × 320** Settings screenshot of the Waveshare UI. The browser status reported one completed manual capture, **58 ms** last-capture latency, 42 seconds uptime, **7,869 KB free heap**, and **SD backup: saved**. The local HTTP status, Wi-Fi connection, correct firmware label `DEV 0.5.10`, physical View PIN display, browser PIN entry and one screenshot transfer are therefore hardware-observed as working. The View PIN was visible in the shared screenshot and should be rotated by rebooting the device; never copy actual PINs, passwords or SSIDs into public logs.
+The v0.5.10 test included a browser screenshot showing **Device online / manual view available** plus **Read-only snapshot received** and a correctly rendered **480 × 320** Settings screenshot of the Waveshare UI. The browser status reported one completed manual capture, **58 ms** last-capture latency, 42 seconds uptime, **7,869 KB free heap**, and **SD backup: saved**. The local HTTP status, Wi-Fi connection, correct firmware label `DEV 0.5.10`, physical View PIN display, browser PIN entry and one screenshot transfer are therefore hardware-observed as working. The View PIN was visible in the shared screenshot and should be rotated by rebooting the device; never copy actual PINs, passwords or SSIDs into public logs.
 
 **Not yet verified:** repeated captures over extended uptime, physical touch responsiveness while capturing, stability during menu changes, zero blackouts under stress, PIN failure behavior, or any remote touch/input capability. Therefore label this as **first read-only capture confirmed**, not yet long-term hardware-stable. Keep v0.5.9 available as known-good SD backup/Wi-Fi rollback and do not enable remote touch until a separate stability test passes.
 
 
 ### October 28 — repeated read-only capture and default Web Flasher selection
 
-Following the first successful v0.5.10 remote screenshot, the owner physically tested **multiple captures of different interface pages** and reported all captures working normally with no black-screen or touch-interaction regressions observed during this test. The v0.5.10 manual **read-only viewer** is therefore hardware-tested for multiple captures. This is not a multi-hour stability/soak test; **remote touch remains disabled** and requires its own isolated experiment.
+Following the first successful v0.5.10 remote screenshot, physical tests of **multiple captures of different interface pages** showed normal operation with no black-screen or touch-interaction regressions observed during this test. The v0.5.10 manual **read-only viewer** is therefore hardware-tested for multiple captures. This is not a multi-hour stability/soak test; **remote touch remains disabled** and requires its own isolated experiment.
 
 The Web Flasher now **preselects `catalog.latest`** on load (v0.5.10 at this change), while the existing drop-down remains able to select any archived firmware. The catalog's `recommended` entry remains `v0.4.0` for historical recovery; do not remove or replace it. Subsequent releases will open on their newest published version automatically, without hardcoding the version number.
 
@@ -176,7 +176,7 @@ The approved visual reference has dark graphite and orange/amber as its primary 
 - Home status cards use shorter text on narrow widths; map sample contours scale with available canvas width.
 - Quick Settings is a bounded modal with a dim backdrop and explicit demo-only indicators.
 - Wi-Fi touchscreen provisioning, SD plaintext backup, manual PIN-protected view-only capture and disabled remote touch are unchanged.
-- Check all four independent rail combinations, 5 pages, map subviews and modal behavior on physical 480x320 LCD. Do not mark hardware-tested before owner confirmation.
+- Check all four independent rail combinations, 5 pages, map subviews and modal behavior on physical 480x320 LCD. Do not mark hardware-tested before confirmation.
 
 ## v0.6.2 — six-tab field workflow (hardware test pending)
 

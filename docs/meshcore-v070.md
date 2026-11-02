@@ -1,6 +1,6 @@
 # MeshCore Companion — v0.7.0 experimental
 
-v0.7.0 adds a real Companion client to the Waveshare display. It has not been validated on physical hardware. The owner confirmed v0.6.8 UI and manual PIN-free web screenshots; those exact bytes remain the recommended default and rollback. This does not claim that every radio feature has been hardware tested.
+v0.7.0 adds a real Companion client to the Waveshare display. It has not been validated on physical hardware. v0.6.8 UI operation and manual PIN-free web screenshots were confirmed; those exact bytes remain the recommended default and rollback. This does not claim that every radio feature has been hardware tested.
 
 ## Authoritative references
 

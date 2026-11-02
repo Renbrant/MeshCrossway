@@ -18,7 +18,7 @@ Verified source findings:
 - Pinned Waveshare ST7796 `draw_bitmap()` discarded `esp_lcd_panel_io_tx_color()`'s
   return value and reported success even on failure. Without a final color
   completion, LVGL waits for flush completion; this explains a possible path
-  from a failed transfer to the watchdog. **The owner's trace lacks the return
+  from a failed transfer to the watchdog. **The available trace lacks the return
   code and a full backtrace: DMA exhaustion remains a hypothesis.**
 
 The candidate reserves two 4,800-pixel DMA draw buffers at boot (9,600 bytes each)
@@ -44,7 +44,7 @@ No complete watchdog backtrace was supplied, so no address decoding is claimed.
 The rollback v0.6.2 is copied from the existing approved publication and its full
 SHA-256 is pinned; it must not be silently rebuilt with different dependencies.
 
-### Owner hardware test
+### Physical hardware test
 
 1. Open the official Web Flasher, select **v0.6.6** deliberately and accept the
    experimental warning. Keep erase disabled. Do not flash the Heltec.

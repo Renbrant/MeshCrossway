@@ -1,6 +1,6 @@
 # Remote companion and last-radio resume — v0.8.10 candidate
 
-v0.8.9 is the owner-confirmed stable baseline, preserved as the exact published binary. See [stable record](stable-v089.md). This candidate requires physical acceptance before replacing it.
+v0.8.9 is the confirmed stable baseline, preserved as the exact published binary. See [stable record](stable-v089.md). This candidate requires physical acceptance before replacing it.
 
 ## On the device
 

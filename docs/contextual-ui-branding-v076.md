@@ -38,4 +38,4 @@
 
 - `meshcrossway_brand.h` holds an independently rasterized (from the repository's official SVG) 165×22 BGRA-palette LVGL image, 2,224 bytes. No image download, SVG parser, or large runtime decoder is needed on the Core.
 - `apply_to_waveshare.py` copies this header with the existing UI headers; preflight asserts inclusion, compact rails and no duplicated Nodes/Groups context arrays.
-- The firmware remains experimental until physical touchscreen screenshots validate precise branding, contrast and sizing. **v0.6.8** remains the verified owner rollback.
+- The firmware remains experimental until physical touchscreen screenshots validate precise branding, contrast and sizing. **v0.6.8** remains the verified hardware-tested rollback.
