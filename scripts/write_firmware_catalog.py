@@ -71,6 +71,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.23":
+        summary="EXPERIMENTAL: adds independent map node icon shapes and colors for Meshtastic and MeshCore, with migration of saved v0.8.22 preferences. v0.8.17 remains recommended stable."
+        label="Per-network map node styles / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.22":
         summary="EXPERIMENTAL: adds a persistent node-marker color selector with Auto network colors plus orange, cyan, green, red, purple, yellow and white. v0.8.17 remains recommended stable."
         label="Configurable map node colors / EXPERIMENTAL"
