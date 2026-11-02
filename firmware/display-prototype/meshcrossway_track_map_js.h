@@ -15,6 +15,7 @@ class TrackMap{
  this.resize=new ResizeObserver(()=>this.draw());this.resize.observe(container);
  }
  setTrack(track,geometry){this.color='#'+Number(track.color).toString(16).padStart(6,'0');this.points=unwrap(geometry.points||[]);this.fit();}
+ setPoint(lat,lon){this.color='#f07120';this.points=unwrap([[lat,lon,0]]);this.fit();}
  fit(){if(!this.points.length){this.draw();return;}let left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity;for(const p of this.points){left=Math.min(left,p.x);right=Math.max(right,p.x);top=Math.min(top,p.y);bottom=Math.max(bottom,p.y);}const w=Math.max(80,this.container.clientWidth-80),h=Math.max(80,this.container.clientHeight-80);const ratio=Math.min(w/Math.max(right-left,1e-7),h/Math.max(bottom-top,1e-7));this.zoom=clamp(Math.floor(Math.log2(ratio/256)),3,19);this.center={x:(left+right)/2,y:(top+bottom)/2};this.draw();}
  changeZoom(delta,x=this.container.clientWidth/2,y=this.container.clientHeight/2){const next=clamp(this.zoom+delta,3,19),old=256*2**this.zoom,scale=256*2**next;this.center={x:this.center.x+(x-this.container.clientWidth/2)*(1/old-1/scale),y:clamp(this.center.y+(y-this.container.clientHeight/2)*(1/old-1/scale),0,1)};this.zoom=next;this.draw();}
  setBackground(enabled){this.background=enabled;this.draw();}
