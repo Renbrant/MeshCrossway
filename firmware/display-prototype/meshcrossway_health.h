@@ -9,6 +9,7 @@
 #include "esp_system.h"
 #include "esp_timer.h"
 #include "meshcrossway_navigation_http.h"
+#include "meshcrossway_gnss.h"
 #include "meshcrossway_remote_chat_http.h"
 #include "meshcrossway_remote_radio.h"
 #include "meshcrossway_remote_settings.h"
@@ -26,6 +27,10 @@ template<esp_err_t (*Handler)(httpd_req_t*)> static esp_err_t observe(httpd_req_
   return rc;
 }
 static bool is_running(){return running.load();}
+static bool remote_origin(double &latitude,double &longitude){
+  const auto fix=mcxgnss::snapshot();if(!fix.valid)return false;
+  latitude=fix.latitude;longitude=fix.longitude;return true;
+}
 #include "meshcrossway_companion_page.h"
 #include "meshcrossway_track_map_js.h"
 static void headers(httpd_req_t *req,const char *type){
@@ -44,7 +49,7 @@ static esp_err_t health(httpd_req_t *req){
   mcxhistory::describe(history,sizeof(history));
   meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
   const int n=snprintf(body,sizeof(body),
-    "{\"version\":\"v0.8.23\",\"uptime_ms\":%llu,\"free_heap\":%lu,\"ip\":\"%s\",\"sd_backup\":\"%s\",\"sd_step\":\"%s\",\"sd_errno\":%d,\"screen\":%s,\"touch\":false,\"captures\":%lu,\"capture_failures\":%lu,\"capture_ms\":%lu,\"history\":\"%s\",\"history_step\":\"%s\",\"history_errno\":%d,\"history_failures\":%lu,\"history_ms\":%lu,\"history_max_ms\":%lu,\"internal_free\":%lu,\"internal_largest\":%lu,\"internal_min\":%lu,\"reset_reason\":%d,\"boot_count\":%lu,\"previous_activity\":\"%s\",\"ui_max_ms\":%lu,\"ui_stack_min\":%lu,\"navigation_stack_min\":%lu,\"allocation_failures\":%lu,\"allocation_bytes\":%lu,\"allocation_caps\":%lu,\"mailbox_peak\":%lu,\"mailbox_overflows\":%lu}",
+    "{\"version\":\"v0.8.24\",\"uptime_ms\":%llu,\"free_heap\":%lu,\"ip\":\"%s\",\"sd_backup\":\"%s\",\"sd_step\":\"%s\",\"sd_errno\":%d,\"screen\":%s,\"touch\":false,\"captures\":%lu,\"capture_failures\":%lu,\"capture_ms\":%lu,\"history\":\"%s\",\"history_step\":\"%s\",\"history_errno\":%d,\"history_failures\":%lu,\"history_ms\":%lu,\"history_max_ms\":%lu,\"internal_free\":%lu,\"internal_largest\":%lu,\"internal_min\":%lu,\"reset_reason\":%d,\"boot_count\":%lu,\"previous_activity\":\"%s\",\"ui_max_ms\":%lu,\"ui_stack_min\":%lu,\"navigation_stack_min\":%lu,\"allocation_failures\":%lu,\"allocation_bytes\":%lu,\"allocation_caps\":%lu,\"mailbox_peak\":%lu,\"mailbox_overflows\":%lu}",
     (unsigned long long)(esp_timer_get_time()/1000),(unsigned long)esp_get_free_heap_size(),ip,
     meshbackup::status(),meshbackup::step_name(meshbackup::failure_step.load()),
     meshbackup::failure_errno.load(),meshcapture::available()?"true":"false",
@@ -68,6 +73,7 @@ static esp_err_t health(httpd_req_t *req){
 }
 static void start(){
   if(running.load())return;
+  mcxremotechat::origin_provider=remote_origin;
   httpd_config_t config=HTTPD_DEFAULT_CONFIG();
   config.server_port=80;config.stack_size=HTTP_STACK_BYTES;
   config.max_open_sockets=4;config.max_uri_handlers=14;
@@ -109,7 +115,7 @@ static void start(){
   if(result==ESP_OK)result=httpd_register_uri_handler(server,&settings_command);
   if(result!=ESP_OK){httpd_stop(server);printf("[MCX-HTTP] route setup failed err=%d\n",(int)result);return;}
   running.store(true);
-  printf("[MCX-HTTP v0.8.23] ready port=80 routes=/,/health,/screen.raw manual=ON touch=OFF\n");
+  printf("[MCX-HTTP v0.8.24] ready port=80 routes=/,/health,/screen.raw manual=ON touch=OFF\n");
 }
 } // namespace meshhealth
 

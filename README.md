@@ -4,7 +4,7 @@
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Project status — v0.8.17 stable; v0.8.23 candidate.** v0.8.17 remains the recommended hardware-tested release. v0.8.23 adds separate map-node icon shapes and colors for Meshtastic and MeshCore. Previous map settings are migrated automatically. See the [v0.8.17 stable record](docs/stable-v0817.md), [v0.8.20 map and display notes](docs/map-node-marker-settings-v0820.md), [v0.8.21 marker sizing notes](docs/map-node-size-v0821.md), [v0.8.22 color notes](docs/map-node-color-v0822.md), and [v0.8.23 per-network style notes](docs/map-node-style-v0823.md).
+> **Project status — v0.8.23 stable; v0.8.24 candidate.** v0.8.23 is the user-selected stable release and preserves its exact published firmware image. v0.8.24 redesigns Meshtastic/MeshCore settings navigation. See the [v0.8.23 stable record](docs/stable-v0823.md), [v0.8.20 map and display notes](docs/map-node-marker-settings-v0820.md), [v0.8.21 marker sizing notes](docs/map-node-size-v0821.md), [v0.8.22 color notes](docs/map-node-color-v0822.md), and [v0.8.23 per-network style notes](docs/map-node-style-v0823.md).
 
 ## See it in operation
 
@@ -87,7 +87,7 @@ The two BLE links use separate protocol adapters: Meshtastic protobuf PhoneAPI o
 
 ## Known issue and next steps
 
-The current software work adds optional node markers and clearer recency information on top of the stable v0.8.17 baseline. Hardware work continues on the three-device modular design and its independently powered Core and Pods.
+The current software work adds settings navigation on top of the stable v0.8.23 baseline. Hardware work continues on the three-device modular design and its independently powered Core and Pods.
 
 1. Restore device map tiles and saved-route loading without regressing the working dual-radio connections.
 2. Expand compatibility and recovery checks across supported radio boards and native firmware builds.
@@ -99,13 +99,15 @@ The current software work adds optional node markers and clearer recency informa
 
 | Topic | Reference |
 |---|---|
-| v0.8.17 stable image | [Stable release record](docs/stable-v0817.md) |
+| v0.8.23 stable image | [Stable release record](docs/stable-v0823.md) |
+| v0.8.17 historical stable image | [Historical release record](docs/stable-v0817.md) |
 | v0.8.18 node map and activity ordering | [Feature notes](docs/node-map-and-recent-activity-v0818.md) |
 | v0.8.20 Home GPS card spacing | [Feature notes](docs/home-gps-layout-v0820.md) |
 | v0.8.20 Configurable map node markers and compact toggles | [Map and display notes](docs/map-node-marker-settings-v0820.md) |
 | v0.8.21 Adjustable map node marker size and quick access | [Feature notes](docs/map-node-size-v0821.md) |
 | v0.8.22 Configurable map node colors | [Feature notes](docs/map-node-color-v0822.md) |
 | v0.8.23 Separate node icon and color settings by network | [Feature notes](docs/map-node-style-v0823.md) |
+| v0.8.24 Meshtastic and MeshCore settings navigation redesign | [Candidate notes](docs/settings-navigation-v0824.md) |
 | Simultaneous BLE radios and per-network settings | [Dual-radio implementation notes](docs/dual-radio-settings-v0816.md) |
 | Device and browser operation screenshots | [Field evidence](docs/field-evidence-v0816.md) |
 | Modular Core and Radio Pod design | [Modular architecture](docs/modular-architecture.md) |

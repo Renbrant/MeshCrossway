@@ -8,6 +8,7 @@ static lv_obj_t *fields[10] = {}, *compose_button=nullptr;
 static lv_obj_t *radio_status = nullptr, *home_name = nullptr, *home_status = nullptr, *history_status=nullptr;
 static char home_name_source[80] = {};
 static uint8_t field_count = 0, selected_command = 0;
+static lv_obj_t *tools_category=nullptr;static unsigned tools_filter=0;
 static bool confirm_pending = false, group = false, conversation = false, reveal = false;
 static uint8_t target_key[32] = {};
 static uint16_t target_slot = 0, list_offset = 0;
@@ -300,9 +301,32 @@ static void presets(lv_event_t *) {
   base("MESHCORE / LORA REGION PRESETS");mode=0;int y=0;
   for(unsigned i=0;i<meshmc::RADIO_PRESET_COUNT;++i){action_button(scroller,meshmc::RADIO_PRESETS[i].name,8,y,460,43,panel2,choose_preset,i);y+=49;}
 }
+static unsigned tool_category(uint8_t code){
+  if(code==11||code==12||code==21||code==43||code==60||code==61)return 1;
+  if(code==8||code==14||code==22||code==37)return 2;
+  if((code>=31&&code<=36)||code==62||code==63||code==64)return 3;
+  if(code==39||code==40||code==41||code==42||code==56)return 4;
+  if(code==23||code==24||code==38||code==54||code==57||code==58||code==59)return 5;
+  return 6;
+}
+static void filter_tools(lv_event_t *){
+  if(!tools_category||!scroller)return;
+  tools_filter=lv_dropdown_get_selected(tools_category);
+  const unsigned count=lv_obj_get_child_cnt(scroller);
+  for(unsigned i=0;i<count;++i){auto *row=lv_obj_get_child(scroller,i);bool show=true;
+    if(i==0)show=tools_filter==0||tools_filter==1;
+    else if(i<=meshmc::COMMAND_COUNT)show=tools_filter==0||tools_filter==tool_category(meshmc::COMMANDS[i-1].code);
+    if(show)lv_obj_clear_flag(row,LV_OBJ_FLAG_HIDDEN);else lv_obj_add_flag(row,LV_OBJ_FLAG_HIDDEN);
+  }
+}
 static void tools() {
-  base("MESHCORE / TOOLS & SETTINGS");
+  base("MESHCORE / SETTINGS");
   mode = 0;
+  lv_obj_set_pos(scroller,0,82);lv_obj_set_height(scroller,182);
+  tools_category=lv_dropdown_create(dialog);lv_obj_set_pos(tools_category,8,44);lv_obj_set_size(tools_category,460,34);
+  lv_dropdown_set_options(tools_category,"All settings\nRadio & region\nDevice & identity\nChannels\nSensors & status\nPrivacy\nAdvanced tools");
+  lv_dropdown_set_selected(tools_category,0);tools_filter=0;
+  lv_obj_add_event_cb(tools_category,filter_tools,LV_EVENT_VALUE_CHANGED,nullptr);
   action_button(scroller,"LoRa region presets",8,0,460,43,orange,presets,0);
   int y = 49;
   for (auto &c : meshmc::COMMANDS) {

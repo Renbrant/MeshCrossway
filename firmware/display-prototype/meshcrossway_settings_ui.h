@@ -9,6 +9,7 @@ static unsigned group = 0, field = 0;
 static uint32_t drawn = UINT32_MAX, edit_revision = 0;
 static uint8_t edit_radio[7] = {};
 static bool confirmed = false, showing_groups = true;
+static lv_obj_t *category_filter=nullptr;static int selected_category=0;
 static void close(lv_event_t *) {
   if (timer) {
     lv_timer_del(timer);
@@ -37,6 +38,9 @@ static void groups(lv_event_t *) {
   int y = 0;
   for (unsigned i = 0; i < meshmt::settings::SECTION_COUNT; ++i) {
     const auto &g = meshmt::settings::sections[i];
+    const bool channels=g.family==3||g.family==5||g.family==6;
+    const unsigned category=channels?4:g.family==1?3:g.family==2?5:g.family==4?6:(i==1||i==2||i==5)?1:2;
+    if(selected_category&&selected_category!=category)continue;
     char label[80];
     snprintf(label, sizeof(label), "%s%s", g.family == 1 ? "Module / " : "",
              g.name);
@@ -186,6 +190,11 @@ static void refresh(lv_timer_t *) {
     y += 56;
   }
 }
+static void category_changed(lv_event_t *) {
+  if(!category_filter)return;
+  selected_category=lv_dropdown_get_selected(category_filter);
+  groups(nullptr);
+}
 static void open_mt(lv_event_t *) {
   mtui::close();
   close(nullptr);
@@ -193,7 +202,12 @@ static void open_mt(lv_event_t *) {
   txt(dialog, "MESHTASTIC / SETTINGS", 8, 8, 255, orange);
   action_button(dialog, "GROUPS", 268, 3, 100, 33, panel2, groups, 0);
   action_button(dialog, "CLOSE", 374, 3, 100, 33, panel2, close, 0);
-  list = panel_at(dialog, 4, 42, 472, 234, bg, 0);
+  category_filter=lv_dropdown_create(dialog);
+  lv_obj_set_pos(category_filter,4,40);lv_obj_set_size(category_filter,360,34);
+  lv_dropdown_set_options(category_filter,"All settings\nRadio\nDevice & network\nModules\nChannels\nIdentity\nInterface");
+  lv_dropdown_set_selected(category_filter,0);selected_category=0;
+  lv_obj_add_event_cb(category_filter,category_changed,LV_EVENT_VALUE_CHANGED,nullptr);
+  list = panel_at(dialog, 4, 78, 472, 198, bg, 0);
   lv_obj_add_flag(list, LV_OBJ_FLAG_SCROLLABLE);
   status = txt(dialog, "Select a group to read its settings from the radio.", 8,
                280, 464, muted);
