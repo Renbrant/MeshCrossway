@@ -71,6 +71,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.20":
+        summary="EXPERIMENTAL: fixes Home GNSS card spacing; adds configurable circle, square or cross node markers and optional labels. v0.8.17 remains recommended stable."
+        label="GPS layout + configurable map markers / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.19":
         summary="EXPERIMENTAL: real backlight brightness and persistent screen timeout controls in quick settings. Touch wakes the display; radio and navigation processing continue. v0.8.17 remains recommended stable."
         label="Display brightness + timeout / EXPERIMENTAL"
