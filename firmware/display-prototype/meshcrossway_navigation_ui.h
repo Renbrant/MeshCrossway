@@ -113,9 +113,28 @@ static void toggle_zoom(){
 }
 static void recenter(lv_event_t *){following=true;const auto f=mcxgnss::snapshot();if(f.valid){latitude=f.latitude;longitude=f.longitude;centered=true;request();}else set_status("Waiting for a fresh GPS fix");}
 static void options(lv_event_t *);
+static bool center_on_known_node(){
+  if(auto *radio=meshmt::client){
+    for(unsigned i=0;i<radio->data.node_count;++i){const auto &node=radio->data.nodes[i];
+      if(!node.position||!node.has_lat||!node.has_lon)continue;
+      const double lat=node.latitude/1e7,lon=node.longitude/1e7;
+      if(!isfinite(lat)||!isfinite(lon)||lat<-90||lat>90||lon<-180||lon>180)continue;
+      latitude=lat;longitude=lon;centered=true;following=false;return true;
+    }
+  }
+  if(auto *radio=meshmc::client){
+    for(unsigned i=0;i<radio->contact_count;++i){const auto &node=radio->contacts[i];
+      if(!(node.flags&0x10)||(!node.lat&&!node.lon)||node.lat<-90000000||node.lat>90000000||node.lon<-180000000||node.lon>180000000)continue;
+      latitude=node.lat/1e6;longitude=node.lon/1e6;centered=true;following=false;return true;
+    }
+  }
+  return false;
+}
 static void create(int w){
   mcxmap::load_config();zoom=mcxmap::configuration().zoom;
-  const auto f=mcxgnss::snapshot();if(f.valid){latitude=f.latitude;longitude=f.longitude;centered=true;}
+  const auto f=mcxgnss::snapshot();const bool gps_center=f.valid;
+  if(gps_center){latitude=f.latitude;longitude=f.longitude;centered=true;following=true;}
+  else if(!centered)center_on_known_node();
   lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);
   canvas=panel_at(body,0,0,w,lv_obj_get_height(body),lv_color_hex(0x1A2027),0);
   lv_obj_add_flag(canvas,LV_OBJ_FLAG_CLICKABLE|LV_OBJ_FLAG_PRESS_LOCK);
@@ -141,7 +160,7 @@ static void create(int w){
   lv_obj_update_layout(attribution);lv_obj_set_y(attribution,lv_obj_get_height(canvas)-lv_obj_get_height(attribution)-3);
   lv_obj_add_flag(attribution,LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_event_cb(attribution,[](lv_event_t *){credits();},LV_EVENT_CLICKED,nullptr);
-  set_status("Waiting for GPS");if(zoom_open)show_zoom();
+  set_status(centered?(gps_center?"Loading map...":"Centered on a saved node · Center GPS to move"):"Waiting for GPS or a node position");if(zoom_open)show_zoom();
   mcxmap::start();if(centered)request();
 }
 static void poll(){

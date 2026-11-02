@@ -72,6 +72,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.8.25":
+        summary="EXPERIMENTAL / HARDWARE VALIDATION PENDING: map opens on positioned Meshtastic or MeshCore nodes when local GPS has no current fix; Center GPS remains available when a fix arrives. v0.8.23 remains stable."
+        label="Map fallback centering / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.24":
         summary="EXPERIMENTAL: reorganized Meshtastic and MeshCore settings into categories, added search in the remote settings workspace, and fixed remote node distance sorting dependency. v0.8.23 remains stable."
         label="Radio settings navigation redesign / EXPERIMENTAL"
