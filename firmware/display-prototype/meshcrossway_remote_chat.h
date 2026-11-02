@@ -6,10 +6,11 @@
 #include "meshcrossway_conversations.h"
 #include "mbedtls/sha256.h"
 #include "meshcrossway_chat_presentation.h"
+#include "meshcrossway_gnss.h"
 #include <atomic>
 #include <new>
 namespace mcxremotechat {
-static constexpr unsigned PAGE_SIZE=32, MESSAGE_LIMIT=40, RESPONSE_SIZE=96*1024;
+static constexpr unsigned PAGE_SIZE=32, MESSAGE_LIMIT=40, RESPONSE_SIZE=128*1024;
 struct Request {bool sending=false;char network[3]={},target[65]={},text[meshmt::MAX_TEXT+1]={};unsigned page=0,category=0;};
 struct Workspace {Request request;char response[RESPONSE_SIZE];size_t length=0;int code=200;uint8_t salt[16]={};};
 static Workspace *work=nullptr;
@@ -58,24 +59,25 @@ static void process(){
   if((mc&&!c)||(!mc&&!m)){result("Connect this network's Bluetooth radio on the device first.",409);return;}
   Json j{work->response,sizeof(work->response)};
   mcxchat::Key mk;meshmt::Target mt;bool found=false;unsigned total=0,shown=0;
-  const unsigned begin=r.page*PAGE_SIZE;
+  const unsigned page_size=r.category==3?512:PAGE_SIZE;
+  const unsigned begin=r.page*page_size;
   const char *problem=nullptr;
-  auto row=[&](const char *id,const char *name,bool group,unsigned unread,uint32_t last,bool node_entry=true){
+  auto row=[&](const char *id,const char *name,bool group,unsigned unread,uint32_t last,bool node_entry=true,bool has_position=false,double latitude=0,double longitude=0,uint32_t seen=0){
     if((r.category==1&&!last)||(r.category==2&&!group)||(r.category==3&&(group||!node_entry)))return;
     unsigned pos=total++;
-    if(r.sending||pos<begin||shown>=PAGE_SIZE)return;
+    if(r.sending||pos<begin||shown>=page_size)return;
     if(shown++)j.add(",");
-    j.add("{\"id\":");j.text(id);j.add(",\"name\":");j.text(name);j.add(",\"kind\":");j.text(group?"Group":"Node");j.add(",\"unread\":");j.number(unread);j.add(",\"last\":");j.number(last);j.add("}");
+    j.add("{\"id\":");j.text(id);j.add(",\"name\":");j.text(name);j.add(",\"kind\":");j.text(group?"Group":"Node");j.add(",\"unread\":");j.number(unread);j.add(",\"last\":");j.number(last);j.add(",\"last_seen\":");j.number(seen);j.add(",\"has_position\":");j.add(has_position?"true":"false");if(has_position){char b[32];snprintf(b,sizeof(b),"%.6f",latitude);j.add(",\"lat\":");j.add(b);snprintf(b,sizeof(b),"%.6f",longitude);j.add(",\"lon\":");j.add(b);}j.add("}");
   };
   j.add("{\"network\":");j.text(mc?"mc":"mt");j.add(",\"connected\":");j.add((mc?meshmc::link.load()&&c->connected:meshmt::link.load()&&m->connected)?"true":"false");
-  j.add(",\"status\":");j.text(mc?c->status:m->status);j.add(",\"targets\":[");
+  j.add(",\"status\":");j.text(mc?c->status:m->status);const auto fix=mcxgnss::snapshot();j.add(",\"origin_valid\":");j.add(fix.valid?"true":"false");if(fix.valid){char b[32];snprintf(b,sizeof(b),"%.6f",fix.latitude);j.add(",\"origin_lat\":");j.add(b);snprintf(b,sizeof(b),"%.6f",fix.longitude);j.add(",\"origin_lon\":");j.add(b);}j.add(",\"targets\":[");
   if(mc){
     for(unsigned i=0;i<c->channel_count;++i)if(c->channels[i].loaded&&c->channels[i].name[0]){
       auto k=mcxchat::key_for(*c,true,uint16_t(i));auto *pref=mcxhistory::preferences().get(k);if(pref&&pref->blocked)continue;char id[65];mc_token(k,id);unsigned unread=0;uint32_t last=0;for(const auto &msg:c->messages)if(mcxchat::belongs(msg,k)){last=msg.id>last?msg.id:last;unread+=!msg.outgoing&&!msg.read;}row(id,c->channels[i].name,true,unread,last);if(!strcmp(id,r.target)){mk=k;found=true;}
     }
     for(unsigned i=0;i<c->contact_count;++i){auto k=mcxchat::key_for(*c,false,uint16_t(i));
       auto *pref=mcxhistory::preferences().get(k);if(pref&&pref->blocked)continue;
-      char id[65];mc_token(k,id);unsigned unread=0;uint32_t last=0;for(const auto &msg:c->messages)if(mcxchat::belongs(msg,k)){last=msg.id>last?msg.id:last;unread+=!msg.outgoing&&!msg.read;}row(id,pref&&pref->alias[0]?pref->alias:c->contacts[i].name,c->contacts[i].type==3,unread,last);if(!strcmp(id,r.target)){mk=k;found=true;}
+      const auto &contact=c->contacts[i];char id[65];mc_token(k,id);unsigned unread=0;uint32_t last=0;for(const auto &msg:c->messages)if(mcxchat::belongs(msg,k)){last=msg.id>last?msg.id:last;unread+=!msg.outgoing&&!msg.read;}const bool pos=(contact.flags&0x10)&&contact.lat>=-90000000&&contact.lat<=90000000&&contact.lon>=-180000000&&contact.lon<=180000000;row(id,pref&&pref->alias[0]?pref->alias:contact.name,contact.type==3,unread,last,true,pos,contact.lat/1000000.0,contact.lon/1000000.0,contact.advert);if(!strcmp(id,r.target)){mk=k;found=true;}
     }
     if(found)problem=mcxchat::send_problem(*c,mk,r.sending?r.text:nullptr);
     if(!meshmc::link.load())problem="MeshCore radio disconnected. Reconnect to send.";
@@ -85,7 +87,7 @@ static void process(){
       auto t=m->target(meshmt::BROADCAST,uint8_t(ch));char id[65];mt_token(t,id);unsigned unread=0;uint32_t last=0;for(const auto &msg:m->data.messages)if(mt_belongs(msg,t,m->data.my_num)){last=msg.seq>last?msg.seq:last;unread+=!msg.outgoing&&!msg.read;}row(id,m->data.channels[ch].name[0]?m->data.channels[ch].name:"Primary channel",true,unread,last);if(!strcmp(id,r.target)){mt=t;found=true;}
       // A DM is bound to its native channel, including secondary channels.
       for(unsigned i=0;i<m->data.node_count;++i){auto &n=m->data.nodes[i];if(n.num==m->data.my_num)continue;
-        t=m->target(n.num,uint8_t(ch));mt_token(t,id);char name[104];snprintf(name,sizeof(name),"%.48s · %.48s",n.name[0]?n.name:"Unknown node",m->data.channels[ch].name);unread=0;last=0;for(const auto &msg:m->data.messages)if(mt_belongs(msg,t,m->data.my_num)){last=msg.seq>last?msg.seq:last;unread+=!msg.outgoing&&!msg.read;}row(id,name,false,unread,last,ch==primary);if(!strcmp(id,r.target)){mt=t;found=true;}
+        t=m->target(n.num,uint8_t(ch));mt_token(t,id);char name[104];snprintf(name,sizeof(name),"%.48s · %.48s",n.name[0]?n.name:"Unknown node",m->data.channels[ch].name);unread=0;last=0;for(const auto &msg:m->data.messages)if(mt_belongs(msg,t,m->data.my_num)){last=msg.seq>last?msg.seq:last;unread+=!msg.outgoing&&!msg.read;}row(id,name,false,unread,last,ch==primary,ch==primary&&n.position,n.latitude/10000000.0,n.longitude/10000000.0,n.last_heard);if(!strcmp(id,r.target)){mt=t;found=true;}
       }
     }
     if(found)problem=m->send_problem(mt,r.sending?r.text:nullptr);
