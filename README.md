@@ -4,7 +4,7 @@
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Project status — v0.8.17 stable; v0.8.18 candidate.** v0.8.17 is confirmed working well on the device and is the recommended stable release. v0.8.18 adds positioned-node map markers, stored/recent node counts, GPS satellite count and recent-activity ordering for nodes, groups and channels. See the [v0.8.17 stable record](docs/stable-v0817.md) and [v0.8.18 feature notes](docs/node-map-and-recent-activity-v0818.md).
+> **Project status — v0.8.17 stable; v0.8.20 candidate.** v0.8.17 is confirmed working well on the device and is the recommended stable release. v0.8.20 fixes the Home GPS card layout so satellite count and estimated accuracy appear on separate lines; it also includes the v0.8.18 node map, status and activity ordering features and v0.8.19 display settings. See the [v0.8.17 stable record](docs/stable-v0817.md) and [v0.8.18 feature notes](docs/node-map-and-recent-activity-v0818.md).
 
 ## See it in operation
 
@@ -53,7 +53,7 @@ The renders below show the committed case design. The Waveshare ESP32-S3 enclosu
 | **Remote browser companion** | Running on the device's local network. It provides separate network views for messages, conversations, groups, nodes and radio settings. |
 | **Track workspace** | The browser shows track folders, saved tracks and route previews. GPX downloads provide a portable backup of tracks. |
 | **Radio settings shortcuts** | Radio cards on Home open their own settings; the selected radio can also be configured through the browser interface. |
-| **Device maps and saved routes** | The v0.8.17 map and remote route-loading improvement is confirmed working well on the device. v0.8.18 adds optional Meshtastic and MeshCore node markers when positions are available. |
+| **Device maps and saved routes** | The v0.8.17 map and remote route-loading improvement is confirmed working well on the device. v0.8.18 added optional Meshtastic and MeshCore node markers when positions are available. |
 | **Live position sharing** | Not implemented; remains future work. |
 
 See the [v0.8.16 field evidence](docs/field-evidence-v0816.md) and [dual-radio implementation and validation notes](docs/dual-radio-settings-v0816.md). Current compatibility evidence comes from the tested hardware and does not establish compatibility with every radio board or firmware version.
@@ -101,6 +101,7 @@ The current software work adds optional node markers and clearer recency informa
 |---|---|
 | v0.8.17 stable image | [Stable release record](docs/stable-v0817.md) |
 | v0.8.18 node map and activity ordering | [Feature notes](docs/node-map-and-recent-activity-v0818.md) |
+| v0.8.20 Home GPS card spacing | [Feature notes](docs/home-gps-layout-v0820.md) |
 | Simultaneous BLE radios and per-network settings | [Dual-radio implementation notes](docs/dual-radio-settings-v0816.md) |
 | Device and browser operation screenshots | [Field evidence](docs/field-evidence-v0816.md) |
 | Modular Core and Radio Pod design | [Modular architecture](docs/modular-architecture.md) |
