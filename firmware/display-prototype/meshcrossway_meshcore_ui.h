@@ -310,7 +310,8 @@ static unsigned tool_category(uint8_t code){
   return 6;
 }
 static void filter_tools(lv_event_t *){
-  if(!tools_category||!scroller)return;tools_filter=lv_dropdown_get_selected(tools_category);
+  if(!tools_category||!scroller)return;
+  tools_filter=lv_dropdown_get_selected(tools_category);
   const unsigned count=lv_obj_get_child_cnt(scroller);
   for(unsigned i=0;i<count;++i){auto *row=lv_obj_get_child(scroller,i);bool show=true;
     if(i==0)show=tools_filter==0||tools_filter==1;
