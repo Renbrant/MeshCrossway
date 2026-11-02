@@ -1,8 +1,9 @@
 #pragma once
 #include "meshcrossway_remote_chat.h"
 #include "esp_http_server.h"
-#include "meshcrossway_gnss.h"
 namespace mcxremotechat {
+using OriginProvider=bool (*)(double &,double &);
+static OriginProvider origin_provider=nullptr;
 static esp_err_t error(httpd_req_t *r,const char *code,const char *message){httpd_resp_set_status(r,code);httpd_resp_set_type(r,"text/plain");return httpd_resp_send(r,message,HTTPD_RESP_USE_STRLEN);}
 static bool valid_target(const char *s){if(!*s)return true;if(strlen(s)!=64)return false;for(;*s;++s)if(!strchr("0123456789abcdef",*s))return false;return true;}
 static esp_err_t exchange(httpd_req_t *r,const Request &request){
@@ -30,7 +31,7 @@ static esp_err_t state(httpd_req_t *r){
   if(strstr(query,"page=")){if(httpd_query_key_value(query,"page",page,sizeof(page))!=ESP_OK)return error(r,"400 Bad Request","Invalid page.");for(const char *p=page;*p;++p)if(*p<'0'||*p>'9')return error(r,"400 Bad Request","Invalid page.");request.page=unsigned(atoi(page));if(request.page>33)return error(r,"400 Bad Request","Invalid page.");}
   if(strstr(query,"category=")){if(httpd_query_key_value(query,"category",category,sizeof(category))!=ESP_OK)return error(r,"400 Bad Request","Invalid category.");
     if(!strcmp(category,"chats"))request.category=1;else if(!strcmp(category,"groups"))request.category=2;else if(!strcmp(category,"nodes"))request.category=3;else if(strcmp(category,"all"))return error(r,"400 Bad Request","Invalid category.");}
-  const auto fix=mcxgnss::snapshot();request.origin_valid=fix.valid;request.origin_lat=fix.latitude;request.origin_lon=fix.longitude;
+  if(origin_provider)request.origin_valid=origin_provider(request.origin_lat,request.origin_lon);
   return exchange(r,request);
 }
 static esp_err_t send(httpd_req_t *r){

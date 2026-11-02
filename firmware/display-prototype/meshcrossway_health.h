@@ -9,6 +9,7 @@
 #include "esp_system.h"
 #include "esp_timer.h"
 #include "meshcrossway_navigation_http.h"
+#include "meshcrossway_gnss.h"
 #include "meshcrossway_remote_chat_http.h"
 #include "meshcrossway_remote_radio.h"
 #include "meshcrossway_remote_settings.h"
@@ -26,6 +27,10 @@ template<esp_err_t (*Handler)(httpd_req_t*)> static esp_err_t observe(httpd_req_
   return rc;
 }
 static bool is_running(){return running.load();}
+static bool remote_origin(double &latitude,double &longitude){
+  const auto fix=mcxgnss::snapshot();if(!fix.valid)return false;
+  latitude=fix.latitude;longitude=fix.longitude;return true;
+}
 #include "meshcrossway_companion_page.h"
 #include "meshcrossway_track_map_js.h"
 static void headers(httpd_req_t *req,const char *type){
@@ -68,6 +73,7 @@ static esp_err_t health(httpd_req_t *req){
 }
 static void start(){
   if(running.load())return;
+  mcxremotechat::origin_provider=remote_origin;
   httpd_config_t config=HTTPD_DEFAULT_CONFIG();
   config.server_port=80;config.stack_size=HTTP_STACK_BYTES;
   config.max_open_sockets=4;config.max_uri_handlers=14;
