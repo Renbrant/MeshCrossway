@@ -105,7 +105,7 @@ The immediate software task is to investigate the map tile and saved-route loadi
 | Modular Core and Radio Pod design | [Modular architecture](docs/modular-architecture.md) |
 | Native firmware and protocol boundary | [Radio firmware strategy](docs/radio-firmware-strategy.md) |
 | Maps and map-rendering investigation | [Maps/GPS notes](docs/maps-gps-v081.md) · [Map rendering latency](docs/map-render-latency-v087.md) |
-| Track and navigation requirements | [Navigation and sharing](docs/navigation-and-sharing.md) |
+| Track organization, route preview and GPX backup | [Field evidence](docs/field-evidence-v0816.md) · [Maps/GPS notes](docs/maps-gps-v081.md) |
 | Meshtastic and MeshCore comparison | [Protocol comparison](docs/meshtastic-vs-meshcore.md) |
 | Community maps and regional coverage | [Maps and regional check](docs/mesh-maps-and-regional-check.md) |
 | Future integrations | [Integration registry](docs/future-integrations/README.md) |
