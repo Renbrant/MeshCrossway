@@ -43,9 +43,9 @@ static lv_color_t *keep_tile(uint64_t source,unsigned z,unsigned x,unsigned y,co
   slot->source=source;slot->z=z;slot->x=x;slot->y=y;slot->used=++tile_clock;return slot->pixels;
 }
 static const char *SD_ROOT="/sdcard";
-struct Config {uint32_t version=1;uint8_t online=1,zoom=14;uint8_t reserved[2]={};char url[192]="https://tile.openstreetmap.org";char attribution[128]="© OpenStreetMap contributors";};
+struct Config {uint32_t version=1;uint8_t online=1,zoom=14,hide_nodes=0,reserved=0;char url[192]="https://tile.openstreetmap.org";char attribution[128]="© OpenStreetMap contributors";};
 static bool valid_config(const Config &c){
-  if(c.version!=1||c.online>1||c.zoom<3||c.zoom>19||!memchr(c.url,0,sizeof(c.url))||!memchr(c.attribution,0,sizeof(c.attribution))||!c.attribution[0]||strncmp(c.url,"https://",8)||!c.url[8])return false;
+  if(c.version!=1||c.online>1||c.hide_nodes>1||c.reserved||c.zoom<3||c.zoom>19||!memchr(c.url,0,sizeof(c.url))||!memchr(c.attribution,0,sizeof(c.attribution))||!c.attribution[0]||strncmp(c.url,"https://",8)||!c.url[8])return false;
   for(const char *p=c.url;*p;++p)if(uint8_t(*p)<=32||strchr("?#@{}",*p))return false;
   return true;
 }

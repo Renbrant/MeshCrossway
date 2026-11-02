@@ -1,8 +1,7 @@
 # v0.8.17: remote map and track preview reliability
 
-Status: experimental candidate. Map backgrounds and saved-route previews were reported to have stopped loading after v0.8.16. The current remote HTTP server config allowed only two open sockets while the companion page concurrently polls messages, radio status and navigation data and requests route geometry. This creates contention for map/track requests. v0.8.17 raises the bounded HTTP socket capacity to four while retaining the existing 14-route limit and per-request stack guards.
+Status: stable. The v0.8.16 browser companion and device reported map/route loading failures. The v0.8.17 remote HTTP server increases bounded socket capacity from two to four to reduce contention between navigation, message and radio refresh requests. Existing endpoint and stack limits remain in place.
 
-The firmware version is v0.8.17. v0.8.16 remains the approved stable release until this candidate is verified on the device and browser. Map tile downloads from external providers still require working Wi-Fi, valid device time for TLS, SD storage for tile cache and an available provider. Route geometry is read locally from the track store; the browser background tiles are fetched directly by the browser.
+The diagnosis was based on request architecture because no failure logs were supplied. After installing v0.8.17, the user confirmed the version is working very well and selected it as the recommended stable release. The exact published binary is pinned in [the stable release record](stable-v0817.md).
 
-This change addresses contention observed in the remote request architecture. The report does not include device logs, so this remains a code-based diagnosis. Check both native map tile loading and remote route geometry/preview after flashing, with both BLE radios connected and while messages/status refresh. If native tile loading still fails, capture the on-screen map status and device log before promoting v0.8.17.
-
+The fix applies to remote route and map requests. Native map tile availability still depends on Wi-Fi, valid device time for TLS, microSD tile cache and the selected map provider.

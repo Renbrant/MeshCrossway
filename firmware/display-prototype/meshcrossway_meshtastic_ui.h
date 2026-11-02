@@ -7,6 +7,7 @@ namespace mtui {
   static bool conversation=false;
   static uint32_t drawn=UINT32_MAX,last_draw=0,drawn_zone=0;
   static unsigned offset=0;
+  static uint16_t node_order[meshmt::MAX_NODES]={},channel_order[meshmt::MAX_CHANNELS]={};
   static bool ready(){auto *c=meshmt::client;
     return c&&c->connected&&c->initialized&&c->history_ready&&!c->fault;
   }
@@ -240,17 +241,24 @@ namespace mtui {
       y+=71;
     };
     if(c&&filter!=2){
-      if(page==1)for(unsigned i=0;i<c->data.node_count;++i){auto &n=c->data.nodes[i];
-        char title[70],detail[100];
-        snprintf(title,sizeof(title),"MT / %s",n.name);
-        snprintf(detail,sizeof(detail),"!%08lx / %s%s",(unsigned long)n.num,n.position?"position available":"no position",n.num==c->data.my_num?" / your radio":"");
-        row(title,detail,select_node,n.num);
+      if(page==1){unsigned count=0;for(unsigned i=0;i<c->data.node_count;++i)node_order[count++]=uint16_t(i);
+        auto heard=[&](unsigned i){return c->data.nodes[i].last_heard;};
+        for(unsigned a=1;a<count;++a){const uint16_t value=node_order[a];unsigned b=a;while(b&&heard(node_order[b-1])<heard(value)){node_order[b]=node_order[b-1];--b;}node_order[b]=value;}
+        for(unsigned i=0;i<count;++i){auto &n=c->data.nodes[node_order[i]];char title[70],detail[100];
+          snprintf(title,sizeof(title),"MT / %s",n.name);
+          snprintf(detail,sizeof(detail),"!%08lx / %s%s",(unsigned long)n.num,n.position?"position available":"no position",n.num==c->data.my_num?" / your radio":"");
+          row(title,detail,select_node,n.num);
+        }
       }
-      if(page==2)for(unsigned i=0;i<meshmt::MAX_CHANNELS;++i){auto &ch=c->data.channels[i];
-        if(!ch.loaded||!ch.role)continue;
-        char title[70];
-        snprintf(title,sizeof(title),"MT / %u / %s",i,ch.name);
-        row(title,ch.role==1?"Primary channel":"Secondary channel",select_channel,i);
+      if(page==2){unsigned count=0;uint32_t latest[meshmt::MAX_CHANNELS]={};
+        for(unsigned i=0;i<meshmt::MAX_CHANNELS;++i){const auto &ch=c->data.channels[i];if(!ch.loaded||!ch.role)continue;channel_order[count++]=uint16_t(i);
+          for(const auto &m:c->data.messages)if(m.seq&&!m.outgoing&&m.to==meshmt::BROADCAST&&m.channel==i&&m.channel_identity==ch.identity&&m.seq>latest[i])latest[i]=m.seq;
+        }
+        for(unsigned a=1;a<count;++a){const uint16_t value=channel_order[a];unsigned b=a;while(b&&latest[channel_order[b-1]]<latest[value]){channel_order[b]=channel_order[b-1];--b;}channel_order[b]=value;}
+        for(unsigned i=0;i<count;++i){const unsigned slot=channel_order[i];auto &ch=c->data.channels[slot];char title[70];
+          snprintf(title,sizeof(title),"MT / %u / %s",slot,ch.name);
+          row(title,ch.role==1?"Primary channel":"Secondary channel",select_channel,slot);
+        }
       }
       if(page==3){
         for(unsigned k=0;k<c->data.message_count;++k){const uint32_t seq=c->data.next_seq-1-k;

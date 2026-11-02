@@ -11,8 +11,8 @@ int main(){
  n.known=true;n.nodes=42;n.unread=5;n.connected=true;
  c=radio(n,2,Phase::READY,2);assert(!c.online&&!strcmp(c.state,"Synchronizing radio"));
  n.initialized=true;c=radio(n,2,Phase::READY,2);assert(!strcmp(c.state,"Restoring messages"));
- n.history=true;c=radio(n,2,Phase::READY,2);assert(c.online&&!strcmp(c.nodes,"42 nodes")&&!strcmp(c.unread,"5 unread"));
- c=radio(n,1,Phase::READY,2);assert(!c.online&&!strcmp(c.nodes,"42 nodes (saved)"));
+ n.history=true;c=radio(n,2,Phase::READY,2);assert(c.online&&!strcmp(c.nodes,"42 saved / 0 recent")&&!strcmp(c.unread,"5 unread"));
+ n.recent=7;c=radio(n,1,Phase::READY,2);assert(!c.online&&!strcmp(c.nodes,"42 saved / 7 recent"));
  n.fault=true;c=radio(n,2,Phase::READY,2);assert(!strcmp(c.state,"Radio error"));
  c=radio(n,2,Phase::FAILED,2);assert(!strcmp(c.state,"Connection failed"));
  mcxgnss::Fix f;auto g=gps(f,true,0,false);assert(!strcmp(g.state,"Waiting for GPS")&&!g.valid);

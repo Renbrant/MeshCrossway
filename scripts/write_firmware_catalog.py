@@ -25,8 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit release approval.
 approved={
-    "v0.8.16":("v0.8.16 was designated the stable release on 2026-11-01 after simultaneous dual-radio operation was confirmed. Includes independent BLE links and radio settings. Current report: map tiles and routes are not loading; this known issue is being investigated. Exact published binary is retained.", "Stable / map issue under investigation"),
-    "v0.8.17":("Candidate fixing remote map and saved-route loading reliability after the v0.8.16 dual-radio release. Hardware validation pending.", "Map and route loading fix / EXPERIMENTAL"),
+    "v0.8.17":("The v0.8.17 dual-radio and remote map/route release is confirmed working well on the device and is the recommended stable image. Exact published binary is retained.", "Recommended stable / maps and tracks"),
     "v0.8.14":("Previous hardware-tested stable release, retained as rollback. Includes Bluetooth/HTTP stack fixes, track folders and remote workspaces. Exact tested binary retained unchanged.", "Previous stable / rollback"),
     "v0.8.11":("v0.8.11 was selected as the stable release on 2026-10-31 after periodic restarts on v0.8.12 were reported. Exact previously published v0.8.11 binary retained unchanged.", "Selected / recommended stable"),
     "v0.8.9":("Testing confirmed normal operation on 2026-10-30, and this revision was selected as the most stable baseline. Exact tested binary retained unchanged. New remote messaging and auto-reconnect changes require separate hardware validation.", "Hardware-tested / recommended stable"),
@@ -72,10 +71,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
-    elif version=="v0.8.16":
-        summary="STABLE: independent simultaneous Meshtastic + MeshCore BLE sessions, separate reconnect identities, and native/browser radio settings. Simultaneous operation of both radio links is confirmed. Known issue under investigation: map tiles and saved routes are not loading."
-        label="Dual radios + settings / STABLE; maps issue"
-        status="hardware-tested"
+    elif version=="v0.8.18":
+        summary="EXPERIMENTAL / HARDWARE VALIDATION PENDING: independent Meshtastic and MeshCore positioned-node map markers with a persistent visibility toggle; Home shows stored and recently heard node counts plus GNSS satellite count; node, group and channel lists are ordered by latest activity. v0.8.17 remains the recommended stable image."
+        label="Node map + recent activity / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.15":
         summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: device-local message times on screen and remote, common native/remote destination matching, complete stored-message enumeration and cleared stale list search when opening a MeshCore conversation. Exact v0.8.14 remains stable."
         label="Message visibility + device-local times / EXPERIMENTAL"

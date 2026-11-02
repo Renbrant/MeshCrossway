@@ -40,12 +40,17 @@ static lv_point_t drag_start={};
 static int drag_x=0,drag_y=0,pan_x=0,pan_y=0;static bool gesture_moved=false;
 static constexpr unsigned MAX_DRAW_SEGMENTS=mcxnav::MAX_VISIBLE*(mcxnav::OVERLAY_POINTS-1)+mcxnav::MAX_PREVIEW-1;
 struct DrawSegment {lv_point_t a,b;uint32_t color;};
-struct OverlayCache {DrawSegment lines[MAX_DRAW_SEGMENTS];lv_point_t pois[mcxnav::MAX_POIS];unsigned line_count=0,poi_count=0;uint32_t generation=0,revision=0;bool ready=false;};
+static constexpr unsigned MAX_NODE_MARKERS=meshmt::MAX_NODES+meshmc::MAX_CONTACTS;
+struct NodeMarker {lv_point_t point;bool meshcore=false;};
+struct OverlayCache {DrawSegment lines[MAX_DRAW_SEGMENTS];lv_point_t pois[mcxnav::MAX_POIS];NodeMarker nodes[MAX_NODE_MARKERS];unsigned line_count=0,poi_count=0,node_count=0;uint32_t generation=0,revision=0;bool ready=false;};
 static OverlayCache *overlay_cache=nullptr;
 static uint32_t overlay_builds=0;
 static uint32_t overlay_signature(){
   if(!nav_state)return 0;
-  const uint32_t fields[]={nav_state->preview_id,nav_state->preview_count,nav_state->points,nav_state->overlay_count,nav_state->poi_count};
+  const auto map=mcxmap::configuration();
+  const uint32_t fields[]={nav_state->preview_id,nav_state->preview_count,nav_state->points,nav_state->overlay_count,nav_state->poi_count,
+    map.hide_nodes,meshmt::client?meshmt::client->generation:0,meshmt::client?meshmt::client->data.node_count:0,
+    meshmc::client?meshmc::client->generation:0,meshmc::client?meshmc::client->contact_count:0};
   return mcxnav::checksum(fields,sizeof(fields))^mcxnav::checksum(nav_state->preferences.styles,sizeof(nav_state->preferences.styles))^mcxnav::checksum(nav_state->pois,nav_state->poi_count*sizeof(mcxnav::Poi));
 }
 static void rebuild_overlay_cache();
@@ -184,14 +189,15 @@ static void rebuild_overlay_cache(){
   if(!overlay_cache){auto *memory=heap_caps_malloc(sizeof(OverlayCache),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!memory)return;overlay_cache=new(memory) OverlayCache();}
   auto &cache=*overlay_cache;
   if(cache.ready&&cache.generation==front->view.generation&&cache.revision==overlay_signature())return;
-  cache.line_count=cache.poi_count=0;
+  cache.line_count=cache.poi_count=cache.node_count=0;
   const auto origin=mcxmap::project(front->view.latitude,front->view.longitude,front->view.zoom);
-  auto project=[&](const mcxnav::Sample &sample,lv_point_t &point){
-    const auto p=mcxmap::project(sample.latitude,sample.longitude,front->view.zoom);
+  auto project_geo=[&](double latitude,double longitude,lv_point_t &point){
+    const auto p=mcxmap::project(latitude,longitude,front->view.zoom);
     const double x=mcxmap::delta(p.x,origin.x,front->view.zoom),y=p.y-origin.y;
     if(fabs(x)>10000||fabs(y)>10000)return false;
     point={lv_coord_t(lround(x+front->view.width/2.0)),lv_coord_t(lround(y+front->view.height/2.0))};return true;
   };
+  auto project=[&](const mcxnav::Sample &sample,lv_point_t &point){return project_geo(sample.latitude,sample.longitude,point);};
   auto track=[&](const mcxnav::Sample *points,unsigned count,uint32_t color){
     lv_point_t previous={};bool previous_valid=false;
     for(unsigned i=0;i<count;++i){lv_point_t point={};const bool valid=project(points[i],point);
@@ -205,6 +211,13 @@ static void rebuild_overlay_cache(){
     if(!saved)track(nav_state->preview,nav_state->preview_count,style.color);
   }
   for(unsigned i=0;i<nav_state->poi_count;++i){lv_point_t point={};if(project(nav_state->pois[i].point,point))cache.pois[cache.poi_count++]=point;}
+  if(!mcxmap::configuration().hide_nodes){
+    if(auto *radio=meshmt::client)for(unsigned i=0;i<radio->data.node_count&&cache.node_count<MAX_NODE_MARKERS;++i){const auto &node=radio->data.nodes[i];
+      if(!node.position||!node.has_lat||!node.has_lon)continue;lv_point_t point={};if(project_geo(node.latitude/1e7,node.longitude/1e7,point))cache.nodes[cache.node_count++]={point,false};}
+    if(auto *radio=meshmc::client)for(unsigned i=0;i<radio->contact_count&&cache.node_count<MAX_NODE_MARKERS;++i){const auto &node=radio->contacts[i];
+      if(!(node.flags&0x10)||(!node.lat&&!node.lon)||node.lat<-90000000||node.lat>90000000||node.lon<-180000000||node.lon>180000000)continue;
+      lv_point_t point={};if(project_geo(node.lat/1e6,node.lon/1e6,point))cache.nodes[cache.node_count++]={point,true};}
+  }
   cache.generation=front->view.generation;cache.revision=overlay_signature();cache.ready=true;++overlay_builds;
 }
 static void draw_overlays(lv_event_t *event){
@@ -221,6 +234,10 @@ static void draw_overlays(lv_event_t *event){
   for(unsigned i=0;i<overlay_cache->poi_count;++i){const auto &p=overlay_cache->pois[i];lv_area_t a={lv_coord_t(p.x+area.x1-4),lv_coord_t(p.y+area.y1-4),lv_coord_t(p.x+area.x1+4),lv_coord_t(p.y+area.y1+4)};
     if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
     lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=cyan;d.border_color=white;d.border_width=1;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
+  }
+  for(unsigned i=0;i<overlay_cache->node_count;++i){const auto &node=overlay_cache->nodes[i];lv_area_t a={lv_coord_t(node.point.x+area.x1-4),lv_coord_t(node.point.y+area.y1-4),lv_coord_t(node.point.x+area.x1+4),lv_coord_t(node.point.y+area.y1+4)};
+    if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
+    lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=lv_color_hex(node.meshcore?0x9C88FF:0x72D8A5);d.border_color=white;d.border_width=1;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
   }
 }
 
@@ -247,7 +264,7 @@ static void map_credits();
 static void refresh(){
   if(dialog!=info_dialog||!dialog){dialog=nullptr;return;}
   nav_refresh();
-  if(map_save_label)chatview::label(map_save_label,mcxmap::settings_saved.load()?"Settings saved / visible tiles only":"Settings pending / save failed");
+  if(map_save_label)chatview::label(map_save_label,mcxmap::settings_saved.load()?"Map settings saved":"Map settings pending / save failed");
   if(clock_status){char clock[8],detail[160];mcxclock::label(clock,sizeof(clock));
     snprintf(detail,sizeof(detail),"%s / %s\n%s",clock,mcxclock::zone_name(),mcxclock::state.synced?"GPS UTC synchronized / continues without signal":"Waiting for valid GPS UTC date and time");chatview::label(clock_status,detail);
   }
@@ -588,9 +605,10 @@ static void library(bool pois){
   }
   auto *help=single_label(dialog,pois?"POIs export automatically to navigation/pois.gpx.":"Finished/recovered tracks have a GPX beside the journal.",8,259,440,muted);lv_obj_set_style_text_font(help,&lv_font_montserrat_10,0);
 }
-static lv_obj_t *provider_picker=nullptr,*online_switch=nullptr;
+static lv_obj_t *provider_picker=nullptr,*online_switch=nullptr,*nodes_switch=nullptr;
 static void provider_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::select_provider(c,lv_dropdown_get_selected(provider_picker));mcxmap::configure(c);}
 static void online_changed(lv_event_t *){auto c=mcxmap::configuration();c.online=lv_obj_has_state(online_switch,LV_STATE_CHECKED);mcxmap::configure(c);}
+static void nodes_changed(lv_event_t *){auto c=mcxmap::configuration();c.hide_nodes=!lv_obj_has_state(nodes_switch,LV_STATE_CHECKED);mcxmap::configure(c);}
 static void map_diagnostics(){
   base("MAP / DIAGNOSTICS");
   auto *detail=single_label(dialog,navui::status_text,8,50,440,white);lv_label_set_long_mode(detail,LV_LABEL_LONG_WRAP);
@@ -609,10 +627,13 @@ static void map_options(){
   provider_picker=lv_dropdown_create(dialog);lv_obj_set_pos(provider_picker,8,73);lv_obj_set_size(provider_picker,440,40);
   lv_dropdown_set_options(provider_picker,"Street / OpenStreetMap\nTopographic / OpenTopoMap");lv_dropdown_set_selected(provider_picker,unsigned(mcxmap::provider(c)));
   lv_obj_add_event_cb(provider_picker,provider_changed,LV_EVENT_VALUE_CHANGED,nullptr);
-  single_label(dialog,"Download visible map tiles",8,137,330,white);
-  online_switch=lv_switch_create(dialog);lv_obj_set_pos(online_switch,385,132);lv_obj_set_size(online_switch,58,30);if(c.online)lv_obj_add_state(online_switch,LV_STATE_CHECKED);
+  single_label(dialog,"Show saved radio nodes",8,126,330,white);
+  nodes_switch=lv_switch_create(dialog);lv_obj_set_pos(nodes_switch,385,121);lv_obj_set_size(nodes_switch,58,30);if(!c.hide_nodes)lv_obj_add_state(nodes_switch,LV_STATE_CHECKED);
+  lv_obj_add_event_cb(nodes_switch,nodes_changed,LV_EVENT_VALUE_CHANGED,nullptr);
+  single_label(dialog,"Download visible map tiles",8,166,330,white);
+  online_switch=lv_switch_create(dialog);lv_obj_set_pos(online_switch,385,160);lv_obj_set_size(online_switch,58,30);if(c.online)lv_obj_add_state(online_switch,LV_STATE_CHECKED);
   lv_obj_add_event_cb(online_switch,online_changed,LV_EVENT_VALUE_CHANGED,nullptr);
-  auto *help=single_label(dialog,"OFF uses SD maps and cached tiles only.\nProvider credits are applied automatically.\nNo area downloads or mesh position sharing.",8,184,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);
+  auto *help=single_label(dialog,"OFF uses SD maps and cached tiles only.\nNode markers use positions reported by each radio.\nNo mesh positions are shared by this device.",8,199,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
   map_save_label=single_label(dialog,"",8,258,440,muted);refresh();
 }
 }

@@ -2,6 +2,8 @@
 
 On 2026-11-01, simultaneous connections to both radio networks were confirmed, and v0.8.16 was designated the stable release. Map tiles and saved routes were also reported not to load in this version; the issue remains under investigation.
 
+This historical stable designation was superseded when v0.8.17 was confirmed working well on the device. See the [current stable release record](stable-v0817.md), which addresses the map/route regression.
+
 The Web Flasher pins the exact published image; v0.8.14 remains available as rollback. The stable designation records the release decision and does not imply that the map regression is resolved.
 
 - Version: `v0.8.16`
