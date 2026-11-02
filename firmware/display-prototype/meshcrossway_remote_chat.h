@@ -117,11 +117,21 @@ static void process(){
   bool read_changed=false;
   for(unsigned i=start;i<count;++i){if(i!=start)j.add(",");
     const bool outgoing=mc?cm[i]->outgoing:mm[i]->outgoing;
-    const char *sender=outgoing?"You":"Peer";
-    if(mc&&!outgoing){int n=c->find_contact(cm[i]->key,6);if(n>=0)sender=c->contacts[n].name;}
-    if(!mc&&!outgoing){auto *n=m->node(mm[i]->from);if(n)sender=n->name;}
+    const char *sender=outgoing?"You":"Unknown sender";
+    const char *text=mc?cm[i]->text:mm[i]->text;
+    if(mc&&!outgoing){
+      if(cm[i]->channel){
+        // MeshCore channel messages carry the sender claim in "Name: text".
+        const mcxchat::Sender parsed=mcxchat::channel_sender(cm[i]->text);
+        if(parsed.claimed){sender=parsed.name;text=parsed.body;}
+      }else{
+        const int n=c->find_contact(cm[i]->key,6);
+        if(n>=0&&c->contacts[n].name[0])sender=c->contacts[n].name;
+      }
+    }
+    if(!mc&&!outgoing){auto *n=m->node(mm[i]->from);if(n&&n->name[0])sender=n->name;}
     j.add("{\"id\":");j.number(mc?cm[i]->id:mm[i]->seq);j.add(",\"outgoing\":");j.add(outgoing?"true":"false");j.add(",\"sender\":");j.text(sender);
-    j.add(",\"text\":");j.text(mc?cm[i]->text:mm[i]->text);j.add(",\"time\":");const uint32_t stamp=mc?mcxchat::message_stamp(cm[i]->timestamp,cm[i]->observed_at):mm[i]->time;j.number(stamp);char local[48];mcxchat::time_local(stamp,local,sizeof(local),true);j.add(",\"local_time\":");j.text(local);j.add(",\"delivery\":");j.text(mc?mc_delivery(cm[i]->delivery):meshmt::delivery_name(mm[i]->delivery));j.add("}");
+    j.add(",\"text\":");j.text(text);j.add(",\"time\":");const uint32_t stamp=mc?mcxchat::message_stamp(cm[i]->timestamp,cm[i]->observed_at):mm[i]->time;j.number(stamp);char local[48];mcxchat::time_local(stamp,local,sizeof(local),true);j.add(",\"local_time\":");j.text(local);j.add(",\"delivery\":");j.text(mc?mc_delivery(cm[i]->delivery):meshmt::delivery_name(mm[i]->delivery));j.add("}");
     if(!outgoing){if(mc&&!cm[i]->read){cm[i]->read=true;read_changed=true;}else if(!mc&&!mm[i]->read){mm[i]->read=true;read_changed=true;}}
   }
   if(read_changed){if(mc)++c->generation;else ++m->generation;}
