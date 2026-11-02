@@ -42,13 +42,13 @@
 <h2>Recovery: touchscreen freezes or display reboots</h2>
 <div class="steps">
 <div class="step">Connect the Waveshare Rev2.0 display to your computer with a USB data cable. Leave the computer on its normal Wi-Fi network.</div>
-<div class="step">Select <b>v0.8.2 — hardware-tested</b> for rollback after an experimental build. Older versions are no longer listed in the Web Flasher.</div>
+<div class="step">Select <b>v0.8.17 — recommended stable</b> to return from an experimental build. Older versions are no longer listed in the Web Flasher.</div>
 <div class="step">If the USB serial port is unavailable because the new firmware keeps restarting, enter ESP32-S3 download mode using the board's <b>BOOT</b> and <b>RESET</b> controls, then retry connecting.</div>
 <div class="step">Always leave the <b>Erase device</b> checkbox <b>unchecked</b> for normal updates. An erase resets NVS and deletes saved Wi-Fi and BLE bonds. From v0.5.8, the split image writes bootloader, partition table and application without targeting NVS. Older merged installers can overwrite settings even without Erase. An SD Wi-Fi backup is plaintext and should be created before erasing. For a clean downgrade, you can choose <b>Erase device</b> in the installer. This will also erase saved Wi-Fi credentials and other settings.</div>
 </div>
 <div class="notice"><b>Target limitation:</b> these images are for the Waveshare ESP32-S3-Touch-LCD-3.5 <b>non-B, Rev2.0</b> display. Do not flash a XIAO radio module or a Waveshare 3.5B with this image. Firmware installation may overwrite data.</div>
 <h2>How versions are maintained</h2>
-<p>The latest experimental firmware is <b>automatically published after the GitHub Actions build and checks succeed</b>; it remains explicitly labeled experimental until physical validation. The firmware listed above is <b>compiled automatically in GitHub Actions</b> from pinned historical commits. The browser installs the compiled binary; it does not compile ESP-IDF source code locally. Each selectable build keeps its own manifest and SHA-256 checksum. Obsolete and known-broken versions are excluded from the active Web Flasher list; historical source commits remain in GitHub.</p>
+<p>The newest candidate is <b>automatically published after the GitHub Actions build and checks succeed</b>; it remains labeled experimental until hardware validation. The latest stable firmware is selected by default. Firmware images are <b>compiled automatically in GitHub Actions</b> from pinned source commits. The browser installs the compiled binary; it does not compile ESP-IDF source code locally. Each selectable build keeps its own manifest and SHA-256 checksum. Obsolete and known-broken versions are excluded from the active Web Flasher list; historical source commits remain in GitHub.</p>
 <p><a class="inset-link" href="https://github.com/Renbrant/MeshCrossway/actions">View build and deployment history on GitHub</a></p>
 </div></section></main>
 <script>

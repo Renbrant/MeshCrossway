@@ -713,11 +713,16 @@ static void render() {
       if(room_list&&s->contacts[i].type!=3)continue;
       display_indices[total++]=i;
     }
-    // Most recently active first; local favorites precede other nodes/channels.
+    // Sort by radio activity. Favorites remain visible in labels but do not
+    // move an older node or channel ahead of a more recently heard one.
     auto rank=[&](int i)->uint64_t {
-      auto key=mcxchat::key_for(*s,channels&&!room_list,i);auto *p=mcxhistory::preferences().get(key);
-      uint32_t last=0;for(const auto &m:s->messages)if(mcxchat::belongs(m,key)&&m.id>last)last=m.id;
-      return (uint64_t(p&&p->favorite)<<32)|last;
+      if(!channels){const auto &contact=s->contacts[i];uint32_t last=contact.advert>contact.lastmod?contact.advert:contact.lastmod;uint32_t message=0;
+        for(const auto &m:s->messages)if(m.id&&!m.outgoing&&!memcmp(m.key,contact.key,6)){if(m.observed_at>last)last=m.observed_at;if(m.id>message)message=m.id;}
+        return (uint64_t(last)<<32)|message;
+      }
+      auto key=mcxchat::key_for(*s,!room_list,i);uint32_t last=0;
+      for(const auto &m:s->messages)if(!m.outgoing&&mcxchat::belongs(m,key)&&m.id>last)last=m.id;
+      return last;
     };
     for(int a=0;a<total;++a)display_scores[display_indices[a]]=rank(display_indices[a]);
     for(int a=1;a<total;++a){uint16_t value=display_indices[a];int b=a;const uint64_t score=display_scores[value];

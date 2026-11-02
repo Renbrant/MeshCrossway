@@ -2,6 +2,8 @@
 
 Status: stable release as of 2026-11-01. Simultaneous dual-radio operation is confirmed. A reported regression prevents map tiles and saved routes from loading; investigation remains open. v0.8.14 is retained as rollback.
 
+This is the historical v0.8.16 status. v0.8.17 was later confirmed working well on the device and is the current stable release; see [its release record](stable-v0817.md).
+
 ## Connection behavior
 
 The Core can maintain one Meshtastic PhoneAPI connection and one MeshCore Companion connection concurrently. The Heltec V3 is the initial test hardware, not an allowlisted model. The ESP32-S3/NimBLE configuration already allowed two connections; the old application had one shared connection handle and reset both transports when selecting a peer.
