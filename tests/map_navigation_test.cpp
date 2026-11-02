@@ -207,7 +207,7 @@ int main(int argc,char **argv){
   navui::invalidate();lv_obj_clean(body);navui::after_clean();
  }
  info_close_now(nullptr);context_actions=panel_at(lv_scr_act(),355,34,125,286,panel2);lv_obj_add_flag(context_actions,LV_OBJ_FLAG_SCROLLABLE);
- const int expected[]={A_MAP_HOME,A_MAP_ZOOM,A_MAP_CENTER,A_RECORD,A_TRACKS,A_POIS,A_MAP_DIAGNOSTICS,A_GNSS,A_MAP_OPTIONS};
+ const int expected[]={A_MAP_HOME,A_MAP_ZOOM,A_MAP_OPTIONS,A_MAP_CENTER,A_RECORD,A_TRACKS,A_POIS,A_MAP_DIAGNOSTICS,A_GNSS};
  for(bool compact:{false,true}){right_compact=compact;rebuild_context();advance();
   for(unsigned i=0;i<9;++i){auto *button=lv_obj_get_child(context_actions,i);assert(lv_obj_get_style_border_width(button,0)==0);lv_event_send(button,LV_EVENT_CLICKED,nullptr);assert(clicked==expected[i]);}
  }
