@@ -4,7 +4,7 @@
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Project status — v0.8.17 stable; v0.8.20 candidate.** v0.8.17 is confirmed working well on the device and is the recommended stable release. v0.8.20 fixes the Home GPS card layout so satellite count and estimated accuracy appear on separate lines; it also includes the v0.8.18 node map, status and activity ordering features and v0.8.19 display settings. See the [v0.8.17 stable record](docs/stable-v0817.md) and [v0.8.18 feature notes](docs/node-map-and-recent-activity-v0818.md).
+> **Project status — v0.8.17 stable; v0.8.20 candidate.** v0.8.17 is confirmed working well on the device and is the recommended stable release. v0.8.20 fixes the Home GPS card layout so satellite count and estimated accuracy appear on separate lines, adds configurable map-node icons and optional labels, and standardizes compact switches; it also includes the v0.8.18 node map, status and activity ordering features and v0.8.19 display settings. See the [v0.8.17 stable record](docs/stable-v0817.md), [v0.8.18 feature notes](docs/node-map-and-recent-activity-v0818.md), and [v0.8.20 map and display notes](docs/map-node-marker-settings-v0820.md).
 
 ## See it in operation
 
@@ -102,6 +102,7 @@ The current software work adds optional node markers and clearer recency informa
 | v0.8.17 stable image | [Stable release record](docs/stable-v0817.md) |
 | v0.8.18 node map and activity ordering | [Feature notes](docs/node-map-and-recent-activity-v0818.md) |
 | v0.8.20 Home GPS card spacing | [Feature notes](docs/home-gps-layout-v0820.md) |
+| v0.8.20 Configurable map node markers and compact toggles | [Map and display notes](docs/map-node-marker-settings-v0820.md) |
 | Simultaneous BLE radios and per-network settings | [Dual-radio implementation notes](docs/dual-radio-settings-v0816.md) |
 | Device and browser operation screenshots | [Field evidence](docs/field-evidence-v0816.md) |
 | Modular Core and Radio Pod design | [Modular architecture](docs/modular-architecture.md) |
