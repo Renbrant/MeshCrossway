@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.8.16: independent MeshCore Companion and Meshtastic PhoneAPI.
+// MeshCrossway v0.8.19: saved/recent node status, map node overlays and network ordering.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -8,6 +8,7 @@
 #include "meshcrossway_brand.h"
 #include "meshcrossway_edge_swipe.h"
 #include "meshcrossway_touch_input.h"
+#include "meshcrossway_display_settings.h"
 #include <initializer_list>
 #include <new>
 #include "meshcrossway_power_status.h"
@@ -26,6 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 namespace meshcrossway {
 static lv_obj_t *body=nullptr,*heading=nullptr,*tabs[6]={};
@@ -524,9 +526,9 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.8.16","Independent MeshCore and Meshtastic over Bluetooth, with separate SD history. One active BLE radio at a time. Local GPS, XYZ maps, tracks and POIs. Automatic location sharing is off.");break;
+      notice("MESH CROSSWAY v0.8.19","Meshtastic and MeshCore run over independent Bluetooth radios. Home shows saved/recent nodes and GPS satellites; the map can display positioned nodes from both networks.");break;
     case A_QUICK:
-      notice("QUICK SETTINGS","Tap the top bar for quick settings. Wi-Fi works; other controls are previews.");break;
+      notice("QUICK SETTINGS","Tap the top bar for quick settings. Adjust brightness, screen timeout and connectivity.");break;
     default:break;
   }
 }
@@ -583,6 +585,7 @@ static void left_tab_touch(lv_event_t *e){
 static bool touch_modal();
 static mcxswipe::Result pending_swipe=mcxswipe::NONE;
 static void buffered_swipe(bool down,int x,int y,uint32_t ms,bool cancel){
+  if(mcxdisplay::cover){mcxswipe::reset(swipe_state);pending_swipe=mcxswipe::NONE;return;}
   if(cancel){mcxswipe::reset(swipe_state);pending_swipe=mcxswipe::NONE;suppress_left_nav_click=false;return;}
   if(pending_swipe!=mcxswipe::NONE)return;
   const auto result=mcxswipe::sample(swipe_state,down,x,y,page,has_left_rail(),has_context_rail(),
@@ -683,10 +686,19 @@ static void open_shade(lv_event_t *){
   action_button(sheet,"BLE --",122,54,108,48,panel2,quick_action,1);
   action_button(sheet,"WI-FI",235,54,108,48,orange,quick_action,2);
   action_button(sheet,"SOUND",348,54,107,48,panel2,quick_action,3);
-  single_label(sheet,"Brightness is a preview; no hardware change.",12,119,438,muted);
-  action_button(sheet,"DISPLAY / DEMO",9,152,219,48,panel2,quick_action,4);
-  action_button(sheet,"DEVICE SETTINGS",235,152,220,48,orange,on_action,A_DIAGNOSTIC);
-  single_label(sheet,"SOUND / BRIGHTNESS: PREVIEW",12,209,438,muted);
+  single_label(sheet,"Brightness",12,109,120,white);
+  auto *level=single_label(sheet,"",385,109,65,white);
+  char percent[16];snprintf(percent,sizeof(percent),"%u%%",unsigned(mcxdisplay::settings.brightness));lv_label_set_text(level,percent);
+  auto *slider=lv_slider_create(sheet);lv_obj_set_pos(slider,20,145);lv_obj_set_size(slider,420,16);
+  lv_slider_set_range(slider,5,100);lv_slider_set_value(slider,mcxdisplay::settings.brightness,LV_ANIM_OFF);
+  lv_obj_add_event_cb(slider,[](lv_event_t *e){auto value=unsigned(lv_slider_get_value(lv_event_get_target(e)));mcxdisplay::brightness(value);
+    char text[16];snprintf(text,sizeof(text),"%u%%",value);lv_label_set_text(static_cast<lv_obj_t *>(lv_event_get_user_data(e)),text);
+  },LV_EVENT_VALUE_CHANGED,level);
+  single_label(sheet,"Screen off after",12,186,150,white);
+  auto *delay=lv_dropdown_create(sheet);lv_obj_set_pos(delay,174,176);lv_obj_set_size(delay,274,40);
+  lv_dropdown_set_options(delay,"Always on\n30 seconds\n1 minute\n2 minutes\n5 minutes\n10 minutes");
+  lv_dropdown_set_selected(delay,mcxdisplay::timeout_slot());
+  lv_obj_add_event_cb(delay,[](lv_event_t *e){mcxdisplay::timeout(lv_dropdown_get_selected(lv_event_get_target(e)));},LV_EVENT_VALUE_CHANGED,nullptr);
 }
 static void show_center_heading(const char *heading_text,const char *subtitle){
   const int w=lv_obj_get_width(body);
@@ -943,22 +955,28 @@ static void gps_refresh(lv_timer_t *){
   }
 }
 // Only this timer owns the Home cards. Native chat timers keep their own UI.
-static lv_obj_t *home_mesh[2][3]={},*home_wifi_name=nullptr,*home_wifi_state=nullptr,*home_wifi_ip=nullptr,*home_gps_state=nullptr,*home_gps_accuracy=nullptr;
+static lv_obj_t *home_mesh[2][3]={},*home_wifi_name=nullptr,*home_wifi_state=nullptr,*home_wifi_ip=nullptr,*home_gps_state=nullptr,*home_gps_accuracy=nullptr,*home_gps_satellites=nullptr;
 static char home_wifi_source[33]={};
 static void home_clear(){
   home_wifi_source[0]=0;
   for(auto &network:home_mesh)for(auto &label:network)label=nullptr;
-  home_wifi_name=home_wifi_state=home_wifi_ip=home_gps_state=home_gps_accuracy=nullptr;
+  home_wifi_name=home_wifi_state=home_wifi_ip=home_gps_state=home_gps_accuracy=home_gps_satellites=nullptr;
 }
 static mcxhome::Network home_network(unsigned protocol){
   mcxhome::Network n;
+  const time_t epoch=time(nullptr);const uint32_t now=epoch>0?uint32_t(epoch):0;
   if(protocol==meshble::MESHCORE){auto *c=meshmc::client;if(!c)return n;
     n.nodes=c->contact_count;n.known=c->initialized||c->contact_count||c->message_count;
     n.connected=meshmc::link.load()&&c->connected;n.initialized=c->initialized;n.history=c->history_ready;n.fault=c->fault;
+    for(unsigned i=0;i<c->contact_count;++i){const auto &node=c->contacts[i];uint32_t seen=node.lastmod>node.advert?node.lastmod:node.advert;
+      for(const auto &m:c->messages)if(m.id&&!m.outgoing&&!memcmp(m.key,node.key,6)&&m.observed_at>seen)seen=m.observed_at;
+      n.recent+=mcxhome::recently_heard(seen,now);
+    }
     for(const auto &m:c->messages)if(m.id&&!m.outgoing&&!m.read)++n.unread;
   }else {auto *c=meshmt::client;if(!c)return n;
     n.nodes=c->data.node_count;n.known=c->initialized||c->data.node_count||c->data.message_count;
     n.connected=meshmt::link.load()&&c->connected;n.initialized=c->initialized;n.history=c->history_ready;n.fault=c->fault;
+    for(unsigned i=0;i<c->data.node_count;++i)n.recent+=mcxhome::recently_heard(c->data.nodes[i].last_heard,now);
     for(const auto &m:c->data.messages)if(m.seq&&!m.outgoing&&!m.read)++n.unread;
   }
   return n;
@@ -986,7 +1004,7 @@ static void home_refresh(lv_timer_t *){
   home_color(home_wifi_state,wifi.connected?green:muted);
   const auto fix=mcxgnss::snapshot();const auto cfg=mcxgnss::configuration();
   const auto gps=mcxhome::gps(fix,cfg.enabled,mcxgnss::status().error,cfg.imperial);
-  chatview::label(home_gps_state,gps.state);chatview::label(home_gps_accuracy,gps.accuracy);
+  chatview::label(home_gps_state,gps.state);chatview::label(home_gps_accuracy,gps.accuracy);chatview::label(home_gps_satellites,gps.satellites);
   home_color(home_gps_state,gps.valid?green:orange);
 }
 static void home_cards(int w){
@@ -1009,6 +1027,8 @@ static void home_cards(int w){
   }
   auto *gps=center_card(8,164,col,101,"LOCAL GPS","Waiting for GPS","Accuracy unavailable",cyan);
   home_gps_state=lv_obj_get_child(gps,1);home_gps_accuracy=lv_obj_get_child(gps,2);
+  home_gps_satellites=single_label(gps,"Satellites: --",8,76,col-16,muted);
+  lv_obj_set_style_text_font(home_gps_satellites,&lv_font_montserrat_14,0);
   lv_obj_set_style_text_font(home_gps_accuracy,&lv_font_montserrat_14,0);
   auto *wifi=center_card(col+16,164,col,101,"WI-FI","No Wi-Fi selected","Checking connection...",orange);
   home_wifi_name=lv_obj_get_child(wifi,1);home_wifi_state=lv_obj_get_child(wifi,2);
@@ -1225,7 +1245,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.8.16] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.8.19] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1246,7 +1266,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.8.16] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.8.19] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1259,7 +1279,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.8.16",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.8.19",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);

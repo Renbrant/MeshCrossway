@@ -1,6 +1,6 @@
 # Messaging phase 1 — v0.7.9 historical implementation
 
-**v0.7.9 withdrawn:** owner testing reproduced NimBLE startup error 257. [v0.7.10 moves the workspace to PSRAM](ble-memory-fix-v0710.md) and preserves the behavior documented below; hardware retest remains pending.
+**v0.7.9 withdrawn:** hardware testing reproduced NimBLE startup error 257. [v0.7.10 moves the workspace to PSRAM](ble-memory-fix-v0710.md) and preserves the behavior documented below; hardware retest remains pending.
 
 Related to #37. Original implementation based on comparative research across several communication systems and the public Companion protocol. Target remains the Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0 (non-B), 480×320.
 
@@ -15,7 +15,7 @@ Related to #37. Original implementation based on comparative research across sev
 
 ## Storage and durability
 
-The SD contains plaintext, including message text and channel data. Encryption/eFuse provisioning remain deferred by the owner's request. No new libraries were adopted.
+The SD contains plaintext, including message text and channel data. Encryption/eFuse provisioning remain deferred by prior project direction. No new libraries were adopted.
 
 The journal is stored under `/sdcard/mcx-history/mc-<full-32-byte-public-radio-id>.log`. Every transaction has a schema/size/sequence envelope, individually checked records and a commit checksum of the resulting state. Recovery applies only fully committed transactions, stops at a corrupt/incomplete tail and truncates that tail before a subsequent append. Checksums detect accidental corruption; they are not authentication.
 

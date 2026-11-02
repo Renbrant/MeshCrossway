@@ -5,7 +5,8 @@
 #include <stdio.h>
 namespace mcxhome {
 enum class Phase {OFF,STARTING,IDLE,SCANNING,CONNECTING,VERIFYING,PAIRING,READY,FAILED};
-struct Network {unsigned nodes=0,unread=0;bool known=false,connected=false,initialized=false,history=false,fault=false;};
+static bool recently_heard(uint32_t timestamp,uint32_t now){return timestamp&&timestamp<=now&&now-timestamp<=900;}
+struct Network {unsigned nodes=0,recent=0,unread=0;bool known=false,connected=false,initialized=false,history=false,fault=false;};
 struct RadioCard {char state[40]={},nodes[40]={},unread[32]={};bool online=false,working=false;};
 static RadioCard radio(const Network &n,unsigned protocol,Phase phase,unsigned target,bool pin=false){
   RadioCard c;const bool active=target==protocol;
@@ -30,11 +31,11 @@ static RadioCard radio(const Network &n,unsigned protocol,Phase phase,unsigned t
     }
   }
   snprintf(c.state,sizeof(c.state),"%s",s);
-  if(n.known){snprintf(c.nodes,sizeof(c.nodes),"%u nodes%s",n.nodes,c.online?"":" (saved)");snprintf(c.unread,sizeof(c.unread),"%u unread",n.unread);}
+  if(n.known){snprintf(c.nodes,sizeof(c.nodes),"%u saved / %u recent",n.nodes,n.recent);snprintf(c.unread,sizeof(c.unread),"%u unread",n.unread);}
   else {snprintf(c.nodes,sizeof(c.nodes),"Nodes: --");snprintf(c.unread,sizeof(c.unread),"Unread: --");}
   return c;
 }
-struct GpsCard {char state[40]={},accuracy[64]={};bool valid=false;};
+struct GpsCard {char state[40]={},accuracy[64]={},satellites[32]={};bool valid=false;};
 static GpsCard gps(const mcxgnss::Fix &f,bool enabled,int error,bool imperial){
   GpsCard c;c.valid=enabled&&!error&&f.valid;
   const char *state=!enabled?"GPS disabled":error?"GPS unavailable":!f.frames?"Waiting for GPS":!f.valid?"Searching / no fix":"FIX GNSS";
@@ -48,6 +49,8 @@ static GpsCard gps(const mcxgnss::Fix &f,bool enabled,int error,bool imperial){
   snprintf(c.state,sizeof(c.state),"%s",state);
   if(c.valid&&f.have_accuracy)snprintf(c.accuracy,sizeof(c.accuracy),"Est. %s%.1f %s",f.accuracy_source==2?"hRMS ":"accuracy ",f.horizontal_accuracy*(imperial?3.28084:1),imperial?"ft":"m");
   else snprintf(c.accuracy,sizeof(c.accuracy),"Accuracy unavailable");
+  if(enabled&&f.have_satellites)snprintf(c.satellites,sizeof(c.satellites),"Satellites: %u",f.satellites);
+  else snprintf(c.satellites,sizeof(c.satellites),"Satellites: --");
   return c;
 }
 }

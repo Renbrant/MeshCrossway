@@ -2,7 +2,7 @@
 
 EXPERIMENTAL — NOT HARDWARE TESTED.
 
-The owner physically exercised v0.6.6: BLE host synchronization, repeated scans,
+Physical testing of v0.6.6 confirmed: BLE host synchronization, repeated scans,
 discovery of the Heltec Companion and connection initiation worked without the
 previous LCD/SPI watchdog freeze. Pairing could not finish because the PIN keyboard
 was invisible. This validates those stages, not completed encryption or messaging.
@@ -33,7 +33,7 @@ The Web Flasher retains the approved v0.6.2 default and its identical pinned bin
 v0.6.7 requires explicit experimental opt-in. v0.6.6 is not promoted to a fully
 approved release because the pairing test remains incomplete.
 
-Owner test: install v0.6.7 without erase, enable BLE, scan and select the Heltec.
+Physical test: install v0.6.7 without erase, enable BLE, scan and select the Heltec.
 The PIN screen should show the numeric keypad immediately. Enter the configured
 six-digit PIN and tap PAIR or the checkmark. Confirm the secure-link status,
 touch/Wi-Fi responsiveness and disconnect/reconnect. Report any pairing error and

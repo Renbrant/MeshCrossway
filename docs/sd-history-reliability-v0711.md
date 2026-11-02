@@ -5,8 +5,8 @@ The approved recovery remains the exact published v0.7.8 image.
 
 ## Device evidence
 
-The owner reported intermittent `SD unavailable / unsaved RAM`, partial history
-after restart, and pauses in touch response on v0.7.10. The submitted binary
+Intermittent `SD unavailable / unsaved RAM`, partial history after restart,
+and pauses in touch response were reported on v0.7.10. The submitted binary
 journal contains four complete, valid transactions and five messages. All record
 checksums and complete-state commit checksums validate; the advisory identity
 files agree with the archive identity. There is no truncated or corrupt record

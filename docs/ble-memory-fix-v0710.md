@@ -1,6 +1,6 @@
 # v0.7.10 — Bluetooth startup memory regression
 
-The owner reproduced a v0.7.9-only startup failure: `NimBLE init failed: 257`, then `BLE host not ready`. Reinstalling v0.7.8 restored scanning, and reinstalling v0.7.9 reproduced it. Decimal 257 is ESP-IDF `ESP_ERR_NO_MEM` (0x101), not a PIN, bonding or RF discovery error.
+A v0.7.9-only startup failure was reproduced: `NimBLE init failed: 257`, then `BLE host not ready`. Reinstalling v0.7.8 restored scanning, and reinstalling v0.7.9 reproduced it. Decimal 257 is ESP-IDF `ESP_ERR_NO_MEM` (0x101), not a PIN, bonding or RF discovery error.
 
 The phase-1 implementation accidentally placed 33,188 bytes of initialized chat preferences plus 12,416 bytes of conversation/list/sort buffers in static internal RAM. The SD image buffers already used PSRAM, but those extra 45,604 bytes did not. This reduces the internal heap available to the Bluetooth controller/host, task stacks and DMA even when the displayed total heap still includes megabytes of free PSRAM. The error and A/B test identify an allocation failure; attributing it specifically to these buffers is the code-based diagnosis pending device retest.
 

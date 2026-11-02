@@ -1,6 +1,6 @@
 # Stable firmware v0.8.14
 
-On 2026-10-31 the owner reported very good and apparently very stable operation after installing v0.8.14, and explicitly requested it as the latest stable release. This promotion records that owner acceptance; it does not imply exhaustive hardware qualification.
+On 2026-10-31, v0.8.14 was reported to be operating very well and stably after installation, and was selected as the latest stable release at that time. This records that release decision; it does not imply exhaustive hardware qualification.
 
 The Web Flasher selects v0.8.14 as recommended stable. It includes the Bluetooth resume stack correction, bounded HTTP navigation JSON, folder save confirmation, track folders and remote communication/map workspaces. Previous known-broken releases are not part of the supported installer line.
 

@@ -59,11 +59,11 @@ build_version() {
     fi
   fi
 
-  # Preserve the exact owner-tested bytes. Rebuilding an old source revision
+  # Preserve the exact hardware-tested bytes. Rebuilding an old source revision
   # with newly resolved component versions is not an approved rollback image.
   if [ "$version" = "$STABLE_VERSION" ] && [ "$ref" = "$STABLE_REF" ]; then
     python3 "$ROOT/scripts/restore_stable_firmware.py" --destination "$image_dir"
-    echo "RESTORED: immutable owner-tested $version"
+    echo "RESTORED: immutable hardware-tested $version"
     return
   fi
 
@@ -168,10 +168,10 @@ build_version() {
 
 # Only one physical rollback and recent candidates are delivered in the Web Flasher.
 # Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
-# Update these two constants whenever the owner validates a newer hardware build.
-STABLE_VERSION="v0.8.16"
-STABLE_REF="1b86b1db5d08a793fca2ee64f1d32e040383119a"
-STABLE_SHA256="a3ac7f83061c8c9932662540a48173432f70fb392ac44e4ee0400d90d130321f"
+# Update these two constants whenever a newer hardware build is validated.
+STABLE_VERSION="v0.8.17"
+STABLE_REF="6619b9ffaf51972f6f927431732caa7faab2f822"
+STABLE_SHA256="0f13bc213ee07729a917ba73426cc3fb85813eef69575ea78fe03f5af677b18b"
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).
@@ -188,7 +188,7 @@ if [ "$LATEST_VERSION" = "v0.6.3" ] || [ "$LATEST_VERSION" = "v0.6.4" ] || [ "$L
 fi
 
 # Always restore the pinned tested bytes, including when stable == latest.
-# Never rebuild an owner-approved version from the publishing commit.
+# Never rebuild an pinned stable version from the publishing commit.
 build_version "$STABLE_VERSION" "$STABLE_REF"
 if [ "$LATEST_VERSION" != "$STABLE_VERSION" ]; then
   build_version "$LATEST_VERSION" HEAD

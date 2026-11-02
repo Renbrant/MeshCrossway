@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
-"""Restore exact owner-approved v0.8.16; never rebuild a tested image."""
+"""Restore the exact pinned stable v0.8.17 image; never rebuild a tested image."""
 import argparse
 import hashlib
+import io
 import json
 from pathlib import Path
 import subprocess
+import tarfile
 import tempfile
 import urllib.request
 import zipfile
 
-VERSION = 'v0.8.16'
-REF = '1b86b1db5d08a793fca2ee64f1d32e040383119a'
-SHA = 'a3ac7f83061c8c9932662540a48173432f70fb392ac44e4ee0400d90d130321f'
-ARTIFACT = 13088250124
-ARCHIVE_SHA = 'a472448c1a78b559defacd180259e603cb697a4c6e353a197c5c70e509ed91f4'
+VERSION = 'v0.8.17'
+REF = '6619b9ffaf51972f6f927431732caa7faab2f822'
+SHA = '0f13bc213ee07729a917ba73426cc3fb85813eef69575ea78fe03f5af677b18b'
+ARTIFACT = 13108534134
+ARCHIVE_SHA = 'd912d217e3643d0f2d4c184215eb274e6390a79897db386c512996a0ebcb0157'
 NAMES = ('manifest.json', 'build-info.json', 'meshcrossway-display-dev.bin',
          'bootloader.bin', 'partition-table.bin', 'application.bin')
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,7 +24,7 @@ def verify(folder):
     subprocess.run(['python3', str(ROOT/'scripts/verify_firmware_version.py'),
                     '--dir', str(folder), '--version', VERSION, '--ref', REF], check=True)
     if hashlib.sha256((folder/'meshcrossway-display-dev.bin').read_bytes()).hexdigest() != SHA:
-        raise ValueError('Owner-approved binary checksum mismatch')
+        raise ValueError('Stable binary checksum mismatch')
 
 def restore(destination):
     with tempfile.TemporaryDirectory(prefix='mcx-stable-') as tmp:
@@ -37,8 +39,8 @@ def restore(destination):
                 (folder/name).write_bytes(data)
             verify(folder)
         except (OSError, ValueError, subprocess.CalledProcessError):
-            # First promotion may follow a release that removed the older image.
-            # Recover the retained successful PR archive, pinned by GitHub digest.
+            # Recover the exact published stable files from the successful
+            # Pages deployment artifact, pinned by the GitHub SHA-256 digest.
             archive = folder/'archive.zip'
             with archive.open('wb') as out:
                 subprocess.run(['gh', 'api', f'repos/Renbrant/MeshCrossway/actions/artifacts/{ARTIFACT}/zip'],
@@ -46,8 +48,12 @@ def restore(destination):
             if hashlib.sha256(archive.read_bytes()).hexdigest() != ARCHIVE_SHA:
                 raise ValueError('Reviewed archive checksum mismatch')
             with zipfile.ZipFile(archive) as z:
-                for name in NAMES:
-                    (folder/name).write_bytes(z.read(f'versions/{VERSION}/{name}'))
+                with tarfile.open(fileobj=io.BytesIO(z.read('artifact.tar')), mode='r:') as pages:
+                    for name in NAMES:
+                        member=pages.extractfile(f'./flasher/firmware/versions/{VERSION}/{name}')
+                        if member is None:
+                            raise ValueError(f'Stable release artifact is missing {name}')
+                        (folder/name).write_bytes(member.read())
             verify(folder)
         destination.mkdir(parents=True, exist_ok=True)
         for name in NAMES:

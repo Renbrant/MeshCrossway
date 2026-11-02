@@ -1,6 +1,6 @@
-# Owner-confirmed stable v0.8.9
+# Historical stable selection: v0.8.9
 
-On 2026-10-30 the owner reported that everything works perfectly and requested this revision as the most stable baseline. This supersedes v0.8.2 as the active recommended rollback; historical source remains available. No claim of concurrent BLE support or additional hardware qualification is implied.
+On 2026-10-30, v0.8.9 was reported to be operating normally and was selected as the most stable baseline. This supersedes v0.8.2 as the active recommended rollback; historical source remains available. No claim of concurrent BLE support or additional hardware qualification is implied.
 
 Preserve the exact published bytes, not a rebuild:
 

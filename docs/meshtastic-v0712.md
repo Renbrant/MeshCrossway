@@ -20,7 +20,7 @@ BLE radio. This is not a MeshCrossway firmware image for the T-Deck.
    authenticated link and does not silently downgrade to NO_PIN.
 5. Install **v0.7.12 experimental** on the Waveshare using the
    [Web Flasher](https://renbrant.github.io/MeshCrossway/flasher/). Leave
-   **Erase unchecked**. v0.7.8 remains the immutable owner-tested recovery.
+   **Erase unchecked**. v0.7.8 remains the immutable hardware-tested recovery.
 6. Open More > Radios > Enable BLE > Scan, select the T-Deck and enter the
    six-digit PIN displayed by the radio. Wait for configuration, NodeDB and SD
    restore. A BLE connection alone does not enable the MT online indicator.

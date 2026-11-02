@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish ONLY the newest owner-tested image and newer supported builds."""
+"""Publish ONLY the newest hardware-tested image and newer supported builds."""
 import argparse
 import json
 import re
@@ -23,16 +23,16 @@ def version_key(version):
 if version_key(stable)>version_key(latest):
     p.error("Approved stable cannot be newer than latest build")
 
-# Only include releases with explicit owner approval.
+# Only include releases with explicit release approval.
 approved={
-    "v0.8.16":("Owner approved v0.8.16 as the definitive release on 2026-11-01 after confirming both mesh radios work simultaneously. Includes independent BLE links and radio settings. Current report: map tiles and routes are not loading; this known issue is being investigated. Exact published binary is retained.", "Owner-approved stable / map issue under investigation"),
-    "v0.8.14":("Previous owner-tested stable release, retained as rollback. Includes Bluetooth/HTTP stack fixes, track folders and remote workspaces. Exact tested binary retained unchanged.", "Previous stable / rollback"),
-    "v0.8.11":("Owner selected v0.8.11 as the stable release on 2026-10-31 after reporting periodic restarts on v0.8.12. Exact previously published v0.8.11 binary retained unchanged.", "Owner-selected / recommended stable"),
-    "v0.8.9":("Owner confirmed everything works perfectly on 2026-10-30 and explicitly selected this revision as the most stable baseline. Exact tested binary retained unchanged. New remote messaging and auto-reconnect changes require separate hardware validation.", "Owner-tested / recommended stable"),
-    "v0.8.2":("Owner confirmed GPS/maps and MeshCore BLE pairing, then successful Bluetooth reconnection after a hardware restart on 2026-10-29. Selected v0.8.2 as recovery. Exact published bytes are retained; this is not full Meshtastic or dual-radio qualification.", "Owner-tested / recommended recovery"),
-    "v0.7.8":("Owner confirmed v0.7.8 works perfectly on Waveshare and explicitly chose it as recovery baseline on 2026-10-29; firmware bytes must remain unchanged.", "Owner-tested / recommended recovery"),
-    "v0.6.8":("Owner confirmed normal operation and PIN-free manual web screenshots. Exact published image retained. MeshCore application traffic was not implemented in this release.", "Hardware-tested UI / screenshot rollback"),
-    "v0.6.2":("Owner confirmed touchscreen, Wi-Fi and normal UI work on the Waveshare Rev2.0; confirmed working after v0.6.3 failed.", "Last hardware-tested / recommended"),
+    "v0.8.17":("The v0.8.17 dual-radio and remote map/route release is confirmed working well on the device and is the recommended stable image. Exact published binary is retained.", "Recommended stable / maps and tracks"),
+    "v0.8.14":("Previous hardware-tested stable release, retained as rollback. Includes Bluetooth/HTTP stack fixes, track folders and remote workspaces. Exact tested binary retained unchanged.", "Previous stable / rollback"),
+    "v0.8.11":("v0.8.11 was selected as the stable release on 2026-10-31 after periodic restarts on v0.8.12 were reported. Exact previously published v0.8.11 binary retained unchanged.", "Selected / recommended stable"),
+    "v0.8.9":("Testing confirmed normal operation on 2026-10-30, and this revision was selected as the most stable baseline. Exact tested binary retained unchanged. New remote messaging and auto-reconnect changes require separate hardware validation.", "Hardware-tested / recommended stable"),
+    "v0.8.2":("GPS/maps, MeshCore BLE pairing and reconnection after a hardware restart were confirmed on 2026-10-29. v0.8.2 was selected as recovery. Exact published bytes are retained; this is not full Meshtastic or dual-radio qualification.", "Hardware-tested / recommended recovery"),
+    "v0.7.8":("Testing confirmed normal v0.7.8 operation on Waveshare, and the version was selected as the recovery baseline on 2026-10-29; firmware bytes must remain unchanged.", "Hardware-tested / recommended recovery"),
+    "v0.6.8":("Normal operation and PIN-free manual web screenshots were confirmed. Exact published image retained. MeshCore application traffic was not implemented in this release.", "Hardware-tested UI / screenshot rollback"),
+    "v0.6.2":("Touchscreen, Wi-Fi and normal UI operation were confirmed on Waveshare Rev2.0 after v0.6.3 failed.", "Last hardware-tested / recommended"),
 }
 # Do not expose a known-broken image through the installer.
 blocked={"v0.6.3","v0.6.4","v0.7.9","v0.7.10","v0.8.8"}
@@ -60,7 +60,7 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     info=json.loads(info_file.read_text())
     if m["version"]!=version or info["version"]!=version:
         p.error(f"Manifest/version mismatch for {version}")
-    # Archived owner-tested binaries retain exact bytes, but their historical
+    # Archived hardware-tested binaries retain exact bytes, but their historical
     # manifest set new_install_prompt_erase=false. ESP Web Tools interprets
     # that as an automatic full-chip erase when Improv is unavailable.
     # Fix only the published manifest, never the tested firmware or checksums.
@@ -71,10 +71,14 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
-    elif version=="v0.8.16":
-        summary="OWNER-APPROVED STABLE: independent simultaneous Meshtastic + MeshCore BLE sessions, separate reconnect identities, and native/browser radio settings. User confirms both radio links work. Known issue under investigation: map tiles and saved routes are not loading."
-        label="Dual radios + settings / STABLE; maps issue"
-        status="hardware-tested"
+    elif version=="v0.8.19":
+        summary="EXPERIMENTAL: real backlight brightness and persistent screen timeout controls in quick settings. Touch wakes the display; radio and navigation processing continue. v0.8.17 remains recommended stable."
+        label="Display brightness + timeout / EXPERIMENTAL"
+        status="experimental"
+    elif version=="v0.8.18":
+        summary="EXPERIMENTAL / HARDWARE VALIDATION PENDING: independent Meshtastic and MeshCore positioned-node map markers with a persistent visibility toggle; Home shows stored and recently heard node counts plus GNSS satellite count; node, group and channel lists are ordered by latest activity. v0.8.17 remains the recommended stable image."
+        label="Node map + recent activity / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.8.15":
         summary="EXPERIMENTAL / HARDWARE RETEST REQUIRED: device-local message times on screen and remote, common native/remote destination matching, complete stored-message enumeration and cleared stale list search when opening a MeshCore conversation. Exact v0.8.14 remains stable."
         label="Message visibility + device-local times / EXPERIMENTAL"
@@ -84,11 +88,11 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         label="Remote navigation crash + folder refresh fix / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.8.13":
-        summary="KNOWN ISSUE: owner logs confirm HTTP stack-canary crashes while serializing saved track distances in the remote navigation list. Use stable v0.8.11."
+        summary="KNOWN ISSUE: logs confirm HTTP stack-canary crashes while serializing saved track distances in the remote navigation list. Use stable v0.8.11."
         label="Remote navigation HTTP crashes / DO NOT INSTALL"
         status="known-issue"
     elif version=="v0.8.12":
-        summary="KNOWN ISSUE: owner logs show repeated stack-canary crashes in mcx_ble_resume followed by automatic restarts. Do not install; use stable v0.8.11."
+        summary="KNOWN ISSUE: logs show repeated stack-canary crashes in mcx_ble_resume followed by automatic restarts. Do not install; use stable v0.8.11."
         label="Repeated Bluetooth resume crashes / DO NOT INSTALL"
         status="known-issue"
     elif version=="v0.8.11":
@@ -100,7 +104,7 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         label="Remote companion + auto reconnect / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.8.4":
-        summary="EXPERIMENTAL: local SD track recording with pause/resume, journal recovery and GPX export; named POIs with map markers and GPX; reorganized matching contextual controls, map-style picker and automatic attribution. Physical acceptance pending. Install without Erase; v0.8.2 is the exact owner-confirmed recovery."
+        summary="EXPERIMENTAL: local SD track recording with pause/resume, journal recovery and GPX export; named POIs with map markers and GPX; reorganized matching contextual controls, map-style picker and automatic attribution. Physical acceptance pending. Install without Erase; v0.8.2 is the exact confirmed recovery."
         label="Tracks + POIs + map controls / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.8.3":
@@ -184,7 +188,7 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         label="Web capture without PIN / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.6.7":
-        summary="EXPERIMENTAL / NOT HARDWARE TESTED: fixes Bluetooth PIN keyboard visibility with a full-screen numeric keypad; retains v0.6.6 DMA/BLE stability changes. Pairing/encryption still requires owner testing."
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: fixes Bluetooth PIN keyboard visibility with a full-screen numeric keypad; retains v0.6.6 DMA/BLE stability changes. Pairing/encryption still requires physical testing."
         label="Bluetooth PIN keyboard fix / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.6.6":

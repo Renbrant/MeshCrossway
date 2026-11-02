@@ -1,6 +1,6 @@
 # v0.8.15: native message visibility and device-local timestamps
 
-The owner reported seeing some messages in remote access that were not visible on the device, and requested local message times matching the device. No message ID, protocol or reproducing log was supplied for the specific missing messages, so the individual cause is not yet established.
+A report noted that some messages appeared in remote access but not on the device, and requested local message times matching the device. No message ID, protocol or reproducing log was supplied for the specific missing messages, so the individual cause is not yet established.
 
 Inspection found two native-only visibility paths worth correcting:
 

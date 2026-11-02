@@ -4,11 +4,15 @@
 #include "meshcrossway_gnss_settings.h"
 #include "meshcrossway_navigation_store.h"
 #include "meshcrossway_clock_runtime.h"
+#include "meshcrossway_meshtastic_protocol.h"
+#include "meshcrossway_meshcore_protocol.h"
 #include <cassert>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
 #include <vector>
+namespace meshmt { static Client *client=nullptr; }
+namespace meshmc { static Client *client=nullptr; }
 namespace meshnetwork { bool connected=false; }
 namespace mcxgnss {
 struct Diagnostics {unsigned baud=9600;int error=0;uint32_t bytes=100;bool saved=true;};

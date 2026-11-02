@@ -1,10 +1,12 @@
 # v0.8.16: independent dual BLE radios and radio configuration
 
-Status: owner-approved stable release as of 2026-11-01. The owner confirms simultaneous dual-radio operation works. A reported regression prevents map tiles and saved routes from loading; investigation remains open. v0.8.14 is retained as rollback.
+Status: stable release as of 2026-11-01. Simultaneous dual-radio operation is confirmed. A reported regression prevents map tiles and saved routes from loading; investigation remains open. v0.8.14 is retained as rollback.
+
+This is the historical v0.8.16 status. v0.8.17 was later confirmed working well on the device and is the current stable release; see [its release record](stable-v0817.md).
 
 ## Connection behavior
 
-The Core can maintain one Meshtastic PhoneAPI connection and one MeshCore Companion connection concurrently. The Heltec V3 is the owner's initial test hardware, not an allowlisted model. The ESP32-S3/NimBLE configuration already allowed two connections; the old application had one shared connection handle and reset both transports when selecting a peer.
+The Core can maintain one Meshtastic PhoneAPI connection and one MeshCore Companion connection concurrently. The Heltec V3 is the initial test hardware, not an allowlisted model. The ESP32-S3/NimBLE configuration already allowed two connections; the old application had one shared connection handle and reset both transports when selecting a peer.
 
 `meshcrossway_ble_link.inc` is instantiated in two separate namespaces. Each owns its connection handle, discovery handles, pairing state, callback epoch and saved peer. Notifications, writes, errors and disconnects stay inside their instance. One controller and host task serve both. Scanning and new connection setup are serialized; an established connection continues carrying traffic while the other is being paired. A peripheral must expose the protocol chosen for its slot; unknown/wrong or ambiguous GATT services are rejected without disconnecting the other slot.
 
@@ -57,4 +59,4 @@ Automated validation:
 - Actual browser functions: enum selection, confirmation, per-network destinations, preserved edits and stale-radio replacement.
 - Real LVGL forms: group selection, settings read, enum editor, confirmation, keypad and existing message/map/Home regressions.
 
-Remaining hardware acceptance includes bidirectional receive/send traffic on both radios at once; reconnect each while the other exchanges messages; reboot the Core with either/both radios missing; PIN pairing for each; repeat while refreshing remote tracks/settings; verify region/channel changes and observe minimum task stack/internal heap. Record both radio firmware versions and exact candidate binary identity. The owner screenshots document connected state, device views and browser access, not this full test matrix. Automated tests cannot establish RF coexistence, long-duration stability or compatibility with every radio firmware.
+Remaining hardware acceptance includes bidirectional receive/send traffic on both radios at once; reconnect each while the other exchanges messages; reboot the Core with either/both radios missing; PIN pairing for each; repeat while refreshing remote tracks/settings; verify region/channel changes and observe minimum task stack/internal heap. Record both radio firmware versions and exact candidate binary identity. The submitted screenshots document the connected state, device views and browser access, not this full test matrix. Automated tests cannot establish RF coexistence, long-duration stability or compatibility with every radio firmware.

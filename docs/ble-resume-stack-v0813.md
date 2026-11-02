@@ -1,6 +1,6 @@
 # v0.8.12 BLE resume crash: analysis and v0.8.13 fix
 
-The owner's log records eight `Stack canary watchpoint triggered (mcx_ble_resume)` crashes from 08:59:06 to 09:01:07, normally about 17 seconds apart. The task waits 12 seconds after boot and another 3 seconds before trying its saved radio, consistent with the observed timing.
+The available log records eight `Stack canary watchpoint triggered (mcx_ble_resume)` crashes from 08:59:06 to 09:01:07, normally about 17 seconds apart. The task waits 12 seconds after boot and another 3 seconds before trying its saved radio, consistent with the observed timing.
 
 ## Exact binary evidence
 
@@ -34,4 +34,4 @@ The four nested application frames alone retain 2112 bytes of a 4096-byte task s
 
 Host tests execute the actual connection helpers for both protocols, repeated retries/failures, identity normalization, peer reorder during cancellation, active-link rejection and manual pause. The old .su failure shape is rejected by the new guard. Full ESP-IDF compilation validates the actual new target frames.
 
-v0.8.11 remains the immutable stable default. v0.8.13 is experimental until repeated power cycles and reconnects to the owner's MC/MT radios confirm adequate runtime minimum stack and no restart. Install without Erase. Networks remain independent and only one BLE session is active.
+v0.8.11 remains the immutable stable default. v0.8.13 is experimental until repeated power cycles and reconnects to the test MC/MT radios confirm adequate runtime minimum stack and no restart. Install without Erase. Networks remain independent and only one BLE session is active.

@@ -1,6 +1,6 @@
 # v0.8.9 — navigation startup stack hardening
 
-The owner reports a repeatable boot loop in v0.8.8. The supplied USB log shows
+A repeatable boot loop was reported in v0.8.8. The supplied USB log shows
 the SD card mounting successfully, followed by a software panic with
 `Backtrace: 0xfffffffe:0x80386d2e |<-CORRUPTED`. The corrupted trace cannot
 identify the crashing task or prove a specific source line. Stack exhaustion
@@ -30,7 +30,7 @@ Host LVGL/navigation tests exercise recording, naming, deleting, overlays and
 the task-allocation failure/retry path. A separate ESP32-S3 GCC 13.2 compile of
 the navigation code with peripheral stubs produces a 6896-byte conservative
 reserve, accepted by 8192 bytes and rejected by 4096. This is not a measurement
-of the owner's filesystem call stack. The full ESP-IDF build runs the same
+of the device's filesystem call stack. The full ESP-IDF build runs the same
 guard against its own compiler reports.
 
 Physical acceptance: cold boot and warm reboot with the existing SD and saved

@@ -23,4 +23,4 @@ Incoming MeshCore chat showed `[emoji]PU2OOM RenBrant 02: test` when the sender'
 6. Verify normal touchscreen, screenshot endpoint, Wi-Fi STA/AP, SD card and BLE during repeated redraws and power cycles; no regressions, stack overflow or PSRAM leak.
 7. If unavailable/invalid image assets, show a readable fallback and maintain the original message bytes. No new PIN prompt unless the peer itself lost its BLE bond.
 
-**Release status:** CI and physical acceptance are independent; completing CI is not proof that the glyph was viewed correctly on real hardware. The v0.6.8 owner-tested rollback remains available.
+**Release status:** CI and physical acceptance are independent; completing CI is not proof that the glyph was viewed correctly on real hardware. The v0.6.8 hardware-tested rollback remains available.

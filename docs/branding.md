@@ -9,9 +9,9 @@
 - **No slogan in this lockup:** the approved production SVG contains neither `OFF-GRID COMMUNICATION` nor `EXPLORE · CONNECT · STAY IN TOUCH`.
 - **Original proportions:** SVG `viewBox="0 0 330 44"`; scale uniformly only; transparent background.
 - **Colors built into the approved SVG:** orange `#F07120` and near-white `#F2F2F2`. Do not remap the logo colors to site accent variables.
-- **Lettering:** vector *paths traced from the owner's supplied reference image*; not live text, not a licensed font file. Never reconstruct the letters using Eurostile, Microgramma, a system font, or a visually similar typeface.
+- **Lettering:** vector *paths traced from the supplied reference image*; not live text, not a licensed font file. Never reconstruct the letters using Eurostile, Microgramma, a system font, or a visually similar typeface.
 
-The owner-provided reference was a 337 × 62 raster image containing the symbol, the main wordmark and two supporting lines. The **approved output for use** is the 330 × 44 SVG containing **only the symbol and wordmark**. It was created from that image, not from the original editable font or master vectors. Preserve the approved SVG file byte-for-byte when publishing or copying it.
+The supplied reference was a 337 × 62 raster image containing the symbol, the main wordmark and two supporting lines. The **approved output for use** is the 330 × 44 SVG containing **only the symbol and wordmark**. It was created from that image, not from the original editable font or master vectors. Preserve the approved SVG file byte-for-byte when publishing or copying it.
 
 ## Usage rules
 

@@ -93,7 +93,7 @@ SD removal/full/error recovery, touch during downloads, zoom/pan/follow, stale f
 GPS settings across restart, and BLE traffic with map TLS. Check internal heap,
 worker stack margins and touch latency before classifying this as stable. Current
 radio protocol limitations remain unchanged. Install without Erase; keep the
-owner-tested v0.7.8 recovery intact.
+hardware-tested v0.7.8 recovery intact.
 
 ## Public references
 
