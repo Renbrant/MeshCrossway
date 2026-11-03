@@ -8,7 +8,7 @@ static lv_obj_t *fields[10] = {}, *compose_button=nullptr;
 static lv_obj_t *radio_status = nullptr, *home_name = nullptr, *home_status = nullptr, *history_status=nullptr;
 static char home_name_source[80] = {};
 static uint8_t field_count = 0, selected_command = 0;
-static lv_obj_t *tools_category=nullptr;static unsigned tools_filter=0;
+static unsigned tools_filter=0;
 static bool confirm_pending = false, group = false, conversation = false, reveal = false;
 static uint8_t target_key[32] = {};
 static uint16_t target_slot = 0, list_offset = 0;
@@ -55,6 +55,7 @@ static void on_close(lv_event_t *) {
   close();
 }
 static void on_tools(lv_event_t *) {
+  tools_filter=0;
   tools();
 }
 // Apply emoji font only to visible name labels. Protocol names and message
@@ -309,33 +310,25 @@ static unsigned tool_category(uint8_t code){
   if(code==23||code==24||code==38||code==54||code==57||code==58||code==59)return 5;
   return 6;
 }
-static void filter_tools(lv_event_t *){
-  if(!tools_category||!scroller)return;
-  tools_filter=lv_dropdown_get_selected(tools_category);
-  const unsigned count=lv_obj_get_child_cnt(scroller);
-  for(unsigned i=0;i<count;++i){auto *row=lv_obj_get_child(scroller,i);bool show=true;
-    if(i==0)show=tools_filter==0||tools_filter==1;
-    else if(i<=meshmc::COMMAND_COUNT)show=tools_filter==0||tools_filter==tool_category(meshmc::COMMANDS[i-1].code);
-    if(show)lv_obj_clear_flag(row,LV_OBJ_FLAG_HIDDEN);else lv_obj_add_flag(row,LV_OBJ_FLAG_HIDDEN);
-  }
-}
+static void tools_select_category(lv_event_t *e){tools_filter=unsigned((intptr_t)lv_event_get_user_data(e));tools();}
+static void tools_back_categories(lv_event_t *){tools_filter=0;tools();}
 static void tools() {
   base("MESHCORE / SETTINGS");
   mode = 0;
-  lv_obj_set_pos(scroller,0,82);lv_obj_set_height(scroller,182);
-  tools_category=lv_dropdown_create(dialog);lv_obj_set_pos(tools_category,8,44);lv_obj_set_size(tools_category,460,34);
-  lv_dropdown_set_options(tools_category,"All settings\nRadio & region\nDevice & identity\nChannels\nSensors & status\nPrivacy\nAdvanced tools");
-  lv_dropdown_set_selected(tools_category,0);tools_filter=0;
-  lv_obj_add_event_cb(tools_category,filter_tools,LV_EVENT_VALUE_CHANGED,nullptr);
-  action_button(scroller,"LoRa region presets",8,0,460,43,orange,presets,0);
-  int y = 49;
+  lv_obj_set_pos(scroller,0,46);lv_obj_set_height(scroller,218);
+  const char *categories[]={"Radio & region","Device & identity","Channels","Sensors & status","Privacy","Advanced tools"};
+  if(!tools_filter){int y=4;for(unsigned cat=1;cat<=6;++cat){action_button(scroller,categories[cat-1],8,y,460,43,panel2,tools_select_category,cat);y+=49;}}
+  else {action_button(dialog,"CATEGORIES",225,4,145,36,panel2,tools_back_categories,0);int y=4;
+  if(tools_filter==1){action_button(scroller,"LoRa region presets",8,y,460,43,orange,presets,0);y+=49;}
   for (auto &c : meshmc::COMMANDS) {
+    if(tool_category(c.code)!=tools_filter)continue;
     // Messaging has dedicated forms; include binary/expert tools without pretending they are
     // board-independent.
     lv_obj_t *b = action_button(scroller, c.name, 8, y, 460, 43, panel2, choose_command, c.code);
     if (!ready() || (session()->protocol && session()->protocol < c.min_version))
       lv_obj_add_state(b, LV_STATE_DISABLED);
     y += 49;
+  }
   }
   feedback = txt(dialog, session() ? session()->status : "Connect your MeshCore radio in More / Radios.", 8,
                  279, 460, muted);

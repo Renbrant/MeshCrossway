@@ -4,7 +4,7 @@
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Project status — v0.8.23 stable; v0.8.24 through v0.8.26 candidates.** v0.8.23 is the user-selected stable release and preserves its exact published firmware image. v0.8.24 redesigns Meshtastic/MeshCore settings navigation. v0.8.25 restores map rendering around saved radio-node positions when local GPS has no current fix. See the [v0.8.23 stable record](docs/stable-v0823.md), [v0.8.24 settings notes](docs/settings-navigation-v0824.md), [v0.8.25 map notes](docs/map-node-centering-v0825.md), and [v0.8.26 remote MeshCore chat notes](docs/remote-meshcore-sender-v0826.md).
+> **Project status — v0.8.26 stable; v0.9.0 candidate.** v0.8.26 is the user-selected stable release and preserves its exact published firmware image. v0.9.0 applies the WadaMesh-inspired category navigation separately to Meshtastic and MeshCore settings on the device and remote access. See the [v0.8.26 stable record](docs/stable-v0826.md) and [v0.9.0 settings notes](docs/settings-navigation-v090.md).
 
 ## See it in operation
 
@@ -87,7 +87,7 @@ The two BLE links use separate protocol adapters: Meshtastic protobuf PhoneAPI o
 
 ## Known issue and next steps
 
-The current software work adds settings navigation on top of the stable v0.8.23 baseline. Hardware work continues on the three-device modular design and its independently powered Core and Pods.
+The current software work adds categorized, independent radio settings on top of the stable v0.8.26 baseline. Hardware work continues on the three-device modular design and its independently powered Core and Pods.
 
 1. Restore device map tiles and saved-route loading without regressing the working dual-radio connections.
 2. Expand compatibility and recovery checks across supported radio boards and native firmware builds.
@@ -99,7 +99,7 @@ The current software work adds settings navigation on top of the stable v0.8.23 
 
 | Topic | Reference |
 |---|---|
-| v0.8.23 stable image | [Stable release record](docs/stable-v0823.md) |
+| v0.8.26 stable image | [Stable release record](docs/stable-v0826.md) |
 | v0.8.17 historical stable image | [Historical release record](docs/stable-v0817.md) |
 | v0.8.18 node map and activity ordering | [Feature notes](docs/node-map-and-recent-activity-v0818.md) |
 | v0.8.20 Home GPS card spacing | [Feature notes](docs/home-gps-layout-v0820.md) |
@@ -109,7 +109,8 @@ The current software work adds settings navigation on top of the stable v0.8.23 
 | v0.8.23 Separate node icon and color settings by network | [Feature notes](docs/map-node-style-v0823.md) |
 | v0.8.24 Meshtastic and MeshCore settings navigation redesign | [Candidate notes](docs/settings-navigation-v0824.md) |
 | v0.8.25 map fallback centering when local GPS has no current fix | [Candidate notes](docs/map-node-centering-v0825.md) |
-| v0.8.26 remote MeshCore chat shows sender names and clean message bodies | [Candidate notes](docs/remote-meshcore-sender-v0826.md) |
+| v0.8.26 remote MeshCore chat sender names | [Stable release record](docs/stable-v0826.md) |
+| v0.9.0 WadaMesh-inspired settings menus, separated by network on device and remote | [Candidate notes](docs/settings-navigation-v090.md) |
 | Simultaneous BLE radios and per-network settings | [Dual-radio implementation notes](docs/dual-radio-settings-v0816.md) |
 | Device and browser operation screenshots | [Field evidence](docs/field-evidence-v0816.md) |
 | Modular Core and Radio Pod design | [Modular architecture](docs/modular-architecture.md) |

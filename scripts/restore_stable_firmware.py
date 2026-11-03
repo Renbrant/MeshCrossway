@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restore the exact pinned stable v0.8.23 image; never rebuild a tested image."""
+"""Restore the exact pinned stable v0.8.26 image; never rebuild a tested image."""
 import argparse
 import hashlib
 import io
@@ -11,11 +11,11 @@ import tempfile
 import urllib.request
 import zipfile
 
-VERSION = 'v0.8.23'
-REF = 'cd17768eed1cd07830295c6130c245f22e8991c0'
-SHA = '26a1ab1a0d2002837d021bee89c0ece70d8e5a13c020bf02cbb60899de38c414'
-ARTIFACT = 13160597329
-ARCHIVE_SHA = 'a9db284513017c0ea125272176e437ddf40c48e03d94562cb17d6e919bad81dd'
+VERSION = 'v0.8.26'
+REF = 'd35b21c1de7f32c34cb7b8f28039a0e021b3a2d3'
+SHA = 'b83e7f0e5f147df8f32014ba0a0eedf809189d91003f6210749b1e248c14a029'
+ARTIFACT = 13182912185
+ARCHIVE_SHA = 'e32e57d62457b061bd5a3d8b45d7949e523e499fb65f05cc411f719f37e47814'
 NAMES = ('manifest.json', 'build-info.json', 'meshcrossway-display-dev.bin',
          'bootloader.bin', 'partition-table.bin', 'application.bin')
 ROOT = Path(__file__).resolve().parents[1]
