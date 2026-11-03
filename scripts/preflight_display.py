@@ -226,7 +226,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
                 assert "SORT: LAST HEARD" in mainui and "SORT: DISTANCE" in mainui
                 assert "recent direct chat:" in mtui and "recent direct chat:" in mcui
                 assert "unread" in mtui and "unread" in mcui
-                assert "add_channel_menu" in mcui and "channel_secret" in (FW/"meshcrossway_meshcore_protocol.h").read_text()
+                assert "add_channel_menu" in mcui and "channel_secret" in mcui
                 assert "form(32)" in mcui and "open_mt_channel" in settingsui
                 assert "lv_obj_set_scroll_dir(body,LV_DIR_VER)" in mainui
             if version=="v0.9.6":
