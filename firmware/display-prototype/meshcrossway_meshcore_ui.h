@@ -20,6 +20,9 @@ static uint8_t target_key[32] = {};
 static uint16_t target_slot = 0;
 static uint32_t rendered_generation = 0,rendered_zone=0;
 static uint32_t last_redraw=0;
+static lv_timer_t *list_batch_timer=nullptr;
+static int list_batch_total=0,list_batch_cursor=0,list_batch_y=141,list_batch_width=0,list_batch_page=0;
+static bool list_batch_channels=false,list_batch_rooms=false;
 static mcxchat::Key selected;
 static int mode = 0; // 0 menu, 1 typed command, 2 compose, 3 result, 4 contact details
 static void tools();
@@ -33,6 +36,7 @@ static void select(const mcxchat::Key &);
 static void thread_info();
 static void form(uint8_t code);
 static void render();
+static void list_batch_tick(lv_timer_t *);
 static meshmc::Client *session() {
   return meshmc::client;
 }
@@ -67,6 +71,13 @@ static void on_tools(lv_event_t *) {
 }
 // Apply emoji font only to visible name labels. Protocol names and message
 // buffers remain untouched and are never written back as private-use glyphs.
+static void emoji_label_text(lv_obj_t *label,const char *value){
+#if defined(MCX_EMOJI_RENDER_ENABLED)
+  mcxemoji::view::set_message_text(label,value);
+#else
+  lv_label_set_text(label,value);
+#endif
+}
 static lv_obj_t *emoji_txt(lv_obj_t *parent,const char *value,int x,int y,int width,lv_color_t color){
   lv_obj_t *label=txt(parent,value,x,y,width,color);
 #if defined(MCX_EMOJI_RENDER_ENABLED)
@@ -722,6 +733,7 @@ static void conversation_list(int w){
 }
 
 static void render() {
+  if(list_batch_timer){lv_timer_del(list_batch_timer);list_batch_timer=nullptr;}
   if(!mcxhistory::init_workspace()){show_center_heading("CHAT / MEMORY","PSRAM unavailable for chat workspace.");return;}
   thread_rows=mcxhistory::workspace()->rows;
   display_indices=mcxhistory::workspace()->indices;
@@ -787,43 +799,27 @@ static void render() {
       return (uint64_t(last)<<32)|latest;
     };
     for(int a=0;a<total;++a){int i=display_indices[a];display_scores[i]=!channels&&node_sort_distance&&gps_valid?distance_key(i):rank(i);}
-    for(int a=1;a<total;++a){uint16_t value=display_indices[a];int b=a;const uint64_t score=display_scores[value];
-      while(b&&(node_sort_distance&&!channels&&gps_valid?display_scores[display_indices[b-1]]>score:display_scores[display_indices[b-1]]<score)){display_indices[b]=display_indices[b-1];--b;}display_indices[b]=value;
-    }
+    auto before=[&](uint16_t a,uint16_t b){return node_sort_distance&&!channels&&gps_valid?display_scores[a]<display_scores[b]:display_scores[a]>display_scores[b];};
+    auto sort=[&](auto&&self,int lo,int hi)->void{int i=lo,j=hi;const uint16_t pivot=display_indices[(lo+hi)/2];
+      while(i<=j){while(before(display_indices[i],pivot))++i;while(before(pivot,display_indices[j]))--j;
+        if(i<=j){const uint16_t swap=display_indices[i];display_indices[i]=display_indices[j];display_indices[j]=swap;++i;--j;}}
+      if(lo<j)self(self,lo,j);
+      if(i<hi)self(self,i,hi);
+    };
+    if(total>1)sort(sort,0,total-1);
     int y=141;
-    if(!total)single_label(body,channels?"No channels or rooms in this radio yet.":"No contacts in this radio yet.",8,y,w-16,muted);
-    for(int row=0;row<total;++row){
-      const int i=display_indices[row];const bool is_channel=channels&&!room_list;const auto key=key_for_index(i);const auto *pref=mcxhistory::preferences().get(key);
-      char title[75],detail[150],when[24];
-      bool loaded=is_channel&&s->channels[i].loaded;
-      unsigned unread_count=0;uint32_t last_heard=0;unsigned messages=0;size_t bytes=0;
-      for(const auto &m:s->messages)if(m.id&&mcxchat::belongs(m,key)){
-        if(!m.outgoing&&!m.read)++unread_count;
-        if(!m.outgoing&&m.observed_at>last_heard)last_heard=m.observed_at;
-        if(!is_channel&&!m.channel){++messages;bytes+=strlen(m.text);}
-      }
-      if(is_channel){
-        snprintf(title,sizeof(title),"%u / %s",i,loaded&&s->channels[i].name[0]?s->channels[i].name:"Empty slot");
-        mcxchat::time_local(last_heard,when,sizeof(when),true);
-        snprintf(detail,sizeof(detail),"%u unread / last received %s",unread_count,last_heard?when:"--");
-      }else{
-        const auto &c=s->contacts[i];uint32_t heard=c.advert>c.lastmod?c.advert:c.lastmod;
-        if(last_heard>heard)heard=last_heard;
-        mcxchat::time_local(heard,when,sizeof(when),true);
-        snprintf(title,sizeof(title),"%s%s",pref&&pref->favorite?"* ":"",pref&&pref->alias[0]?pref->alias:c.name);
-        if(node_sort_distance&&gps_valid&&c.lat&&c.lon){
-          const double lat=double(c.lat)/1000000.0,lon=double(c.lon)/1000000.0;
-          const double dy=(lat-gps_latitude)*111320.0,dx=(lon-gps_longitude)*111320.0*cos(gps_latitude*0.017453292519943295);
-          snprintf(detail,sizeof(detail),"%s / %u unread / recent direct chat: %u msgs / %lu B logged",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes);
-          char suffix[24];snprintf(suffix,sizeof(suffix)," / %.0f m",sqrt(dx*dx+dy*dy));
-          strncat(detail,suffix,sizeof(detail)-strlen(detail)-1);
-        }else snprintf(detail,sizeof(detail),"%s / %u unread / recent direct chat: %u msgs / %lu B logged",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes);
-      }
-      auto *b=action_button(body,"",8,y,w-16,74,panel,is_channel?choose_channel:choose_contact,i);
-      emoji_txt(b, title, 7, 5, w-30, white);
-      auto *d=txt(b,detail,7,31,w-30,muted);lv_obj_set_height(d,37);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
-      y+=80;
+    if(channels&&!room_list){
+      unsigned direct_unread=0,channel_unread=0;
+      for(const auto &m:s->messages)if(m.id&&!m.outgoing&&!m.read){if(m.channel)++channel_unread;else ++direct_unread;}
+      char summary[90];snprintf(summary,sizeof(summary),"Unread: %u direct / %u channels",direct_unread,channel_unread);
+      single_label(body,summary,8,y,w-16,muted);y+=23;
     }
+    if(!total){single_label(body,channels?"No channels or rooms in this radio yet.":"No contacts in this radio yet.",8,y,w-16,muted);return;}
+    list_batch_total=total;list_batch_cursor=0;list_batch_y=y;list_batch_width=w;
+    list_batch_page=page;list_batch_channels=channels;list_batch_rooms=room_list;
+    list_batch_timer=lv_timer_create(list_batch_tick,1,nullptr);
+    list_batch_tick(list_batch_timer);
+    return;
   } else if (page == 3) {
     if (!conversation || !s) {conversation_list(w);return;}
     int ci = group ? -1 : s->find_contact(target_key);
@@ -906,6 +902,58 @@ static void render() {
     chatview::end("No messages in saved history.");
   }
 }
+static void list_batch_tick(lv_timer_t *timer){
+  if((page!=1&&page!=2)||page!=list_batch_page||showing_mt()||dialog){
+    lv_timer_del(timer);list_batch_timer=nullptr;return;
+  }
+  auto *s=session();
+  if(!s){lv_timer_del(timer);list_batch_timer=nullptr;return;}
+  int budget=12;
+  while(budget--&&list_batch_cursor<list_batch_total){
+    const int i=display_indices[list_batch_cursor++];
+    const bool is_channel=list_batch_channels&&!list_batch_rooms;
+    const auto key=mcxchat::key_for(*s,is_channel,uint16_t(i));
+    const auto *pref=mcxhistory::preferences().get(key);
+    char title[75],detail[150],when[24];
+    const bool loaded=is_channel&&i<s->channel_count&&s->channels[i].loaded;
+    unsigned unread_count=0;uint32_t last_heard=0;unsigned messages=0;size_t bytes=0;
+    for(const auto &m:s->messages)if(m.id&&mcxchat::belongs(m,key)){
+      if(!m.outgoing&&!m.read)++unread_count;
+      if(!m.outgoing&&m.observed_at>last_heard)last_heard=m.observed_at;
+      if(!is_channel&&!m.channel){++messages;bytes+=strlen(m.text);}
+    }
+    if(is_channel){
+      snprintf(title,sizeof(title),"%u / %s",unsigned(i),loaded&&s->channels[i].name[0]?s->channels[i].name:"Empty slot");
+      mcxchat::time_local(last_heard,when,sizeof(when),true);
+      snprintf(detail,sizeof(detail),"%u unread / last received %s",unread_count,last_heard?when:"--");
+    }else{
+      const auto &c=s->contacts[i];uint32_t heard=c.advert>c.lastmod?c.advert:c.lastmod;
+      if(last_heard>heard)heard=last_heard;
+      mcxchat::time_local(heard,when,sizeof(when));
+      snprintf(title,sizeof(title),"%s%s",pref&&pref->favorite?"* ":"",pref&&pref->alias[0]?pref->alias:c.name);
+      if(node_sort_distance&&nav_gps_valid&&c.lat&&c.lon){
+        const double lat=double(c.lat)/1000000.0,lon=double(c.lon)/1000000.0;
+        const double dy=(lat-nav_latitude)*111320.0,dx=(lon-nav_longitude)*111320.0*cos(nav_latitude*0.017453292519943295);
+        snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B / %.0f m",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
+      }else snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes);
+    }
+    auto *b=action_button(body,"",8,list_batch_y,list_batch_width-16,list_batch_channels?74:58,panel,is_channel?choose_channel:choose_contact,i);
+    if(!list_batch_channels){
+      auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
+      lv_obj_set_pos(name,7,8);lv_obj_set_size(name,145,40);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
+      auto *d=txt(b,detail,158,4,list_batch_width-174,50,muted);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+      list_batch_y+=64;
+    }else{
+      emoji_label_text(lv_obj_get_child(b,0),title);
+      auto *d=txt(b,detail,7,31,list_batch_width-30,37,muted);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+      list_batch_y+=80;
+    }
+  }
+  if(list_batch_cursor>=list_batch_total){
+    lv_timer_del(timer);list_batch_timer=nullptr;
+    rendered_generation=s->generation;rendered_zone=mcxchat::time_zone_key();
+  }
+}
 static void poll(lv_timer_t *) {
   mcxruntime::Scope measured(mcxruntime::PROTOCOL);
   mcxruntime::sample_ui_stack();
@@ -942,7 +990,7 @@ static void poll(lv_timer_t *) {
       lv_label_set_text(feedback, s->result[0] ? s->result : s->status);
     rendered_generation = s->generation;
   }
-  if (!showing_mt() && !dialog && !wifi_dialog && !ble_dialog && !info_dialog && s && (s->generation != rendered_generation||rendered_zone!=mcxchat::time_zone_key()) &&
+  if (!showing_mt() && !dialog && !wifi_dialog && !ble_dialog && !info_dialog && !list_batch_timer && s && (s->generation != rendered_generation||rendered_zone!=mcxchat::time_zone_key()) &&
       (page == 1 || page == 2 || page == 3)) {
     // Do not delete a finger's current target. Redraw only when the input is released.
     bool pressed = false;

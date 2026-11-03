@@ -11,6 +11,9 @@ namespace mtui {
   static uint16_t meshcore_order_get(unsigned i){const unsigned bit=i*9,byte=bit>>3,shift=bit&7;const uint16_t pair=uint16_t(meshcore_node_order[byte])|(uint16_t(meshcore_node_order[byte+1])<<8);return uint16_t((pair>>shift)&0x1ff);}
   static void meshcore_order_set(unsigned i,uint16_t value){const unsigned bit=i*9,byte=bit>>3,shift=bit&7;uint16_t pair=uint16_t(meshcore_node_order[byte])|(uint16_t(meshcore_node_order[byte+1])<<8);const uint16_t mask=uint16_t(0x1ffu<<shift);pair=uint16_t((pair&~mask)|((value&0x1ffu)<<shift));meshcore_node_order[byte]=uint8_t(pair);meshcore_node_order[byte+1]=uint8_t(pair>>8);}
   static uint16_t node_order[meshmt::MAX_NODES]={},channel_order[meshmt::MAX_CHANNELS]={};
+  static lv_timer_t *node_batch_timer=nullptr;
+  static unsigned mt_node_count=0,mc_node_count=0,mt_node_cursor=0,mc_node_cursor=0;
+  static int node_batch_network=0,node_batch_width=0,node_batch_y=141;
   static bool ready(){auto *c=meshmt::client;
     return c&&c->connected&&c->initialized&&c->history_ready&&!c->fault;
   }
@@ -189,7 +192,57 @@ namespace mtui {
   static bool belongs(const meshmt::Message &m){
     return meshmt::client&&meshmt::message_belongs(m,selected,meshmt::client->data.my_num);
   }
+  static void node_batch_tick(lv_timer_t *timer){
+    if(page!=1||!showing_mt()){lv_timer_del(timer);node_batch_timer=nullptr;return;}
+    unsigned budget=12;
+    while(budget){
+      if(node_batch_network==1&&mt_node_cursor>=mt_node_count)node_batch_network=2;
+      if(node_batch_network==2&&mc_node_cursor>=mc_node_count)node_batch_network=0;
+      if(node_batch_network==0){
+        lv_timer_del(timer);node_batch_timer=nullptr;
+        auto *mt=meshmt::client;auto *mc=meshmc::client;
+        drawn=mt?mt->generation:0;drawn_zone=mcxchat::time_zone_key();
+        mcui::rendered_generation=mc?mc->generation:0;
+        return;
+      }
+      char title[72],detail[112],when[16];uint32_t last=0;unsigned messages=0,unread=0;size_t bytes=0;
+      lv_event_cb_t callback=nullptr;uintptr_t token=0;
+      if(node_batch_network==1){
+        auto *c=meshmt::client;if(!c){node_batch_network=2;continue;}
+        const unsigned index=node_order[mt_node_cursor++];if(index>=c->data.node_count)continue;
+        const auto &n=c->data.nodes[index];last=n.last_heard;
+        snprintf(title,sizeof(title),"MT / %s",n.name);token=n.num;callback=select_node;
+        for(const auto &m:c->data.messages)if(m.seq&&m.to!=meshmt::BROADCAST&&(m.to==n.num||m.from==n.num)){
+          ++messages;bytes+=strlen(m.text);if(!m.outgoing&&!m.read)++unread;if(m.time>last)last=m.time;}
+        mcxchat::time_local(last,when,sizeof(when));
+        if(mcui::node_sort_distance&&mcui::nav_gps_valid&&n.has_lat&&n.has_lon){
+          const double lat=double(n.latitude)/1e7,lon=double(n.longitude)/1e7;
+          const double dy=(lat-mcui::nav_latitude)*111320.0,dx=(lon-mcui::nav_longitude)*111320.0*cos(mcui::nav_latitude*0.017453292519943295);
+          snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B / %.0f m",last?when:"Never",unread,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
+        }else snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B",last?when:"Never",unread,messages,(unsigned long)bytes);
+      }else{
+        auto *c=meshmc::client;if(!c){node_batch_network=0;continue;}
+        const unsigned index=meshcore_order_get(mc_node_cursor++);if(index>=c->contact_count)continue;
+        const auto &contact=c->contacts[index];last=contact.advert>contact.lastmod?contact.advert:contact.lastmod;
+        snprintf(title,sizeof(title),"MC / %s",contact.name);token=index;callback=mcui::choose_contact;
+        for(const auto &m:c->messages)if(m.id&&!m.channel&&!memcmp(m.key,contact.key,6)){
+          ++messages;bytes+=strlen(m.text);if(!m.outgoing&&!m.read)++unread;if(m.observed_at>last)last=m.observed_at;}
+        mcxchat::time_local(last,when,sizeof(when));
+        if(mcui::node_sort_distance&&mcui::nav_gps_valid&&contact.lat&&contact.lon){
+          const double lat=double(contact.lat)/1e6,lon=double(contact.lon)/1e6;
+          const double dy=(lat-mcui::nav_latitude)*111320.0,dx=(lon-mcui::nav_longitude)*111320.0*cos(mcui::nav_latitude*0.017453292519943295);
+          snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B / %.0f m",last?when:"Never",unread,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
+        }else snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B",last?when:"Never",unread,messages,(unsigned long)bytes);
+      }
+      auto *b=action_button(body,"",8,node_batch_y,node_batch_width-16,58,panel,callback,intptr_t(token));
+      auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);lv_obj_set_pos(name,7,8);lv_obj_set_size(name,145,40);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
+      auto *d=txt(b,detail,158,4,node_batch_width-174,50,muted);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+      node_batch_y+=64;--budget;
+    }
+  }
   static void render(){
+    if(node_batch_timer){lv_timer_del(node_batch_timer);node_batch_timer=nullptr;}
+    mt_node_count=mc_node_count=mt_node_cursor=mc_node_cursor=0;node_batch_network=0;
     const int w=lv_obj_get_width(body);
     auto *c=meshmt::client;
     drawn=c?c->generation:0;drawn_zone=mcxchat::time_zone_key();
@@ -237,10 +290,17 @@ namespace mtui {
     unsigned index=0,shown=0;
     auto row=[&](const char *title,const char *detail,lv_event_cb_t callback,uintptr_t token){
       ++index;++shown;
-      auto *b=action_button(body,"",8,y,w-16,74,panel,callback,intptr_t(token));
-      mcui::emoji_txt(b,title,7,5,w-30,white);
-      auto *d=txt(b,detail,7,31,w-30,muted);lv_obj_set_height(d,37);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
-      y+=80;
+      auto *b=action_button(body,"",8,y,w-16,page==1?58:74,panel,callback,intptr_t(token));
+      if(page==1){
+        auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);
+        lv_obj_set_pos(name,7,8);lv_obj_set_size(name,145,40);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
+        auto *d=txt(b,detail,158,4,w-174,50,muted);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+        y+=64;
+      }else{
+        mcui::emoji_label_text(lv_obj_get_child(b,0),title);
+        auto *d=txt(b,detail,7,31,w-30,37,muted);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+        y+=80;
+      }
     };
     if(c&&filter!=2){
       if(page==1){unsigned count=0;for(unsigned i=0;i<c->data.node_count;++i)node_order[count++]=uint16_t(i);
@@ -254,19 +314,20 @@ namespace mtui {
           for(const auto &m:c->data.messages)if(m.seq&&m.to!=meshmt::BROADCAST&&(m.to==n.num||m.from==n.num)){if(m.time>last)last=m.time;if(m.seq>activity)activity=m.seq;}
           return (uint64_t(last)<<32)|activity;
         };
-        for(unsigned a=1;a<count;++a){const uint16_t value=node_order[a];unsigned b=a;
-          while(b&&(mcui::node_sort_distance&&mcui::nav_gps_valid?distance(node_order[b-1])>distance(value):heard(node_order[b-1])<heard(value))){node_order[b]=node_order[b-1];--b;}node_order[b]=value;}
-        for(unsigned i=0;i<count;++i){auto &n=c->data.nodes[node_order[i]];char title[70],detail[160],when[24];
-          snprintf(title,sizeof(title),"MT / %s",n.name);
-          uint32_t last=n.last_heard;unsigned messages=0;size_t bytes=0;
-          for(const auto &m:c->data.messages)if(m.seq&&m.to!=meshmt::BROADCAST&&(m.to==n.num||m.from==n.num)){++messages;bytes+=strlen(m.text);if(m.time>last)last=m.time;}
-          mcxchat::time_local(last,when,sizeof(when),true);
-          if(mcui::node_sort_distance&&gps_valid&&n.has_lat&&n.has_lon){
-            const double d=sqrt(distance(node_order[i]));
-            snprintf(detail,sizeof(detail),"Last heard %s / recent direct chat: %u msgs / %lu B logged / %.0f m",last?when:"Never",messages,(unsigned long)bytes,d);
-          }else snprintf(detail,sizeof(detail),"Last heard %s / recent direct chat: %u msgs / %lu B logged",last?when:"Never",messages,(unsigned long)bytes);
-          row(title,detail,select_node,n.num);
-        }
+        auto before=[&](unsigned a,unsigned b){return mcui::node_sort_distance&&mcui::nav_gps_valid?distance(a)<distance(b):heard(a)>heard(b);};
+        auto sort=[&](auto&&self,int lo,int hi)->void{int i=lo,j=hi;const uint16_t pivot=node_order[(lo+hi)/2];
+          while(i<=j){while(before(node_order[i],pivot))++i;while(before(pivot,node_order[j]))--j;
+            if(i<=j){const uint16_t swap=node_order[i];node_order[i]=node_order[j];node_order[j]=swap;++i;--j;}}
+          if(lo<j)self(self,lo,j);
+          if(i<hi)self(self,i,hi);};
+        if(count>1)sort(sort,0,int(count)-1);
+        mt_node_count=count;
+      }
+      if(page==2&&filter==0&&meshmc::client){
+        unsigned direct_unread=0,channel_unread=0;
+        for(const auto &m:meshmc::client->messages)if(m.id&&!m.outgoing&&!m.read){if(m.channel)++channel_unread;else ++direct_unread;}
+        char summary[90];snprintf(summary,sizeof(summary),"MeshCore unread: %u direct / %u channels",direct_unread,channel_unread);
+        single_label(body,summary,8,y,w-16,muted);y+=23;
       }
       if(page==2){unsigned count=0;uint32_t latest[meshmt::MAX_CHANNELS]={};uint16_t unread[meshmt::MAX_CHANNELS]={};uint32_t latest_time[meshmt::MAX_CHANNELS]={};
         for(unsigned i=0;i<meshmt::MAX_CHANNELS;++i){const auto &ch=c->data.channels[i];if(!ch.loaded||!ch.role)continue;channel_order[count++]=uint16_t(i);
@@ -310,17 +371,13 @@ namespace mtui {
         auto distance=[&](unsigned i){const auto &c=mc->contacts[i];if(!gps_valid||!c.lat||!c.lon)return 1.0e30;
           const double lat=double(c.lat)/1e6,lon=double(c.lon)/1e6;
           const double dy=(lat-gps_latitude)*111320.0,dx=(lon-gps_longitude)*111320.0*cos(gps_latitude*0.017453292519943295);return dx*dx+dy*dy;};
-        for(unsigned a=1;a<count;++a){const uint16_t value=meshcore_order_get(a);unsigned b=a;
-          while(b&&(mcui::node_sort_distance&&mcui::nav_gps_valid?distance(meshcore_order_get(b-1))>distance(value):heard(meshcore_order_get(b-1))<heard(value))){meshcore_order_set(b,meshcore_order_get(b-1));--b;}meshcore_order_set(b,value);}
-        for(unsigned k=0;k<count;++k){unsigned i=meshcore_order_get(k);auto &contact=mc->contacts[i];char title[75],detail[155],when[24];
-          snprintf(title,sizeof(title),"MC / %s",contact.name);uint32_t last=heard(i);mcxchat::time_local(last,when,sizeof(when),true);
-          unsigned messages=0;size_t bytes=0;for(const auto &m:mc->messages)if(m.id&&!m.channel&&!memcmp(m.key,contact.key,6)){++messages;bytes+=strlen(m.text);}
-          snprintf(detail,sizeof(detail),"Heard %s / recent direct chat: %u msgs / %lu B logged",last?when:"Never",messages,(unsigned long)bytes);
-          if(mcui::node_sort_distance&&gps_valid&&contact.lat&&contact.lon){const double lat=double(contact.lat)/1e6,lon=double(contact.lon)/1e6;
-            const double dy=(lat-gps_latitude)*111320.0,dx=(lon-gps_longitude)*111320.0*cos(gps_latitude*0.017453292519943295);
-            char suffix[24];snprintf(suffix,sizeof(suffix)," / %.0f m",sqrt(dx*dx+dy*dy));strncat(detail,suffix,sizeof(detail)-strlen(detail)-1);}
-          row(title,detail,mcui::choose_contact,i);
-        }
+        auto before=[&](unsigned a,unsigned b){return mcui::node_sort_distance&&mcui::nav_gps_valid?distance(a)<distance(b):heard(a)>heard(b);};
+        auto sort=[&](auto&&self,int lo,int hi)->void{int i=lo,j=hi;const uint16_t pivot=meshcore_order_get(unsigned((lo+hi)/2));
+          while(i<=j){while(before(meshcore_order_get(unsigned(i)),pivot))++i;while(before(pivot,meshcore_order_get(unsigned(j))))--j;
+            if(i<=j){const uint16_t swap=meshcore_order_get(unsigned(i));meshcore_order_set(unsigned(i),meshcore_order_get(unsigned(j)));meshcore_order_set(unsigned(j),swap);++i;--j;}}
+          if(lo<j)self(self,lo,j);if(i<hi)self(self,i,hi);};
+        if(count>1)sort(sort,0,int(count)-1);
+        mc_node_count=count;
       }
       if(page==2)for(unsigned i=0;i<mc->channel_count;++i){auto &ch=mc->channels[i];
         if(!ch.loaded||!ch.name[0])continue;
@@ -340,6 +397,16 @@ namespace mtui {
           row(title,m?m->text:"Draft",mcui::open_row,i);
         }
       }
+    }
+    if(page==1){
+      if(!mt_node_count&&!mc_node_count)single_label(body,"No nodes found for this network yet.",8,141,w-16,muted);
+      else{
+        node_batch_width=w;node_batch_y=141;mt_node_cursor=mc_node_cursor=0;
+        node_batch_network=mt_node_count?1:2;
+        node_batch_timer=lv_timer_create(node_batch_tick,1,nullptr);
+        node_batch_tick(node_batch_timer);
+      }
+      return;
     }
     if(!shown)single_label(body,"No entries for this network yet.",8,y,w-16,muted);
   }
@@ -361,6 +428,7 @@ namespace mtui {
     }
     if(!showing_mt()||dialog||mcui::dialog||wifi_dialog||ble_dialog||info_dialog||page<1||page>3)return;
     const uint32_t generation=c?c->generation:0;
+    if(node_batch_timer){drawn=generation;drawn_zone=mcxchat::time_zone_key();if(meshmc::client)mcui::rendered_generation=meshmc::client->generation;return;}
     if(generation==drawn&&drawn_zone==mcxchat::time_zone_key()&&(!meshmc::client||meshmc::client->generation==mcui::rendered_generation))return;
     for(lv_indev_t *input=lv_indev_get_next(nullptr);input;input=lv_indev_get_next(input))if(input->proc.state==LV_INDEV_STATE_PRESSED)return;
     const uint32_t now=uint32_t(esp_timer_get_time()/1000);

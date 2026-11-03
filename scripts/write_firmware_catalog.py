@@ -73,6 +73,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.8":
+        summary="EXPERIMENTAL: batches node and channel rows to keep the touchscreen responsive, uses faster node ordering, places activity beside names, and reports direct versus channel unread totals. v0.8.26 remains stable."
+        label="Node list responsiveness / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.7":
         summary="EXPERIMENTAL: adds vertical node lists, last-heard/distance sorting, logged direct-chat message/byte counts, per-channel unread totals, and channel creation shortcuts. v0.8.26 remains stable."
         label="Node and channel visibility / EXPERIMENTAL"
