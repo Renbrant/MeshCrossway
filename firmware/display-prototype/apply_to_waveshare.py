@@ -49,8 +49,13 @@ if 'mcxdisplay::init(' not in source:
 # unmounted card for an empty archive. Bootstrap under the UI lock afterwards,
 # still independently of Bluetooth and its 12-second auto-resume delay.
 source = source.replace('        mcxoffline::begin();\n', '')  # migrate this patcher's earlier hook
+marker = '    meshnetwork::start();'
+if 'meshble::prepare_controller_early();' not in source:
+    if source.count(marker) != 1:
+        sys.exit('Missing or duplicate network startup marker')
+    source = source.replace(marker,
+        '    meshble::prepare_controller_early();\n' + marker, 1)
 if '    // MCX offline restore after SD mount attempt' not in source:
-    marker = '    meshnetwork::start();'
     if source.count(marker) != 1:
         sys.exit('Missing or duplicate network startup marker')
     source = source.replace(marker, marker + '\n    // MCX offline restore after SD mount attempt'
@@ -154,6 +159,8 @@ if source.count('meshhealth::start();') != 1:
     sys.exit('Missing or duplicate status-only HTTP initialization')
 if 'meshble::start();' in source or 'meshble::request_start();' in source:
     sys.exit('BLE must not start automatically at boot')
+if source.count('meshble::prepare_controller_early();') != 1:
+    sys.exit('Missing or duplicate early BLE controller preparation')
 if source.count('meshnetwork::start();') != 1:
     sys.exit('Missing or duplicate isolated Wi-Fi initialization')
 for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_health.h", "meshcrossway_ui.h", "meshcrossway_remote.h",
