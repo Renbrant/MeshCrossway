@@ -1,5 +1,6 @@
 #pragma once
 #include "meshcrossway_chat_presentation.h" // Also included by standalone pairing host fixture.
+#include <math.h>
 // Included inside meshcrossway after the shared LVGL helpers. All callbacks stay on LVGL thread.
 namespace mcui {
 static lv_obj_t *dialog = nullptr, *scroller = nullptr, *feedback = nullptr, *editor = nullptr,
@@ -9,6 +10,10 @@ static lv_obj_t *radio_status = nullptr, *home_name = nullptr, *home_status = nu
 static char home_name_source[80] = {};
 static uint8_t field_count = 0, selected_command = 0;
 static unsigned tools_filter=0;
+static bool node_sort_distance=false,nav_gps_valid=false;
+static double nav_latitude=0,nav_longitude=0;
+static void set_navigation_fix(bool valid,double latitude,double longitude){nav_gps_valid=valid;nav_latitude=latitude;nav_longitude=longitude;}
+static const char *node_sort_label(){if(!node_sort_distance)return "SORT: LAST HEARD";return nav_gps_valid?"SORT: DISTANCE":"DISTANCE / GPS NEEDED";}
 static bool tools_show_presets=false;
 static bool confirm_pending = false, group = false, conversation = false, reveal = false;
 static uint8_t target_key[32] = {};
@@ -466,20 +471,10 @@ static void toggle_node_sort_now(void *){node_sort_distance=!node_sort_distance;
 static void toggle_node_sort(lv_event_t *){lv_async_call(toggle_node_sort_now,nullptr);}
 static void add_meshcore_channel_now(void *mode);
 static void add_meshcore_channel(lv_event_t *e){lv_async_call(add_meshcore_channel_now,lv_event_get_user_data(e));}
-static void add_mt_channel_now(lv_event_t *) {
-  auto *c=meshmt::client;
-  if(!c||!c->connected||!c->initialized){notice("MESHTASTIC / CHANNEL","Connect and synchronize the Meshtastic radio first.");return;}
-  for(unsigned slot=1;slot<meshmt::MAX_CHANNELS;++slot)
-    if(!c->data.channels[slot].loaded||!c->data.channels[slot].role){cfgui::open_mt_channel(slot);return;}
-  notice("MESHTASTIC / CHANNEL","No unused secondary channel slots were reported by this radio.");
-}
-static void add_mt_channel(lv_event_t *){lv_async_call(add_mt_channel_now,nullptr);}
 static void add_channel_menu(){
   base("ADD CHANNEL");
-  auto *info=txt(scroller,"Choose a network channel type. Meshtastic uses its PSK settings; MeshCore # channels derive a shared public key.",10,4,450,muted);lv_obj_set_height(info,38);lv_label_set_long_mode(info,LV_LABEL_LONG_WRAP);
-  action_button(scroller,"MESHTASTIC SECONDARY CHANNEL",8,48,448,42,panel2,add_mt_channel,0);
-  action_button(scroller,"MESHCORE PUBLIC # CHANNEL",8,98,448,42,panel2,add_meshcore_channel,1);
-  action_button(scroller,"MESHCORE PRIVATE CHANNEL",8,148,448,42,panel2,add_meshcore_channel,0);
+  action_button(scroller,"PUBLIC # CHANNEL",8,8,448,44,panel2,add_meshcore_channel,1);
+  action_button(scroller,"PRIVATE CHANNEL",8,60,448,44,panel2,add_meshcore_channel,0);
 }
 static void show_add_channel_menu_now(void *){add_channel_menu();}
 static void show_add_channel_menu(){lv_async_call(show_add_channel_menu_now,nullptr);}
@@ -763,14 +758,14 @@ static void render() {
       if(room_list&&s->contacts[i].type!=3)continue;
       display_indices[total++]=i;
     }
-    const auto gps=mcxgnss::snapshot();
+    const bool gps_valid=nav_gps_valid;const double gps_latitude=nav_latitude,gps_longitude=nav_longitude;
     auto key_for_index=[&](int i){return mcxchat::key_for(*s,channels&&!room_list,i);};
     auto distance_key=[&](int i)->uint64_t{
       const auto &c=s->contacts[i];
-      if(!gps.valid||!c.lat||!c.lon)return UINT64_MAX;
+      if(!gps_valid||!c.lat||!c.lon)return UINT64_MAX;
       const double lat=double(c.lat)/1000000.0,lon=double(c.lon)/1000000.0;
-      const double dy=(lat-gps.latitude)*111320.0;
-      const double dx=(lon-gps.longitude)*111320.0*cos(gps.latitude*0.017453292519943295);
+      const double dy=(lat-gps_latitude)*111320.0;
+      const double dx=(lon-gps_longitude)*111320.0*cos(gps_latitude*0.017453292519943295);
       const double d=dx*dx+dy*dy;
       return d<0||d>1.0e15?UINT64_MAX:uint64_t(d);
     };
@@ -789,9 +784,9 @@ static void render() {
       }
       return (uint64_t(last)<<32)|latest;
     };
-    for(int a=0;a<total;++a){int i=display_indices[a];display_scores[i]=!channels&&node_sort_distance&&gps.valid?distance_key(i):rank(i);}
+    for(int a=0;a<total;++a){int i=display_indices[a];display_scores[i]=!channels&&node_sort_distance&&gps_valid?distance_key(i):rank(i);}
     for(int a=1;a<total;++a){uint16_t value=display_indices[a];int b=a;const uint64_t score=display_scores[value];
-      while(b&&(node_sort_distance&&!channels&&gps.valid?display_scores[display_indices[b-1]]>score:display_scores[display_indices[b-1]]<score)){display_indices[b]=display_indices[b-1];--b;}display_indices[b]=value;
+      while(b&&(node_sort_distance&&!channels&&gps_valid?display_scores[display_indices[b-1]]>score:display_scores[display_indices[b-1]]<score)){display_indices[b]=display_indices[b-1];--b;}display_indices[b]=value;
     }
     int y=141;
     if(!total)single_label(body,channels?"No channels or rooms in this radio yet.":"No contacts in this radio yet.",8,y,w-16,muted);
@@ -814,16 +809,16 @@ static void render() {
         if(last_heard>heard)heard=last_heard;
         mcxchat::time_local(heard,when,sizeof(when),true);
         snprintf(title,sizeof(title),"%s%s",pref&&pref->favorite?"* ":"",pref&&pref->alias[0]?pref->alias:c.name);
-        if(node_sort_distance&&gps.valid&&c.lat&&c.lon){
+        if(node_sort_distance&&gps_valid&&c.lat&&c.lon){
           const double lat=double(c.lat)/1000000.0,lon=double(c.lon)/1000000.0;
-          const double dy=(lat-gps.latitude)*111320.0,dx=(lon-gps.longitude)*111320.0*cos(gps.latitude*0.017453292519943295);
+          const double dy=(lat-gps_latitude)*111320.0,dx=(lon-gps_longitude)*111320.0*cos(gps_latitude*0.017453292519943295);
           snprintf(detail,sizeof(detail),"%s / %u unread / recent direct chat: %u msgs / %lu B logged",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes);
           char suffix[24];snprintf(suffix,sizeof(suffix)," / %.0f m",sqrt(dx*dx+dy*dy));
           strncat(detail,suffix,sizeof(detail)-strlen(detail)-1);
         }else snprintf(detail,sizeof(detail),"%s / %u unread / recent direct chat: %u msgs / %lu B logged",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes);
       }
       auto *b=action_button(body,"",8,y,w-16,74,panel,is_channel?choose_channel:choose_contact,i);
-      emoji_txt(b, title, 7, 5, w-30, white);
+      emoji_txt(b,title,7,5,w-30,white);
       auto *d=txt(b,detail,7,31,w-30,muted);lv_obj_set_height(d,37);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
       y+=80;
     }

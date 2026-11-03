@@ -163,9 +163,16 @@ namespace mtui {
   }
   static void open_message(lv_event_t *e){lv_async_call(open_message_now,lv_event_get_user_data(e));
   }
-  static void toggle_node_sort_now(void *){node_sort_distance=!node_sort_distance;draw();}
+  static void toggle_node_sort_now(void *){mcui::node_sort_distance=!mcui::node_sort_distance;draw();}
   static void toggle_node_sort(lv_event_t *){lv_async_call(toggle_node_sort_now,nullptr);}
-  static void add_channel(lv_event_t *){mcui::show_add_channel_menu();}
+  static void add_channel_now(void *) {
+    auto *c=meshmt::client;
+    if(!c||!c->connected||!c->initialized||!c->history_ready||c->fault){notice("MESHTASTIC / CHANNEL","Connect and synchronize this radio first.");return;}
+    for(unsigned slot=1;slot<meshmt::MAX_CHANNELS;++slot)
+      if(!c->data.channels[slot].loaded||!c->data.channels[slot].role){cfgui::open_mt_channel(slot);return;}
+    notice("MESHTASTIC / CHANNEL","No unused secondary channel slots were reported by this radio.");
+  }
+  static void add_channel(lv_event_t *){lv_async_call(add_channel_now,nullptr);}
   static void node_details(){
     auto *c=meshmt::client;
     auto *n=c?c->node(selected.node):nullptr;
@@ -221,7 +228,7 @@ namespace mtui {
     const int filter=page==1?nodes_filter:page==2?groups_filter:chats_filter;
     show_center_heading(page==1?"NODES / NETWORKS":page==2?"GROUPS / CHANNELS":"CHATS / NETWORKS",ready()?"Meshtastic connected":c?c->status:"More > Radios > Enable BLE");
     filter_tabs(w,filter);
-    if(page==1)action_button(body,node_sort_label(),8,98,w-16,34,panel2,toggle_node_sort,0);
+    if(page==1)action_button(body,mcui::node_sort_label(),8,98,w-16,34,panel2,toggle_node_sort,0);
     else if(page==2)action_button(body,"ADD CHANNEL",8,98,w-16,34,panel2,add_channel,0);
     int y=page==3?98:141;
     unsigned index=0,shown=0;
@@ -234,10 +241,10 @@ namespace mtui {
     };
     if(c&&filter!=2){
       if(page==1){unsigned count=0;for(unsigned i=0;i<c->data.node_count;++i)node_order[count++]=uint16_t(i);
-        const auto gps=mcxgnss::snapshot();
-        auto distance=[&](unsigned i){const auto &n=c->data.nodes[i];if(!gps.valid||!n.has_lat||!n.has_lon)return 1.0e30;
+        const bool gps_valid=mcui::nav_gps_valid;const double gps_latitude=mcui::nav_latitude,gps_longitude=mcui::nav_longitude;
+        auto distance=[&](unsigned i){const auto &n=c->data.nodes[i];if(!gps_valid||!n.has_lat||!n.has_lon)return 1.0e30;
           const double lat=double(n.latitude)/1e7,lon=double(n.longitude)/1e7;
-          const double dy=(lat-gps.latitude)*111320.0,dx=(lon-gps.longitude)*111320.0*cos(gps.latitude*0.017453292519943295);
+          const double dy=(lat-gps_latitude)*111320.0,dx=(lon-gps_longitude)*111320.0*cos(gps_latitude*0.017453292519943295);
           return dx*dx+dy*dy;
         };
         auto heard=[&](unsigned i){const auto &n=c->data.nodes[i];uint32_t last=n.last_heard,activity=0;
@@ -245,13 +252,13 @@ namespace mtui {
           return (uint64_t(last)<<32)|activity;
         };
         for(unsigned a=1;a<count;++a){const uint16_t value=node_order[a];unsigned b=a;
-          while(b&&(node_sort_distance&&gps.valid?distance(node_order[b-1])>distance(value):heard(node_order[b-1])<heard(value))){node_order[b]=node_order[b-1];--b;}node_order[b]=value;}
+          while(b&&(mcui::node_sort_distance&&mcui::nav_gps_valid?distance(node_order[b-1])>distance(value):heard(node_order[b-1])<heard(value))){node_order[b]=node_order[b-1];--b;}node_order[b]=value;}
         for(unsigned i=0;i<count;++i){auto &n=c->data.nodes[node_order[i]];char title[70],detail[160],when[24];
           snprintf(title,sizeof(title),"MT / %s",n.name);
           uint32_t last=n.last_heard;unsigned messages=0;size_t bytes=0;
           for(const auto &m:c->data.messages)if(m.seq&&m.to!=meshmt::BROADCAST&&(m.to==n.num||m.from==n.num)){++messages;bytes+=strlen(m.text);if(m.time>last)last=m.time;}
           mcxchat::time_local(last,when,sizeof(when),true);
-          if(node_sort_distance&&gps.valid&&n.has_lat&&n.has_lon){
+          if(mcui::node_sort_distance&&gps_valid&&n.has_lat&&n.has_lon){
             const double d=sqrt(distance(node_order[i]));
             snprintf(detail,sizeof(detail),"Last heard %s / recent direct chat: %u msgs / %lu B logged / %.0f m",last?when:"Never",messages,(unsigned long)bytes,d);
           }else snprintf(detail,sizeof(detail),"Last heard %s / recent direct chat: %u msgs / %lu B logged",last?when:"Never",messages,(unsigned long)bytes);
@@ -293,20 +300,20 @@ namespace mtui {
     auto *mc=meshmc::client;
     if(filter==0&&mc){
       if(page==1){unsigned count=0;for(unsigned i=0;i<mc->contact_count;++i)meshcore_node_order[count++]=uint16_t(i);
-        const auto gps=mcxgnss::snapshot();
+        const bool gps_valid=mcui::nav_gps_valid;const double gps_latitude=mcui::nav_latitude,gps_longitude=mcui::nav_longitude;
         auto heard=[&](unsigned i){const auto &c=mc->contacts[i];uint32_t last=c.advert>c.lastmod?c.advert:c.lastmod;
           for(const auto &m:mc->messages)if(m.id&&!m.outgoing&&!m.channel&&!memcmp(m.key,c.key,6)&&m.observed_at>last)last=m.observed_at;return last;};
-        auto distance=[&](unsigned i){const auto &c=mc->contacts[i];if(!gps.valid||!c.lat||!c.lon)return 1.0e30;
+        auto distance=[&](unsigned i){const auto &c=mc->contacts[i];if(!gps_valid||!c.lat||!c.lon)return 1.0e30;
           const double lat=double(c.lat)/1e6,lon=double(c.lon)/1e6;
-          const double dy=(lat-gps.latitude)*111320.0,dx=(lon-gps.longitude)*111320.0*cos(gps.latitude*0.017453292519943295);return dx*dx+dy*dy;};
+          const double dy=(lat-gps_latitude)*111320.0,dx=(lon-gps_longitude)*111320.0*cos(gps_latitude*0.017453292519943295);return dx*dx+dy*dy;};
         for(unsigned a=1;a<count;++a){const uint16_t value=meshcore_node_order[a];unsigned b=a;
-          while(b&&(node_sort_distance&&gps.valid?distance(meshcore_node_order[b-1])>distance(value):heard(meshcore_node_order[b-1])<heard(value))){meshcore_node_order[b]=meshcore_node_order[b-1];--b;}meshcore_node_order[b]=value;}
+          while(b&&(mcui::node_sort_distance&&mcui::nav_gps_valid?distance(meshcore_node_order[b-1])>distance(value):heard(meshcore_node_order[b-1])<heard(value))){meshcore_node_order[b]=meshcore_node_order[b-1];--b;}meshcore_node_order[b]=value;}
         for(unsigned k=0;k<count;++k){unsigned i=meshcore_node_order[k];auto &contact=mc->contacts[i];char title[75],detail[155],when[24];
           snprintf(title,sizeof(title),"MC / %s",contact.name);uint32_t last=heard(i);mcxchat::time_local(last,when,sizeof(when),true);
           unsigned messages=0;size_t bytes=0;for(const auto &m:mc->messages)if(m.id&&!m.channel&&!memcmp(m.key,contact.key,6)){++messages;bytes+=strlen(m.text);}
           snprintf(detail,sizeof(detail),"Heard %s / recent direct chat: %u msgs / %lu B logged",last?when:"Never",messages,(unsigned long)bytes);
-          if(node_sort_distance&&gps.valid&&contact.lat&&contact.lon){const double lat=double(contact.lat)/1e6,lon=double(contact.lon)/1e6;
-            const double dy=(lat-gps.latitude)*111320.0,dx=(lon-gps.longitude)*111320.0*cos(gps.latitude*0.017453292519943295);
+          if(mcui::node_sort_distance&&gps_valid&&contact.lat&&contact.lon){const double lat=double(contact.lat)/1e6,lon=double(contact.lon)/1e6;
+            const double dy=(lat-gps_latitude)*111320.0,dx=(lon-gps_longitude)*111320.0*cos(gps_latitude*0.017453292519943295);
             char suffix[24];snprintf(suffix,sizeof(suffix)," / %.0f m",sqrt(dx*dx+dy*dy));strncat(detail,suffix,sizeof(detail)-strlen(detail)-1);}
           row(title,detail,mcui::choose_contact,i);
         }

@@ -223,7 +223,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
                 assert 'action_button(body,">"' not in mtui and 'action_button(body, ">"' not in mc_nodes_groups
                 assert '"MT STATUS"' not in mtui and '"TOOLS"' not in mc_nodes_groups
                 assert "node_sort_label()" in mtui and "node_sort_label()" in mcui
-                assert "SORT: LAST HEARD" in mainui and "SORT: DISTANCE" in mainui
+                assert "SORT: LAST HEARD" in mcui and "SORT: DISTANCE" in mcui
                 assert "recent direct chat:" in mtui and "recent direct chat:" in mcui
                 assert "unread" in mtui and "unread" in mcui
                 assert "add_channel_menu" in mcui and "channel_secret" in mcui

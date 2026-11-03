@@ -35,8 +35,7 @@ static lv_obj_t *wifi_dialog=nullptr,*wifi_ssid=nullptr,*wifi_password=nullptr,*
 static lv_obj_t *wifi_editor=nullptr,*wifi_edit_text=nullptr,*wifi_edit_target=nullptr;
 static lv_obj_t *wifi_sd_status=nullptr;
 static int page=0;
-static bool node_sort_distance=false;
-static const char *node_sort_label(){if(!node_sort_distance)return "SORT: LAST HEARD";return mcxgnss::snapshot().valid?"SORT: DISTANCE":"DISTANCE / GPS NEEDED";}
+
 static lv_obj_t *uptime_value=nullptr,*heap_value=nullptr,*network_value=nullptr,*backup_value=nullptr;
 static const lv_color_t bg=lv_color_hex(0x090C10);
 static const lv_color_t panel=lv_color_hex(0x181D24);
@@ -1046,6 +1045,7 @@ static void draw(){
   mcxruntime::Scope measured(mcxruntime::DRAW);
   home_clear();
   if(!body||!left_rail||!right_rail||!context_actions)return;
+  const auto map_fix=mcxgnss::snapshot();mcui::set_navigation_fix(map_fix.valid,map_fix.latitude,map_fix.longitude);
   const int lw=has_left_rail()?(left_compact?40:79):0;
   const int rw=has_context_rail()?(right_compact?40:125):0;
   const int cw=480-lw-rw;
