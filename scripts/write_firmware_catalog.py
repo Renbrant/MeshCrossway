@@ -73,6 +73,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.5":
+        summary="EXPERIMENTAL: reuses the existing BLE coordinator task for auto-resume and pairing, avoiding a second 6 KB internal-RAM task allocation. v0.8.26 remains stable."
+        label="BLE coordinator memory fix / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.4":
         summary="EXPERIMENTAL: initializes the BLE controller before Wi-Fi to prevent boot-looping from contiguous internal RAM exhaustion. v0.8.26 remains stable."
         label="BLE startup memory fix / EXPERIMENTAL"

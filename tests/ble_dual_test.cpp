@@ -15,7 +15,7 @@ static void connect_mc(){using namespace meshble;
 }
 int main(){using namespace meshble;
  descriptions[0].peer_id_addr.val[0]=11;descriptions[1].peer_id_addr.val[0]=22;
- assert(request_start());on_sync();connect_mt();const int mt_downs=meshmt::downs;connect_mc();assert(meshmt::downs==mt_downs);assert(snapshot(MESHTASTIC).phase==READY&&snapshot(MESHCORE).phase==READY);
+ assert(request_start());assert(notify_count==1);on_sync();connect_mt();const int mt_downs=meshmt::downs;connect_mc();assert(meshmt::downs==mt_downs);assert(snapshot(MESHTASTIC).phase==READY&&snapshot(MESHCORE).phase==READY);
  assert(nvs.count("peer_mt")&&nvs.count("peer_mc"));assert(mt::read_remembered()&&mc::read_remembered());assert(mt::remembered.radio==MESHTASTIC&&mc::remembered.radio==MESHCORE);
  const uint8_t payload[]={1,2};assert(mc::mc_write(payload,2)&&write_handle==1);assert(mt::mt_write(payload,2)&&write_handle==0);ble_gatt_error ok;mt::mt_written(0,&ok,nullptr,mt::mt_token());
  os_mbuf mb;mb.len=2;ble_gap_event event;event.type=BLE_GAP_EVENT_NOTIFY_RX;event.notify_rx={1,21,&mb};mc::gap_event(&event,nullptr);assert(meshmc::frames==1);event.notify_rx={0,11,&mb};mc::gap_event(&event,nullptr);assert(meshmc::frames==1);

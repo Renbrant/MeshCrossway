@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-using esp_err_t=int;using nvs_handle_t=int;using TaskHandle_t=void*;using BaseType_t=int;using esp_bt_controller_config_t=int;
+using esp_err_t=int;using nvs_handle_t=int;using TaskHandle_t=void*;using BaseType_t=int;using TickType_t=uint32_t;using esp_bt_controller_config_t=int;
 using portMUX_TYPE=int;
 #define portMUX_INITIALIZER_UNLOCKED 0
 #define portENTER_CRITICAL(p) (void)(p)
@@ -15,6 +15,8 @@ using portMUX_TYPE=int;
 #define pdMS_TO_TICKS(n) (n)
 #define BT_CONTROLLER_INIT_CONFIG_DEFAULT() 0
 static constexpr int ESP_OK=0,ESP_ERR_NO_MEM=-12,ESP_ERR_INVALID_STATE=-1,NVS_READONLY=0,NVS_READWRITE=1,pdPASS=1,tskIDLE_PRIORITY=0,ESP_BT_MODE_BLE=1,ESP_BT_CONTROLLER_STATUS_IDLE=0;
+static constexpr int pdTRUE=1;
+static constexpr uint32_t portMAX_DELAY=0xffffffffu;
 static constexpr unsigned MALLOC_CAP_INTERNAL=1,MALLOC_CAP_8BIT=2,MALLOC_CAP_DMA=4;
 static constexpr int BLE_HS_CONN_HANDLE_NONE=65535,BLE_HS_EDONE=14,BLE_ERR_REM_USER_CONN_TERM=19;
 static constexpr int BLE_GATT_CHR_F_WRITE=8,BLE_GATT_CHR_F_NOTIFY=16;
@@ -81,7 +83,8 @@ static const char *esp_err_to_name(int){return "OK";}static void nimble_port_run
 static int ble_store_util_status_rr(void*){return 0;}static int ble_svc_gap_device_name_set(const char*){return 0;}
 extern "C" void ble_store_config_init(){}
 static void vTaskDelay(unsigned){}static void vTaskDelete(void*){}
-template<class...A>static int xTaskCreate(A...){return pdPASS;}
+static int xTaskCreate(void (*)(void*),const char*,unsigned,void*,unsigned,TaskHandle_t *created){*created=reinterpret_cast<TaskHandle_t>(uintptr_t(1));return pdPASS;}
+static uint32_t ulTaskNotifyTake(unsigned,uint32_t){return 0;}static unsigned notify_count=0;static int xTaskNotifyGive(TaskHandle_t){++notify_count;return pdPASS;}
 template<class...A>static int xTaskCreatePinnedToCore(A...){return pdPASS;}
 namespace mcxhistory{static std::atomic<bool> ble_startup{false};}
 namespace mcxpriority{static std::atomic<bool> map_busy{false},ble_initializing{false};}

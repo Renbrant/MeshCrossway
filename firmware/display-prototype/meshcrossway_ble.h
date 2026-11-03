@@ -159,6 +159,7 @@ static void start_internal(){
   debug_memory("after nimble init");
   if(err!=ESP_OK){
     mcxhistory::ble_startup.store(false);
+    mcxpriority::ble_initializing=false;
     char msg[96];snprintf(msg,sizeof(msg),"BLE %s: %s (%d)",init_stage,esp_err_to_name(err),(int)err);
     update(FAILED,msg);return;
   }
@@ -178,30 +179,36 @@ static void start_internal(){
   nimble_port_freertos_init(host_task);
   mt::remember_enabled();
   mcxhistory::ble_startup.store(false);
+  mcxpriority::ble_initializing=false;
   printf("[MCX-BLE] host created; awaiting sync\n");
 }
-static void init_task(void *){
-  // Never initialize controller/host in LVGL or the early app_main boot path.
-  // A short delay allows LVGL, the Wi-Fi AP/STA and HTTP to become responsive.
-  vTaskDelay(pdMS_TO_TICKS(500));
-  // In-flight HTTPS releases TLS/socket allocations before controller/HCI init.
+static constexpr unsigned RESUME_STACK_BYTES=6144;
+static TaskHandle_t reconnect_worker=nullptr;
+static std::atomic<bool> start_requested{false};
+static void resume_stack_diagnostic(){
+  printf("[MCX-BLE] resume stack_free_min=%lu bytes / %u\n",
+         (unsigned long)uxTaskGetStackHighWaterMark(nullptr),RESUME_STACK_BYTES);
+}
+static void schedule_auto_resume();
+static void start_on_worker(){
+  // Reuse the already allocated coordinator stack; a second 6 KB task cannot
+  // be allocated after the BLE controller and Wi-Fi claim internal DRAM.
   for(unsigned wait=0;mcxpriority::map_busy.load()&&wait<80;++wait)vTaskDelay(pdMS_TO_TICKS(50));
   if(mcxpriority::map_busy.load()){
     mcxhistory::ble_startup.store(false);mcxpriority::ble_initializing=false;
-    update(FAILED,"Map worker busy; restart before BLE");vTaskDelete(nullptr);return;
+    update(FAILED,"Map worker busy; BLE startup deferred");return;
   }
-  start_internal();mcxpriority::ble_initializing=false;
+  start_internal();
   read_remembered();restore_offline();
-  vTaskDelete(nullptr);
 }
-static void schedule_auto_resume();
-static bool request_start(){
+
+static bool request_start_impl(bool run_on_worker){
   if(controller_prepare_failed.load()){
     mcxhistory::ble_startup.store(false);
     update(FAILED,"BLE startup skipped: controller memory unavailable; device kept running");
     return false;
   }
-  if(mt::phase()!=OFF||mc::phase()!=OFF)return false; // Do not repeat a partial or failed init.
+  if(mt::phase()!=OFF||mc::phase()!=OFF)return false;
   mcxhistory::ble_startup.store(true);
   if(!meshmc::init()){mcxhistory::ble_startup.store(false);update(FAILED,"No PSRAM for MeshCore session");return false;}
   if(!meshmt::init()){mcxhistory::ble_startup.store(false);update(FAILED,"No PSRAM for Meshtastic session");return false;}
@@ -209,33 +216,32 @@ static bool request_start(){
   meshmt::send_frame=mt::mt_write;meshmt::can_write=mt::mt_can_write;meshmt::pump_read=mt::mt_pump_read;meshmt::close_link=mt::mt_close;
   mcxpriority::ble_initializing=true;
   debug_memory("BLE requested");
-  update(STARTING,"BLE worker requested - standby...");
-  const BaseType_t created=xTaskCreatePinnedToCore(init_task,"mcx_ble_init",6144,nullptr,tskIDLE_PRIORITY+1,nullptr,1);
-  if(created!=pdPASS){
-    mcxhistory::ble_startup.store(false);
-    mcxpriority::ble_initializing=false;
-    update(FAILED,"No memory for BLE worker; restart");return false;
+  update(STARTING,run_on_worker?"Starting BLE on coordinator task...":"BLE start queued...");
+  if(run_on_worker){start_on_worker();return true;}
+  if(!reconnect_worker)schedule_auto_resume();
+  if(!reconnect_worker){
+    mcxhistory::ble_startup.store(false);mcxpriority::ble_initializing=false;
+    update(FAILED,"No memory for BLE coordinator task");
+    return false;
   }
-  schedule_auto_resume();
+  start_requested.store(true);
+  xTaskNotifyGive(reconnect_worker);
   return true;
 }
-static constexpr unsigned RESUME_STACK_BYTES=6144;
-static void resume_stack_diagnostic(){
-  // ESP-IDF reports bytes, unlike upstream FreeRTOS's word-based API.
-  printf("[MCX-BLE] resume stack_free_min=%lu bytes / %u\n",
-         (unsigned long)uxTaskGetStackHighWaterMark(nullptr),RESUME_STACK_BYTES);
-}
-static TaskHandle_t reconnect_worker=nullptr;
+static bool request_start(){return request_start_impl(false);}
 static void auto_resume_task(void *){
-  vTaskDelay(pdMS_TO_TICKS(12000));
-  const bool known=read_remembered();
-  if(!known&&!read_enabled()){reconnect_worker=nullptr;vTaskDelete(nullptr);return;}
-  (void)request_start();
+  const bool known=read_remembered(),enabled=read_enabled();
+  const TickType_t first_wait=(known||enabled)?pdMS_TO_TICKS(12000):portMAX_DELAY;
+  const uint32_t notified=ulTaskNotifyTake(pdTRUE,first_wait);
+  if(notified&&start_requested.exchange(false))start_on_worker();
+  else if(known||enabled)(void)request_start_impl(true);
   bool alternate=false;
   for(;;){
-    vTaskDelay(pdMS_TO_TICKS(3000));
+    const uint32_t wake=ulTaskNotifyTake(pdTRUE,pdMS_TO_TICKS(3000));
+    if((wake||start_requested.load())&&start_requested.exchange(false)){
+      start_on_worker();alternate=false;
+    }
     if(procedure.load()!=UNKNOWN)continue;
-    // Round-robin ensures an absent remembered radio cannot starve the other.
     alternate=!alternate;
     if(alternate)mt::resume_once();else mc::resume_once();
     resume_stack_diagnostic();
@@ -243,6 +249,8 @@ static void auto_resume_task(void *){
 }
 static void schedule_auto_resume(){
   if(reconnect_worker)return;
+  // Keep this small internal-RAM task alive so manual pairing and auto-resume
+  // share its stack instead of allocating another task during BLE startup.
   (void)xTaskCreate(auto_resume_task,"mcx_ble_resume",RESUME_STACK_BYTES,nullptr,tskIDLE_PRIORITY+1,&reconnect_worker);
 }
 } // namespace meshble
