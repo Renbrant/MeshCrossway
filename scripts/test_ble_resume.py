@@ -32,7 +32,7 @@ static int esp_bt_controller_enable(int){assert(++step==2);if(fail==2)return 258
 static int esp_nimble_init(){assert(++step==3);return fail==3?-1:0;}
 static int esp_bt_controller_disable(){++disabled;controller_status=1;return 0;}
 static int esp_bt_controller_deinit(){++deinitialized;controller_status=0;return 0;}
-'''
+'''+startup+r'''
 int main(){
  for(fail=0;fail<=3;++fail){
   step=disabled=deinitialized=controller_status=0;
