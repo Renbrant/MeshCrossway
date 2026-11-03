@@ -701,7 +701,7 @@ static void show_node_details(unsigned index){
 }
 static void show_node_group(unsigned group){
   if(!navui::overlay_cache||group>=navui::overlay_cache->cluster_count)return;
-  char list[5400];size_t used=0;unsigned shown=0;const unsigned total=navui::overlay_cache->clusters[group].count;
+  static char list[5400];list[0]=0;size_t used=0;unsigned shown=0;const unsigned total=navui::overlay_cache->clusters[group].count;
   for(unsigned i=0;i<navui::overlay_cache->node_count&&shown<48;++i){const auto &node=navui::overlay_cache->nodes[i];if(node.cluster!=group)continue;const size_t len=strlen(node.id);const char *suffix=len>=4?node.id+len-4:node.id;
     const int n=snprintf(list+used,sizeof(list)-used,"%s · %s · %s · %s\n",suffix,node.meshcore?"MeshCore":"Meshtastic",node.name,navui::activity_name(navui::node_activity(node)));
     if(n<0||size_t(n)>=sizeof(list)-used)break;

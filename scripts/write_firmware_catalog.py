@@ -73,6 +73,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.3":
+        summary="EXPERIMENTAL: fixes a taskLVGL stack overflow when opening nearby-node map clusters. v0.8.26 remains stable."
+        label="Map cluster stability fix / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.2":
         summary="EXPERIMENTAL: map supports last-four-digit node labels, tap-to-view details, proximity clusters, Small/Medium markers and activity colors based on recent radio timestamps. v0.8.26 remains stable."
         label="Map node labels and clusters / EXPERIMENTAL"
