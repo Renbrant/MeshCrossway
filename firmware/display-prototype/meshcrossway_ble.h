@@ -111,9 +111,9 @@ static void debug_memory(const char *phase){
 // Bring up the memory-hungry controller before Wi-Fi fragments internal DRAM.
 // v0.9.3 logs showed only a 25-26 KB largest block after Wi-Fi, while the
 // BLE controller requested 30-34 KB and asserted instead of returning ENOMEM.
+static const char *init_stage="not started";
 static std::atomic<bool> controller_ready{false},controller_prepare_failed{false};
 static std::atomic<int> controller_prepare_error{0};
-static const char *init_stage="not started";
 static void prepare_controller_early(){
   if(controller_ready.load()||controller_prepare_failed.load())return;
   const uint32_t largest=(uint32_t)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT);
