@@ -41,7 +41,7 @@ int main(){
   const int rc=initialize_stack();
   if(fail==0)assert(rc==0&&step==3&&controller_ready.load()&&!disabled&&!deinitialized&&!strcmp(init_stage,"host ready"));
   if(fail==1)assert(rc==257&&step==1&&controller_prepare_failed.load()&&!disabled&&!deinitialized&&!strcmp(init_stage,"early controller init"));
-  if(fail==2)assert(rc==258&&step==2&&controller_prepare_failed.load()&&!disabled&&deinitialized==1&&!strcmp(init_stage,"early controller enable"));
+  if(fail==2)assert(rc==258&&step==2&&controller_prepare_failed.load()&&disabled==1&&deinitialized==1&&!strcmp(init_stage,"early controller enable"));
   if(fail==3)assert(rc==-1&&step==3&&controller_prepare_failed.load()&&disabled==1&&deinitialized==1&&!strcmp(init_stage,"host / HCI"));
  }
  puts("PASS: early BLE controller memory gate, staged init errors and safe cleanup");
