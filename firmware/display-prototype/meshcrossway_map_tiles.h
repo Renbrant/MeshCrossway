@@ -280,7 +280,7 @@ static void worker(void *){
 static bool start(){
   if(task)return true;
   load_config();
-  const BaseType_t result=xTaskCreatePinnedToCoreWithCaps(worker,"mcx_map",MAP_WORKER_STACK_BYTES,nullptr,1,&task,0,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+  const auto result=xTaskCreatePinnedToCoreWithCaps(worker,"mcx_map",MAP_WORKER_STACK_BYTES,nullptr,1,&task,0,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
   if(result!=pdPASS){
     task=nullptr;last_error=ESP_ERR_NO_MEM;
     printf("[MCX-MAP] worker create failed rc=%ld stack=%lu internal_free=%lu internal_largest=%lu psram_free=%lu psram_largest=%lu\\n",(long)result,(unsigned long)MAP_WORKER_STACK_BYTES,(unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),(unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),(unsigned long)heap_caps_get_free_size(MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT),(unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
