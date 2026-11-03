@@ -818,7 +818,7 @@ static void render() {
         }else snprintf(detail,sizeof(detail),"%s / %u unread / recent direct chat: %u msgs / %lu B logged",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes);
       }
       auto *b=action_button(body,"",8,y,w-16,74,panel,is_channel?choose_channel:choose_contact,i);
-      emoji_txt(b,title,7,5,w-30,white);
+      emoji_txt(b, title, 7, 5, w-30, white);
       auto *d=txt(b,detail,7,31,w-30,muted);lv_obj_set_height(d,37);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
       y+=80;
     }
