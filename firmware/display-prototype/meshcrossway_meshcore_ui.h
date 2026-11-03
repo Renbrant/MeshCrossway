@@ -941,11 +941,11 @@ static void list_batch_tick(lv_timer_t *timer){
     if(!list_batch_channels){
       auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
       lv_obj_set_pos(name,7,8);lv_obj_set_size(name,145,40);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
-      auto *d=txt(b,detail,158,4,list_batch_width-174,50,muted);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+      auto *d=txt(b,detail,158,4,list_batch_width-174,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
       list_batch_y+=64;
     }else{
       emoji_label_text(lv_obj_get_child(b,0),title);
-      auto *d=txt(b,detail,7,31,list_batch_width-30,37,muted);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+      auto *d=txt(b,detail,7,31,list_batch_width-30,muted);lv_obj_set_height(d,37);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
       list_batch_y+=80;
     }
   }

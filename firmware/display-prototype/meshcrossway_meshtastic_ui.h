@@ -236,7 +236,7 @@ namespace mtui {
       }
       auto *b=action_button(body,"",8,node_batch_y,node_batch_width-16,58,panel,callback,intptr_t(token));
       auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);lv_obj_set_pos(name,7,8);lv_obj_set_size(name,145,40);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
-      auto *d=txt(b,detail,158,4,node_batch_width-174,50,muted);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+      auto *d=txt(b,detail,158,4,node_batch_width-174,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
       node_batch_y+=64;--budget;
     }
   }
@@ -294,11 +294,11 @@ namespace mtui {
       if(page==1){
         auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);
         lv_obj_set_pos(name,7,8);lv_obj_set_size(name,145,40);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
-        auto *d=txt(b,detail,158,4,w-174,50,muted);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+        auto *d=txt(b,detail,158,4,w-174,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
         y+=64;
       }else{
         mcui::emoji_label_text(lv_obj_get_child(b,0),title);
-        auto *d=txt(b,detail,7,31,w-30,37,muted);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+        auto *d=txt(b,detail,7,31,w-30,muted);lv_obj_set_height(d,37);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
         y+=80;
       }
     };
