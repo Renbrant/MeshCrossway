@@ -73,6 +73,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.4":
+        summary="EXPERIMENTAL: initializes the BLE controller before Wi-Fi to prevent boot-looping from contiguous internal RAM exhaustion. v0.8.26 remains stable."
+        label="BLE startup memory fix / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.3":
         summary="EXPERIMENTAL: fixes a taskLVGL stack overflow when opening nearby-node map clusters. v0.8.26 remains stable."
         label="Map cluster stability fix / EXPERIMENTAL"

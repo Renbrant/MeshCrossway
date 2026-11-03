@@ -108,17 +108,46 @@ static void debug_memory(const char *phase){
          (unsigned long)esp_get_free_heap_size());
   fflush(stdout);
 }
-// Separate SDK stages: nimble_port_init() collapses HCI allocation failures
-// into ESP_FAIL. Keep the actual stage visible; never retry partial host init.
+// Bring up the memory-hungry controller before Wi-Fi fragments internal DRAM.
+// v0.9.3 logs showed only a 25-26 KB largest block after Wi-Fi, while the
+// BLE controller requested 30-34 KB and asserted instead of returning ENOMEM.
 static const char *init_stage="not started";
-static esp_err_t initialize_stack(){
-  init_stage="controller init";
+static std::atomic<bool> controller_ready{false},controller_prepare_failed{false};
+static std::atomic<int> controller_prepare_error{0};
+static void prepare_controller_early(){
+  if(controller_ready.load()||controller_prepare_failed.load())return;
+  const uint32_t largest=(uint32_t)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT);
+  if(largest<48*1024){
+    controller_prepare_error.store(ESP_ERR_NO_MEM);controller_prepare_failed.store(true);
+    printf("[MCX-BLE] early controller skipped: largest internal block=%lu; need at least 49152 bytes\n",(unsigned long)largest);
+    return;
+  }
   esp_bt_controller_config_t cfg=BT_CONTROLLER_INIT_CONFIG_DEFAULT();
-  esp_err_t rc=esp_bt_controller_init(&cfg);if(rc!=ESP_OK)return rc;
-  init_stage="controller enable";rc=esp_bt_controller_enable(ESP_BT_MODE_BLE);
-  if(rc!=ESP_OK){(void)esp_bt_controller_deinit();return rc;}
-  init_stage="host / HCI";rc=esp_nimble_init();
-  if(rc!=ESP_OK){(void)esp_bt_controller_disable();(void)esp_bt_controller_deinit();return rc;}
+  init_stage="early controller init";
+  esp_err_t rc=esp_bt_controller_init(&cfg);
+  if(rc==ESP_OK){init_stage="early controller enable";rc=esp_bt_controller_enable(ESP_BT_MODE_BLE);}
+  if(rc!=ESP_OK){
+    controller_prepare_error.store((int)rc);controller_prepare_failed.store(true);
+    if(esp_bt_controller_get_status()!=ESP_BT_CONTROLLER_STATUS_IDLE){
+      (void)esp_bt_controller_disable();(void)esp_bt_controller_deinit();
+    }
+    printf("[MCX-BLE] %s failed: %s (%d); BLE auto-start disabled\n",init_stage,esp_err_to_name(rc),(int)rc);
+    return;
+  }
+  controller_ready.store(true);
+  printf("[MCX-BLE] controller prepared before Wi-Fi; internal largest=%lu\n",
+         (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT));
+}
+static esp_err_t initialize_stack(){
+  if(controller_prepare_failed.load())return (esp_err_t)controller_prepare_error.load();
+  if(!controller_ready.load()){init_stage="controller not prepared before Wi-Fi";return ESP_ERR_INVALID_STATE;}
+  init_stage="host / HCI";esp_err_t rc=esp_nimble_init();
+  if(rc!=ESP_OK){
+    (void)esp_bt_controller_disable();(void)esp_bt_controller_deinit();
+    controller_ready.store(false);
+    controller_prepare_error.store((int)rc);controller_prepare_failed.store(true);
+    return rc;
+  }
   init_stage="host ready";return ESP_OK;
 }
 static void start_internal(){
@@ -130,7 +159,7 @@ static void start_internal(){
   debug_memory("after nimble init");
   if(err!=ESP_OK){
     mcxhistory::ble_startup.store(false);
-    char msg[96];snprintf(msg,sizeof(msg),"BLE %s: %s (%d); restart",init_stage,esp_err_to_name(err),(int)err);
+    char msg[96];snprintf(msg,sizeof(msg),"BLE %s: %s (%d)",init_stage,esp_err_to_name(err),(int)err);
     update(FAILED,msg);return;
   }
   (void)ble_att_set_preferred_mtu(517);
@@ -167,6 +196,11 @@ static void init_task(void *){
 }
 static void schedule_auto_resume();
 static bool request_start(){
+  if(controller_prepare_failed.load()){
+    mcxhistory::ble_startup.store(false);
+    update(FAILED,"BLE startup skipped: controller memory unavailable; device kept running");
+    return false;
+  }
   if(mt::phase()!=OFF||mc::phase()!=OFF)return false; // Do not repeat a partial or failed init.
   mcxhistory::ble_startup.store(true);
   if(!meshmc::init()){mcxhistory::ble_startup.store(false);update(FAILED,"No PSRAM for MeshCore session");return false;}
