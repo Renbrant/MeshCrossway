@@ -238,8 +238,8 @@ static void test_companion_ui(const char *preview){
   mcui::show_list();assert(!mcui::conversation);chatview::invalidate();lv_obj_clean(body);mcui::render();advance();assert(mcui::thread_count==1);
   c.qcount=0;mcui::select(mcxchat::key_for(c,false,0));
   for(int i=0;i<20;i++){mcui::form(26);assert(lv_textarea_get_password_mode(mcui::fields[1]));mcui::close();}
-  mcui::tools();advance();assert(lv_obj_get_child_cnt(mcui::scroller)==meshmc::COMMAND_COUNT+1);mcui::close();
-  c.protocol=7;mcui::tools();lv_obj_scroll_to_y(mcui::scroller,4000,LV_ANIM_OFF);advance();assert(!strcmp(lv_label_get_text(lv_obj_get_child(lv_obj_get_child(mcui::scroller,meshmc::COMMAND_COUNT),0)),"Local radio console"));assert(lv_obj_has_state(lv_obj_get_child(mcui::scroller,meshmc::COMMAND_COUNT),LV_STATE_DISABLED));mcui::close();
+  mcui::tools();advance();assert(lv_obj_get_child_cnt(mcui::scroller)==6);mcui::close();
+  c.protocol=7;mcui::tools();tap_object(mc_button(mcui::scroller,"Advanced tools"));advance();auto *local_console=mc_button(mcui::scroller,"Local radio console");assert(local_console&&lv_obj_has_state(local_console,LV_STATE_DISABLED));mcui::close();
   mcui::radio_status=txt(body,"stale sync",8,8,350,white);advance();c.busy=false;c.fault=false;c.initialized=true;mcui::poll(nullptr);advance();assert(!strcmp(lv_label_get_text(mcui::radio_status),"MeshCore ready"));mcui::radio_status=nullptr;
   // The disconnected-radio regression must keep a useful draft, show a reason,
   // and disable SEND. Reconnection re-enables it without dismissing the draft.
