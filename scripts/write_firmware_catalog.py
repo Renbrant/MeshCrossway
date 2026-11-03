@@ -25,6 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit release approval.
 approved={
+    "v0.8.26":("v0.8.26 is the user-selected stable firmware. Its exact v0.8.26 binary is restored from the published Pages artifact and checksum-verified.", "Recommended stable / dual-radio maps and tracks"),
     "v0.8.23":("v0.8.23 is the user-selected stable release. It retains the exact previously published firmware image; the 0.8.24 configuration redesign is a separate candidate.", "Recommended stable / dual-network maps and tracks"),
     "v0.8.17":("The v0.8.17 dual-radio and remote map/route release is confirmed working well on the device and is the recommended stable image. Exact published binary is retained.", "Recommended stable / maps and tracks"),
     "v0.8.14":("Previous hardware-tested stable release, retained as rollback. Includes Bluetooth/HTTP stack fixes, track folders and remote workspaces. Exact tested binary retained unchanged.", "Previous stable / rollback"),
@@ -72,16 +73,16 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
-    elif version=="v0.8.26":
-        summary="EXPERIMENTAL: remote MeshCore chat now shows channel sender names from the message prefix and removes the prefix from the displayed body; direct messages use the contact name. v0.8.23 remains stable."
-        label="Remote MeshCore sender names / EXPERIMENTAL"
+    elif version=="v0.9.0":
+        summary="EXPERIMENTAL: device and remote settings are organized into separate category menus for Meshtastic and MeshCore, inspired by WadaMesh repeater management. v0.8.26 remains stable."
+        label="Independent categorized radio settings / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.8.25":
-        summary="EXPERIMENTAL / HARDWARE VALIDATION PENDING: map opens on positioned Meshtastic or MeshCore nodes when local GPS has no current fix; Center GPS remains available when a fix arrives. v0.8.23 remains stable."
+        summary="EXPERIMENTAL / HARDWARE VALIDATION PENDING: map opens on positioned Meshtastic or MeshCore nodes when local GPS has no current fix; Center GPS remains available when a fix arrives. v0.8.26 remains stable."
         label="Map fallback centering / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.8.24":
-        summary="EXPERIMENTAL: reorganized Meshtastic and MeshCore settings into categories, added search in the remote settings workspace, and fixed remote node distance sorting dependency. v0.8.23 remains stable."
+        summary="EXPERIMENTAL: reorganized Meshtastic and MeshCore settings into categories, added search in the remote settings workspace, and fixed remote node distance sorting dependency. v0.8.26 remains stable."
         label="Radio settings navigation redesign / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.8.22":

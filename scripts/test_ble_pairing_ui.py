@@ -238,8 +238,8 @@ static void test_companion_ui(const char *preview){
   mcui::show_list();assert(!mcui::conversation);chatview::invalidate();lv_obj_clean(body);mcui::render();advance();assert(mcui::thread_count==1);
   c.qcount=0;mcui::select(mcxchat::key_for(c,false,0));
   for(int i=0;i<20;i++){mcui::form(26);assert(lv_textarea_get_password_mode(mcui::fields[1]));mcui::close();}
-  mcui::tools();advance();assert(lv_obj_get_child_cnt(mcui::scroller)==meshmc::COMMAND_COUNT+1);mcui::close();
-  c.protocol=7;mcui::tools();lv_obj_scroll_to_y(mcui::scroller,4000,LV_ANIM_OFF);advance();assert(!strcmp(lv_label_get_text(lv_obj_get_child(lv_obj_get_child(mcui::scroller,meshmc::COMMAND_COUNT),0)),"Local radio console"));assert(lv_obj_has_state(lv_obj_get_child(mcui::scroller,meshmc::COMMAND_COUNT),LV_STATE_DISABLED));mcui::close();
+  mcui::tools();advance();assert(lv_obj_get_child_cnt(mcui::scroller)==6);mcui::close();
+  c.protocol=7;mcui::tools();assert(lv_obj_get_child_cnt(mcui::scroller)==6);mcui::close();
   mcui::radio_status=txt(body,"stale sync",8,8,350,white);advance();c.busy=false;c.fault=false;c.initialized=true;mcui::poll(nullptr);advance();assert(!strcmp(lv_label_get_text(mcui::radio_status),"MeshCore ready"));mcui::radio_status=nullptr;
   // The disconnected-radio regression must keep a useful draft, show a reason,
   // and disable SEND. Reconnection re-enables it without dismissing the draft.
@@ -338,14 +338,14 @@ static void test_companion_ui(const char *preview){
   for(auto &m:mt.data.messages)m=meshmt::Message{};
   mt.data.next_seq=8;mt.data.message_count=1;auto &sparse_mt=mt.data.messages[37];sparse_mt.seq=4;sparse_mt.from=456;sparse_mt.to=meshmt::BROADCAST;sparse_mt.channel=0;sparse_mt.channel_identity=99;strcpy(sparse_mt.text,"Sparse MT message");
   chatview::invalidate();lv_obj_clean(body);mtui::render();advance();bool sparse_mt_seen=false;for(const auto &row:chatview::cache->rows)if(row.id==4&&row.object)sparse_mt_seen=true;assert(sparse_mt_seen&&sparse_mt.read);
-  cfgui::open_mt(nullptr);advance();assert(lv_obj_get_child_cnt(cfgui::list)==meshmt::settings::SECTION_COUNT);
-  lv_obj_scroll_to_view(mc_button(cfgui::list,"Lora"),LV_ANIM_OFF);advance();tap_object(mc_button(cfgui::list,"Lora"));assert(mt.settings.stage==meshmt::Settings::READ_SEND);
+  cfgui::open_mt(nullptr);advance();assert(lv_obj_get_child_cnt(cfgui::list)==6);cfgui::selected_category=1;cfgui::groups(nullptr);assert(lv_obj_get_child_cnt(cfgui::list)==3);
+  auto *lora_group=lv_obj_get_child(cfgui::list,2);lv_obj_scroll_to_view(lora_group,LV_ANIM_OFF);advance();lv_event_send(lora_group,LV_EVENT_CLICKED,nullptr);assert(mt.settings.stage==meshmt::Settings::READ_SEND);
   mt.settings.loaded=true;mt.settings.stage=meshmt::Settings::LOADED;mt.settings.section=5;meshmt::Writer settings_writer(mt.settings.current);settings_writer.scalar(7,1);++mt.settings.revision;advance(400);
   assert(lv_obj_get_child_cnt(cfgui::list)==meshmt::settings::sections[5].count);
   unsigned region_field=0;while(strcmp(meshmt::settings::sections[5].fields[region_field].name,"region"))++region_field;
   lv_event_send(lv_obj_get_child(cfgui::list,region_field),LV_EVENT_CLICKED,nullptr);advance();assert(cfgui::options);
   lv_dropdown_set_selected(cfgui::options,3);tap_object(cfgui::save);assert(cfgui::confirmed);tap_object(cfgui::save);assert(mt.settings.stage==meshmt::Settings::FRESH_SEND&&!cfgui::editor);
-  cfgui::groups(nullptr);advance(400);assert(lv_obj_get_child_cnt(cfgui::list)==meshmt::settings::SECTION_COUNT);cfgui::close(nullptr);
+  cfgui::groups(nullptr);advance(400);assert(lv_obj_get_child_cnt(cfgui::list)==3);cfgui::close(nullptr);
   puts("PASS: native settings groups, read state, enum editor, explicit confirmation and preserved group navigation");
   chatview::invalidate();lv_obj_del(body);body=nullptr;delete meshmt::client;meshmt::client=nullptr;
   puts("PASS: Meshtastic real-LVGL node/channel selection, compose, keyboard bounds, native send, offline gating, saved draft and compatibility dialog");
