@@ -773,14 +773,16 @@ static void render() {
       if(!channels){
         const auto &contact=s->contacts[i];uint32_t last=contact.advert>contact.lastmod?contact.advert:contact.lastmod;uint32_t latest=0;
         for(const auto &m:s->messages)if(m.id&&!m.outgoing&&!m.channel&&!memcmp(m.key,contact.key,6)){
-          if(m.observed_at>last)last=m.observed_at;if(m.id>latest)latest=m.id;
+          if(m.observed_at>last)last=m.observed_at;
+          if(m.id>latest)latest=m.id;
         }
         return (uint64_t(last)<<32)|latest;
       }
       const auto key=key_for_index(i);uint32_t last=0,latest=0;
       for(const auto &m:s->messages)if(m.id&&!m.outgoing&&mcxchat::belongs(m,key)){
         const uint32_t seen=m.observed_at?m.observed_at:m.id;
-        if(seen>last)last=seen;if(m.id>latest)latest=m.id;
+        if(seen>last)last=seen;
+        if(m.id>latest)latest=m.id;
       }
       return (uint64_t(last)<<32)|latest;
     };

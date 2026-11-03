@@ -303,7 +303,8 @@ namespace mtui {
       if(page==1){unsigned count=0;for(unsigned i=0;i<mc->contact_count;++i)meshcore_node_order[count++]=uint16_t(i);
         const bool gps_valid=mcui::nav_gps_valid;const double gps_latitude=mcui::nav_latitude,gps_longitude=mcui::nav_longitude;
         auto heard=[&](unsigned i){const auto &c=mc->contacts[i];uint32_t last=c.advert>c.lastmod?c.advert:c.lastmod;
-          for(const auto &m:mc->messages)if(m.id&&!m.outgoing&&!m.channel&&!memcmp(m.key,c.key,6)&&m.observed_at>last)last=m.observed_at;return last;};
+          for(const auto &m:mc->messages){if(m.id&&!m.outgoing&&!m.channel&&!memcmp(m.key,c.key,6)&&m.observed_at>last)last=m.observed_at;}
+          return last;};
         auto distance=[&](unsigned i){const auto &c=mc->contacts[i];if(!gps_valid||!c.lat||!c.lon)return 1.0e30;
           const double lat=double(c.lat)/1e6,lon=double(c.lon)/1e6;
           const double dy=(lat-gps_latitude)*111320.0,dx=(lon-gps_longitude)*111320.0*cos(gps_latitude*0.017453292519943295);return dx*dx+dy*dy;};
