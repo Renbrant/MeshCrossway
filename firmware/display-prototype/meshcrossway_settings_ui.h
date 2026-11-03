@@ -234,4 +234,24 @@ static void open_mt(lv_event_t *) {
   groups(nullptr);
   timer = lv_timer_create(refresh, 300, nullptr);
 }
+static void open_mt_channel(unsigned slot) {
+  open_mt(nullptr);
+  auto *c=meshmt::client;
+  if(!c||!c->connected||!c->initialized||!c->history_ready||c->fault){
+    lv_label_set_text(status,"Connect and synchronize Meshtastic before editing a channel.");return;
+  }
+  selected_category=4;
+  groups(nullptr);
+  for(unsigned i=0;i<meshmt::settings::SECTION_COUNT;++i)
+    if(meshmt::settings::sections[i].family==3&&meshmt::settings::sections[i].tag==slot){
+      group=i;
+      if(c->settings.read(i)){
+        showing_groups=false;drawn=UINT32_MAX;
+        if(back_button){lv_obj_clear_flag(back_button,LV_OBJ_FLAG_HIDDEN);lv_label_set_text(lv_obj_get_child(back_button,0),"BACK");}
+        refresh(nullptr);
+      }
+      return;
+    }
+  lv_label_set_text(status,"This Meshtastic channel slot is unavailable in the radio protocol.");
+}
 } // namespace cfgui

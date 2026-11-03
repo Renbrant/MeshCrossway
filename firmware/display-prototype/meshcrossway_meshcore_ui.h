@@ -12,7 +12,7 @@ static unsigned tools_filter=0;
 static bool tools_show_presets=false;
 static bool confirm_pending = false, group = false, conversation = false, reveal = false;
 static uint8_t target_key[32] = {};
-static uint16_t target_slot = 0, list_offset = 0;
+static uint16_t target_slot = 0;
 static uint32_t rendered_generation = 0,rendered_zone=0;
 static uint32_t last_redraw=0;
 static mcxchat::Key selected;
@@ -204,8 +204,7 @@ static void apply(lv_event_t *e) {
                       "Queue full, unsupported firmware, slot/power out of range, or frame exceeds BLE MTU.");
     return;
   }
-  if (selected_command == 4)
-    list_offset = 0;
+  
   result();
   lv_label_set_text(feedback, "Command queued. Waiting for radio response...");
 }
@@ -463,13 +462,39 @@ static void choose_channel_now(void *data) {
 static void choose_channel(lv_event_t *e) {
   lv_async_call(choose_channel_now, lv_event_get_user_data(e));
 }
-static void paginate_now(void *data) {
-  int direction = (int)(intptr_t)data;
-  list_offset = direction > 0 ? list_offset + 10 : (list_offset >= 10 ? list_offset - 10 : 0);
-  draw();
+static void toggle_node_sort_now(void *){node_sort_distance=!node_sort_distance;draw();}
+static void toggle_node_sort(lv_event_t *){lv_async_call(toggle_node_sort_now,nullptr);}
+static void add_meshcore_channel_now(void *mode);
+static void add_meshcore_channel(lv_event_t *e){lv_async_call(add_meshcore_channel_now,lv_event_get_user_data(e));}
+static void add_mt_channel_now(lv_event_t *) {
+  auto *c=meshmt::client;
+  if(!c||!c->connected||!c->initialized){notice("MESHTASTIC / CHANNEL","Connect and synchronize the Meshtastic radio first.");return;}
+  for(unsigned slot=1;slot<meshmt::MAX_CHANNELS;++slot)
+    if(!c->data.channels[slot].loaded||!c->data.channels[slot].role){cfgui::open_mt_channel(slot);return;}
+  notice("MESHTASTIC / CHANNEL","No unused secondary channel slots were reported by this radio.");
 }
-static void paginate(lv_event_t *e) {
-  lv_async_call(paginate_now, lv_event_get_user_data(e));
+static void add_mt_channel(lv_event_t *){lv_async_call(add_mt_channel_now,nullptr);}
+static void add_channel_menu(){
+  base("ADD CHANNEL");
+  auto *info=txt(scroller,"Choose a network channel type. Meshtastic uses its PSK settings; MeshCore # channels derive a shared public key.",10,4,450,muted);lv_obj_set_height(info,38);lv_label_set_long_mode(info,LV_LABEL_LONG_WRAP);
+  action_button(scroller,"MESHTASTIC SECONDARY CHANNEL",8,48,448,42,panel2,add_mt_channel,0);
+  action_button(scroller,"MESHCORE PUBLIC # CHANNEL",8,98,448,42,panel2,add_meshcore_channel,1);
+  action_button(scroller,"MESHCORE PRIVATE CHANNEL",8,148,448,42,panel2,add_meshcore_channel,0);
+}
+static void show_add_channel_menu_now(void *){add_channel_menu();}
+static void show_add_channel_menu(){lv_async_call(show_add_channel_menu_now,nullptr);}
+static void open_add_channel_event(lv_event_t *){show_add_channel_menu();}
+static void add_meshcore_channel_now(void *mode){
+  auto *s=session();
+  if(!s||!ready()){notice("MESHCORE / CHANNEL","Connect and synchronize MeshCore before adding a channel.");return;}
+  unsigned slot=meshmc::MAX_CHANNELS;
+  for(unsigned i=0;i<meshmc::MAX_CHANNELS;++i)if(!s->channels[i].loaded){slot=i;break;}
+  if(slot==meshmc::MAX_CHANNELS){notice("MESHCORE / CHANNEL","No unused channel slots are available on this radio.");return;}
+  target_slot=uint16_t(slot);
+  form(32);
+  if(field_count>1&&fields[1])lv_textarea_set_text(fields[1],intptr_t(mode)?"#":"");
+  if(field_count>2&&fields[2])lv_textarea_set_text(fields[2],"");
+  if(feedback)lv_label_set_text(feedback,intptr_t(mode)?"Name the channel #topic; its public key will be derived from that name.":"A random private key will be generated when you leave the key blank.");
 }
 static int unread(bool is_group, int index) {
   if (!session())
@@ -572,7 +597,7 @@ static void local_action(lv_event_t *e){
 }
 static void chat_tools_event(lv_event_t *){chat_tools();}
 static void room_menu_event(lv_event_t *){room_menu();}
-static void toggle_groups(lv_event_t *){groups_rooms=!groups_rooms;list_offset=0;draw();}
+static void toggle_groups(lv_event_t *){groups_rooms=!groups_rooms;draw();}
 static void notification_open_now(void *){
   auto *s=session();auto *m=s?s->by_id(notification_id):nullptr;
   if(m){select(mcxchat::key_for_message(*s,*m));page=3;draw();}
@@ -716,14 +741,18 @@ static void render() {
                         ready() ? "Live MeshCore session" : "Connect a MeshCore Companion");
     int filter = channels ? groups_filter : nodes_filter;
     filter_tabs(w, filter);
+    if(!channels)action_button(body,node_sort_label(),8,98,w-16,34,panel2,toggle_node_sort,0);
+    else {
+      action_button(body,groups_rooms?"ROOMS":"CHANNELS",8,98,(w-22)/2,34,panel2,toggle_groups,0);
+      action_button(body,"ADD CHANNEL",(w+2)/2,98,(w-22)/2,34,panel2,open_add_channel_event,0);
+    }
     if (filter == 1) {
-      single_label(body, "Meshtastic is not integrated yet.", 8, 107, w - 16, muted);
+      single_label(body, "Meshtastic is not integrated yet.", 8, 141, w - 16, muted);
       return;
     }
     if (!s || (!s->initialized && !s->contact_count && !s->channel_count)) {
       lv_obj_t *status = single_label(body,
-          s ? s->status : "More > Radios > Enable BLE", 8, 107, w - 16, orange);
-      // Diagnostic code/length must remain readable, not end in "...".
+          s ? s->status : "More > Radios > Enable BLE", 8, 141, w - 16, orange);
       lv_label_set_long_mode(status,LV_LABEL_LONG_WRAP);
       lv_obj_set_height(status,52);
       return;
@@ -734,57 +763,69 @@ static void render() {
       if(room_list&&s->contacts[i].type!=3)continue;
       display_indices[total++]=i;
     }
-    // Sort by radio activity. Favorites remain visible in labels but do not
-    // move an older node or channel ahead of a more recently heard one.
-    auto rank=[&](int i)->uint64_t {
-      if(!channels){const auto &contact=s->contacts[i];uint32_t last=contact.advert>contact.lastmod?contact.advert:contact.lastmod;uint32_t message=0;
-        for(const auto &m:s->messages)if(m.id&&!m.outgoing&&!memcmp(m.key,contact.key,6)){if(m.observed_at>last)last=m.observed_at;if(m.id>message)message=m.id;}
-        return (uint64_t(last)<<32)|message;
-      }
-      auto key=mcxchat::key_for(*s,!room_list,i);uint32_t last=0;
-      for(const auto &m:s->messages)if(!m.outgoing&&mcxchat::belongs(m,key)&&m.id>last)last=m.id;
-      return last;
+    const auto gps=mcxgnss::snapshot();
+    auto key_for_index=[&](int i){return mcxchat::key_for(*s,channels&&!room_list,i);};
+    auto distance_key=[&](int i)->uint64_t{
+      const auto &c=s->contacts[i];
+      if(!gps.valid||!c.lat||!c.lon)return UINT64_MAX;
+      const double lat=double(c.lat)/1000000.0,lon=double(c.lon)/1000000.0;
+      const double dy=(lat-gps.latitude)*111320.0;
+      const double dx=(lon-gps.longitude)*111320.0*cos(gps.latitude*0.017453292519943295);
+      const double d=dx*dx+dy*dy;
+      return d<0||d>1.0e15?UINT64_MAX:uint64_t(d);
     };
-    for(int a=0;a<total;++a)display_scores[display_indices[a]]=rank(display_indices[a]);
-    for(int a=1;a<total;++a){uint16_t value=display_indices[a];int b=a;const uint64_t score=display_scores[value];
-      while(b&&display_scores[display_indices[b-1]]<score){display_indices[b]=display_indices[b-1];--b;}display_indices[b]=value;
-    }
-    if (list_offset >= total)
-      list_offset = 0;
-    action_button(body, "<", 8, 99, 45, 34, panel2, paginate, -1);
-    action_button(body, ">", 59, 99, 45, 34, panel2, paginate, 1);
-    if(channels)action_button(body,groups_rooms?"ROOMS / CHANNELS":"CHANNELS / ROOMS",112,99,w-120,34,panel2,toggle_groups,0);
-    else action_button(body, "TOOLS", 112, 99, w - 120, 34, panel2, on_tools, 0);
-    int y = 141;
-    if (!total)
-      single_label(body, "No entries reported by the radio.", 8, y, w - 16, muted);
-    for (int row = list_offset; row < total && row < list_offset + 10; row++) {
-      const int i=display_indices[row];const bool is_channel=channels&&!room_list;
-      const auto key=mcxchat::key_for(*s,is_channel,i);const auto *pref=mcxhistory::preferences().get(key);
-      char title[75], detail[100];
-      bool loaded = is_channel && s->channels[i].loaded;
-      if (is_channel) {
-        snprintf(title, sizeof(title), "%u / %s", i,
-                 loaded && s->channels[i].name[0] ? s->channels[i].name : "Empty slot");
-        snprintf(detail, sizeof(detail), "%d unread / tap to %s", unread(true, i),
-                 loaded && s->channels[i].name[0] ? "chat" : "configure");
-      } else {
-        const auto &c = s->contacts[i];
-        snprintf(title, sizeof(title), "%s%s",pref&&pref->favorite?"* ":"",pref&&pref->alias[0]?pref->alias:c.name);
-        snprintf(detail, sizeof(detail), "%s / %d unread",
-                 c.type == 2   ? "Repeater"
-                 : c.type == 3 ? "Room"
-                 : c.type == 4 ? "Sensor"
-                               : "Companion",
-                 unread(false, i));
+    auto rank=[&](int i)->uint64_t {
+      if(!channels){
+        const auto &contact=s->contacts[i];uint32_t last=contact.advert>contact.lastmod?contact.advert:contact.lastmod;uint32_t latest=0;
+        for(const auto &m:s->messages)if(m.id&&!m.outgoing&&!m.channel&&!memcmp(m.key,contact.key,6)){
+          if(m.observed_at>last)last=m.observed_at;if(m.id>latest)latest=m.id;
+        }
+        return (uint64_t(last)<<32)|latest;
       }
-      uint32_t last=0;for(const auto &m:s->messages)if(mcxchat::belongs(m,key)&&m.id>last)last=m.id;
-      if(last){auto *m=s->by_id(last);char recent[100];snprintf(recent,sizeof(recent),"%d unread / %.65s",mcxchat::unread(*s,key),m->text);snprintf(detail,sizeof(detail),"%s",recent);}
-      lv_obj_t *b =
-          action_button(body, "", 8, y, w - 16, 60, panel, is_channel ? choose_channel : choose_contact, i);
-      emoji_txt(b, title, 7, 6, w - 30, white);
-      txt(b, detail, 7, 33, w - 30, muted);
-      y += 67;
+      const auto key=key_for_index(i);uint32_t last=0,latest=0;
+      for(const auto &m:s->messages)if(m.id&&!m.outgoing&&mcxchat::belongs(m,key)){
+        const uint32_t seen=m.observed_at?m.observed_at:m.id;
+        if(seen>last)last=seen;if(m.id>latest)latest=m.id;
+      }
+      return (uint64_t(last)<<32)|latest;
+    };
+    for(int a=0;a<total;++a){int i=display_indices[a];display_scores[i]=!channels&&node_sort_distance&&gps.valid?distance_key(i):rank(i);}
+    for(int a=1;a<total;++a){uint16_t value=display_indices[a];int b=a;const uint64_t score=display_scores[value];
+      while(b&&(node_sort_distance&&!channels&&gps.valid?display_scores[display_indices[b-1]]>score:display_scores[display_indices[b-1]]<score)){display_indices[b]=display_indices[b-1];--b;}display_indices[b]=value;
+    }
+    int y=141;
+    if(!total)single_label(body,channels?"No channels or rooms in this radio yet.":"No contacts in this radio yet.",8,y,w-16,muted);
+    for(int row=0;row<total;++row){
+      const int i=display_indices[row];const bool is_channel=channels&&!room_list;const auto key=key_for_index(i);const auto *pref=mcxhistory::preferences().get(key);
+      char title[75],detail[150],when[24];
+      bool loaded=is_channel&&s->channels[i].loaded;
+      unsigned unread_count=0;uint32_t last_heard=0;unsigned messages=0;size_t bytes=0;
+      for(const auto &m:s->messages)if(m.id&&mcxchat::belongs(m,key)){
+        if(!m.outgoing&&!m.read)++unread_count;
+        if(!m.outgoing&&m.observed_at>last_heard)last_heard=m.observed_at;
+        if(!is_channel&&!m.channel){++messages;bytes+=strlen(m.text);}
+      }
+      if(is_channel){
+        snprintf(title,sizeof(title),"%u / %s",i,loaded&&s->channels[i].name[0]?s->channels[i].name:"Empty slot");
+        mcxchat::time_local(last_heard,when,sizeof(when),true);
+        snprintf(detail,sizeof(detail),"%u unread / last received %s",unread_count,last_heard?when:"--");
+      }else{
+        const auto &c=s->contacts[i];uint32_t heard=c.advert>c.lastmod?c.advert:c.lastmod;
+        if(last_heard>heard)heard=last_heard;
+        mcxchat::time_local(heard,when,sizeof(when),true);
+        snprintf(title,sizeof(title),"%s%s",pref&&pref->favorite?"* ":"",pref&&pref->alias[0]?pref->alias:c.name);
+        if(node_sort_distance&&gps.valid&&c.lat&&c.lon){
+          const double lat=double(c.lat)/1000000.0,lon=double(c.lon)/1000000.0;
+          const double dy=(lat-gps.latitude)*111320.0,dx=(lon-gps.longitude)*111320.0*cos(gps.latitude*0.017453292519943295);
+          snprintf(detail,sizeof(detail),"%s / %u unread / recent direct chat: %u msgs / %lu B logged",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes);
+          char suffix[24];snprintf(suffix,sizeof(suffix)," / %.0f m",sqrt(dx*dx+dy*dy));
+          strncat(detail,suffix,sizeof(detail)-strlen(detail)-1);
+        }else snprintf(detail,sizeof(detail),"%s / %u unread / recent direct chat: %u msgs / %lu B logged",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes);
+      }
+      auto *b=action_button(body,"",8,y,w-16,74,panel,is_channel?choose_channel:choose_contact,i);
+      emoji_txt(b,title,7,5,w-30,white);
+      auto *d=txt(b,detail,7,31,w-30,muted);lv_obj_set_height(d,37);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+      y+=80;
     }
   } else if (page == 3) {
     if (!conversation || !s) {conversation_list(w);return;}
