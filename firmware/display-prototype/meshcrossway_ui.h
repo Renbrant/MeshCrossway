@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.9.6: categorized independent radio settings on device and remote.
+// MeshCrossway v0.9.7: categorized independent radio settings on device and remote.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -35,6 +35,7 @@ static lv_obj_t *wifi_dialog=nullptr,*wifi_ssid=nullptr,*wifi_password=nullptr,*
 static lv_obj_t *wifi_editor=nullptr,*wifi_edit_text=nullptr,*wifi_edit_target=nullptr;
 static lv_obj_t *wifi_sd_status=nullptr;
 static int page=0;
+
 static lv_obj_t *uptime_value=nullptr,*heap_value=nullptr,*network_value=nullptr,*backup_value=nullptr;
 static const lv_color_t bg=lv_color_hex(0x090C10);
 static const lv_color_t panel=lv_color_hex(0x181D24);
@@ -526,7 +527,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.9.6","Meshtastic and MeshCore run over independent Bluetooth radios. The map can center on positioned radio nodes before GPS has a fix.");break;
+      notice("MESH CROSSWAY v0.9.7","Meshtastic and MeshCore run over independent Bluetooth radios. The map can center on positioned radio nodes before GPS has a fix.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Adjust brightness, screen timeout and connectivity.");break;
     default:break;
@@ -912,8 +913,9 @@ static void ble_show_pairing(){
 }
 // MeshCore workspace
 #include "meshcrossway_chat_view.h"
+namespace cfgui {static void open_mt_channel(unsigned);}
 #include "meshcrossway_meshcore_ui.h"
-namespace cfgui {static void open_mt(lv_event_t *);}
+namespace cfgui {static void open_mt(lv_event_t *);static void open_mt_channel(unsigned);}
 #include "meshcrossway_meshtastic_ui.h"
 #include "meshcrossway_settings_ui.h"
 static bool touch_modal(){return navui::adjusting()||wifi_dialog||wifi_editor||ble_dialog||(info_dialog&&!navigation_panel)||shade||mcui::dialog||mtui::dialog||cfgui::dialog;}
@@ -1043,6 +1045,7 @@ static void draw(){
   mcxruntime::Scope measured(mcxruntime::DRAW);
   home_clear();
   if(!body||!left_rail||!right_rail||!context_actions)return;
+  const auto map_fix=mcxgnss::snapshot();mcui::set_navigation_fix(map_fix.valid,map_fix.latitude,map_fix.longitude);
   const int lw=has_left_rail()?(left_compact?40:79):0;
   const int rw=has_context_rail()?(right_compact?40:125):0;
   const int cw=480-lw-rw;
@@ -1246,7 +1249,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.9.6] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.9.7] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1267,7 +1270,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.9.6] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.9.7] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1280,7 +1283,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.9.6",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.9.7",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);
