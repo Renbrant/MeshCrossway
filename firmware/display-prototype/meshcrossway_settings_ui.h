@@ -9,7 +9,7 @@ static unsigned group = 0, field = 0;
 static uint32_t drawn = UINT32_MAX, edit_revision = 0;
 static uint8_t edit_radio[7] = {};
 static bool confirmed = false, showing_groups = true;
-static lv_obj_t *category_filter=nullptr;static int selected_category=0;
+static lv_obj_t *category_filter=nullptr, *back_button=nullptr;static int selected_category=0;
 static void close(lv_event_t *) {
   if (timer) {
     lv_timer_del(timer);
@@ -17,18 +17,27 @@ static void close(lv_event_t *) {
   }
   if (dialog)
     lv_obj_del(dialog);
-  dialog = list = status = editor = input = options = keyboard = save = nullptr;
+  dialog = list = status = editor = input = options = keyboard = save = back_button = nullptr;
 }
 static void refresh(lv_timer_t *);
 static void edit(lv_event_t *e);
 static void groups(lv_event_t *);
 static void select_category(lv_event_t *e){selected_category=int((intptr_t)lv_event_get_user_data(e));groups(nullptr);}
-static void back_categories(lv_event_t *){selected_category=0;groups(nullptr);}
+static void back_categories(lv_event_t *){
+  if(editor){
+    if(keyboard)lv_keyboard_set_textarea(keyboard,nullptr);
+    lv_obj_del(editor);editor=input=options=keyboard=save=nullptr;
+    if(back_button)lv_label_set_text(lv_obj_get_child(back_button,0),"BACK");
+    return;
+  }
+  if(!showing_groups){groups(nullptr);return;}
+  if(selected_category){selected_category=0;groups(nullptr);}
+}
 static void read_group(lv_event_t *e) {
   auto *c = meshmt::client;
   if (!c||!c->connected||!c->initialized||!c->history_ready||c->fault){lv_label_set_text(status,"Connect and synchronize this radio first.");return;}
   group = unsigned((intptr_t)lv_event_get_user_data(e));
-  if (c->settings.read(group)) {showing_groups=false;drawn=UINT32_MAX;}
+  if (c->settings.read(group)) {showing_groups=false;drawn=UINT32_MAX;if(back_button){lv_obj_clear_flag(back_button,LV_OBJ_FLAG_HIDDEN);lv_label_set_text(lv_obj_get_child(back_button,0),"BACK");}}
   refresh(nullptr);
 }
 static void groups(lv_event_t *) {
@@ -39,11 +48,16 @@ static void groups(lv_event_t *) {
   }
   lv_obj_clean(list);
   int y = 0;
+  if(back_button){
+    if(showing_groups&&!selected_category)lv_obj_add_flag(back_button,LV_OBJ_FLAG_HIDDEN);
+    else {lv_obj_clear_flag(back_button,LV_OBJ_FLAG_HIDDEN);lv_label_set_text(lv_obj_get_child(back_button,0),"BACK");}
+  }
   if(!selected_category){
     const char *categories[]={"Radio","Device & network","Modules","Channels","Identity","Interface"};
     for(unsigned cat=1;cat<=6;++cat){
-      action_button(list,categories[cat-1],4,y,448,42,panel2,select_category,cat);
-      y+=47;
+      auto *row=action_button(list,categories[cat-1],4,y,448,32,panel2,select_category,cat);
+      lv_obj_set_style_radius(row,6,0);
+      y+=35;
     }
     drawn=UINT32_MAX;
     return;
@@ -56,8 +70,9 @@ static void groups(lv_event_t *) {
     char label[80];
     snprintf(label, sizeof(label), "%s%s", g.family == 1 ? "Module / " : "",
              g.name);
-    action_button(list, label, 4, y, 448, 38, panel2, read_group, i);
-    y += 43;
+    auto *row=action_button(list, label, 4, y, 448, 31, panel2, read_group, i);
+    lv_obj_set_style_radius(row,6,0);
+    y += 34;
   }
   drawn = UINT32_MAX;
 }
@@ -196,10 +211,10 @@ static void refresh(lv_timer_t *) {
              : valid  ? s.scratch
                       : "Unavailable",
              f.readonly ? " (read only)" : "");
-    auto *b = action_button(list, label, 4, y, 448, 51, panel2, edit, i);
+    auto *b = action_button(list, label, 4, y, 448, 43, panel2, edit, i);
     if (s.busy() || f.readonly || !valid)
       lv_obj_add_state(b, LV_STATE_DISABLED);
-    y += 56;
+    y += 46;
   }
 }
 static void open_mt(lv_event_t *) {
@@ -207,8 +222,9 @@ static void open_mt(lv_event_t *) {
   close(nullptr);
   dialog = panel_at(lv_scr_act(), 0, 0, 480, 320, bg, 0);
   txt(dialog, "MESHTASTIC / SETTINGS", 8, 8, 255, orange);
-  action_button(dialog, "CATEGORIES", 245, 3, 123, 33, panel2, back_categories, 0);
-  action_button(dialog, "CLOSE", 374, 3, 100, 33, panel2, close, 0);
+  back_button=action_button(dialog, "BACK", 270, 4, 94, 30, panel2, back_categories, 0);
+  lv_obj_add_flag(back_button,LV_OBJ_FLAG_HIDDEN);
+  action_button(dialog, "CLOSE", 374, 4, 100, 30, panel2, close, 0);
   category_filter=nullptr;selected_category=0;showing_groups=true;
   list = panel_at(dialog, 4, 42, 472, 234, bg, 0);
   lv_obj_add_flag(list, LV_OBJ_FLAG_SCROLLABLE);

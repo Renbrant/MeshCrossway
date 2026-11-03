@@ -4,7 +4,7 @@
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Project status — v0.8.26 stable; v0.9.0 candidate.** v0.8.26 is the user-selected stable release and preserves its exact published firmware image. v0.9.0 applies the WadaMesh-inspired category navigation separately to Meshtastic and MeshCore settings on the device and remote access. See the [v0.8.26 stable record](docs/stable-v0826.md) and [v0.9.0 settings notes](docs/settings-navigation-v090.md).
+> **Project status — v0.8.26 stable; v0.9.1 candidate.** v0.8.26 remains the user-selected stable release and preserves its exact published firmware image. v0.9.1 makes the separate Meshtastic and MeshCore setting menus more compact and adds page-by-page Back navigation on the device and remote access. See the [v0.8.26 stable record](docs/stable-v0826.md) and [v0.9.1 settings notes](docs/settings-navigation-v091.md).
 
 ## See it in operation
 
@@ -110,7 +110,7 @@ The current software work adds categorized, independent radio settings on top of
 | v0.8.24 Meshtastic and MeshCore settings navigation redesign | [Candidate notes](docs/settings-navigation-v0824.md) |
 | v0.8.25 map fallback centering when local GPS has no current fix | [Candidate notes](docs/map-node-centering-v0825.md) |
 | v0.8.26 remote MeshCore chat sender names | [Stable release record](docs/stable-v0826.md) |
-| v0.9.0 WadaMesh-inspired settings menus, separated by network on device and remote | [Candidate notes](docs/settings-navigation-v090.md) |
+| v0.9.1 compact settings pages with back navigation on device and remote | [Candidate notes](docs/settings-navigation-v091.md) |
 | Simultaneous BLE radios and per-network settings | [Dual-radio implementation notes](docs/dual-radio-settings-v0816.md) |
 | Device and browser operation screenshots | [Field evidence](docs/field-evidence-v0816.md) |
 | Modular Core and Radio Pod design | [Modular architecture](docs/modular-architecture.md) |
