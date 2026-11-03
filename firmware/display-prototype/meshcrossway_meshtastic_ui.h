@@ -7,7 +7,9 @@ namespace mtui {
   static meshmt::Target selected;
   static bool conversation=false;
   static uint32_t drawn=UINT32_MAX,last_draw=0,drawn_zone=0;
-  static uint16_t meshcore_node_order[meshmc::MAX_CONTACTS]={};
+  static uint8_t meshcore_node_order[(meshmc::MAX_CONTACTS*9+7)/8]={};
+  static uint16_t meshcore_order_get(unsigned i){const unsigned bit=i*9,byte=bit>>3,shift=bit&7;const uint16_t pair=uint16_t(meshcore_node_order[byte])|(uint16_t(meshcore_node_order[byte+1])<<8);return uint16_t((pair>>shift)&0x1ff);}
+  static void meshcore_order_set(unsigned i,uint16_t value){const unsigned bit=i*9,byte=bit>>3,shift=bit&7;uint16_t pair=uint16_t(meshcore_node_order[byte])|(uint16_t(meshcore_node_order[byte+1])<<8);const uint16_t mask=uint16_t(0x1ffu<<shift);pair=uint16_t((pair&~mask)|((value&0x1ffu)<<shift));meshcore_node_order[byte]=uint8_t(pair);meshcore_node_order[byte+1]=uint8_t(pair>>8);}
   static uint16_t node_order[meshmt::MAX_NODES]={},channel_order[meshmt::MAX_CHANNELS]={};
   static bool ready(){auto *c=meshmt::client;
     return c&&c->connected&&c->initialized&&c->history_ready&&!c->fault;
@@ -300,7 +302,7 @@ namespace mtui {
     // ALL includes both models, with native callbacks and a visible network label.
     auto *mc=meshmc::client;
     if(filter==0&&mc){
-      if(page==1){unsigned count=0;for(unsigned i=0;i<mc->contact_count;++i)meshcore_node_order[count++]=uint16_t(i);
+      if(page==1){unsigned count=0;for(unsigned i=0;i<mc->contact_count;++i)meshcore_order_set(count++,uint16_t(i));
         const bool gps_valid=mcui::nav_gps_valid;const double gps_latitude=mcui::nav_latitude,gps_longitude=mcui::nav_longitude;
         auto heard=[&](unsigned i){const auto &c=mc->contacts[i];uint32_t last=c.advert>c.lastmod?c.advert:c.lastmod;
           for(const auto &m:mc->messages){if(m.id&&!m.outgoing&&!m.channel&&!memcmp(m.key,c.key,6)&&m.observed_at>last)last=m.observed_at;}
@@ -308,9 +310,9 @@ namespace mtui {
         auto distance=[&](unsigned i){const auto &c=mc->contacts[i];if(!gps_valid||!c.lat||!c.lon)return 1.0e30;
           const double lat=double(c.lat)/1e6,lon=double(c.lon)/1e6;
           const double dy=(lat-gps_latitude)*111320.0,dx=(lon-gps_longitude)*111320.0*cos(gps_latitude*0.017453292519943295);return dx*dx+dy*dy;};
-        for(unsigned a=1;a<count;++a){const uint16_t value=meshcore_node_order[a];unsigned b=a;
-          while(b&&(mcui::node_sort_distance&&mcui::nav_gps_valid?distance(meshcore_node_order[b-1])>distance(value):heard(meshcore_node_order[b-1])<heard(value))){meshcore_node_order[b]=meshcore_node_order[b-1];--b;}meshcore_node_order[b]=value;}
-        for(unsigned k=0;k<count;++k){unsigned i=meshcore_node_order[k];auto &contact=mc->contacts[i];char title[75],detail[155],when[24];
+        for(unsigned a=1;a<count;++a){const uint16_t value=meshcore_order_get(a);unsigned b=a;
+          while(b&&(mcui::node_sort_distance&&mcui::nav_gps_valid?distance(meshcore_order_get(b-1))>distance(value):heard(meshcore_order_get(b-1))<heard(value))){meshcore_order_set(b,meshcore_order_get(b-1));--b;}meshcore_order_set(b,value);}
+        for(unsigned k=0;k<count;++k){unsigned i=meshcore_order_get(k);auto &contact=mc->contacts[i];char title[75],detail[155],when[24];
           snprintf(title,sizeof(title),"MC / %s",contact.name);uint32_t last=heard(i);mcxchat::time_local(last,when,sizeof(when),true);
           unsigned messages=0;size_t bytes=0;for(const auto &m:mc->messages)if(m.id&&!m.channel&&!memcmp(m.key,contact.key,6)){++messages;bytes+=strlen(m.text);}
           snprintf(detail,sizeof(detail),"Heard %s / recent direct chat: %u msgs / %lu B logged",last?when:"Never",messages,(unsigned long)bytes);
