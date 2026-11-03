@@ -375,7 +375,8 @@ namespace mtui {
         auto sort=[&](auto&&self,int lo,int hi)->void{int i=lo,j=hi;const uint16_t pivot=meshcore_order_get(unsigned((lo+hi)/2));
           while(i<=j){while(before(meshcore_order_get(unsigned(i)),pivot))++i;while(before(pivot,meshcore_order_get(unsigned(j))))--j;
             if(i<=j){const uint16_t swap=meshcore_order_get(unsigned(i));meshcore_order_set(unsigned(i),meshcore_order_get(unsigned(j)));meshcore_order_set(unsigned(j),swap);++i;--j;}}
-          if(lo<j)self(self,lo,j);if(i<hi)self(self,i,hi);};
+          if(lo<j)self(self,lo,j);
+          if(i<hi)self(self,i,hi);};
         if(count>1)sort(sort,0,int(count)-1);
         mc_node_count=count;
       }
