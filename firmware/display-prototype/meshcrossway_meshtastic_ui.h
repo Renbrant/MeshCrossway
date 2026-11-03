@@ -1,5 +1,6 @@
 #pragma once
 // Included inside meshcrossway. Every model/UI access is on the LVGL owner task.
+namespace cfgui {static void open_mt_channel(unsigned);}
 namespace mtui {
   static lv_obj_t *dialog=nullptr,*value=nullptr,*keyboard=nullptr,*feedback=nullptr,*send_button=nullptr;
   static lv_obj_t *home_name=nullptr,*home_status=nullptr,*radio_status=nullptr;
