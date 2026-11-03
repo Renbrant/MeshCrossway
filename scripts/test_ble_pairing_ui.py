@@ -393,6 +393,9 @@ static void check_allocator(){
 #include <stddef.h>
 #define MALLOC_CAP_SPIRAM 1
 #define MALLOC_CAP_8BIT 2
+#define MALLOC_CAP_INTERNAL 4
+static size_t heap_caps_get_free_size(unsigned){return 65536;}
+static size_t heap_caps_get_largest_free_block(unsigned){return 32768;}
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -434,7 +437,7 @@ using portMUX_TYPE=int;
 #include "FreeRTOS.h"
 using TaskHandle_t=void *;
 static bool fake_task_failure=false;
-static unsigned fake_task_calls=0,fake_task_stack=0;
+static unsigned fake_task_calls=0,fake_task_stack=0,fake_task_caps=0;
 static int xTaskCreatePinnedToCore(void (*)(void *),const char *,unsigned stack,void *,int,TaskHandle_t *out,int){
   ++fake_task_calls;fake_task_stack=stack;
   if(fake_task_failure)return 0;
@@ -442,6 +445,13 @@ static int xTaskCreatePinnedToCore(void (*)(void *),const char *,unsigned stack,
 }
 static void vTaskDelay(unsigned){}
 static unsigned uxTaskGetStackHighWaterMark(void *){return 2048;}
+''')
+        (temp/'freertos/idf_additions.h').write_text(r'''#pragma once
+#include "task.h"
+static int xTaskCreatePinnedToCoreWithCaps(void (*fn)(void *),const char *name,unsigned stack,void *arg,unsigned priority,TaskHandle_t *out,int core,unsigned caps){
+  fake_task_caps=caps;
+  return xTaskCreatePinnedToCore(fn,name,stack,arg,int(priority),out,core);
+}
 ''')
         (temp/'esp_timer.h').write_text(r'''#pragma once
 #include "lvgl.h"
