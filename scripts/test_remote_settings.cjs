@@ -11,7 +11,7 @@ const call=js=>vm.runInContext(js,ctx);
 (async()=>{
  await call('refreshSettings()');assert.equal($('settings-groups').children.length,1);$('settings-groups').children[0].children[0].onclick();$('settings-groups').children[2].children[0].onclick();await new Promise(r=>setImmediate(r));await call('refreshSettings()');assert.equal($('settings-fields').children.length,4);const form=$('settings-fields').children[2],input=form.children[0].children[0];input.value='3';input.oninput();await form.onsubmit({preventDefault(){}});await new Promise(r=>setImmediate(r));assert.equal(confirms,1);assert.equal(posts[1],'mt|2|0|0|7|'+'a'.repeat(64)+'|3');
  // No refresh may destroy an unsaved field; switching a radio clears stale identity.
- input.value='1';input.oninput();reply={...fixture,revision:8};await call('refreshSettings()');assert.strictEqual($('settings-fields').children[1],form);
+ input.value='1';input.oninput();reply={...fixture,revision:8};await call('refreshSettings()');assert.strictEqual($('settings-fields').children[2],form);
  reply={...fixture,identity:'b'.repeat(64)};await call('refreshSettings()');assert.notStrictEqual($('settings-groups').children[0],form);assert.equal($('settings-groups').children.length,1);
  call('settingsReset()');await call('refreshSettings()');assert.equal($('settings-groups').children.length,1);
  // Read-only and sensitive fields never fabricate a stored value.
