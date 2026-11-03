@@ -296,7 +296,8 @@ static void draw_overlays(lv_event_t *event){
       lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=lv_color_hex(activity_color(cluster.activity));d.border_color=white;d.border_width=2;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
       char n[8];snprintf(n,sizeof(n),"%u",unsigned(cluster.count));lv_draw_label_dsc_t label;lv_draw_label_dsc_init(&label);label.color=lv_color_hex(0x101820);label.font=&lv_font_montserrat_10;label.align=LV_TEXT_ALIGN_CENTER;lv_draw_label(ctx,&label,&a,n,nullptr);continue;
     }
-    if(cluster.first>=overlay_cache->node_count)continue;const NodeMarker *node=&overlay_cache->nodes[cluster.first];
+    if(cluster.first>=overlay_cache->node_count)continue;
+    const NodeMarker *node=&overlay_cache->nodes[cluster.first];
     const int nx=lv_coord_t(node->point.x+area.x1),ny=lv_coord_t(node->point.y+area.y1);const auto icon=mcxmap::node_icon(config,node->meshcore);const bool name_mode=icon==mcxmap::NODE_NAME;
     const int width=name_mode?36:node_size,height=name_mode?15:node_size;lv_area_t a={lv_coord_t(nx-(width-1)/2),lv_coord_t(ny-(height-1)/2),lv_coord_t(nx+width/2),lv_coord_t(ny+height/2)};
     if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
@@ -690,7 +691,8 @@ static void map_diagnostics(){
   detail=single_label(dialog,text,8,115,440,muted);lv_label_set_long_mode(detail,LV_LABEL_LONG_WRAP);
 }
 static void show_node_details(unsigned index){
-  if(!navui::overlay_cache||index>=navui::overlay_cache->node_count)return;const auto &node=navui::overlay_cache->nodes[index];const auto activity=navui::node_activity(node);char info[420],age[80],role[80];
+  if(!navui::overlay_cache||index>=navui::overlay_cache->node_count)return;
+  const auto &node=navui::overlay_cache->nodes[index];const auto activity=navui::node_activity(node);char info[420],age[80],role[80];
   const time_t epoch=time(nullptr);if(!node.heard)snprintf(age,sizeof(age),"No activity timestamp");else if(epoch>0&&node.heard<=uint32_t(epoch)){const uint32_t seconds=uint32_t(epoch)-node.heard;snprintf(age,sizeof(age),"%lu seconds ago",(unsigned long)seconds);}else snprintf(age,sizeof(age),"Timestamp unavailable");
   if(node.meshcore)snprintf(role,sizeof(role),"MeshCore contact type %u%s",unsigned(node.type),node.type==2?" / repeater":"");else snprintf(role,sizeof(role),"Meshtastic hardware type %u",unsigned(node.type));
   snprintf(info,sizeof(info),"%s\n%s\n%s\n%s\n\n%s\nPosition: %.6f, %.6f",node.name,node.id,node.meshcore?"MeshCore":"Meshtastic",role,navui::activity_name(activity),node.latitude,node.longitude);
@@ -698,10 +700,12 @@ static void show_node_details(unsigned index){
   label=single_label(dialog,"Name badge colors: green = heard/advertised within 5 min; cyan = within 60 min; gray = saved without recent activity. This indicates recent radio activity, not a health check.",0,0,440,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
 }
 static void show_node_group(unsigned group){
-  if(!navui::overlay_cache||group>=navui::overlay_cache->cluster_count)return;char list[5400];size_t used=0;unsigned shown=0;const unsigned total=navui::overlay_cache->clusters[group].count;
+  if(!navui::overlay_cache||group>=navui::overlay_cache->cluster_count)return;
+  char list[5400];size_t used=0;unsigned shown=0;const unsigned total=navui::overlay_cache->clusters[group].count;
   for(unsigned i=0;i<navui::overlay_cache->node_count&&shown<48;++i){const auto &node=navui::overlay_cache->nodes[i];if(node.cluster!=group)continue;const size_t len=strlen(node.id);const char *suffix=len>=4?node.id+len-4:node.id;
     const int n=snprintf(list+used,sizeof(list)-used,"%s · %s · %s · %s\n",suffix,node.meshcore?"MeshCore":"Meshtastic",node.name,navui::activity_name(navui::node_activity(node)));
-    if(n<0||size_t(n)>=sizeof(list)-used)break;used+=size_t(n);++shown;
+    if(n<0||size_t(n)>=sizeof(list)-used)break;
+    used+=size_t(n);++shown;
   }
   if(total>shown&&used<sizeof(list))snprintf(list+used,sizeof(list)-used,"… and %u more. Zoom in to separate nearby nodes.",total-shown);
   base("NEARBY NODES");char title[64];snprintf(title,sizeof(title),"%u nodes in this group",total);single_label(dialog,title,0,0,440,orange);auto *label=single_label(dialog,list,0,0,440,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
