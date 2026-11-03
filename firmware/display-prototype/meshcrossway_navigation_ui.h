@@ -1,5 +1,6 @@
 #pragma once
 // Included inside meshcrossway; all widgets are owned by the LVGL task.
+namespace gpsui {static void show_node_details(unsigned);static void show_node_group(unsigned);}
 namespace navui {
 static lv_obj_t *canvas=nullptr,*picture=nullptr,*marker=nullptr,*map_status=nullptr,*attribution=nullptr;
 static mcxmap::Frame *front=nullptr;
@@ -36,13 +37,16 @@ static bool following=true,inflight=false,dragging=false,centered=false;
 static double latitude=0,longitude=0;
 static unsigned zoom=14;
 static uint32_t generation=0,requested_at=0,completed_at=0,seen_config=0;
+static uint32_t next_activity_redraw=0;
 static lv_point_t drag_start={};
 static int drag_x=0,drag_y=0,pan_x=0,pan_y=0;static bool gesture_moved=false;
 static constexpr unsigned MAX_DRAW_SEGMENTS=mcxnav::MAX_VISIBLE*(mcxnav::OVERLAY_POINTS-1)+mcxnav::MAX_PREVIEW-1;
 struct DrawSegment {lv_point_t a,b;uint32_t color;};
 static constexpr unsigned MAX_NODE_MARKERS=meshmt::MAX_NODES+meshmc::MAX_CONTACTS;
-struct NodeMarker {lv_point_t point;bool meshcore=false;char name[25]={};};
-struct OverlayCache {DrawSegment lines[MAX_DRAW_SEGMENTS];lv_point_t pois[mcxnav::MAX_POIS];NodeMarker nodes[MAX_NODE_MARKERS];unsigned line_count=0,poi_count=0,node_count=0;uint32_t generation=0,revision=0;bool ready=false;};
+enum NodeActivity : uint8_t {NODE_SAVED=0,NODE_RECENT=1,NODE_ACTIVE=2};
+struct NodeMarker {lv_point_t point;bool meshcore=false;uint8_t type=0;uint16_t cluster=0xffff;uint32_t heard=0;double latitude=0,longitude=0;char name[33]={},id[65]={};};
+struct NodeCluster {lv_point_t point;uint16_t count=0,first=0;NodeActivity activity=NODE_SAVED;};
+struct OverlayCache {DrawSegment lines[MAX_DRAW_SEGMENTS];lv_point_t pois[mcxnav::MAX_POIS];NodeMarker nodes[MAX_NODE_MARKERS];NodeCluster clusters[MAX_NODE_MARKERS];unsigned line_count=0,poi_count=0,node_count=0,cluster_count=0;uint32_t generation=0,revision=0;bool ready=false;};
 static OverlayCache *overlay_cache=nullptr;
 static uint32_t overlay_builds=0;
 static uint32_t overlay_signature(){
@@ -54,6 +58,9 @@ static uint32_t overlay_signature(){
   return mcxnav::checksum(fields,sizeof(fields))^mcxnav::checksum(nav_state->preferences.styles,sizeof(nav_state->preferences.styles))^mcxnav::checksum(nav_state->pois,nav_state->poi_count*sizeof(mcxnav::Poi));
 }
 static void rebuild_overlay_cache();
+static NodeActivity node_activity(const NodeMarker &);
+static void refresh_node_activity();
+static void open_node_selection(unsigned);
 
 static void invalidate(){
   canvas=picture=marker=map_status=attribution=nullptr;zoom_overlay=zoom_slider=zoom_value=record_badge=nullptr;zoom_adjusting=false;inflight=false;dragging=false;pan_x=pan_y=drag_x=drag_y=0;if(overlay_cache)overlay_cache->ready=false;mcxmap::stop();
@@ -70,6 +77,9 @@ static void pointer(lv_event_t *event){
   if(!centered||zoom_adjusting||!front)return;
   auto *input=lv_indev_get_act();if(!input)return;
   lv_point_t p={};lv_indev_get_point(input,&p);const auto code=lv_event_get_code(event);
+  if(code==LV_EVENT_CLICKED){if(!gesture_moved&&overlay_cache&&overlay_cache->ready&&picture){lv_area_t a;lv_obj_get_coords(canvas,&a);const int x=p.x-a.x1-pan_x,y=p.y-a.y1-pan_y;const auto map=mcxmap::configuration();const int radius=mcxmap::node_icon(map,false)==mcxmap::NODE_NAME||mcxmap::node_icon(map,true)==mcxmap::NODE_NAME?25:int(mcxmap::node_size(map)/2)+7;
+      for(unsigned i=0;i<overlay_cache->cluster_count;++i){const auto &cluster=overlay_cache->clusters[i];const int dx=x-cluster.point.x,dy=y-cluster.point.y;if(dx*dx+dy*dy<=radius*radius)open_node_selection(i);}}
+    gesture_moved=false;return;}
   if(code==LV_EVENT_PRESSED){drag_start=p;drag_x=pan_x;drag_y=pan_y;dragging=true;gesture_moved=false;}
   else if(code==LV_EVENT_PRESSING&&dragging){drag_x=pan_x+p.x-drag_start.x;drag_y=pan_y+p.y-drag_start.y;
     drag_x=drag_x<-8192?-8192:drag_x>8192?8192:drag_x;drag_y=drag_y<-8192?-8192:drag_y>8192?8192:drag_y;
@@ -180,6 +190,7 @@ static void poll(){
   if(map_status&&!info_dialog){const bool waiting=inflight||(front&&front->missing);if(waiting)chatview::label(map_status,inflight?"Loading map...":mcxmap::configuration().online?"Map tiles unavailable / retrying":"Offline / tiles not saved");set_hidden(map_status,!waiting);}
   if(!canvas||info_dialog||zoom_adjusting)return;
   if(front&&nav_state&&(!overlay_cache||!overlay_cache->ready||overlay_cache->generation!=front->view.generation||overlay_cache->revision!=overlay_signature())){rebuild_overlay_cache();lv_obj_invalidate(picture);}
+  const auto marker_config=mcxmap::configuration();if(front&&(mcxmap::node_icon(marker_config,false)==mcxmap::NODE_NAME||mcxmap::node_icon(marker_config,true)==mcxmap::NODE_NAME)&&int32_t(now-next_activity_redraw)>=0){refresh_node_activity();lv_obj_invalidate(picture);next_activity_redraw=now+10000;}
 
   if(seen_config!=mcxmap::configuration_revision()){
     seen_config=mcxmap::configuration_revision();const auto c=mcxmap::configuration();zoom=c.zoom;
@@ -208,7 +219,7 @@ static void rebuild_overlay_cache(){
   if(!overlay_cache){auto *memory=heap_caps_malloc(sizeof(OverlayCache),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!memory)return;overlay_cache=new(memory) OverlayCache();}
   auto &cache=*overlay_cache;
   if(cache.ready&&cache.generation==front->view.generation&&cache.revision==overlay_signature())return;
-  cache.line_count=cache.poi_count=cache.node_count=0;
+  cache.line_count=cache.poi_count=cache.node_count=cache.cluster_count=0;
   const auto origin=mcxmap::project(front->view.latitude,front->view.longitude,front->view.zoom);
   auto project_geo=[&](double latitude,double longitude,lv_point_t &point){
     const auto p=mcxmap::project(latitude,longitude,front->view.zoom);
@@ -218,9 +229,9 @@ static void rebuild_overlay_cache(){
   };
   auto project=[&](const mcxnav::Sample &sample,lv_point_t &point){return project_geo(sample.latitude,sample.longitude,point);};
   const auto map_config=mcxmap::configuration();
-  auto save_node=[&](lv_point_t point,bool meshcore,const char *name){
-    auto &marker=cache.nodes[cache.node_count++];marker.point=point;marker.meshcore=meshcore;
-    snprintf(marker.name,sizeof(marker.name),"%s",name&&name[0]?name:"Node");
+  auto save_node=[&](lv_point_t point,bool meshcore,uint8_t type,uint32_t heard,double lat,double lon,const char *name,const char *id){
+    auto &marker=cache.nodes[cache.node_count++];marker.point=point;marker.meshcore=meshcore;marker.cluster=0xffff;
+    marker.type=type;marker.heard=heard;marker.latitude=lat;marker.longitude=lon;snprintf(marker.name,sizeof(marker.name),"%s",name&&name[0]?name:"Node");snprintf(marker.id,sizeof(marker.id),"%s",id?id:"????");
   };
   auto track=[&](const mcxnav::Sample *points,unsigned count,uint32_t color){
     lv_point_t previous={};bool previous_valid=false;
@@ -239,18 +250,31 @@ static void rebuild_overlay_cache(){
     if(auto *radio=meshmt::client){
       for(unsigned i=0;i<radio->data.node_count&&cache.node_count<MAX_NODE_MARKERS;++i){const auto &node=radio->data.nodes[i];
         if(!node.position||!node.has_lat||!node.has_lon)continue;
-        lv_point_t point={};if(project_geo(node.latitude/1e7,node.longitude/1e7,point))save_node(point,false,node.name[0]?node.name:node.short_name);
+        char id[16];snprintf(id,sizeof(id),"!%08lX",(unsigned long)node.num);lv_point_t point={};if(project_geo(node.latitude/1e7,node.longitude/1e7,point))save_node(point,false,node.hardware,node.last_heard,node.latitude/1e7,node.longitude/1e7,node.name[0]?node.name:node.short_name,id);
       }
     }
     if(auto *radio=meshmc::client){
       for(unsigned i=0;i<radio->contact_count&&cache.node_count<MAX_NODE_MARKERS;++i){const auto &node=radio->contacts[i];
         if(!(node.flags&0x10)||(!node.lat&&!node.lon)||node.lat<-90000000||node.lat>90000000||node.lon<-180000000||node.lon>180000000)continue;
-        lv_point_t point={};if(project_geo(node.lat/1e6,node.lon/1e6,point))save_node(point,true,node.name);
+        static const char hex[]="0123456789ABCDEF";char id[65];for(unsigned b=0;b<32;++b){id[b*2]=hex[node.key[b]>>4];id[b*2+1]=hex[node.key[b]&15];}id[64]=0;lv_point_t point={};if(project_geo(node.lat/1e6,node.lon/1e6,point))save_node(point,true,node.type,node.lastmod>node.advert?node.lastmod:node.advert,node.lat/1e6,node.lon/1e6,node.name,id);
       }
     }
   }
+  // Group close markers so dense areas stay readable. Each node belongs to one nearby group.
+  const auto marker_config=mcxmap::configuration();int cluster_radius=int(mcxmap::node_size(marker_config))+6;if(cluster_radius<20)cluster_radius=20;
+  if(mcxmap::node_icon(marker_config,false)==mcxmap::NODE_NAME||mcxmap::node_icon(marker_config,true)==mcxmap::NODE_NAME)cluster_radius=42;
+  for(unsigned i=0;i<cache.node_count;++i){if(cache.nodes[i].cluster!=0xffff)continue;const unsigned group=cache.cluster_count++;auto &cluster=cache.clusters[group];cluster.point=cache.nodes[i].point;cluster.count=0;cluster.first=uint16_t(i);cluster.activity=NODE_SAVED;
+    int64_t sx=0,sy=0;for(unsigned j=i;j<cache.node_count;++j){if(cache.nodes[j].cluster!=0xffff)continue;const int dx=cache.nodes[j].point.x-cluster.point.x,dy=cache.nodes[j].point.y-cluster.point.y;if(dx*dx+dy*dy>cluster_radius*cluster_radius)continue;
+      cache.nodes[j].cluster=uint16_t(group);++cluster.count;sx+=cache.nodes[j].point.x;sy+=cache.nodes[j].point.y;const auto activity=node_activity(cache.nodes[j]);if(activity>cluster.activity)cluster.activity=activity;}
+    if(cluster.count){cluster.point.x=lv_coord_t(sx/cluster.count);cluster.point.y=lv_coord_t(sy/cluster.count);}
+  }
   cache.generation=front->view.generation;cache.revision=overlay_signature();cache.ready=true;++overlay_builds;
 }
+static NodeActivity node_activity(const NodeMarker &node){const time_t epoch=time(nullptr);if(!node.heard||epoch<=0||node.heard>uint32_t(epoch))return NODE_SAVED;const uint32_t age=uint32_t(epoch)-node.heard;return age<=300?NODE_ACTIVE:age<=3600?NODE_RECENT:NODE_SAVED;}
+static void refresh_node_activity(){if(!overlay_cache||!overlay_cache->ready)return;for(unsigned g=0;g<overlay_cache->cluster_count;++g)overlay_cache->clusters[g].activity=NODE_SAVED;for(unsigned i=0;i<overlay_cache->node_count;++i){auto &group=overlay_cache->clusters[overlay_cache->nodes[i].cluster];const auto activity=node_activity(overlay_cache->nodes[i]);if(activity>group.activity)group.activity=activity;}}
+static uint32_t activity_color(NodeActivity state){return state==NODE_ACTIVE?0x36D399:state==NODE_RECENT?0x55C9F5:0x8993A1;}
+static const char *activity_name(NodeActivity state){return state==NODE_ACTIVE?"Active recently":state==NODE_RECENT?"Seen recently":"Saved only / older record";}
+static void open_node_selection(unsigned group){if(!overlay_cache||group>=overlay_cache->cluster_count)return;const auto &cluster=overlay_cache->clusters[group];if(cluster.count==1)gpsui::show_node_details(cluster.first);else gpsui::show_node_group(group);}
 static void draw_overlays(lv_event_t *event){
   // Called once per DMA stripe: use only integer coordinates cached outside draw.
   if(!front||!overlay_cache||!overlay_cache->ready||zoom_adjusting||front->view.zoom!=zoom)return;
@@ -267,19 +291,24 @@ static void draw_overlays(lv_event_t *event){
     lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=cyan;d.border_color=white;d.border_width=1;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
   }
   const auto config=mcxmap::configuration();const int node_size=int(mcxmap::node_size(config));
-  for(unsigned i=0;i<overlay_cache->node_count;++i){const auto &node=overlay_cache->nodes[i];const int x=lv_coord_t(node.point.x+area.x1),y=lv_coord_t(node.point.y+area.y1);lv_area_t a={lv_coord_t(x-(node_size-1)/2),lv_coord_t(y-(node_size-1)/2),lv_coord_t(x+node_size/2),lv_coord_t(y+node_size/2)};
-    if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
-    const auto color=lv_color_hex(mcxmap::node_color_hex(config,node.meshcore));
-    if(mcxmap::node_icon(config,node.meshcore)==mcxmap::NODE_CROSS){
-      lv_point_t h1={lv_coord_t(a.x1+3),lv_coord_t(y)},h2={lv_coord_t(a.x2-3),lv_coord_t(y)};
-      lv_point_t v1={lv_coord_t(x),lv_coord_t(a.y1+3)},v2={lv_coord_t(x),lv_coord_t(a.y2-3)};
-      lv_draw_line_dsc_t icon;lv_draw_line_dsc_init(&icon);icon.color=white;icon.width=6;lv_draw_line(ctx,&icon,&h1,&h2);lv_draw_line(ctx,&icon,&v1,&v2);
-      icon.color=color;icon.width=3;lv_draw_line(ctx,&icon,&h1,&h2);lv_draw_line(ctx,&icon,&v1,&v2);
-    }else{
-      lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=color;d.border_color=white;d.border_width=2;d.radius=mcxmap::node_icon(config,node.meshcore)==mcxmap::NODE_CIRCLE?LV_RADIUS_CIRCLE:0;lv_draw_rect(ctx,&d,&a);
+  for(unsigned g=0;g<overlay_cache->cluster_count;++g){const auto &cluster=overlay_cache->clusters[g];const int x=lv_coord_t(cluster.point.x+area.x1),y=lv_coord_t(cluster.point.y+area.y1);
+    if(cluster.count>1){lv_area_t a={lv_coord_t(x-11),lv_coord_t(y-11),lv_coord_t(x+11),lv_coord_t(y+11)};if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
+      lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=lv_color_hex(activity_color(cluster.activity));d.border_color=white;d.border_width=2;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
+      char n[8];snprintf(n,sizeof(n),"%u",unsigned(cluster.count));lv_draw_label_dsc_t label;lv_draw_label_dsc_init(&label);label.color=lv_color_hex(0x101820);label.font=&lv_font_montserrat_10;label.align=LV_TEXT_ALIGN_CENTER;lv_draw_label(ctx,&label,&a,n,nullptr);continue;
     }
-    if((config.show_node_names&1u)&&node.name[0]){lv_draw_label_dsc_t label;lv_draw_label_dsc_init(&label);label.color=white;label.font=&lv_font_montserrat_10;
-      lv_area_t text={lv_coord_t(a.x2+2),lv_coord_t(a.y1-5),lv_coord_t(a.x2+76),lv_coord_t(a.y2+7)};lv_draw_label(ctx,&label,&text,node.name,nullptr);}
+    if(cluster.first>=overlay_cache->node_count)continue;
+    const NodeMarker *node=&overlay_cache->nodes[cluster.first];
+    const int nx=lv_coord_t(node->point.x+area.x1),ny=lv_coord_t(node->point.y+area.y1);const auto icon=mcxmap::node_icon(config,node->meshcore);const bool name_mode=icon==mcxmap::NODE_NAME;
+    const int width=name_mode?36:node_size,height=name_mode?15:node_size;lv_area_t a={lv_coord_t(nx-(width-1)/2),lv_coord_t(ny-(height-1)/2),lv_coord_t(nx+width/2),lv_coord_t(ny+height/2)};
+    if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
+    const auto color=lv_color_hex(name_mode?activity_color(node_activity(*node)):mcxmap::node_color_hex(config,node->meshcore));
+    if(name_mode){char suffix[5]="????";const size_t len=strlen(node->id);if(len>=4)memcpy(suffix,node->id+len-4,4);suffix[4]=0;
+      lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=color;d.border_color=white;d.border_width=1;d.radius=height/2;lv_draw_rect(ctx,&d,&a);
+      lv_draw_label_dsc_t label;lv_draw_label_dsc_init(&label);label.color=white;label.font=&lv_font_montserrat_10;label.align=LV_TEXT_ALIGN_CENTER;lv_draw_label(ctx,&label,&a,suffix,nullptr);continue;}
+    if(icon==mcxmap::NODE_CROSS){lv_point_t h1={lv_coord_t(a.x1+3),lv_coord_t(ny)},h2={lv_coord_t(a.x2-3),lv_coord_t(ny)};lv_point_t v1={lv_coord_t(nx),lv_coord_t(a.y1+3)},v2={lv_coord_t(nx),lv_coord_t(a.y2-3)};
+      lv_draw_line_dsc_t mark;lv_draw_line_dsc_init(&mark);mark.color=white;mark.width=6;lv_draw_line(ctx,&mark,&h1,&h2);lv_draw_line(ctx,&mark,&v1,&v2);mark.color=color;mark.width=3;lv_draw_line(ctx,&mark,&h1,&h2);lv_draw_line(ctx,&mark,&v1,&v2);
+    }else{lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=color;d.border_color=white;d.border_width=2;d.radius=icon==mcxmap::NODE_CIRCLE?LV_RADIUS_CIRCLE:0;lv_draw_rect(ctx,&d,&a);}
+    if((config.show_node_names&1u)&&node->name[0]){lv_draw_label_dsc_t label;lv_draw_label_dsc_init(&label);label.color=white;label.font=&lv_font_montserrat_10;lv_area_t text={lv_coord_t(a.x2+2),lv_coord_t(a.y1-5),lv_coord_t(a.x2+76),lv_coord_t(a.y2+7)};lv_draw_label(ctx,&label,&text,node->name,nullptr);}
   }
 }
 
@@ -661,6 +690,27 @@ static void map_diagnostics(){
   const auto c=mcxmap::configuration();char text[320];snprintf(text,sizeof(text),"Zoom %u / %s\nSD %s / worker error %d\nSettings %s\nRAM tile hits %lu / PNG decodes %lu\nLast composition %lu ms",navui::zoom,c.online?"online + offline":"offline only",esp_sdcard_port_get_size()?"available":"unavailable",int(mcxmap::last_error.load()),mcxmap::settings_saved.load()?"saved":"pending",(unsigned long)mcxmap::cache_hits.load(),(unsigned long)mcxmap::decode_count.load(),(unsigned long)mcxmap::last_render_ms.load());
   detail=single_label(dialog,text,8,115,440,muted);lv_label_set_long_mode(detail,LV_LABEL_LONG_WRAP);
 }
+static void show_node_details(unsigned index){
+  if(!navui::overlay_cache||index>=navui::overlay_cache->node_count)return;
+  const auto &node=navui::overlay_cache->nodes[index];const auto activity=navui::node_activity(node);char info[420],age[80],role[80];
+  const time_t epoch=time(nullptr);if(!node.heard)snprintf(age,sizeof(age),"No activity timestamp");else if(epoch>0&&node.heard<=uint32_t(epoch)){const uint32_t seconds=uint32_t(epoch)-node.heard;snprintf(age,sizeof(age),"%lu seconds ago",(unsigned long)seconds);}else snprintf(age,sizeof(age),"Timestamp unavailable");
+  if(node.meshcore)snprintf(role,sizeof(role),"MeshCore contact type %u%s",unsigned(node.type),node.type==2?" / repeater":"");else snprintf(role,sizeof(role),"Meshtastic hardware type %u",unsigned(node.type));
+  snprintf(info,sizeof(info),"%s\n%s\n%s\n%s\n\n%s\nPosition: %.6f, %.6f",node.name,node.id,node.meshcore?"MeshCore":"Meshtastic",role,navui::activity_name(activity),node.latitude,node.longitude);
+  base("NODE DETAILS");auto *label=single_label(dialog,info,0,0,440,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);label=single_label(dialog,age,0,0,440,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
+  label=single_label(dialog,"Name badge colors: green = heard/advertised within 5 min; cyan = within 60 min; gray = saved without recent activity. This indicates recent radio activity, not a health check.",0,0,440,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
+}
+static void show_node_group(unsigned group){
+  if(!navui::overlay_cache||group>=navui::overlay_cache->cluster_count)return;
+  char list[5400];size_t used=0;unsigned shown=0;const unsigned total=navui::overlay_cache->clusters[group].count;
+  for(unsigned i=0;i<navui::overlay_cache->node_count&&shown<48;++i){const auto &node=navui::overlay_cache->nodes[i];if(node.cluster!=group)continue;const size_t len=strlen(node.id);const char *suffix=len>=4?node.id+len-4:node.id;
+    const int n=snprintf(list+used,sizeof(list)-used,"%s · %s · %s · %s\n",suffix,node.meshcore?"MeshCore":"Meshtastic",node.name,navui::activity_name(navui::node_activity(node)));
+    if(n<0||size_t(n)>=sizeof(list)-used)break;
+    used+=size_t(n);++shown;
+  }
+  if(total>shown&&used<sizeof(list))snprintf(list+used,sizeof(list)-used,"… and %u more. Zoom in to separate nearby nodes.",total-shown);
+  base("NEARBY NODES");char title[64];snprintf(title,sizeof(title),"%u nodes in this group",total);single_label(dialog,title,0,0,440,orange);auto *label=single_label(dialog,list,0,0,440,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
+  label=single_label(dialog,"Green: active in last 5 min · Cyan: seen in last hour · Gray: saved/older. Colors use received/ad timestamps and do not confirm device health.",0,0,440,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
+}
 static void map_credits(){
   base("MAP / CREDITS");const auto c=mcxmap::configuration();
   auto *label=single_label(dialog,c.attribution,8,48,440,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
@@ -682,15 +732,15 @@ static void map_options(){
   lv_obj_add_event_cb(names_switch,names_changed,LV_EVENT_VALUE_CHANGED,nullptr);
   row=control_row(38);row_label=single_label(row,"Meshtastic icon",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
   auto *icon_picker=lv_dropdown_create(row);lv_obj_set_size(icon_picker,278,34);
-  lv_dropdown_set_options(icon_picker,"Circle\nSquare\nCross");lv_dropdown_set_selected(icon_picker,unsigned(mcxmap::node_icon(c,false)));
+  lv_dropdown_set_options(icon_picker,"Circle\nSquare\nCross\nName / last 4 ID digits");lv_dropdown_set_selected(icon_picker,unsigned(mcxmap::node_icon(c,false)));
   lv_obj_add_event_cb(icon_picker,icon_changed,LV_EVENT_VALUE_CHANGED,nullptr);
   row=control_row(38);row_label=single_label(row,"MeshCore icon",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
   icon_picker=lv_dropdown_create(row);lv_obj_set_size(icon_picker,278,34);
-  lv_dropdown_set_options(icon_picker,"Circle\nSquare\nCross");lv_dropdown_set_selected(icon_picker,unsigned(mcxmap::node_icon(c,true)));
+  lv_dropdown_set_options(icon_picker,"Circle\nSquare\nCross\nName / last 4 ID digits");lv_dropdown_set_selected(icon_picker,unsigned(mcxmap::node_icon(c,true)));
   lv_obj_add_event_cb(icon_picker,icon_changed,LV_EVENT_VALUE_CHANGED,(void *)1);
   row=control_row(38);row_label=single_label(row,"Node size",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
   size_picker=lv_dropdown_create(row);lv_obj_set_size(size_picker,278,34);
-  lv_dropdown_set_options(size_picker,"Large / 18 px\nLarger / 22 px\nExtra large / 26 px\nMaximum / 30 px");
+  lv_dropdown_set_options(size_picker,"Small / 8 px\nMedium / 12 px\nLarge / 18 px\nLarger / 22 px\nExtra large / 26 px\nMaximum / 30 px");
   lv_dropdown_set_selected(size_picker,mcxmap::node_size_index(c));lv_obj_add_event_cb(size_picker,size_changed,LV_EVENT_VALUE_CHANGED,nullptr);
   row=control_row(38);row_label=single_label(row,"Meshtastic color",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
   auto *color_picker=lv_dropdown_create(row);lv_obj_set_size(color_picker,278,34);
@@ -703,7 +753,7 @@ static void map_options(){
   row=control_row(30);row_label=single_label(row,"Download visible map tiles",0,0,330,white);lv_obj_set_flex_grow(row_label,1);
   online_switch=lv_switch_create(row);lv_obj_set_size(online_switch,44,24);if(c.online)lv_obj_add_state(online_switch,LV_STATE_CHECKED);
   lv_obj_add_event_cb(online_switch,online_changed,LV_EVENT_VALUE_CHANGED,nullptr);
-  auto *help=single_label(dialog,"OFF uses SD maps and cached tiles only.\nIcon and color are independent per network; size and names are shared.",0,0,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
+  auto *help=single_label(dialog,"Name mode shows the last 4 ID digits; tap a marker or cluster for details. Nearby nodes are grouped. In Name mode: green = active within 5 min, cyan = seen within 60 min, gray = saved/older (recent activity is not a health check).\nOFF uses SD maps and cached tiles only. Icons and colors are independent per network; size and name visibility are shared.",0,0,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
   map_save_label=single_label(dialog,"",0,0,440,muted);refresh();
 }
 }

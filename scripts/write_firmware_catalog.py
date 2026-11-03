@@ -73,6 +73,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.2":
+        summary="EXPERIMENTAL: map supports last-four-digit node labels, tap-to-view details, proximity clusters, Small/Medium markers and activity colors based on recent radio timestamps. v0.8.26 remains stable."
+        label="Map node labels and clusters / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.1":
         summary="EXPERIMENTAL: compact radio-setting menus show more categories and options at once, with clear Back navigation through device and remote settings. Meshtastic and MeshCore remain separate. v0.8.26 remains stable."
         label="Compact settings navigation / EXPERIMENTAL"
