@@ -43,37 +43,43 @@ static lv_color_t *keep_tile(uint64_t source,unsigned z,unsigned x,unsigned y,co
   slot->source=source;slot->z=z;slot->x=x;slot->y=y;slot->used=++tile_clock;return slot->pixels;
 }
 static const char *SD_ROOT="/sdcard";
-// Keep the persisted blob size/layout stable. Version 2 packs independent MT/MC marker styles
+// Keep the persisted blob size/layout stable. Version 3 expands marker size and icon packing.
 // into the same two bytes that held the shared icon/color options in version 1.
-struct Config {uint32_t version=2;uint8_t online=1,zoom=14,hide_nodes=0,show_node_names=0;char url[192]="https://tile.openstreetmap.org";char attribution[128]="© OpenStreetMap contributors";};
-enum NodeIcon {NODE_CIRCLE=0,NODE_SQUARE=1,NODE_CROSS=2};
+struct Config {uint32_t version=3;uint8_t online=1,zoom=14,hide_nodes=0,show_node_names=0;char url[192]="https://tile.openstreetmap.org";char attribution[128]="© OpenStreetMap contributors";};
+enum NodeIcon {NODE_CIRCLE=0,NODE_SQUARE=1,NODE_CROSS=2,NODE_NAME=3};
 enum NodeColor {NODE_COLOR_AUTO=0,NODE_COLOR_ORANGE=1,NODE_COLOR_CYAN=2,NODE_COLOR_GREEN=3,NODE_COLOR_RED=4,NODE_COLOR_PURPLE=5,NODE_COLOR_YELLOW=6,NODE_COLOR_WHITE=7};
-static constexpr unsigned NODE_SIZES[]={18,22,26,30};
+static constexpr unsigned NODE_SIZES[]={8,12,18,22,26,30};
 static constexpr uint32_t NODE_COLORS[]={0,0xFF8A22,0x59C9F5,0x61D69B,0xFF6262,0xB99AFF,0xFFD45A,0xFFFFFF};
 static bool nodes_hidden(const Config &c){return c.hide_nodes&1;}
-static NodeIcon node_icon(const Config &c,bool meshcore){return NodeIcon((c.hide_nodes>>(meshcore?5:3))&3);}
-static unsigned node_size_index(const Config &c){return (c.hide_nodes>>1)&3;}
+static NodeIcon node_icon(const Config &c,bool meshcore){return NodeIcon((c.hide_nodes>>(meshcore?6:4))&3);}
+static unsigned node_size_index(const Config &c){return (c.hide_nodes>>1)&7;}
 static unsigned node_size(const Config &c){return NODE_SIZES[node_size_index(c)];}
 static NodeColor node_color(const Config &c,bool meshcore){return NodeColor((c.show_node_names>>(meshcore?4:1))&7);}
 static uint32_t node_color_hex(const Config &c,bool meshcore){const auto selected=node_color(c,meshcore);return selected==NODE_COLOR_AUTO?(meshcore?0x9C88FF:0x72D8A5):NODE_COLORS[selected];}
 static void set_nodes_hidden(Config &c,bool hidden){c.hide_nodes=uint8_t((c.hide_nodes&~1u)|(hidden?1u:0u));}
-static void set_node_icon(Config &c,bool meshcore,unsigned icon){const unsigned shift=meshcore?5:3;const uint8_t mask=uint8_t(~(3u<<shift));c.hide_nodes=uint8_t((c.hide_nodes&mask)|((icon%3u)<<shift));}
-static void set_node_size(Config &c,unsigned size){c.hide_nodes=uint8_t((c.hide_nodes&0xF9u)|((size%4u)<<1));}
+static void set_node_icon(Config &c,bool meshcore,unsigned icon){const unsigned shift=meshcore?6:4;const uint8_t mask=uint8_t(~(3u<<shift));c.hide_nodes=uint8_t((c.hide_nodes&mask)|((icon%4u)<<shift));}
+static void set_node_size(Config &c,unsigned size){c.hide_nodes=uint8_t((c.hide_nodes&0xF1u)|((size%6u)<<1));}
 static void set_node_color(Config &c,bool meshcore,unsigned color){const unsigned shift=meshcore?4:1;const uint8_t mask=uint8_t(~(7u<<shift));c.show_node_names=uint8_t((c.show_node_names&mask)|((color&7u)<<shift));}
 static void set_node_names(Config &c,bool enabled){c.show_node_names=uint8_t((c.show_node_names&~1u)|(enabled?1u:0u));}
 static bool valid_config(const Config &c){
-  if(c.version!=2||c.online>1||(c.hide_nodes&0x80)||((c.hide_nodes>>3)&3)>NODE_CROSS||((c.hide_nodes>>5)&3)>NODE_CROSS||(c.show_node_names&0x80)||c.zoom<3||c.zoom>19||!memchr(c.url,0,sizeof(c.url))||!memchr(c.attribution,0,sizeof(c.attribution))||!c.attribution[0]||strncmp(c.url,"https://",8)||!c.url[8])return false;
+  if(c.version!=3||c.online>1||((c.hide_nodes>>1)&7)>=6||((c.hide_nodes>>4)&3)>NODE_NAME||((c.hide_nodes>>6)&3)>NODE_NAME||(c.show_node_names&0x80)||c.zoom<3||c.zoom>19||!memchr(c.url,0,sizeof(c.url))||!memchr(c.attribution,0,sizeof(c.attribution))||!c.attribution[0]||strncmp(c.url,"https://",8)||!c.url[8])return false;
   for(const char *p=c.url;*p;++p)if(uint8_t(*p)<=32||strchr("?#@{}",*p))return false;
   return true;
 }
 static bool migrate_config(Config &c){
-  if(c.version==2)return valid_config(c);
-  if(c.version!=1||c.online>1||((c.hide_nodes>>1)&3)>NODE_CROSS||c.show_node_names>1)return false;
-  const uint8_t old_nodes=c.hide_nodes,old_names=c.show_node_names;
-  const unsigned icon=(old_nodes>>1)&3,size=(old_nodes>>3)&3,color=(old_nodes>>5)&7;
-  c.hide_nodes=uint8_t((old_nodes&1u)|(size<<1)|(icon<<3)|(icon<<5));
-  c.show_node_names=uint8_t((old_names&1u)|(color<<1)|(color<<4));
-  c.version=2;
+  if(c.version==3)return valid_config(c);
+  if(c.version==1){
+    if(c.online>1||((c.hide_nodes>>1)&3)>NODE_CROSS||c.show_node_names>1)return false;
+    const uint8_t old_nodes=c.hide_nodes,old_names=c.show_node_names;
+    const unsigned icon=(old_nodes>>1)&3,size=(old_nodes>>3)&3,color=(old_nodes>>5)&7;
+    c.hide_nodes=uint8_t((old_nodes&1u)|(size<<1)|(icon<<3)|(icon<<5));
+    c.show_node_names=uint8_t((old_names&1u)|(color<<1)|(color<<4));c.version=2;
+  }
+  if(c.version==2){
+    if(c.online>1||(c.hide_nodes&0x80)||((c.hide_nodes>>3)&3)>NODE_CROSS||((c.hide_nodes>>5)&3)>NODE_CROSS||(c.show_node_names&0x80))return false;
+    const uint8_t old=c.hide_nodes;const unsigned size=(old>>1)&3,mt=(old>>3)&3,mc=(old>>5)&3;
+    c.hide_nodes=uint8_t((old&1u)|(size<<1)|(mt<<4)|(mc<<6));c.version=3;
+  }
   return valid_config(c);
 }
 enum Provider {STREET=0,TOPO=1};
@@ -107,7 +113,7 @@ static void release(Frame *f){if(f){heap_caps_free((void *)f->image.data);heap_c
 static void load_config(){
   if(loaded_config)return;
   nvs_handle_t h;if(nvs_open("mcx_map",NVS_READONLY,&h)==ESP_OK){Config c;size_t n=sizeof(c);
-    if(nvs_get_blob(h,"config",&c,&n)==ESP_OK&&n==sizeof(c)){const bool legacy=c.version==1;if(migrate_config(c)){config=c;if(legacy){revision=1;changed_ms=milliseconds();settings_saved=false;}}}
+    if(nvs_get_blob(h,"config",&c,&n)==ESP_OK&&n==sizeof(c)){const bool legacy=c.version<3;if(migrate_config(c)){config=c;if(legacy){revision=1;changed_ms=milliseconds();settings_saved=false;}}}
     select_provider(config,provider(config));
     nvs_close(h);
   }loaded_config=true;
