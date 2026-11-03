@@ -239,7 +239,7 @@ static void test_companion_ui(const char *preview){
   c.qcount=0;mcui::select(mcxchat::key_for(c,false,0));
   for(int i=0;i<20;i++){mcui::form(26);assert(lv_textarea_get_password_mode(mcui::fields[1]));mcui::close();}
   mcui::tools();advance();assert(lv_obj_get_child_cnt(mcui::scroller)==6);mcui::close();
-  c.protocol=7;mcui::tools();tap_object(mc_button(mcui::scroller,"Advanced tools"));advance();auto *local_console=mc_button(mcui::scroller,"Local radio console");assert(local_console&&lv_obj_has_state(local_console,LV_STATE_DISABLED));mcui::close();
+  c.protocol=7;mcui::tools_filter=6;mcui::tools();auto *local_console=mc_button(mcui::scroller,"Local radio console");assert(local_console&&lv_obj_has_state(local_console,LV_STATE_DISABLED));mcui::close();
   mcui::radio_status=txt(body,"stale sync",8,8,350,white);advance();c.busy=false;c.fault=false;c.initialized=true;mcui::poll(nullptr);advance();assert(!strcmp(lv_label_get_text(mcui::radio_status),"MeshCore ready"));mcui::radio_status=nullptr;
   // The disconnected-radio regression must keep a useful draft, show a reason,
   // and disable SEND. Reconnection re-enables it without dismissing the draft.
