@@ -9,6 +9,7 @@ static lv_obj_t *radio_status = nullptr, *home_name = nullptr, *home_status = nu
 static char home_name_source[80] = {};
 static uint8_t field_count = 0, selected_command = 0;
 static unsigned tools_filter=0;
+static bool tools_show_presets=false;
 static bool confirm_pending = false, group = false, conversation = false, reveal = false;
 static uint8_t target_key[32] = {};
 static uint16_t target_slot = 0, list_offset = 0;
@@ -17,6 +18,7 @@ static uint32_t last_redraw=0;
 static mcxchat::Key selected;
 static int mode = 0; // 0 menu, 1 typed command, 2 compose, 3 result, 4 contact details
 static void tools();
+static void tools_back_categories(lv_event_t *);
 static void compose();
 static void save_draft();
 static void chat_tools();
@@ -55,7 +57,7 @@ static void on_close(lv_event_t *) {
   close();
 }
 static void on_tools(lv_event_t *) {
-  tools_filter=0;
+  tools_show_presets=false;
   tools();
 }
 // Apply emoji font only to visible name labels. Protocol names and message
@@ -155,7 +157,7 @@ static void result() {
   mode = 3;
   feedback = txt(scroller, session() ? session()->result : "No radio session", 10, 5, 453, white);
   lv_label_set_long_mode(feedback, LV_LABEL_LONG_WRAP);
-  action_button(dialog, "TOOLS", 10, 273, 220, 40, panel2, on_tools, 0);
+  action_button(dialog, "BACK", 10, 273, 220, 40, panel2, on_tools, 0);
   action_button(dialog, "SHOW / HIDE DATA", 240, 273, 230, 40, panel2, show_data, 0);
 }
 static uint8_t form_radio_key[32]={};
@@ -286,7 +288,7 @@ static void form(uint8_t code) {
   feedback = txt(scroller, "", 10, y + 8, 450, orange);
   lv_label_set_long_mode(feedback, LV_LABEL_LONG_WRAP);
   action_button(dialog, c->confirm ? "APPLY" : "RUN", 10, 273, 220, 40, orange, apply, 0);
-  action_button(dialog, "TOOLS", 240, 273, 230, 40, panel2, on_tools, 0);
+  action_button(dialog, "BACK", 240, 273, 230, 40, panel2, on_tools, 0);
 }
 static void choose_command(lv_event_t *e) {
   form((uint8_t)(intptr_t)lv_event_get_user_data(e));
@@ -299,8 +301,10 @@ static void choose_preset(lv_event_t *e) {
   char hint[120];snprintf(hint,sizeof(hint),p.hash_bytes?"%s: review LoRa values. Set path hash separately to %u bytes.":"%s: review LoRa values before applying.",p.name,p.hash_bytes);lv_label_set_text(feedback,hint);
 }
 static void presets(lv_event_t *) {
-  base("MESHCORE / LORA REGION PRESETS");mode=0;int y=0;
-  for(unsigned i=0;i<meshmc::RADIO_PRESET_COUNT;++i){action_button(scroller,meshmc::RADIO_PRESETS[i].name,8,y,460,43,panel2,choose_preset,i);y+=49;}
+  base("MESHCORE / LORA REGION PRESETS");mode=0;tools_show_presets=true;
+  action_button(dialog,"BACK",280,4,88,30,panel2,tools_back_categories,0);
+  int y=2;
+  for(unsigned i=0;i<meshmc::RADIO_PRESET_COUNT;++i){action_button(scroller,meshmc::RADIO_PRESETS[i].name,8,y,460,34,panel2,choose_preset,i);y+=38;}
 }
 static unsigned tool_category(uint8_t code){
   if(code==11||code==12||code==21||code==43||code==60||code==61)return 1;
@@ -310,24 +314,24 @@ static unsigned tool_category(uint8_t code){
   if(code==23||code==24||code==38||code==54||code==57||code==58||code==59)return 5;
   return 6;
 }
-static void tools_select_category(lv_event_t *e){tools_filter=unsigned((intptr_t)lv_event_get_user_data(e));tools();}
-static void tools_back_categories(lv_event_t *){tools_filter=0;tools();}
+static void tools_select_category(lv_event_t *e){tools_filter=unsigned((intptr_t)lv_event_get_user_data(e));tools_show_presets=false;tools();}
+static void tools_back_categories(lv_event_t *){if(tools_show_presets)tools_show_presets=false;else tools_filter=0;tools();}
 static void tools() {
   base("MESHCORE / SETTINGS");
   mode = 0;
   lv_obj_set_pos(scroller,0,46);lv_obj_set_height(scroller,218);
   const char *categories[]={"Radio & region","Device & identity","Channels","Sensors & status","Privacy","Advanced tools"};
-  if(!tools_filter){int y=4;for(unsigned cat=1;cat<=6;++cat){action_button(scroller,categories[cat-1],8,y,460,43,panel2,tools_select_category,cat);y+=49;}}
-  else {action_button(dialog,"CATEGORIES",225,4,145,36,panel2,tools_back_categories,0);int y=4;
-  if(tools_filter==1){action_button(scroller,"LoRa region presets",8,y,460,43,orange,presets,0);y+=49;}
+  if(!tools_filter){int y=3;for(unsigned cat=1;cat<=6;++cat){action_button(scroller,categories[cat-1],8,y,460,34,panel2,tools_select_category,cat);y+=38;}}
+  else {action_button(dialog,"BACK",280,4,88,30,panel2,tools_back_categories,0);int y=3;
+  if(tools_filter==1){action_button(scroller,"LoRa region presets",8,y,460,34,orange,presets,0);y+=38;}
   for (auto &c : meshmc::COMMANDS) {
     if(tool_category(c.code)!=tools_filter)continue;
     // Messaging has dedicated forms; include binary/expert tools without pretending they are
     // board-independent.
-    lv_obj_t *b = action_button(scroller, c.name, 8, y, 460, 43, panel2, choose_command, c.code);
+    lv_obj_t *b = action_button(scroller, c.name, 8, y, 460, 34, panel2, choose_command, c.code);
     if (!ready() || (session()->protocol && session()->protocol < c.min_version))
       lv_obj_add_state(b, LV_STATE_DISABLED);
-    y += 49;
+    y += 38;
   }
   }
   feedback = txt(dialog, session() ? session()->status : "Connect your MeshCore radio in More / Radios.", 8,
