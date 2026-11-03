@@ -5,7 +5,7 @@ namespace navui {
 static lv_obj_t *canvas=nullptr,*picture=nullptr,*marker=nullptr,*map_status=nullptr,*attribution=nullptr;
 static mcxmap::Frame *front=nullptr;
 static lv_obj_t *zoom_overlay=nullptr,*zoom_slider=nullptr,*zoom_value=nullptr;
-static bool zoom_open=false,zoom_adjusting=false;
+static bool zoom_open=false,zoom_adjusting=false,worker_start_failed=false;
 static unsigned pending_zoom=14;
 static char status_text[96]="Waiting for GPS";
 static void recording();
@@ -70,8 +70,9 @@ static void request(){
   if(!canvas||!centered)return;
   mcxmap::View v;v.latitude=latitude;v.longitude=longitude;v.zoom=zoom;v.width=unsigned(lv_obj_get_width(canvas));v.height=unsigned(lv_obj_get_height(canvas));
   seen_config=mcxmap::configuration_revision();
-  generation=mcxmap::request(v);inflight=generation!=0;requested_at=uint32_t(esp_timer_get_time()/1000);
-  set_status(generation?"Loading map...":"Map unavailable / memory");
+  generation=mcxmap::request(v);inflight=generation!=0;worker_start_failed=generation==0;requested_at=uint32_t(esp_timer_get_time()/1000);
+  set_status(generation?"Loading map...":"Map worker unavailable · check PSRAM/internal memory");
+  if(map_status){chatview::label(map_status,status_text);set_hidden(map_status,false);}
 }
 static void pointer(lv_event_t *event){
   if(!centered||zoom_adjusting||!front)return;
@@ -174,6 +175,7 @@ static void create(int w){
   mcxmap::start();if(centered)request();
 }
 static void poll(){
+  mcxmap::persist_config();
   if(!nav_state){auto *p=heap_caps_malloc(sizeof(mcxnav::Snapshot),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(p)nav_state=new(p) mcxnav::Snapshot();}
   if(nav_state)mcxnav::snapshot(*nav_state);
   if(canvas&&nav_state&&!info_dialog){if(record_badge){const bool active=nav_state->mode==mcxnav::RECORDING||nav_state->mode==mcxnav::PAUSED||nav_state->mode==mcxnav::STORAGE_ERROR;
@@ -187,7 +189,7 @@ static void poll(){
       set_status(front->status);
     }else mcxmap::release(next);
   }
-  if(map_status&&!info_dialog){const bool waiting=inflight||(front&&front->missing);if(waiting)chatview::label(map_status,inflight?"Loading map...":mcxmap::configuration().online?"Map tiles unavailable / retrying":"Offline / tiles not saved");set_hidden(map_status,!waiting);}
+  if(map_status&&!info_dialog){const bool waiting=worker_start_failed||inflight||(front&&front->missing);if(waiting)chatview::label(map_status,worker_start_failed?"Map worker unavailable · check PSRAM/internal memory":inflight?"Loading map...":mcxmap::configuration().online?"Map tiles unavailable / retrying":"Offline / tiles not saved");set_hidden(map_status,!waiting);}
   if(!canvas||info_dialog||zoom_adjusting)return;
   if(front&&nav_state&&(!overlay_cache||!overlay_cache->ready||overlay_cache->generation!=front->view.generation||overlay_cache->revision!=overlay_signature())){rebuild_overlay_cache();lv_obj_invalidate(picture);}
   const auto marker_config=mcxmap::configuration();if(front&&(mcxmap::node_icon(marker_config,false)==mcxmap::NODE_NAME||mcxmap::node_icon(marker_config,true)==mcxmap::NODE_NAME)&&int32_t(now-next_activity_redraw)>=0){refresh_node_activity();lv_obj_invalidate(picture);next_activity_redraw=now+10000;}

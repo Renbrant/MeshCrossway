@@ -12,6 +12,7 @@
 #include <time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/idf_additions.h"
 #include "lvgl.h"
 #define LODEPNG_NO_COMPILE_CPP
 extern "C" {
@@ -26,6 +27,7 @@ extern "C" {
 #include <unistd.h>
 namespace mcxmap {
 static constexpr size_t MAX_PNG=256*1024;
+static constexpr uint32_t MAP_WORKER_STACK_BYTES=6144;
 // Worker-owned bounded LRU: twelve RGB565 tiles, 1.5 MiB of PSRAM at most.
 struct Tile {uint64_t source=0;unsigned z=0,x=0,y=0;uint32_t used=0;lv_color_t *pixels=nullptr;};
 static Tile tile_cache[12];static uint32_t tile_clock=0;
@@ -117,6 +119,20 @@ static void load_config(){
     select_provider(config,provider(config));
     nvs_close(h);
   }loaded_config=true;
+}
+static void persist_config(){
+  static uint32_t last_attempt=0;
+  Config c;uint32_t rev,at;
+  portENTER_CRITICAL(&mux);c=config;rev=revision;at=changed_ms;const bool pending=!settings_saved.load();portEXIT_CRITICAL(&mux);
+  const uint32_t now=milliseconds();
+  if(!pending||uint32_t(now-at)<700||(last_attempt&&uint32_t(now-last_attempt)<5000))return;
+  last_attempt=now;
+  nvs_handle_t h;
+  if(nvs_open("mcx_map",NVS_READWRITE,&h)==ESP_OK){
+    const bool ok=nvs_set_blob(h,"config",&c,sizeof(c))==ESP_OK&&nvs_commit(h)==ESP_OK;
+    nvs_close(h);
+    if(ok){portENTER_CRITICAL(&mux);if(revision==rev)settings_saved=true;portEXIT_CRITICAL(&mux);}
+  }
 }
 static uint32_t configuration_revision(){portENTER_CRITICAL(&mux);const auto r=revision;portEXIT_CRITICAL(&mux);return r;}
 static Config configuration(){portENTER_CRITICAL(&mux);auto c=config;portEXIT_CRITICAL(&mux);return c;}
@@ -251,14 +267,9 @@ static Frame *render(const View &v,const Config &c){
   snprintf(f->status,sizeof(f->status),"z%u / %u tiles / %u missing%s",v.zoom,f->loaded,f->missing,!esp_sdcard_port_get_size()?" / SD unavailable":waiting_clock?" / clock sync":cache_full?" / cache reserve":"");last_render_ms=milliseconds()-begun;return f;
 }
 static void worker(void *){
-  uint32_t saved=0,last_save=0;uint64_t previous_source=0;
+  uint64_t previous_source=0;
   for(;;){
-    portENTER_CRITICAL(&mux);const Config c=config;const uint32_t rev=revision,at=changed_ms;const bool work=queued&&!ready&&!mcxpriority::ble_initializing.load();View v=requested;if(work)queued=false;portEXIT_CRITICAL(&mux);
-    const uint32_t now=milliseconds();
-    if(rev!=saved&&uint32_t(now-at)>700&&(!last_save||uint32_t(now-last_save)>5000)){last_save=now;nvs_handle_t h;
-      if(nvs_open("mcx_map",NVS_READWRITE,&h)==ESP_OK){if(nvs_set_blob(h,"config",&c,sizeof(c))==ESP_OK&&nvs_commit(h)==ESP_OK){saved=rev;portENTER_CRITICAL(&mux);if(revision==rev)settings_saved=true;portEXIT_CRITICAL(&mux);}
-        nvs_close(h);}
-    }
+    portENTER_CRITICAL(&mux);const Config c=config;const bool work=queued&&!ready&&!mcxpriority::ble_initializing.load();View v=requested;if(work)queued=false;portEXIT_CRITICAL(&mux);
     if(work){mcxpriority::map_busy=true;
       if(mcxpriority::ble_initializing.load()){mcxpriority::map_busy=false;continue;}
       if(source_hash(c)!=previous_source){clear_tiles();for(auto &miss:misses)miss=Miss{};backing_off=false;previous_source=source_hash(c);}
@@ -268,7 +279,16 @@ static void worker(void *){
 }
 static bool start(){
   if(task)return true;
-  load_config();if(xTaskCreatePinnedToCore(worker,"mcx_map",6144,nullptr,1,&task,0)!=pdPASS){last_error=ESP_ERR_NO_MEM;return false;}return true;
+  load_config();
+  const auto result=xTaskCreatePinnedToCoreWithCaps(worker,"mcx_map",MAP_WORKER_STACK_BYTES,nullptr,1,&task,0,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+  if(result!=pdPASS){
+    task=nullptr;last_error=ESP_ERR_NO_MEM;
+    printf("[MCX-MAP] worker create failed rc=%ld stack=%lu internal_free=%lu internal_largest=%lu psram_free=%lu psram_largest=%lu\\n",(long)result,(unsigned long)MAP_WORKER_STACK_BYTES,(unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),(unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),(unsigned long)heap_caps_get_free_size(MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT),(unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
+    return false;
+  }
+  last_error=ESP_OK;
+  printf("[MCX-MAP] worker started stack=PSRAM/%lu TCB=internal internal_free=%lu psram_free=%lu\\n",(unsigned long)MAP_WORKER_STACK_BYTES,(unsigned long)heap_caps_get_free_size(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT),(unsigned long)heap_caps_get_free_size(MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
+  return true;
 }
 static uint32_t request(View v){
   if(v.zoom<3||v.zoom>19||v.width<64||v.width>480||v.height<64||v.height>286||!isfinite(v.latitude)||!isfinite(v.longitude))return 0;
