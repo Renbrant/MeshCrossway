@@ -26,6 +26,8 @@ static Fix snapshot(){portENTER_CRITICAL(&mutex);Fix out=latest;const auto cfg=s
   const uint32_t now=uint32_t(esp_timer_get_time()/1000);
   if(!cfg.enabled||uint32_t(now-out.satellites_ms)>cfg.timeout_ms){out.have_satellites=out.have_hdop=out.have_altitude=false;}
   if(!cfg.enabled||uint32_t(now-out.speed_ms)>cfg.timeout_ms)out.have_speed=false;
+  if(!cfg.enabled||uint32_t(now-out.visible_ms)>5000)out.have_visible_satellites=false;
+  if(!cfg.enabled||uint32_t(now-out.visible_ms)>5000)out.have_visible_satellites=false;
   if(!cfg.enabled||uint32_t(now-out.time_ms)>cfg.timeout_ms)out.have_time=false;
   if(!out.valid||uint32_t(now-out.accuracy_ms)>cfg.timeout_ms)out.have_accuracy=false;
   if(!out.valid||uint32_t(now-out.quality_ms)>cfg.timeout_ms)out.have_quality=false;

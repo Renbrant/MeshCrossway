@@ -4,9 +4,27 @@
 #include <string.h>
 #include <math.h>
 namespace mcxgnss {
-struct Fix {double horizontal_accuracy=0;uint32_t accuracy_ms=0,quality_ms=0;uint8_t quality=0,accuracy_source=0;bool have_accuracy=false,have_quality=false;double latitude=0,longitude=0,altitude=0,hdop=0,speed_kmh=0;unsigned satellites=0;uint64_t utc_seconds=0;uint32_t time_ms=0;bool have_time=false;uint32_t position_ms=0,received_ms=0,satellites_ms=0,speed_ms=0,frames=0,errors=0;bool valid=false,have_altitude=false,have_hdop=false,have_satellites=false,have_speed=false;};
+struct Fix {double horizontal_accuracy=0;uint32_t accuracy_ms=0,quality_ms=0;uint8_t quality=0,accuracy_source=0;bool have_accuracy=false,have_quality=false;double latitude=0,longitude=0,altitude=0,hdop=0,speed_kmh=0;unsigned satellites=0,visible_satellites=0;uint8_t visible_by_constellation[4]={};bool have_visible_satellites=false;uint32_t visible_ms=0;uint64_t utc_seconds=0;uint32_t time_ms=0;bool have_time=false;uint32_t position_ms=0,received_ms=0,satellites_ms=0,speed_ms=0,frames=0,errors=0;bool valid=false,have_altitude=false,have_hdop=false,have_satellites=false,have_speed=false;};
 struct Parser {
-  Fix fix;char line[160]={};unsigned used=0;bool collecting=false;
+  Fix fix;char line[160]={};unsigned used=0;bool collecting=false;uint8_t gsv_total[4]={},gsv_seen[4]={},gsv_parts[4]={};uint32_t gsv_started[4]={};
+  // GSV is split into several sentences. Publish a constellation only after
+  // the complete sequence arrives, so partial UART frames cannot inflate totals.
+  struct Gsv {uint8_t next=0,total=0;uint32_t updated=0;unsigned count=0;bool ready=false;};
+  Gsv gsv[5]={}; // GPS, GLONASS, Galileo, BeiDou, GN mixed fallback
+  static int constellation(const char *id){
+    if(id[0]!='G')return -1;
+    if(id[1]=='P')return 0;if(id[1]=='L')return 1;
+    if(id[1]=='A')return 2;if(id[1]=='B'||id[1]=='D')return 3;
+    if(id[1]=='N')return 4;return -1;
+  }
+  void visible(uint32_t now){
+    unsigned sum=0;bool individual=false;
+    for(unsigned i=0;i<4;++i)if(gsv[i].ready&&uint32_t(now-gsv[i].updated)<=5000){individual=true;sum+=gsv[i].count;}
+    if(!individual&&gsv[4].ready&&uint32_t(now-gsv[4].updated)<=5000)sum=gsv[4].count;
+    fix.have_visible_satellites=individual||(gsv[4].ready&&uint32_t(now-gsv[4].updated)<=5000);
+    fix.visible_satellites=sum;fix.visible_ms=now;
+    for(unsigned i=0;i<4;++i)fix.visible_by_constellation[i]=gsv[i].ready&&uint32_t(now-gsv[i].updated)<=5000?uint8_t(gsv[i].count>255?255:gsv[i].count):0;
+  }
   static int hex(char c){return c>='0'&&c<='9'?c-'0':c>='A'&&c<='F'?c-'A'+10:c>='a'&&c<='f'?c-'a'+10:-1;}
   static bool number(const char *s,double &out){if(!*s)return false;char *end=nullptr;out=strtod(s,&end);return end!=s&&!*end&&isfinite(out);}
   static bool coordinate(const char *s,const char *hem,bool lat,double &out){double raw;if(!number(s,raw)||raw<0||strlen(hem)!=1)return false;double deg=floor(raw/100),minutes=raw-deg*100;out=deg+minutes/60;if(minutes>=60||out>(lat?90:180))return false;if(*hem==(lat?'S':'W'))out=-out;else if(*hem!=(lat?'N':'E'))return false;return true;}
@@ -33,6 +51,32 @@ struct Parser {
     const int a=hex(star[1]),b=hex(star[2]);if(a<0||b<0||checksum!=unsigned(a*16+b))return false;
     *star=0;char *f[24]={};unsigned n=1;f[0]=line;
     for(char *p=line;*p;++p)if(*p==','){*p=0;if(n==24)return false;f[n++]=p+1;}
+    // GSV counts satellites in view, independent of GGA satellites used.
+    // A complete multi-part cycle is required; partial/old cycles are ignored.
+    if(strlen(f[0])==5&&!strcmp(f[0]+2,"GSV")){
+      int constellation=-1;
+      if(!strncmp(f[0],"GP",2))constellation=0;
+      else if(!strncmp(f[0],"GA",2))constellation=1;
+      else if(!strncmp(f[0],"GB",2)||!strncmp(f[0],"BD",2))constellation=2;
+      else if(!strncmp(f[0],"GL",2))constellation=3;
+      if(constellation<0||n<4)return false;
+      double parts=0,index=0,total=0;
+      if(!number(f[1],parts)||!number(f[2],index)||!number(f[3],total)||
+         parts<1||parts>32||index<1||index>parts||total<0||total>128||
+         floor(parts)!=parts||floor(index)!=index||floor(total)!=total)return false;
+      const unsigned c=unsigned(constellation),part=unsigned(index);
+      if(part==1){gsv_parts[c]=unsigned(parts);gsv_total[c]=unsigned(total);gsv_seen[c]=1;gsv_started[c]=now;}
+      else if(gsv_parts[c]!=unsigned(parts)||gsv_seen[c]+1!=part||
+              uint32_t(now-gsv_started[c])>5000)return false;
+      else gsv_seen[c]=uint8_t(part);
+      if(part==unsigned(parts)){
+        fix.visible_by_constellation[c]=gsv_total[c];
+        gsv_parts[c]=gsv_seen[c]=0;
+        unsigned sum=0;for(unsigned k=0;k<4;++k)sum+=fix.visible_by_constellation[k];
+        fix.visible_satellites=sum;fix.visible_ms=now;fix.have_visible_satellites=true;
+      }
+      fix.received_ms=now;++fix.frames;return true;
+    }
     if(!strcmp(f[0],"PUBX")){
       // u-blox M10 SPG 5.10 UBX-21035062 R03 section 2.8.2.
       // Poll response only supplies accuracy; standard GGA/RMC keep owning the
@@ -45,7 +89,20 @@ struct Parser {
       fix.received_ms=now;++fix.frames;return true;
     }
     if(strlen(f[0])!=5)return false;
-    const char *kind=f[0]+2;double lat=0,lon=0;
+    const char *kind=f[0]+2;
+    if(!strcmp(kind,"GSV")){
+      const int system=constellation(f[0]);double total=0,index=0,count=0;
+      if(system<0||n<4||!number(f[1],total)||!number(f[2],index)||!number(f[3],count)||
+         total<1||total>32||index<1||index>total||count<0||count>255||
+         floor(total)!=total||floor(index)!=index||floor(count)!=count)return false;
+      auto &v=gsv[system];const unsigned part=unsigned(index);
+      if(part==1){v.next=1;v.total=uint8_t(total);v.count=unsigned(count);v.ready=false;}
+      if(v.next!=part||v.total!=unsigned(total))return false;
+      v.updated=now;
+      if(part==unsigned(total)){v.ready=true;v.next=0;visible(now);}
+      else v.next=uint8_t(part+1);
+      fix.received_ms=now;++fix.frames;return true;
+    }double lat=0,lon=0;
     if(!strcmp(kind,"GGA")){
       if(n<11)return false;
       double quality,sats;
@@ -82,6 +139,6 @@ struct Parser {
     if(used+1>=sizeof(line)){collecting=false;++fix.errors;return false;}
     line[used++]=c;return false;
   }
-  Fix snapshot(uint32_t now)const{Fix out=fix;if(uint32_t(now-out.position_ms)>3000)out.valid=false;if(!out.valid||uint32_t(now-out.accuracy_ms)>3000)out.have_accuracy=false;if(!out.valid||uint32_t(now-out.quality_ms)>3000)out.have_quality=false;if(uint32_t(now-out.satellites_ms)>3000)out.have_satellites=out.have_hdop=out.have_altitude=false;if(uint32_t(now-out.speed_ms)>3000)out.have_speed=false;return out;}
+  Fix snapshot(uint32_t now)const{Fix out=fix;if(uint32_t(now-out.position_ms)>3000)out.valid=false;if(!out.valid||uint32_t(now-out.accuracy_ms)>3000)out.have_accuracy=false;if(!out.valid||uint32_t(now-out.quality_ms)>3000)out.have_quality=false;if(uint32_t(now-out.satellites_ms)>3000)out.have_satellites=out.have_hdop=out.have_altitude=false;if(uint32_t(now-out.speed_ms)>3000)out.have_speed=false;if(uint32_t(now-out.visible_ms)>5000)out.have_visible_satellites=false;return out;}
 };
 }
