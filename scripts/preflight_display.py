@@ -207,7 +207,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
             assert "meshble::start();" not in output
             assert "meshble::request_start()" in ui
             assert "meshble::schedule_auto_resume();" in output
-            assert "ENABLE BLE / TEST" in ui
+            assert ("TURN BLUETOOTH OFF" in ui if version=="v0.9.10" else "ENABLE BLE / TEST" in ui)
             assert "static bool request_start()" in ble
             if version=="v0.9.5":
                 assert "xTaskNotifyGive(reconnect_worker)" in ble
