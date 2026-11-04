@@ -131,7 +131,7 @@ static void debug_memory(const char *phase){
 // v0.9.3 logs showed only a 25-26 KB largest block after Wi-Fi, while the
 // BLE controller requested 30-34 KB and asserted instead of returning ENOMEM.
 static const char *init_stage="not started";
-static std::atomic<bool> controller_ready{false},controller_prepare_failed{false};
+static std::atomic<bool> controller_ready{false},controller_enabled{false},controller_prepare_failed{false};
 static std::atomic<int> controller_prepare_error{0};
 static void prepare_controller_early(){
   if(controller_ready.load()||controller_prepare_failed.load())return;
@@ -150,25 +150,27 @@ static void prepare_controller_early(){
     if(esp_bt_controller_get_status()!=ESP_BT_CONTROLLER_STATUS_IDLE){
       (void)esp_bt_controller_disable();(void)esp_bt_controller_deinit();
     }
+    controller_enabled.store(false);
     printf("[MCX-BLE] %s failed: %s (%d); BLE auto-start disabled\n",init_stage,esp_err_to_name(rc),(int)rc);
     return;
   }
-  controller_ready.store(true);
+  controller_enabled.store(true);controller_ready.store(true);
   printf("[MCX-BLE] controller prepared before Wi-Fi; internal largest=%lu\n",
          (unsigned long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT));
 }
 static esp_err_t initialize_stack(){
   if(controller_prepare_failed.load())return (esp_err_t)controller_prepare_error.load();
   if(!controller_ready.load()){init_stage="controller not prepared before Wi-Fi";return ESP_ERR_INVALID_STATE;}
-  if(esp_bt_controller_get_status()==ESP_BT_CONTROLLER_STATUS_INITED){
+  if(!controller_enabled.load()){
     init_stage="controller re-enable";
     const esp_err_t enabled=esp_bt_controller_enable(ESP_BT_MODE_BLE);
     if(enabled!=ESP_OK)return enabled;
+    controller_enabled.store(true);
   }
   init_stage="host / HCI";esp_err_t rc=esp_nimble_init();
   if(rc!=ESP_OK){
     (void)esp_bt_controller_disable();(void)esp_bt_controller_deinit();
-    controller_ready.store(false);
+    controller_enabled.store(false);controller_ready.store(false);
     controller_prepare_error.store((int)rc);controller_prepare_failed.store(true);
     return rc;
   }
@@ -283,9 +285,10 @@ static bool power_off_internal(){
     host_stack_initialized.store(false);
   }
   host_task_requested.store(false);
-  if(esp_bt_controller_get_status()==ESP_BT_CONTROLLER_STATUS_ENABLED){
+  if(controller_enabled.load()){
     const esp_err_t controller_rc=esp_bt_controller_disable();
     if(controller_rc!=ESP_OK){char error[64];snprintf(error,sizeof(error),"Bluetooth disable error: %d",(int)controller_rc);update(FAILED,error);return false;}
+    controller_enabled.store(false);
   }
   mt::synced=false;mc::synced=false;mt::conn=BLE_HS_CONN_HANDLE_NONE;mc::conn=BLE_HS_CONN_HANDLE_NONE;
   mt::auto_paused=true;mc::auto_paused=true;procedure=UNKNOWN;
