@@ -23,7 +23,7 @@ static size_t packet(uint8_t cls,uint8_t id,const uint8_t *payload,size_t length
 }
 struct Parser {
   State state;
-  uint8_t payload[512]={},header[4]={};
+  uint8_t payload[1024]={};
   uint16_t size=0,offset=0;
   uint8_t phase=0,ck_a=0,ck_b=0,cls=0,id=0;
   void reset(){phase=0;size=offset=0;ck_a=ck_b=0;}
