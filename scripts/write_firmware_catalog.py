@@ -73,6 +73,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.16":
+        summary="EXPERIMENTAL: identifies Meshtastic and MeshCore people, repeaters, rooms and sensors with compact type badges; shows four-character IDs, direct/flood route and relative last-heard age. Uses plain LVGL labels for list names to avoid the observed LVGL stack overflow. v0.8.26 remains stable."
+        label="Typed node cards and LVGL stack fix / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.15":
         summary="EXPERIMENTAL: refreshes node and channel cards with circular network markers, readable aligned metadata and a compact add-channel sheet, using the MeshCrossway dark and orange palette. v0.8.26 remains stable."
         label="Node and channel visual refresh / EXPERIMENTAL"

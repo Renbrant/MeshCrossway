@@ -27,6 +27,15 @@ namespace mtui {
     if(!text)return;
     for(char *p=text;*p;++p)if(*p=='\n'||*p=='\r'||*p=='\t')*p=' ';
   }
+  static lv_obj_t *list_icon(lv_obj_t *parent,const char *glyph,int x,int y,int size,lv_color_t accent){
+    auto *badge=panel_at(parent,x,y,size,size,lv_color_hex(0x302515),size/2);
+    lv_obj_set_style_border_width(badge,1,0);
+    lv_obj_set_style_border_color(badge,accent,0);
+    auto *mark=txt(badge,glyph,0,(size-20)/2,size,accent);
+    lv_obj_set_height(mark,20);
+    lv_obj_set_style_text_align(mark,LV_TEXT_ALIGN_CENTER,0);
+    return badge;
+  }
   static uint8_t primary(){auto *c=meshmt::client;
     if(c)for(unsigned i=0;i<meshmt::MAX_CHANNELS;++i)if(c->data.channels[i].role==1)return i;
     return 0;
@@ -213,41 +222,56 @@ namespace mtui {
         mcui::rendered_generation=mc?mc->generation:0;
         return;
       }
-      char title[72],heard_detail[64],chat_detail[72],when[16];uint32_t last=0;unsigned messages=0,unread=0;size_t bytes=0;
+      char title[72],heard_detail[88],chat_detail[72],when[24];uint32_t last=0;unsigned messages=0,unread=0;size_t bytes=0;
       lv_event_cb_t callback=nullptr;uintptr_t token=0;
       if(node_batch_network==1){
         auto *c=meshmt::client;if(!c){node_batch_network=2;continue;}
         const unsigned index=node_order[mt_node_cursor++];if(index>=c->data.node_count)continue;
         const auto &n=c->data.nodes[index];last=n.last_heard;
-        snprintf(title,sizeof(title),"MT / %s",n.name[0]?n.name:n.short_name[0]?n.short_name:"!node");compact_list_label(title);token=n.num;callback=select_node;
+        snprintf(title,sizeof(title),"%s",n.name[0]?n.name:n.short_name[0]?n.short_name:"!node");compact_list_label(title);token=n.num;callback=select_node;
         for(const auto &m:c->data.messages)if(m.seq&&m.to!=meshmt::BROADCAST&&(m.to==n.num||m.from==n.num)){
           ++messages;bytes+=strlen(m.text);if(!m.outgoing&&!m.read)++unread;if(m.time>last)last=m.time;}
-        mcxchat::time_local(last,when,sizeof(when));
-        snprintf(heard_detail,sizeof(heard_detail),"Heard %s / %u unread",last?when:"Never",unread);
+        node_heard_age(last,when,sizeof(when));
+        const uint8_t role=c->node_role(n.num);
+        const bool repeater=role==2||role==3||role==4||role==11||role==12;
+        const char *kind=repeater?"Meshtastic repeater":role==5?"Meshtastic tracker":role==6?"Meshtastic sensor":"Meshtastic person";
+        snprintf(heard_detail,sizeof(heard_detail),"ID %04X / %s / %s",unsigned(n.num&0xffffu),kind,when);
         if(mcui::node_sort_distance&&mcui::nav_gps_valid&&n.has_lat&&n.has_lon){
           const double lat=double(n.latitude)/1e7,lon=double(n.longitude)/1e7;
           const double dy=(lat-mcui::nav_latitude)*111320.0,dx=(lon-mcui::nav_longitude)*111320.0*cos(mcui::nav_latitude*0.017453292519943295);
-          snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B / %.0f m",messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
-        }else snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B",messages,(unsigned long)bytes);
+          snprintf(chat_detail,sizeof(chat_detail),"Unread %u / Chat %u / %lu B / %.0f m",unread,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
+        }else snprintf(chat_detail,sizeof(chat_detail),"Unread %u / Chat %u / %lu B",unread,messages,(unsigned long)bytes);
       }else{
         auto *c=meshmc::client;if(!c){node_batch_network=0;continue;}
         const unsigned index=meshcore_order_get(mc_node_cursor++);if(index>=c->contact_count)continue;
         const auto &contact=c->contacts[index];last=contact.advert>contact.lastmod?contact.advert:contact.lastmod;
-        snprintf(title,sizeof(title),"MC / %s",contact.name[0]?contact.name:"Unknown node");compact_list_label(title);token=index;callback=mcui::choose_contact;
+        snprintf(title,sizeof(title),"%s",contact.name[0]?contact.name:"Unknown node");compact_list_label(title);token=index;callback=mcui::choose_contact;
         for(const auto &m:c->messages)if(m.id&&!m.channel&&!memcmp(m.key,contact.key,6)){
           ++messages;bytes+=strlen(m.text);if(!m.outgoing&&!m.read)++unread;if(m.observed_at>last)last=m.observed_at;}
-        mcxchat::time_local(last,when,sizeof(when));
-        snprintf(heard_detail,sizeof(heard_detail),"Heard %s / %u unread",last?when:"Never",unread);
+        node_heard_age(last,when,sizeof(when));
+        const char *kind=contact.type==2?"MeshCore repeater":contact.type==3?"MeshCore room":contact.type==4?"MeshCore sensor":"MeshCore companion";
+        const char *route=contact.path_len==255?"Flood":"Direct";
+        snprintf(heard_detail,sizeof(heard_detail),"ID %02X%02X / %s / %s / %s",contact.key[4],contact.key[5],kind,route,when);
         if(mcui::node_sort_distance&&mcui::nav_gps_valid&&contact.lat&&contact.lon){
           const double lat=double(contact.lat)/1e6,lon=double(contact.lon)/1e6;
           const double dy=(lat-mcui::nav_latitude)*111320.0,dx=(lon-mcui::nav_longitude)*111320.0*cos(mcui::nav_latitude*0.017453292519943295);
-          snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B / %.0f m",messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
-        }else snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B",messages,(unsigned long)bytes);
+          snprintf(chat_detail,sizeof(chat_detail),"Unread %u / Chat %u / %lu B / %.0f m",unread,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
+        }else snprintf(chat_detail,sizeof(chat_detail),"Unread %u / Chat %u / %lu B",unread,messages,(unsigned long)bytes);
       }
       auto *b=action_button(node_list_view,"",0,0,node_batch_width,76,panel,callback,intptr_t(token));
       const int card_width=node_batch_width;
-      mcui::list_icon(b,"N",8,18,40,orange);
-      auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
+      const char *glyph="P";
+      if(node_batch_network==1){
+        const uint8_t role=meshmt::client?meshmt::client->node_role(uint32_t(token)):0;
+        if(role==2||role==3||role==4||role==11||role==12)glyph="R";
+        else if(role==5)glyph="T";
+        else if(role==6)glyph="S";
+      }else if(meshmc::client&&token<meshmc::client->contact_count){
+        const uint8_t type=meshmc::client->contacts[token].type;
+        glyph=type==2?"R":type==3?"H":type==4?"S":"P";
+      }
+      mtui::list_icon(b,glyph,8,18,40,orange);
+      auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,title);lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
       auto *heard_label=txt(b,heard_detail,56,28,card_width-64,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
       auto *chat_label=txt(b,chat_detail,56,49,card_width-64,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
       --budget;
@@ -308,18 +332,18 @@ namespace mtui {
       ++index;++shown;
       auto *b=action_button(body,"",8,y,w-16,page==1?58:page==2?58:74,panel,callback,intptr_t(token));
       if(page==1){
-        auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);
+        auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,title);
         const int card_width=w-16;const int name_width=card_width>=350?145:card_width*30/100;const int detail_x=name_width+14;
         lv_obj_set_pos(name,7,18);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
         auto *d=txt(b,detail,detail_x,4,card_width-detail_x-8,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
         y+=64;
       }else if(page==2){
         char compact_title[100];snprintf(compact_title,sizeof(compact_title),"%s",title);compact_list_label(compact_title);
-        auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,compact_title);
+        auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,compact_title);
         const int card_width=w-16;
-        mcui::list_icon(b,"#",8,9,40,orange);
+        mtui::list_icon(b,"#",8,9,40,orange);
         lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-        auto *d=txt(b,detail,56,30,card_width-64,18,muted);lv_obj_set_height(d,18);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
+        auto *d=txt(b,detail,56,30,card_width-64,muted);lv_obj_set_height(d,18);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
         y+=64;
       }else{
         char compact_title[100];snprintf(compact_title,sizeof(compact_title),"%s",title);compact_list_label(compact_title);

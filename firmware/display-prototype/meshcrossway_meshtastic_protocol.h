@@ -200,6 +200,8 @@ namespace meshmt {
   struct Client {
     Settings settings;
     Archive data;
+    // Runtime-only User.role cache; kept outside Archive so the SD format is unchanged.
+    uint8_t node_roles[MAX_NODES]={};
     bool connected=false,initialized=false,fault=false,history_ready=false,have_my_info=false,have_metadata=false,have_lora=false,tx_enabled=false,has_pki=false;
     uint8_t region=0,hop_limit=3;
     uint16_t mtu=0;
@@ -223,11 +225,20 @@ namespace meshmt {
       if(data.node_count==MAX_NODES){++dropped_nodes;
         return nullptr;
       }
-      auto &n=data.nodes[data.node_count++];
+      const unsigned index=data.node_count++;
+      auto &n=data.nodes[index];
+      node_roles[index]=0;
       n=Node{};
       n.num=id;
       snprintf(n.name,sizeof(n.name),"!%08lx",(unsigned long)id);
       return &n;
+    }
+    uint8_t node_role(uint32_t id)const{
+      for(unsigned i=0;i<data.node_count;++i)if(data.nodes[i].num==id)return node_roles[i];
+      return 0;
+    }
+    void set_node_role(uint32_t id,uint8_t value){
+      for(unsigned i=0;i<data.node_count;++i)if(data.nodes[i].num==id){node_roles[i]=value;return;}
     }
     Message *message(uint32_t id){for(auto &m:data.messages)if(m.seq&&m.outgoing&&m.id==id)return &m;
       return nullptr;
@@ -251,6 +262,7 @@ namespace meshmt {
     void attach(const uint8_t identity[7],uint16_t payload_mtu,uint32_t nonce,uint32_t now){
       settings.disconnect();
       new(&data) Archive();
+      memset(node_roles,0,sizeof(node_roles));
       memcpy(data.radio,identity,7);
       connected=true;
       initialized=fault=history_ready=false;
@@ -270,11 +282,17 @@ namespace meshmt {
     bool parse_user(View v,Node &n){
       Reader r(v);
       Field f;
+      uint8_t received_role=0;
+      bool has_role=false;
       while(r.next(f)){
         if(f.tag==2&&!string_field(f,n.name,sizeof(n.name)))return false;
         if(f.tag==3&&!string_field(f,n.short_name,sizeof(n.short_name)))return false;
         if(f.tag==5){if(f.wire!=0)return false;
           n.hardware=f.value;
+        }
+        if(f.tag==7){if(f.wire!=0)return false;
+          received_role=f.value<=12?uint8_t(f.value):0;
+          has_role=true;
         }
         if(f.tag==8){if(f.wire!=2||(f.bytes.len!=0&&f.bytes.len!=32))return false;
           n.has_key=f.bytes.len==32;
@@ -284,7 +302,9 @@ namespace meshmt {
         if(f.tag==9){if(f.wire!=0)return false;
           n.unmessagable=f.value!=0;
         }
-      }return r.ok;
+      }
+      if(r.ok&&has_role)set_node_role(n.num,received_role);
+      return r.ok;
     }
     bool parse_position(View v,Node &n){
       Reader r(v);

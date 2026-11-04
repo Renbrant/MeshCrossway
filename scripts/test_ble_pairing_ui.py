@@ -30,6 +30,7 @@ def run(lvgl, render):
 #include <cstdint>
 #include <initializer_list>
 #include <string>
+#include <ctime>
 namespace meshble {
 enum Radio{MESHTASTIC,MESHCORE};
 struct Snapshot { bool pin_required; bool confirm_required; uint32_t compare_number; Radio radio=MESHTASTIC; };
