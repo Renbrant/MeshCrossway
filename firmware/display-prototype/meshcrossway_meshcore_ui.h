@@ -27,7 +27,7 @@ static uint32_t last_redraw=0;
 static lv_timer_t *list_batch_timer=nullptr;
 static lv_obj_t *list_viewport=nullptr;
 static bool nodes_were_syncing=false;
-static int list_batch_total=0,list_batch_cursor=0,list_batch_y=141,list_batch_width=0,list_batch_page=0;
+static int list_batch_total=0,list_batch_cursor=0,list_batch_width=0,list_batch_page=0;
 static bool list_batch_channels=false,list_batch_rooms=false;
 static mcxchat::Key selected;
 static int mode = 0; // 0 menu, 1 typed command, 2 compose, 3 result, 4 contact details
@@ -824,7 +824,7 @@ static void render() {
       single_label(body,summary,8,y,w-16,muted);y+=23;
     }
     if(!total){single_label(body,channels?"No channels or rooms in this radio yet.":"No contacts in this radio yet.",8,y,w-16,muted);return;}
-    list_batch_y=0;list_batch_width=w-16;
+    list_batch_width=w-16;
     list_batch_total=total;list_batch_cursor=0;
     list_batch_page=page;list_batch_channels=channels;list_batch_rooms=room_list;
     list_batch_timer=lv_timer_create(list_batch_tick,list_batch_channels?1:25,nullptr);
@@ -952,7 +952,7 @@ static void list_batch_tick(lv_timer_t *timer){
         snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B / %.0f m",messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
       }else snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B",messages,(unsigned long)bytes);
     }
-    auto *b=action_button(list_viewport,"",0,list_batch_y,list_batch_width,is_channel?48:76,panel,is_channel?choose_channel:choose_contact,i);
+    auto *b=action_button(list_viewport,"",0,0,list_batch_width,is_channel?48:76,panel,is_channel?choose_channel:choose_contact,i);
     const int card_width=list_batch_width;
     if(!is_channel){
       auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
@@ -960,7 +960,7 @@ static void list_batch_tick(lv_timer_t *timer){
       lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
       auto *heard_label=txt(b,heard_detail,7,28,card_width-14,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
       auto *chat_label=txt(b,chat_detail,7,49,card_width-14,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
-      list_batch_y+=82;
+
     }else{
       auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
       const int name_width=card_width>=350?165:card_width*38/100;
@@ -968,7 +968,7 @@ static void list_batch_tick(lv_timer_t *timer){
       lv_obj_set_pos(name,7,13);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
       lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
       auto *d=txt(b,detail,detail_x,13,card_width-detail_x-8,muted);lv_obj_set_height(d,22);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
-      list_batch_y+=54;
+
     }
   }
   if(list_batch_cursor>=list_batch_total){

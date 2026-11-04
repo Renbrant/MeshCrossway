@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.9.13: categorized independent radio settings on device and remote.
+// MeshCrossway v0.9.14: categorized independent radio settings on device and remote.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -347,6 +347,9 @@ static lv_obj_t *list_view_at(lv_obj_t *parent,int y,int w){
   lv_obj_t *view=panel_at(parent,8,y,w-16,h,bg,0);
   lv_obj_set_style_bg_opa(view,LV_OPA_TRANSP,0);
   lv_obj_set_style_pad_all(view,0,0);
+  lv_obj_set_layout(view,LV_LAYOUT_FLEX);
+  lv_obj_set_flex_flow(view,LV_FLEX_FLOW_COLUMN);
+  lv_obj_set_style_pad_row(view,6,0);
   lv_obj_add_flag(view,LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_set_scroll_dir(view,LV_DIR_VER);
   lv_obj_set_scrollbar_mode(view,LV_SCROLLBAR_MODE_AUTO);
@@ -549,7 +552,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.9.13","Meshtastic and MeshCore run over independent Bluetooth radios. Node and channel rows keep names and activity in separate columns.");break;
+      notice("MESH CROSSWAY v0.9.14","Meshtastic and MeshCore run over independent Bluetooth radios. Node and channel rows keep names and activity in separate columns.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Adjust brightness, screen timeout and connectivity.");break;
     default:break;
@@ -1277,7 +1280,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.9.13] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.9.14] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1298,7 +1301,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.9.13] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.9.14] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1311,7 +1314,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.9.13",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.9.14",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);
