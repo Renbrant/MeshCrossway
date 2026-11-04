@@ -43,7 +43,7 @@ int main(){
  meshble::current.phase=meshble::READY;meshble::current.radio=meshble::MESHCORE;
  strcpy(meshnetwork::wifi.ssid,"My home Wi-Fi network name");strcpy(meshnetwork::wifi.state,"Connected to Wi-Fi");meshnetwork::wifi.connected=true;strcpy(meshnetwork::wifi.ip,"192.168.1.22");
  mcxgnss::fix.valid=true;mcxgnss::fix.frames=10;mcxgnss::fix.have_accuracy=true;mcxgnss::fix.horizontal_accuracy=2.1;mcxgnss::fix.accuracy_source=1;
- home_cards(401);lv_obj_update_layout(body);lv_refr_now(nullptr);
+ home_cards(401);home_refresh(nullptr);lv_obj_update_layout(body);lv_refr_now(nullptr);
  assert(!strcmp(lv_label_get_text(home_mesh[1][0]),"Connected"));assert(!strcmp(lv_label_get_text(home_mesh[1][1]),"23 saved / 0 recent"));assert(!strcmp(lv_label_get_text(home_mesh[1][2]),"1 unread"));
  assert(!strcmp(lv_label_get_text(home_mesh[0][0]),"Disconnected"));assert(!strcmp(lv_label_get_text(home_mesh[0][1]),"8 saved / 0 recent"));assert(!strcmp(lv_label_get_text(home_mesh[0][2]),"1 unread"));
  assert(!strcmp(home_wifi_source,meshnetwork::wifi.ssid));assert(!strcmp(lv_label_get_text(home_gps_state),"FIX GNSS"));assert(!strcmp(lv_label_get_text(home_gps_accuracy),"Est. accuracy 2.1 m"));
