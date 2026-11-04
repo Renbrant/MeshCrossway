@@ -213,7 +213,7 @@ namespace mtui {
         mcui::rendered_generation=mc?mc->generation:0;
         return;
       }
-      char title[72],detail[112],when[16];uint32_t last=0;unsigned messages=0,unread=0;size_t bytes=0;
+      char title[72],heard_detail[64],chat_detail[72],when[16];uint32_t last=0;unsigned messages=0,unread=0;size_t bytes=0;
       lv_event_cb_t callback=nullptr;uintptr_t token=0;
       if(node_batch_network==1){
         auto *c=meshmt::client;if(!c){node_batch_network=2;continue;}
@@ -223,11 +223,12 @@ namespace mtui {
         for(const auto &m:c->data.messages)if(m.seq&&m.to!=meshmt::BROADCAST&&(m.to==n.num||m.from==n.num)){
           ++messages;bytes+=strlen(m.text);if(!m.outgoing&&!m.read)++unread;if(m.time>last)last=m.time;}
         mcxchat::time_local(last,when,sizeof(when));
+        snprintf(heard_detail,sizeof(heard_detail),"Heard %s / %u unread",last?when:"Never",unread);
         if(mcui::node_sort_distance&&mcui::nav_gps_valid&&n.has_lat&&n.has_lon){
           const double lat=double(n.latitude)/1e7,lon=double(n.longitude)/1e7;
           const double dy=(lat-mcui::nav_latitude)*111320.0,dx=(lon-mcui::nav_longitude)*111320.0*cos(mcui::nav_latitude*0.017453292519943295);
-          snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B / %.0f m",last?when:"Never",unread,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
-        }else snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B",last?when:"Never",unread,messages,(unsigned long)bytes);
+          snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B / %.0f m",messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
+        }else snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B",messages,(unsigned long)bytes);
       }else{
         auto *c=meshmc::client;if(!c){node_batch_network=0;continue;}
         const unsigned index=meshcore_order_get(mc_node_cursor++);if(index>=c->contact_count)continue;
@@ -236,17 +237,19 @@ namespace mtui {
         for(const auto &m:c->messages)if(m.id&&!m.channel&&!memcmp(m.key,contact.key,6)){
           ++messages;bytes+=strlen(m.text);if(!m.outgoing&&!m.read)++unread;if(m.observed_at>last)last=m.observed_at;}
         mcxchat::time_local(last,when,sizeof(when));
+        snprintf(heard_detail,sizeof(heard_detail),"Heard %s / %u unread",last?when:"Never",unread);
         if(mcui::node_sort_distance&&mcui::nav_gps_valid&&contact.lat&&contact.lon){
           const double lat=double(contact.lat)/1e6,lon=double(contact.lon)/1e6;
           const double dy=(lat-mcui::nav_latitude)*111320.0,dx=(lon-mcui::nav_longitude)*111320.0*cos(mcui::nav_latitude*0.017453292519943295);
-          snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B / %.0f m",last?when:"Never",unread,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
-        }else snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B",last?when:"Never",unread,messages,(unsigned long)bytes);
+          snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B / %.0f m",messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
+        }else snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B",messages,(unsigned long)bytes);
       }
-      auto *b=action_button(node_list_view,"",0,node_batch_y,node_batch_width,58,panel,callback,intptr_t(token));
-      const int card_width=node_batch_width;const int name_width=card_width>=350?145:card_width*30/100;const int detail_x=name_width+14;
-      auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);lv_obj_set_pos(name,7,18);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-      auto *d=txt(b,detail,detail_x,4,card_width-detail_x-8,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
-      node_batch_y+=64;--budget;
+      auto *b=action_button(node_list_view,"",0,node_batch_y,node_batch_width,76,panel,callback,intptr_t(token));
+      const int card_width=node_batch_width;
+      auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);lv_obj_set_pos(name,7,5);lv_obj_set_size(name,card_width-14,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
+      auto *heard_label=txt(b,heard_detail,7,28,card_width-14,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
+      auto *chat_label=txt(b,chat_detail,7,49,card_width-14,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
+      node_batch_y+=82;--budget;
     }
   }
   static void render(){

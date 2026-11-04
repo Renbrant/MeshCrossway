@@ -73,6 +73,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.13":
+        summary="EXPERIMENTAL: displays node names and metadata in three separate, fixed-height lines with single-line ellipsis, preventing names, heard times, unread counts and traffic totals from overlapping. v0.8.26 remains stable."
+        label="Non-overlapping node cards / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.12":
         summary="EXPERIMENTAL: reduces node-list draw bursts from 12 rows per 1 ms to small frame-spaced batches, preventing LVGL render stalls and watchdog delays while keeping the list responsive. v0.8.26 remains stable."
         label="Node list rendering stability / EXPERIMENTAL"
