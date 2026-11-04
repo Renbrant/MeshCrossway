@@ -1,6 +1,7 @@
 #pragma once
 #include "meshcrossway_chat_presentation.h" // Also included by standalone pairing host fixture.
 #include <math.h>
+#include <time.h>
 // Included inside meshcrossway after the shared LVGL helpers. All callbacks stay on LVGL thread.
 namespace mcui {
 static lv_obj_t *dialog = nullptr, *scroller = nullptr, *feedback = nullptr, *editor = nullptr,
@@ -491,9 +492,9 @@ static void add_meshcore_channel(lv_event_t *e){lv_async_call(add_meshcore_chann
 static void channel_choice(lv_obj_t *sheet,const char *title,const char *subtitle,int y,const char *glyph,int mode){
   auto *b=action_button(sheet,"",10,y,460,60,panel2,add_meshcore_channel,mode);
   list_icon(b,glyph,8,9,40,orange);
-  auto *name=txt(b,title,58,7,390,20,white);lv_obj_set_height(name,20);
+  auto *name=txt(b,title,58,7,390,white);lv_obj_set_height(name,20);
   lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-  auto *detail=txt(b,subtitle,58,31,390,18,muted);lv_obj_set_height(detail,18);
+  auto *detail=txt(b,subtitle,58,31,390,muted);lv_obj_set_height(detail,18);
   lv_label_set_long_mode(detail,LV_LABEL_LONG_DOT);
 }
 static void add_channel_menu(){
@@ -502,9 +503,9 @@ static void add_channel_menu(){
   lv_obj_set_style_bg_color(dialog,lv_color_hex(0x000000),0);
   lv_obj_set_style_bg_opa(dialog,LV_OPA_70,0);
   scroller=panel_at(dialog,0,86,480,234,panel,18);
-  txt(scroller,"ADD CHANNEL",18,10,330,22,orange);
+  txt(scroller,"ADD CHANNEL",18,10,330,orange);
   action_button(scroller,"X",426,7,42,34,panel2,on_close,0);
-  txt(scroller,"JOIN / CREATE",18,49,220,18,muted);
+  txt(scroller,"JOIN / CREATE",18,49,220,muted);
   channel_choice(scroller,"Hashtag channel","Join or create a public #channel",74,"#",1);
   channel_choice(scroller,"Private channel","Enter a key to join, or leave blank to create",144,"K",0);
 }
@@ -985,7 +986,7 @@ static void list_batch_tick(lv_timer_t *timer){
       auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,title);
       lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
       lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-      auto *d=txt(b,detail,56,30,card_width-64,18,muted);lv_obj_set_height(d,18);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
+      auto *d=txt(b,detail,56,30,card_width-64,muted);lv_obj_set_height(d,18);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
     }
   }
   if(list_batch_cursor>=list_batch_total){
