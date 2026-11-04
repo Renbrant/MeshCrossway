@@ -1,6 +1,7 @@
 #pragma once
 #include "meshcrossway_chat_presentation.h" // Also included by standalone pairing host fixture.
 #include <math.h>
+#include <time.h>
 // Included inside meshcrossway after the shared LVGL helpers. All callbacks stay on LVGL thread.
 namespace mcui {
 static lv_obj_t *dialog = nullptr, *scroller = nullptr, *feedback = nullptr, *editor = nullptr,
@@ -491,9 +492,9 @@ static void add_meshcore_channel(lv_event_t *e){lv_async_call(add_meshcore_chann
 static void channel_choice(lv_obj_t *sheet,const char *title,const char *subtitle,int y,const char *glyph,int mode){
   auto *b=action_button(sheet,"",10,y,460,60,panel2,add_meshcore_channel,mode);
   list_icon(b,glyph,8,9,40,orange);
-  auto *name=txt(b,title,58,7,390,20,white);lv_obj_set_height(name,20);
+  auto *name=txt(b,title,58,7,390,white);lv_obj_set_height(name,20);
   lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-  auto *detail=txt(b,subtitle,58,31,390,18,muted);lv_obj_set_height(detail,18);
+  auto *detail=txt(b,subtitle,58,31,390,muted);lv_obj_set_height(detail,18);
   lv_label_set_long_mode(detail,LV_LABEL_LONG_DOT);
 }
 static void add_channel_menu(){
@@ -502,9 +503,9 @@ static void add_channel_menu(){
   lv_obj_set_style_bg_color(dialog,lv_color_hex(0x000000),0);
   lv_obj_set_style_bg_opa(dialog,LV_OPA_70,0);
   scroller=panel_at(dialog,0,86,480,234,panel,18);
-  txt(scroller,"ADD CHANNEL",18,10,330,22,orange);
+  txt(scroller,"ADD CHANNEL",18,10,330,orange);
   action_button(scroller,"X",426,7,42,34,panel2,on_close,0);
-  txt(scroller,"JOIN / CREATE",18,49,220,18,muted);
+  txt(scroller,"JOIN / CREATE",18,49,220,muted);
   channel_choice(scroller,"Hashtag channel","Join or create a public #channel",74,"#",1);
   channel_choice(scroller,"Private channel","Enter a key to join, or leave blank to create",144,"K",0);
 }
@@ -941,7 +942,7 @@ static void list_batch_tick(lv_timer_t *timer){
     const bool is_channel=list_batch_channels&&!list_batch_rooms;
     const auto key=mcxchat::key_for(*s,is_channel,uint16_t(i));
     const auto *pref=mcxhistory::preferences().get(key);
-    char title[75],detail[150],heard_detail[64],chat_detail[72],when[24];
+    char title[75],detail[150],heard_detail[104],chat_detail[72],when[24];
     const bool loaded=is_channel&&i<s->channel_count&&s->channels[i].loaded;
     unsigned unread_count=0;uint32_t last_heard=0;unsigned messages=0;size_t bytes=0;
     for(const auto &m:s->messages)if(m.id&&mcxchat::belongs(m,key)){
@@ -957,31 +958,35 @@ static void list_batch_tick(lv_timer_t *timer){
     }else{
       const auto &c=s->contacts[i];uint32_t heard=c.advert>c.lastmod?c.advert:c.lastmod;
       if(last_heard>heard)heard=last_heard;
-      mcxchat::time_local(heard,when,sizeof(when));
+      node_heard_age(heard,when,sizeof(when));
       snprintf(title,sizeof(title),"%s%s",pref&&pref->favorite?"* ":"",pref&&pref->alias[0]?pref->alias:c.name);
       compact_list_label(title);
-      snprintf(heard_detail,sizeof(heard_detail),"Heard %s / %u unread",heard?when:"Not heard",unread_count);
+      const char *kind=c.type==2?"MeshCore repeater":c.type==3?"MeshCore room":c.type==4?"MeshCore sensor":"MeshCore companion";
+      const char *route=c.path_len==255?"Flood":"Direct";
+      snprintf(heard_detail,sizeof(heard_detail),"ID %02X%02X / %s / %s / %s",c.key[4],c.key[5],kind,route,when);
       if(node_sort_distance&&nav_gps_valid&&c.lat&&c.lon){
         const double lat=double(c.lat)/1000000.0,lon=double(c.lon)/1000000.0;
         const double dy=(lat-nav_latitude)*111320.0,dx=(lon-nav_longitude)*111320.0*cos(nav_latitude*0.017453292519943295);
-        snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B / %.0f m",messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
-      }else snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B",messages,(unsigned long)bytes);
+        snprintf(chat_detail,sizeof(chat_detail),"Unread %u / Chat %u / %lu B / %.0f m",unread_count,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
+      }else snprintf(chat_detail,sizeof(chat_detail),"Unread %u / Chat %u / %lu B",unread_count,messages,(unsigned long)bytes);
     }
     auto *b=action_button(list_viewport,"",0,0,list_batch_width,is_channel?58:76,panel,is_channel?choose_channel:choose_contact,i);
     const int card_width=list_batch_width;
     if(!is_channel){
-      list_icon(b,"N",8,18,40,orange);
-      auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
+      const auto &contact=s->contacts[i];
+      const char *glyph=contact.type==2?"R":contact.type==3?"H":contact.type==4?"S":"P";
+      list_icon(b,glyph,8,18,40,orange);
+      auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,title);
       lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
       lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
       auto *heard_label=txt(b,heard_detail,56,28,card_width-64,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
       auto *chat_label=txt(b,chat_detail,56,49,card_width-64,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
     }else{
       list_icon(b,"#",8,9,40,orange);
-      auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
+      auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,title);
       lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
       lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-      auto *d=txt(b,detail,56,30,card_width-64,18,muted);lv_obj_set_height(d,18);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
+      auto *d=txt(b,detail,56,30,card_width-64,muted);lv_obj_set_height(d,18);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
     }
   }
   if(list_batch_cursor>=list_batch_total){
