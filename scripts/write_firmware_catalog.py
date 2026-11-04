@@ -73,6 +73,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.14":
+        summary="EXPERIMENTAL: uses an LVGL vertical column layout to place fixed-height node cards with a defined 6 px gap, rather than calculating card positions manually. Each field stays on its own truncated line. v0.8.26 remains stable."
+        label="Fixed node list spacing / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.13":
         summary="EXPERIMENTAL: displays node names and metadata in three separate, fixed-height lines with single-line ellipsis, preventing names, heard times, unread counts and traffic totals from overlapping. v0.8.26 remains stable."
         label="Non-overlapping node cards / EXPERIMENTAL"
