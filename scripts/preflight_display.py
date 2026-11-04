@@ -235,7 +235,13 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
                 assert "lv_timer_create(node_batch_tick,1" in mtui and "node_batch_tick(node_batch_timer)" in mtui
                 assert "lv_timer_create(list_batch_tick,1" in mcui and "list_batch_tick(list_batch_timer)" in mcui
                 assert "MeshCore unread:" in mtui and "Unread: %u direct / %u channels" in mcui
-                assert "lv_obj_set_size(name,145,40)" in mtui and "lv_obj_set_size(name,145,40)" in mcui
+                if version=="v0.9.8":
+                    assert "lv_obj_set_size(name,145,40)" in mtui and "lv_obj_set_size(name,145,40)" in mcui
+                else:
+                    assert "compact_list_label(title)" in mtui and "compact_list_label(title)" in mcui
+                    assert "lv_obj_set_size(name,name_width,22)" in mtui and "lv_obj_set_size(name,name_width,22)" in mcui
+                    assert "card_width*35/100" in mtui and "card_width*44/100" in mcui
+                    assert "latest received" not in mtui and "last received" not in mcui
                 assert "Heard %s / %u unread\\nChat %u" in mtui and "Heard %s / %u unread\\nChat %u" in mcui
             if version=="v0.9.6":
                 map_tiles=(FW/"meshcrossway_map_tiles.h").read_text()
