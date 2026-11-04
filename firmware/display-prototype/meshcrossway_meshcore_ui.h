@@ -14,6 +14,10 @@ static bool node_sort_distance=false,nav_gps_valid=false;
 static double nav_latitude=0,nav_longitude=0;
 static void set_navigation_fix(bool valid,double latitude,double longitude){nav_gps_valid=valid;nav_latitude=latitude;nav_longitude=longitude;}
 static const char *node_sort_label(){if(!node_sort_distance)return "SORT: LAST HEARD";return nav_gps_valid?"SORT: DISTANCE":"DISTANCE / GPS NEEDED";}
+static void compact_list_label(char *text){
+  if(!text)return;
+  for(char *p=text;*p;++p)if(*p=='\n'||*p=='\r'||*p=='\t')*p=' ';
+}
 static bool tools_show_presets=false;
 static bool confirm_pending = false, group = false, conversation = false, reveal = false;
 static uint8_t target_key[32] = {};
@@ -924,29 +928,39 @@ static void list_batch_tick(lv_timer_t *timer){
     }
     if(is_channel){
       snprintf(title,sizeof(title),"%u / %s",unsigned(i),loaded&&s->channels[i].name[0]?s->channels[i].name:"Empty slot");
-      mcxchat::time_local(last_heard,when,sizeof(when),true);
-      snprintf(detail,sizeof(detail),"%u unread / last received %s",unread_count,last_heard?when:"--");
+      compact_list_label(title);
+      mcxchat::time_local(last_heard,when,sizeof(when));
+      snprintf(detail,sizeof(detail),"%u unread | %s",unread_count,last_heard?when:"--");
     }else{
       const auto &c=s->contacts[i];uint32_t heard=c.advert>c.lastmod?c.advert:c.lastmod;
       if(last_heard>heard)heard=last_heard;
       mcxchat::time_local(heard,when,sizeof(when));
       snprintf(title,sizeof(title),"%s%s",pref&&pref->favorite?"* ":"",pref&&pref->alias[0]?pref->alias:c.name);
+      compact_list_label(title);
       if(node_sort_distance&&nav_gps_valid&&c.lat&&c.lon){
         const double lat=double(c.lat)/1000000.0,lon=double(c.lon)/1000000.0;
         const double dy=(lat-nav_latitude)*111320.0,dx=(lon-nav_longitude)*111320.0*cos(nav_latitude*0.017453292519943295);
         snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B / %.0f m",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
       }else snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes);
     }
-    auto *b=action_button(body,"",8,list_batch_y,list_batch_width-16,list_batch_channels?74:58,panel,is_channel?choose_channel:choose_contact,i);
-    if(!list_batch_channels){
+    auto *b=action_button(body,"",8,list_batch_y,list_batch_width-16,is_channel?48:58,panel,is_channel?choose_channel:choose_contact,i);
+    const int card_width=list_batch_width-16;
+    if(!is_channel){
       auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
-      lv_obj_set_pos(name,7,8);lv_obj_set_size(name,145,40);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
-      auto *d=txt(b,detail,158,4,list_batch_width-174,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+      const int name_width=card_width>=350?145:card_width*35/100;
+      const int detail_x=name_width+14;
+      lv_obj_set_pos(name,7,18);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
+      lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
+      auto *d=txt(b,detail,detail_x,4,card_width-detail_x-8,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
       list_batch_y+=64;
     }else{
-      emoji_label_text(lv_obj_get_child(b,0),title);
-      auto *d=txt(b,detail,7,31,list_batch_width-30,muted);lv_obj_set_height(d,37);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
-      list_batch_y+=80;
+      auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
+      const int name_width=card_width>=350?165:card_width*44/100;
+      const int detail_x=name_width+14;
+      lv_obj_set_pos(name,7,13);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
+      lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
+      auto *d=txt(b,detail,detail_x,13,card_width-detail_x-8,muted);lv_obj_set_height(d,22);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
+      list_batch_y+=54;
     }
   }
   if(list_batch_cursor>=list_batch_total){

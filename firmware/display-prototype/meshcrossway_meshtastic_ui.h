@@ -21,6 +21,10 @@ namespace mtui {
     auto *n=c?c->node(id):nullptr;
     return n&&n->name[0]?n->name:"Unknown node";
   }
+  static void compact_list_label(char *text){
+    if(!text)return;
+    for(char *p=text;*p;++p)if(*p=='\n'||*p=='\r'||*p=='\t')*p=' ';
+  }
   static uint8_t primary(){auto *c=meshmt::client;
     if(c)for(unsigned i=0;i<meshmt::MAX_CHANNELS;++i)if(c->data.channels[i].role==1)return i;
     return 0;
@@ -211,7 +215,7 @@ namespace mtui {
         auto *c=meshmt::client;if(!c){node_batch_network=2;continue;}
         const unsigned index=node_order[mt_node_cursor++];if(index>=c->data.node_count)continue;
         const auto &n=c->data.nodes[index];last=n.last_heard;
-        snprintf(title,sizeof(title),"MT / %s",n.name);token=n.num;callback=select_node;
+        snprintf(title,sizeof(title),"MT / %s",n.name);compact_list_label(title);token=n.num;callback=select_node;
         for(const auto &m:c->data.messages)if(m.seq&&m.to!=meshmt::BROADCAST&&(m.to==n.num||m.from==n.num)){
           ++messages;bytes+=strlen(m.text);if(!m.outgoing&&!m.read)++unread;if(m.time>last)last=m.time;}
         mcxchat::time_local(last,when,sizeof(when));
@@ -224,7 +228,7 @@ namespace mtui {
         auto *c=meshmc::client;if(!c){node_batch_network=0;continue;}
         const unsigned index=meshcore_order_get(mc_node_cursor++);if(index>=c->contact_count)continue;
         const auto &contact=c->contacts[index];last=contact.advert>contact.lastmod?contact.advert:contact.lastmod;
-        snprintf(title,sizeof(title),"MC / %s",contact.name);token=index;callback=mcui::choose_contact;
+        snprintf(title,sizeof(title),"MC / %s",contact.name);compact_list_label(title);token=index;callback=mcui::choose_contact;
         for(const auto &m:c->messages)if(m.id&&!m.channel&&!memcmp(m.key,contact.key,6)){
           ++messages;bytes+=strlen(m.text);if(!m.outgoing&&!m.read)++unread;if(m.observed_at>last)last=m.observed_at;}
         mcxchat::time_local(last,when,sizeof(when));
@@ -235,8 +239,9 @@ namespace mtui {
         }else snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B",last?when:"Never",unread,messages,(unsigned long)bytes);
       }
       auto *b=action_button(body,"",8,node_batch_y,node_batch_width-16,58,panel,callback,intptr_t(token));
-      auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);lv_obj_set_pos(name,7,8);lv_obj_set_size(name,145,40);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
-      auto *d=txt(b,detail,158,4,node_batch_width-174,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+      const int card_width=node_batch_width-16;const int name_width=card_width>=350?145:card_width*35/100;const int detail_x=name_width+14;
+      auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);lv_obj_set_pos(name,7,18);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
+      auto *d=txt(b,detail,detail_x,4,card_width-detail_x-8,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
       node_batch_y+=64;--budget;
     }
   }
@@ -290,15 +295,25 @@ namespace mtui {
     unsigned index=0,shown=0;
     auto row=[&](const char *title,const char *detail,lv_event_cb_t callback,uintptr_t token){
       ++index;++shown;
-      auto *b=action_button(body,"",8,y,w-16,page==1?58:74,panel,callback,intptr_t(token));
+      auto *b=action_button(body,"",8,y,w-16,page==1?58:page==2?48:74,panel,callback,intptr_t(token));
       if(page==1){
         auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);
-        lv_obj_set_pos(name,7,8);lv_obj_set_size(name,145,40);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
-        auto *d=txt(b,detail,158,4,w-174,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+        const int card_width=w-16;const int name_width=card_width>=350?145:card_width*35/100;const int detail_x=name_width+14;
+        lv_obj_set_pos(name,7,18);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
+        auto *d=txt(b,detail,detail_x,4,card_width-detail_x-8,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
         y+=64;
+      }else if(page==2){
+        char compact_title[100];snprintf(compact_title,sizeof(compact_title),"%s",title);compact_list_label(compact_title);
+        auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,compact_title);
+        const int card_width=w-16;const int name_width=card_width>=350?165:card_width*44/100;const int detail_x=name_width+14;
+        lv_obj_set_pos(name,7,13);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
+        auto *d=txt(b,detail,detail_x,13,card_width-detail_x-8,muted);lv_obj_set_height(d,22);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
+        y+=54;
       }else{
-        mcui::emoji_label_text(lv_obj_get_child(b,0),title);
-        auto *d=txt(b,detail,7,31,w-30,muted);lv_obj_set_height(d,37);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
+        char compact_title[100];snprintf(compact_title,sizeof(compact_title),"%s",title);compact_list_label(compact_title);
+        auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,compact_title);
+        lv_obj_set_pos(name,7,5);lv_obj_set_size(name,w-30,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
+        auto *d=txt(b,detail,7,29,w-30,muted);lv_obj_set_height(d,38);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
         y+=80;
       }
     };
@@ -340,7 +355,7 @@ namespace mtui {
         for(unsigned i=0;i<count;++i){const unsigned slot=channel_order[i];auto &ch=c->data.channels[slot];char title[70],detail[96],when[20];
           snprintf(title,sizeof(title),"MT / %u / %s",slot,ch.name);
           mcxchat::time_local(latest_time[slot],when,sizeof(when));
-          snprintf(detail,sizeof(detail),"%u unread / latest received %s",unread[slot],latest[slot]?when:"--");
+          snprintf(detail,sizeof(detail),"%u unread | %s",unread[slot],latest[slot]?when:"--");
           row(title,detail,select_channel,slot);
         }
       }
@@ -385,7 +400,7 @@ namespace mtui {
         auto key=mcxchat::key_for(*mc,true,i);unsigned unread=0;uint32_t last=0;
         for(const auto &m:mc->messages)if(m.id&&mcxchat::belongs(m,key)){if(!m.outgoing&&m.observed_at>last)last=m.observed_at;if(!m.outgoing&&!m.read)++unread;}
         char title[75],detail[90],when[20];snprintf(title,sizeof(title),"MC / %s",ch.name);mcxchat::time_local(last,when,sizeof(when));
-        snprintf(detail,sizeof(detail),"%u unread / latest received %s",unread,last?when:"--");
+        snprintf(detail,sizeof(detail),"%u unread | %s",unread,last?when:"--");
         row(title,detail,mcui::choose_channel,i);
       }
       if(page==3&&mcxhistory::init_workspace()){
