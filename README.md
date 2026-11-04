@@ -21,6 +21,10 @@
 
 Developing MeshCrossway takes time and ongoing investment in hardware parts and AI model tokens. If you'd like to help cover these costs, you're welcome to make a one-time donation or become a project sponsor through [GitHub Sponsors](https://github.com/sponsors/Renbrant).
 
+## Contributing
+
+Contributions are welcome across firmware, hardware, documentation, testing, and interface design. To get involved, open a [GitHub issue](https://github.com/Renbrant/MeshCrossway/issues) to introduce yourself or propose an area to work on; use a pull request for concrete changes. Please read the [contribution guide](CONTRIBUTING.md) first. For larger changes, open an issue before starting so the work can be coordinated.
+
 ## See it in operation
 
 ### v0.9.8 candidate running on the device
