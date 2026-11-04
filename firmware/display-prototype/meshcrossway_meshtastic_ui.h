@@ -239,7 +239,7 @@ namespace mtui {
         }else snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B",last?when:"Never",unread,messages,(unsigned long)bytes);
       }
       auto *b=action_button(body,"",8,node_batch_y,node_batch_width-16,58,panel,callback,intptr_t(token));
-      const int card_width=node_batch_width-16;const int name_width=card_width>=350?145:card_width*35/100;const int detail_x=name_width+14;
+      const int card_width=node_batch_width-16;const int name_width=card_width>=350?145:card_width*30/100;const int detail_x=name_width+14;
       auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);lv_obj_set_pos(name,7,18);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
       auto *d=txt(b,detail,detail_x,4,card_width-detail_x-8,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
       node_batch_y+=64;--budget;
@@ -298,14 +298,14 @@ namespace mtui {
       auto *b=action_button(body,"",8,y,w-16,page==1?58:page==2?48:74,panel,callback,intptr_t(token));
       if(page==1){
         auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);
-        const int card_width=w-16;const int name_width=card_width>=350?145:card_width*35/100;const int detail_x=name_width+14;
+        const int card_width=w-16;const int name_width=card_width>=350?145:card_width*30/100;const int detail_x=name_width+14;
         lv_obj_set_pos(name,7,18);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
         auto *d=txt(b,detail,detail_x,4,card_width-detail_x-8,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
         y+=64;
       }else if(page==2){
         char compact_title[100];snprintf(compact_title,sizeof(compact_title),"%s",title);compact_list_label(compact_title);
         auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,compact_title);
-        const int card_width=w-16;const int name_width=card_width>=350?165:card_width*44/100;const int detail_x=name_width+14;
+        const int card_width=w-16;const int name_width=card_width>=350?165:card_width*38/100;const int detail_x=name_width+14;
         lv_obj_set_pos(name,7,13);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
         auto *d=txt(b,detail,detail_x,13,card_width-detail_x-8,muted);lv_obj_set_height(d,22);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
         y+=54;
