@@ -270,7 +270,7 @@ namespace mtui {
         const uint8_t type=meshmc::client->contacts[token].type;
         glyph=type==2?"R":type==3?"H":type==4?"S":"P";
       }
-      list_icon(b,glyph,8,18,40,orange);
+      mtui::list_icon(b,glyph,8,18,40,orange);
       auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,title);lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
       auto *heard_label=txt(b,heard_detail,56,28,card_width-64,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
       auto *chat_label=txt(b,chat_detail,56,49,card_width-64,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
