@@ -248,7 +248,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
                     assert "lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT)" in mcui and "lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT)" in mcui
                     assert "node_batch_y+=82" in mtui and "list_batch_y+=82" in mcui
                     assert "latest received" not in mtui and "last received" not in mcui
-                elif version=="v0.9.16":
+                elif version in ("v0.9.16","v0.10.0"):
                     shared=(FW/"meshcrossway_ui.h").read_text()
                     mtproto=(FW/"meshcrossway_meshtastic_protocol.h").read_text()
                     assert "node_heard_age(" in shared
