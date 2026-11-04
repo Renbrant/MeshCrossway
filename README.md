@@ -4,7 +4,7 @@
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Project status — v0.8.26 stable; v0.9.8 candidate.** v0.8.26 remains the user-selected stable release and preserves its exact published firmware image. v0.9.8 keeps the v0.8.26 stable baseline and improves node and channel responsiveness with batched rendering, compact activity details and unread totals by conversation type. See the [v0.8.26 stable record](docs/stable-v0826.md) and [v0.9.8 node list notes](docs/nodes-performance-v098.md).
+> **Project status — v0.8.26 stable; v0.9.9 candidate.** v0.8.26 remains the user-selected stable release and preserves its exact published firmware image. v0.9.9 corrects overlapping labels in Nodes and Groups / Channels with compact two-column rows. v0.9.8 introduced batched rendering and faster sorting. See the [v0.8.26 stable record](docs/stable-v0826.md), [v0.9.8 performance notes](docs/nodes-performance-v098.md) and [v0.9.9 layout notes](docs/node-layout-v099.md).
 
 ## See it in operation
 
