@@ -14,7 +14,7 @@ using portMUX_TYPE=int;
 #define portEXIT_CRITICAL(p) (void)(p)
 #define pdMS_TO_TICKS(n) (n)
 #define BT_CONTROLLER_INIT_CONFIG_DEFAULT() 0
-static constexpr int ESP_OK=0,ESP_ERR_NO_MEM=-12,ESP_ERR_INVALID_STATE=-1,NVS_READONLY=0,NVS_READWRITE=1,pdPASS=1,tskIDLE_PRIORITY=0,ESP_BT_MODE_BLE=1,ESP_BT_CONTROLLER_STATUS_IDLE=0;
+static constexpr int ESP_OK=0,ESP_FAIL=-1,ESP_ERR_NO_MEM=-12,ESP_ERR_INVALID_STATE=-1,NVS_READONLY=0,NVS_READWRITE=1,pdPASS=1,tskIDLE_PRIORITY=0,ESP_BT_MODE_BLE=1,ESP_BT_CONTROLLER_STATUS_IDLE=0;
 static constexpr int pdTRUE=1;
 static constexpr uint32_t portMAX_DELAY=0xffffffffu;
 static constexpr unsigned MALLOC_CAP_INTERNAL=1,MALLOC_CAP_8BIT=2,MALLOC_CAP_DMA=4;
@@ -79,7 +79,7 @@ static int64_t esp_timer_get_time(){return int64_t(clock_ms)*1000;}
 static size_t heap_caps_get_free_size(int){return 100000;}static size_t heap_caps_get_largest_free_block(int){return 50000;}
 static unsigned uxTaskGetStackHighWaterMark(void*){return 5000;}static unsigned esp_get_free_heap_size(){return 200000;}static int xPortGetCoreID(){return 1;}
 static int esp_bt_controller_get_status(){return ESP_BT_CONTROLLER_STATUS_IDLE;}static int esp_bt_controller_init(int*){return 0;}static int esp_bt_controller_enable(int){return 0;}static int esp_bt_controller_disable(){return 0;}static int esp_bt_controller_deinit(){return 0;}static int esp_nimble_init(){return 0;}
-static const char *esp_err_to_name(int){return "OK";}static void nimble_port_run(){}static void nimble_port_freertos_deinit(){}static void nimble_port_freertos_init(void(*)(void*)){}
+static const char *esp_err_to_name(int){return "OK";}static void nimble_port_run(){}static int nimble_port_stop(){return ESP_OK;}static esp_err_t esp_nimble_deinit(){return ESP_OK;}static void nimble_port_freertos_deinit(){}static void nimble_port_freertos_init(void(*)(void*)){}
 static int ble_store_util_status_rr(void*){return 0;}static int ble_svc_gap_device_name_set(const char*){return 0;}
 extern "C" void ble_store_config_init(){}
 static void vTaskDelay(unsigned){}static void vTaskDelete(void*){}
