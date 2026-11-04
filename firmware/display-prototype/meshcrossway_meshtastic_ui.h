@@ -294,7 +294,7 @@ namespace mtui {
     if(page==1)nodes_were_syncing=syncing;
     show_center_heading(page==1?"NODES / NETWORKS":page==2?"GROUPS / CHANNELS":"CHATS / NETWORKS",page==1?(syncing?"Synchronizing Meshtastic nodes…":ready()?"Meshtastic connected":"More > Radios > Enable BLE"):ready()?"Meshtastic connected":c?c->status:"More > Radios > Enable BLE");
     filter_tabs(w,filter);
-    if(page==1){action_button(body,mcui::node_sort_label(),8,98,w-16,34,panel2,toggle_node_sort,0);lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);node_list_view=list_view_at(141,w);}
+    if(page==1){action_button(body,mcui::node_sort_label(),8,98,w-16,34,panel2,toggle_node_sort,0);lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);node_list_view=list_view_at(body,141,w);}
     else if(page==2)action_button(body,"ADD CHANNEL",8,98,w-16,34,panel2,add_channel,0);
     int y=page==3?98:141;
     unsigned index=0,shown=0;

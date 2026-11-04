@@ -756,7 +756,7 @@ static void render() {
                         ready() ? "Live MeshCore session" : "Connect a MeshCore Companion");
     int filter = channels ? groups_filter : nodes_filter;
     filter_tabs(w, filter);
-    if(!channels){action_button(body,node_sort_label(),8,98,w-16,34,panel2,toggle_node_sort,0);lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);list_viewport=list_view_at(141,w);}
+    if(!channels){action_button(body,node_sort_label(),8,98,w-16,34,panel2,toggle_node_sort,0);lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);list_viewport=list_view_at(body,141,w);}
     else {
       action_button(body,groups_rooms?"ROOMS":"CHANNELS",8,98,(w-22)/2,34,panel2,toggle_groups,0);
       action_button(body,"ADD CHANNEL",(w+2)/2,98,(w-22)/2,34,panel2,open_add_channel_event,0);
@@ -774,7 +774,7 @@ static void render() {
     }
     int total=0;
     const bool room_list=channels&&groups_rooms;
-    if(channels){lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);list_viewport=list_view_at(groups_rooms?141:164,w);}
+    if(channels){lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);list_viewport=list_view_at(body,groups_rooms?141:164,w);}
     for(int i=0;i<(channels&&!room_list?s->channel_count:s->contact_count);++i){
       if(room_list&&s->contacts[i].type!=3)continue;
       display_indices[total++]=i;
