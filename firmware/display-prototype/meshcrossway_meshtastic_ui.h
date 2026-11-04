@@ -246,9 +246,10 @@ namespace mtui {
       }
       auto *b=action_button(node_list_view,"",0,0,node_batch_width,76,panel,callback,intptr_t(token));
       const int card_width=node_batch_width;
-      auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);lv_obj_set_pos(name,7,5);lv_obj_set_size(name,card_width-14,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-      auto *heard_label=txt(b,heard_detail,7,28,card_width-14,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
-      auto *chat_label=txt(b,chat_detail,7,49,card_width-14,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
+      mcui::list_icon(b,"N",8,18,40,orange);
+      auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
+      auto *heard_label=txt(b,heard_detail,56,28,card_width-64,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
+      auto *chat_label=txt(b,chat_detail,56,49,card_width-64,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
       --budget;
     }
   }
@@ -305,7 +306,7 @@ namespace mtui {
     unsigned index=0,shown=0;
     auto row=[&](const char *title,const char *detail,lv_event_cb_t callback,uintptr_t token){
       ++index;++shown;
-      auto *b=action_button(body,"",8,y,w-16,page==1?58:page==2?48:74,panel,callback,intptr_t(token));
+      auto *b=action_button(body,"",8,y,w-16,page==1?58:page==2?58:74,panel,callback,intptr_t(token));
       if(page==1){
         auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);
         const int card_width=w-16;const int name_width=card_width>=350?145:card_width*30/100;const int detail_x=name_width+14;
@@ -315,10 +316,11 @@ namespace mtui {
       }else if(page==2){
         char compact_title[100];snprintf(compact_title,sizeof(compact_title),"%s",title);compact_list_label(compact_title);
         auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,compact_title);
-        const int card_width=w-16;const int name_width=card_width>=350?165:card_width*38/100;const int detail_x=name_width+14;
-        lv_obj_set_pos(name,7,13);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-        auto *d=txt(b,detail,detail_x,13,card_width-detail_x-8,muted);lv_obj_set_height(d,22);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
-        y+=54;
+        const int card_width=w-16;
+        mcui::list_icon(b,"#",8,9,40,orange);
+        lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
+        auto *d=txt(b,detail,56,30,card_width-64,18,muted);lv_obj_set_height(d,18);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
+        y+=64;
       }else{
         char compact_title[100];snprintf(compact_title,sizeof(compact_title),"%s",title);compact_list_label(compact_title);
         auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,compact_title);
