@@ -232,8 +232,13 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
             if version in ("v0.9.8","v0.9.9","v0.9.10","v0.9.11","v0.9.12"):
                 mtui=(FW/"meshcrossway_meshtastic_ui.h").read_text()
                 mcui=(FW/"meshcrossway_meshcore_ui.h").read_text()
-                assert "lv_timer_create(node_batch_tick,1" in mtui and "node_batch_tick(node_batch_timer)" in mtui
-                assert "lv_timer_create(list_batch_tick,1" in mcui and "list_batch_tick(list_batch_timer)" in mcui
+                if version=="v0.9.12":
+                    assert "lv_timer_create(node_batch_tick,25" in mtui and "unsigned budget=3" in mtui
+                    assert "list_batch_channels?1:25" in mcui and "int budget=list_batch_channels?8:3" in mcui
+                else:
+                    assert "lv_timer_create(node_batch_tick,1" in mtui
+                    assert "lv_timer_create(list_batch_tick,1" in mcui
+                assert "node_batch_tick(node_batch_timer)" in mtui and "list_batch_tick(list_batch_timer)" in mcui
                 assert "MeshCore unread:" in mtui and "Unread: %u direct / %u channels" in mcui
                 if version=="v0.9.8":
                     assert "lv_obj_set_size(name,145,40)" in mtui and "lv_obj_set_size(name,145,40)" in mcui
