@@ -827,7 +827,7 @@ static void render() {
     list_batch_y=0;list_batch_width=w-16;
     list_batch_total=total;list_batch_cursor=0;
     list_batch_page=page;list_batch_channels=channels;list_batch_rooms=room_list;
-    list_batch_timer=lv_timer_create(list_batch_tick,1,nullptr);
+    list_batch_timer=lv_timer_create(list_batch_tick,list_batch_channels?1:25,nullptr);
     list_batch_tick(list_batch_timer);
     return;
   } else if (page == 3) {
@@ -918,7 +918,9 @@ static void list_batch_tick(lv_timer_t *timer){
   }
   auto *s=session();
   if(!s){lv_timer_del(timer);list_batch_timer=nullptr;return;}
-  int budget=12;
+  // Node rows are heavier than channel rows and invalidate the scroll area.
+  // Add them in small, frame-spaced batches so LVGL can keep refreshing.
+  int budget=list_batch_channels?8:3;
   while(budget--&&list_batch_cursor<list_batch_total){
     const int i=display_indices[list_batch_cursor++];
     const bool is_channel=list_batch_channels&&!list_batch_rooms;

@@ -200,7 +200,9 @@ namespace mtui {
   }
   static void node_batch_tick(lv_timer_t *timer){
     if(page!=1||!showing_mt()){lv_timer_del(timer);node_batch_timer=nullptr;return;}
-    unsigned budget=12;
+    // Keep each LVGL refresh small. Large 12-row bursts can make the display
+    // renderer monopolize taskLVGL while the scroll viewport is invalidated.
+    unsigned budget=3;
     while(budget){
       if(node_batch_network==1&&mt_node_cursor>=mt_node_count)node_batch_network=2;
       if(node_batch_network==2&&mc_node_cursor>=mc_node_count)node_batch_network=0;
@@ -425,7 +427,7 @@ namespace mtui {
       if(mc_node_count||(!syncing&&mt_node_count)){
         node_batch_width=w-16;node_batch_y=syncing?25:0;mt_node_cursor=mc_node_cursor=0;
         node_batch_network=mt_node_count?1:2;
-        node_batch_timer=lv_timer_create(node_batch_tick,1,nullptr);
+        node_batch_timer=lv_timer_create(node_batch_tick,25,nullptr);
         node_batch_tick(node_batch_timer);
       }
       return;
