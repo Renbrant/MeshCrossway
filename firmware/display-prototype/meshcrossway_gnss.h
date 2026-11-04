@@ -1,5 +1,6 @@
 #pragma once
 #include "meshcrossway_gnss_parser.h"
+#include "meshcrossway_ubx.h"
 #include "meshcrossway_gnss_settings.h"
 #include "nvs.h"
 #include "driver/uart.h"
@@ -16,6 +17,15 @@ static Settings settings;
 static uint32_t revision=0,changed_ms=0;
 struct Diagnostics {unsigned baud=0;int error=0;uint32_t bytes=0;bool saved=true;};
 static Diagnostics diagnostics;
+static mcxubx::State ubx_latest;
+static mcxubx::State receiver(){portENTER_CRITICAL(&mutex);auto out=ubx_latest;portEXIT_CRITICAL(&mutex);return out;}
+static void ubx_poll(uint8_t cls,uint8_t id,const uint8_t *payload,size_t length){uint8_t frame[48];const size_t n=mcxubx::packet(cls,id,payload,length,frame,sizeof(frame));if(n)uart_write_bytes(UART_NUM_1,frame,n);}
+static void ubx_readonly_poll(uint32_t now){static uint32_t last=0;static unsigned stage=0;if(last&&uint32_t(now-last)<3500)return;last=now;
+  if(stage==0)ubx_poll(0x0a,0x04,nullptr,0);
+  else if(stage==1)ubx_poll(0x01,0x35,nullptr,0);
+  else {const uint32_t keys[]={0x1031001f,0x10310021,0x10310022,0x10310025};uint8_t request[4+sizeof(keys)]={0,0,0,0};for(unsigned i=0;i<4;++i){const uint32_t key=keys[i];for(unsigned j=0;j<4;++j)request[4+i*4+j]=uint8_t(key>>(8*j));}ubx_poll(0x06,0x8b,request,sizeof(request));}
+  stage=(stage+1)%3;
+}
 static Settings configuration(){portENTER_CRITICAL(&mutex);auto out=settings;portEXIT_CRITICAL(&mutex);return out;}
 static Diagnostics status(){portENTER_CRITICAL(&mutex);auto out=diagnostics;portEXIT_CRITICAL(&mutex);return out;}
 static void configure(const Settings &value){if(!valid_settings(value))return;
@@ -26,7 +36,6 @@ static Fix snapshot(){portENTER_CRITICAL(&mutex);Fix out=latest;const auto cfg=s
   const uint32_t now=uint32_t(esp_timer_get_time()/1000);
   if(!cfg.enabled||uint32_t(now-out.satellites_ms)>cfg.timeout_ms){out.have_satellites=out.have_hdop=out.have_altitude=false;}
   if(!cfg.enabled||uint32_t(now-out.speed_ms)>cfg.timeout_ms)out.have_speed=false;
-  if(!cfg.enabled||uint32_t(now-out.visible_ms)>5000)out.have_visible_satellites=false;
   if(!cfg.enabled||uint32_t(now-out.visible_ms)>5000)out.have_visible_satellites=false;
   if(!cfg.enabled||uint32_t(now-out.time_ms)>cfg.timeout_ms)out.have_time=false;
   if(!out.valid||uint32_t(now-out.accuracy_ms)>cfg.timeout_ms)out.have_accuracy=false;
@@ -40,14 +49,14 @@ static bool poll_accuracy(const Parser &parser,const Settings &cfg,uint32_t now,
   last_poll=now;return uart_write_bytes(UART_NUM_1,poll,sizeof(poll)-1)==int(sizeof(poll)-1);
 }
 static void worker(void *){
-  Parser parser;Settings applied;bool have_applied=false;int io_error=0;uint8_t bytes[128];uint32_t switched=0,seen=UINT32_MAX,persisted=0,last_save=0,last_accuracy_poll=0;
+  Parser parser;mcxubx::Parser ubx;Settings applied;bool have_applied=false;int io_error=0;uint8_t bytes[128];uint32_t switched=0,seen=UINT32_MAX,persisted=0,last_save=0,last_accuracy_poll=0;
   for(;;){
     const uint32_t now=uint32_t(esp_timer_get_time()/1000);
     portENTER_CRITICAL(&mutex);const auto cfg=settings;const uint32_t rev=revision,edited=changed_ms;portEXIT_CRITICAL(&mutex);
     if(rev!=seen){
       if(!have_applied||cfg.baud!=applied.baud||cfg.enabled!=applied.enabled){
         baud=cfg.baud?cfg.baud:9600;io_error=uart_set_baudrate(UART_NUM_1,baud);uart_flush_input(UART_NUM_1);
-        parser=Parser{};switched=now;
+        parser=Parser{};ubx=mcxubx::Parser{};switched=now;
       }
       applied=cfg;have_applied=true;seen=rev;
     }
@@ -63,7 +72,8 @@ static void worker(void *){
     if(!cfg.enabled)vTaskDelay(pdMS_TO_TICKS(100));
     if(n<0){io_error=-1;vTaskDelay(pdMS_TO_TICKS(100));}
     if(n>0)io_error=0;
-    for(int i=0;i<n;++i)parser.feed(char(bytes[i]),now);
+    for(int i=0;i<n;++i){const uint8_t b=bytes[i];const bool in_ubx=ubx.phase!=0||b==0xb5;ubx.feed(b,now);if(!in_ubx)parser.feed(char(b),now);}
+    if(cfg.enabled&&!io_error&&uint32_t(now-switched)>2000)ubx_readonly_poll(now);
     // Read-only measurement poll, not a receiver configuration command.
     // Requires display TX43 -> receiver RX. RX-only wiring still works;
     // unsupported/non-responding receivers simply leave accuracy unavailable.
@@ -72,7 +82,7 @@ static void worker(void *){
       baud=baud==9600?38400:9600;io_error=uart_set_baudrate(UART_NUM_1,baud);uart_flush_input(UART_NUM_1);
       parser.collecting=false;parser.used=0;parser.fix.valid=false;switched=now;
     }
-    portENTER_CRITICAL(&mutex);latest=parser.fix;diagnostics.baud=baud;diagnostics.error=io_error;if(n>0)diagnostics.bytes+=uint32_t(n);portEXIT_CRITICAL(&mutex);
+    portENTER_CRITICAL(&mutex);latest=parser.fix;ubx_latest=ubx.state;diagnostics.baud=baud;diagnostics.error=io_error;if(n>0)diagnostics.bytes+=uint32_t(n);portEXIT_CRITICAL(&mutex);
   }
 }
 static void start(){
@@ -84,7 +94,7 @@ static void start(){
   }
   uart_config_t config={};config.baud_rate=9600;config.data_bits=UART_DATA_8_BITS;config.parity=UART_PARITY_DISABLE;config.stop_bits=UART_STOP_BITS_1;config.flow_ctrl=UART_HW_FLOWCTRL_DISABLE;config.source_clk=UART_SCLK_DEFAULT;
   esp_err_t rc=uart_param_config(UART_NUM_1,&config);
-  // UART1 uses RXD44/TXD43. Only an optional measurement poll is sent; no GPS configuration writes.
+  // UART1 RXD44/TXD43. UBX MON-VER/NAV-SAT/CFG-VALGET are read-only polls; no configuration writes.
   if(rc==ESP_OK)rc=uart_set_pin(UART_NUM_1,43,44,UART_PIN_NO_CHANGE,UART_PIN_NO_CHANGE);
   if(rc==ESP_OK)rc=uart_driver_install(UART_NUM_1,2048,0,0,nullptr,0);
   if(rc==ESP_OK&&xTaskCreatePinnedToCore(worker,"mcx_gnss",4096,nullptr,1,&task,0)!=pdPASS){uart_driver_delete(UART_NUM_1);rc=ESP_ERR_NO_MEM;}
