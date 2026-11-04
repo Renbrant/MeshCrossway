@@ -13,9 +13,12 @@ struct Parser {
   Gsv gsv[5]={}; // GPS, GLONASS, Galileo, BeiDou, GN mixed fallback
   static int constellation(const char *id){
     if(id[0]!='G')return -1;
-    if(id[1]=='P')return 0;if(id[1]=='L')return 1;
-    if(id[1]=='A')return 2;if(id[1]=='B'||id[1]=='D')return 3;
-    if(id[1]=='N')return 4;return -1;
+    if(id[1]=='P')return 0;
+    if(id[1]=='L')return 1;
+    if(id[1]=='A')return 2;
+    if(id[1]=='B'||id[1]=='D')return 3;
+    if(id[1]=='N')return 4;
+    return -1;
   }
   void visible(uint32_t now){
     unsigned sum=0;bool individual=false;
