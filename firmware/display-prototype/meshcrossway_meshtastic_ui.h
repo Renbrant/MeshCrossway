@@ -341,7 +341,7 @@ namespace mtui {
         char compact_title[100];snprintf(compact_title,sizeof(compact_title),"%s",title);compact_list_label(compact_title);
         auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,compact_title);
         const int card_width=w-16;
-        mcui::list_icon(b,"#",8,9,40,orange);
+        mtui::list_icon(b,"#",8,9,40,orange);
         lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
         auto *d=txt(b,detail,56,30,card_width-64,muted);lv_obj_set_height(d,18);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
         y+=64;
