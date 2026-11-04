@@ -488,10 +488,25 @@ static void toggle_node_sort_now(void *){node_sort_distance=!node_sort_distance;
 static void toggle_node_sort(lv_event_t *){lv_async_call(toggle_node_sort_now,nullptr);}
 static void add_meshcore_channel_now(void *mode);
 static void add_meshcore_channel(lv_event_t *e){lv_async_call(add_meshcore_channel_now,lv_event_get_user_data(e));}
+static void channel_choice(lv_obj_t *sheet,const char *title,const char *subtitle,int y,const char *glyph,int mode){
+  auto *b=action_button(sheet,"",10,y,460,60,panel2,add_meshcore_channel,mode);
+  list_icon(b,glyph,8,9,40,orange);
+  auto *name=txt(b,title,58,7,390,20,white);lv_obj_set_height(name,20);
+  lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
+  auto *detail=txt(b,subtitle,58,31,390,18,muted);lv_obj_set_height(detail,18);
+  lv_label_set_long_mode(detail,LV_LABEL_LONG_DOT);
+}
 static void add_channel_menu(){
-  base("ADD CHANNEL");
-  action_button(scroller,"PUBLIC # CHANNEL",8,8,448,44,panel2,add_meshcore_channel,1);
-  action_button(scroller,"PRIVATE CHANNEL",8,60,448,44,panel2,add_meshcore_channel,0);
+  close();
+  dialog=panel_at(lv_scr_act(),0,0,480,320,bg,0);
+  lv_obj_set_style_bg_color(dialog,lv_color_hex(0x000000),0);
+  lv_obj_set_style_bg_opa(dialog,LV_OPA_70,0);
+  scroller=panel_at(dialog,0,86,480,234,panel,18);
+  txt(scroller,"ADD CHANNEL",18,10,330,22,orange);
+  action_button(scroller,"X",426,7,42,34,panel2,on_close,0);
+  txt(scroller,"JOIN / CREATE",18,49,220,18,muted);
+  channel_choice(scroller,"Hashtag channel","Join or create a public #channel",74,"#",1);
+  channel_choice(scroller,"Private channel","Enter a key to join, or leave blank to create",144,"K",0);
 }
 static void show_add_channel_menu_now(void *){add_channel_menu();}
 static void show_add_channel_menu(){lv_async_call(show_add_channel_menu_now,nullptr);}
@@ -952,23 +967,21 @@ static void list_batch_tick(lv_timer_t *timer){
         snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B / %.0f m",messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
       }else snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B",messages,(unsigned long)bytes);
     }
-    auto *b=action_button(list_viewport,"",0,0,list_batch_width,is_channel?48:76,panel,is_channel?choose_channel:choose_contact,i);
+    auto *b=action_button(list_viewport,"",0,0,list_batch_width,is_channel?58:76,panel,is_channel?choose_channel:choose_contact,i);
     const int card_width=list_batch_width;
     if(!is_channel){
+      list_icon(b,"N",8,18,40,orange);
       auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
-      lv_obj_set_pos(name,7,5);lv_obj_set_size(name,card_width-14,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
+      lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
       lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-      auto *heard_label=txt(b,heard_detail,7,28,card_width-14,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
-      auto *chat_label=txt(b,chat_detail,7,49,card_width-14,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
-
+      auto *heard_label=txt(b,heard_detail,56,28,card_width-64,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
+      auto *chat_label=txt(b,chat_detail,56,49,card_width-64,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
     }else{
+      list_icon(b,"#",8,9,40,orange);
       auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
-      const int name_width=card_width>=350?165:card_width*38/100;
-      const int detail_x=name_width+14;
-      lv_obj_set_pos(name,7,13);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
+      lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
       lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-      auto *d=txt(b,detail,detail_x,13,card_width-detail_x-8,muted);lv_obj_set_height(d,22);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
-
+      auto *d=txt(b,detail,56,30,card_width-64,18,muted);lv_obj_set_height(d,18);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
     }
   }
   if(list_batch_cursor>=list_batch_total){
