@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.9.16: categorized independent radio settings on device and remote.
+// MeshCrossway v0.10.0: categorized independent radio settings on device and remote.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -990,15 +990,15 @@ static void gps_refresh(lv_timer_t *){
   if(!cfg.enabled)snprintf(state,sizeof(state),"GPS reading disabled / open GPS Settings");
   else if(diag.error)snprintf(state,sizeof(state),"GPS UART error %d",diag.error);
   else if(!f.frames)snprintf(state,sizeof(state),"Waiting for GPS data / RX44 TX43");
-  else if(f.have_hdop)snprintf(state,sizeof(state),"%s / Sats %u / HDOP %.1f",f.valid?"FIX":"NO FIX",f.satellites,f.hdop);
-  else snprintf(state,sizeof(state),"%s / Sats %u / HDOP --",f.valid?"FIX":"NO FIX",f.satellites);
+  else if(f.have_hdop)snprintf(state,sizeof(state),"%s / Used %u / HDOP %.1f",f.valid?"FIX":"NO FIX",f.satellites,f.hdop);
+  else snprintf(state,sizeof(state),"%s / Used %u / HDOP --",f.valid?"FIX":"NO FIX",f.satellites);
   if(gps_position)chatview::label(gps_position,pos);
   if(gps_status)chatview::label(gps_status,state);
-  if(gps_extra){char detail[320],altitude[32]="--",speed[32]="--",utc[32]="unavailable";
+  if(gps_extra){char visible_count[12];snprintf(visible_count,sizeof(visible_count),"%u",f.visible_satellites);char detail[320],altitude[32]="--",speed[32]="--",utc[32]="unavailable";
     if(f.valid&&f.have_altitude)snprintf(altitude,sizeof(altitude),"%.1f %s",f.altitude*(cfg.imperial?3.28084:1),cfg.imperial?"ft":"m");
     if(f.valid&&f.have_speed)snprintf(speed,sizeof(speed),"%.1f %s",f.speed_kmh*(cfg.imperial?.621371:1),cfg.imperial?"mph":"km/h");
     if(f.have_time){time_t stamp=time_t(f.utc_seconds);struct tm t={};if(gmtime_r(&stamp,&t))strftime(utc,sizeof(utc),"%Y-%m-%d %H:%M:%S",&t);}
-    snprintf(detail,sizeof(detail),"Altitude %s / Speed %s\nPosition age %.1f s\nUART %u / %lu bytes / error %d\nNMEA %lu valid / %lu invalid\nUTC %s",altitude,speed,f.frames?double(uint32_t(esp_timer_get_time()/1000)-f.position_ms)/1000:0,diag.baud,(unsigned long)diag.bytes,diag.error,(unsigned long)f.frames,(unsigned long)f.errors,utc);chatview::label(gps_extra,detail);
+    snprintf(detail,sizeof(detail),"Visible %s / Used %u\\nGPS %u  GLO %u  GAL %u  BDS %u\\nAltitude %s / Speed %s\\nPosition age %.1f s\\nUART %u / %lu bytes / error %d\\nNMEA %lu valid / %lu invalid\\nUTC %s",f.have_visible_satellites?visible_count:"--",f.satellites,f.visible_by_constellation[0],f.visible_by_constellation[1],f.visible_by_constellation[2],f.visible_by_constellation[3],altitude,speed,f.frames?double(uint32_t(esp_timer_get_time()/1000)-f.position_ms)/1000:0,diag.baud,(unsigned long)diag.bytes,diag.error,(unsigned long)f.frames,(unsigned long)f.errors,utc);chatview::label(gps_extra,detail);
   }
 }
 // Only this timer owns the Home cards. Native chat timers keep their own UI.
@@ -1334,7 +1334,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.9.16",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.10.0",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);
