@@ -926,7 +926,7 @@ static void list_batch_tick(lv_timer_t *timer){
     const bool is_channel=list_batch_channels&&!list_batch_rooms;
     const auto key=mcxchat::key_for(*s,is_channel,uint16_t(i));
     const auto *pref=mcxhistory::preferences().get(key);
-    char title[75],detail[150],when[24];
+    char title[75],detail[150],heard_detail[64],chat_detail[72],when[24];
     const bool loaded=is_channel&&i<s->channel_count&&s->channels[i].loaded;
     unsigned unread_count=0;uint32_t last_heard=0;unsigned messages=0;size_t bytes=0;
     for(const auto &m:s->messages)if(m.id&&mcxchat::belongs(m,key)){
@@ -945,22 +945,22 @@ static void list_batch_tick(lv_timer_t *timer){
       mcxchat::time_local(heard,when,sizeof(when));
       snprintf(title,sizeof(title),"%s%s",pref&&pref->favorite?"* ":"",pref&&pref->alias[0]?pref->alias:c.name);
       compact_list_label(title);
+      snprintf(heard_detail,sizeof(heard_detail),"Heard %s / %u unread",heard?when:"Not heard",unread_count);
       if(node_sort_distance&&nav_gps_valid&&c.lat&&c.lon){
         const double lat=double(c.lat)/1000000.0,lon=double(c.lon)/1000000.0;
         const double dy=(lat-nav_latitude)*111320.0,dx=(lon-nav_longitude)*111320.0*cos(nav_latitude*0.017453292519943295);
-        snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B / %.0f m",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
-      }else snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes);
+        snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B / %.0f m",messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
+      }else snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B",messages,(unsigned long)bytes);
     }
-    auto *b=action_button(list_viewport,"",0,list_batch_y,list_batch_width,is_channel?48:58,panel,is_channel?choose_channel:choose_contact,i);
+    auto *b=action_button(list_viewport,"",0,list_batch_y,list_batch_width,is_channel?48:76,panel,is_channel?choose_channel:choose_contact,i);
     const int card_width=list_batch_width;
     if(!is_channel){
       auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
-      const int name_width=card_width>=350?145:card_width*30/100;
-      const int detail_x=name_width+14;
-      lv_obj_set_pos(name,7,18);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
+      lv_obj_set_pos(name,7,5);lv_obj_set_size(name,card_width-14,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
       lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-      auto *d=txt(b,detail,detail_x,4,card_width-detail_x-8,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
-      list_batch_y+=64;
+      auto *heard_label=txt(b,heard_detail,7,28,card_width-14,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
+      auto *chat_label=txt(b,chat_detail,7,49,card_width-14,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
+      list_batch_y+=82;
     }else{
       auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
       const int name_width=card_width>=350?165:card_width*38/100;
