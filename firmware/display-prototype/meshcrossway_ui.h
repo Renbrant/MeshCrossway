@@ -710,7 +710,7 @@ static void open_thread_now(void *value){active_thread=(int)(intptr_t)value;page
 static void on_thread(lv_event_t *e){lv_async_call(open_thread_now,lv_event_get_user_data(e));}
 static void quick_action_run(void *value){
   int mode=(int)(intptr_t)value;
-  if(mode==0){close_shade();page=4;map_view=3;draw();return;}
+  if(mode==0){close_shade();page=4;map_view=3;draw();return;} // Open live GNSS diagnostics, not a GPS on/off toggle.
   if(mode==2){close_shade();wifi_setup(nullptr);return;}
   if(mode==1){close_shade();page=5;more_view=1;draw();return;}
   const char *names[]={"GPS","Bluetooth","","Sound","Brightness"};
@@ -728,7 +728,7 @@ static void open_shade(lv_event_t *){
   lv_obj_t *sheet=panel_at(shade,8,8,464,235,panel,9);
   single_label(sheet,"QUICK SETTINGS / STATUS",12,10,340,orange);
   action_button(sheet,"CLOSE",366,6,89,37,panel2,shade_close,0);
-  action_button(sheet,mcxgnss::snapshot().valid?"GPS FIX":"GPS --",9,54,108,48,panel2,quick_action,0);
+  action_button(sheet,mcxgnss::snapshot().valid?"GPS STATUS":"GPS STATUS",9,54,108,48,panel2,quick_action,0);
   action_button(sheet,"BLE --",122,54,108,48,panel2,quick_action,1);
   action_button(sheet,"WI-FI",235,54,108,48,orange,quick_action,2);
   action_button(sheet,"SOUND",348,54,107,48,panel2,quick_action,3);
@@ -998,7 +998,7 @@ static void gps_refresh(lv_timer_t *){
     if(f.valid&&f.have_altitude)snprintf(altitude,sizeof(altitude),"%.1f %s",f.altitude*(cfg.imperial?3.28084:1),cfg.imperial?"ft":"m");
     if(f.valid&&f.have_speed)snprintf(speed,sizeof(speed),"%.1f %s",f.speed_kmh*(cfg.imperial?.621371:1),cfg.imperial?"mph":"km/h");
     if(f.have_time){time_t stamp=time_t(f.utc_seconds);struct tm t={};if(gmtime_r(&stamp,&t))strftime(utc,sizeof(utc),"%Y-%m-%d %H:%M:%S",&t);}
-    snprintf(detail,sizeof(detail),"Visible %s / Used %u\\nGPS %u  GLO %u  GAL %u  BDS %u\\nAltitude %s / Speed %s\\nPosition age %.1f s\\nUART %u / %lu bytes / error %d\\nNMEA %lu valid / %lu invalid\\nUTC %s",f.have_visible_satellites?visible_count:"--",f.satellites,f.visible_by_constellation[0],f.visible_by_constellation[1],f.visible_by_constellation[2],f.visible_by_constellation[3],altitude,speed,f.frames?double(uint32_t(esp_timer_get_time()/1000)-f.position_ms)/1000:0,diag.baud,(unsigned long)diag.bytes,diag.error,(unsigned long)f.frames,(unsigned long)f.errors,utc);chatview::label(gps_extra,detail);
+    snprintf(detail,sizeof(detail),"Visible %s / Used %u\\nGPS %u  GLO %u  GAL %u  BDS %u\\nAltitude %s / Speed %s\\nPosition age %.1f s\\nUART %u / %lu bytes / error %d\\nNMEA %lu valid / %lu invalid\\nUTC %s",f.have_visible_satellites?visible_count:"--",f.satellites,f.visible_by_constellation[0],f.visible_by_constellation[3],f.visible_by_constellation[1],f.visible_by_constellation[2],altitude,speed,f.frames?double(uint32_t(esp_timer_get_time()/1000)-f.position_ms)/1000:0,diag.baud,(unsigned long)diag.bytes,diag.error,(unsigned long)f.frames,(unsigned long)f.errors,utc);chatview::label(gps_extra,detail);
   }
 }
 // Only this timer owns the Home cards. Native chat timers keep their own UI.
