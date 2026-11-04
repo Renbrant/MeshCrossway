@@ -6,6 +6,10 @@
 
 > **Project status — v0.8.26 stable; v0.9.13 candidate.** v0.8.26 remains the user-selected stable release and preserves its exact published firmware image. v0.9.13 separates each node name, heard time, unread count and traffic total into fixed-height lines, preventing text overlap. It includes the v0.9.12 LVGL pacing fix, v0.9.11 startup stack fix and v0.9.10 radio controls. v0.8.26 remains the recommended stable release. See the [v0.8.26 stable record](docs/stable-v0826.md) and [v0.9.11 boot stability notes](docs/boot-stability-v0911.md) and [v0.9.12 node-list rendering notes](docs/node-list-rendering-v0912.md) and [v0.9.13 non-overlapping node cards](docs/node-layout-v0913.md).
 
+## Support the project
+
+Developing MeshCrossway takes time and ongoing investment in hardware parts and AI model tokens. If you'd like to help cover these costs, you're welcome to make a one-time donation or become a project sponsor through [GitHub Sponsors](https://github.com/sponsors/Renbrant).
+
 ## See it in operation
 
 ### v0.9.8 candidate running on the device
