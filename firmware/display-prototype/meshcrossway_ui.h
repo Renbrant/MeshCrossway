@@ -341,17 +341,6 @@ static lv_obj_t *panel_at(lv_obj_t *parent,int x,int y,int w,int h,lv_color_t co
   lv_obj_set_pos(o,x,y);lv_obj_set_size(o,w,h);
   lv_obj_clear_flag(o,LV_OBJ_FLAG_SCROLLABLE);return o;
 }
-static lv_obj_t *list_view_at(int y,int w){
-  const int h=286-y;
-  if(h<32)return nullptr;
-  lv_obj_t *view=panel_at(body,8,y,w-16,h,bg,0);
-  lv_obj_set_style_bg_opa(view,LV_OPA_TRANSP,0);
-  lv_obj_set_style_pad_all(view,0,0);
-  lv_obj_add_flag(view,LV_OBJ_FLAG_SCROLLABLE);
-  lv_obj_set_scroll_dir(view,LV_DIR_VER);
-  lv_obj_set_scrollbar_mode(view,LV_SCROLLBAR_MODE_AUTO);
-  return view;
-}
 static lv_obj_t *color_label(lv_obj_t *parent,const char *value,int x,int y,int w,lv_color_t color){
   return txt(parent,value,x,y,w,color);
 }
@@ -365,6 +354,17 @@ static lv_obj_t *action_button(lv_obj_t *parent,const char *label,int x,int y,in
   return b;
 }
 // Lightweight LVGL shapes avoid depending on emoji fonts or extra image assets.
+static lv_obj_t *list_view_at(int y,int w){
+  const int h=286-y;
+  if(h<32)return nullptr;
+  lv_obj_t *view=panel_at(body,8,y,w-16,h,bg,0);
+  lv_obj_set_style_bg_opa(view,LV_OPA_TRANSP,0);
+  lv_obj_set_style_pad_all(view,0,0);
+  lv_obj_add_flag(view,LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_set_scroll_dir(view,LV_DIR_VER);
+  lv_obj_set_scrollbar_mode(view,LV_SCROLLBAR_MODE_AUTO);
+  return view;
+}
 static lv_obj_t *nav_shape(lv_obj_t *parent,int x,int y,int w,int h,int radius){
   lv_obj_t *shape=panel_at(parent,x,y,w,h,orange,radius);
   lv_obj_clear_flag(shape,LV_OBJ_FLAG_CLICKABLE);
