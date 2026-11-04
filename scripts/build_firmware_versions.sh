@@ -53,7 +53,7 @@ build_version() {
     if [ "$ref" != "HEAD" ]; then verify_args+=(--ref "$ref"); fi
     if python3 "$ROOT/scripts/verify_firmware_version.py" "${verify_args[@]}" &&
        { [ "$version" != "$STABLE_VERSION" ] ||
-         [ "$(sha256sum "$image_dir/meshcrossway-display-dev.bin" | cut -d' ' -f1)" = "$STABLE_SHA256" ]; }; then
+         python3 "$ROOT/scripts/restore_stable_firmware.py" --verify "$image_dir"; }; then
       echo "RESTORED: $version from verified compiled artifact cache"
       return
     fi
@@ -171,7 +171,7 @@ build_version() {
 # Update these two constants whenever a newer hardware build is validated.
 STABLE_VERSION="v0.9.16"
 STABLE_REF="b225afb57f26196853c57aaad20f85450d69b126"
-STABLE_SHA256=""
+STABLE_SHA256="" # stable digest is checked against published catalog
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).
