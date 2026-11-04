@@ -27,6 +27,15 @@ namespace mtui {
     if(!text)return;
     for(char *p=text;*p;++p)if(*p=='\n'||*p=='\r'||*p=='\t')*p=' ';
   }
+  static lv_obj_t *list_icon(lv_obj_t *parent,const char *glyph,int x,int y,int size,lv_color_t accent){
+    auto *badge=panel_at(parent,x,y,size,size,lv_color_hex(0x302515),size/2);
+    lv_obj_set_style_border_width(badge,1,0);
+    lv_obj_set_style_border_color(badge,accent,0);
+    auto *mark=txt(badge,glyph,0,(size-20)/2,size,accent);
+    lv_obj_set_height(mark,20);
+    lv_obj_set_style_text_align(mark,LV_TEXT_ALIGN_CENTER,0);
+    return badge;
+  }
   static uint8_t primary(){auto *c=meshmt::client;
     if(c)for(unsigned i=0;i<meshmt::MAX_CHANNELS;++i)if(c->data.channels[i].role==1)return i;
     return 0;
@@ -261,7 +270,7 @@ namespace mtui {
         const uint8_t type=meshmc::client->contacts[token].type;
         glyph=type==2?"R":type==3?"H":type==4?"S":"P";
       }
-      mcui::list_icon(b,glyph,8,18,40,orange);
+      list_icon(b,glyph,8,18,40,orange);
       auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,title);lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
       auto *heard_label=txt(b,heard_detail,56,28,card_width-64,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
       auto *chat_label=txt(b,chat_detail,56,49,card_width-64,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
@@ -334,7 +343,7 @@ namespace mtui {
         const int card_width=w-16;
         mcui::list_icon(b,"#",8,9,40,orange);
         lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-        auto *d=txt(b,detail,56,30,card_width-64,18,muted);lv_obj_set_height(d,18);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
+        auto *d=txt(b,detail,56,30,card_width-64,muted);lv_obj_set_height(d,18);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
         y+=64;
       }else{
         char compact_title[100];snprintf(compact_title,sizeof(compact_title),"%s",title);compact_list_label(compact_title);
