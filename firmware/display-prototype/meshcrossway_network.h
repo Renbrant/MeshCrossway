@@ -9,6 +9,7 @@
 #include "nvs.h"
 #include "meshcrossway_backup.h"
 #include "freertos/FreeRTOS.h"
+#include <atomic>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,7 +21,7 @@ static char wifi_state[30]="Wi-Fi not configured";
 static char ssid_name[33]="";
 static bool wants_station=false;
 static bool station_connected=false;
-static bool wifi_started=false;
+static std::atomic<bool> wifi_started{false};
 static unsigned retries=0;
 ESP_EVENT_DEFINE_BASE(MCX_CONTROL_EVENT);
 enum ControlEvent { CONNECT_MANUAL=1, RETRY_KNOWN=2 };
@@ -243,11 +244,15 @@ static void wifi_event(void *,esp_event_base_t base,int32_t event,void *data){
   }else if(base==WIFI_EVENT && event==WIFI_EVENT_STA_START){
     wifi_started=true;
     if(wants_station)(void)esp_wifi_connect();
+  }else if(base==WIFI_EVENT && event==WIFI_EVENT_STA_STOP){
+    wifi_started=false;station_connected=false;
+    portENTER_CRITICAL(&guard);local_ip[0]=0;portEXIT_CRITICAL(&guard);
+    if(!wants_station)set_state("Wi-Fi disabled","");
   }else if(base==WIFI_EVENT && event==WIFI_EVENT_STA_DISCONNECTED){
     const wifi_event_sta_disconnected_t *d=(const wifi_event_sta_disconnected_t*)data;
     station_connected=false;
+    if(!wants_station){set_state(wifi_started?"Wi-Fi enabled":"Wi-Fi disabled","");return;}
     set_state("Reconnecting...","");
-    if(!wants_station)return;
     // An AP-originated leave is a real link loss. Suppress only our recent
     // explicit disconnect used to switch the selected station profile.
     if(d && d->reason==WIFI_REASON_ASSOC_LEAVE && suppress_user_leave &&
@@ -293,6 +298,32 @@ static bool connect(const char *ssid,const char *password){
   memset(&c,0,sizeof(c));
   if(rc!=ESP_OK)set_state("Connection queue busy","");
   return rc==ESP_OK;
+}
+static bool enabled(){return wifi_started.load();}
+static bool disable(){
+  if(!wifi_started.load())return true;
+  wants_station=false;manual_active=false;station_connected=false;
+  stop_retry_timer();
+  if(scan_running){(void)esp_wifi_scan_stop();scan_running=false;}
+  suppress_user_leave=true;suppress_leave_until_us=esp_timer_get_time()+2000000LL;
+  (void)esp_wifi_disconnect();
+  const esp_err_t rc=esp_wifi_stop();
+  if(rc!=ESP_OK){set_state("Wi-Fi shutdown failed","");return false;}
+  wifi_started=false;
+  portENTER_CRITICAL(&guard);local_ip[0]=0;portEXIT_CRITICAL(&guard);
+  set_state("Wi-Fi disabled","");
+  return true;
+}
+static bool enable(){
+  if(wifi_started.load())return true;
+  wifi_config_t saved={};
+  const bool have_station=esp_wifi_get_config(WIFI_IF_STA,&saved)==ESP_OK&&saved.sta.ssid[0];
+  wants_station=have_station;manual_active=false;attempted=0;retries=0;
+  const esp_err_t rc=esp_wifi_start();
+  if(rc!=ESP_OK){set_state("Wi-Fi start failed","");return false;}
+  wifi_started=true;
+  set_state(have_station?"Connecting...":"Wi-Fi enabled","");
+  return true;
 }
 static void start(){
   ESP_ERROR_CHECK(esp_netif_init());

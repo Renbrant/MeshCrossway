@@ -73,6 +73,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.10":
+        summary="EXPERIMENTAL: adds on-device Wi-Fi and Bluetooth power controls, a Bluetooth stop action available during startup, safer handling when the NimBLE host fails to start, and a fixed node-list viewport to reduce redraws. v0.8.26 remains stable."
+        label="Radio power controls and node stability / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.9":
         summary="EXPERIMENTAL: separates node names, channel names, unread counts and activity into compact aligned columns, and collapses line breaks in long names to prevent overlap. v0.8.26 remains stable."
         label="Node and channel layout fix / EXPERIMENTAL"
