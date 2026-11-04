@@ -254,7 +254,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
                     assert "node_heard_age(" in shared
                     assert "Runtime-only User.role cache" in mtproto and "f.tag==7" in mtproto
                     assert "Meshtastic repeater" in mtui and "MeshCore repeater" in mcui
-                    assert "contact.path_len==255?\"Flood\":\"Direct\"" in mcui
+                    assert 'c.path_len==255?"Flood":"Direct"' in mcui
                     assert "ID %04X" in mtui and "ID %02X%02X" in mcui
                     assert "emoji_label_text(name,title)" not in mcui
                     assert "lv_label_set_text(name,title)" in mcui and "lv_label_set_text(name,title)" in mtui
