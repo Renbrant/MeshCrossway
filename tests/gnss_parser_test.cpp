@@ -34,7 +34,7 @@ assert(!p.fix.have_visible_satellites);
 sentence(p,"GPGSV,2,2,08,05,25,180,23,06,20,200,20,07,15,220,18,08,10,240,15",5100);
 assert(p.fix.have_visible_satellites&&p.fix.visible_satellites==8&&p.fix.visible_by_constellation[0]==8);
 sentence(p,"GAGSV,1,1,05,11,45,100,35,12,40,120,30,13,35,140,28,14,30,160,25",5200);
-assert(p.fix.visible_satellites==13&&p.fix.visible_by_constellation[1]==5);
+assert(p.fix.visible_satellites==13&&p.fix.visible_by_constellation[2]==5);
 assert(!p.snapshot(11000).have_visible_satellites);
 puts("PASS GNSS GSV: complete cycles, per-constellation counts, used/view separation and expiration");
 puts("PASS GNSS accuracy: PUBX hAcc, GST hRMS, quality, unavailable/invalid/stale/no-fix handling and no fabricated HDOP metres");
