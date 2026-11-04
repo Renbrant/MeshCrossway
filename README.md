@@ -8,7 +8,22 @@
 
 ## See it in operation
 
-These v0.8.16 screenshots show v0.8.16 running on the touchscreen and in the device's local browser companion. The browser interface is served by the device over the local network; it is not a cloud service or a web simulator.
+### v0.9.8 candidate running on the device
+
+These field photos show the MeshCrossway touchscreen hardware running the v0.9.8 candidate, including its home status dashboard, map and message views.
+
+<p align="center">
+  <img src="docs/site/media/v0.9.8-field/01-assembled-device.jpg" width="49%" alt="Assembled MeshCrossway touchscreen console with external GNSS antenna">
+  <img src="docs/site/media/v0.9.8-field/02-home-status.jpg" width="49%" alt="v0.9.8 home dashboard showing connected Meshtastic and MeshCore radios, GPS and Wi-Fi">
+</p>
+<p align="center">
+  <img src="docs/site/media/v0.9.8-field/03-map-view.jpg" width="49%" alt="MeshCrossway map view with nearby network nodes">
+  <img src="docs/site/media/v0.9.8-field/04-messages-view.jpg" width="49%" alt="MeshCrossway message list showing received messages and hop counts">
+</p>
+
+### Earlier v0.8.16 device and local browser companion screenshots
+
+These v0.8.16 screenshots document the touchscreen and the device's local browser companion. The browser interface is served by the device over the local network; it is not a cloud service or a web simulator.
 
 <p align="center">
   <img src="docs/site/media/v0.8.16/01-device-home-radio-gps.png" width="49%" alt="Device home screen with Meshtastic and MeshCore connected, local GPS and Wi-Fi status">
