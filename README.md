@@ -2,6 +2,17 @@
 
 # MeshCrossway
 
+<p align="center">
+  <a href="https://renbrant.github.io/MeshCrossway/"><img alt="Project website" src="https://img.shields.io/badge/PROJECT%20SITE-OPEN-1f6feb?style=for-the-badge"></a>
+  <a href="https://renbrant.github.io/MeshCrossway/ui/"><img alt="Interactive UI demo" src="https://img.shields.io/badge/UI%20DEMO-TRY%20IT-0A7B83?style=for-the-badge"></a>
+  <a href="https://renbrant.github.io/MeshCrossway/flasher/"><img alt="Web Flasher" src="https://img.shields.io/badge/WEB%20FLASHER-INSTALL-orange?style=for-the-badge"></a>
+</p>
+<p align="center">
+  <a href="https://github.com/Renbrant/MeshCrossway/tree/main/docs"><img alt="Project documentation" src="https://img.shields.io/badge/DOCUMENTATION-READ-444444?style=for-the-badge"></a>
+  <a href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/stable-v0826.md"><img alt="Recommended stable firmware v0.8.26" src="https://img.shields.io/badge/STABLE%20FIRMWARE-v0.8.26-2ea44f?style=for-the-badge"></a>
+  <a href="https://github.com/sponsors/Renbrant"><img alt="Donate or become a sponsor" src="https://img.shields.io/badge/DONATE%20%2F%20SPONSOR-SUPPORT%20THE%20PROJECT-ff8a24?style=for-the-badge"></a>
+</p>
+
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
 > **Project status — v0.8.26 stable; v0.9.13 candidate.** v0.8.26 remains the user-selected stable release and preserves its exact published firmware image. v0.9.13 separates each node name, heard time, unread count and traffic total into fixed-height lines, preventing text overlap. It includes the v0.9.12 LVGL pacing fix, v0.9.11 startup stack fix and v0.9.10 radio controls. v0.8.26 remains the recommended stable release. See the [v0.8.26 stable record](docs/stable-v0826.md) and [v0.9.11 boot stability notes](docs/boot-stability-v0911.md) and [v0.9.12 node-list rendering notes](docs/node-list-rendering-v0912.md) and [v0.9.13 non-overlapping node cards](docs/node-layout-v0913.md).
