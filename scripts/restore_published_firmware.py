@@ -93,8 +93,8 @@ def restore() -> None:
     latest = (ROOT / "firmware/display-prototype/VERSION").read_text().strip()
     stable = builder_constant("STABLE_VERSION")
     ref = builder_constant("STABLE_REF")
-    from restore_stable_firmware import published_sha
-    expected_sha = published_sha()
+    from restore_stable_firmware import SHA
+    expected_sha = SHA
     versions = list(dict.fromkeys([stable, latest]))
     with tempfile.TemporaryDirectory(prefix="mcx-published-") as tmp:
         staged = Path(tmp)
