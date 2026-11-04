@@ -947,7 +947,7 @@ static void list_batch_tick(lv_timer_t *timer){
     const int card_width=list_batch_width-16;
     if(!is_channel){
       auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
-      const int name_width=card_width>=350?145:card_width*35/100;
+      const int name_width=card_width>=350?145:card_width*30/100;
       const int detail_x=name_width+14;
       lv_obj_set_pos(name,7,18);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
       lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
@@ -955,7 +955,7 @@ static void list_batch_tick(lv_timer_t *timer){
       list_batch_y+=64;
     }else{
       auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
-      const int name_width=card_width>=350?165:card_width*44/100;
+      const int name_width=card_width>=350?165:card_width*38/100;
       const int detail_x=name_width+14;
       lv_obj_set_pos(name,7,13);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
       lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
