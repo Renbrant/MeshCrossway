@@ -240,7 +240,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
                 else:
                     assert "compact_list_label(title)" in mtui and "compact_list_label(title)" in mcui
                     assert "lv_obj_set_size(name,name_width,22)" in mtui and "lv_obj_set_size(name,name_width,22)" in mcui
-                    assert "card_width*35/100" in mtui and "card_width*44/100" in mcui
+                    assert "card_width*30/100" in mtui and "card_width*38/100" in mcui
                     assert "latest received" not in mtui and "last received" not in mcui
                 assert "Heard %s / %u unread\\nChat %u" in mtui and "Heard %s / %u unread\\nChat %u" in mcui
             if version=="v0.9.6":
