@@ -15,7 +15,7 @@ namespace mtui {
   static lv_obj_t *node_list_view=nullptr;
   static bool nodes_were_syncing=false;
   static unsigned mt_node_count=0,mc_node_count=0,mt_node_cursor=0,mc_node_cursor=0;
-  static int node_batch_network=0,node_batch_width=0,node_batch_y=141;
+  static int node_batch_network=0,node_batch_width=0;
   static bool ready(){auto *c=meshmt::client;
     return c&&c->connected&&c->initialized&&c->history_ready&&!c->fault;
   }
@@ -244,12 +244,12 @@ namespace mtui {
           snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B / %.0f m",messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
         }else snprintf(chat_detail,sizeof(chat_detail),"Chat %u / %lu B",messages,(unsigned long)bytes);
       }
-      auto *b=action_button(node_list_view,"",0,node_batch_y,node_batch_width,76,panel,callback,intptr_t(token));
+      auto *b=action_button(node_list_view,"",0,0,node_batch_width,76,panel,callback,intptr_t(token));
       const int card_width=node_batch_width;
       auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);lv_obj_set_pos(name,7,5);lv_obj_set_size(name,card_width-14,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
       auto *heard_label=txt(b,heard_detail,7,28,card_width-14,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
       auto *chat_label=txt(b,chat_detail,7,49,card_width-14,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
-      node_batch_y+=82;--budget;
+      --budget;
     }
   }
   static void render(){
@@ -428,7 +428,7 @@ namespace mtui {
       if(syncing)single_label(node_list_view,"Syncing Meshtastic node database…",8,8,w-32,orange);
       if(!mt_node_count&&!mc_node_count&&!syncing)single_label(node_list_view,"No nodes found for this network yet.",8,8,w-32,muted);
       if(mc_node_count||(!syncing&&mt_node_count)){
-        node_batch_width=w-16;node_batch_y=syncing?25:0;mt_node_cursor=mc_node_cursor=0;
+        node_batch_width=w-16;mt_node_cursor=mc_node_cursor=0;
         node_batch_network=mt_node_count?1:2;
         node_batch_timer=lv_timer_create(node_batch_tick,25,nullptr);
         node_batch_tick(node_batch_timer);
