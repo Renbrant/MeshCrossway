@@ -25,6 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit release approval.
 approved={
+    "v0.9.16":("Hardware-tested v0.9.16; retain exact published binary.", "Recommended stable / hardware-tested"),
     "v0.8.26":("v0.8.26 is the user-selected stable firmware. Its exact v0.8.26 binary is restored from the published Pages artifact and checksum-verified.", "Recommended stable / dual-radio maps and tracks"),
     "v0.8.23":("v0.8.23 is the user-selected stable release. It retains the exact previously published firmware image; the 0.8.24 configuration redesign is a separate candidate.", "Recommended stable / dual-network maps and tracks"),
     "v0.8.17":("The v0.8.17 dual-radio and remote map/route release is confirmed working well on the device and is the recommended stable image. Exact published binary is retained.", "Recommended stable / maps and tracks"),
