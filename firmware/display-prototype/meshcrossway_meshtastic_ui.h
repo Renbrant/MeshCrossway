@@ -12,6 +12,8 @@ namespace mtui {
   static void meshcore_order_set(unsigned i,uint16_t value){const unsigned bit=i*9,byte=bit>>3,shift=bit&7;uint16_t pair=uint16_t(meshcore_node_order[byte])|(uint16_t(meshcore_node_order[byte+1])<<8);const uint16_t mask=uint16_t(0x1ffu<<shift);pair=uint16_t((pair&~mask)|((value&0x1ffu)<<shift));meshcore_node_order[byte]=uint8_t(pair);meshcore_node_order[byte+1]=uint8_t(pair>>8);}
   static uint16_t node_order[meshmt::MAX_NODES]={},channel_order[meshmt::MAX_CHANNELS]={};
   static lv_timer_t *node_batch_timer=nullptr;
+  static lv_obj_t *node_list_view=nullptr;
+  static bool nodes_were_syncing=false;
   static unsigned mt_node_count=0,mc_node_count=0,mt_node_cursor=0,mc_node_cursor=0;
   static int node_batch_network=0,node_batch_width=0,node_batch_y=141;
   static bool ready(){auto *c=meshmt::client;
@@ -215,7 +217,7 @@ namespace mtui {
         auto *c=meshmt::client;if(!c){node_batch_network=2;continue;}
         const unsigned index=node_order[mt_node_cursor++];if(index>=c->data.node_count)continue;
         const auto &n=c->data.nodes[index];last=n.last_heard;
-        snprintf(title,sizeof(title),"MT / %s",n.name);compact_list_label(title);token=n.num;callback=select_node;
+        snprintf(title,sizeof(title),"MT / %s",n.name[0]?n.name:n.short_name[0]?n.short_name:"!node");compact_list_label(title);token=n.num;callback=select_node;
         for(const auto &m:c->data.messages)if(m.seq&&m.to!=meshmt::BROADCAST&&(m.to==n.num||m.from==n.num)){
           ++messages;bytes+=strlen(m.text);if(!m.outgoing&&!m.read)++unread;if(m.time>last)last=m.time;}
         mcxchat::time_local(last,when,sizeof(when));
@@ -228,7 +230,7 @@ namespace mtui {
         auto *c=meshmc::client;if(!c){node_batch_network=0;continue;}
         const unsigned index=meshcore_order_get(mc_node_cursor++);if(index>=c->contact_count)continue;
         const auto &contact=c->contacts[index];last=contact.advert>contact.lastmod?contact.advert:contact.lastmod;
-        snprintf(title,sizeof(title),"MC / %s",contact.name);compact_list_label(title);token=index;callback=mcui::choose_contact;
+        snprintf(title,sizeof(title),"MC / %s",contact.name[0]?contact.name:"Unknown node");compact_list_label(title);token=index;callback=mcui::choose_contact;
         for(const auto &m:c->messages)if(m.id&&!m.channel&&!memcmp(m.key,contact.key,6)){
           ++messages;bytes+=strlen(m.text);if(!m.outgoing&&!m.read)++unread;if(m.observed_at>last)last=m.observed_at;}
         mcxchat::time_local(last,when,sizeof(when));
@@ -238,8 +240,8 @@ namespace mtui {
           snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B / %.0f m",last?when:"Never",unread,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
         }else snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B",last?when:"Never",unread,messages,(unsigned long)bytes);
       }
-      auto *b=action_button(body,"",8,node_batch_y,node_batch_width-16,58,panel,callback,intptr_t(token));
-      const int card_width=node_batch_width-16;const int name_width=card_width>=350?145:card_width*30/100;const int detail_x=name_width+14;
+      auto *b=action_button(node_list_view,"",0,node_batch_y,node_batch_width,58,panel,callback,intptr_t(token));
+      const int card_width=node_batch_width;const int name_width=card_width>=350?145:card_width*30/100;const int detail_x=name_width+14;
       auto *name=lv_obj_get_child(b,0);mcui::emoji_label_text(name,title);lv_obj_set_pos(name,7,18);lv_obj_set_size(name,name_width,22);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
       auto *d=txt(b,detail,detail_x,4,card_width-detail_x-8,muted);lv_obj_set_height(d,50);lv_label_set_long_mode(d,LV_LABEL_LONG_WRAP);
       node_batch_y+=64;--budget;
@@ -249,6 +251,7 @@ namespace mtui {
     if(node_batch_timer){lv_timer_del(node_batch_timer);node_batch_timer=nullptr;}
     mt_node_count=mc_node_count=mt_node_cursor=mc_node_cursor=0;node_batch_network=0;
     const int w=lv_obj_get_width(body);
+    node_list_view=nullptr;
     auto *c=meshmt::client;
     drawn=c?c->generation:0;drawn_zone=mcxchat::time_zone_key();
     mcui::rendered_generation=meshmc::client?meshmc::client->generation:0;
@@ -287,9 +290,11 @@ namespace mtui {
       return;
     }
     const int filter=page==1?nodes_filter:page==2?groups_filter:chats_filter;
-    show_center_heading(page==1?"NODES / NETWORKS":page==2?"GROUPS / CHANNELS":"CHATS / NETWORKS",ready()?"Meshtastic connected":c?c->status:"More > Radios > Enable BLE");
+    const bool syncing=filter!=2&&c&&c->connected&&(!c->initialized||!c->history_ready);
+    if(page==1)nodes_were_syncing=syncing;
+    show_center_heading(page==1?"NODES / NETWORKS":page==2?"GROUPS / CHANNELS":"CHATS / NETWORKS",page==1?(syncing?"Synchronizing Meshtastic nodes…":ready()?"Meshtastic connected":"More > Radios > Enable BLE"):ready()?"Meshtastic connected":c?c->status:"More > Radios > Enable BLE");
     filter_tabs(w,filter);
-    if(page==1)action_button(body,mcui::node_sort_label(),8,98,w-16,34,panel2,toggle_node_sort,0);
+    if(page==1){action_button(body,mcui::node_sort_label(),8,98,w-16,34,panel2,toggle_node_sort,0);lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);node_list_view=list_view_at(141,w);}
     else if(page==2)action_button(body,"ADD CHANNEL",8,98,w-16,34,panel2,add_channel,0);
     int y=page==3?98:141;
     unsigned index=0,shown=0;
@@ -318,7 +323,7 @@ namespace mtui {
       }
     };
     if(c&&filter!=2){
-      if(page==1){unsigned count=0;for(unsigned i=0;i<c->data.node_count;++i)node_order[count++]=uint16_t(i);
+      if(page==1){unsigned count=0;if(!syncing)for(unsigned i=0;i<c->data.node_count;++i)node_order[count++]=uint16_t(i);
         const bool gps_valid=mcui::nav_gps_valid;const double gps_latitude=mcui::nav_latitude,gps_longitude=mcui::nav_longitude;
         auto distance=[&](unsigned i){const auto &n=c->data.nodes[i];if(!gps_valid||!n.has_lat||!n.has_lon)return 1.0e30;
           const double lat=double(n.latitude)/1e7,lon=double(n.longitude)/1e7;
@@ -415,9 +420,10 @@ namespace mtui {
       }
     }
     if(page==1){
-      if(!mt_node_count&&!mc_node_count)single_label(body,"No nodes found for this network yet.",8,141,w-16,muted);
-      else{
-        node_batch_width=w;node_batch_y=141;mt_node_cursor=mc_node_cursor=0;
+      if(syncing)single_label(node_list_view,"Syncing Meshtastic node database…",8,8,w-32,orange);
+      if(!mt_node_count&&!mc_node_count&&!syncing)single_label(node_list_view,"No nodes found for this network yet.",8,8,w-32,muted);
+      if(mc_node_count||(!syncing&&mt_node_count)){
+        node_batch_width=w-16;node_batch_y=syncing?25:0;mt_node_cursor=mc_node_cursor=0;
         node_batch_network=mt_node_count?1:2;
         node_batch_timer=lv_timer_create(node_batch_tick,1,nullptr);
         node_batch_tick(node_batch_timer);
@@ -445,6 +451,11 @@ namespace mtui {
     if(!showing_mt()||dialog||mcui::dialog||wifi_dialog||ble_dialog||info_dialog||page<1||page>3)return;
     const uint32_t generation=c?c->generation:0;
     if(node_batch_timer){drawn=generation;drawn_zone=mcxchat::time_zone_key();if(meshmc::client)mcui::rendered_generation=meshmc::client->generation;return;}
+    if(page==1){
+      const bool syncing=nodes_filter!=2&&c&&c->connected&&(!c->initialized||!c->history_ready);
+      if(nodes_were_syncing&&!syncing){nodes_were_syncing=false;draw();return;}
+      nodes_were_syncing=syncing;drawn=generation;drawn_zone=mcxchat::time_zone_key();if(meshmc::client)mcui::rendered_generation=meshmc::client->generation;return;
+    }
     if(generation==drawn&&drawn_zone==mcxchat::time_zone_key()&&(!meshmc::client||meshmc::client->generation==mcui::rendered_generation))return;
     for(lv_indev_t *input=lv_indev_get_next(nullptr);input;input=lv_indev_get_next(input))if(input->proc.state==LV_INDEV_STATE_PRESSED)return;
     const uint32_t now=uint32_t(esp_timer_get_time()/1000);

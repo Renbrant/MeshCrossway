@@ -25,6 +25,8 @@ static uint16_t target_slot = 0;
 static uint32_t rendered_generation = 0,rendered_zone=0;
 static uint32_t last_redraw=0;
 static lv_timer_t *list_batch_timer=nullptr;
+static lv_obj_t *list_viewport=nullptr;
+static bool nodes_were_syncing=false;
 static int list_batch_total=0,list_batch_cursor=0,list_batch_y=141,list_batch_width=0,list_batch_page=0;
 static bool list_batch_channels=false,list_batch_rooms=false;
 static mcxchat::Key selected;
@@ -743,33 +745,36 @@ static void render() {
   display_indices=mcxhistory::workspace()->indices;
   display_scores=mcxhistory::workspace()->scores;
   const int w = content_width();
+  list_viewport=nullptr;
   auto *s = session();
   rendered_generation = s ? s->generation : 0;
   rendered_zone=mcxchat::time_zone_key();
   if (page == 1 || page == 2) {
     const bool channels = page == 2;
+    if(!channels)nodes_were_syncing=s&&s->connected&&!s->initialized;
     show_center_heading(channels ? "GROUPS / CHANNELS" : "NODES / MESHCORE",
                         ready() ? "Live MeshCore session" : "Connect a MeshCore Companion");
     int filter = channels ? groups_filter : nodes_filter;
     filter_tabs(w, filter);
-    if(!channels)action_button(body,node_sort_label(),8,98,w-16,34,panel2,toggle_node_sort,0);
+    if(!channels){action_button(body,node_sort_label(),8,98,w-16,34,panel2,toggle_node_sort,0);lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);list_viewport=list_view_at(141,w);}
     else {
       action_button(body,groups_rooms?"ROOMS":"CHANNELS",8,98,(w-22)/2,34,panel2,toggle_groups,0);
       action_button(body,"ADD CHANNEL",(w+2)/2,98,(w-22)/2,34,panel2,open_add_channel_event,0);
     }
     if (filter == 1) {
-      single_label(body, "Meshtastic is not integrated yet.", 8, 141, w - 16, muted);
+      single_label(list_viewport?list_viewport:body, "Meshtastic is not integrated yet.", list_viewport?8:8, list_viewport?8:141, w - 16, muted);
       return;
     }
-    if (!s || (!s->initialized && !s->contact_count && !s->channel_count)) {
-      lv_obj_t *status = single_label(body,
-          s ? s->status : "More > Radios > Enable BLE", 8, 141, w - 16, orange);
+    if ((!channels&&s&&s->connected&&!s->initialized) || !s || (!s->initialized && !s->contact_count && !s->channel_count)) {
+      lv_obj_t *status = single_label(list_viewport?list_viewport:body,
+          s ? s->status : "More > Radios > Enable BLE", 8, list_viewport?8:141, w - 16, orange);
       lv_label_set_long_mode(status,LV_LABEL_LONG_WRAP);
       lv_obj_set_height(status,52);
       return;
     }
     int total=0;
     const bool room_list=channels&&groups_rooms;
+    if(channels){lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);list_viewport=list_view_at(groups_rooms?141:164,w);}
     for(int i=0;i<(channels&&!room_list?s->channel_count:s->contact_count);++i){
       if(room_list&&s->contacts[i].type!=3)continue;
       display_indices[total++]=i;
@@ -819,7 +824,8 @@ static void render() {
       single_label(body,summary,8,y,w-16,muted);y+=23;
     }
     if(!total){single_label(body,channels?"No channels or rooms in this radio yet.":"No contacts in this radio yet.",8,y,w-16,muted);return;}
-    list_batch_total=total;list_batch_cursor=0;list_batch_y=y;list_batch_width=w;
+    list_batch_y=0;list_batch_width=w-16;
+    list_batch_total=total;list_batch_cursor=0;
     list_batch_page=page;list_batch_channels=channels;list_batch_rooms=room_list;
     list_batch_timer=lv_timer_create(list_batch_tick,1,nullptr);
     list_batch_tick(list_batch_timer);
@@ -943,8 +949,8 @@ static void list_batch_tick(lv_timer_t *timer){
         snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B / %.0f m",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
       }else snprintf(detail,sizeof(detail),"Heard %s / %u unread\nChat %u / %lu B",heard?when:"Not heard",unread_count,messages,(unsigned long)bytes);
     }
-    auto *b=action_button(body,"",8,list_batch_y,list_batch_width-16,is_channel?48:58,panel,is_channel?choose_channel:choose_contact,i);
-    const int card_width=list_batch_width-16;
+    auto *b=action_button(list_viewport,"",0,list_batch_y,list_batch_width,is_channel?48:58,panel,is_channel?choose_channel:choose_contact,i);
+    const int card_width=list_batch_width;
     if(!is_channel){
       auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
       const int name_width=card_width>=350?145:card_width*30/100;

@@ -56,6 +56,7 @@ static void debug_memory(const char *phase);
 static bool claim(Radio radio){Radio empty=UNKNOWN;return procedure.compare_exchange_strong(empty,radio);}
 static void release(Radio radio){Radio expected=radio;procedure.compare_exchange_strong(expected,UNKNOWN);}
 static const char *protocol_name(Radio r){return r==MESHTASTIC?"Meshtastic":r==MESHCORE?"MeshCore":"Unknown";}
+static std::atomic<bool> stop_requested{false},host_task_running{false},host_task_requested{false},host_stack_initialized{false};
 } // namespace meshble
 #define MCX_BLE_SLOT mt
 #define MCX_BLE_RADIO MESHTASTIC
@@ -88,14 +89,32 @@ static bool submit_pin(uint32_t pin){return submit_pin(selected(),pin);}
 static bool confirm_number(Radio r,bool ok){return r==MESHCORE?mc::confirm_number(ok):mt::confirm_number(ok);}
 static bool confirm_number(bool ok){return confirm_number(selected(),ok);}
 static bool read_enabled(){return mt::read_enabled();}
+static void remember_disabled(){
+  nvs_handle_t h;if(nvs_open("mcx_ble",NVS_READWRITE,&h)!=ESP_OK)return;
+  const esp_err_t rc=nvs_set_u8(h,"enabled",0)==ESP_OK?nvs_commit(h):ESP_FAIL;nvs_close(h);
+  if(rc!=ESP_OK)printf("[MCX-BLE] disabled preference not saved err=%d\n",(int)rc);
+}
 static bool read_remembered(){const bool a=mt::read_remembered(),b=mc::read_remembered();return a||b;}
 static void restore_offline(){if(mt::read_remembered()){
   uint8_t id[7];portENTER_CRITICAL(&mt::mux);id[0]=mt::remembered.addr_type&1;memcpy(id+1,mt::remembered.addr,6);portEXIT_CRITICAL(&mt::mux);meshmt::request_offline(id);
 }}
 static void update(Phase p,const char *s){mt::update(p,s);mc::update(p,s);}
-static void on_sync(){mt::on_sync();mc::on_sync();}
+static void on_sync(){
+  printf("[MCX-BLE] NimBLE controller synchronized stack_free=%u\n",(unsigned)uxTaskGetStackHighWaterMark(nullptr));
+  fflush(stdout);
+  mt::on_sync();mc::on_sync();
+}
 static void on_reset(int reason){mt::on_reset(reason);mc::on_reset(reason);}
-static void host_task(void *){nimble_port_run();nimble_port_freertos_deinit();}
+static void host_task(void *){
+  host_task_running.store(true);
+  printf("[MCX-BLE] NimBLE host task entered core=%d stack_free=%u\n",(int)xPortGetCoreID(),(unsigned)uxTaskGetStackHighWaterMark(nullptr));
+  fflush(stdout);
+  nimble_port_run();
+  printf("[MCX-BLE] NimBLE host task returned; shutting down\n");
+  fflush(stdout);
+  host_task_running.store(false);
+  nimble_port_freertos_deinit();
+}
 static void debug_memory(const char *phase){
   const uint32_t free_internal=(uint32_t)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
   const uint32_t largest_internal=(uint32_t)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
@@ -141,6 +160,11 @@ static void prepare_controller_early(){
 static esp_err_t initialize_stack(){
   if(controller_prepare_failed.load())return (esp_err_t)controller_prepare_error.load();
   if(!controller_ready.load()){init_stage="controller not prepared before Wi-Fi";return ESP_ERR_INVALID_STATE;}
+  if(esp_bt_controller_get_status()==ESP_BT_CONTROLLER_STATUS_INITED){
+    init_stage="controller re-enable";
+    const esp_err_t enabled=esp_bt_controller_enable(ESP_BT_MODE_BLE);
+    if(enabled!=ESP_OK)return enabled;
+  }
   init_stage="host / HCI";esp_err_t rc=esp_nimble_init();
   if(rc!=ESP_OK){
     (void)esp_bt_controller_disable();(void)esp_bt_controller_deinit();
@@ -163,6 +187,7 @@ static void start_internal(){
     char msg[96];snprintf(msg,sizeof(msg),"BLE %s: %s (%d)",init_stage,esp_err_to_name(err),(int)err);
     update(FAILED,msg);return;
   }
+  host_stack_initialized.store(true);
   (void)ble_att_set_preferred_mtu(517);
   ble_hs_cfg.reset_cb=on_reset;
   ble_hs_cfg.sync_cb=on_sync;
@@ -177,10 +202,12 @@ static void start_internal(){
   ble_store_config_init();
   debug_memory("before host task");
   nimble_port_freertos_init(host_task);
+  host_task_requested.store(true);
   mt::remember_enabled();
   mcxhistory::ble_startup.store(false);
   mcxpriority::ble_initializing=false;
-  printf("[MCX-BLE] host created; awaiting sync\n");
+  printf("[MCX-BLE] host task requested; waiting for controller sync\n");
+  fflush(stdout);
 }
 static constexpr unsigned RESUME_STACK_BYTES=6144;
 static TaskHandle_t reconnect_worker=nullptr;
@@ -229,15 +256,59 @@ static bool request_start_impl(bool run_on_worker){
   return true;
 }
 static bool request_start(){return request_start_impl(false);}
+static bool power_off_internal(){
+  remember_disabled();
+  mt::disconnect();mc::disconnect();
+  if(host_task_requested.load()&&!host_task_running.load())
+    for(unsigned i=0;i<40&&!host_task_running.load();++i)vTaskDelay(pdMS_TO_TICKS(50));
+  if(host_task_requested.load()&&!host_task_running.load()){
+    update(FAILED,"NimBLE host did not start; Bluetooth left on");
+    printf("[MCX-BLE] refusing shutdown: requested NimBLE host task never entered\n");fflush(stdout);
+    return false;
+  }
+  if(host_task_running.load()){
+    for(unsigned i=0;i<100&&(mt::conn!=BLE_HS_CONN_HANDLE_NONE||mc::conn!=BLE_HS_CONN_HANDLE_NONE);++i)
+      vTaskDelay(pdMS_TO_TICKS(50));
+    if(mt::conn!=BLE_HS_CONN_HANDLE_NONE||mc::conn!=BLE_HS_CONN_HANDLE_NONE){
+      update(FAILED,"Disconnect timeout; Bluetooth left on");return false;
+    }
+    const int stop_rc=nimble_port_stop();
+    if(stop_rc!=0){char error[64];snprintf(error,sizeof(error),"NimBLE stop error: %d",stop_rc);update(FAILED,error);return false;}
+    for(unsigned i=0;i<100&&host_task_running.load();++i)vTaskDelay(pdMS_TO_TICKS(10));
+    if(host_task_running.load()){update(FAILED,"NimBLE host did not stop");return false;}
+  }
+  if(host_stack_initialized.load()){
+    const esp_err_t host_rc=esp_nimble_deinit();
+    if(host_rc!=ESP_OK){char error[64];snprintf(error,sizeof(error),"NimBLE deinit error: %d",(int)host_rc);update(FAILED,error);return false;}
+    host_stack_initialized.store(false);
+  }
+  host_task_requested.store(false);
+  if(esp_bt_controller_get_status()==ESP_BT_CONTROLLER_STATUS_ENABLED){
+    const esp_err_t controller_rc=esp_bt_controller_disable();
+    if(controller_rc!=ESP_OK){char error[64];snprintf(error,sizeof(error),"Bluetooth disable error: %d",(int)controller_rc);update(FAILED,error);return false;}
+  }
+  mt::synced=false;mc::synced=false;mt::conn=BLE_HS_CONN_HANDLE_NONE;mc::conn=BLE_HS_CONN_HANDLE_NONE;
+  mt::auto_paused=true;mc::auto_paused=true;procedure=UNKNOWN;
+  update(OFF,"Bluetooth disabled");
+  printf("[MCX-BLE] NimBLE host and controller disabled\n");fflush(stdout);
+  return true;
+}
+static bool request_stop(){
+  if(mt::phase()==OFF&&mc::phase()==OFF)return true;
+  if(!reconnect_worker)return false;
+  start_requested.store(false);stop_requested.store(true);
+  xTaskNotifyGive(reconnect_worker);return true;
+}
 static void auto_resume_task(void *){
-  const bool known=read_remembered(),enabled=read_enabled();
-  const TickType_t first_wait=(known||enabled)?pdMS_TO_TICKS(12000):portMAX_DELAY;
+  const bool enabled=read_enabled();
+  const TickType_t first_wait=enabled?pdMS_TO_TICKS(12000):portMAX_DELAY;
   const uint32_t notified=ulTaskNotifyTake(pdTRUE,first_wait);
   if(notified&&start_requested.exchange(false))start_on_worker();
-  else if(known||enabled)(void)request_start_impl(true);
+  else if(enabled)(void)request_start_impl(true);
   bool alternate=false;
   for(;;){
     const uint32_t wake=ulTaskNotifyTake(pdTRUE,pdMS_TO_TICKS(3000));
+    if(stop_requested.exchange(false)){(void)power_off_internal();alternate=false;continue;}
     if((wake||start_requested.load())&&start_requested.exchange(false)){
       start_on_worker();alternate=false;
     }
