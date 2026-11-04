@@ -170,8 +170,8 @@ build_version() {
 # Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
 # Update these two constants whenever a newer hardware build is validated.
 STABLE_VERSION="v0.9.16"
-STABLE_REF="b225afb57f26196853c57aaad20f85450d69b126"
-STABLE_SHA256="" # stable digest is checked against published catalog
+STABLE_REF="d821b78979b3c2b9d716757f0cff02dbf89e776f"
+STABLE_SHA256="54c99f8c30d352c602f4e4d662701e10f2bd85d5a38af14d8190b3cc4693858a"
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).
