@@ -49,8 +49,7 @@ static GpsCard gps(const mcxgnss::Fix &f,bool enabled,int error,bool imperial){
   snprintf(c.state,sizeof(c.state),"%s",state);
   if(c.valid&&f.have_accuracy)snprintf(c.accuracy,sizeof(c.accuracy),"Est. %s%.1f %s",f.accuracy_source==2?"hRMS ":"accuracy ",f.horizontal_accuracy*(imperial?3.28084:1),imperial?"ft":"m");
   else snprintf(c.accuracy,sizeof(c.accuracy),"Accuracy unavailable");
-  if(enabled&&f.have_satellites&&f.have_visible_satellites)snprintf(c.satellites,sizeof(c.satellites),"Used %u / View %u",f.satellites,f.visible_satellites);
-  else if(enabled&&f.have_satellites)snprintf(c.satellites,sizeof(c.satellites),"Used: %u",f.satellites);
+  if(enabled&&f.have_satellites)snprintf(c.satellites,sizeof(c.satellites),"Satellites: %u",f.satellites);
   else snprintf(c.satellites,sizeof(c.satellites),"Satellites: --");
   return c;
 }

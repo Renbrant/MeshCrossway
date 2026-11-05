@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.10.1: categorized independent radio settings on device and remote.
+// MeshCrossway v0.9.17: fixed-height network rows and memory diagnostics.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -23,6 +23,7 @@
 #define MCX_EMOJI_RENDER_ENABLED 1
 #include "esp_system.h"
 #include "esp_timer.h"
+#include "esp_heap_caps.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -284,6 +285,7 @@ static lv_obj_t *top_mt_name=nullptr,*top_mc_name=nullptr,*top_charge=nullptr;
 static lv_obj_t *top_clock=nullptr;
 static lv_obj_t *top_battery=nullptr,*top_battery_fill=nullptr,*top_battery_percent=nullptr;
 static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
+static lv_obj_t *memory_usage[3]={},*memory_details[3]={},*memory_bars[3]={};
 static bool navigation_panel=false;
 static bool left_compact=true,right_compact=true;
 static int nodes_filter=0,groups_filter=0,chats_filter=0,active_thread=-1,more_view=0;
@@ -308,7 +310,7 @@ static const char *tab_glyphs[6]={LV_SYMBOL_HOME,"","","",LV_SYMBOL_GPS,LV_SYMBO
 enum Action {
   A_MAP_HOME,A_INBOX,A_NEW,A_POSITION,A_NETWORKS,A_WIFI,A_POIS,A_TRACKS,A_RECORD,A_SHARE,
   A_GPS_SETTINGS,A_GNSS,A_TEAM,A_PATHS,A_SCANNER,A_PACKETS,A_REPEATERS,A_SETUP,A_DIAGNOSTIC,
-  A_VIEW,A_PRIVACY,A_ABOUT,A_CHAT_MT,A_CHAT_MC,A_CHAT_ALL,A_QUICK,
+  A_MEMORY,A_VIEW,A_PRIVACY,A_ABOUT,A_CHAT_MT,A_CHAT_MC,A_CHAT_ALL,A_QUICK,
   A_NODES,A_GROUPS,A_CHAT_OPEN,A_RADIOS,A_GROUP_NEW,A_THREAD_INFO,A_NODE_DETAILS,A_BLE_SCAN,A_BLE_DISCONNECT,A_BLE_ENABLE,A_SETTINGS,A_RETURN_HOME,A_MAP_ZOOM,A_MAP_CENTER,A_MAP_OPTIONS,A_MAP_DIAGNOSTICS,A_WIFI_POWER,A_BLE_POWER
 };
 struct ActionInfo {const char *label;int id;lv_color_t color;};
@@ -347,9 +349,8 @@ static lv_obj_t *list_view_at(lv_obj_t *parent,int y,int w){
   lv_obj_t *view=panel_at(parent,8,y,w-16,h,bg,0);
   lv_obj_set_style_bg_opa(view,LV_OPA_TRANSP,0);
   lv_obj_set_style_pad_all(view,0,0);
-  lv_obj_set_layout(view,LV_LAYOUT_FLEX);
-  lv_obj_set_flex_flow(view,LV_FLEX_FLOW_COLUMN);
-  lv_obj_set_style_pad_row(view,6,0);
+  // Children use explicit row coordinates. Flex layout would reposition them
+  // whenever another batch arrives, causing visible rows to collide.
   lv_obj_add_flag(view,LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_set_scroll_dir(view,LV_DIR_VER);
   lv_obj_set_scrollbar_mode(view,LV_SCROLLBAR_MODE_AUTO);
@@ -436,7 +437,9 @@ static void update_nav_vector(int index,lv_color_t tint){
 }
 static void info_close_now(void *){
   if(!info_dialog)return;
-  lv_obj_t *old=info_dialog;info_dialog=nullptr;navigation_panel=false;lv_obj_del(old);
+  lv_obj_t *old=info_dialog;info_dialog=nullptr;navigation_panel=false;
+  for(unsigned i=0;i<3;++i)memory_usage[i]=memory_details[i]=memory_bars[i]=nullptr;
+  lv_obj_del(old);
 }
 static void info_close(lv_event_t *){lv_async_call(info_close_now,nullptr);}
 static void close_shade(){
@@ -456,6 +459,86 @@ static void notice(const char *title,const char *body_text){
   lv_label_set_long_mode(message,LV_LABEL_LONG_WRAP);
   lv_obj_set_height(message,143);
 }
+// Memory totals overlap by capability: DMA-capable memory is a subset of
+// internal RAM. Show each allocator pool independently and refresh only when
+// the user opens or taps refresh, avoiding repeated heap walks in the UI loop.
+static const uint32_t memory_caps[3]={
+  MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT,
+  MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT,
+  MALLOC_CAP_INTERNAL|MALLOC_CAP_DMA|MALLOC_CAP_8BIT
+};
+static unsigned memory_percent(size_t total,size_t free_bytes){
+  if(!total)return 0;
+  if(free_bytes>total)free_bytes=total;
+  return unsigned(((uint64_t(total-free_bytes)*100u)+total/2u)/total);
+}
+static void memory_refresh(){
+  if(!info_dialog)return;
+  for(unsigned i=0;i<3;++i){
+    const uint32_t caps=memory_caps[i];
+    // One heap walk per pool supplies all statistics; the refresh is manual
+    // so this diagnostic work never runs continuously beside LVGL/BLE.
+    multi_heap_info_t info={};
+    heap_caps_get_info(&info,caps);
+    const size_t free_bytes=info.total_free_bytes;
+    const size_t total=info.total_free_bytes+info.total_allocated_bytes;
+    const size_t largest=info.largest_free_block;
+    const size_t low=info.minimum_free_bytes;
+    const unsigned used=memory_percent(total,free_bytes);
+    char value[48],detail[96];
+    if(!total){
+      snprintf(value,sizeof(value),"Unavailable");
+      snprintf(detail,sizeof(detail),"This memory capability is not present.");
+    }else{
+      snprintf(value,sizeof(value),"%u%% used",used);
+      snprintf(detail,sizeof(detail),"Free %.1f KB / largest %.1f KB / min free %.1f KB",
+        double(free_bytes)/1024.0,double(largest)/1024.0,double(low)/1024.0);
+    }
+    if(memory_usage[i])lv_label_set_text(memory_usage[i],value);
+    if(memory_details[i])lv_label_set_text(memory_details[i],detail);
+    if(memory_bars[i]){
+      const lv_color_t color=!total?muted:used>=90?red:used>=75?orange:green;
+      lv_obj_set_style_bg_color(memory_bars[i],color,0);
+      const int width=total?int((424u*used+50u)/100u):0;
+      lv_obj_set_width(memory_bars[i],width?width:1);
+    }
+  }
+}
+static void memory_refresh_event(lv_event_t *){memory_refresh();}
+static void memory_open(){
+  close_shade();
+  if(info_dialog)info_close_now(nullptr);
+  info_dialog=panel_at(lv_scr_act(),12,24,456,286,panel,10);
+  color_label(info_dialog,"MEMORY USAGE / SNAPSHOT",14,8,250,orange);
+  action_button(info_dialog,"REFRESH",282,5,82,34,panel2,memory_refresh_event,0);
+  action_button(info_dialog,"CLOSE",370,5,74,34,panel2,info_close,0);
+  const char *names[]={"INTERNAL RAM / 8-BIT","PSRAM / 8-BIT","DMA-CAPABLE / INTERNAL SUBSET"};
+  for(unsigned i=0;i<3;++i){
+    const int y=45+60*int(i);
+    single_label(info_dialog,names[i],14,y,280,white);
+    memory_usage[i]=single_label(info_dialog,"Reading…",310,y,130,orange);
+    lv_obj_set_style_text_align(memory_usage[i],LV_TEXT_ALIGN_RIGHT,0);
+    lv_obj_t *track=panel_at(info_dialog,14,y+18,428,9,panel2,4);
+    memory_bars[i]=panel_at(track,0,0,1,9,green,4);
+    memory_details[i]=single_label(info_dialog,"",14,y+29,428,muted);
+    lv_obj_set_style_text_font(memory_details[i],&lv_font_montserrat_10,0);
+  }
+  lv_obj_t *foot=single_label(info_dialog,"UI min stack free: -- / longest UI work: -- ms",14,231,428,muted);
+  char detail[120];
+  const uint32_t stack_free=mcxruntime::ui_stack_min.load();
+  if(stack_free==UINT32_MAX)
+    snprintf(detail,sizeof(detail),"UI min stack free: n/a / longest UI work: %lu ms",
+      (unsigned long)mcxruntime::ui_max_ms.load());
+  else
+    snprintf(detail,sizeof(detail),"UI min stack free: %lu B / longest UI work: %lu ms",
+      (unsigned long)stack_free,(unsigned long)mcxruntime::ui_max_ms.load());
+  lv_label_set_text(foot,detail);
+  lv_obj_set_style_text_font(foot,&lv_font_montserrat_10,0);
+  auto *note=single_label(info_dialog,"Heap only; static RAM excluded. DMA is part of Internal RAM.",14,251,428,muted);
+  lv_label_set_long_mode(note,LV_LABEL_LONG_DOT);
+  lv_obj_set_style_text_font(note,&lv_font_montserrat_10,0);
+  memory_refresh();
+}
 namespace mcui {static void tools();static void compose();static void form(uint8_t);static void thread_info();static void chat_tools();static void show_list();}
 namespace mtui {static void tools();static void compose();static void node_details();static void close();}
 namespace navui {static void recording();static void library(bool);static void toggle_zoom();static bool adjusting();static void recenter(lv_event_t *);static void options(lv_event_t *);static void diagnostics();}
@@ -473,6 +556,7 @@ static void run_action(void *data){
   if(id==A_PACKETS){mcui::chat_tools();return;}
   if(id==A_NETWORKS||id==A_NODE_DETAILS){mcui::tools();return;}
   if(id==A_WIFI){close_shade();wifi_setup(nullptr);return;}
+  if(id==A_MEMORY){memory_open();return;}
   if(id==A_WIFI_POWER){if(meshnetwork::enabled())(void)meshnetwork::disable();else (void)meshnetwork::enable();if(wifi_dialog)close_wifi();draw();return;}
   if(id==A_BLE_POWER){if(meshble::snapshot(meshble::MESHTASTIC).phase==meshble::OFF&&meshble::snapshot(meshble::MESHCORE).phase==meshble::OFF)(void)meshble::request_start();else (void)meshble::request_stop();page=5;more_view=1;draw();return;}
   if(id==A_BLE_ENABLE){(void)meshble::request_start();page=5;more_view=1;draw();return;}
@@ -513,7 +597,7 @@ static void run_action(void *data){
   if(id==A_NETWORKS||id==A_SCANNER||id==A_PACKETS||id==A_REPEATERS){
     page=5;more_view=1;draw();
   }
-  if(id==A_SETUP||id==A_DIAGNOSTIC||id==A_VIEW||id==A_PRIVACY||id==A_ABOUT){
+  if(id==A_SETUP||id==A_DIAGNOSTIC||id==A_MEMORY||id==A_VIEW||id==A_PRIVACY||id==A_ABOUT){
     page=5;more_view=0;draw();
   }
   char summary[512];
@@ -572,7 +656,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.10.1","Meshtastic and MeshCore run over independent Bluetooth radios. Node and channel rows keep names and activity in separate columns.");break;
+      notice("MESH CROSSWAY v0.9.17","Meshtastic and MeshCore run over independent Bluetooth radios. Node and channel rows keep names and activity in separate columns.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Adjust brightness, screen timeout and connectivity.");break;
     default:break;
@@ -710,7 +794,7 @@ static void open_thread_now(void *value){active_thread=(int)(intptr_t)value;page
 static void on_thread(lv_event_t *e){lv_async_call(open_thread_now,lv_event_get_user_data(e));}
 static void quick_action_run(void *value){
   int mode=(int)(intptr_t)value;
-  if(mode==0){close_shade();page=4;map_view=3;draw();return;} // Open live GNSS diagnostics, not a GPS on/off toggle.
+  if(mode==0){close_shade();page=4;map_view=3;draw();return;}
   if(mode==2){close_shade();wifi_setup(nullptr);return;}
   if(mode==1){close_shade();page=5;more_view=1;draw();return;}
   const char *names[]={"GPS","Bluetooth","","Sound","Brightness"};
@@ -728,7 +812,7 @@ static void open_shade(lv_event_t *){
   lv_obj_t *sheet=panel_at(shade,8,8,464,235,panel,9);
   single_label(sheet,"QUICK SETTINGS / STATUS",12,10,340,orange);
   action_button(sheet,"CLOSE",366,6,89,37,panel2,shade_close,0);
-  action_button(sheet,mcxgnss::snapshot().valid?"GPS STATUS":"GPS STATUS",9,54,108,48,panel2,quick_action,0);
+  action_button(sheet,mcxgnss::snapshot().valid?"GPS FIX":"GPS --",9,54,108,48,panel2,quick_action,0);
   action_button(sheet,"BLE --",122,54,108,48,panel2,quick_action,1);
   action_button(sheet,"WI-FI",235,54,108,48,orange,quick_action,2);
   action_button(sheet,"SOUND",348,54,107,48,panel2,quick_action,3);
@@ -972,7 +1056,6 @@ static bool showing_mt(){
   return meshble::snapshot().radio==meshble::MESHTASTIC;
 }
 
-// Firmware release v0.10.2: GNSS diagnostics correction.
 #include "meshcrossway_navigation_ui.h"
 static lv_obj_t *gps_position=nullptr,*gps_status=nullptr,*gps_extra=nullptr,*gps_icon=nullptr,*gps_satellites=nullptr;
 static void clock_refresh(lv_timer_t *){
@@ -991,15 +1074,15 @@ static void gps_refresh(lv_timer_t *){
   if(!cfg.enabled)snprintf(state,sizeof(state),"GPS reading disabled / open GPS Settings");
   else if(diag.error)snprintf(state,sizeof(state),"GPS UART error %d",diag.error);
   else if(!f.frames)snprintf(state,sizeof(state),"Waiting for GPS data / RX44 TX43");
-  else if(f.have_hdop)snprintf(state,sizeof(state),"%s / Used %u / HDOP %.1f",f.valid?"FIX":"NO FIX",f.satellites,f.hdop);
-  else snprintf(state,sizeof(state),"%s / Used %u / HDOP --",f.valid?"FIX":"NO FIX",f.satellites);
+  else if(f.have_hdop)snprintf(state,sizeof(state),"%s / Sats %u / HDOP %.1f",f.valid?"FIX":"NO FIX",f.satellites,f.hdop);
+  else snprintf(state,sizeof(state),"%s / Sats %u / HDOP --",f.valid?"FIX":"NO FIX",f.satellites);
   if(gps_position)chatview::label(gps_position,pos);
   if(gps_status)chatview::label(gps_status,state);
-  if(gps_extra){char visible_count[12];snprintf(visible_count,sizeof(visible_count),"%u",f.visible_satellites);char detail[320],altitude[32]="--",speed[32]="--",utc[32]="unavailable";
+  if(gps_extra){char detail[320],altitude[32]="--",speed[32]="--",utc[32]="unavailable";
     if(f.valid&&f.have_altitude)snprintf(altitude,sizeof(altitude),"%.1f %s",f.altitude*(cfg.imperial?3.28084:1),cfg.imperial?"ft":"m");
     if(f.valid&&f.have_speed)snprintf(speed,sizeof(speed),"%.1f %s",f.speed_kmh*(cfg.imperial?.621371:1),cfg.imperial?"mph":"km/h");
     if(f.have_time){time_t stamp=time_t(f.utc_seconds);struct tm t={};if(gmtime_r(&stamp,&t))strftime(utc,sizeof(utc),"%Y-%m-%d %H:%M:%S",&t);}
-    snprintf(detail,sizeof(detail),"Visible %s / Used %u\nGPS %u  GLO %u  GAL %u  BDS %u\nAltitude %s / Speed %s\nPosition age %.1f s\nUART %u / %lu bytes / error %d\nNMEA %lu valid / %lu invalid\nUTC %s",f.have_visible_satellites&&f.visible_satellites>=f.satellites?visible_count:"partial",f.satellites,f.visible_by_constellation[0],f.visible_by_constellation[3],f.visible_by_constellation[1],f.visible_by_constellation[2],altitude,speed,f.frames?double(uint32_t(esp_timer_get_time()/1000)-f.position_ms)/1000:0,diag.baud,(unsigned long)diag.bytes,diag.error,(unsigned long)f.frames,(unsigned long)f.errors,utc);chatview::label(gps_extra,detail);
+    snprintf(detail,sizeof(detail),"Altitude %s / Speed %s\nPosition age %.1f s\nUART %u / %lu bytes / error %d\nNMEA %lu valid / %lu invalid\nUTC %s",altitude,speed,f.frames?double(uint32_t(esp_timer_get_time()/1000)-f.position_ms)/1000:0,diag.baud,(unsigned long)diag.bytes,diag.error,(unsigned long)f.frames,(unsigned long)f.errors,utc);chatview::label(gps_extra,detail);
   }
 }
 // Only this timer owns the Home cards. Native chat timers keep their own UI.
@@ -1248,9 +1331,10 @@ static void draw(){
     action_button(body,bluetooth_on?"BLUETOOTH OFF":"BLUETOOTH ON",col+18,198,col,36,panel2,on_action,A_BLE_POWER);
     action_button(body,"REMOTE VIEW",8,241,col,36,panel2,on_action,A_VIEW);
     action_button(body,"DEVICE DIAGNOSTICS",col+18,241,col,36,panel2,on_action,A_DIAGNOSTIC);
-    action_button(body,"PRIVACY",8,284,col,34,panel2,on_action,A_PRIVACY);
-    action_button(body,"ABOUT",col+18,284,col,34,panel2,on_action,A_ABOUT);
-    action_button(body,"GPS SETTINGS",8,326,w-16,35,panel2,on_action,A_GPS_SETTINGS);
+    action_button(body,"MEMORY USAGE",8,284,w-16,36,panel2,on_action,A_MEMORY);
+    action_button(body,"PRIVACY",8,326,col,34,panel2,on_action,A_PRIVACY);
+    action_button(body,"ABOUT",col+18,326,col,34,panel2,on_action,A_ABOUT);
+    action_button(body,"GPS SETTINGS",8,368,w-16,35,panel2,on_action,A_GPS_SETTINGS);
   }
 }
 static void refresh(lv_timer_t *){
@@ -1301,7 +1385,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.10.1] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.9.17] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1322,7 +1406,7 @@ static void refresh(lv_timer_t *){
 }
 static void init(){
   mcxruntime::begin();
-  printf("[MCX-DIAG v0.10.1] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.9.17] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1335,7 +1419,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.10.2",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.9.17",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);
