@@ -730,18 +730,18 @@ static void show_node_group(unsigned group){
   lv_obj_clear_flag(dialog,LV_OBJ_FLAG_SCROLLABLE);lv_obj_set_style_pad_all(dialog,0,0);
   const int width=lv_obj_get_width(body);
   auto *title=lv_obj_get_child(dialog,0);lv_obj_set_pos(title,8,8);lv_obj_set_size(title,width-16,19);
-  char summary[80];snprintf(summary,sizeof(summary),"%u nodes / preview up to %u. Zoom to narrow.",unsigned(cluster.count),GROUP_PREVIEW_LIMIT);
-  single_label(dialog,summary,8,31,width-16,muted);
+  char text[80];snprintf(text,sizeof(text),"%u nodes / preview up to %u. Zoom to narrow.",unsigned(cluster.count),GROUP_PREVIEW_LIMIT);
+  single_label(dialog,text,8,31,width-16,muted);
   unsigned shown=0;
   for(unsigned i=0;i<navui::overlay_cache->node_count&&shown<GROUP_PREVIEW_LIMIT;++i){
     const auto &node=navui::overlay_cache->nodes[i];if(node.cluster!=group)continue;
     auto *card=panel_at(dialog,8,55+int(shown)*43,width-16,39,panel2,5);
-    char name[sizeof(node.name)];snprintf(name,sizeof(name),"%s",node.name);
-    for(char *c=name;*c;++c)if(uint8_t(*c)<32)*c=' ';
-    auto *label=single_label(card,name,6,1,width-28,white);lv_label_set_long_mode(label,LV_LABEL_LONG_CLIP);lv_obj_set_height(label,18);
+    snprintf(text,sizeof(text),"%.32s",node.name);
+    for(char *c=text;*c;++c)if(uint8_t(*c)<32)*c=' ';
+    auto *label=single_label(card,text,6,1,width-28,white);lv_label_set_long_mode(label,LV_LABEL_LONG_CLIP);lv_obj_set_height(label,18);
     const size_t len=strlen(node.id);const char *suffix=len>=4?node.id+len-4:node.id;
-    char detail[80];snprintf(detail,sizeof(detail),"%s / %s / %s",suffix,node.meshcore?"MC":"MT",navui::activity_name(navui::node_activity(node)));
-    label=single_label(card,detail,6,20,width-28,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_CLIP);lv_obj_set_height(label,18);
+    snprintf(text,sizeof(text),"%s / %s / %s",suffix,node.meshcore?"MC":"MT",navui::activity_name(navui::node_activity(node)));
+    label=single_label(card,text,6,20,width-28,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_CLIP);lv_obj_set_height(label,18);
     ++shown;
   }
   const int button_width=(width-24)/2;
