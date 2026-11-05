@@ -74,6 +74,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.19":
+        summary="DIAGNOSTIC: bounded PSRAM memory timeline, sparse stack measurements and serial-console logs for issue #137. Includes build memory reports. No network allocator optimization yet. v0.9.16 remains stable."
+        label="Memory timeline diagnostics / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.18":
         summary="EXPERIMENTAL: limits the visible node list to 32 recently heard nodes per protocol within 14 days, keeps MeshCore favorites despite age, uses fixed-position cards and manual refresh, and removes repeated message-history scans. v0.9.16 remains stable."
         label="Bounded recent-node lists / EXPERIMENTAL"

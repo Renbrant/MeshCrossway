@@ -60,6 +60,13 @@ if '    // MCX offline restore after SD mount attempt' not in source:
         sys.exit('Missing or duplicate network startup marker')
     source = source.replace(marker, marker + '\n    // MCX offline restore after SD mount attempt'
         + '\n    if (lvgl_port_lock(0)) { mcxoffline::begin(); lvgl_port_unlock(); }', 1)
+# Cheap milestone snapshots; no heap walks, filesystem work or new task here.
+for call, before, after in (("meshble::prepare_controller_early();",2,3),
+                            ("meshnetwork::start();",4,5), ("meshhealth::start();",6,18)):
+    wrapped=f"mcxmem::capture({before}); {call} mcxmem::capture({after});"
+    if wrapped not in source:
+        if source.count(call)!=1: sys.exit("Unexpected diagnostic startup marker: " + call)
+        source=source.replace(call,wrapped,1)
 main.write_text(source)
 # Reserve two small DMA buffers at display initialization. The previous PSRAM
 # draw buffers required SPI to allocate internal bounce memory during each flush.
@@ -168,7 +175,7 @@ for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_he
              "meshcrossway_meshtastic_protocol.h", "meshcrossway_settings_schema.h", "meshcrossway_settings_codec.inc", "meshcrossway_mt_settings.inc", "meshcrossway_meshtastic.h", "meshcrossway_meshtastic_store.h", "meshcrossway_meshtastic_ui.h", "meshcrossway_settings_ui.h",
              "meshcrossway_meshcore_protocol.h", "meshcrossway_radio_presets.h", "meshcrossway_meshcore_ui.h", "meshcrossway_sd_history.h", "meshcrossway_history_store.h", "meshcrossway_conversations.h",
              "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h", "meshcrossway_lvgl_alloc.h", "meshcrossway_runtime.h",
-             "meshcrossway_power_status.h", "meshcrossway_battery_decode.h",
+             "meshcrossway_memory_log.h", "meshcrossway_power_status.h", "meshcrossway_battery_decode.h",
              "meshcrossway_chat_presentation.h", "meshcrossway_message_order.h", "meshcrossway_chat_view.h", "meshcrossway_offline_boot.h",
              "meshcrossway_display_settings.h", "meshcrossway_touch_queue.h", "meshcrossway_touch_input.h", "meshcrossway_gnss.h", "meshcrossway_home_status.h", "meshcrossway_clock.h", "meshcrossway_clock_runtime.h", "meshcrossway_gnss_parser.h", "meshcrossway_gnss_settings.h", "meshcrossway_radio_priority.h", "meshcrossway_map_projection.h", "meshcrossway_map_tiles.h", "meshcrossway_navigation_ui.h", "meshcrossway_navigation.h", "meshcrossway_navigation_store.h", "meshcrossway_navigation_http.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
@@ -215,9 +222,13 @@ allocator_build='''
 # MeshCrossway: isolate LVGL allocations from BLE/DMA internal RAM.
 idf_component_get_property(mcx_lvgl_lib lvgl__lvgl COMPONENT_LIB)
 target_include_directories(${mcx_lvgl_lib} PRIVATE "${CMAKE_CURRENT_LIST_DIR}")
+target_compile_definitions(${COMPONENT_LIB} PRIVATE MCX_MEMORY_DIAGNOSTICS=1)
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wframe-larger-than=4096 -fstack-usage)
 '''
 if "idf_component_get_property(mcx_lvgl_lib" not in cmake.read_text():
     cmake.write_text(cmake.read_text()+allocator_build)
+diagnostic_define = "target_compile_definitions(${COMPONENT_LIB} PRIVATE MCX_MEMORY_DIAGNOSTICS=1)"
+if diagnostic_define not in cmake.read_text():
+    cmake.write_text(cmake.read_text() + "\n" + diagnostic_define + "\n")
 print(f"MeshCrossway patched and verified: {project}")
 

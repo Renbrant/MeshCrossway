@@ -1,4 +1,5 @@
 #pragma once
+#include "meshcrossway_memory_log.h"
 #include "meshcrossway_navigation_store.h"
 #include "meshcrossway_gnss.h"
 #include "esp_heap_caps.h"
@@ -18,6 +19,7 @@ static std::atomic<uint32_t> stack_min{UINT32_MAX};
 static void sample_stack(){
  const uint32_t bytes=uxTaskGetStackHighWaterMark(nullptr);
  const uint32_t before=stack_min.load();
+ mcxmem::stack(mcxmem::NAV,bytes);
  if(bytes<before){stack_min.store(bytes);if(before==UINT32_MAX||bytes<1024)printf("[MCX-NAV] stack_free_min=%lu bytes\n",(unsigned long)bytes);}
 }
 static Command commands[4];static unsigned head=0,count=0;
@@ -54,6 +56,9 @@ static __attribute__((noinline)) void execute(const Command &c,bool space){
 static void worker(void *){
  printf("[MCX-NAV] worker started / stack=%u bytes\n",WORKER_STACK_BYTES);
  for(;;){
+#if MCX_MEMORY_DIAGNOSTICS
+    mcxmem::observe(mcxmem::NAV);
+#endif
   if(!store->loaded&&esp_sdcard_port_get_size()){
    printf("[MCX-NAV] loading navigation SD\n");
    if(mkdir("/sdcard/meshcrossway",0755)==0||errno==EEXIST)store->load("/sdcard/meshcrossway/navigation");

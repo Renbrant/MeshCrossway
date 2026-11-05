@@ -130,6 +130,10 @@ build_version() {
       set -e
       idf.py set-target esp32s3
       idf.py build
+      mkdir -p build/memory-report
+      idf.py size > build/memory-report/size.txt
+      idf.py size-components > build/memory-report/components.txt
+      idf.py size-files > build/memory-report/files.txt
       idf.py merge-bin -o '/workspace/$image_rel'
     "
   if [ -f "$source_root/scripts/check_chat_memory.py" ]; then
@@ -159,6 +163,7 @@ build_version() {
     python3 "$source_root/scripts/check_ble_sdkconfig.py" \
       "$vendor/examples/esp-idf/02_lvgl_example/sdkconfig"
   fi
+  python3 "$ROOT/scripts/report_memory_config.py" "$vendor/examples/esp-idf/02_lvgl_example"
   test -s "$image_dir/meshcrossway-display-dev.bin"
   python3 "$ROOT/scripts/write_firmware_version.py" \
     --version "$version" --ref "$(git -C "$source_root" rev-parse HEAD)" \

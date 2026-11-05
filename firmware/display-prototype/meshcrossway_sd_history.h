@@ -1,4 +1,5 @@
 #pragma once
+#include "meshcrossway_memory_log.h"
 // LVGL owns model snapshots. A single low-priority worker owns ALL filesystem I/O.
 #include "meshcrossway_history_store.h"
 #include "esp_heap_caps.h"
@@ -90,6 +91,7 @@ static void worker_main(void *){
   Job retry;uint32_t retry_at=0;
   mcxstore::Cursor cursor;
   for(;;){
+    mcxmem::observe(mcxmem::HISTORY_TASK);
     if(!ble_startup.load())if(auto work=extra_work.load())work();
     Job job;bool have=false;
     portENTER_CRITICAL(&lock);

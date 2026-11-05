@@ -1,4 +1,5 @@
 #pragma once
+#include "meshcrossway_memory_log.h"
 // MeshCrossway v0.7.2 Wi-Fi: reconnect most recently successful known network,
 // then fall back to up to four other saved WPA2/WPA3-personal profiles.
 #include "esp_err.h"
@@ -250,6 +251,9 @@ static void wifi_event(void *,esp_event_base_t base,int32_t event,void *data){
     if(!wants_station)set_state("Wi-Fi disabled","");
   }else if(base==WIFI_EVENT && event==WIFI_EVENT_STA_DISCONNECTED){
     const wifi_event_sta_disconnected_t *d=(const wifi_event_sta_disconnected_t*)data;
+#if MCX_MEMORY_DIAGNOSTICS
+    mcxmem::capture(13,d?unsigned(d->reason):0);
+#endif
     station_connected=false;
     if(!wants_station){set_state(wifi_started?"Wi-Fi enabled":"Wi-Fi disabled","");return;}
     set_state("Reconnecting...","");
@@ -266,6 +270,9 @@ static void wifi_event(void *,esp_event_base_t base,int32_t event,void *data){
     }
     next_saved();
   }else if(base==IP_EVENT && event==IP_EVENT_STA_GOT_IP){
+#if MCX_MEMORY_DIAGNOSTICS
+    mcxmem::capture(14);
+#endif
     const ip_event_got_ip_t *ev=(const ip_event_got_ip_t*)data;
     char ip[16];snprintf(ip,sizeof(ip),IPSTR,IP2STR(&ev->ip_info.ip));
     retries=0;attempted=0;manual_active=false;station_connected=true;
