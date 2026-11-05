@@ -8,6 +8,7 @@ enum Task { UI, HISTORY_TASK, NAV, GNSS, BLE_COORD, BLE_HOST, MAP, HTTP, TOUCH, 
 }
 #if MCX_MEMORY_DIAGNOSTICS
 #include "esp_heap_caps.h"
+#include "esp_attr.h"
 #include "esp_timer.h"
 #include "esp_system.h"
 #include "esp_random.h"
@@ -29,6 +30,18 @@ static uint32_t boot=0,sequence=0,dropped=0;
 static std::atomic<uint32_t> stacks[TASK_COUNT],next_stack[TASK_COUNT];
 static std::atomic<uint32_t> failures{0},failed_bytes{0},failed_caps{0},write_errors{0};
 static uint32_t last_sample=0,last_flush=0;
+// Callback-safe reserve: never allocate, log, walk heaps/stacks or retain task pointers.
+struct AllocationFailure {uint32_t seq,ms,bytes,caps,core,isr;char task[16],function[32];};
+static constexpr unsigned FAILURE_CAPACITY=4;
+static DRAM_ATTR AllocationFailure failure_rows[FAILURE_CAPACITY];
+static DRAM_ATTR portMUX_TYPE failure_mux=portMUX_INITIALIZER_UNLOCKED;
+static DRAM_ATTR unsigned failure_head=0,failure_count=0,failure_dropped=0;
+static_assert(sizeof(failure_rows)==288,"Keep failure reserve small and fixed");
+static void failure_name(char *out,unsigned size,const char *in){
+  unsigned i=0;if(!in)in="unknown";
+  for(;i+1<size&&in[i];++i){const unsigned char c=in[i];out[i]=(c>=33&&c<=126&&c!=',')?char(c):'_';}
+  out[i]=0;
+}
 // Event codes: 0 periodic, 1 logger ready, 2 controller before, 3 controller after,
 // 4 Wi-Fi before, 5 Wi-Fi after, 6 HTTP after, 7 NimBLE before, 8 NimBLE after,
 // 9 page changed (detail=page), 10 map render before, 11 map render after.
@@ -53,9 +66,36 @@ static void begin(){
   if(!p){printf("[MCX-MEMLOG] disabled: PSRAM allocation unavailable\n");return;}
   for(unsigned i=0;i<TASK_COUNT;++i)stacks[i].store(UINT32_MAX);
   boot=esp_random();rows.store(p);capture(1,esp_reset_reason());
-  printf("[MCX-MEMLOG] v0.9.20 ring=%u bytes PSRAM; sample=30s output=console\n",unsigned(CAPACITY*sizeof(Row)));
+  printf("[MCX-MEMLOG] v0.9.21 ring=%u bytes PSRAM; sample=30s output=console\n",unsigned(CAPACITY*sizeof(Row)));
 }
-static void allocation_failed(size_t bytes,uint32_t caps){failures.fetch_add(1);failed_bytes.store(bytes);failed_caps.store(caps);}
+static void allocation_failed(size_t bytes,uint32_t caps,const char *function="unknown"){
+  AllocationFailure r={};r.seq=failures.fetch_add(1)+1;
+  failed_bytes.store(bytes);failed_caps.store(caps);
+  r.ms=uint32_t(esp_timer_get_time()/1000);r.bytes=uint32_t(bytes);r.caps=caps;
+  r.core=uint32_t(xPortGetCoreID());r.isr=bool(xPortInIsrContext());
+  const char *task="ISR";
+  if(!r.isr){const auto handle=xTaskGetCurrentTaskHandle();task=handle?pcTaskGetName(handle):"startup";}
+  failure_name(r.task,sizeof(r.task),task);failure_name(r.function,sizeof(r.function),function);
+  portENTER_CRITICAL_SAFE(&failure_mux);
+  if(failure_count==FAILURE_CAPACITY){failure_head=(failure_head+1)%FAILURE_CAPACITY;--failure_count;++failure_dropped;}
+  failure_rows[(failure_head+failure_count)%FAILURE_CAPACITY]=r;++failure_count;
+  portEXIT_CRITICAL_SAFE(&failure_mux);
+}
+// Existing coordinator only. Console I/O happens after releasing the callback lock.
+static __attribute__((noinline)) void flush_failures(){
+  for(unsigned n=0;n<2;++n){
+    AllocationFailure r={};unsigned lost;
+    portENTER_CRITICAL_SAFE(&failure_mux);
+    const bool found=failure_count!=0;if(found)r=failure_rows[failure_head];lost=failure_dropped;
+    portEXIT_CRITICAL_SAFE(&failure_mux);if(!found)return;
+    char line[320];
+    const int used=snprintf(line,sizeof(line),"[MCX-ALLOC] v0.9.21,boot=%u,seq=%u,uptime_ms=%u,bytes=%u,caps=0x%x,core=%u,isr=%u,task=%s,function=%s,dropped=%u\n",unsigned(boot),unsigned(r.seq),unsigned(r.ms),unsigned(r.bytes),unsigned(r.caps),unsigned(r.core),unsigned(r.isr),r.task,r.function,lost);
+    if(used<0||unsigned(used)>=sizeof(line)||MCX_MEMLOG_WRITE(line,unsigned(used))!=unsigned(used)){++write_errors;return;}
+    portENTER_CRITICAL_SAFE(&failure_mux);
+    if(failure_count&&failure_rows[failure_head].seq==r.seq){failure_head=(failure_head+1)%FAILURE_CAPACITY;--failure_count;}
+    portEXIT_CRITICAL_SAFE(&failure_mux);
+  }
+}
 static void stack(Task id,uint32_t bytes){
   uint32_t before=stacks[id].load();while(bytes<before&&!stacks[id].compare_exchange_weak(before,bytes)){}
 }
@@ -74,7 +114,7 @@ static __attribute__((noinline)) void flush(){
     const bool found=count!=0;if(found)r=p[head];
     portEXIT_CRITICAL(&mux);if(!found)return;
     char line[384];
-    int used=snprintf(line,sizeof(line),"[MCX-MEMLOG] v0.9.20,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",unsigned(r.boot),unsigned(r.seq),unsigned(r.ms),unsigned(r.event),unsigned(r.detail),unsigned(r.internal),unsigned(r.dma),unsigned(r.psram),unsigned(r.failures),unsigned(r.failed_bytes),unsigned(r.failed_caps),unsigned(r.sample_us),unsigned(r.dropped),unsigned(r.output_errors));
+    int used=snprintf(line,sizeof(line),"[MCX-MEMLOG] v0.9.21,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",unsigned(r.boot),unsigned(r.seq),unsigned(r.ms),unsigned(r.event),unsigned(r.detail),unsigned(r.internal),unsigned(r.dma),unsigned(r.psram),unsigned(r.failures),unsigned(r.failed_bytes),unsigned(r.failed_caps),unsigned(r.sample_us),unsigned(r.dropped),unsigned(r.output_errors));
     if(used<0||unsigned(used)>=sizeof(line)){++write_errors;return;}
     for(unsigned i=0;i<TASK_COUNT;++i){
       const int added=snprintf(line+used,sizeof(line)-unsigned(used),",%u",unsigned(r.stack[i]));
@@ -95,7 +135,7 @@ static void poll(){
   observe(BLE_COORD);
   const uint32_t now=uint32_t(esp_timer_get_time()/1000);
   if(uint32_t(now-last_sample)>=SAMPLE_MS){last_sample=now;capture();}
-  if(uint32_t(now-last_flush)>=FLUSH_MS){last_flush=now;flush();}
+  if(uint32_t(now-last_flush)>=FLUSH_MS){last_flush=now;flush_failures();flush();}
 }
 static void page(unsigned value){static unsigned previous=UINT32_MAX;if(value!=previous){previous=value;capture(9,value);}}
 }
@@ -105,7 +145,7 @@ static void page(unsigned value){static unsigned previous=UINT32_MAX;if(value!=p
 namespace mcxmem {
 static inline void begin(){}
 static inline void capture(unsigned=0,unsigned=0){}
-static inline void allocation_failed(size_t,uint32_t){}
+static inline void allocation_failed(size_t,uint32_t,const char * = "unknown"){}
 static inline void stack(Task,uint32_t){}
 static inline void observe(Task){}
 static inline void poll(){}

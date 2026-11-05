@@ -19,8 +19,8 @@ static const char *stage_name(uint32_t stage){
   switch(stage){case PROTOCOL:return "protocol";case HISTORY:return "history";
     case DRAW:return "draw";case CAPTURE:return "capture";default:return "idle";}
 }
-static void allocation_failed(size_t bytes,uint32_t caps,const char *){
-  mcxmem::allocation_failed(bytes,caps);
+static void allocation_failed(size_t bytes,uint32_t caps,const char *function){
+  mcxmem::allocation_failed(bytes,caps,function);
   allocation_failures.fetch_add(1);last_allocation_bytes.store(bytes);last_allocation_caps.store(caps);
 }
 static void begin(){
