@@ -1,4 +1,5 @@
 #pragma once
+#include "meshcrossway_memory_log.h"
 // v0.6: HTTP status and PIN-free manual read-only capture.
 // No LVGL calls from HTTP thread and no remote input.
 #include "meshcrossway_network.h"
@@ -51,6 +52,7 @@ template<esp_err_t (*Handler)(httpd_req_t*)> static esp_err_t observe(httpd_req_
   }
   const esp_err_t rc=Handler(req);
   const uint32_t bytes=uxTaskGetStackHighWaterMark(nullptr),before=http_stack_min.load();
+  mcxmem::stack(mcxmem::HTTP,bytes);
   if(bytes<before){http_stack_min.store(bytes);if(before==UINT32_MAX||bytes<2048)printf("[MCX-HTTP] stack_free_min=%lu bytes / %u\n",(unsigned long)bytes,HTTP_STACK_BYTES);}
   return rc;
 }
@@ -77,7 +79,7 @@ static esp_err_t health(httpd_req_t *req){
   mcxhistory::describe(history,sizeof(history));
   meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));
   const int n=snprintf(body,sizeof(body),
-    "{\"version\":\"v0.9.18\",\"uptime_ms\":%llu,\"free_heap\":%lu,\"ip\":\"%s\",\"sd_backup\":\"%s\",\"sd_step\":\"%s\",\"sd_errno\":%d,\"screen\":%s,\"touch\":false,\"captures\":%lu,\"capture_failures\":%lu,\"capture_ms\":%lu,\"history\":\"%s\",\"history_step\":\"%s\",\"history_errno\":%d,\"history_failures\":%lu,\"history_ms\":%lu,\"history_max_ms\":%lu,\"internal_free\":%lu,\"internal_largest\":%lu,\"internal_min\":%lu,\"reset_reason\":%d,\"boot_count\":%lu,\"previous_activity\":\"%s\",\"ui_max_ms\":%lu,\"ui_stack_min\":%lu,\"navigation_stack_min\":%lu,\"allocation_failures\":%lu,\"allocation_bytes\":%lu,\"allocation_caps\":%lu,\"mailbox_peak\":%lu,\"mailbox_overflows\":%lu}",
+    "{\"version\":\"v0.9.19\",\"uptime_ms\":%llu,\"free_heap\":%lu,\"ip\":\"%s\",\"sd_backup\":\"%s\",\"sd_step\":\"%s\",\"sd_errno\":%d,\"screen\":%s,\"touch\":false,\"captures\":%lu,\"capture_failures\":%lu,\"capture_ms\":%lu,\"history\":\"%s\",\"history_step\":\"%s\",\"history_errno\":%d,\"history_failures\":%lu,\"history_ms\":%lu,\"history_max_ms\":%lu,\"internal_free\":%lu,\"internal_largest\":%lu,\"internal_min\":%lu,\"reset_reason\":%d,\"boot_count\":%lu,\"previous_activity\":\"%s\",\"ui_max_ms\":%lu,\"ui_stack_min\":%lu,\"navigation_stack_min\":%lu,\"allocation_failures\":%lu,\"allocation_bytes\":%lu,\"allocation_caps\":%lu,\"mailbox_peak\":%lu,\"mailbox_overflows\":%lu}",
     (unsigned long long)(esp_timer_get_time()/1000),(unsigned long)esp_get_free_heap_size(),ip,
     meshbackup::status(),meshbackup::step_name(meshbackup::failure_step.load()),
     meshbackup::failure_errno.load(),meshcapture::available()?"true":"false",
@@ -143,7 +145,7 @@ static void start(){
   if(result==ESP_OK)result=httpd_register_uri_handler(server,&settings_command);
   if(result!=ESP_OK){httpd_stop(server);printf("[MCX-HTTP] route setup failed err=%d\n",(int)result);return;}
   running.store(true);
-  printf("[MCX-HTTP v0.9.18] ready port=80 routes=/,/health,/screen.raw manual=ON touch=OFF\n");
+  printf("[MCX-HTTP v0.9.19] ready port=80 routes=/,/health,/screen.raw manual=ON touch=OFF\n");
 }
 } // namespace meshhealth
 

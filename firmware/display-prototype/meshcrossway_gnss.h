@@ -1,4 +1,5 @@
 #pragma once
+#include "meshcrossway_memory_log.h"
 #include "meshcrossway_gnss_parser.h"
 #include "meshcrossway_gnss_settings.h"
 #include "nvs.h"
@@ -40,6 +41,9 @@ static bool poll_accuracy(const Parser &parser,const Settings &cfg,uint32_t now,
 static void worker(void *){
   Parser parser;Settings applied;bool have_applied=false;int io_error=0;uint8_t bytes[128];uint32_t switched=0,seen=UINT32_MAX,persisted=0,last_save=0,last_accuracy_poll=0;
   for(;;){
+#if MCX_MEMORY_DIAGNOSTICS
+    mcxmem::observe(mcxmem::GNSS);
+#endif
     const uint32_t now=uint32_t(esp_timer_get_time()/1000);
     portENTER_CRITICAL(&mutex);const auto cfg=settings;const uint32_t rev=revision,edited=changed_ms;portEXIT_CRITICAL(&mutex);
     if(rev!=seen){

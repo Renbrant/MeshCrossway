@@ -1,4 +1,5 @@
 #pragma once
+#include "meshcrossway_memory_log.h"
 // MeshCrossway v0.7.2 - resume only last bonded BLE peer after safe boot.
 // PIN-authenticated transports: MeshCore Companion and Meshtastic PhoneAPI.
 #include "nimble/nimble_port.h"
@@ -178,11 +179,17 @@ static esp_err_t initialize_stack(){
 }
 static void start_internal(){
   printf("[MCX-BLE] worker entered; heap=%lu\n",(unsigned long)esp_get_free_heap_size());
+  #if MCX_MEMORY_DIAGNOSTICS
+  mcxmem::capture(7);
+#endif
   debug_memory("before nimble");
   update(STARTING,"Initializing NimBLE in worker...");
   const esp_err_t err=initialize_stack();
   printf("[MCX-BLE] init stage=%s result=%s (%d) heap=%lu\n",init_stage,esp_err_to_name(err),(int)err,(unsigned long)esp_get_free_heap_size());
   debug_memory("after nimble init");
+#if MCX_MEMORY_DIAGNOSTICS
+  mcxmem::capture(8,unsigned(err));
+#endif
   if(err!=ESP_OK){
     mcxhistory::ble_startup.store(false);
     mcxpriority::ble_initializing=false;
@@ -303,13 +310,27 @@ static bool request_stop(){
   xTaskNotifyGive(reconnect_worker);return true;
 }
 static void auto_resume_task(void *){
+#if MCX_MEMORY_DIAGNOSTICS
+  mcxmem::poll();
+#endif
   const bool enabled=read_enabled();
   const TickType_t first_wait=enabled?pdMS_TO_TICKS(12000):portMAX_DELAY;
+#if MCX_MEMORY_DIAGNOSTICS
+  uint32_t notified=0;const TickType_t waiting_started=xTaskGetTickCount();
+  do {
+    mcxmem::poll();
+    notified=ulTaskNotifyTake(pdTRUE,pdMS_TO_TICKS(1000));
+  }while(!notified&&(!enabled||TickType_t(xTaskGetTickCount()-waiting_started)<first_wait));
+#else
   const uint32_t notified=ulTaskNotifyTake(pdTRUE,first_wait);
+#endif
   if(notified&&start_requested.exchange(false))start_on_worker();
   else if(enabled)(void)request_start_impl(true);
   bool alternate=false;
   for(;;){
+#if MCX_MEMORY_DIAGNOSTICS
+    mcxmem::poll();
+#endif
     const uint32_t wake=ulTaskNotifyTake(pdTRUE,pdMS_TO_TICKS(3000));
     if(stop_requested.exchange(false)){(void)power_off_internal();alternate=false;continue;}
     if((wake||start_requested.load())&&start_requested.exchange(false)){

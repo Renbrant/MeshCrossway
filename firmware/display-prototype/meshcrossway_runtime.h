@@ -1,6 +1,7 @@
 #pragma once
 // Lightweight crash breadcrumbs, heap allocation failures and UI latency.
 // No user content is retained. RTC data survives warm resets without flash writes.
+#include "meshcrossway_memory_log.h"
 #include "esp_attr.h"
 #include "esp_system.h"
 #include "esp_heap_caps.h"
@@ -19,6 +20,7 @@ static const char *stage_name(uint32_t stage){
     case DRAW:return "draw";case CAPTURE:return "capture";default:return "idle";}
 }
 static void allocation_failed(size_t bytes,uint32_t caps,const char *){
+  mcxmem::allocation_failed(bytes,caps);
   allocation_failures.fetch_add(1);last_allocation_bytes.store(bytes);last_allocation_caps.store(caps);
 }
 static void begin(){
@@ -29,6 +31,7 @@ static void begin(){
 }
 static void sample_ui_stack(){
   const uint32_t bytes=uxTaskGetStackHighWaterMark(nullptr);
+  mcxmem::stack(mcxmem::UI,bytes);
   if(bytes<ui_stack_min.load())ui_stack_min.store(bytes);
 }
 struct Scope {

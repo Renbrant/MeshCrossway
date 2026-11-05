@@ -14,7 +14,7 @@
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Project status — v0.9.16 stable; v0.9.18 candidate.** v0.9.16 remains the user-selected stable release and preserves its exact published firmware image. v0.9.18 limits the visible node list to 32 recent nodes per protocol, removes repeated list scans and uses fixed-position cards with manual refresh. v0.8.26 remains the stable fallback until the candidate is built and confirmed on hardware. See the [v0.8.26 stable record](docs/stable-v0826.md), [v0.9.11 boot stability notes](docs/boot-stability-v0911.md), [v0.9.12 node-list rendering notes](docs/node-list-rendering-v0912.md), [v0.9.14 fixed node-card layout](docs/node-layout-v0913.md) and [v0.9.15 node and channel styling](docs/node-channel-cards-v0915.md) and [v0.9.16 node details and stack fix](docs/node-types-stack-v0916.md).
+> **Project status — v0.9.16 stable; v0.9.19 diagnostic candidate.** The v0.9.18 node layout, distance sorting and manual refresh were accepted on hardware. v0.9.19 adds serial-console memory/stack diagnostics and build memory reports for [issue #137](https://github.com/Renbrant/MeshCrossway/issues/137); hardware validation is pending. See the [diagnostic collection procedure](docs/memory-diagnostics-v0919.md).
 
 ## Support the project
 

@@ -510,6 +510,11 @@ static int service_cb(uint16_t handle,const struct ble_gatt_error *err,
   return 0;
 }
 static int gap_event(struct ble_gap_event *event,void *){
+#if MCX_MEMORY_DIAGNOSTICS
+  mcxmem::observe(mcxmem::BLE_HOST);
+  if(event->type==BLE_GAP_EVENT_CONNECT||event->type==BLE_GAP_EVENT_DISCONNECT)
+    mcxmem::capture(12,(unsigned(MCX_BLE_RADIO)<<16)|unsigned(event->type));
+#endif
   switch(event->type){
     case BLE_GAP_EVENT_DISC:{
       const struct ble_gap_disc_desc &disc=event->disc;

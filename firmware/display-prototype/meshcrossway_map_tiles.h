@@ -1,4 +1,5 @@
 #pragma once
+#include "meshcrossway_memory_log.h"
 #include "meshcrossway_map_projection.h"
 #include "meshcrossway_radio_priority.h"
 #include "esp_heap_caps.h"
@@ -269,11 +270,14 @@ static Frame *render(const View &v,const Config &c){
 static void worker(void *){
   uint64_t previous_source=0;
   for(;;){
+#if MCX_MEMORY_DIAGNOSTICS
+    mcxmem::observe(mcxmem::MAP);
+#endif
     portENTER_CRITICAL(&mux);const Config c=config;const bool work=queued&&!ready&&!mcxpriority::ble_initializing.load();View v=requested;if(work)queued=false;portEXIT_CRITICAL(&mux);
     if(work){mcxpriority::map_busy=true;
       if(mcxpriority::ble_initializing.load()){mcxpriority::map_busy=false;continue;}
       if(source_hash(c)!=previous_source){clear_tiles();for(auto &miss:misses)miss=Miss{};backing_off=false;previous_source=source_hash(c);}
-      auto *f=render(v,c);if(f&&wanted.load()==v.generation){portENTER_CRITICAL(&mux);ready=f;portEXIT_CRITICAL(&mux);}else release(f);mcxpriority::map_busy=false;}
+      mcxmem::capture(10);auto *f=render(v,c);mcxmem::observe(mcxmem::MAP);mcxmem::capture(11);if(f&&wanted.load()==v.generation){portENTER_CRITICAL(&mux);ready=f;portEXIT_CRITICAL(&mux);}else release(f);mcxpriority::map_busy=false;}
     vTaskDelay(pdMS_TO_TICKS(50));
   }
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include "meshcrossway_memory_log.h"
 #include "meshcrossway_touch_queue.h"
 #include "esp_lcd_touch.h"
 #include "esp_timer.h"
@@ -54,6 +55,9 @@ static void read(lv_indev_drv_t *,lv_indev_data_t *data){
 static void sample_task(void *){
   uint32_t previous=0,reported=0;unsigned failures=0;
   for(;;){
+#if MCX_MEMORY_DIAGNOSTICS
+    mcxmem::observe(mcxmem::TOUCH);
+#endif
     const uint32_t now=uint32_t(esp_timer_get_time()/1000);
     const uint32_t gap=previous?now-previous:0;previous=now;
     // Only this task accesses the touch controller after attach().

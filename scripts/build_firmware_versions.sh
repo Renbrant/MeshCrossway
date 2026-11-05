@@ -130,6 +130,11 @@ build_version() {
       set -e
       idf.py set-target esp32s3
       idf.py build
+      mkdir -p build/memory-report
+      idf.py size > build/memory-report/size.txt
+      idf.py size-components > build/memory-report/components.txt
+      idf.py size-files > build/memory-report/files.txt
+      python3 /workspace/scripts/report_memory_config.py .
       idf.py merge-bin -o '/workspace/$image_rel'
     "
   if [ -f "$source_root/scripts/check_chat_memory.py" ]; then
