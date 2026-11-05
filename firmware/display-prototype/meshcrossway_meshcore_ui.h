@@ -803,7 +803,7 @@ static void render() {
         const auto key=mcxchat::key_for(*s,false,uint16_t(i));
         const auto *pref=mcxhistory::preferences().get(key);
         const uint32_t heard=contact_last_heard(*s,i);
-        if(!meshcrossway::is_recent_node(heard,pref&&pref->favorite))continue;
+        if(!is_recent_node(heard,pref&&pref->favorite))continue;
         display_scores[i]=uint64_t(heard)<<32;
       }
       display_indices[total++]=i;
@@ -838,7 +838,7 @@ static void render() {
       if(i<hi)self(self,i,hi);
     };
     if(total>1)sort(sort,0,total-1);
-    if(!channels&&total>int(meshcrossway::NODE_MAX_RECENT))total=int(meshcrossway::NODE_MAX_RECENT);
+    if(!channels&&total>int(NODE_MAX_RECENT))total=int(NODE_MAX_RECENT);
     int y=141;
     if(channels&&!room_list){
       unsigned direct_unread=0,channel_unread=0;
