@@ -7,6 +7,13 @@ REQUIRED = {
     'CONFIG_LV_USE_PNG': 'y',
     'CONFIG_MBEDTLS_CERTIFICATE_BUNDLE': 'y',
     'CONFIG_MBEDTLS_HAVE_TIME_DATE': 'y',
+    'CONFIG_MBEDTLS_TLS_ENABLED': 'y',
+    'CONFIG_MBEDTLS_SSL_PROTO_TLS1_2': 'y',
+    'CONFIG_MBEDTLS_AES_C': 'y',
+    'CONFIG_MBEDTLS_GCM_C': 'y',
+    'CONFIG_MBEDTLS_CCM_C': 'y',
+    'CONFIG_MBEDTLS_HARDWARE_SHA': 'y',
+    'CONFIG_MBEDTLS_HARDWARE_MPI': 'y',
     'CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC': 'y',
     'CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG': 'y',
     'CONFIG_IDF_TARGET': '"esp32s3"',
@@ -46,14 +53,15 @@ REQUIRED = {
     'CONFIG_FREERTOS_WATCHPOINT_END_OF_STACK': 'y',
 }
 
-DISABLED = ('CONFIG_ESP_WIFI_RX_IRAM_OPT', 'CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP')
+DISABLED = ('CONFIG_ESP_WIFI_RX_IRAM_OPT', 'CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP',
+            'CONFIG_MBEDTLS_HARDWARE_AES', 'CONFIG_MBEDTLS_AES_USE_INTERRUPT')
 
 def verify(path):
     config = dict(line.split('=', 1) for line in path.read_text().splitlines()
                   if line.startswith('CONFIG_') and '=' in line)
     errors = [f'{name}: expected {expected}, got {config.get(name, "unset")}'
               for name, expected in REQUIRED.items() if config.get(name) != expected]
-    errors.extend(f'{name}: must remain disabled in the RX-only experiment'
+    errors.extend(f'{name}: must remain disabled in the software-AES map candidate'
                   for name in DISABLED if config.get(name, 'n') != 'n')
     if errors:
         raise ValueError('Generated sdkconfig rejected:\n' + '\n'.join(errors))
@@ -66,5 +74,5 @@ if __name__ == '__main__':
         verify(args.sdkconfig)
     except (OSError, ValueError) as error:
         parser.exit(1, f'{error}\n')
-    print('PASS: generated sdkconfig enables BLE central, CPU affinity, coexistence, preserved features and isolated RX-flash profile')
+    print('PASS: generated sdkconfig enables BLE central, CPU affinity, coexistence, preserved features and RX-flash / software-AES map profile')
 

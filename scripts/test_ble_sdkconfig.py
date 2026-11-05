@@ -30,7 +30,7 @@ class GeneratedConfigTest(unittest.TestCase):
             with self.subTest(name=name):
                 self.check({k: v for k, v in REQUIRED.items() if k != name}, False)
 
-    def test_rx_or_psram_preference_enabled_is_rejected(self):
+    def test_forbidden_acceleration_or_policy_is_rejected(self):
         for name in DISABLED:
             with self.subTest(name=name):
                 self.check(dict(REQUIRED, **{name:'y'}), False)
