@@ -2,7 +2,7 @@
 
 > **Architecture update — 2026-10-28:** Current MeshCrossway development is **software-first, three independently powered detachable devices, two BLE links**. See [modular architecture](modular-architecture.md). The previous UART/single-carrier PCB content on this page is **archived integrated-variant reference**, not the current implementation. **All KiCad files remain untouched.**
 
-> **Historical integrated baseline: October 26, 2026.** The V1 design uses two Seeed XIAO ESP32-S3 + Wio-SX1262 B2B radio kits, a Waveshare ESP32-S3 touchscreen and MAX-M10S GNSS. Project is in design and bench-prototype planning; the simulator is not operating hardware.
+> **Historical integrated baseline: October 26, 2026.** The V1 design uses two Seeed XIAO ESP32-S3 + Wio-SX1262 B2B radio kits, a Waveshare ESP32-S3 touchscreen and MAX-M10S GNSS. Project is in design and bench-prototype planning; no interactive interface simulator is currently published. Historical UI mockups remain archived.
 
 [README](../README.md)
 
@@ -87,5 +87,5 @@ Serial baseline is 115200 8N1 if enabled on both endpoints; Meshtastic PROTO and
 | Navigation and sharing | [Navigation and sharing](navigation-and-sharing.md) |
 | Meshtastic vs MeshCore comparison | [Protocol comparison](meshtastic-vs-meshcore.md) |
 | Reticulum future option | [Future Reticulum](reticulum-future-integration.md) |
-| Visual UI prototype | [Simulator documentation](ui-prototype/README.md) |
+| Archived UI mockups | [Historical prototype documentation](ui-prototype/README.md) |
 

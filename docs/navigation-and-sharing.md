@@ -20,7 +20,7 @@ Direct Only, Adaptive and mesh forwarding are policy concepts; zero-hop guarante
 
 ## User experience
 
-The 480 × 320 touchscreen provides **Navigation** with a map/position view and large touch actions for **POIs**, **Tracks**, **Record**, **Share** and **Live share**. Map graphics and sample positions in the web simulator are illustrative, not geographic data. Detailed offline basemaps remain a future milestone.
+The 480 × 320 touchscreen provides **Navigation** with a map/position view and large touch actions for **POIs**, **Tracks**, **Record**, **Share** and **Live share**. Archived browser-prototype map graphics and sample positions are illustrative, not geographic data; the prototype is no longer published. Detailed offline basemaps remain a future milestone.
 
 ### POIs and waypoints
 
@@ -35,7 +35,7 @@ The 480 × 320 touchscreen provides **Navigation** with a map/position view and 
 - Present distance, duration, point count, elevation where available, data age and integrity.
 - Define recording intervals, movement thresholds, storage limits, coordinate precision and battery-use profiles.
 - Plan GPX import/export, track simplification, on-map visualization and management.
-- Prefer an authenticated Bluetooth companion connection for exchanging large GPX tracks. The web simulator's example GPX export is not a real recorded track. The Bluetooth file transfer and phone companion software do not exist yet.
+- Prefer an authenticated Bluetooth companion connection for exchanging large GPX tracks. The archived browser prototype's example GPX export is not a real recorded track. The Bluetooth file transfer and phone companion software do not exist yet.
 
 ### Live location sharing
 
@@ -125,7 +125,7 @@ Plan map markers for participants with identity and network, last fix age, sourc
 
 The central ESP32-S3 will eventually run a GNSS service, track logger, POI storage, location scheduler, radio-specific adapters and a transport router. Prove on actual hardware: BLE adapter capabilities, update/airtime limits, RF coexistence, radio acknowledgments, GNSS power/accuracy, storage resilience, privacy across restarts, Bluetooth throughput/security and degraded/no-fix behavior.
 
-See the [interactive simulator](https://renbrant.github.io/MeshCrossway/) and [UI prototype notes](ui-prototype/README.md). Demo interactions and settings are not proof of firmware feature completeness.
+The interactive browser prototype has been retired because it no longer reflects the current firmware. Historical mockups and prototype notes remain archived in [UI prototype documentation](ui-prototype/README.md).
 
 ## Protocol interoperability boundary
 

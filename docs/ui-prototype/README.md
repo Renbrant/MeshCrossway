@@ -1,4 +1,6 @@
-# MeshCrossway UI Prototype — Landscape Side Console
+# Archived MeshCrossway UI Prototype — Landscape Side Console
+
+> **Retired:** this browser simulator is no longer published because it no longer reflects current firmware behavior. The files below are kept only as historical design references.
 
 > **Current architecture (2026-10-28):** The UI will connect via two concurrent BLE Central links to independent MX-M Meshtastic and MX-C MeshCore Radio Pods. Hardware remains separate; archived UART/PCB implementation references below are not current. [Approved design](../modular-architecture.md).
 
@@ -6,7 +8,7 @@ This folder contains a **browser-based UI concept** for the 3.5-inch MeshCrosswa
 
 ## Landscape UI v5 — dual collapsible sidebars
 
-The current interactive simulator targets the **480 × 320 landscape screen**. The v5 visual language takes the approved MeshCrossway field-console concept as its reference: **high-contrast dark slate surfaces, individually colored vector action icons, cyan active-state accents, topographic-inspired map styling and protruding edge handles** for both collapsible panels.
+The archived interactive simulator was designed for the **480 × 320 landscape screen**. The v5 visual language takes the approved MeshCrossway field-console concept as its reference: **high-contrast dark slate surfaces, individually colored vector action icons, cyan active-state accents, topographic-inspired map styling and protruding edge handles** for both collapsible panels.
 
 - **Left sidebar:** global Home, Chats, Map, Radios and More navigation. The edge chevron collapses the sidebar to icons to reclaim map/content width.
 - **Center:** the current workspace, with more usable vertical area because the bottom navigation bar has been removed.
@@ -42,7 +44,7 @@ Open [the interactive GitHub Pages prototype](https://renbrant.github.io/MeshCro
 
 ![Historical MeshCrossway Home, Map and Tools menu mockup](ui-overview-current.svg)
 
-The interface groups POIs, waypoints, saved tracks, track recording, live-location sharing, GNSS sky, team positions and saved paths under **Map → Tools**. **More** contains general device controls and settings. This archived overview is illustrative and may differ from the live simulator or current physical firmware. Open the browser simulator for its currently deployed behavior.
+The interface groups POIs, waypoints, saved tracks, track recording, live-location sharing, GNSS sky, team positions and saved paths under **Map → Tools**. **More** contains general device controls and settings. This archived overview is illustrative and differs from current physical firmware. The browser simulator is no longer deployed.
 
 ## Important
 
@@ -72,7 +74,7 @@ The Navigation screen now includes interactive **POIs**, **saved tracks**, **tra
 
 - Compact waypoint/POI location messages can be represented through a chosen mesh network adapter, only where the native protocol supports it and the user explicitly selects a destination.
 - A large GPX track should not be sent directly over LoRa. The interface offers a track summary for LoRa and reserves full GPX file exchange for a future authenticated Bluetooth companion channel.
-- Bluetooth transport is a future development requirement, not a feature of the current browser simulator or a guarantee that both radio firmware implementations support it.
+- Bluetooth transport is a future development requirement, not a feature of the retired browser simulator or a guarantee that both radio firmware implementations support it.
 - The example coordinates and GPX metadata are fictional. The simulator does not access actual GNSS, retain recordings, or transmit anything.
 - Design follow-ups include GPX import/export, track point simplification and bounds, POI category/icon management, offline basemaps, explicit location privacy, file integrity, transfer progress, interruption recovery, and battery impact.
 
