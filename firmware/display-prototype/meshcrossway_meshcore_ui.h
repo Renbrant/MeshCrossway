@@ -14,7 +14,7 @@ static unsigned tools_filter=0;
 static bool node_sort_distance=false,nav_gps_valid=false;
 static double nav_latitude=0,nav_longitude=0;
 static void set_navigation_fix(bool valid,double latitude,double longitude){nav_gps_valid=valid;nav_latitude=latitude;nav_longitude=longitude;}
-static const char *node_sort_label(){if(!node_sort_distance)return "SORT: LAST HEARD";return nav_gps_valid?"SORT: DISTANCE":"DISTANCE / GPS NEEDED";}
+static const char *node_sort_label(){if(!node_sort_distance)return "SORT: HEARD";return nav_gps_valid?"SORT: DISTANCE":"SORT: DIST / NO GPS";}
 static void compact_list_label(char *text){
   if(!text)return;
   for(char *p=text;*p;++p)if(*p=='\n'||*p=='\r'||*p=='\t')*p=' ';
@@ -487,9 +487,7 @@ static void choose_channel(lv_event_t *e) {
 }
 static uint32_t contact_last_heard(const meshmc::Client &s,int i){
   const auto &contact=s.contacts[i];
-  uint32_t last=contact.advert>contact.lastmod?contact.advert:contact.lastmod;
-  for(const auto &m:s.messages)if(m.id&&!m.outgoing&&!m.channel&&!memcmp(m.key,contact.key,6)&&m.observed_at>last)last=m.observed_at;
-  return last;
+  return contact.advert>contact.lastmod?contact.advert:contact.lastmod;
 }
 static void toggle_node_sort_now(void *){node_sort_distance=!node_sort_distance;draw();}
 static void toggle_node_sort(lv_event_t *){lv_async_call(toggle_node_sort_now,nullptr);}
