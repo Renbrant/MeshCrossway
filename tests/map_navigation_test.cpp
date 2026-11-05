@@ -195,6 +195,25 @@ int main(int argc,char **argv){
  mcxnav::mock_state.folders[0].id=5;strcpy(mcxnav::mock_state.folders[0].name,"Trail folder");++mcxnav::mock_state.revision;navui::poll();gpsui::nav_refresh();advance();assert(gpsui::library_folder==5);render_preview("track-folders");
  gpsui::track_details(9);advance();lv_obj_t *folder_picker=nullptr;for(unsigned i=0;i<lv_obj_get_child_cnt(gpsui::dialog);++i){auto *o=lv_obj_get_child(gpsui::dialog,i);if(lv_obj_check_type(o,&lv_dropdown_class)){folder_picker=o;break;}}assert(folder_picker);lv_dropdown_set_selected(folder_picker,1);lv_event_send(folder_picker,LV_EVENT_VALUE_CHANGED,nullptr);assert(mcxnav::last_command.action==mcxnav::MOVE_TRACK&&mcxnav::last_command.id==9&&mcxnav::last_command.value==5);
 
+ // Dense map group: fixed preview budget even with every protocol slot occupied.
+ assert(navui::front&&navui::overlay_cache);
+ auto &dense=*navui::overlay_cache;dense.node_count=navui::MAX_NODE_MARKERS;dense.cluster_count=1;
+ dense.clusters[0].count=uint16_t(dense.node_count);dense.clusters[0].first=0;
+ dense.clusters[0].point={lv_coord_t(navui::front->view.width/2),lv_coord_t(navui::front->view.height/2)};
+ for(unsigned i=0;i<dense.node_count;++i){dense.nodes[i].cluster=0;strcpy(dense.nodes[i].name,"Long node name\nwith controls");snprintf(dense.nodes[i].id,sizeof(dense.nodes[i].id),"%064u",i);}
+ const auto requests_before=mcxmap::wanted.load();
+ for(int width:{276,400})for(unsigned repeat=0;repeat<10;++repeat){
+   lv_obj_set_width(body,width);gpsui::show_node_group(0);advance();
+   assert(lv_obj_get_child_cnt(info_dialog)==8&&!lv_obj_has_flag(info_dialog,LV_OBJ_FLAG_SCROLLABLE));
+   lv_area_t bounds;lv_obj_get_coords(info_dialog,&bounds);
+   for(unsigned i=0;i<lv_obj_get_child_cnt(info_dialog);++i){lv_area_t a;lv_obj_get_coords(lv_obj_get_child(info_dialog,i),&a);assert(a.x1>=bounds.x1&&a.x2<=bounds.x2&&a.y1>=bounds.y1&&a.y2<=bounds.y2);}
+   for(unsigned i=0;i<gpsui::GROUP_PREVIEW_LIMIT;++i){auto *card=lv_obj_get_child(info_dialog,i+2);assert(lv_obj_get_height(card)==39);assert(lv_label_get_long_mode(lv_obj_get_child(card,0))==LV_LABEL_LONG_CLIP);assert(!strchr(lv_label_get_text(lv_obj_get_child(card,0)),'\n'));}
+   assert(mcxmap::wanted.load()==requests_before); // Opening the preview never requests tiles/radio data.
+ }
+ const auto previous_zoom=navui::zoom;lv_event_send(lv_obj_get_child(info_dialog,6),LV_EVENT_CLICKED,nullptr);advance();
+ assert(!info_dialog&&navui::zoom==previous_zoom+2&&mcxmap::wanted.load()>requests_before);
+ puts("PASS: 640-node cluster remains bounded to four fixed rows at both widths; preview requests no tiles; explicit zoom works");
+ dense.node_count=dense.cluster_count=0;dense.ready=false;
  gpsui::map_diagnostics();advance();assert(info_dialog);gpsui::map_credits();advance();assert(info_dialog);
  info_close_now(nullptr);navui::invalidate();lv_obj_clean(body);navui::after_clean();assert(!navui::front);
  // Full viewport/overlay geometry at all four left/right rail combinations.

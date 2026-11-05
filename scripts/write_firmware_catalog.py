@@ -74,6 +74,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.20":
+        summary="EXPERIMENTAL: replaces the large map-cluster text list with four fixed preview rows and an explicit zoom action; preserves serial memory diagnostics. v0.9.16 remains stable."
+        label="Bounded map cluster preview / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.19":
         summary="DIAGNOSTIC: bounded PSRAM memory timeline, sparse stack measurements and serial-console logs for issue #137. Includes build memory reports. No network allocator optimization yet. v0.9.16 remains stable."
         label="Memory timeline diagnostics / EXPERIMENTAL"

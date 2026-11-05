@@ -53,7 +53,7 @@ static void begin(){
   if(!p){printf("[MCX-MEMLOG] disabled: PSRAM allocation unavailable\n");return;}
   for(unsigned i=0;i<TASK_COUNT;++i)stacks[i].store(UINT32_MAX);
   boot=esp_random();rows.store(p);capture(1,esp_reset_reason());
-  printf("[MCX-MEMLOG] v0.9.19 ring=%u bytes PSRAM; sample=30s output=console\n",unsigned(CAPACITY*sizeof(Row)));
+  printf("[MCX-MEMLOG] v0.9.20 ring=%u bytes PSRAM; sample=30s output=console\n",unsigned(CAPACITY*sizeof(Row)));
 }
 static void allocation_failed(size_t bytes,uint32_t caps){failures.fetch_add(1);failed_bytes.store(bytes);failed_caps.store(caps);}
 static void stack(Task id,uint32_t bytes){
@@ -74,7 +74,7 @@ static __attribute__((noinline)) void flush(){
     const bool found=count!=0;if(found)r=p[head];
     portEXIT_CRITICAL(&mux);if(!found)return;
     char line[384];
-    int used=snprintf(line,sizeof(line),"[MCX-MEMLOG] v0.9.19,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",unsigned(r.boot),unsigned(r.seq),unsigned(r.ms),unsigned(r.event),unsigned(r.detail),unsigned(r.internal),unsigned(r.dma),unsigned(r.psram),unsigned(r.failures),unsigned(r.failed_bytes),unsigned(r.failed_caps),unsigned(r.sample_us),unsigned(r.dropped),unsigned(r.output_errors));
+    int used=snprintf(line,sizeof(line),"[MCX-MEMLOG] v0.9.20,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",unsigned(r.boot),unsigned(r.seq),unsigned(r.ms),unsigned(r.event),unsigned(r.detail),unsigned(r.internal),unsigned(r.dma),unsigned(r.psram),unsigned(r.failures),unsigned(r.failed_bytes),unsigned(r.failed_caps),unsigned(r.sample_us),unsigned(r.dropped),unsigned(r.output_errors));
     if(used<0||unsigned(used)>=sizeof(line)){++write_errors;return;}
     for(unsigned i=0;i<TASK_COUNT;++i){
       const int added=snprintf(line+used,sizeof(line)-unsigned(used),",%u",unsigned(r.stack[i]));
