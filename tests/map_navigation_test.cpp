@@ -82,6 +82,11 @@ int main(int argc,char **argv){
  lv_indev_drv_t input;lv_indev_drv_init(&input);input.type=LV_INDEV_TYPE_POINTER;input.read_cb=read_pointer;lv_indev_drv_register(&input);
  mcxmap::View v;v.latitude=45.123456;v.longitude=-110.654321;v.width=400;v.height=155;v.generation=1;mcxmap::wanted=1;mcxmap::Config c;c.online=0;make_tiles(v);
  auto *frame=mcxmap::render(v,c);assert(frame&&frame->loaded>=2&&!frame->missing);const auto *pixels=(const lv_color_t *)frame->image.data;assert(pixels[100].full==lv_color_make(25,150,75).full);mcxmap::release(frame);
+ const auto day_pixel=lv_color_make(25,150,75);auto night_config=c;mcxmap::select_provider(night_config,mcxmap::STREET_NIGHT);
+ assert(mcxmap::provider(night_config)==mcxmap::STREET_NIGHT&&mcxmap::source_hash(c)==mcxmap::source_hash(night_config));
+ const int night_http_before=fake_http_calls;frame=mcxmap::render(v,night_config);assert(frame&&frame->loaded>=2&&!frame->missing);
+ assert(((const lv_color_t *)frame->image.data)[100].full==mcxmap::night_pixel(day_pixel).full&&mcxmap::night_pixel(day_pixel).full!=day_pixel.full);mcxmap::release(frame);
+ frame=mcxmap::render(v,c);assert(frame&&((const lv_color_t *)frame->image.data)[100].full==day_pixel.full&&fake_http_calls==night_http_before);mcxmap::release(frame);
  const auto decoded=mcxmap::decode_count.load();
  const auto hits=mcxmap::cache_hits.load();
  frame=mcxmap::render(v,c);assert(frame&&!frame->missing&&mcxmap::decode_count.load()==decoded&&mcxmap::cache_hits.load()>hits);mcxmap::release(frame);
@@ -138,7 +143,10 @@ int main(int argc,char **argv){
  for(int z=5;z<=17;++z){lv_slider_set_value(navui::zoom_slider,z,LV_ANIM_OFF);lv_event_send(navui::zoom_slider,LV_EVENT_VALUE_CHANGED,nullptr);}
  assert(navui::zoom==14&&navui::pending_zoom==17&&mcxmap::wanted.load()==before_slider+1); // Only cancellation during drag.
  lv_event_send(navui::zoom_slider,LV_EVENT_RELEASED,nullptr);assert(navui::zoom==17&&mcxmap::requested.zoom==17&&!navui::zoom_adjusting);
- assert(navui::zoom_overlay);navui::toggle_zoom();assert(!navui::zoom_overlay&&!navui::zoom_open);
+ assert(navui::zoom_overlay);lv_tick_inc(1900);navui::poll();assert(navui::zoom_overlay);
+ lv_tick_inc(101);navui::poll();assert(!navui::zoom_overlay&&!navui::zoom_open);
+ navui::toggle_zoom();lv_event_send(navui::zoom_slider,LV_EVENT_PRESSED,nullptr);lv_tick_inc(3000);navui::poll();assert(navui::zoom_overlay&&navui::zoom_adjusting);
+ lv_event_send(navui::zoom_slider,LV_EVENT_RELEASED,nullptr);navui::toggle_zoom();assert(!navui::zoom_overlay);
  navui::zoom=14;auto restore=mcxmap::configuration();restore.zoom=14;mcxmap::configure(restore);navui::request();auto current=mcxmap::requested;make_tiles(current);mcxmap::ready=mcxmap::render(current,mcxmap::config);mcxmap::queued=false;navui::poll();assert(navui::front&&!navui::front->missing&&!lv_obj_has_flag(navui::marker,LV_OBJ_FLAG_HIDDEN));
  navui::toggle_zoom();advance();
  lv_event_send(navui::zoom_slider,LV_EVENT_PRESSED,nullptr);lv_slider_set_value(navui::zoom_slider,15,LV_ANIM_OFF);lv_event_send(navui::zoom_slider,LV_EVENT_VALUE_CHANGED,nullptr);
@@ -171,6 +179,14 @@ int main(int argc,char **argv){
  lv_dropdown_set_selected(gpsui::provider_picker,1);lv_event_send(gpsui::provider_picker,LV_EVENT_VALUE_CHANGED,nullptr);
  assert(mcxmap::provider(mcxmap::configuration())==mcxmap::TOPO&&strstr(mcxmap::configuration().attribution,"OpenTopoMap"));
  lv_obj_clear_state(gpsui::online_switch,LV_STATE_CHECKED);lv_event_send(gpsui::online_switch,LV_EVENT_VALUE_CHANGED,nullptr);assert(!mcxmap::configuration().online);
+ // Network sections keep format/size/color together and update independently.
+ std::vector<lv_obj_t *> style_pickers;
+ for(unsigned i=0;i<lv_obj_get_child_cnt(gpsui::dialog);++i){auto *o=lv_obj_get_child(gpsui::dialog,i);if(lv_obj_check_type(o,&lv_dropdown_class))style_pickers.push_back(o);else for(unsigned j=0;j<lv_obj_get_child_cnt(o);++j){auto *child=lv_obj_get_child(o,j);if(lv_obj_check_type(child,&lv_dropdown_class))style_pickers.push_back(child);}}
+ assert(style_pickers.size()==7);
+ const unsigned selected[]={2,1,4,3,5,3};for(unsigned i=0;i<6;++i){lv_dropdown_set_selected(style_pickers[i+1],selected[i]);lv_event_send(style_pickers[i+1],LV_EVENT_VALUE_CHANGED,nullptr);}
+ const auto styled=mcxmap::configuration();assert(mcxmap::node_icon(styled,false)==mcxmap::NODE_CROSS&&mcxmap::node_icon(styled,true)==mcxmap::NODE_NAME);
+ assert(mcxmap::node_size_index(styled,false)==1&&mcxmap::node_size_index(styled,true)==5&&mcxmap::node_color(styled,false)==mcxmap::NODE_COLOR_RED&&mcxmap::node_color(styled,true)==mcxmap::NODE_COLOR_GREEN);
+ render_preview("map-network-options");
  gpsui::new_poi();advance();lv_textarea_set_text(gpsui::poi_name,"Trail start");gpsui::save_poi(nullptr);assert(mcxnav::last_action==mcxnav::SAVE_POI&&!strcmp(mcxnav::last_name,"Trail start"));
  mcxnav::mock_state.mode=mcxnav::STOPPED;gpsui::recording();advance();assert(!lv_obj_has_state(gpsui::record_start,LV_STATE_DISABLED));assert(lv_obj_has_state(gpsui::record_pause,LV_STATE_DISABLED));
  lv_area_t start_area,pause_area;lv_obj_get_coords(gpsui::record_start,&start_area);lv_obj_get_coords(gpsui::record_pause,&pause_area);assert(start_area.x2<pause_area.x1&&start_area.y1==pause_area.y1);render_preview("record-ready");
@@ -195,22 +211,34 @@ int main(int argc,char **argv){
  mcxnav::mock_state.folders[0].id=5;strcpy(mcxnav::mock_state.folders[0].name,"Trail folder");++mcxnav::mock_state.revision;navui::poll();gpsui::nav_refresh();advance();assert(gpsui::library_folder==5);render_preview("track-folders");
  gpsui::track_details(9);advance();lv_obj_t *folder_picker=nullptr;for(unsigned i=0;i<lv_obj_get_child_cnt(gpsui::dialog);++i){auto *o=lv_obj_get_child(gpsui::dialog,i);if(lv_obj_check_type(o,&lv_dropdown_class)){folder_picker=o;break;}}assert(folder_picker);lv_dropdown_set_selected(folder_picker,1);lv_event_send(folder_picker,LV_EVENT_VALUE_CHANGED,nullptr);assert(mcxnav::last_command.action==mcxnav::MOVE_TRACK&&mcxnav::last_command.id==9&&mcxnav::last_command.value==5);
 
+ // MeshCore GPS is independent of contact flags; invalid coordinates remain excluded.
+ info_close_now(nullptr);auto *mc_radio=new meshmc::Client();meshmc::client=mc_radio;mc_radio->contact_count=2;
+ auto &mc_contact=mc_radio->contacts[0];mc_contact.flags=0;mc_contact.lat=int32_t(navui::front->view.latitude*1e6);mc_contact.lon=int32_t((navui::front->view.longitude+.006)*1e6);mc_contact.key[30]=0xAB;mc_contact.key[31]=0xCD;
+ const double fallback_lat=navui::latitude,fallback_lon=navui::longitude;const bool fallback_follow=navui::following;
+ assert(navui::center_on_known_node()&&fabs(navui::latitude-mc_contact.lat/1e6)<1e-7);navui::latitude=fallback_lat;navui::longitude=fallback_lon;navui::following=fallback_follow;
+ strcpy(mc_contact.name,"MeshCore GPS tag");mc_radio->contacts[1]=mc_contact;mc_radio->contacts[1].lat=91000000;
+ auto mc_config=mcxmap::configuration();mcxmap::set_nodes_hidden(mc_config,false);mcxmap::set_nodes_grouped(mc_config,false);mcxmap::set_node_icon(mc_config,true,mcxmap::NODE_NAME);mcxmap::set_node_size(mc_config,5,true);mcxmap::configure(mc_config);
+ navui::zoom=navui::front->view.zoom;navui::overlay_cache->ready=false;navui::rebuild_overlay_cache();assert(navui::overlay_cache->node_count==1&&navui::overlay_cache->nodes[0].meshcore);
+ assert(!strcmp(navui::overlay_cache->nodes[0].id+60,"ABCD"));lv_obj_invalidate(navui::picture);advance();render_preview("meshcore-name-tag");
+ meshmc::client=nullptr;delete mc_radio;
  // The user can turn grouping off, save it, and reload it without losing marker styles.
  auto legacy_map=mcxmap::configuration();legacy_map.version=3;legacy_map.show_node_names&=0x7f;
  mcxmap::set_node_icon(legacy_map,false,mcxmap::NODE_NAME);mcxmap::set_node_icon(legacy_map,true,mcxmap::NODE_CROSS);mcxmap::set_node_size(legacy_map,4);
  mcxmap::set_node_color(legacy_map,false,mcxmap::NODE_COLOR_PURPLE);mcxmap::set_node_color(legacy_map,true,mcxmap::NODE_COLOR_GREEN);mcxmap::set_node_names(legacy_map,true);
- fake_nvs_available=true;fake_nvs_blob.assign((const unsigned char *)&legacy_map,(const unsigned char *)&legacy_map+sizeof(legacy_map));
- mcxmap::loaded_config=false;mcxmap::load_config();assert(mcxmap::configuration().version==4&&mcxmap::nodes_grouped(mcxmap::configuration()));
+ fake_nvs_available=true;fake_nvs_blob.assign((const unsigned char *)&legacy_map,(const unsigned char *)&legacy_map+offsetof(mcxmap::Config,meshcore_size));
+ mcxmap::loaded_config=false;mcxmap::load_config();assert(mcxmap::configuration().version==5&&mcxmap::nodes_grouped(mcxmap::configuration()));
  assert(mcxmap::configuration().hide_nodes==legacy_map.hide_nodes&&mcxmap::configuration().show_node_names==legacy_map.show_node_names);
+ auto saved_style=mcxmap::configuration();mcxmap::set_node_size(saved_style,2,true);mcxmap::select_provider(saved_style,mcxmap::STREET_NIGHT);mcxmap::configure(saved_style);
  gpsui::map_options();advance();assert(lv_obj_has_state(gpsui::grouping_switch,LV_STATE_CHECKED));
  lv_obj_clear_state(gpsui::grouping_switch,LV_STATE_CHECKED);lv_event_send(gpsui::grouping_switch,LV_EVENT_VALUE_CHANGED,nullptr);
  assert(!mcxmap::nodes_grouped(mcxmap::configuration()));lv_tick_inc(6000);mcxmap::persist_config();assert(mcxmap::settings_saved.load());
  mcxmap::config=mcxmap::Config{};mcxmap::loaded_config=false;mcxmap::load_config();assert(!mcxmap::nodes_grouped(mcxmap::configuration()));
+ assert(mcxmap::node_size_index(mcxmap::configuration(),true)==2&&mcxmap::node_size_index(mcxmap::configuration(),false)==4&&mcxmap::provider(mcxmap::configuration())==mcxmap::STREET_NIGHT);
  assert(mcxmap::configuration().hide_nodes==legacy_map.hide_nodes&&(mcxmap::configuration().show_node_names&0x7f)==legacy_map.show_node_names);
  gpsui::map_options();advance();assert(!lv_obj_has_state(gpsui::grouping_switch,LV_STATE_CHECKED));
  lv_obj_add_state(gpsui::grouping_switch,LV_STATE_CHECKED);lv_event_send(gpsui::grouping_switch,LV_EVENT_VALUE_CHANGED,nullptr);
  assert(mcxmap::nodes_grouped(mcxmap::configuration()));fake_nvs_available=false;fake_nvs_blob.clear();
- for(unsigned version:{1u,2u,3u}){mcxmap::Config old;old.version=version;assert(mcxmap::migrate_config(old)&&old.version==4&&mcxmap::nodes_grouped(old));}
+ for(unsigned version:{1u,2u,3u,4u}){mcxmap::Config old;old.version=version;assert(mcxmap::migrate_config(old)&&old.version==5&&mcxmap::nodes_grouped(old));}
 
  // Dense map group: fixed preview budget even with every protocol slot occupied.
  assert(navui::front&&navui::overlay_cache);

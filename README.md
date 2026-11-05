@@ -14,7 +14,7 @@
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Project status — v0.9.16 stable; v0.9.24 candidate.** Map Options now includes a saved **Group nearby nodes** switch: turn it off for individual markers. Preserves the v0.9.23 software-AES map-download fix and memory diagnostics. See [map grouping](docs/map-grouping-v0924.md) and [issue #137](https://github.com/Renbrant/MeshCrossway/issues/137).
+> **Project status — v0.9.16 stable; v0.9.25 candidate.** Map controls add per-network format/size/color sections, two-second zoom dismissal and local OpenStreetMap night presentation. MeshCore markers use valid coordinates independently of contact flags. Preserves software-AES HTTPS, optional grouping and diagnostics. See [map control changes](docs/map-controls-v0925.md).
 
 ## Support the project
 

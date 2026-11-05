@@ -6,6 +6,7 @@ static lv_obj_t *canvas=nullptr,*picture=nullptr,*marker=nullptr,*map_status=nul
 static mcxmap::Frame *front=nullptr;
 static lv_obj_t *zoom_overlay=nullptr,*zoom_slider=nullptr,*zoom_value=nullptr;
 static bool zoom_open=false,zoom_adjusting=false,worker_start_failed=false;
+static bool zoom_close_armed=false;static uint32_t zoom_close_at=0;
 static unsigned pending_zoom=14;
 static char status_text[96]="Waiting for GPS";
 static void recording();
@@ -53,7 +54,7 @@ static uint32_t overlay_signature(){
   if(!nav_state)return 0;
   const auto map=mcxmap::configuration();
   const uint32_t fields[]={nav_state->preview_id,nav_state->preview_count,nav_state->points,nav_state->overlay_count,nav_state->poi_count,
-    uint32_t(map.hide_nodes)|(uint32_t(map.show_node_names)<<8),meshmt::client?meshmt::client->generation:0u,uint32_t(meshmt::client?meshmt::client->data.node_count:0),
+    uint32_t(map.hide_nodes)|(uint32_t(map.show_node_names)<<8)|(uint32_t(map.meshcore_size)<<16)|(uint32_t(map.night)<<24),meshmt::client?meshmt::client->generation:0u,uint32_t(meshmt::client?meshmt::client->data.node_count:0),
     meshmc::client?meshmc::client->generation:0u,uint32_t(meshmc::client?meshmc::client->contact_count:0)};
   return mcxnav::checksum(fields,sizeof(fields))^mcxnav::checksum(nav_state->preferences.styles,sizeof(nav_state->preferences.styles))^mcxnav::checksum(nav_state->pois,nav_state->poi_count*sizeof(mcxnav::Poi));
 }
@@ -78,7 +79,7 @@ static void pointer(lv_event_t *event){
   if(!centered||zoom_adjusting||!front)return;
   auto *input=lv_indev_get_act();if(!input)return;
   lv_point_t p={};lv_indev_get_point(input,&p);const auto code=lv_event_get_code(event);
-  if(code==LV_EVENT_CLICKED){if(!gesture_moved&&overlay_cache&&overlay_cache->ready&&picture){lv_area_t a;lv_obj_get_coords(canvas,&a);const int x=p.x-a.x1-pan_x,y=p.y-a.y1-pan_y;const auto map=mcxmap::configuration();const int radius=mcxmap::node_icon(map,false)==mcxmap::NODE_NAME||mcxmap::node_icon(map,true)==mcxmap::NODE_NAME?25:int(mcxmap::node_size(map)/2)+7;
+  if(code==LV_EVENT_CLICKED){if(!gesture_moved&&overlay_cache&&overlay_cache->ready&&picture){lv_area_t a;lv_obj_get_coords(canvas,&a);const int x=p.x-a.x1-pan_x,y=p.y-a.y1-pan_y;const auto map=mcxmap::configuration();const int radius=mcxmap::node_icon(map,false)==mcxmap::NODE_NAME||mcxmap::node_icon(map,true)==mcxmap::NODE_NAME?25:int((mcxmap::node_size(map)>mcxmap::node_size(map,true)?mcxmap::node_size(map):mcxmap::node_size(map,true))/2)+7;
       for(unsigned i=0;i<overlay_cache->cluster_count;++i){const auto &cluster=overlay_cache->clusters[i];const int dx=x-cluster.point.x,dy=y-cluster.point.y;if(dx*dx+dy*dy<=radius*radius){open_node_selection(i);break;}}}
     gesture_moved=false;return;}
   if(code==LV_EVENT_PRESSED){drag_start=p;drag_x=pan_x;drag_y=pan_y;dragging=true;gesture_moved=false;}
@@ -93,14 +94,14 @@ static void pointer(lv_event_t *event){
 }
 static void zoom_changed(lv_event_t *event){
   const auto code=lv_event_get_code(event);
-  if(code==LV_EVENT_PRESSED){zoom_adjusting=true;mcxmap::stop();inflight=false;}
+  if(code==LV_EVENT_PRESSED){zoom_close_armed=false;zoom_adjusting=true;mcxmap::stop();inflight=false;}
   if(code==LV_EVENT_VALUE_CHANGED||code==LV_EVENT_PRESSED){
     pending_zoom=unsigned(lv_slider_get_value(zoom_slider));char value[24];snprintf(value,sizeof(value),"Zoom %u",pending_zoom);
     chatview::label(zoom_value,value);preview_zoom(pending_zoom);
     // Keyboard adjustments have no pointer release: commit on key event below.
   }
   if(code==LV_EVENT_RELEASED||code==LV_EVENT_PRESS_LOST||code==LV_EVENT_KEY){
-    zoom_adjusting=false;
+    zoom_adjusting=false;zoom_close_armed=true;zoom_close_at=uint32_t(esp_timer_get_time()/1000)+2000;
     if(pending_zoom!=zoom){zoom=pending_zoom;auto c=mcxmap::configuration();c.zoom=uint8_t(zoom);mcxmap::configure(c);request();}
     else if(centered)request();
   }
@@ -118,7 +119,7 @@ static void show_zoom(){
   lv_obj_add_event_cb(zoom_slider,zoom_changed,LV_EVENT_ALL,nullptr);
 }
 static void toggle_zoom(){
-  zoom_open=!zoom_open;
+  zoom_close_armed=false;zoom_open=!zoom_open;
   if(zoom_open)show_zoom();
   else if(zoom_overlay){lv_obj_del(zoom_overlay);zoom_overlay=zoom_slider=zoom_value=nullptr;zoom_adjusting=false;}
 }
@@ -135,7 +136,7 @@ static bool center_on_known_node(){
   }
   if(auto *radio=meshmc::client){
     for(unsigned i=0;i<radio->contact_count;++i){const auto &node=radio->contacts[i];
-      if(!(node.flags&0x10)||(!node.lat&&!node.lon)||node.lat<-90000000||node.lat>90000000||node.lon<-180000000||node.lon>180000000)continue;
+      if((!node.lat&&!node.lon)||node.lat<-90000000||node.lat>90000000||node.lon<-180000000||node.lon>180000000)continue;
       latitude=node.lat/1e6;longitude=node.lon/1e6;centered=true;following=false;return true;
     }
   }
@@ -181,6 +182,7 @@ static void poll(){
   if(canvas&&nav_state&&!info_dialog){if(record_badge){const bool active=nav_state->mode==mcxnav::RECORDING||nav_state->mode==mcxnav::PAUSED||nav_state->mode==mcxnav::STORAGE_ERROR;
     if(active){chatview::label(record_badge,nav_state->mode==mcxnav::RECORDING?"REC":nav_state->mode==mcxnav::PAUSED?"PAUSED":"SD ERR");set_hidden(record_badge,false);}else set_hidden(record_badge,true);}}
   const uint32_t now=uint32_t(esp_timer_get_time()/1000);
+  if(zoom_overlay&&zoom_open&&zoom_close_armed&&!zoom_adjusting&&int32_t(now-zoom_close_at)>=0)toggle_zoom();
   if(!dragging)if(auto *next=mcxmap::take()){
     if(next->view.generation==generation){inflight=false;completed_at=now;}
     if(canvas&&next->view.generation==generation&&!zoom_adjusting&&!dragging){
@@ -228,7 +230,7 @@ static void build_node_groups(OverlayCache &cache,const mcxmap::Config &marker_c
     cache.cluster_count=cache.node_count;return;
   }
   // Group close markers so dense areas stay readable. Each node belongs to one nearby group.
-  int cluster_radius=int(mcxmap::node_size(marker_config))+6;if(cluster_radius<20)cluster_radius=20;
+  int cluster_radius=int(mcxmap::node_size(marker_config)>mcxmap::node_size(marker_config,true)?mcxmap::node_size(marker_config):mcxmap::node_size(marker_config,true))+6;if(cluster_radius<20)cluster_radius=20;
   if(mcxmap::node_icon(marker_config,false)==mcxmap::NODE_NAME||mcxmap::node_icon(marker_config,true)==mcxmap::NODE_NAME)cluster_radius=42;
   for(unsigned i=0;i<cache.node_count;++i){if(cache.nodes[i].cluster!=0xffff)continue;const unsigned group=cache.cluster_count++;auto &cluster=cache.clusters[group];cluster.point=cache.nodes[i].point;cluster.count=0;cluster.first=uint16_t(i);cluster.activity=NODE_SAVED;
     int64_t sx=0,sy=0;for(unsigned j=i;j<cache.node_count;++j){if(cache.nodes[j].cluster!=0xffff)continue;const int dx=cache.nodes[j].point.x-cluster.point.x,dy=cache.nodes[j].point.y-cluster.point.y;if(dx*dx+dy*dy>cluster_radius*cluster_radius)continue;
@@ -277,7 +279,7 @@ static void rebuild_overlay_cache(){
     }
     if(auto *radio=meshmc::client){
       for(unsigned i=0;i<radio->contact_count&&cache.node_count<MAX_NODE_MARKERS;++i){const auto &node=radio->contacts[i];
-        if(!(node.flags&0x10)||(!node.lat&&!node.lon)||node.lat<-90000000||node.lat>90000000||node.lon<-180000000||node.lon>180000000)continue;
+        if((!node.lat&&!node.lon)||node.lat<-90000000||node.lat>90000000||node.lon<-180000000||node.lon>180000000)continue;
         static const char hex[]="0123456789ABCDEF";char id[65];for(unsigned b=0;b<32;++b){id[b*2]=hex[node.key[b]>>4];id[b*2+1]=hex[node.key[b]&15];}id[64]=0;lv_point_t point={};if(project_geo(node.lat/1e6,node.lon/1e6,point))save_node(point,true,node.type,node.lastmod>node.advert?node.lastmod:node.advert,node.lat/1e6,node.lon/1e6,node.name,id);
       }
     }
@@ -305,7 +307,7 @@ static void draw_overlays(lv_event_t *event){
     if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
     lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=cyan;d.border_color=white;d.border_width=1;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
   }
-  const auto config=mcxmap::configuration();const int node_size=int(mcxmap::node_size(config));
+  const auto config=mcxmap::configuration();
   for(unsigned g=0;g<overlay_cache->cluster_count;++g){const auto &cluster=overlay_cache->clusters[g];const int x=lv_coord_t(cluster.point.x+area.x1),y=lv_coord_t(cluster.point.y+area.y1);
     if(cluster.count>1){lv_area_t a={lv_coord_t(x-11),lv_coord_t(y-11),lv_coord_t(x+11),lv_coord_t(y+11)};if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
       lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=lv_color_hex(activity_color(cluster.activity));d.border_color=white;d.border_width=2;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
@@ -314,12 +316,13 @@ static void draw_overlays(lv_event_t *event){
     if(cluster.first>=overlay_cache->node_count)continue;
     const NodeMarker *node=&overlay_cache->nodes[cluster.first];
     const int nx=lv_coord_t(node->point.x+area.x1),ny=lv_coord_t(node->point.y+area.y1);const auto icon=mcxmap::node_icon(config,node->meshcore);const bool name_mode=icon==mcxmap::NODE_NAME;
-    const int width=name_mode?36:node_size,height=name_mode?15:node_size;lv_area_t a={lv_coord_t(nx-(width-1)/2),lv_coord_t(ny-(height-1)/2),lv_coord_t(nx+width/2),lv_coord_t(ny+height/2)};
+    const int node_size=int(mcxmap::node_size(config,node->meshcore));
+    const int width=name_mode?30+node_size/2:node_size,height=name_mode?(node_size>22?20:15):node_size;lv_area_t a={lv_coord_t(nx-(width-1)/2),lv_coord_t(ny-(height-1)/2),lv_coord_t(nx+width/2),lv_coord_t(ny+height/2)};
     if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
-    const auto color=lv_color_hex(name_mode?activity_color(node_activity(*node)):mcxmap::node_color_hex(config,node->meshcore));
+    const auto color=lv_color_hex(name_mode&&mcxmap::node_color(config,node->meshcore)==mcxmap::NODE_COLOR_AUTO?activity_color(node_activity(*node)):mcxmap::node_color_hex(config,node->meshcore));
     if(name_mode){char suffix[5]="????";const size_t len=strlen(node->id);if(len>=4)memcpy(suffix,node->id+len-4,4);suffix[4]=0;
       lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=color;d.border_color=white;d.border_width=1;d.radius=height/2;lv_draw_rect(ctx,&d,&a);
-      lv_draw_label_dsc_t label;lv_draw_label_dsc_init(&label);label.color=white;label.font=&lv_font_montserrat_10;label.align=LV_TEXT_ALIGN_CENTER;lv_draw_label(ctx,&label,&a,suffix,nullptr);continue;}
+      lv_draw_label_dsc_t label;lv_draw_label_dsc_init(&label);label.color=lv_color_hex(0x101820);label.font=&lv_font_montserrat_10;label.align=LV_TEXT_ALIGN_CENTER;lv_draw_label(ctx,&label,&a,suffix,nullptr);continue;}
     if(icon==mcxmap::NODE_CROSS){lv_point_t h1={lv_coord_t(a.x1+3),lv_coord_t(ny)},h2={lv_coord_t(a.x2-3),lv_coord_t(ny)};lv_point_t v1={lv_coord_t(nx),lv_coord_t(a.y1+3)},v2={lv_coord_t(nx),lv_coord_t(a.y2-3)};
       lv_draw_line_dsc_t mark;lv_draw_line_dsc_init(&mark);mark.color=white;mark.width=6;lv_draw_line(ctx,&mark,&h1,&h2);lv_draw_line(ctx,&mark,&v1,&v2);mark.color=color;mark.width=3;lv_draw_line(ctx,&mark,&h1,&h2);lv_draw_line(ctx,&mark,&v1,&v2);
     }else{lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=color;d.border_color=white;d.border_width=2;d.radius=icon==mcxmap::NODE_CIRCLE?LV_RADIUS_CIRCLE:0;lv_draw_rect(ctx,&d,&a);}
@@ -694,7 +697,7 @@ static void library(bool pois){
 static lv_obj_t *provider_picker=nullptr,*size_picker=nullptr,*online_switch=nullptr,*nodes_switch=nullptr,*names_switch=nullptr,*grouping_switch=nullptr;
 static void provider_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::select_provider(c,lv_dropdown_get_selected(provider_picker));mcxmap::configure(c);}
 static void icon_changed(lv_event_t *event){auto c=mcxmap::configuration();const bool meshcore=intptr_t(lv_event_get_user_data(event))!=0;auto *picker=lv_event_get_target(event);mcxmap::set_node_icon(c,meshcore,lv_dropdown_get_selected(picker));mcxmap::configure(c);}
-static void size_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::set_node_size(c,lv_dropdown_get_selected(size_picker));mcxmap::configure(c);}
+static void size_changed(lv_event_t *event){auto c=mcxmap::configuration();mcxmap::set_node_size(c,lv_dropdown_get_selected(lv_event_get_target(event)),intptr_t(lv_event_get_user_data(event))!=0);mcxmap::configure(c);}
 static void color_changed(lv_event_t *event){auto c=mcxmap::configuration();const bool meshcore=intptr_t(lv_event_get_user_data(event))!=0;auto *picker=lv_event_get_target(event);mcxmap::set_node_color(c,meshcore,lv_dropdown_get_selected(picker));mcxmap::configure(c);}
 static void online_changed(lv_event_t *){auto c=mcxmap::configuration();c.online=lv_obj_has_state(online_switch,LV_STATE_CHECKED);mcxmap::configure(c);}
 static void nodes_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::set_nodes_hidden(c,!lv_obj_has_state(nodes_switch,LV_STATE_CHECKED));mcxmap::configure(c);}
@@ -774,7 +777,7 @@ static void map_options(){
   lv_obj_set_height(dialog,420);
   single_label(dialog,"Map style",8,48,140,white);
   provider_picker=lv_dropdown_create(dialog);lv_obj_set_size(provider_picker,440,40);
-  lv_dropdown_set_options(provider_picker,"Street / OpenStreetMap\nTopographic / OpenTopoMap");lv_dropdown_set_selected(provider_picker,unsigned(mcxmap::provider(c)));
+  lv_dropdown_set_options(provider_picker,"Street / OpenStreetMap\nTopographic / OpenTopoMap\nStreet / OpenStreetMap night");lv_dropdown_set_selected(provider_picker,unsigned(mcxmap::provider(c)));
   lv_obj_add_event_cb(provider_picker,provider_changed,LV_EVENT_VALUE_CHANGED,nullptr);
   auto *row=control_row(30);auto *row_label=single_label(row,"Show saved radio nodes",0,0,330,white);lv_obj_set_flex_grow(row_label,1);
   nodes_switch=lv_switch_create(row);lv_obj_set_size(nodes_switch,44,24);if(!mcxmap::nodes_hidden(c))lv_obj_add_state(nodes_switch,LV_STATE_CHECKED);
@@ -785,30 +788,26 @@ static void map_options(){
   row=control_row(30);row_label=single_label(row,"Show node names",0,0,330,white);lv_obj_set_flex_grow(row_label,1);
   names_switch=lv_switch_create(row);lv_obj_set_size(names_switch,44,24);if(c.show_node_names&1u)lv_obj_add_state(names_switch,LV_STATE_CHECKED);
   lv_obj_add_event_cb(names_switch,names_changed,LV_EVENT_VALUE_CHANGED,nullptr);
-  row=control_row(38);row_label=single_label(row,"Meshtastic icon",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
-  auto *icon_picker=lv_dropdown_create(row);lv_obj_set_size(icon_picker,278,34);
-  lv_dropdown_set_options(icon_picker,"Circle\nSquare\nCross\nName / last 4 ID digits");lv_dropdown_set_selected(icon_picker,unsigned(mcxmap::node_icon(c,false)));
-  lv_obj_add_event_cb(icon_picker,icon_changed,LV_EVENT_VALUE_CHANGED,nullptr);
-  row=control_row(38);row_label=single_label(row,"MeshCore icon",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
-  icon_picker=lv_dropdown_create(row);lv_obj_set_size(icon_picker,278,34);
-  lv_dropdown_set_options(icon_picker,"Circle\nSquare\nCross\nName / last 4 ID digits");lv_dropdown_set_selected(icon_picker,unsigned(mcxmap::node_icon(c,true)));
-  lv_obj_add_event_cb(icon_picker,icon_changed,LV_EVENT_VALUE_CHANGED,(void *)1);
-  row=control_row(38);row_label=single_label(row,"Node size",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
-  size_picker=lv_dropdown_create(row);lv_obj_set_size(size_picker,278,34);
-  lv_dropdown_set_options(size_picker,"Small / 8 px\nMedium / 12 px\nLarge / 18 px\nLarger / 22 px\nExtra large / 26 px\nMaximum / 30 px");
-  lv_dropdown_set_selected(size_picker,mcxmap::node_size_index(c));lv_obj_add_event_cb(size_picker,size_changed,LV_EVENT_VALUE_CHANGED,nullptr);
-  row=control_row(38);row_label=single_label(row,"Meshtastic color",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
-  auto *color_picker=lv_dropdown_create(row);lv_obj_set_size(color_picker,278,34);
-  lv_dropdown_set_options(color_picker,"Auto / network color\nOrange\nCyan\nGreen\nRed\nPurple\nYellow\nWhite");
-  lv_dropdown_set_selected(color_picker,unsigned(mcxmap::node_color(c,false)));lv_obj_add_event_cb(color_picker,color_changed,LV_EVENT_VALUE_CHANGED,nullptr);
-  row=control_row(38);row_label=single_label(row,"MeshCore color",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
-  color_picker=lv_dropdown_create(row);lv_obj_set_size(color_picker,278,34);
-  lv_dropdown_set_options(color_picker,"Auto / network color\nOrange\nCyan\nGreen\nRed\nPurple\nYellow\nWhite");
-  lv_dropdown_set_selected(color_picker,unsigned(mcxmap::node_color(c,true)));lv_obj_add_event_cb(color_picker,color_changed,LV_EVENT_VALUE_CHANGED,(void *)1);
+  for(unsigned network=0;network<2;++network){
+    const bool meshcore=network!=0;void *which=meshcore?(void *)1:nullptr;
+    single_label(dialog,meshcore?"MESHCORE":"MESHTASTIC",0,0,440,orange);
+    row=control_row(38);row_label=single_label(row,"Format",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
+    auto *picker=lv_dropdown_create(row);lv_obj_set_size(picker,278,34);
+    lv_dropdown_set_options(picker,"Circle\nSquare\nCross\nName / last 4 ID digits");lv_dropdown_set_selected(picker,unsigned(mcxmap::node_icon(c,meshcore)));
+    lv_obj_add_event_cb(picker,icon_changed,LV_EVENT_VALUE_CHANGED,which);
+    row=control_row(38);row_label=single_label(row,"Size",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
+    picker=lv_dropdown_create(row);lv_obj_set_size(picker,278,34);
+    lv_dropdown_set_options(picker,"Small / 8 px\nMedium / 12 px\nLarge / 18 px\nLarger / 22 px\nExtra large / 26 px\nMaximum / 30 px");
+    lv_dropdown_set_selected(picker,mcxmap::node_size_index(c,meshcore));lv_obj_add_event_cb(picker,size_changed,LV_EVENT_VALUE_CHANGED,which);
+    row=control_row(38);row_label=single_label(row,"Color",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
+    picker=lv_dropdown_create(row);lv_obj_set_size(picker,278,34);
+    lv_dropdown_set_options(picker,"Auto / network color\nOrange\nCyan\nGreen\nRed\nPurple\nYellow\nWhite");
+    lv_dropdown_set_selected(picker,unsigned(mcxmap::node_color(c,meshcore)));lv_obj_add_event_cb(picker,color_changed,LV_EVENT_VALUE_CHANGED,which);
+  }
   row=control_row(30);row_label=single_label(row,"Download visible map tiles",0,0,330,white);lv_obj_set_flex_grow(row_label,1);
   online_switch=lv_switch_create(row);lv_obj_set_size(online_switch,44,24);if(c.online)lv_obj_add_state(online_switch,LV_STATE_CHECKED);
   lv_obj_add_event_cb(online_switch,online_changed,LV_EVENT_VALUE_CHANGED,nullptr);
-  auto *help=single_label(dialog,"Name mode shows the last 4 ID digits; tap a marker or cluster for details. Turn off Group nearby nodes to show individual markers. In Name mode: green = active within 5 min, cyan = seen within 60 min, gray = saved/older (recent activity is not a health check).\nOFF uses SD maps and cached tiles only. Icons and colors are independent per network; size and name visibility are shared.",0,0,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
+  auto *help=single_label(dialog,"Name mode shows the last 4 ID digits; tap a marker or cluster for details. Turn off Group nearby nodes to show individual markers. In Name mode: green = active within 5 min, cyan = seen within 60 min, gray = saved/older (recent activity is not a health check).\nOFF uses SD maps and cached tiles only. Format, size and color are independent per network; name visibility is shared.",0,0,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
   map_save_label=single_label(dialog,"",0,0,440,muted);refresh();
 }
 }

@@ -74,6 +74,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.25":
+        summary="EXPERIMENTAL: per-network map format/size/color sections, zoom closes after two seconds, local OpenStreetMap night presentation and valid-coordinate MeshCore marker fix. Preserves software-AES HTTPS fix and optional grouping."
+        label="Map controls and MeshCore markers / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.24":
         summary="EXPERIMENTAL: adds a saved Group nearby nodes map switch for individual markers. Preserves v0.9.23 software-AES HTTPS fix, RX memory optimization and diagnostics; v0.9.16 remains stable."
         label="Optional map grouping / EXPERIMENTAL"
