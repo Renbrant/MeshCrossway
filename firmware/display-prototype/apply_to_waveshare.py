@@ -202,6 +202,12 @@ defaults = "# CONFIG_ESP_WIFI_RX_IRAM_OPT is not set\n" + "\n".join(line for lin
                      if not line.startswith(("CONFIG_ESP_WIFI_RX_IRAM_OPT=",
                                              "# CONFIG_ESP_WIFI_RX_IRAM_OPT is not set"))) + "\n"
 sdk.write_text(defaults)
+# v0.9.23: avoid hardware-AES bounce buffers during PSRAM-backed HTTPS reads.
+# TLS/AES support and certificate validation stay enabled; only acceleration changes.
+defaults = "# CONFIG_MBEDTLS_HARDWARE_AES is not set\n" + "\n".join(line for line in defaults.splitlines()
+                     if not line.startswith(("CONFIG_MBEDTLS_HARDWARE_AES=",
+                                             "# CONFIG_MBEDTLS_HARDWARE_AES is not set"))) + "\n"
+sdk.write_text(defaults)
 # The Wi-Fi backup uses /sdcard/meshcrossway-wifi.{tmp,json,bak}.
 # ESP-IDF FatFs defaults to FATFS_LFN_NONE, so those paths otherwise fail
 # to open even on correctly mounted FAT32 cards.

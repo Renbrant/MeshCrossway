@@ -14,7 +14,7 @@
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Project status — v0.9.16 stable; v0.9.22 candidate.** A controlled Wi-Fi RX code-placement experiment targets internal-memory headroom while preserving v0.9.21 allocation diagnostics and accepted node/map behavior. Hardware comparison against v0.9.21 is pending. See the [A/B test procedure](docs/wifi-rx-flash-v0922.md) and [memory investigation #137](https://github.com/Renbrant/MeshCrossway/issues/137).
+> **Project status — v0.9.16 stable; v0.9.23 candidate.** The map-download candidate uses software AES in mbedTLS after v0.9.22 logs identified hardware-AES DMA allocation failures. HTTPS verification and the RX memory optimization are preserved. Physical validation is pending. See the [evidence and test procedure](docs/map-tls-dma-v0923.md) and [issue #137](https://github.com/Renbrant/MeshCrossway/issues/137).
 
 ## Support the project
 
