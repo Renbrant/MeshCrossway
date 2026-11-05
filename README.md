@@ -4,7 +4,6 @@
 
 <p align="center">
   <a href="https://renbrant.github.io/MeshCrossway/"><img alt="Project website" src="https://img.shields.io/badge/PROJECT%20SITE-OPEN-1f6feb?style=for-the-badge"></a>
-  <a href="https://renbrant.github.io/MeshCrossway/ui/"><img alt="Interactive UI demo" src="https://img.shields.io/badge/UI%20DEMO-TRY%20IT-0A7B83?style=for-the-badge"></a>
   <a href="https://renbrant.github.io/MeshCrossway/flasher/"><img alt="Web Flasher" src="https://img.shields.io/badge/WEB%20FLASHER-INSTALL-orange?style=for-the-badge"></a>
 </p>
 <p align="center">
