@@ -37,7 +37,7 @@
       <div class="wrap">
         <div class="eyebrow">Open-source · Offline-first · v0.8.26 stable</div>
         <h1>Two independent mesh networks.<br><span>One field communicator.</span></h1>
-        <p class="lead">MeshCrossway brings Meshtastic and MeshCore into one touchscreen experience while preserving each network's identity, security and routing. The v0.8.26 stable build connects to both radios and provides device-side and local browser access.</p>
+        <p class="lead">MeshCrossway is a portable touchscreen that lets you use Meshtastic and MeshCore from one place. It connects to a separate radio for each network, so messages stay on their own network. The project began as an idea for one custom circuit board, but testing led to a more flexible design made from separate devices.</p>
         <div class="actions">
           <a class="button primary" href="/MeshCrossway/ui/">Explore the UI demo</a>
           <a class="button secondary" href="/MeshCrossway/flasher/">Web Flasher</a>
@@ -93,21 +93,21 @@
       <div class="wrap">
         <div class="eyebrow">Product architecture</div>
         <h2>Three devices. Two separate networks.</h2>
-        <p class="sectionintro">The selected design has one touchscreen Core and two detachable LoRa Radio Pods. Meshtastic and MeshCore remain independent; MeshCrossway does not automatically bridge or relay messages between them.</p>
+        <p class="sectionintro">Think of the Core as the screen and controls, and the two Radio Pods as separate radios. Bluetooth connects the screen to each radio. One runs Meshtastic and the other MeshCore; their messages and networks stay completely separate.</p>
         <div class="network">
           <article class="card">
             <div class="num">CORE</div>
-            <h3>Waveshare ESP32-S3 touchscreen</h3>
-            <p>LVGL interface, local storage, GNSS, maps and BLE central connections to both Radio Pods.</p>
+            <h3>The touchscreen Core</h3>
+            <p>This is the part you hold and use. It shows messages, maps and location, and connects to the radios over Bluetooth.</p>
           </article>
           <div class="plus" aria-hidden="true">+</div>
           <div>
             <article class="card">
               <div class="num">RADIO PODS</div>
-              <h3>Two independent XIAO + SX1262 radios</h3>
-            <p>One Pod runs native Meshtastic; the other runs MeshCore Companion. The stable v0.8.26 build connects to both at once, while each network keeps its own identity and traffic.</p>
+              <h3>Two separate radio modules</h3>
+            <p>Each module handles one network: one runs Meshtastic and the other MeshCore. They can work at the same time, but they do not pass messages between each other. The modular design also leaves room to choose compatible radio hardware.</p>
             </article>
-            <p class="sectionintro">The two networks remain independent; MeshCrossway does not bridge messages between them.</p>
+            <p class="sectionintro">Keeping the radios in separate modules also makes it easier to place their antennas apart, reducing the chance that one radio interferes with or overloads the other. The user can choose compatible radio modules instead of being locked into one custom all-in-one board.</p>
           </div>
         </div>
       </div>
