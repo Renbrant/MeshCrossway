@@ -74,6 +74,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.21":
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: bounded console allocation-failure attribution (task, allocation API, core, ISR context and uptime). Retains v0.9.20 bounded map previews and accepted recent-node/manual-refresh behavior."
+        label="Allocation origin diagnostics / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.20":
         summary="EXPERIMENTAL: replaces the large map-cluster text list with four fixed preview rows and an explicit zoom action; preserves serial memory diagnostics. v0.9.16 remains stable."
         label="Bounded map cluster preview / EXPERIMENTAL"
