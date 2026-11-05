@@ -343,12 +343,12 @@ static void refresh(){
   }
   if(!status_label)return;
   if(ubx_status){const auto u=mcxgnss::receiver();char info[320];const uint32_t now=uint32_t(esp_timer_get_time()/1000);
-    snprintf(info,sizeof(info),"UBX SW %s / HW %s\nSAT %s: %u tracked / %u used / max CNo %u\nGPS %u / GAL %u / BDS %u / GLO %u\nEnabled (255=unknown): %u / %u / %u / %u\nNAV-SAT frames %lu / rejected %lu / length %lu / version %u\nUBX frames %lu / checksum errors %lu",
+    snprintf(info,sizeof(info),"UBX SW %s / HW %s\nSAT %s: %u tracked / %u used / max CNo %u\nGPS %u / GAL %u / BDS %u / GLO %u\nEnabled (255=unknown): %u / %u / %u / %u\nNAV-SAT frames %lu / rejected %lu / length %lu / version %lu\nUBX frames %lu / checksum errors %lu",
       u.last_version_ms?u.software:"waiting",u.last_version_ms?u.hardware:"--",
       u.last_sat_ms&&uint32_t(now-u.last_sat_ms)<15000?"live":"waiting",
       u.satellites,u.used,u.max_cno,u.gps,u.galileo,u.beidou,u.glonass,
       u.gps_enabled,u.galileo_enabled,u.beidou_enabled,u.glonass_enabled,
-      (unsigned long)u.navsat_frames,(unsigned long)u.navsat_rejected,(unsigned long)u.navsat_last_length,u.navsat_last_version,
+      (unsigned long)u.navsat_frames,(unsigned long)u.navsat_rejected,(unsigned long)u.navsat_last_length,(unsigned long)u.navsat_last_version,
       (unsigned long)u.frames,(unsigned long)u.errors);
     chatview::label(ubx_status,info);
   }
