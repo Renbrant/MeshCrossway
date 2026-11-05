@@ -440,8 +440,8 @@ namespace mtui {
       }
     }
     if(page==1){
-      if(syncing)single_label(node_list_view,"Syncing Meshtastic node database…",8,8,w-32,orange);
-      if(!mt_node_count&&!mc_node_count&&!syncing)single_label(node_list_view,"No nodes found for this network yet.",8,8,w-32,muted);
+      if(!mt_node_count&&!mc_node_count)
+        single_label(node_list_view,syncing?"Syncing Meshtastic node database…":"No nodes found for this network yet.",8,8,w-32,syncing?orange:muted);
       if(mc_node_count||(!syncing&&mt_node_count)){
         node_batch_width=w-16;mt_node_cursor=mc_node_cursor=node_batch_rows=0;
         node_batch_network=mt_node_count?1:2;
