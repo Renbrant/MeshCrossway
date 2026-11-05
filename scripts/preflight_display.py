@@ -253,7 +253,18 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
                     mtproto=(FW/"meshcrossway_meshtastic_protocol.h").read_text()
                     assert "node_heard_age(" in shared
                     assert "Runtime-only User.role cache" in mtproto and "f.tag==7" in mtproto
-                    assert "Meshtastic repeater" in mtui and "MeshCore repeater" in mcui
+                    if version=="v0.9.18":
+                        assert "Meshtastic repeater" in mtui and 'c.type==2?"Repeater"' in mcui
+                        assert "NODE_MAX_RECENT=32" in shared and "14u*24u*60u*60u" in shared
+                        assert "refresh_nodes_event" in mtui and "refresh_nodes_event" in mcui
+                        assert "const int row_y=int(node_batch_rows++*64u)" in mtui
+                        assert "const int row_y=(list_batch_cursor-1)*(row_height+6)" in mcui
+                        node_batch=mtui.split("static void node_batch_tick",1)[1].split("static void render()",1)[0]
+                        heard_helper=mcui.split("static uint32_t contact_last_heard",1)[1].split("static void toggle_node_sort",1)[0]
+                        assert "for(const auto &m:c->data.messages)" not in node_batch
+                        assert "s.messages" not in heard_helper
+                    else:
+                        assert "Meshtastic repeater" in mtui and "MeshCore repeater" in mcui
                     assert 'c.path_len==255?"Flood":"Direct"' in mcui
                     assert "ID %04X" in mtui and "ID %02X%02X" in mcui
                     assert "emoji_label_text(name,title)" not in mcui
