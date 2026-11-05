@@ -10,7 +10,7 @@ struct State {
   uint8_t gps=0,glonass=0,galileo=0,beidou=0;
   uint8_t max_cno=0;
   uint8_t gps_enabled=255,galileo_enabled=255,beidou_enabled=255,glonass_enabled=255;
-  uint32_t frames=0,errors=0;
+  uint32_t frames=0,errors=0,navsat_frames=0,navsat_rejected=0,navsat_last_length=0,navsat_last_version=255;
 };
 static uint16_t u16(const uint8_t *p){return uint16_t(p[0])|(uint16_t(p[1])<<8);}
 static uint32_t u32(const uint8_t *p){return uint32_t(p[0])|(uint32_t(p[1])<<8)|(uint32_t(p[2])<<16)|(uint32_t(p[3])<<24);}
@@ -33,9 +33,11 @@ struct Parser {
       memcpy(state.software,payload,30);state.software[30]=0;
       memcpy(state.hardware,payload+30,10);state.hardware[10]=0;
       state.last_version_ms=now;
-    }else if(cls==0x01&&id==0x35&&size>=8&&payload[0]==1){
+    }else if(cls==0x01&&id==0x35){
+      ++state.navsat_frames;state.navsat_last_length=size;state.navsat_last_version=size?payload[0]:255;
+      if(size<8){++state.navsat_rejected;return;}
       const unsigned count=payload[5];
-      if(size<8u+12u*count)return;
+      if(size<8u+12u*count){++state.navsat_rejected;return;}
       State next=state;next.satellites=next.used=next.gps=next.glonass=next.galileo=next.beidou=next.max_cno=0;
       for(unsigned i=0;i<count;++i){
         const uint8_t *s=payload+8+12*i;

@@ -342,12 +342,12 @@ static void refresh(){
     snprintf(detail,sizeof(detail),"%s / %s\n%s",clock,mcxclock::zone_name(),mcxclock::state.synced?"GPS UTC synchronized / continues without signal":"Waiting for valid GPS UTC date and time");chatview::label(clock_status,detail);
   }
   if(!status_label)return;
-  if(ubx_status){const auto u=mcxgnss::receiver();char info[240];const uint32_t now=uint32_t(esp_timer_get_time()/1000);
-    snprintf(info,sizeof(info),"UBX SW %s / HW %s\nSAT %s: %u tracked / %u used / max CNo %u\nGPS %u / GAL %u / BDS %u / GLO %u\nEnabled (255=unknown): %u / %u / %u / %u",
+  if(ubx_status){const auto u=mcxgnss::receiver();char info[320];const uint32_t now=uint32_t(esp_timer_get_time()/1000);
+    snprintf(info,sizeof(info),"UBX SW %s / HW %s\nSAT %s: %u tracked / %u used / max CNo %u\nGPS %u / GAL %u / BDS %u / GLO %u\nEnabled (255=unknown): %u / %u / %u / %u\nNAV-SAT frames %lu / rejected %lu / length %lu / version %u\nUBX frames %lu / checksum errors %lu",
       u.last_version_ms?u.software:"waiting",u.last_version_ms?u.hardware:"--",
       u.last_sat_ms&&uint32_t(now-u.last_sat_ms)<15000?"live":"waiting",
       u.satellites,u.used,u.max_cno,u.gps,u.galileo,u.beidou,u.glonass,
-      u.gps_enabled,u.galileo_enabled,u.beidou_enabled,u.glonass_enabled);
+      u.gps_enabled,u.galileo_enabled,u.beidou_enabled,u.glonass_enabled,\n      (unsigned long)u.navsat_frames,(unsigned long)u.navsat_rejected,(unsigned long)u.navsat_last_length,u.navsat_last_version,\n      (unsigned long)u.frames,(unsigned long)u.errors);
     chatview::label(ubx_status,info);
   }
   const auto c=mcxgnss::configuration();const auto d=mcxgnss::status();const auto f=mcxgnss::snapshot();char state[160],label[64];
@@ -423,7 +423,7 @@ static void open(){
   single_label(dialog,"RX44 / TX43 fixed. Reading OFF does not power off GPS.",8,216,440,muted);
   action_button(dialog,"CLOCK / TIME ZONE",8,241,440,34,panel2,clock_settings,0);
   ubx_status=single_label(dialog,"UBX receiver: waiting",8,285,440,cyan);lv_label_set_long_mode(ubx_status,LV_LABEL_LONG_WRAP);
-  single_label(dialog,"Read-only UBX diagnostics. No GNSS settings are changed.",8,380,440,muted);refresh();
+  single_label(dialog,"Read-only UBX diagnostics. No GNSS settings are changed.",8,425,440,muted);refresh();
 }
 static uint32_t library_folder=0xffffffffu,folder_filter_ids[mcxnav::MAX_FOLDERS+2]={},folder_move_ids[mcxnav::MAX_FOLDERS+1]={};
 static lv_obj_t *folder_value=nullptr,*folder_owner=nullptr,*folder_save=nullptr;

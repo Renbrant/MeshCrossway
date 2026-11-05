@@ -21,7 +21,7 @@ static Settings configuration(){return cfg;}
 static void configure(Settings c){assert(valid_settings(c));cfg=c;}
 static Diagnostics status(){return {};}
 static Fix snapshot(){return fix;}
-struct Receiver {char software[31]={},hardware[11]={};uint32_t last_version_ms=0,last_sat_ms=0;uint8_t satellites=0,used=0,max_cno=0,gps=0,galileo=0,beidou=0,glonass=0,gps_enabled=255,galileo_enabled=255,beidou_enabled=255,glonass_enabled=255;};
+struct Receiver {char software[31]={},hardware[11]={};uint32_t last_version_ms=0,last_sat_ms=0;uint8_t satellites=0,used=0,max_cno=0,gps=0,galileo=0,beidou=0,glonass=0,gps_enabled=255,galileo_enabled=255,beidou_enabled=255,glonass_enabled=255;uint32_t navsat_frames=0,navsat_rejected=0,navsat_last_length=0,navsat_last_version=255,frames=0,errors=0;};
 static Receiver receiver(){return {};}
 }
 namespace mcxnav {
