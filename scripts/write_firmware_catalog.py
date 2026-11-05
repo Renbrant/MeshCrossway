@@ -74,6 +74,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.18":
+        summary="EXPERIMENTAL: limits the visible node list to 32 recently heard nodes per protocol within 14 days, keeps MeshCore favorites despite age, uses fixed-position cards and manual refresh, and removes repeated message-history scans. v0.9.16 remains stable."
+        label="Bounded recent-node lists / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.17":
         summary="EXPERIMENTAL: fixes node and channel card overlap with fixed row positions and vertical spacing; adds a memory snapshot for internal RAM, PSRAM, DMA-capable RAM and UI stack headroom. v0.9.16 remains stable."
         label="Fixed node layout and memory diagnostics / EXPERIMENTAL"
