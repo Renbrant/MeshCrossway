@@ -1002,7 +1002,8 @@ static void gps_refresh(lv_timer_t *){
     snprintf(detail,sizeof(detail),"Visible %s / Used %u\nGPS %u  GLO %u  GAL %u  BDS %u\nAltitude %s / Speed %s\nPosition age %.1f s\nUART %u / %lu bytes / error %d\nNMEA %lu valid / %lu invalid\nUTC %s",f.have_visible_satellites&&f.visible_satellites>=f.satellites?visible_count:"partial",f.satellites,f.visible_by_constellation[0],f.visible_by_constellation[3],f.visible_by_constellation[1],f.visible_by_constellation[2],altitude,speed,f.frames?double(uint32_t(esp_timer_get_time()/1000)-f.position_ms)/1000:0,diag.baud,(unsigned long)diag.bytes,diag.error,(unsigned long)f.frames,(unsigned long)f.errors,utc);chatview::label(gps_extra,detail);
   }
 }
-// Only this timer owns the Home cards. Native chat timers keep their own UI.\nstatic lv_obj_t *home_mesh[2][3]={},*home_wifi_name=nullptr,*home_wifi_state=nullptr,*home_wifi_ip=nullptr,*home_gps_state=nullptr,*home_gps_accuracy=nullptr,*home_gps_satellites=nullptr;
+// Only this timer owns the Home cards. Native chat timers keep their own UI.
+static lv_obj_t *home_mesh[2][3]={},*home_wifi_name=nullptr,*home_wifi_state=nullptr,*home_wifi_ip=nullptr,*home_gps_state=nullptr,*home_gps_accuracy=nullptr,*home_gps_satellites=nullptr;
 static char home_wifi_source[33]={};
 static void home_clear(){
   home_wifi_source[0]=0;
