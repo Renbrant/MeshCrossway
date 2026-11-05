@@ -970,7 +970,9 @@ static void list_batch_tick(lv_timer_t *timer){
         snprintf(chat_detail,sizeof(chat_detail),"Unread %u / Chat %u / %lu B / %.0f m",unread_count,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
       }else snprintf(chat_detail,sizeof(chat_detail),"Unread %u / Chat %u / %lu B",unread_count,messages,(unsigned long)bytes);
     }
-    auto *b=action_button(list_viewport,"",0,0,list_batch_width,is_channel?58:76,panel,is_channel?choose_channel:choose_contact,i);
+    const int row_height=is_channel?58:76;
+    const int row_y=(list_batch_cursor-1)*(row_height+6);
+    auto *b=action_button(list_viewport,"",0,row_y,list_batch_width,row_height,panel,is_channel?choose_channel:choose_contact,i);
     const int card_width=list_batch_width;
     if(!is_channel){
       const auto &contact=s->contacts[i];

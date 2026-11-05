@@ -317,7 +317,7 @@ static void draw_overlays(lv_event_t *event){
 }
 namespace gpsui {
 static lv_obj_t *dialog=nullptr,*status_label=nullptr,*metrics_label=nullptr,*enabled_button=nullptr,*baud_button=nullptr,*timeout_button=nullptr,*units_button=nullptr;
-static lv_obj_t *map_save_label=nullptr,*clock_status=nullptr,*ubx_status=nullptr;
+static lv_obj_t *map_save_label=nullptr,*clock_status=nullptr;
 static lv_obj_t *edit_value=nullptr,*edit_keyboard=nullptr,*edit_notice=nullptr;
 static int editing=0;
 static lv_obj_t *nav_detail=nullptr;static unsigned nav_dialog=0;
@@ -342,16 +342,6 @@ static void refresh(){
     snprintf(detail,sizeof(detail),"%s / %s\n%s",clock,mcxclock::zone_name(),mcxclock::state.synced?"GPS UTC synchronized / continues without signal":"Waiting for valid GPS UTC date and time");chatview::label(clock_status,detail);
   }
   if(!status_label)return;
-  if(ubx_status){const auto u=mcxgnss::receiver();char info[320];const uint32_t now=uint32_t(esp_timer_get_time()/1000);
-    snprintf(info,sizeof(info),"UBX SW %s / HW %s\nSAT %s: %u tracked / %u used / max CNo %u\nGPS %u / GAL %u / BDS %u / GLO %u\nEnabled (255=unknown): %u / %u / %u / %u\nNAV-SAT frames %lu / rejected %lu / length %lu / version %lu\nUBX frames %lu / checksum errors %lu",
-      u.last_version_ms?u.software:"waiting",u.last_version_ms?u.hardware:"--",
-      u.last_sat_ms&&uint32_t(now-u.last_sat_ms)<15000?"live":"waiting",
-      u.satellites,u.used,u.max_cno,u.gps,u.galileo,u.beidou,u.glonass,
-      u.gps_enabled,u.galileo_enabled,u.beidou_enabled,u.glonass_enabled,
-      (unsigned long)u.navsat_frames,(unsigned long)u.navsat_rejected,(unsigned long)u.navsat_last_length,(unsigned long)u.navsat_last_version,
-      (unsigned long)u.frames,(unsigned long)u.errors);
-    chatview::label(ubx_status,info);
-  }
   const auto c=mcxgnss::configuration();const auto d=mcxgnss::status();const auto f=mcxgnss::snapshot();char state[160],label[64];
   snprintf(state,sizeof(state),"UART %u / error %d / %lu bytes\nNMEA %lu / bad %lu / settings %s",d.baud,d.error,(unsigned long)d.bytes,(unsigned long)f.frames,(unsigned long)f.errors,d.saved?"saved":"pending / save failed");chatview::label(status_label,state);
   snprintf(label,sizeof(label),"GPS reading: %s",c.enabled?"ON":"OFF");if(enabled_button)chatview::label(lv_obj_get_child(enabled_button,0),label);
@@ -389,7 +379,7 @@ static void base(const char *title){
     }
   },dialog);
   map_save_label=clock_status=nav_detail=nullptr;nav_dialog=0;
-  metrics_label=status_label=enabled_button=baud_button=timeout_button=units_button=ubx_status=nullptr;
+  metrics_label=status_label=enabled_button=baud_button=timeout_button=units_button=nullptr;
   edit_value=edit_keyboard=edit_notice=nullptr;
 }
 static void compact_base(const char *title){base(title);lv_obj_add_flag(dialog,LV_OBJ_FLAG_USER_1);lv_obj_set_style_pad_row(dialog,6,0);lv_obj_set_width(lv_obj_get_child(dialog,0),LV_PCT(100));}
@@ -423,9 +413,7 @@ static void open(){
   status_label=single_label(dialog,"",8,126,440,white);lv_label_set_long_mode(status_label,LV_LABEL_LONG_WRAP);
   metrics_label=single_label(dialog,"",8,177,440,cyan);
   single_label(dialog,"RX44 / TX43 fixed. Reading OFF does not power off GPS.",8,216,440,muted);
-  action_button(dialog,"CLOCK / TIME ZONE",8,241,440,34,panel2,clock_settings,0);
-  ubx_status=single_label(dialog,"UBX receiver: waiting",8,285,440,cyan);lv_label_set_long_mode(ubx_status,LV_LABEL_LONG_WRAP);
-  single_label(dialog,"Read-only UBX diagnostics. No GNSS settings are changed.",8,425,440,muted);refresh();
+  action_button(dialog,"CLOCK / TIME ZONE",8,241,440,34,panel2,clock_settings,0);refresh();
 }
 static uint32_t library_folder=0xffffffffu,folder_filter_ids[mcxnav::MAX_FOLDERS+2]={},folder_move_ids[mcxnav::MAX_FOLDERS+1]={};
 static lv_obj_t *folder_value=nullptr,*folder_owner=nullptr,*folder_save=nullptr;

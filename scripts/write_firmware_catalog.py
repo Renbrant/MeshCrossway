@@ -74,6 +74,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.17":
+        summary="EXPERIMENTAL: fixes node and channel card overlap with fixed row positions and vertical spacing; adds a memory snapshot for internal RAM, PSRAM, DMA-capable RAM and UI stack headroom. v0.9.16 remains stable."
+        label="Fixed node layout and memory diagnostics / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.16":
         summary="EXPERIMENTAL: identifies Meshtastic and MeshCore people, repeaters, rooms and sensors with compact type badges; shows four-character IDs, direct/flood route and relative last-heard age. Uses plain LVGL labels for list names to avoid the observed LVGL stack overflow. v0.8.26 remains stable."
         label="Typed node cards and LVGL stack fix / EXPERIMENTAL"
