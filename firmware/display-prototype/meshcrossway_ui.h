@@ -972,6 +972,7 @@ static bool showing_mt(){
   return meshble::snapshot().radio==meshble::MESHTASTIC;
 }
 
+// Firmware release v0.10.2: GNSS diagnostics correction.
 #include "meshcrossway_navigation_ui.h"
 static lv_obj_t *gps_position=nullptr,*gps_status=nullptr,*gps_extra=nullptr,*gps_icon=nullptr,*gps_satellites=nullptr;
 static void clock_refresh(lv_timer_t *){
