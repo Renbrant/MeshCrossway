@@ -347,7 +347,9 @@ static void refresh(){
       u.last_version_ms?u.software:"waiting",u.last_version_ms?u.hardware:"--",
       u.last_sat_ms&&uint32_t(now-u.last_sat_ms)<15000?"live":"waiting",
       u.satellites,u.used,u.max_cno,u.gps,u.galileo,u.beidou,u.glonass,
-      u.gps_enabled,u.galileo_enabled,u.beidou_enabled,u.glonass_enabled,\n      (unsigned long)u.navsat_frames,(unsigned long)u.navsat_rejected,(unsigned long)u.navsat_last_length,u.navsat_last_version,\n      (unsigned long)u.frames,(unsigned long)u.errors);
+      u.gps_enabled,u.galileo_enabled,u.beidou_enabled,u.glonass_enabled,
+      (unsigned long)u.navsat_frames,(unsigned long)u.navsat_rejected,(unsigned long)u.navsat_last_length,u.navsat_last_version,
+      (unsigned long)u.frames,(unsigned long)u.errors);
     chatview::label(ubx_status,info);
   }
   const auto c=mcxgnss::configuration();const auto d=mcxgnss::status();const auto f=mcxgnss::snapshot();char state[160],label[64];
