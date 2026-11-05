@@ -11,6 +11,7 @@
 #include "esp_timer.h"
 #include "esp_netif_sntp.h"
 #include <time.h>
+#include <stddef.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/idf_additions.h"
@@ -46,9 +47,10 @@ static lv_color_t *keep_tile(uint64_t source,unsigned z,unsigned x,unsigned y,co
   slot->source=source;slot->z=z;slot->x=x;slot->y=y;slot->used=++tile_clock;return slot->pixels;
 }
 static const char *SD_ROOT="/sdcard";
-// Keep the persisted blob size/layout stable. Version 4 uses the remaining flag bit for grouping.
-// into the same two bytes that held the shared icon/color options in version 1.
-struct Config {uint32_t version=4;uint8_t online=1,zoom=14,hide_nodes=0,show_node_names=0;char url[192]="https://tile.openstreetmap.org";char attribution[128]="© OpenStreetMap contributors";};
+// Schema 5 appends independent MeshCore size and local night presentation.
+// The leading schema-1..4 blob layout remains readable for migration.
+struct Config {uint32_t version=5;uint8_t online=1,zoom=14,hide_nodes=0,show_node_names=0;char url[192]="https://tile.openstreetmap.org";char attribution[128]="© OpenStreetMap contributors";uint8_t meshcore_size=0,night=0;};
+static_assert(offsetof(Config,meshcore_size)==328,"Legacy map configuration prefix changed");
 enum NodeIcon {NODE_CIRCLE=0,NODE_SQUARE=1,NODE_CROSS=2,NODE_NAME=3};
 enum NodeColor {NODE_COLOR_AUTO=0,NODE_COLOR_ORANGE=1,NODE_COLOR_CYAN=2,NODE_COLOR_GREEN=3,NODE_COLOR_RED=4,NODE_COLOR_PURPLE=5,NODE_COLOR_YELLOW=6,NODE_COLOR_WHITE=7};
 static constexpr unsigned NODE_SIZES[]={8,12,18,22,26,30};
@@ -57,22 +59,22 @@ static bool nodes_hidden(const Config &c){return c.hide_nodes&1;}
 static bool nodes_grouped(const Config &c){return !(c.show_node_names&0x80u);}
 static void set_nodes_grouped(Config &c,bool enabled){c.show_node_names=uint8_t((c.show_node_names&0x7fu)|(enabled?0u:0x80u));}
 static NodeIcon node_icon(const Config &c,bool meshcore){return NodeIcon((c.hide_nodes>>(meshcore?6:4))&3);}
-static unsigned node_size_index(const Config &c){return (c.hide_nodes>>1)&7;}
-static unsigned node_size(const Config &c){return NODE_SIZES[node_size_index(c)];}
+static unsigned node_size_index(const Config &c,bool meshcore=false){return meshcore?c.meshcore_size:(c.hide_nodes>>1)&7;}
+static unsigned node_size(const Config &c,bool meshcore=false){return NODE_SIZES[node_size_index(c,meshcore)];}
 static NodeColor node_color(const Config &c,bool meshcore){return NodeColor((c.show_node_names>>(meshcore?4:1))&7);}
 static uint32_t node_color_hex(const Config &c,bool meshcore){const auto selected=node_color(c,meshcore);return selected==NODE_COLOR_AUTO?(meshcore?0x9C88FF:0x72D8A5):NODE_COLORS[selected];}
 static void set_nodes_hidden(Config &c,bool hidden){c.hide_nodes=uint8_t((c.hide_nodes&~1u)|(hidden?1u:0u));}
 static void set_node_icon(Config &c,bool meshcore,unsigned icon){const unsigned shift=meshcore?6:4;const uint8_t mask=uint8_t(~(3u<<shift));c.hide_nodes=uint8_t((c.hide_nodes&mask)|((icon%4u)<<shift));}
-static void set_node_size(Config &c,unsigned size){c.hide_nodes=uint8_t((c.hide_nodes&0xF1u)|((size%6u)<<1));}
+static void set_node_size(Config &c,unsigned size,bool meshcore=false){if(meshcore)c.meshcore_size=uint8_t(size%6u);else c.hide_nodes=uint8_t((c.hide_nodes&0xF1u)|((size%6u)<<1));}
 static void set_node_color(Config &c,bool meshcore,unsigned color){const unsigned shift=meshcore?4:1;const uint8_t mask=uint8_t(~(7u<<shift));c.show_node_names=uint8_t((c.show_node_names&mask)|((color&7u)<<shift));}
 static void set_node_names(Config &c,bool enabled){c.show_node_names=uint8_t((c.show_node_names&~1u)|(enabled?1u:0u));}
 static bool valid_config(const Config &c){
-  if(c.version!=4||c.online>1||((c.hide_nodes>>1)&7)>=6||((c.hide_nodes>>4)&3)>NODE_NAME||((c.hide_nodes>>6)&3)>NODE_NAME||c.zoom<3||c.zoom>19||!memchr(c.url,0,sizeof(c.url))||!memchr(c.attribution,0,sizeof(c.attribution))||!c.attribution[0]||strncmp(c.url,"https://",8)||!c.url[8])return false;
+  if(c.version!=5||c.meshcore_size>=6||c.night>1||c.online>1||((c.hide_nodes>>1)&7)>=6||((c.hide_nodes>>4)&3)>NODE_NAME||((c.hide_nodes>>6)&3)>NODE_NAME||c.zoom<3||c.zoom>19||!memchr(c.url,0,sizeof(c.url))||!memchr(c.attribution,0,sizeof(c.attribution))||!c.attribution[0]||strncmp(c.url,"https://",8)||!c.url[8])return false;
   for(const char *p=c.url;*p;++p)if(uint8_t(*p)<=32||strchr("?#@{}",*p))return false;
   return true;
 }
 static bool migrate_config(Config &c){
-  if(c.version==4)return valid_config(c);
+  if(c.version==5)return valid_config(c);
   if(c.version==1){
     if(c.online>1||((c.hide_nodes>>1)&3)>NODE_CROSS||c.show_node_names>1)return false;
     const uint8_t old_nodes=c.hide_nodes,old_names=c.show_node_names;
@@ -86,13 +88,15 @@ static bool migrate_config(Config &c){
     c.hide_nodes=uint8_t((old&1u)|(size<<1)|(mt<<4)|(mc<<6));c.version=3;
   }
   if(c.version==3){if(c.show_node_names&0x80)return false;c.version=4;}
+  if(c.version==4){c.meshcore_size=uint8_t((c.hide_nodes>>1)&7);c.night=0;c.version=5;}
   return valid_config(c);
 }
-enum Provider {STREET=0,TOPO=1};
-static Provider provider(const Config &c){return !strcmp(c.url,"https://a.tile.opentopomap.org")?TOPO:STREET;}
+enum Provider {STREET=0,TOPO=1,STREET_NIGHT=2};
+static Provider provider(const Config &c){return !strcmp(c.url,"https://a.tile.opentopomap.org")?TOPO:c.night?STREET_NIGHT:STREET;}
 static unsigned max_zoom(const Config &c){return provider(c)==TOPO?17:19;}
-static const char *provider_name(const Config &c){return provider(c)==TOPO?"Topographic / OpenTopoMap":"Street / OpenStreetMap";}
+static const char *provider_name(const Config &c){return provider(c)==TOPO?"Topographic / OpenTopoMap":provider(c)==STREET_NIGHT?"Street / OpenStreetMap night":"Street / OpenStreetMap";}
 static void select_provider(Config &c,unsigned id){
+  c.night=id==STREET_NIGHT;
   snprintf(c.url,sizeof(c.url),"%s",id==TOPO?"https://a.tile.opentopomap.org":"https://tile.openstreetmap.org");
   snprintf(c.attribution,sizeof(c.attribution),"%s",id==TOPO?"© OpenStreetMap contributors, SRTM | © OpenTopoMap (CC-BY-SA)":"© OpenStreetMap contributors");
   if(c.zoom>max_zoom(c))c.zoom=uint8_t(max_zoom(c));
@@ -119,7 +123,7 @@ static void release(Frame *f){if(f){heap_caps_free((void *)f->image.data);heap_c
 static void load_config(){
   if(loaded_config)return;
   nvs_handle_t h;if(nvs_open("mcx_map",NVS_READONLY,&h)==ESP_OK){Config c;size_t n=sizeof(c);
-    if(nvs_get_blob(h,"config",&c,&n)==ESP_OK&&n==sizeof(c)){const bool legacy=c.version<4;if(migrate_config(c)){config=c;if(legacy){revision=1;changed_ms=milliseconds();settings_saved=false;}}}
+    if(nvs_get_blob(h,"config",&c,&n)==ESP_OK&&((c.version==5&&n==sizeof(c))||(c.version>=1&&c.version<=4&&n==offsetof(Config,meshcore_size)))){const bool legacy=c.version<5;if(migrate_config(c)){config=c;if(legacy){revision=1;changed_ms=milliseconds();settings_saved=false;}}}
     select_provider(config,provider(config));
     nvs_close(h);
   }loaded_config=true;
@@ -236,10 +240,19 @@ static unsigned char *checked_png(const char *file,size_t &size,unsigned char **
   if(!ok){heap_caps_free(png);return nullptr;}
   if(decoded)*decoded=rgba;else lv_mem_free(rgba);return png;
 }
+// Invert lightness while retaining hue, then tint to a dark blue-gray palette.
+// Apply only to the composed frame: shared SD/RAM tiles stay in their original colors.
+static lv_color_t night_pixel(lv_color_t color){
+  const uint32_t rgb=lv_color_to32(color);const int r=(rgb>>16)&255,g=(rgb>>8)&255,b=rgb&255;
+  int hi=r>g?r:g;if(b>hi)hi=b;int lo=r<g?r:g;if(b<lo)lo=b;
+  const int shift=255-hi-lo;
+  return lv_color_make(uint8_t(8+(r+shift)*200/255),uint8_t(12+(g+shift)*200/255),uint8_t(18+(b+shift)*210/255));
+}
 static Frame *render(const View &v,const Config &c){
   const auto begun=milliseconds();waiting_clock=cache_full=false;
   if(!esp_sdcard_port_get_size())clear_tiles();
   auto *f=(Frame *)heap_caps_malloc(sizeof(Frame),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!f)return nullptr;new(f) Frame();f->view=v;f->source=source_hash(c);
+  const bool night=provider(c)==STREET_NIGHT;
   const size_t count=v.width*v.height;auto *pixels=(lv_color_t *)heap_caps_malloc(count*sizeof(lv_color_t),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
   if(!pixels){release(f);return nullptr;}
   f->image.header.cf=LV_IMG_CF_TRUE_COLOR;f->image.header.w=v.width;f->image.header.h=v.height;f->image.data=(const uint8_t *)pixels;f->image.data_size=count*sizeof(lv_color_t);
@@ -263,6 +276,7 @@ static Frame *render(const View &v,const Config &c){
           const unsigned i=(y-dy)*256+x-dx;
           if(tile)pixels[y*v.width+x]=tile[i];
           else {const auto *p=rgba+4*i;const unsigned a=p[3];pixels[y*v.width+x]=lv_color_make((p[0]*a+230*(255-a))/255,(p[1]*a+230*(255-a))/255,(p[2]*a+230*(255-a))/255);}
+          if(night)pixels[y*v.width+x]=night_pixel(pixels[y*v.width+x]);
         }
       }else ++f->missing;
       lv_mem_free(rgba);
