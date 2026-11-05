@@ -74,6 +74,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.24":
+        summary="EXPERIMENTAL: adds a saved Group nearby nodes map switch for individual markers. Preserves v0.9.23 software-AES HTTPS fix, RX memory optimization and diagnostics; v0.9.16 remains stable."
+        label="Optional map grouping / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.23":
         summary="EXPERIMENTAL / NOT HARDWARE TESTED: uses software AES in mbedTLS to avoid hardware-AES DMA allocation failures during map HTTPS downloads. TLS/certificate validation, v0.9.22 RX RAM savings and allocation diagnostics are preserved."
         label="Map HTTPS DMA fix candidate / EXPERIMENTAL"

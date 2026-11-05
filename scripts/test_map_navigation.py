@@ -13,12 +13,16 @@ static uint64_t esp_sdcard_port_get_size(){return fake_sd_size;}
 ''')
     (temp/'nvs.h').write_text('''#pragma once
 #include <cstddef>
+#include <vector>
+#include <cstring>
 using nvs_handle_t=int;
 #define NVS_READONLY 0
 #define NVS_READWRITE 1
-static int nvs_open(const char *,int,nvs_handle_t *){return -1;}
-static int nvs_get_blob(int,const char *,void *,size_t *){return -1;}
-static int nvs_set_blob(int,const char *,const void *,size_t){return 0;}
+static bool fake_nvs_available=false;
+static std::vector<unsigned char> fake_nvs_blob;
+static int nvs_open(const char *,int,nvs_handle_t *h){if(!fake_nvs_available)return -1;*h=1;return 0;}
+static int nvs_get_blob(int,const char *,void *out,size_t *n){if(fake_nvs_blob.empty()||*n<fake_nvs_blob.size())return -1;memcpy(out,fake_nvs_blob.data(),fake_nvs_blob.size());*n=fake_nvs_blob.size();return 0;}
+static int nvs_set_blob(int,const char *,const void *p,size_t n){fake_nvs_blob.assign((const unsigned char *)p,(const unsigned char *)p+n);return 0;}
 static int nvs_commit(int){return 0;}
 static void nvs_close(int){}
 ''')
