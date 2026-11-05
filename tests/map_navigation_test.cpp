@@ -195,12 +195,37 @@ int main(int argc,char **argv){
  mcxnav::mock_state.folders[0].id=5;strcpy(mcxnav::mock_state.folders[0].name,"Trail folder");++mcxnav::mock_state.revision;navui::poll();gpsui::nav_refresh();advance();assert(gpsui::library_folder==5);render_preview("track-folders");
  gpsui::track_details(9);advance();lv_obj_t *folder_picker=nullptr;for(unsigned i=0;i<lv_obj_get_child_cnt(gpsui::dialog);++i){auto *o=lv_obj_get_child(gpsui::dialog,i);if(lv_obj_check_type(o,&lv_dropdown_class)){folder_picker=o;break;}}assert(folder_picker);lv_dropdown_set_selected(folder_picker,1);lv_event_send(folder_picker,LV_EVENT_VALUE_CHANGED,nullptr);assert(mcxnav::last_command.action==mcxnav::MOVE_TRACK&&mcxnav::last_command.id==9&&mcxnav::last_command.value==5);
 
+ // The user can turn grouping off, save it, and reload it without losing marker styles.
+ auto legacy_map=mcxmap::configuration();legacy_map.version=3;legacy_map.show_node_names&=0x7f;
+ mcxmap::set_node_icon(legacy_map,false,mcxmap::NODE_NAME);mcxmap::set_node_icon(legacy_map,true,mcxmap::NODE_CROSS);mcxmap::set_node_size(legacy_map,4);
+ mcxmap::set_node_color(legacy_map,false,mcxmap::NODE_COLOR_PURPLE);mcxmap::set_node_color(legacy_map,true,mcxmap::NODE_COLOR_GREEN);mcxmap::set_node_names(legacy_map,true);
+ fake_nvs_available=true;fake_nvs_blob.assign((const unsigned char *)&legacy_map,(const unsigned char *)&legacy_map+sizeof(legacy_map));
+ mcxmap::loaded_config=false;mcxmap::load_config();assert(mcxmap::configuration().version==4&&mcxmap::nodes_grouped(mcxmap::configuration()));
+ assert(mcxmap::configuration().hide_nodes==legacy_map.hide_nodes&&mcxmap::configuration().show_node_names==legacy_map.show_node_names);
+ gpsui::map_options();advance();assert(lv_obj_has_state(gpsui::grouping_switch,LV_STATE_CHECKED));
+ lv_obj_clear_state(gpsui::grouping_switch,LV_STATE_CHECKED);lv_event_send(gpsui::grouping_switch,LV_EVENT_VALUE_CHANGED,nullptr);
+ assert(!mcxmap::nodes_grouped(mcxmap::configuration()));lv_tick_inc(6000);mcxmap::persist_config();assert(mcxmap::settings_saved.load());
+ mcxmap::config=mcxmap::Config{};mcxmap::loaded_config=false;mcxmap::load_config();assert(!mcxmap::nodes_grouped(mcxmap::configuration()));
+ assert(mcxmap::configuration().hide_nodes==legacy_map.hide_nodes&&(mcxmap::configuration().show_node_names&0x7f)==legacy_map.show_node_names);
+ gpsui::map_options();advance();assert(!lv_obj_has_state(gpsui::grouping_switch,LV_STATE_CHECKED));
+ lv_obj_add_state(gpsui::grouping_switch,LV_STATE_CHECKED);lv_event_send(gpsui::grouping_switch,LV_EVENT_VALUE_CHANGED,nullptr);
+ assert(mcxmap::nodes_grouped(mcxmap::configuration()));fake_nvs_available=false;fake_nvs_blob.clear();
+ for(unsigned version:{1u,2u,3u}){mcxmap::Config old;old.version=version;assert(mcxmap::migrate_config(old)&&old.version==4&&mcxmap::nodes_grouped(old));}
+
  // Dense map group: fixed preview budget even with every protocol slot occupied.
  assert(navui::front&&navui::overlay_cache);
  auto &dense=*navui::overlay_cache;dense.node_count=navui::MAX_NODE_MARKERS;dense.cluster_count=1;
  dense.clusters[0].count=uint16_t(dense.node_count);dense.clusters[0].first=0;
  dense.clusters[0].point={lv_coord_t(navui::front->view.width/2),lv_coord_t(navui::front->view.height/2)};
  for(unsigned i=0;i<dense.node_count;++i){dense.nodes[i].cluster=0;strcpy(dense.nodes[i].name,"Long node name\nwith controls");snprintf(dense.nodes[i].id,sizeof(dense.nodes[i].id),"%064u",i);}
+ for(unsigned i=0;i<dense.node_count;++i){dense.nodes[i].point={120,80};dense.nodes[i].meshcore=bool(i&1);}
+ auto grouping_config=mcxmap::configuration();navui::build_node_groups(dense,grouping_config);assert(dense.cluster_count==1&&dense.clusters[0].count==dense.node_count);
+ mcxmap::set_nodes_grouped(grouping_config,false);navui::build_node_groups(dense,grouping_config);
+ assert(dense.cluster_count==dense.node_count);
+ for(unsigned i=0;i<dense.node_count;++i)assert(dense.nodes[i].cluster==i&&dense.clusters[i].count==1&&dense.clusters[i].first==i&&dense.clusters[i].point.x==120&&dense.clusters[i].point.y==80);
+ navui::open_node_selection(1);assert(info_dialog&&lv_obj_get_child_cnt(info_dialog)!=8); // Individual detail, not group preview.
+ mcxmap::set_nodes_grouped(grouping_config,true);navui::build_node_groups(dense,grouping_config);assert(dense.cluster_count==1);
+ puts("PASS: saved grouping switch survives config reload; legacy styles preserved; 640 co-located markers remain individual when disabled");
  const auto requests_before=mcxmap::wanted.load();
  for(int width:{276,400})for(unsigned repeat=0;repeat<10;++repeat){
    lv_obj_set_width(body,width);gpsui::show_node_group(0);advance();
