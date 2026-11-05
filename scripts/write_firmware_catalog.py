@@ -25,6 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit release approval.
 approved={
+    "v0.9.25":("Hardware-tested and selected stable on 2026-11-05. Exact tested binary retained: software-AES map downloads, optional grouping, per-network styles, zoom dismissal and local night view.", "Recommended stable / hardware-tested"),
     "v0.9.16":("Hardware-tested v0.9.16; retain exact published binary.", "Recommended stable / hardware-tested"),
     "v0.8.26":("v0.8.26 is the user-selected stable firmware. Its exact v0.8.26 binary is restored from the published Pages artifact and checksum-verified.", "Recommended stable / dual-radio maps and tracks"),
     "v0.8.23":("v0.8.23 is the user-selected stable release. It retains the exact previously published firmware image; the 0.8.24 configuration redesign is a separate candidate.", "Recommended stable / dual-network maps and tracks"),
@@ -53,7 +54,7 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if not folder.is_dir():
         continue
     version=folder.name
-    if version_key(version)<version_key(stable) or version_key(version)>version_key(latest) or version in blocked:
+    if (version_key(version)<version_key(stable) and version!="v0.9.16") or version_key(version)>version_key(latest) or version in blocked:
         continue
     manifest=folder/"manifest.json"
     info_file=folder/"build-info.json"
@@ -73,6 +74,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
   
     if version==stable:
         summary,label=approved[version]
+        status="hardware-tested"
+    elif version=="v0.9.16":
+        summary="Previous hardware-tested stable; exact image retained for recovery."
+        label="Previous stable / recovery"
         status="hardware-tested"
     elif version=="v0.9.25":
         summary="EXPERIMENTAL: per-network map format/size/color sections, zoom closes after two seconds, local OpenStreetMap night presentation and valid-coordinate MeshCore marker fix. Preserves software-AES HTTPS fix and optional grouping."

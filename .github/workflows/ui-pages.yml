@@ -118,7 +118,8 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/verify_firmware_version.py --dir _site/flasher/firmware/versions/v0.9.16 --version v0.9.16 --ref d821b78979b3c2b9d716757f0cff02dbf89e776f
-          python3 scripts/restore_stable_firmware.py --verify _site/flasher/firmware/versions/v0.9.16
+          python3 scripts/restore_stable_firmware.py --version v0.9.16 --verify _site/flasher/firmware/versions/v0.9.16
+          python3 scripts/restore_stable_firmware.py --verify _site/flasher/firmware/versions/v0.9.25
           python3 scripts/preflight_firmware_catalog.py --catalog _site/flasher/firmware/catalog.json
           python3 scripts/verify_firmware_version.py --dir "_site/flasher/firmware/versions/$(cat firmware/display-prototype/VERSION)" --version "$(cat firmware/display-prototype/VERSION)"
       - name: Verify embedded firmware UI version
@@ -131,3 +132,18 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
+
+  archive-tested-releases:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retain immutable stable and recovery firmware as permanent releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/archive_stable_release.py --version v0.9.16
+          python3 scripts/archive_stable_release.py --version v0.9.25

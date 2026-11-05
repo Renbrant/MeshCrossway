@@ -37,6 +37,7 @@ print("PASS: Web Flasher version selector JavaScript and build script syntax")
 
 if args.catalog is None:
     subprocess.run([sys.executable,str(root/"scripts/test_firmware_install.py")],check=True)
+    subprocess.run([sys.executable,str(root/"scripts/test_stable_release.py")],check=True)
 
 if args.catalog is not None:
     path=args.catalog.resolve()
@@ -52,7 +53,7 @@ if args.catalog is not None:
     # The flasher is a rolling release line, not a full historical archive.
     assert {manifest["recommended"],current}.issubset(found),found
     assert not {"v0.6.3","v0.6.4"} & found,"Broken BLE releases must never appear in selector"
-    assert all(tuple(map(int,v[1:].split("."))) >= tuple(map(int,manifest["recommended"][1:].split("."))) for v in found),found
+    assert all(tuple(map(int,v[1:].split("."))) >= tuple(map(int,manifest["recommended"][1:].split("."))) for v in found if v!="v0.9.16"),found
     assert not any(v in found for v in ("v0.3.0","v0.4.0","v0.5.10")),"Old archives must not appear"
     physical={p.name for p in (path.parent/"versions").iterdir() if p.is_dir()}
     assert physical==found,("Archived binaries not in selectable catalog", physical-found,found-physical)
