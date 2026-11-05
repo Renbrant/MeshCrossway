@@ -196,6 +196,12 @@ defaults = sdk.read_text()
 defaults = "\n".join(line for line in defaults.splitlines()
                      if not line.startswith(("CONFIG_ESP_WIFI_TASK_CORE_ID=", "CONFIG_ESP_CONSOLE_UART", "CONFIG_ESP_CONSOLE_SECONDARY_", "CONFIG_MBEDTLS_INTERNAL_MEM_ALLOC=", "CONFIG_MBEDTLS_DEFAULT_MEM_ALLOC=", "CONFIG_MBEDTLS_IRAM_8BIT_MEM_ALLOC=", "CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_INTERNAL=", "CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_DEFAULT=", "CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_IRAM_8BIT="))) + "\n"
 sdk.write_text(defaults)
+# v0.9.22 controlled experiment: only RX code placement changes. Remove any
+# inherited assignment so a vendor default cannot silently keep RX code in IRAM.
+defaults = "# CONFIG_ESP_WIFI_RX_IRAM_OPT is not set\n" + "\n".join(line for line in defaults.splitlines()
+                     if not line.startswith(("CONFIG_ESP_WIFI_RX_IRAM_OPT=",
+                                             "# CONFIG_ESP_WIFI_RX_IRAM_OPT is not set"))) + "\n"
+sdk.write_text(defaults)
 # The Wi-Fi backup uses /sdcard/meshcrossway-wifi.{tmp,json,bak}.
 # ESP-IDF FatFs defaults to FATFS_LFN_NONE, so those paths otherwise fail
 # to open even on correctly mounted FAT32 cards.

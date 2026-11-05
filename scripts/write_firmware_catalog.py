@@ -74,6 +74,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
+    elif version=="v0.9.22":
+        summary="EXPERIMENTAL / NOT HARDWARE TESTED: isolated Wi-Fi RX code placement test (RX IRAM optimization disabled). Preserves v0.9.21 allocation diagnostics and buffer/stack budgets. Compare free internal RAM and map/network response; v0.9.16 remains stable."
+        label="Wi-Fi RX RAM experiment / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.21":
         summary="EXPERIMENTAL / NOT HARDWARE TESTED: bounded console allocation-failure attribution (task, allocation API, core, ISR context and uptime). Retains v0.9.20 bounded map previews and accepted recent-node/manual-refresh behavior."
         label="Allocation origin diagnostics / EXPERIMENTAL"

@@ -3,7 +3,7 @@
 import tempfile
 import unittest
 from pathlib import Path
-from check_ble_sdkconfig import REQUIRED, verify
+from check_ble_sdkconfig import REQUIRED, DISABLED, verify
 
 class GeneratedConfigTest(unittest.TestCase):
     def check(self, settings, valid):
@@ -29,6 +29,14 @@ class GeneratedConfigTest(unittest.TestCase):
         for name in REQUIRED:
             with self.subTest(name=name):
                 self.check({k: v for k, v in REQUIRED.items() if k != name}, False)
+
+    def test_rx_or_psram_preference_enabled_is_rejected(self):
+        for name in DISABLED:
+            with self.subTest(name=name):
+                self.check(dict(REQUIRED, **{name:'y'}), False)
+
+    def test_buffer_budget_change_is_rejected(self):
+        self.check(dict(REQUIRED, CONFIG_ESP_WIFI_STATIC_TX_BUFFER_NUM='8'), False)
 
     def test_wrong_host_core(self):
         self.check(dict(REQUIRED, CONFIG_BT_NIMBLE_PINNED_TO_CORE_1='n'), False)
