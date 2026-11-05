@@ -376,6 +376,16 @@ static void node_heard_age(uint32_t stamp,char *out,size_t cap){
   else if(age<86400)snprintf(out,cap,"%lu h ago",(unsigned long)(age/3600));
   else snprintf(out,cap,"%lu d ago",(unsigned long)(age/86400));
 }
+static constexpr unsigned NODE_MAX_RECENT=64;
+static constexpr uint32_t NODE_RETENTION_SECONDS=14u*24u*60u*60u;
+static bool is_recent_node(uint32_t stamp,bool pinned=false){
+  if(pinned)return true;
+  if(stamp<1577836800u)return false;
+  const time_t now=time(nullptr);
+  if(now<1577836800)return true;
+  if(now<=time_t(stamp))return true;
+  return uint32_t(now-time_t(stamp))<=NODE_RETENTION_SECONDS;
+}
 static lv_obj_t *color_label(lv_obj_t *parent,const char *value,int x,int y,int w,lv_color_t color){
   return txt(parent,value,x,y,w,color);
 }
