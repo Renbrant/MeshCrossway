@@ -14,7 +14,7 @@ static unsigned tools_filter=0;
 static bool node_sort_distance=false,nav_gps_valid=false;
 static double nav_latitude=0,nav_longitude=0;
 static void set_navigation_fix(bool valid,double latitude,double longitude){nav_gps_valid=valid;nav_latitude=latitude;nav_longitude=longitude;}
-static const char *node_sort_label(){if(!node_sort_distance)return "SORT: LAST HEARD";return nav_gps_valid?"SORT: DISTANCE":"DISTANCE / GPS NEEDED";}
+static const char *node_sort_label(){if(!node_sort_distance)return "SORT: HEARD";return nav_gps_valid?"SORT: DISTANCE":"SORT: DIST / NO GPS";}
 static void compact_list_label(char *text){
   if(!text)return;
   for(char *p=text;*p;++p)if(*p=='\n'||*p=='\r'||*p=='\t')*p=' ';
@@ -485,8 +485,14 @@ static void choose_channel_now(void *data) {
 static void choose_channel(lv_event_t *e) {
   lv_async_call(choose_channel_now, lv_event_get_user_data(e));
 }
+static uint32_t contact_last_heard(const meshmc::Client &s,int i){
+  const auto &contact=s.contacts[i];
+  return contact.advert>contact.lastmod?contact.advert:contact.lastmod;
+}
 static void toggle_node_sort_now(void *){node_sort_distance=!node_sort_distance;draw();}
 static void toggle_node_sort(lv_event_t *){lv_async_call(toggle_node_sort_now,nullptr);}
+static void refresh_nodes_now(void *){if(page==1)draw();}
+static void refresh_nodes_event(lv_event_t *){lv_async_call(refresh_nodes_now,nullptr);}
 static void add_meshcore_channel_now(void *mode);
 static void add_meshcore_channel(lv_event_t *e){lv_async_call(add_meshcore_channel_now,lv_event_get_user_data(e));}
 static void channel_choice(lv_obj_t *sheet,const char *title,const char *subtitle,int y,const char *glyph,int mode){
@@ -772,7 +778,7 @@ static void render() {
                         ready() ? "Live MeshCore session" : "Connect a MeshCore Companion");
     int filter = channels ? groups_filter : nodes_filter;
     filter_tabs(w, filter);
-    if(!channels){action_button(body,node_sort_label(),8,98,w-16,34,panel2,toggle_node_sort,0);lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);list_viewport=list_view_at(body,141,w);}
+    if(!channels){action_button(body,node_sort_label(),8,98,(w-22)/2,34,panel2,toggle_node_sort,0);action_button(body,"REFRESH",(w+2)/2,98,(w-22)/2,34,panel2,refresh_nodes_event,0);lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);list_viewport=list_view_at(body,141,w);}
     else {
       action_button(body,groups_rooms?"ROOMS":"CHANNELS",8,98,(w-22)/2,34,panel2,toggle_groups,0);
       action_button(body,"ADD CHANNEL",(w+2)/2,98,(w-22)/2,34,panel2,open_add_channel_event,0);
@@ -793,6 +799,13 @@ static void render() {
     if(channels){lv_obj_clear_flag(body,LV_OBJ_FLAG_SCROLLABLE);list_viewport=list_view_at(body,groups_rooms?141:164,w);}
     for(int i=0;i<(channels&&!room_list?s->channel_count:s->contact_count);++i){
       if(room_list&&s->contacts[i].type!=3)continue;
+      if(!channels){
+        const auto key=mcxchat::key_for(*s,false,uint16_t(i));
+        const auto *pref=mcxhistory::preferences().get(key);
+        const uint32_t heard=contact_last_heard(*s,i);
+        if(!meshcrossway::is_recent_node(heard,pref&&pref->favorite))continue;
+        display_scores[i]=uint64_t(heard)<<32;
+      }
       display_indices[total++]=i;
     }
     const bool gps_valid=nav_gps_valid;const double gps_latitude=nav_latitude,gps_longitude=nav_longitude;
@@ -807,14 +820,7 @@ static void render() {
       return d<0||d>1.0e15?UINT64_MAX:uint64_t(d);
     };
     auto rank=[&](int i)->uint64_t {
-      if(!channels){
-        const auto &contact=s->contacts[i];uint32_t last=contact.advert>contact.lastmod?contact.advert:contact.lastmod;uint32_t latest=0;
-        for(const auto &m:s->messages)if(m.id&&!m.outgoing&&!m.channel&&!memcmp(m.key,contact.key,6)){
-          if(m.observed_at>last)last=m.observed_at;
-          if(m.id>latest)latest=m.id;
-        }
-        return (uint64_t(last)<<32)|latest;
-      }
+      if(!channels)return display_scores[i];
       const auto key=key_for_index(i);uint32_t last=0,latest=0;
       for(const auto &m:s->messages)if(m.id&&!m.outgoing&&mcxchat::belongs(m,key)){
         const uint32_t seen=m.observed_at?m.observed_at:m.id;
@@ -832,6 +838,7 @@ static void render() {
       if(i<hi)self(self,i,hi);
     };
     if(total>1)sort(sort,0,total-1);
+    if(!channels&&total>int(meshcrossway::NODE_MAX_RECENT))total=int(meshcrossway::NODE_MAX_RECENT);
     int y=141;
     if(channels&&!room_list){
       unsigned direct_unread=0,channel_unread=0;
@@ -934,62 +941,48 @@ static void list_batch_tick(lv_timer_t *timer){
   }
   auto *s=session();
   if(!s){lv_timer_del(timer);list_batch_timer=nullptr;return;}
-  // Node rows are heavier than channel rows and invalidate the scroll area.
-  // Add them in small, frame-spaced batches so LVGL can keep refreshing.
+  // Build a bounded, two-line snapshot. The radio database remains intact.
   int budget=list_batch_channels?8:3;
   while(budget--&&list_batch_cursor<list_batch_total){
     const int i=display_indices[list_batch_cursor++];
     const bool is_channel=list_batch_channels&&!list_batch_rooms;
     const auto key=mcxchat::key_for(*s,is_channel,uint16_t(i));
     const auto *pref=mcxhistory::preferences().get(key);
-    char title[75],detail[150],heard_detail[104],chat_detail[72],when[24];
+    char title[75],detail[150],when[24];
     const bool loaded=is_channel&&i<s->channel_count&&s->channels[i].loaded;
-    unsigned unread_count=0;uint32_t last_heard=0;unsigned messages=0;size_t bytes=0;
-    for(const auto &m:s->messages)if(m.id&&mcxchat::belongs(m,key)){
-      if(!m.outgoing&&!m.read)++unread_count;
-      if(!m.outgoing&&m.observed_at>last_heard)last_heard=m.observed_at;
-      if(!is_channel&&!m.channel){++messages;bytes+=strlen(m.text);}
-    }
     if(is_channel){
+      unsigned unread_count=0;uint32_t last_heard=0;
+      for(const auto &m:s->messages)if(m.id&&mcxchat::belongs(m,key)){
+        if(!m.outgoing&&!m.read)++unread_count;
+        if(!m.outgoing&&m.observed_at>last_heard)last_heard=m.observed_at;
+      }
       snprintf(title,sizeof(title),"%u / %s",unsigned(i),loaded&&s->channels[i].name[0]?s->channels[i].name:"Empty slot");
       compact_list_label(title);
       mcxchat::time_local(last_heard,when,sizeof(when));
-      snprintf(detail,sizeof(detail),"%u unread | %s",unread_count,last_heard?when:"--");
+      snprintf(detail,sizeof(detail),"%u unread / %s",unread_count,last_heard?when:"--");
     }else{
-      const auto &c=s->contacts[i];uint32_t heard=c.advert>c.lastmod?c.advert:c.lastmod;
-      if(last_heard>heard)heard=last_heard;
-      node_heard_age(heard,when,sizeof(when));
+      const auto &c=s->contacts[i];
+      node_heard_age(contact_last_heard(*s,i),when,sizeof(when));
       snprintf(title,sizeof(title),"%s%s",pref&&pref->favorite?"* ":"",pref&&pref->alias[0]?pref->alias:c.name);
       compact_list_label(title);
-      const char *kind=c.type==2?"MeshCore repeater":c.type==3?"MeshCore room":c.type==4?"MeshCore sensor":"MeshCore companion";
+      const char *kind=c.type==2?"Repeater":c.type==3?"Room":c.type==4?"Sensor":"Person";
       const char *route=c.path_len==255?"Flood":"Direct";
-      snprintf(heard_detail,sizeof(heard_detail),"ID %02X%02X / %s / %s / %s",c.key[4],c.key[5],kind,route,when);
+      snprintf(detail,sizeof(detail),"ID %02X%02X / %s / %s / %s",c.key[4],c.key[5],kind,route,when);
       if(node_sort_distance&&nav_gps_valid&&c.lat&&c.lon){
         const double lat=double(c.lat)/1000000.0,lon=double(c.lon)/1000000.0;
         const double dy=(lat-nav_latitude)*111320.0,dx=(lon-nav_longitude)*111320.0*cos(nav_latitude*0.017453292519943295);
-        snprintf(chat_detail,sizeof(chat_detail),"Unread %u / Chat %u / %lu B / %.0f m",unread_count,messages,(unsigned long)bytes,sqrt(dx*dx+dy*dy));
-      }else snprintf(chat_detail,sizeof(chat_detail),"Unread %u / Chat %u / %lu B",unread_count,messages,(unsigned long)bytes);
+        const size_t used=strlen(detail);
+        if(used<sizeof(detail))snprintf(detail+used,sizeof(detail)-used," / %.0f m",sqrt(dx*dx+dy*dy));
+      }
     }
-    const int row_height=is_channel?58:76;
+    const int row_height=58;
     const int row_y=(list_batch_cursor-1)*(row_height+6);
     auto *b=action_button(list_viewport,"",0,row_y,list_batch_width,row_height,panel,is_channel?choose_channel:choose_contact,i);
-    const int card_width=list_batch_width;
-    if(!is_channel){
-      const auto &contact=s->contacts[i];
-      const char *glyph=contact.type==2?"R":contact.type==3?"H":contact.type==4?"S":"P";
-      list_icon(b,glyph,8,18,40,orange);
-      auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,title);
-      lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
-      lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-      auto *heard_label=txt(b,heard_detail,56,28,card_width-64,muted);lv_obj_set_height(heard_label,18);lv_label_set_long_mode(heard_label,LV_LABEL_LONG_DOT);
-      auto *chat_label=txt(b,chat_detail,56,49,card_width-64,muted);lv_obj_set_height(chat_label,18);lv_label_set_long_mode(chat_label,LV_LABEL_LONG_DOT);
-    }else{
-      list_icon(b,"#",8,9,40,orange);
-      auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,title);
-      lv_obj_set_pos(name,56,5);lv_obj_set_size(name,card_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
-      lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
-      auto *d=txt(b,detail,56,30,card_width-64,muted);lv_obj_set_height(d,18);lv_label_set_long_mode(d,LV_LABEL_LONG_DOT);
-    }
+    list_icon(b,is_channel?"#":(s->contacts[i].type==2?"R":s->contacts[i].type==3?"H":s->contacts[i].type==4?"S":"P"),8,9,40,orange);
+    auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,title);
+    lv_obj_set_pos(name,56,4);lv_obj_set_size(name,list_batch_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
+    lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
+    auto *detail_label=txt(b,detail,56,30,list_batch_width-64,muted);lv_obj_set_height(detail_label,18);lv_label_set_long_mode(detail_label,LV_LABEL_LONG_DOT);
   }
   if(list_batch_cursor>=list_batch_total){
     lv_timer_del(timer);list_batch_timer=nullptr;
@@ -1031,6 +1024,13 @@ static void poll(lv_timer_t *) {
     } else
       lv_label_set_text(feedback, s->result[0] ? s->result : s->status);
     rendered_generation = s->generation;
+  }
+  if(page==1&&!showing_mt()&&!dialog&&!wifi_dialog&&!ble_dialog&&!info_dialog){
+    const bool syncing=s&&s->connected&&!s->initialized;
+    if(!list_batch_timer&&nodes_were_syncing&&!syncing){nodes_were_syncing=false;draw();return;}
+    nodes_were_syncing=syncing;
+    if(!list_batch_timer){rendered_generation=s?s->generation:0;rendered_zone=mcxchat::time_zone_key();}
+    return; // Keep the node snapshot stable; REFRESH rebuilds it on demand.
   }
   if (!showing_mt() && !dialog && !wifi_dialog && !ble_dialog && !info_dialog && !list_batch_timer && s && (s->generation != rendered_generation||rendered_zone!=mcxchat::time_zone_key()) &&
       (page == 1 || page == 2 || page == 3)) {
