@@ -79,7 +79,7 @@ static void pointer(lv_event_t *event){
   auto *input=lv_indev_get_act();if(!input)return;
   lv_point_t p={};lv_indev_get_point(input,&p);const auto code=lv_event_get_code(event);
   if(code==LV_EVENT_CLICKED){if(!gesture_moved&&overlay_cache&&overlay_cache->ready&&picture){lv_area_t a;lv_obj_get_coords(canvas,&a);const int x=p.x-a.x1-pan_x,y=p.y-a.y1-pan_y;const auto map=mcxmap::configuration();const int radius=mcxmap::node_icon(map,false)==mcxmap::NODE_NAME||mcxmap::node_icon(map,true)==mcxmap::NODE_NAME?25:int(mcxmap::node_size(map)/2)+7;
-      for(unsigned i=0;i<overlay_cache->cluster_count;++i){const auto &cluster=overlay_cache->clusters[i];const int dx=x-cluster.point.x,dy=y-cluster.point.y;if(dx*dx+dy*dy<=radius*radius)open_node_selection(i);}}
+      for(unsigned i=0;i<overlay_cache->cluster_count;++i){const auto &cluster=overlay_cache->clusters[i];const int dx=x-cluster.point.x,dy=y-cluster.point.y;if(dx*dx+dy*dy<=radius*radius){open_node_selection(i);break;}}}
     gesture_moved=false;return;}
   if(code==LV_EVENT_PRESSED){drag_start=p;drag_x=pan_x;drag_y=pan_y;dragging=true;gesture_moved=false;}
   else if(code==LV_EVENT_PRESSING&&dragging){drag_x=pan_x+p.x-drag_start.x;drag_y=pan_y+p.y-drag_start.y;
@@ -701,17 +701,53 @@ static void show_node_details(unsigned index){
   base("NODE DETAILS");auto *label=single_label(dialog,info,0,0,440,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);label=single_label(dialog,age,0,0,440,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
   label=single_label(dialog,"Name badge colors: green = heard/advertised within 5 min; cyan = within 60 min; gray = saved without recent activity. This indicates recent radio activity, not a health check.",0,0,440,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
 }
+// A cluster preview has a fixed widget/text budget, independent of node count.
+static constexpr unsigned GROUP_PREVIEW_LIMIT=4;
+static double group_latitude=0,group_longitude=0;
+static unsigned group_zoom=0;
+static void zoom_node_group(lv_event_t *){
+  lv_async_call([](void *expected){
+    if(info_dialog!=expected||!navui::canvas)return;
+    info_close_now(nullptr);
+    navui::following=false;navui::centered=true;
+    navui::latitude=group_latitude;navui::longitude=group_longitude;navui::zoom=group_zoom;
+    auto c=mcxmap::configuration();c.zoom=uint8_t(group_zoom);mcxmap::configure(c);navui::request();
+  },info_dialog);
+}
 static void show_node_group(unsigned group){
-  if(!navui::overlay_cache||group>=navui::overlay_cache->cluster_count)return;
-  static char list[5400];list[0]=0;size_t used=0;unsigned shown=0;const unsigned total=navui::overlay_cache->clusters[group].count;
-  for(unsigned i=0;i<navui::overlay_cache->node_count&&shown<48;++i){const auto &node=navui::overlay_cache->nodes[i];if(node.cluster!=group)continue;const size_t len=strlen(node.id);const char *suffix=len>=4?node.id+len-4:node.id;
-    const int n=snprintf(list+used,sizeof(list)-used,"%s · %s · %s · %s\n",suffix,node.meshcore?"MeshCore":"Meshtastic",node.name,navui::activity_name(navui::node_activity(node)));
-    if(n<0||size_t(n)>=sizeof(list)-used)break;
-    used+=size_t(n);++shown;
+  if(!navui::front||!navui::overlay_cache||group>=navui::overlay_cache->cluster_count)return;
+  const auto &cluster=navui::overlay_cache->clusters[group];
+  const auto &view=navui::front->view;
+  const auto origin=mcxmap::project(view.latitude,view.longitude,view.zoom);
+  const auto center=mcxmap::unproject(origin.x+cluster.point.x-double(view.width)/2,
+                                    origin.y+cluster.point.y-double(view.height)/2,view.zoom);
+  group_latitude=center.x;group_longitude=center.y;
+  const unsigned max_zoom=mcxmap::max_zoom(mcxmap::configuration());
+  group_zoom=navui::zoom+2; if(group_zoom>max_zoom)group_zoom=max_zoom;
+  base("NEARBY NODES");
+  // This page owns fixed coordinates; prevent base()'s deferred flex/wrap pass.
+  lv_obj_add_flag(dialog,LV_OBJ_FLAG_USER_1);lv_obj_set_layout(dialog,0);
+  lv_obj_clear_flag(dialog,LV_OBJ_FLAG_SCROLLABLE);lv_obj_set_style_pad_all(dialog,0,0);
+  const int width=lv_obj_get_width(body);
+  auto *title=lv_obj_get_child(dialog,0);lv_obj_set_pos(title,8,8);lv_obj_set_size(title,width-16,19);
+  char text[80];snprintf(text,sizeof(text),"%u nodes / preview up to %u. Zoom to narrow.",unsigned(cluster.count),GROUP_PREVIEW_LIMIT);
+  single_label(dialog,text,8,31,width-16,muted);
+  unsigned shown=0;
+  for(unsigned i=0;i<navui::overlay_cache->node_count&&shown<GROUP_PREVIEW_LIMIT;++i){
+    const auto &node=navui::overlay_cache->nodes[i];if(node.cluster!=group)continue;
+    auto *card=panel_at(dialog,8,55+int(shown)*43,width-16,39,panel2,5);
+    snprintf(text,sizeof(text),"%.32s",node.name);
+    for(char *c=text;*c;++c)if(uint8_t(*c)<32)*c=' ';
+    auto *label=single_label(card,text,6,1,width-28,white);lv_label_set_long_mode(label,LV_LABEL_LONG_CLIP);lv_obj_set_height(label,18);
+    const size_t len=strlen(node.id);const char *suffix=len>=4?node.id+len-4:node.id;
+    snprintf(text,sizeof(text),"%s / %s / %s",suffix,node.meshcore?"MC":"MT",navui::activity_name(navui::node_activity(node)));
+    label=single_label(card,text,6,20,width-28,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_CLIP);lv_obj_set_height(label,18);
+    ++shown;
   }
-  if(total>shown&&used<sizeof(list))snprintf(list+used,sizeof(list)-used,"… and %u more. Zoom in to separate nearby nodes.",total-shown);
-  base("NEARBY NODES");char title[64];snprintf(title,sizeof(title),"%u nodes in this group",total);single_label(dialog,title,0,0,440,orange);auto *label=single_label(dialog,list,0,0,440,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
-  label=single_label(dialog,"Green: active in last 5 min · Cyan: seen in last hour · Gray: saved/older. Colors use received/ad timestamps and do not confirm device health.",0,0,440,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
+  const int button_width=(width-24)/2;
+  auto *zoom=action_button(dialog,"ZOOM IN",8,239,button_width,36,orange,zoom_node_group,0);
+  if(navui::zoom>=max_zoom)lv_obj_add_state(zoom,LV_STATE_DISABLED);
+  action_button(dialog,"CLOSE",16+button_width,239,button_width,36,panel2,info_close,0);
 }
 static void map_credits(){
   base("MAP / CREDITS");const auto c=mcxmap::configuration();
