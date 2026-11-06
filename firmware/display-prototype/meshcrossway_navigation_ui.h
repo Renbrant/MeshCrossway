@@ -176,6 +176,11 @@ static void create(int w){
   lv_obj_update_layout(attribution);lv_obj_set_y(attribution,lv_obj_get_height(canvas)-lv_obj_get_height(attribution)-3);
   lv_obj_add_flag(attribution,LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_event_cb(attribution,[](lv_event_t *){credits();},LV_EVENT_CLICKED,nullptr);
+  // Keep the established child order for event handling, then explicitly raise
+  // the controls above the map image and labels so tile refreshes cannot cover
+  // them after a drag finishes.
+  lv_obj_move_foreground(zoom_control);
+  lv_obj_move_foreground(center_control);
   set_status(centered?(gps_center?"Loading map...":"Centered on a saved node · Center GPS to move"):"Waiting for GPS or a node position");if(zoom_open)show_zoom();
   mcxmap::start();if(centered)request();
 }
@@ -385,6 +390,7 @@ static void base(const char *title){
   info_close_now(nullptr);
   map_node_info=page==4&&strcmp(title,"NODE DETAILS")==0;
   map_options_active=page==4&&strcmp(title,"MAP OPTIONS")==0;
+  if(page==4)map_active_action=map_action_for_title(title);
   dialog=info_dialog=panel_at(body,0,0,lv_obj_get_width(body),286,bg,0);
   navigation_panel=true;
   if(right_rail){if(has_context_rail())lv_obj_clear_flag(right_rail,LV_OBJ_FLAG_HIDDEN);else lv_obj_add_flag(right_rail,LV_OBJ_FLAG_HIDDEN);}

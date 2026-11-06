@@ -2,7 +2,7 @@
 
 **Current stable: v0.9.28.** This directory contains the ESP32-S3 controller firmware for the non-B Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0, using ESP-IDF 5.3.2 and LVGL 8.4 through the pinned Waveshare BSP. The historical directory name `display-prototype` remains for build compatibility; the software now includes real dual-radio BLE, messaging, GNSS and storage.
 
-**Current test candidate: v0.9.30.** Improves map node details and controls: last-heard age uses hours/minutes/seconds, node details hide map actions, Map Options shows its active context, and zoom/center controls sit on the map. Keeps v0.9.28 as the recommended stable image. [Change notes and device checks](../../docs/map-ui-v0930.md).
+**Current test candidate: v0.9.31.** Fixes map control layering and active navigation state: zoom/center stay visible after dragging, and Map Options, Record, Tracks and POIs each highlight as the current screen. Keeps v0.9.28 as the recommended stable image. [Change notes and device checks](../../docs/map-ui-v0931.md).
 
 Install the exact accepted image with the [Web Flasher](https://renbrant.github.io/MeshCrossway/flasher/). The publisher restores checksum-pinned bytes rather than recompiling the stable source. v0.9.25 is previous stable recovery and v0.9.16 remains legacy recovery. See the [stable record](../../docs/stable-v0928.md).
 
