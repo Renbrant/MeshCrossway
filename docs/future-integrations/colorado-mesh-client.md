@@ -7,7 +7,7 @@
 
 ## Why it matters
 
-Mesh-Client is an Electron desktop application supporting Meshtastic, MeshCore and Reticulum with concurrent protocol sessions, BLE/serial/TCP connectivity, SQLite history, RF diagnostics and TAK/CoT features. MeshCrossway is a standalone touchscreen embedded device with two independent XIAO/Wio Radio Pods and a Waveshare Core connected over two BLE links. They are complementary, not interchangeable.
+Mesh-Client is an Electron desktop application supporting Meshtastic, MeshCore and Reticulum with concurrent protocol sessions, BLE/serial/TCP connectivity, SQLite history, RF diagnostics and TAK/CoT features. MeshCrossway is a standalone touchscreen embedded device with two user-selectable radios and a Waveshare Core connected over two BLE links. Heltec V3 radios are used successfully in development tests; each alternative model/firmware combination needs validation. They are complementary, not interchangeable.
 
 ## Possible workstreams
 
