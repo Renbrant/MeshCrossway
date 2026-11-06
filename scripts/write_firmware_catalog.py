@@ -88,6 +88,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary="EXPERIMENTAL: keeps zoom/center controls above map tiles after drag and makes the active Map Options, Record, Tracks or POIs screen the only highlighted map action. v0.9.28 remains the recommended stable image; physical validation is pending."
         label="Map controls and navigation state / EXPERIMENTAL"
         status="experimental"
+    elif version=="v0.10.0":
+        summary="EXPERIMENTAL: adds an OpenFreeMap vector map using bounded single-tile rendering and SD caching of viewed tiles, with offline-only mode, OpenFreeMap attribution and zoom capped at 14. Includes a minimal MVT style; labels and field performance still need device validation. v0.9.28 remains recommended stable."
+        label="OpenFreeMap vector maps / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.29":
         summary="EXPERIMENTAL: 750 local color emoji sequences, preserved legacy glyphs, readable unknown fallback and flash-resident sprites. Names and messages retain original UTF-8; physical validation pending. Exact v0.9.28 stable retained."
         label="Expanded emoji coverage / EXPERIMENTAL"

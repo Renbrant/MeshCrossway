@@ -2,6 +2,7 @@
 #include "meshcrossway_node_age.h"
 #include "meshcrossway_memory_log.h"
 #include "meshcrossway_map_projection.h"
+#include "meshcrossway_ofm_mvt.h"
 #include "meshcrossway_radio_priority.h"
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
@@ -94,10 +95,12 @@ static bool migrate_config(Config &c){
   return valid_config(c);
 }
 enum Provider {STREET=0,TOPO=1,STREET_NIGHT=2};
-static Provider provider(const Config &c){return !strcmp(c.url,"https://a.tile.opentopomap.org")?TOPO:c.night?STREET_NIGHT:STREET;}
-static unsigned max_zoom(const Config &c){return provider(c)==TOPO?17:19;}
-static const char *provider_name(const Config &c){return provider(c)==TOPO?"Topographic / OpenTopoMap":provider(c)==STREET_NIGHT?"Street / OpenStreetMap night":"Street / OpenStreetMap";}
+static constexpr Provider OPENFREEMAP=Provider(3);
+static Provider provider(const Config &c){return !strcmp(c.url,"https://a.tile.opentopomap.org")?TOPO:!strcmp(c.url,"https://tiles.openfreemap.org/planet/latest")?OPENFREEMAP:c.night?STREET_NIGHT:STREET;}
+static unsigned max_zoom(const Config &c){return provider(c)==TOPO?17:provider(c)==OPENFREEMAP?14:19;}
+static const char *provider_name(const Config &c){return provider(c)==TOPO?"Topographic / OpenTopoMap":provider(c)==OPENFREEMAP?"Vector / OpenFreeMap (offline cache)":provider(c)==STREET_NIGHT?"Street / OpenStreetMap night":"Street / OpenStreetMap";}
 static void select_provider(Config &c,unsigned id){
+  if(id==unsigned(OPENFREEMAP)){c.night=0;snprintf(c.url,sizeof(c.url),"https://tiles.openfreemap.org/planet/latest");snprintf(c.attribution,sizeof(c.attribution),"© OpenFreeMap © OpenMapTiles Data from OpenStreetMap");if(c.zoom>14)c.zoom=14;return;}
   c.night=id==STREET_NIGHT;
   snprintf(c.url,sizeof(c.url),"%s",id==TOPO?"https://a.tile.opentopomap.org":"https://tile.openstreetmap.org");
   snprintf(c.attribution,sizeof(c.attribution),"%s",id==TOPO?"© OpenStreetMap contributors, SRTM | © OpenTopoMap (CC-BY-SA)":"© OpenStreetMap contributors");
@@ -178,6 +181,44 @@ static bool decode(unsigned char *png,size_t size,unsigned char **rgba){
 static bool (*wifi_ready)()=nullptr;
 static bool network_allowed(){return wifi_ready&&wifi_ready();}
 static unsigned char *checked_png(const char *file,size_t &size,unsigned char **decoded=nullptr);
+static bool vector_path(char *out,size_t cap,unsigned z,unsigned x,unsigned y){
+  char dir[96];const int length=snprintf(dir,sizeof(dir),"%s/mcx-map-vector/latest/%u/%u",SD_ROOT,z,x);
+  if(length<=0||size_t(length)>=sizeof(dir))return false;
+  for(char *p=dir+strlen(SD_ROOT)+1;*p;++p)if(*p=='/'){*p=0;const bool ok=!mkdir(dir,0755)||errno==EEXIST;*p='/';if(!ok)return false;}
+  if(mkdir(dir,0755)&&errno!=EEXIST)return false;
+  const int file_length=snprintf(out,cap,"%s/%u.pbf",dir,y);return file_length>0&&size_t(file_length)<cap;
+}
+static uint8_t *obtain_vector(const Config &c,unsigned z,unsigned x,unsigned y,size_t &size,uint32_t generation){
+  size=0;if(z>14||esp_sdcard_port_get_size()==0)return nullptr;
+  char file[192];if(!vector_path(file,sizeof(file),z,x,y))return nullptr;
+  auto read_file=[&]()->uint8_t *{FILE *f=fopen(file,"rb");if(!f)return nullptr;struct stat st={};if(fstat(fileno(f),&st)||st.st_size<=0||st.st_size>int(mcxofm::MAX_TILE_BYTES)){fclose(f);return nullptr;}size_t n=size_t(st.st_size);auto *p=(uint8_t *)heap_caps_malloc(n,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);bool ok=p&&fread(p,1,n,f)==n&&!ferror(f);const int rc=fclose(f);if(!ok||rc){heap_caps_free(p);return nullptr;}size=n;return p;};
+  if(auto *p=read_file())return p;
+  if(!c.online||!network_allowed()||wanted.load()!=generation||mcxpriority::ble_initializing.load())return nullptr;
+  const uint32_t now=milliseconds();if(backing_off&&uint32_t(now-backoff_started)<backoff_ms)return nullptr;
+  uint64_t total=0,free_space=0;if(esp_vfs_fat_info(SD_ROOT,&total,&free_space)!=ESP_OK||free_space<8ULL*1024*1024+mcxofm::MAX_TILE_BYTES){cache_full=true;return nullptr;}
+  if(uint32_t(now-last_request)<1000)vTaskDelay(pdMS_TO_TICKS(1000-uint32_t(now-last_request)));
+  if(wanted.load()!=generation||mcxpriority::ble_initializing.load())return nullptr;
+  last_request=milliseconds();char temporary[208];snprintf(temporary,sizeof(temporary),"%s.tmp",file);FILE *out=fopen(temporary,"wb");if(!out)return nullptr;
+  char url[256];snprintf(url,sizeof(url),"%s/%u/%u/%u.pbf",c.url,z,x,y);
+  esp_http_client_config_t http={};http.url=url;http.timeout_ms=4000;http.buffer_size=2048;http.buffer_size_tx=512;
+  http.user_agent="MeshCrossway/0.10.0 (+https://github.com/Renbrant/MeshCrossway)";http.crt_bundle_attach=esp_crt_bundle_attach;http.disable_auto_redirect=true;
+  auto client=esp_http_client_init(&http);bool ok=false;uint8_t *data=nullptr;int status=0;size=0;
+  if(client&&esp_http_client_open(client,0)==ESP_OK){const auto length=esp_http_client_fetch_headers(client);status=esp_http_client_get_status_code(client);
+    if(status==429||status>=500){backoff_started=now;backoff_ms=120000;backing_off=true;}
+    if(status==200&&(length<0||length<=int64_t(mcxofm::MAX_TILE_BYTES))){data=(uint8_t *)heap_caps_malloc(mcxofm::MAX_TILE_BYTES,MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(data){int n=0;ok=true;while(size<mcxofm::MAX_TILE_BYTES){if(wanted.load()!=generation||mcxpriority::ble_initializing.load()){ok=false;break;}n=esp_http_client_read(client,(char *)data+size,int(fmin(size_t(4096),mcxofm::MAX_TILE_BYTES-size)));if(n<0){ok=false;break;}if(!n)break;size+=size_t(n);}ok=ok&&size>0&&esp_http_client_is_complete_data_received(client);}}
+  }
+  if(client){esp_http_client_close(client);esp_http_client_cleanup(client);}
+  if(ok){ // Reject malformed protobuf before it reaches the draw loop.
+    auto *probe=(uint16_t *)heap_caps_malloc(sizeof(uint16_t),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);auto *scratch=(mcxofm::Scratch *)heap_caps_malloc(sizeof(mcxofm::Scratch),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+    if(probe&&scratch){mcxofm::Canvas test;test.pixels=probe;test.points=scratch->points;test.crossings=scratch->crossings;test.width=test.height=1;test.tile_x=test.tile_y=test.origin_x=test.origin_y=0;ok=mcxofm::render(data,size,test);}else ok=false;
+    heap_caps_free(probe);heap_caps_free(scratch);
+  }
+  if(ok)ok=fwrite(data,1,size,out)==size&&fflush(out)==0&&fsync(fileno(out))==0;
+  if(fclose(out))ok=false;
+  if(ok)ok=rename(temporary,file)==0;
+  if(!ok){remove(temporary);heap_caps_free(data);data=nullptr;size=0;if(!backing_off){backoff_started=now;backoff_ms=status==404?30000:10000;backing_off=true;}}
+  return data;
+}
 static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,size_t &size,unsigned char **decoded=nullptr,uint32_t generation=0){
   if(decoded)*decoded=nullptr;
   const auto cancelled=[generation](){return mcxpriority::ble_initializing.load()||(generation&&wanted.load()!=generation);};
@@ -250,6 +291,29 @@ static lv_color_t night_pixel(lv_color_t color){
   const int shift=255-hi-lo;
   return lv_color_make(uint8_t(8+(r+shift)*200/255),uint8_t(12+(g+shift)*200/255),uint8_t(18+(b+shift)*210/255));
 }
+static Frame *render_openfreemap(const View &v,const Config &c,Frame *f,lv_color_t *pixels){
+  const uint32_t begun=milliseconds();
+  auto *scratch=(mcxofm::Scratch *)heap_caps_malloc(sizeof(mcxofm::Scratch),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+  if(!scratch){release(f);return nullptr;}
+  for(unsigned i=0;i<v.width*v.height;++i)pixels[i]=lv_color_hex(0xE9E6DA);
+  const auto center=project(v.latitude,v.longitude,v.zoom);const int left=int(floor(center.x-double(v.width)/2)),top=int(floor(center.y-double(v.height)/2));
+  const int first_x=int(floor(double(left)/256)),first_y=int(floor(double(top)/256));const int tiles=1<<v.zoom;unsigned tile_errors=0;
+  for(int ty=first_y;ty<=int(floor(double(top+int(v.height)-1)/256));++ty){
+    for(int tx=first_x;tx<=int(floor(double(left+int(v.width)-1)/256));++tx){
+      if(wanted.load()!=v.generation){heap_caps_free(scratch);release(f);return nullptr;}
+      if(ty<0||ty>=tiles){++f->missing;continue;}
+      const unsigned tile_x=unsigned((tx%tiles+tiles)%tiles),tile_y=unsigned(ty);size_t size=0;
+      auto *data=obtain_vector(c,v.zoom,tile_x,tile_y,size,v.generation);
+      if(data){mcxofm::Canvas canvas;canvas.pixels=(uint16_t *)pixels;canvas.points=scratch->points;canvas.crossings=scratch->crossings;canvas.width=v.width;canvas.height=v.height;canvas.origin_x=left;canvas.origin_y=top;canvas.tile_x=tx;canvas.tile_y=int(tile_y);canvas.zoom=v.zoom;
+        if(mcxofm::render(data,size,canvas))++f->loaded;else{++f->missing;++tile_errors;}
+        heap_caps_free(data);
+      }else ++f->missing;
+      vTaskDelay(1);
+    }
+  }
+  heap_caps_free(scratch);snprintf(f->status,sizeof(f->status),"OpenFreeMap z%u / %u vector tiles / %u missing%s",v.zoom,f->loaded,f->missing,!esp_sdcard_port_get_size()?" / SD unavailable":tile_errors?" / invalid tile":"");
+  last_render_ms=milliseconds()-begun;return f;
+}
 static Frame *render(const View &v,const Config &c){
   const auto begun=milliseconds();waiting_clock=cache_full=false;
   if(!esp_sdcard_port_get_size())clear_tiles();
@@ -258,6 +322,7 @@ static Frame *render(const View &v,const Config &c){
   const size_t count=v.width*v.height;auto *pixels=(lv_color_t *)heap_caps_malloc(count*sizeof(lv_color_t),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
   if(!pixels){release(f);return nullptr;}
   f->image.header.cf=LV_IMG_CF_TRUE_COLOR;f->image.header.w=v.width;f->image.header.h=v.height;f->image.data=(const uint8_t *)pixels;f->image.data_size=count*sizeof(lv_color_t);
+  if(provider(c)==OPENFREEMAP)return render_openfreemap(v,c,f,pixels);
   for(unsigned y=0;y<v.height;++y)for(unsigned x=0;x<v.width;++x)pixels[y*v.width+x]=lv_color_hex(((x/32+y/32)&1)?0x222A31:0x1A2027);
   const auto center=project(v.latitude,v.longitude,v.zoom);const int left=int(floor(center.x-double(v.width)/2)),top=int(floor(center.y-double(v.height)/2));
   const int first_x=int(floor(double(left)/256)),first_y=int(floor(double(top)/256));const int tiles=1<<v.zoom;
