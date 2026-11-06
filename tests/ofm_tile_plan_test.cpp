@@ -7,6 +7,10 @@ int main() {
   assert(tile_x(0,0)==0 && tile_y(0,0)==0);
   assert(tile_x(0,1)==1 && tile_y(0,1)==1);
   assert(tile_x(180,2)==0); // longitude wraps
+  assert(count(rect(-85,-180,85,180,0))==1);
+  assert(count(rect(-85,-180,85,180,1))==4);
+  assert(rect(-1,179,1,180,2).right==3);
+  assert(rect(-1,-180,1,-179,2).left==0);
   assert(tile_y(90,2)==0 && tile_y(-90,2)==3);
   assert(count(rect(-1,-1,1,1,0))==1);
   assert(!rect(-1,170,1,-170,3).valid); // antimeridian explicit rejection
