@@ -85,7 +85,7 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         label="Map details and on-map controls / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.9.32":
-        summary="EXPERIMENTAL: restores the v0.9.31 raster map and adds two-finger pinch zoom. Pinching magnifies the whole map; standard raster tile labels cannot be resized independently. v0.9.28 remains the recommended stable image pending hardware validation."
+        summary="EXPERIMENTAL: restores the v0.9.31 raster map and adds two-finger pinch zoom. Adds a saved 1.25x map magnification option; it scales all map content, crops the visible area, and leaves cached tile files unchanged. Standard raster tile labels cannot be resized independently. v0.9.28 remains the recommended stable image pending hardware validation."
         label="Raster map pinch zoom / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.9.31":
