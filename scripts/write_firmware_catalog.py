@@ -84,6 +84,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary="EXPERIMENTAL: improves node details and map controls. Last-heard age uses hours/minutes/seconds, node details hide map actions, Map Options shows its active context, and zoom/center controls sit on the map. v0.9.28 remains the recommended stable image; physical validation is pending."
         label="Map details and on-map controls / EXPERIMENTAL"
         status="experimental"
+    elif version=="v0.9.31":
+        summary="EXPERIMENTAL: keeps zoom/center controls above map tiles after drag and makes the active Map Options, Record, Tracks or POIs screen the only highlighted map action. v0.9.28 remains the recommended stable image; physical validation is pending."
+        label="Map controls and navigation state / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.29":
         summary="EXPERIMENTAL: 750 local color emoji sequences, preserved legacy glyphs, readable unknown fallback and flash-resident sprites. Names and messages retain original UTF-8; physical validation pending. Exact v0.9.28 stable retained."
         label="Expanded emoji coverage / EXPERIMENTAL"
