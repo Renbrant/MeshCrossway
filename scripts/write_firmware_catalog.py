@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish ONLY the newest hardware-tested image and newer supported builds."""
+"""Publish the accepted stable line, pinned recoveries and newer supported builds."""
 import argparse
 import json
 import re
@@ -25,6 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit release approval.
 approved={
+    "v0.9.28":("Selected stable by explicit acceptance on 2026-11-05. Exact published image retained: dual radios, street/night maps, orientation lock, node age colors and configurable local retention.", "Recommended stable / hardware-tested"),
     "v0.9.25":("Hardware-tested and selected stable on 2026-11-05. Exact tested binary retained: software-AES map downloads, optional grouping, per-network styles, zoom dismissal and local night view.", "Recommended stable / hardware-tested"),
     "v0.9.16":("Hardware-tested v0.9.16; retain exact published binary.", "Recommended stable / hardware-tested"),
     "v0.8.26":("v0.8.26 is the user-selected stable firmware. Its exact v0.8.26 binary is restored from the published Pages artifact and checksum-verified.", "Recommended stable / dual-radio maps and tracks"),
@@ -54,7 +55,7 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if not folder.is_dir():
         continue
     version=folder.name
-    if (version_key(version)<version_key(stable) and version!="v0.9.16") or version_key(version)>version_key(latest) or version in blocked:
+    if (version_key(version)<version_key(stable) and version not in ("v0.9.16","v0.9.25")) or version_key(version)>version_key(latest) or version in blocked:
         continue
     manifest=folder/"manifest.json"
     info_file=folder/"build-info.json"
@@ -75,9 +76,9 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
-    elif version=="v0.9.16":
+    elif version in ("v0.9.16","v0.9.25"):
         summary="Previous hardware-tested stable; exact image retained for recovery."
-        label="Previous stable / recovery"
+        label="Previous stable / recovery" if version=="v0.9.25" else "Legacy stable / recovery"
         status="hardware-tested"
     elif version=="v0.9.28":
         summary="EXPERIMENTAL: independent last-heard map colors, configurable 0-365 day local node retention, protected favorites/messages and filtered SD/radio imports. Exact v0.9.25 stable image retained."

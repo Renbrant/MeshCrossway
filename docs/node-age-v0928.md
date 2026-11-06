@@ -1,6 +1,6 @@
 # v0.9.28: map colors by last reception and configurable local retention
 
-v0.9.25 remains the exact hardware-tested recommended stable image. v0.9.28 is a test candidate.
+v0.9.28 was selected as stable on 2026-11-05. Its exact published bytes are retained; v0.9.25 remains previous stable recovery. See the [stable acceptance record](stable-v0928.md).
 
 ## Controls
 
@@ -43,4 +43,4 @@ On hardware:
 5. Test 0 (disabled), 1, 7, 30 and 365 days, clock unavailable/future data and no SD. Confirm messages are preserved and SD errors retain RAM data.
 6. Collect console memory/latency diagnostics during maps, reconnection, cleanup and SD persistence; record results in issue #137. Expected cleanup log: `[MCX-NODES] expired local records ...`.
 
-The feature remains experimental until device testing confirms these behaviors.
+The release has been accepted as stable. Continue recording the hardware checks above and measured runtime evidence in issue #137; acceptance does not establish every radio, SD card or operating condition.

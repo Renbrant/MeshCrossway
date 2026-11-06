@@ -1,5 +1,7 @@
 # v0.9.25 stable acceptance record
 
+Historical acceptance record. [v0.9.28 is now the recommended stable image](stable-v0928.md); these exact v0.9.25 bytes remain previous stable recovery.
+
 On 2026-11-05 hardware testing confirmed that v0.9.25 was working well and was stable, and this image was explicitly accepted as stable. This promotion changes release metadata and distribution only. It does not change or recompile firmware.
 
 ## Immutable tested image

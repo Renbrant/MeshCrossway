@@ -52,7 +52,7 @@ build_version() {
     local verify_args=(--dir "$image_dir" --version "$version")
     if [ "$ref" != "HEAD" ]; then verify_args+=(--ref "$ref"); fi
     if python3 "$ROOT/scripts/verify_firmware_version.py" "${verify_args[@]}" &&
-       { { [ "$version" != "$STABLE_VERSION" ] && [ "$version" != "$RECOVERY_VERSION" ]; } ||
+       { { [ "$version" != "$STABLE_VERSION" ] && [ "$version" != "$RECOVERY_VERSION" ] && [ "$version" != "$LEGACY_VERSION" ]; } ||
          python3 "$ROOT/scripts/restore_stable_firmware.py" --version "$version" --verify "$image_dir"; }; then
       echo "RESTORED: $version from verified compiled artifact cache"
       return
@@ -61,7 +61,7 @@ build_version() {
 
   # Preserve the exact hardware-tested bytes. Rebuilding an old source revision
   # with newly resolved component versions is not an approved rollback image.
-  if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$RECOVERY_VERSION" ]; then
+  if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$RECOVERY_VERSION" ] || [ "$version" = "$LEGACY_VERSION" ]; then
     python3 "$ROOT/scripts/restore_stable_firmware.py" --version "$version" --destination "$image_dir"
     echo "RESTORED: immutable hardware-tested $version"
     return
@@ -171,14 +171,16 @@ build_version() {
   echo "SUCCESS: $version $(wc -c < "$image_dir/meshcrossway-display-dev.bin") bytes"
 }
 
-# Only one physical rollback and recent candidates are delivered in the Web Flasher.
+# Deliver the current stable, previous stable, legacy recovery and any newer candidate.
 # Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
-# Update these two constants whenever a newer hardware build is validated.
-STABLE_VERSION="v0.9.25"
-STABLE_REF="65f4214b15fe9486a7f07e7471380114bcbf8826"
-STABLE_SHA256="daeebb735024fcdcb474acdfe0887c3d72e608ba794ba1343e1b60749f3d6b23"
-RECOVERY_VERSION="v0.9.16"
-RECOVERY_REF="d821b78979b3c2b9d716757f0cff02dbf89e776f"
+# Update these pins whenever a newer hardware build is accepted.
+STABLE_VERSION="v0.9.28"
+STABLE_REF="37a8caca1ce57e2795be78e7a40012890a6b7147"
+STABLE_SHA256="a36970339c00cc327515eac2648c5421e1b9aab460484919a6ed8f57cc040c61"
+RECOVERY_VERSION="v0.9.25"
+RECOVERY_REF="65f4214b15fe9486a7f07e7471380114bcbf8826"
+LEGACY_VERSION="v0.9.16"
+LEGACY_REF="d821b78979b3c2b9d716757f0cff02dbf89e776f"
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).
@@ -195,7 +197,8 @@ if [ "$LATEST_VERSION" = "v0.6.3" ] || [ "$LATEST_VERSION" = "v0.6.4" ] || [ "$L
 fi
 
 # Always restore the pinned tested bytes, including when stable == latest.
-# Never rebuild an pinned stable version from the publishing commit.
+# Never rebuild a pinned stable version from the publishing commit.
+build_version "$LEGACY_VERSION" "$LEGACY_REF"
 build_version "$RECOVERY_VERSION" "$RECOVERY_REF"
 build_version "$STABLE_VERSION" "$STABLE_REF"
 if [ "$LATEST_VERSION" != "$STABLE_VERSION" ]; then
@@ -207,7 +210,7 @@ fi
 for archive in "$OUT"/versions/*; do
   [ -d "$archive" ] || continue
   version="$(basename "$archive")"
-  if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$RECOVERY_VERSION" ] || [ "$version" = "$LATEST_VERSION" ]; then
+  if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$RECOVERY_VERSION" ] || [ "$version" = "$LATEST_VERSION" ] || [ "$version" = "$LEGACY_VERSION" ]; then
     continue
   fi
   rm -rf -- "$archive"

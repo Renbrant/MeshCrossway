@@ -8,20 +8,18 @@
 </p>
 <p align="center">
   <a href="https://github.com/Renbrant/MeshCrossway/tree/main/docs"><img alt="Project documentation" src="https://img.shields.io/badge/DOCUMENTATION-READ-444444?style=for-the-badge"></a>
-  <a href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/stable-v0826.md"><img alt="Recommended stable firmware v0.8.26" src="https://img.shields.io/badge/STABLE%20FIRMWARE-v0.8.26-2ea44f?style=for-the-badge"></a>
+  <a href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/stable-v0928.md"><img alt="Recommended stable firmware v0.9.28" src="https://img.shields.io/badge/STABLE%20FIRMWARE-v0.9.28-2ea44f?style=for-the-badge"></a>
   <a href="https://github.com/sponsors/Renbrant"><img alt="Donate or become a sponsor" src="https://img.shields.io/badge/DONATE%20%2F%20SPONSOR-SUPPORT%20THE%20PROJECT-ff8a24?style=for-the-badge"></a>
 </p>
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Project status — v0.9.25 stable.** Hardware-tested and selected as stable on 2026-11-05. The exact tested binary is pinned by checksum and is the Web Flasher default; v0.9.16 remains available as previous stable recovery. See the [stable acceptance and archive record](docs/stable-v0925.md).
+> **Project status — v0.9.28 stable.** Selected as stable by explicit device acceptance on 2026-11-05. The exact published image is checksum-pinned and selected by default in the Web Flasher. v0.9.25 remains the previous stable recovery; v0.9.16 is retained as legacy recovery. See the [stable acceptance record](docs/stable-v0928.md) and [release history](https://renbrant.github.io/MeshCrossway/project-status/).
 
 ## Support the project
 
 Developing MeshCrossway takes time and ongoing investment in hardware parts and AI model tokens. If you'd like to help cover these costs, you're welcome to make a one-time donation or become a project sponsor through [GitHub Sponsors](https://github.com/sponsors/Renbrant).
 
-
-## See it in operation
 
 ## See it in operation
 
@@ -78,17 +76,21 @@ The renders below show the committed case design. The Waveshare ESP32-S3 enclosu
 
 ## What works today
 
-| Capability | Current status |
+| Capability | Available in v0.9.28 stable |
 |---|---|
-| **Dual radio connections** | Meshtastic and MeshCore can connect simultaneously through separate BLE sessions. Network identities, settings and traffic remain independent. |
-| **Touchscreen interface** | Home status, radio connection cards, node lists, network filters, message lists and conversations are shown working in the v0.8.16 screenshots. |
-| **Remote browser companion** | Running on the device's local network. It provides separate network views for messages, conversations, groups, nodes and radio settings. |
-| **Track workspace** | The browser shows track folders, saved tracks and route previews. GPX downloads provide a portable backup of tracks. |
-| **Radio settings shortcuts** | Radio cards on Home open their own settings; the selected radio can also be configured through the browser interface. |
-| **Device maps and saved routes** | The v0.8.17 map and remote route-loading improvement is confirmed working well on the device. v0.8.18 added optional Meshtastic and MeshCore node markers when positions are available. |
+| **Two independent radios** | Simultaneous Meshtastic and MeshCore BLE sessions, native messages, channels, separate identities, pairing and reconnection. No bridging between networks. |
+| **Touchscreen and local browser** | Home dashboard, network filters, conversations and radio settings. The browser companion runs on the device's local Wi-Fi network and includes messages, settings and track tools. |
+| **GNSS and maps** | Local GNSS position, satellites/accuracy, clock/timezone, street/topographic maps and local OpenStreetMap night rendering. Cached SD tiles remain usable offline; uncached tiles require Wi-Fi. |
+| **Tracks and POIs** | Record/pause/resume tracks, save POIs, organize folders, preview routes and download GPX through the browser companion. |
+| **Readable node lists** | Bounded recent-node lists, fixed row spacing, sorting by last heard or distance, and explicit manual refresh. |
+| **Map customization** | Independent format, size and color for each network; circles, squares, crosses or ID badges; optional grouping; zoom controls close automatically after use. |
+| **Colors by last reception** | Optional per network: green under 24 hours, yellow from 1 to under 7 days, gray at 7 days or more/unknown. This indicates reception age, not guaranteed reachability. |
+| **Configurable local retention** | Keep nodes for 0–365 days (default 30; 0 disables expiry). Protect favorites, local radios, retained conversations/drafts and unknown timestamps. Filter stale imports and save through the SD worker. |
+| **Display and connectivity controls** | Automatic 180-degree landscape orientation, saved rotation lock, manual flip/recalibration, brightness and screen timeout; Bluetooth and Wi-Fi power controls. |
+| **Diagnostics and storage recovery** | Console memory logs, internal RAM/PSRAM/DMA snapshots, allocation and touch diagnostics, bounded SD work and recovery archives. Cleanup reduces stale records; fixed table capacity remains allocated. |
 | **Live position sharing** | Not implemented; remains future work. |
 
-See the [v0.8.16 field evidence](docs/field-evidence-v0816.md) and [dual-radio implementation and validation notes](docs/dual-radio-settings-v0816.md). Current compatibility evidence comes from the tested hardware and does not establish compatibility with every radio board or firmware version.
+Start with the [current firmware guide](firmware/display-prototype/README.md). Recent operating details: [node age and retention](docs/node-age-v0928.md), [orientation correction](docs/rotation-reference-v0927.md) and [map controls](docs/stable-v0925.md). Existing photos and screenshots retain their original version labels; they are historical evidence, not new v0.9.28 captures. Tested configurations do not establish compatibility with every radio board or firmware version.
 
 ## Remote interface and track backup
 
@@ -98,13 +100,13 @@ The remote page complements the touchscreen; radio messages still use their nati
 
 ## Hardware architecture
 
-The selected product direction is three independently powered, detachable devices: a touchscreen Core and two LoRa Radio Pods. This modular design is the target architecture; mechanical, power, RF and environmental validation is still in progress.
+The implemented software architecture uses three independent devices: a touchscreen Core and two LoRa Radio Pods. Two radio links are operating; the final detachable Pod packaging, power design, RF and environmental qualification remain in progress.
 
 | Unit | Selected hardware | Role |
 |---|---|---|
 | **MeshCrossway Core** | Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0, 480 × 320 touchscreen | LVGL interface, local storage, GNSS integration and two BLE Central connections |
-| **MX-M Radio Pod** | Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kit | Native Meshtastic radio using its BLE PhoneAPI |
-| **MX-C Radio Pod** | Second Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kit | Native MeshCore radio using its BLE Companion interface |
+| **MX-M Radio Pod** | BLE-capable Meshtastic radio; Heltec V3 tested, XIAO/Wio-SX1262 proposed for the detachable Pod | Native Meshtastic radio using its BLE PhoneAPI |
+| **MX-C Radio Pod** | BLE-capable MeshCore radio; Heltec V3 tested, XIAO/Wio-SX1262 proposed for the detachable Pod | Native MeshCore radio using its BLE Companion interface |
 
 Each unit has its own battery and power system. The Core communicates with each Pod wirelessly over BLE; the LoRa radios do not connect to the Core over UART, SPI or GPIO. Each Pod must continue native LoRa operation if the Core is off or out of range.
 
@@ -119,19 +121,23 @@ The two BLE links use separate protocol adapters: Meshtastic protobuf PhoneAPI o
 
 ## Known issue and next steps
 
-The current software work adds categorized, independent radio settings on top of the stable v0.8.26 baseline. Hardware work continues on the three-device modular design and its independently powered Core and Pods.
+The selected stable software is v0.9.28. The earlier map-download and overlapping-node-list problems have implemented fixes; they are not listed as unimplemented features. Broader field coverage and hardware qualification continue.
 
-1. Restore device map tiles and saved-route loading without regressing the working dual-radio connections.
-2. Expand compatibility and recovery checks across supported radio boards and native firmware builds.
-3. Validate battery protection, charging, autonomy, GNSS integration and microSD behavior on the target hardware.
-4. Check enclosure fit, antenna spacing and RF coexistence in separated and docked configurations.
-5. Verify GPX backup and restoration behavior against retained track data.
+1. Continue measured runtime and memory testing across radio reconnects, map pans, hotspot changes, SD recovery and node expiry; track evidence in [issue #137](https://github.com/Renbrant/MeshCrossway/issues/137).
+2. Evaluate smaller working sets/compact storage separately: deleting entries does not free the currently reserved fixed-capacity arrays.
+3. Expand radio/firmware compatibility, battery/autonomy, GNSS and microSD validation.
+4. Complete enclosure fit, antenna separation and RF coexistence tests for the final independently powered Pods.
+5. Keep live position sharing and optional external integrations as future work; they are not delivered functionality.
 
 ## Technical documentation
 
 | Topic | Reference |
 |---|---|
-| v0.8.26 stable image | [Stable release record](docs/stable-v0826.md) |
+| v0.9.28 recommended stable | [Acceptance, binary pin and recovery](docs/stable-v0928.md) |
+| Current user features and test procedure | [Firmware guide](firmware/display-prototype/README.md) · [Age colors and retention](docs/node-age-v0928.md) |
+| Rotation, lock and manual correction | [Orientation notes](docs/rotation-reference-v0927.md) |
+| v0.9.25 previous stable recovery | [Previous stable record](docs/stable-v0925.md) |
+| v0.8.26 historical stable image | [Stable release record](docs/stable-v0826.md) |
 | v0.8.17 historical stable image | [Historical release record](docs/stable-v0817.md) |
 | v0.8.18 node map and activity ordering | [Feature notes](docs/node-map-and-recent-activity-v0818.md) |
 | v0.8.20 Home GPS card spacing | [Feature notes](docs/home-gps-layout-v0820.md) |
