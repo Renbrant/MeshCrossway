@@ -35,7 +35,7 @@ See [pcb-rev-a-pin-allocation.md](pcb-rev-a-pin-allocation.md) for the complete 
 ### Product page
 
 - Source: https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html
-- Used for: selected radio kit identity and product-level configuration.
+- Used for: manufacturer record for a radio kit previously evaluated for the archived Rev A design. XIAO/Wio is optional and is not required by the current BLE architecture.
 
 ### Wio-SX1262 official schematic
 
