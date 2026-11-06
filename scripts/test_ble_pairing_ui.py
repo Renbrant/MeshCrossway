@@ -24,6 +24,7 @@ def run(lvgl, render):
               segment('static meshble::Radio ble_dialog_radio', '// MeshCore workspace')]
     test = r'''
 #include "lvgl.h"
+#include "meshcrossway_node_age.h"
 #include <cassert>
 #include <cstdio>
 #include <cstring>

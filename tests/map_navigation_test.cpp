@@ -226,7 +226,7 @@ int main(int argc,char **argv){
  mcxmap::set_node_icon(legacy_map,false,mcxmap::NODE_NAME);mcxmap::set_node_icon(legacy_map,true,mcxmap::NODE_CROSS);mcxmap::set_node_size(legacy_map,4);
  mcxmap::set_node_color(legacy_map,false,mcxmap::NODE_COLOR_PURPLE);mcxmap::set_node_color(legacy_map,true,mcxmap::NODE_COLOR_GREEN);mcxmap::set_node_names(legacy_map,true);
  fake_nvs_available=true;fake_nvs_blob.assign((const unsigned char *)&legacy_map,(const unsigned char *)&legacy_map+offsetof(mcxmap::Config,meshcore_size));
- mcxmap::loaded_config=false;mcxmap::load_config();assert(mcxmap::configuration().version==5&&mcxmap::nodes_grouped(mcxmap::configuration()));
+ mcxmap::loaded_config=false;mcxmap::load_config();assert(mcxmap::configuration().version==6&&mcxmap::nodes_grouped(mcxmap::configuration()));
  assert(mcxmap::configuration().hide_nodes==legacy_map.hide_nodes&&mcxmap::configuration().show_node_names==legacy_map.show_node_names);
  auto saved_style=mcxmap::configuration();mcxmap::set_node_size(saved_style,2,true);mcxmap::select_provider(saved_style,mcxmap::STREET_NIGHT);mcxmap::configure(saved_style);
  gpsui::map_options();advance();assert(lv_obj_has_state(gpsui::grouping_switch,LV_STATE_CHECKED));
@@ -238,8 +238,43 @@ int main(int argc,char **argv){
  gpsui::map_options();advance();assert(!lv_obj_has_state(gpsui::grouping_switch,LV_STATE_CHECKED));
  lv_obj_add_state(gpsui::grouping_switch,LV_STATE_CHECKED);lv_event_send(gpsui::grouping_switch,LV_EVENT_VALUE_CHANGED,nullptr);
  assert(mcxmap::nodes_grouped(mcxmap::configuration()));fake_nvs_available=false;fake_nvs_blob.clear();
- for(unsigned version:{1u,2u,3u,4u}){mcxmap::Config old;old.version=version;assert(mcxmap::migrate_config(old)&&old.version==5&&mcxmap::nodes_grouped(old));}
+ for(unsigned version:{1u,2u,3u,4u,5u}){mcxmap::Config old;old.version=version;assert(mcxmap::migrate_config(old)&&old.version==6&&mcxmap::nodes_grouped(old));}
 
+ // Real LVGL controls: independent age colors, +/- day edits and NVS reload.
+ fake_nvs_available=true;gpsui::map_options();advance();
+ std::vector<lv_obj_t *> age_pickers;lv_obj_t *days_widget=nullptr,*plus_widget=nullptr,*minus_widget=nullptr;
+ auto collect=[&](auto &&self,lv_obj_t *o)->void{
+   if(lv_obj_check_type(o,&lv_dropdown_class)&&lv_dropdown_get_option_cnt(o)==9)age_pickers.push_back(o);
+   if(lv_obj_check_type(o,&lv_spinbox_class))days_widget=o;
+   if(lv_obj_check_type(o,&lv_btn_class)&&lv_obj_get_child_cnt(o)){
+     auto *label=lv_obj_get_child(o,0);if(lv_obj_check_type(label,&lv_label_class)){
+       if(!strcmp(lv_label_get_text(label),"+"))plus_widget=o;
+       if(!strcmp(lv_label_get_text(label),"-"))minus_widget=o;
+     }
+   }
+   for(unsigned i=0;i<lv_obj_get_child_cnt(o);++i)self(self,lv_obj_get_child(o,i));
+ };collect(collect,gpsui::dialog);
+ assert(age_pickers.size()==2&&days_widget&&plus_widget&&minus_widget);
+ for(auto *picker:age_pickers){lv_dropdown_set_selected(picker,8);lv_event_send(picker,LV_EVENT_VALUE_CHANGED,nullptr);}
+ assert(mcxmap::node_color(mcxmap::configuration(),false)==mcxmap::NODE_COLOR_AGE&&mcxmap::node_color(mcxmap::configuration(),true)==mcxmap::NODE_COLOR_AGE);
+ lv_spinbox_set_value(days_widget,7);lv_event_send(days_widget,LV_EVENT_VALUE_CHANGED,nullptr);
+ assert(mcxmap::configuration().retention_days==7);
+ lv_event_send(plus_widget,LV_EVENT_CLICKED,nullptr);assert(mcxmap::configuration().retention_days==8);
+ lv_event_send(minus_widget,LV_EVENT_CLICKED,nullptr);assert(mcxmap::configuration().retention_days==7);
+ lv_tick_inc(6000);mcxmap::persist_config();mcxmap::loaded_config=false;mcxmap::load_config();
+ assert(mcxmap::configuration().retention_days==7&&mcxmap::configuration().age_colors==3);
+ const uint32_t age_now=1800000000;mcxnodeage::epoch.store(age_now);
+ for(bool network:{false,true})for(unsigned shape=0;shape<4;++shape){
+   auto cfg=mcxmap::configuration();mcxmap::set_node_icon(cfg,network,shape);mcxmap::configure(cfg);
+   navui::NodeMarker marker;marker.meshcore=network;marker.heard=age_now;
+   assert(navui::activity_color(navui::node_activity(marker,mcxmap::configuration()))==0x36D399);
+   marker.heard=age_now-mcxnodeage::DAY;assert(navui::activity_color(navui::node_activity(marker,mcxmap::configuration()))==0xFFD45A);
+   marker.heard=age_now-7*mcxnodeage::DAY;assert(navui::activity_color(navui::node_activity(marker,mcxmap::configuration()))==0x8993A1);
+ }
+ // Schema-5 records retain fixed network colors/shapes and gain safe new defaults.
+ auto old5=mcxmap::configuration();old5.version=5;fake_nvs_blob.assign((const unsigned char *)&old5,(const unsigned char *)&old5+offsetof(mcxmap::Config,retention_days));
+ mcxmap::loaded_config=false;mcxmap::load_config();assert(mcxmap::configuration().version==6&&mcxmap::configuration().age_colors==0&&mcxmap::configuration().retention_days==30);
+ fake_nvs_available=false;mcxnodeage::retention.store(0);mcxnodeage::epoch.store(0);
  // Dense map group: fixed preview budget even with every protocol slot occupied.
  assert(navui::front&&navui::overlay_cache);
  auto &dense=*navui::overlay_cache;dense.node_count=navui::MAX_NODE_MARKERS;dense.cluster_count=1;
