@@ -2,7 +2,7 @@
 
 > **Architecture update — 2026-10-28:** Current MeshCrossway development is **software-first, three independently powered detachable devices, two BLE links**. See [modular architecture](modular-architecture.md). The previous UART/single-carrier PCB content on this page is **archived integrated-variant reference**, not the current implementation. **All KiCad files remain untouched.**
 
-This page records the manufacturer/upstream sources used to define the Rev A carrier electrical interface. It exists so pin assignments, power decisions and footprints can be traced back to primary documentation rather than seller imagery or earlier project drafts.
+This page records manufacturer/upstream sources for the archived Rev A carrier electrical interface and the Waveshare Core. The XIAO/Wio references document one superseded integrated-radio design; they do not define a required radio for the current BLE architecture. Users may choose compatible radio hardware; Heltec V3 is the development-tested setup. Pin assignments, power decisions and footprints below apply only where their board-specific context is stated.
 
 ## Waveshare host
 
