@@ -79,6 +79,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary="Previous hardware-tested stable; exact image retained for recovery."
         label="Previous stable / recovery"
         status="hardware-tested"
+    elif version=="v0.9.28":
+        summary="EXPERIMENTAL: independent last-heard map colors, configurable 0-365 day local node retention, protected favorites/messages and filtered SD/radio imports. Exact v0.9.25 stable image retained."
+        label="Node age colors and retention / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.27":
         summary="EXPERIMENTAL: fixes reversed auto-rotation reference after manual correction. Use Flip 180 to make the screen readable, then re-enable Auto Rotate; the corrected reference is saved. v0.9.25 remains recommended stable."
         label="Rotation reference correction / EXPERIMENTAL"

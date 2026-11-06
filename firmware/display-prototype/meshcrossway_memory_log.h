@@ -66,7 +66,7 @@ static void begin(){
   if(!p){printf("[MCX-MEMLOG] disabled: PSRAM allocation unavailable\n");return;}
   for(unsigned i=0;i<TASK_COUNT;++i)stacks[i].store(UINT32_MAX);
   boot=esp_random();rows.store(p);capture(1,esp_reset_reason());
-  printf("[MCX-MEMLOG] v0.9.27 ring=%u bytes PSRAM; sample=30s output=console\n",unsigned(CAPACITY*sizeof(Row)));
+  printf("[MCX-MEMLOG] v0.9.28 ring=%u bytes PSRAM; sample=30s output=console\n",unsigned(CAPACITY*sizeof(Row)));
 }
 static void allocation_failed(size_t bytes,uint32_t caps,const char *function="unknown"){
   AllocationFailure r={};r.seq=failures.fetch_add(1)+1;
@@ -89,7 +89,7 @@ static __attribute__((noinline)) void flush_failures(){
     const bool found=failure_count!=0;if(found)r=failure_rows[failure_head];lost=failure_dropped;
     portEXIT_CRITICAL_SAFE(&failure_mux);if(!found)return;
     char line[320];
-    const int used=snprintf(line,sizeof(line),"[MCX-ALLOC] v0.9.27,boot=%u,seq=%u,uptime_ms=%u,bytes=%u,caps=0x%x,core=%u,isr=%u,task=%s,function=%s,dropped=%u\n",unsigned(boot),unsigned(r.seq),unsigned(r.ms),unsigned(r.bytes),unsigned(r.caps),unsigned(r.core),unsigned(r.isr),r.task,r.function,lost);
+    const int used=snprintf(line,sizeof(line),"[MCX-ALLOC] v0.9.28,boot=%u,seq=%u,uptime_ms=%u,bytes=%u,caps=0x%x,core=%u,isr=%u,task=%s,function=%s,dropped=%u\n",unsigned(boot),unsigned(r.seq),unsigned(r.ms),unsigned(r.bytes),unsigned(r.caps),unsigned(r.core),unsigned(r.isr),r.task,r.function,lost);
     if(used<0||unsigned(used)>=sizeof(line)||MCX_MEMLOG_WRITE(line,unsigned(used))!=unsigned(used)){++write_errors;return;}
     portENTER_CRITICAL_SAFE(&failure_mux);
     if(failure_count&&failure_rows[failure_head].seq==r.seq){failure_head=(failure_head+1)%FAILURE_CAPACITY;--failure_count;}
@@ -114,7 +114,7 @@ static __attribute__((noinline)) void flush(){
     const bool found=count!=0;if(found)r=p[head];
     portEXIT_CRITICAL(&mux);if(!found)return;
     char line[384];
-    int used=snprintf(line,sizeof(line),"[MCX-MEMLOG] v0.9.27,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",unsigned(r.boot),unsigned(r.seq),unsigned(r.ms),unsigned(r.event),unsigned(r.detail),unsigned(r.internal),unsigned(r.dma),unsigned(r.psram),unsigned(r.failures),unsigned(r.failed_bytes),unsigned(r.failed_caps),unsigned(r.sample_us),unsigned(r.dropped),unsigned(r.output_errors));
+    int used=snprintf(line,sizeof(line),"[MCX-MEMLOG] v0.9.28,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u",unsigned(r.boot),unsigned(r.seq),unsigned(r.ms),unsigned(r.event),unsigned(r.detail),unsigned(r.internal),unsigned(r.dma),unsigned(r.psram),unsigned(r.failures),unsigned(r.failed_bytes),unsigned(r.failed_caps),unsigned(r.sample_us),unsigned(r.dropped),unsigned(r.output_errors));
     if(used<0||unsigned(used)>=sizeof(line)){++write_errors;return;}
     for(unsigned i=0;i<TASK_COUNT;++i){
       const int added=snprintf(line+used,sizeof(line)-unsigned(used),",%u",unsigned(r.stack[i]));

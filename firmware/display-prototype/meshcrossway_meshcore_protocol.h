@@ -2,6 +2,7 @@
 // Independent Companion wire-format implementation. See docs/meshcore-v070.md for pinned sources.
 // No upstream firmware/library code is linked or copied. All integers on this wire are little endian.
 #include <errno.h>
+#include "meshcrossway_node_age.h"
 #include "meshcrossway_radio_presets.h"
 #include <limits.h>
 #include <new>
@@ -819,9 +820,28 @@ public:
     if (response_done)
       busy = false;
   }
-  bool parse_contact(const uint8_t *p, size_t n) {
+  bool keep_contact(const Contact &c)const{
+    if((c.flags&1)||!memcmp(c.key,public_key,32)||!mcxnodeage::expired(c.advert))return true;
+    if(mcxnodeage::pin_lookup()&&mcxnodeage::pin_lookup()(c.key))return true;
+    for(const auto &m:messages)if(m.id&&!m.channel&&!memcmp(m.key,c.key,6))return true;
+    return false;
+  }
+  unsigned prune_contacts(){
+    unsigned out=0,old=contact_count;
+    for(unsigned i=0;i<old;++i)if(keep_contact(contacts[i])){if(out!=i)contacts[out]=contacts[i];++out;}
+    for(unsigned i=out;i<old;++i)contacts[i]=Contact{};
+    contact_count=uint16_t(out);if(old!=out)++generation;return old-out;
+  }
+  uint8_t age_observed_key[32]={};uint32_t age_observed_at=0,age_lookup_ms=0;
+  bool parse_contact(const uint8_t *p, size_t n,bool observed=false) {
     if (n < 148)
       return false;
+    const uint32_t clock=mcxnodeage::epoch.load();
+    const bool fresh=clock>=mcxnodeage::VALID_TIME&&(observed||
+      (age_observed_at&&clock>=age_observed_at&&clock-age_observed_at<=30&&!memcmp(age_observed_key,p+1,32)));
+    // Do not filter before local SD preferences/messages have been restored.
+    if(history_ready){Contact candidate;memcpy(candidate.key,p+1,32);candidate.flags=p[34];candidate.advert=fresh?clock:u32(p+132);
+      if(!keep_contact(candidate))return true;}
     int i = find_contact(p + 1);
     if (i < 0) {
       if (contact_count == MAX_CONTACTS)
@@ -835,7 +855,7 @@ public:
     c.path_len = p[35];
     memcpy(c.path, p + 36, 64);
     string_copy(c.name, sizeof(c.name), p + 100, 32);
-    c.advert = u32(p + 132);
+    c.advert = fresh?clock:u32(p + 132);
     c.lat = (int32_t)u32(p + 136);
     c.lon = (int32_t)u32(p + 140);
     c.lastmod = n >= 152 ? u32(p + 148) : c.advert;
@@ -882,7 +902,7 @@ public:
       break;
     case 3:
     case 138:
-      valid = parse_contact(p, n);
+      valid = parse_contact(p, n,code==138);
       if (valid && code == 3)
         ++contacts_seen;
       break;
@@ -1092,9 +1112,18 @@ public:
       valid = n == 1 || n >= 48;
       break;
     case 128:
-    case 129:
-      valid = n >= 33;
+      valid=n>=33;
+      if(valid&&mcxnodeage::retention.load()){
+        const uint32_t clock=mcxnodeage::epoch.load();const int index=find_contact(p+1);
+        if(index>=0&&clock>=mcxnodeage::VALID_TIME)contacts[index].advert=clock;
+        else if(index<0&&!busy&&!qcount&&uint32_t(now-age_lookup_ms)>=1000){
+          memcpy(age_observed_key,p+1,32);age_observed_at=clock>=mcxnodeage::VALID_TIME?clock:0;age_lookup_ms=now;
+          Frame request;request.len=33;request.data[0]=30;memcpy(request.data+1,p+1,32);enqueue(request,-1,false);
+        }
+      }
       break;
+    case 129:
+      valid=n>=33;break;
     case 130:
       valid = n >= 9;
       if (valid) {

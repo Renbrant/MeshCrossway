@@ -487,7 +487,7 @@ static void choose_channel(lv_event_t *e) {
 }
 static uint32_t contact_last_heard(const meshmc::Client &s,int i){
   const auto &contact=s.contacts[i];
-  return contact.advert>contact.lastmod?contact.advert:contact.lastmod;
+  return contact.advert;
 }
 static void toggle_node_sort_now(void *){node_sort_distance=!node_sort_distance;draw();}
 static void toggle_node_sort(lv_event_t *){lv_async_call(toggle_node_sort_now,nullptr);}
@@ -803,7 +803,7 @@ static void render() {
         const auto key=mcxchat::key_for(*s,false,uint16_t(i));
         const auto *pref=mcxhistory::preferences().get(key);
         const uint32_t heard=contact_last_heard(*s,i);
-        if(!is_recent_node(heard,pref&&pref->favorite))continue;
+        if(!s->keep_contact(s->contacts[i]))continue;
         display_scores[i]=uint64_t(heard)<<32;
       }
       display_indices[total++]=i;

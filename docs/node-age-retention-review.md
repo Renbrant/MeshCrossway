@@ -35,4 +35,4 @@ These are different policies, not a universal standard. The proposed 24-hour / 7
 - Run cleanup while maps and radios are active without stale indices/pointers or GUI-thread filesystem work; handle no SD, write failure and interrupted replacement.
 - Compare populated counts, snapshot sizes, PSRAM/internal free and largest block, allocation failures, map rebuild cost and touch latency before/after. Evaluate memory capacity reduction separately against v0.9.25 stable.
 
-This document records research and a proposed policy. Age colors and automatic deletion are not implemented by the v0.9.27 orientation hotfix.
+The research policy was approved for implementation after the v0.9.27 orientation hotfix. See [v0.9.28 implementation and test procedure](node-age-v0928.md) for the delivered controls, protection rules and limits.
