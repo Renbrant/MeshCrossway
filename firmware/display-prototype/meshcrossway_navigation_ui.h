@@ -151,10 +151,6 @@ static void create(int w){
   canvas=panel_at(body,0,0,w,lv_obj_get_height(body),lv_color_hex(0x1A2027),0);
   lv_obj_add_flag(canvas,LV_OBJ_FLAG_CLICKABLE|LV_OBJ_FLAG_PRESS_LOCK);
   lv_obj_add_event_cb(canvas,pointer,LV_EVENT_ALL,nullptr);
-  auto *zoom_control=action_button(canvas,"",w-38,8,32,38,panel2,on_action,A_MAP_ZOOM);
-  auto *zoom_glyph=panel_at(zoom_control,4,7,23,24,panel2,0);lv_obj_set_style_bg_opa(zoom_glyph,LV_OPA_TRANSP,0);lv_obj_set_style_text_color(zoom_glyph,orange,0);lv_obj_clear_flag(zoom_glyph,LV_OBJ_FLAG_CLICKABLE);lv_obj_add_event_cb(zoom_glyph,context_icon,LV_EVENT_DRAW_MAIN,(void *)(intptr_t)A_MAP_ZOOM);
-  auto *center_control=action_button(canvas,"",w-38,50,32,38,panel2,on_action,A_MAP_CENTER);
-  auto *center_glyph=panel_at(center_control,4,7,23,24,panel2,0);lv_obj_set_style_bg_opa(center_glyph,LV_OPA_TRANSP,0);lv_obj_set_style_text_color(center_glyph,orange,0);lv_obj_clear_flag(center_glyph,LV_OBJ_FLAG_CLICKABLE);lv_obj_add_event_cb(center_glyph,context_icon,LV_EVENT_DRAW_MAIN,(void *)(intptr_t)A_MAP_CENTER);
   picture=lv_img_create(canvas);lv_obj_clear_flag(picture,LV_OBJ_FLAG_CLICKABLE);
   if(front){lv_img_cache_invalidate_src(&front->image);mcxmap::release(front);front=nullptr;}
   marker=panel_at(canvas,0,0,12,12,orange,6);lv_obj_set_style_border_width(marker,2,0);lv_obj_set_style_border_color(marker,white,0);lv_obj_clear_flag(marker,LV_OBJ_FLAG_CLICKABLE);set_hidden(marker,true);
@@ -176,6 +172,13 @@ static void create(int w){
   lv_obj_update_layout(attribution);lv_obj_set_y(attribution,lv_obj_get_height(canvas)-lv_obj_get_height(attribution)-3);
   lv_obj_add_flag(attribution,LV_OBJ_FLAG_CLICKABLE);
   lv_obj_add_event_cb(attribution,[](lv_event_t *){credits();},LV_EVENT_CLICKED,nullptr);
+  // These controls must be later siblings than the map image and map labels.
+  // LVGL paints later children on top, so placing them before `picture` made
+  // the rendered tiles cover them as soon as a drag/map refresh completed.
+  auto *zoom_control=action_button(canvas,"",w-38,8,32,38,panel2,on_action,A_MAP_ZOOM);
+  auto *zoom_glyph=panel_at(zoom_control,4,7,23,24,panel2,0);lv_obj_set_style_bg_opa(zoom_glyph,LV_OPA_TRANSP,0);lv_obj_set_style_text_color(zoom_glyph,orange,0);lv_obj_clear_flag(zoom_glyph,LV_OBJ_FLAG_CLICKABLE);lv_obj_add_event_cb(zoom_glyph,context_icon,LV_EVENT_DRAW_MAIN,(void *)(intptr_t)A_MAP_ZOOM);
+  auto *center_control=action_button(canvas,"",w-38,50,32,38,panel2,on_action,A_MAP_CENTER);
+  auto *center_glyph=panel_at(center_control,4,7,23,24,panel2,0);lv_obj_set_style_bg_opa(center_glyph,LV_OPA_TRANSP,0);lv_obj_set_style_text_color(center_glyph,orange,0);lv_obj_clear_flag(center_glyph,LV_OBJ_FLAG_CLICKABLE);lv_obj_add_event_cb(center_glyph,context_icon,LV_EVENT_DRAW_MAIN,(void *)(intptr_t)A_MAP_CENTER);
   set_status(centered?(gps_center?"Loading map...":"Centered on a saved node · Center GPS to move"):"Waiting for GPS or a node position");if(zoom_open)show_zoom();
   mcxmap::start();if(centered)request();
 }
@@ -385,6 +388,7 @@ static void base(const char *title){
   info_close_now(nullptr);
   map_node_info=page==4&&strcmp(title,"NODE DETAILS")==0;
   map_options_active=page==4&&strcmp(title,"MAP OPTIONS")==0;
+  if(page==4)map_active_action=map_action_for_title(title);
   dialog=info_dialog=panel_at(body,0,0,lv_obj_get_width(body),286,bg,0);
   navigation_panel=true;
   if(right_rail){if(has_context_rail())lv_obj_clear_flag(right_rail,LV_OBJ_FLAG_HIDDEN);else lv_obj_add_flag(right_rail,LV_OBJ_FLAG_HIDDEN);}
