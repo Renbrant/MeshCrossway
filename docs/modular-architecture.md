@@ -7,12 +7,12 @@
 MeshCrossway shall comprise three **independently powered, detachable devices**:
 
 1. **MeshCrossway Core:** Waveshare ESP32-S3-Touch-LCD-3.5, LVGL touchscreen UI, central u-blox MAX-M10S GNSS, microSD, message/position storage, two simultaneous BLE central client connections and independent application-level protocol adapters.
-2. **MX-M Pod:** Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kit with native Meshtastic firmware configured for its BLE PhoneAPI, a suitable 902–928 MHz antenna, protected rechargeable battery, suitable power management and weather-resistant case.
-3. **MX-C Pod:** same hardware kit with MeshCore **BLE Companion** firmware, independent antenna, battery, power management and case.
+2. **MX-M Pod:** user-selected Meshtastic radio hardware with compatible native BLE PhoneAPI firmware, a suitable regional antenna, protected rechargeable battery, suitable power management and weather-resistant case. Heltec V3 is the current development-tested radio; the XIAO/Wio kit is an optional hardware choice, not a requirement.
+3. **MX-C Pod:** user-selected MeshCore radio hardware with compatible **BLE Companion** firmware, independent regional antenna, battery, power management and case. Heltec V3 is the current development-tested radio; the XIAO/Wio kit is optional.
 
 **BLE is the default and required Core↔Pod data transport.** The two LoRa protocols and identities remain strictly separate. Do not treat the two BLE interfaces as an interchangeable wire protocol: implement one Meshtastic protobuf PhoneAPI BLE client and one MeshCore Companion GATT binary-protocol client.
 
-The two Pods must continue functioning as native radios if the Core is switched off or out of BLE range. BLE disconnection shall never automatically disable their LoRa reception. Phone interoperability should be tested with native applications where firmware supports it, allowing only intended authenticated client sessions.
+Radio hardware is user-selectable; there is no XIAO-specific requirement. Each chosen device must expose the correct protocol's native BLE interface and run compatible firmware. Heltec V3 has been used successfully in development testing. Other radio/firmware combinations must be validated individually before compatibility is claimed. The two Pods must continue functioning as native radios if the Core is switched off or out of BLE range. BLE disconnection shall never automatically disable their LoRa reception. Phone interoperability should be tested with native applications where firmware supports it, allowing only intended authenticated client sessions.
 
 ## Docking and wearability
 
@@ -22,7 +22,7 @@ Use keyed mechanical locating features plus a positive latch; magnets can assist
 
 Proposed hardware boundaries:
 - One Core controller/display/GNSS battery, charging and enclosure.
-- Two small independent Pod PCBs/carriers for mounting XIAO/Wio, LiPo, charging/protection, battery measurement, on/off and service USB.
+- Two small independent Pod enclosures/carriers designed around the user-selected radio boards, LiPo, charging/protection, battery measurement, on/off and service USB.
 - No shared large three-device carrier PCB in the **new** product baseline.
 - The older integrated Rev A PCB schematic/wiring documents are retained as historical bench references **only**, not production instructions.
 
@@ -32,7 +32,7 @@ Core is BLE **Central**, each Pod is BLE **Peripheral**, using documented offici
 - Meshtastic PhoneAPI service `6BA1B218-15A8-461F-9FA8-5DCAE273EAFD`. `ToRadio` and `FromRadio` protobuf messages over BLE GATT (no UART stream framing).
 - MeshCore Companion service `6E400001-B5A3-F393-E0A9-E50E24DCCA9E`, write RX `6E400002-B5A3-F393-E0A9-E50E24DCCA9E`, notify TX `6E400003-B5A3-F393-E0A9-E50E24DCCA9E`. Negotiate API version and supported command set.
 
-Firmware selection: do **not** flash an old MeshCore `..._serial` variant as the new Pod firmware. Start with matching **Xiao_S3_WIO BLE Companion** upstream target and a verified Meshtastic XIAO ESP32-S3/Wio BLE-enabled target; verify current release names, capabilities, displayless pairing process and battery telemetry on the actual kit. For Meshtastic ESP32 boards, Wi-Fi enablement disables BLE, so keep Wi-Fi disabled in the normal Pod configuration. For MeshCore, avoid relying on Wi-Fi+BLE coexistence even when a recent firmware build makes that possible.
+Firmware selection: choose firmware for the selected board that exposes the native Meshtastic BLE PhoneAPI or MeshCore BLE Companion. Do **not** use a serial-only build when the Core expects BLE. Confirm the official target, release, required BLE settings, displayless pairing process and battery telemetry on the actual device. For some Meshtastic ESP32 boards, Wi-Fi enablement disables BLE; check board and firmware documentation and keep Wi-Fi disabled when required. For MeshCore, avoid relying on Wi-Fi+BLE coexistence unless verified for that build.
 
 Core requirements:
 - Maintain two independent BLE connections; configure ESP-IDF/NimBLE host resources, pairing and reconnection appropriately.
@@ -56,11 +56,11 @@ For **vehicle roof mounting**, a magnet by itself is not an approved retention s
 
 ## Power and charging
 
-Each unit has its own protected rechargeable battery. Final cells, protection IC, charge IC, USB-C/dock charging, battery gauge, cutoffs, autonomy and thermal budget are TBD. XIAO external supply and USB/VBUS power-path isolation must be validated per exact board revision. A shared dock charger must provide **independent appropriately controlled charging paths** for all three batteries; never connect cell terminals together. Include safe firmware behavior during charging and long-term unattended operation.
+Each unit has its own protected rechargeable battery. Final cells, protection IC, charge IC, USB-C/dock charging, battery gauge, cutoffs, autonomy and thermal budget are TBD. The selected radio boards' external-supply and USB power-path isolation must be validated per exact model and board revision. A shared dock charger must provide **independent appropriately controlled charging paths** for all three batteries; never connect cell terminals together. Include safe firmware behavior during charging and long-term unattended operation.
 
 ## Milestones / acceptance gates
 
-1. Flash Meshtastic BLE and MeshCore BLE Companion on **two exact XIAO/Wio kits**, verify native phone connection separately.
+1. Validate the chosen Meshtastic and MeshCore radio models with their native BLE firmware; Heltec V3 is the demonstrated development setup. Verify native phone connections separately and test each additional model/firmware pairing before calling it compatible.
 2. Pair the Waveshare ESP32-S3 as BLE central with both Pods concurrently, then decode/send native messages without mobile phones.
 3. Validate secure pairing, independent reconnection after dropout, reboot recovery, queued inbound event synchronization, BLE packet sizes/MTU and version compatibility.
 4. Measure actual Pod TX/RX/BLE current profiles, battery autonomy, thermal behavior and independent charge/protection.
@@ -75,7 +75,7 @@ Each unit has its own protected rechargeable battery. Final cells, protection IC
 - [Meshtastic PhoneAPI transports](https://github.com/meshtastic/meshtastic-sdk/blob/main/docs/protocol.md)
 - [MeshCore Companion BLE protocol](https://docs.meshcore.io/companion_protocol/)
 - [MeshCore v1.18.0 BLE/Wi-Fi support update](https://blog.meshcore.io/2026/10/15/release-1-18-0)
-- [Seeed XIAO ESP32-S3 + Wio-SX1262](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html)
+- Optional radio hardware example: [Seeed XIAO ESP32-S3 + Wio-SX1262](https://www.seeedstudio.com/Wio-SX1262-with-XIAO-ESP32S3-p-5982.html)
 
 Related legacy/bench documents: [integrated wiring](hardware-wiring.md), [UART architecture](radio-communication-architecture.md), [old power prototype](power-architecture.md), [firmware strategy](radio-firmware-strategy.md).
 
