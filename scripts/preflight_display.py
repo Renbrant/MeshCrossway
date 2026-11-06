@@ -543,6 +543,12 @@ if (FW / "meshcrossway_map_projection.h").exists():
         subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", str(ROOT / "tests/map_projection_test.cpp"), "-o", binary], check=True)
         subprocess.run([binary], check=True)
 
+if (FW / "meshcrossway_ofm_mvt.h").exists():
+    with tempfile.TemporaryDirectory() as ofm_tmp:
+        binary = str(Path(ofm_tmp) / "ofm-mvt-test")
+        subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", str(ROOT / "tests/ofm_mvt_test.cpp"), "-o", binary], check=True)
+        subprocess.run([binary], check=True)
+
 # Local navigation persistence is exercised independently of radio protocols.
 if (FW / "meshcrossway_navigation_store.h").exists():
     with tempfile.TemporaryDirectory() as nav_tmp:
