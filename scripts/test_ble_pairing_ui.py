@@ -24,6 +24,8 @@ def run(lvgl, render):
               segment('static meshble::Radio ble_dialog_radio', '// MeshCore workspace')]
     test = r'''
 #include "lvgl.h"
+#include "emoji/emoji_display.h"
+#define MCX_EMOJI_RENDER_ENABLED 1
 #include "meshcrossway_node_age.h"
 #include <cassert>
 #include <cstdio>
@@ -365,10 +367,10 @@ static void test_companion_ui(const char *preview){
 #include <cstring>
 #include "meshcrossway_lvgl_alloc.h"
 static size_t ui_live_bytes=0,ui_alloc_calls=0,ui_resize_calls=0;
-static bool ui_fail=false;
+static bool ui_fail=false;static size_t ui_fail_size=0;
 struct alignas(std::max_align_t) Allocation {size_t bytes;};
 extern "C" void *heap_caps_malloc(size_t n,unsigned caps){
-  assert(caps==(MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));if(ui_fail)return nullptr;
+  assert(caps==(MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));if(ui_fail||(ui_fail_size&&n==ui_fail_size))return nullptr;
   auto *h=(Allocation *)malloc(sizeof(Allocation)+n);if(!h)return nullptr;
   h->bytes=n;ui_live_bytes+=n;++ui_alloc_calls;return h+1;
 }
@@ -408,7 +410,7 @@ void heap_caps_free(void *);
 }
 #endif
 ''')
-        flags = ['-O1', '-DLV_USE_PNG=1', '-DLV_CONF_SKIP', '-DLV_MEM_CUSTOM=1', '-DLV_MEM_CUSTOM_INCLUDE="meshcrossway_lvgl_alloc.h"',
+        flags = ['-O1', '-DLV_USE_IMGFONT=1', '-DLV_USE_PNG=1', '-DLV_CONF_SKIP', '-DLV_MEM_CUSTOM=1', '-DLV_MEM_CUSTOM_INCLUDE="meshcrossway_lvgl_alloc.h"',
                  '-DLV_FONT_MONTSERRAT_20=1', '-DLV_FONT_MONTSERRAT_10=1', '-I'+str(temp), '-I'+str(lvgl), '-I'+str(ROOT/'firmware/display-prototype')]
         def compile_c(source):
             obj = temp / (hashlib.sha256(str(source).encode()).hexdigest()[:16]+'.o')
@@ -424,6 +426,11 @@ void heap_caps_free(void *);
             render.parent.mkdir(parents=True, exist_ok=True)
             args.extend([str(render),str(render.with_name(render.stem+'-meshcore.ppm'))])
         subprocess.run(args,check=True)
+        # Exercise the real emoji imagefont and indexed image decoder offline.
+        emoji_source=temp/'emoji.cpp';emoji_source.write_text(allocator+(ROOT/'tests/test_emoji_lvgl.cpp').read_text())
+        emoji_binary=temp/'emoji'
+        subprocess.run(['c++','-std=c++20',*flags,str(emoji_source),*objects,'-lm','-o',str(emoji_binary)],check=True)
+        subprocess.run([str(emoji_binary)],check=True)
         # Reuse the actual LVGL objects for the production buffered adapter.
         (temp/'freertos').mkdir()
         (temp/'freertos/FreeRTOS.h').write_text(r'''#pragma once

@@ -979,7 +979,7 @@ static void list_batch_tick(lv_timer_t *timer){
     const int row_y=(list_batch_cursor-1)*(row_height+6);
     auto *b=action_button(list_viewport,"",0,row_y,list_batch_width,row_height,panel,is_channel?choose_channel:choose_contact,i);
     list_icon(b,is_channel?"#":(s->contacts[i].type==2?"R":s->contacts[i].type==3?"H":s->contacts[i].type==4?"S":"P"),8,9,40,orange);
-    auto *name=lv_obj_get_child(b,0);lv_label_set_text(name,title);
+    auto *name=lv_obj_get_child(b,0);emoji_label_text(name,title);
     lv_obj_set_pos(name,56,4);lv_obj_set_size(name,list_batch_width-64,20);lv_label_set_long_mode(name,LV_LABEL_LONG_DOT);
     lv_obj_set_style_text_align(name,LV_TEXT_ALIGN_LEFT,0);
     auto *detail_label=txt(b,detail,56,30,list_batch_width-64,muted);lv_obj_set_height(detail_label,18);lv_label_set_long_mode(detail_label,LV_LABEL_LONG_DOT);

@@ -1,5 +1,7 @@
 # Read-only color emoji rendering — MeshCrossway v0.7.3 candidate
 
+> Historical preparation notes. For the v0.9.29 candidate, see [current coverage and reproduction](emoji-coverage-v0929.md) and [validation checklist](emoji-v0929-validation.md). v0.9.28 remains the recommended stable image.
+
 **Implemented in branch `feature/color-emoji-rendering`, PR #41.** This is a **candidate**, not yet hardware-tested, merged or published. It adds 92 colored emoji images to the conversation view; it does **not** add an emoji picker or alter the keyboard, message payloads, BLE security or native radio protocols.
 
 ## Rendering architecture

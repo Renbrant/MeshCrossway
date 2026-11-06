@@ -3,7 +3,9 @@
 from pathlib import Path
 import base64
 import hashlib
+import json
 import re
+import sys
 import subprocess
 import tempfile
 
@@ -23,7 +25,27 @@ def main():
     assert len(data) == 92 * (16 * 4 + 20 * 20 // 2), len(data)
     expected = '2b1a3721dfb0a5c0f76c534fff071b1fe40f3b149b1a0e61d9a611d90c02fa5a'
     assert hashlib.sha256(data).hexdigest() == expected, 'atlas unexpectedly changed'
-    assert REGISTRY.read_text().count(', "') == 93, 'registry does not match 93 glyphs'
+    sys.path.insert(0, str(ROOT/'scripts'))
+    import build_emoji_catalog as catalog
+    rows=catalog.registry()
+    report=json.loads((ROOT/'scripts/emoji/coverage.json').read_text())
+    assert len(rows)==report['current_glyphs']==750
+    assert rows[:93]==catalog.legacy(), 'legacy PUA mappings must remain append-only'
+    assert not catalog.audit(rows)['missing_visible_after'], 'reference visible mappings missing'
+    packed=b''.join(bytes.fromhex(''.join(re.findall(r'\\x([0-9a-f]{2})', p.read_text())))
+                    for p in sorted(REGISTRY.parent.glob('emoji_sprites_*.inc')))
+    assert len(packed)==750*164
+    sprites=[packed[i:i+162] for i in range(0,len(packed),164)]
+    assert all(packed[i+162:i+164]==b'\0\0' for i in range(0,len(packed),164))
+    assert hashlib.sha256(b''.join(sprites)).hexdigest()==report['sprite_sha256']
+    assert sprites[:93]==catalog.legacy_sprites(), 'legacy display pixels changed'
+    assert all(any(v[3:64:4]) and any(v[64:]) for v in sprites), 'empty sprite'
+    order=[int(v) for v in re.findall(r'\d+', (REGISTRY.parent/'emoji_lookup_order.inc').read_text().split('\n',1)[1])]
+    assert sorted(order)==list(range(750))
+    keys=[catalog.normalize(rows[i][0]).encode() for i in order]
+    assert keys==sorted(set(keys)), 'lookup order or canonical uniqueness invalid'
+    for k in ('flags','tone_sequences','zwj_sequences','sprite_bytes','sprite_storage_bytes'):
+        assert report[k]==catalog.audit(rows)[k]
     flag_header=FLAG.read_text()
     match=re.search(r'kCheckeredFlagBase64\[\]\s*=\s*"([A-Za-z0-9+/]+)"',flag_header)
     assert match, 'missing flag asset'
@@ -47,12 +69,12 @@ def main():
     with tempfile.TemporaryDirectory(prefix='mcx-emoji-') as temp:
         executable = str(Path(temp)/'test_emoji')
         for standard in ('c++11', 'c++20'):
-            for test in (TEST, SPRITE_TEST):
+            for test in (TEST, SPRITE_TEST, ROOT/'tests/test_emoji_assets.cpp'):
                 build = ['g++', '-std=' + standard, '-Wall', '-Wextra', '-Werror', '-pedantic',
                          '-O2', str(test), '-o', executable]
                 subprocess.run(build, cwd=ROOT, check=True)
                 subprocess.run([executable], cwd=ROOT, check=True)
-    print('PASS: 93 color emojis (checkered flag), verified 92-atlas + flag SHA256, 14px sprite scaling and UTF-8 host tests on C++11 + C++20')
+    print('PASS: 750 flash sprites, all 272 reference mappings, 93 legacy mappings/pixels preserved, UTF-8/sequence tests C++11 + C++20')
 
 
 if __name__ == '__main__':
