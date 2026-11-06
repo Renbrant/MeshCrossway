@@ -214,7 +214,9 @@ static uint8_t *obtain_vector(const Config &c,unsigned z,unsigned x,unsigned y,s
     heap_caps_free(probe);heap_caps_free(scratch);
   }
   if(ok)ok=fwrite(data,1,size,out)==size&&fflush(out)==0&&fsync(fileno(out))==0;
-  if(fclose(out))ok=false;if(ok)ok=rename(temporary,file)==0;if(!ok){remove(temporary);heap_caps_free(data);data=nullptr;size=0;if(!backing_off){backoff_started=now;backoff_ms=status==404?30000:10000;backing_off=true;}}
+  if(fclose(out))ok=false;
+  if(ok)ok=rename(temporary,file)==0;
+  if(!ok){remove(temporary);heap_caps_free(data);data=nullptr;size=0;if(!backing_off){backoff_started=now;backoff_ms=status==404?30000:10000;backing_off=true;}}
   return data;
 }
 static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,size_t &size,unsigned char **decoded=nullptr,uint32_t generation=0){
