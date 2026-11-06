@@ -49,7 +49,7 @@ inline TileRect rect(double south, double west, double north, double east, unsig
   r.left=tile_x(west,z);
   // East is exclusive to avoid including an extra column at exact tile edges.
   const double east_inclusive = std::nextafter(east, -std::numeric_limits<double>::infinity());
-  r.right=tile_x(east_inclusive,z);
+  r.right=(east==180.0) ? ((uint32_t(1)<<z)-1) : tile_x(east_inclusive,z);
   r.top=tile_y(north,z);
   r.bottom=tile_y(south,z);
   r.valid=r.left<=r.right && r.top<=r.bottom;
