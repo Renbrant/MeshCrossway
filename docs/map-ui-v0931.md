@@ -4,7 +4,7 @@ This experimental candidate fixes the map controls and action highlighting repor
 
 ## Changes
 
-- Zoom and Center GPS controls are created above the map image and labels, so refreshed tiles cannot cover them after a pan.
+- Zoom and Center GPS controls are explicitly raised above the map image and labels, so refreshed tiles cannot cover them after a pan.
 - Exactly one right-side map action reflects the current screen. Map Options, Record, Tracks, POIs, map diagnostics and GNSS status no longer leave Map View highlighted at the same time.
 - Closing a map subpage restores the action associated with the current map view.
 
