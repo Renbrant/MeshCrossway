@@ -289,6 +289,7 @@ static lv_obj_t *shade=nullptr,*info_dialog=nullptr;
 static lv_obj_t *memory_usage[3]={},*memory_details[3]={},*memory_bars[3]={};
 static bool navigation_panel=false;
 static bool left_compact=true,right_compact=true;
+static bool map_node_info=false,map_options_active=false;
 static int nodes_filter=0,groups_filter=0,chats_filter=0,active_thread=-1,more_view=0;
 static int active_chat_network=2; // 1 Meshtastic, 2 MeshCore; never infer a send protocol from text.
 static bool showing_mt();
@@ -321,14 +322,15 @@ static const ActionInfo chat_actions[]={
   {"Compose",A_NEW,orange},{"Chat tools",A_PACKETS,cyan},{"Chat info",A_THREAD_INFO,purple}
 };
 static const ActionInfo map_actions[]={
-  {"Map View",A_MAP_HOME,orange},{"Zoom",A_MAP_ZOOM,orange},{"Map Options",A_MAP_OPTIONS,orange},{"Center GPS",A_MAP_CENTER,orange},
+  {"Map View",A_MAP_HOME,orange},{"Map Options",A_MAP_OPTIONS,orange},
   {"Record",A_RECORD,orange},{"Tracks",A_TRACKS,orange},{"POIs",A_POIS,orange},
   {"Map Details",A_MAP_DIAGNOSTICS,orange},{"GNSS",A_GNSS,orange},
   {"Live Share",A_SHARE,orange},{"Team",A_TEAM,orange}
 };
 static void draw(); // Forward-declared above Wi-Fi editor callbacks.
 static bool edge_swipe_click_in_progress();
-static bool has_context_rail(){return page==3||page==4;}
+static bool has_context_rail(){return page==3||(page==4&&!map_node_info);}
+static void rebuild_context();
 static bool has_left_rail(){return true;} // Main navigation never disappears, even in Settings / Radios.
 static int content_width(){return 480-(has_left_rail()?(left_compact?40:79):0)
                                    -(has_context_rail()?(right_compact?40:125):0);}
@@ -441,6 +443,9 @@ static void update_nav_vector(int index,lv_color_t tint){
 static void info_close_now(void *){
   if(!info_dialog)return;
   lv_obj_t *old=info_dialog;info_dialog=nullptr;navigation_panel=false;
+  map_node_info=false;map_options_active=false;
+  if(right_rail){if(has_context_rail())lv_obj_clear_flag(right_rail,LV_OBJ_FLAG_HIDDEN);else lv_obj_add_flag(right_rail,LV_OBJ_FLAG_HIDDEN);}
+  if(context_actions)rebuild_context();
   for(unsigned i=0;i<3;++i)memory_usage[i]=memory_details[i]=memory_bars[i]=nullptr;
   lv_obj_del(old);
 }
@@ -956,7 +961,7 @@ static void rebuild_context(){
   for(size_t i=0;i<count;i++){
     const int id=choices[i].id;
     const bool selected=page==4&&
-      ((id==A_MAP_HOME&&map_view==0)||(id==A_POIS&&map_view==1)||
+      ((id==A_MAP_OPTIONS&&map_options_active)||(id==A_MAP_HOME&&map_view==0)||(id==A_POIS&&map_view==1)||
        (id==A_TRACKS&&map_view==2)||(id==A_GNSS&&map_view==3)||
        (id==A_TEAM&&map_view==4)||(id==A_SHARE&&map_view==5));
     lv_obj_t *button=action_button(context_actions,

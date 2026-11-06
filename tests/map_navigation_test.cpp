@@ -34,8 +34,9 @@ static bool submit(Action a,uint32_t id=0,const char *name=nullptr){last_action=
 }
 namespace meshcrossway {
 static int page=4,map_view=0;static void draw();
-static lv_obj_t *body=nullptr,*info_dialog=nullptr;
+static lv_obj_t *body=nullptr,*info_dialog=nullptr,*right_rail=nullptr;
 static bool navigation_panel=false;
+static bool map_node_info=false,map_options_active=false;
 static const lv_color_t purple=lv_color_hex(0x9C88FF);
 static const lv_color_t green=lv_color_hex(0x72D8A5);
 static const lv_color_t bg=lv_color_hex(0x090C10),panel2=lv_color_hex(0x242B34),orange=lv_color_hex(0xFF8A24),white=lv_color_hex(0xF2F4F7),muted=lv_color_hex(0x9AA6B4),cyan=lv_color_hex(0x6CBDE6),red=lv_color_hex(0xFF7777);
@@ -43,12 +44,12 @@ static void fill(lv_obj_t *o,lv_color_t c,int radius=0){lv_obj_set_style_bg_colo
 static lv_obj_t *panel_at(lv_obj_t *p,int x,int y,int w,int h,lv_color_t c,int r=0){auto *o=lv_obj_create(p);fill(o,c,r);lv_obj_set_pos(o,x,y);lv_obj_set_size(o,w,h);lv_obj_clear_flag(o,LV_OBJ_FLAG_SCROLLABLE);return o;}
 static lv_obj_t *single_label(lv_obj_t *p,const char *s,int x,int y,int w,lv_color_t c){auto *o=lv_label_create(p);lv_label_set_text(o,s);lv_obj_set_pos(o,x,y);lv_obj_set_width(o,w);lv_label_set_long_mode(o,LV_LABEL_LONG_DOT);lv_obj_set_style_text_color(o,c,0);return o;}
 static lv_obj_t *action_button(lv_obj_t *p,const char *s,int x,int y,int w,int h,lv_color_t c,lv_event_cb_t cb,intptr_t value){auto *o=lv_btn_create(p);fill(o,c);lv_obj_set_pos(o,x,y);lv_obj_set_size(o,w,h);auto *l=single_label(o,s,0,5,w,white);lv_obj_set_style_text_align(l,LV_TEXT_ALIGN_CENTER,0);lv_obj_add_event_cb(o,cb,LV_EVENT_CLICKED,(void *)value);return o;}
-static void info_close_now(void *){if(info_dialog){lv_obj_del(info_dialog);info_dialog=nullptr;}}
+static void info_close_now(void *){if(info_dialog){lv_obj_del(info_dialog);info_dialog=nullptr;}map_node_info=false;map_options_active=false;if(right_rail)lv_obj_clear_flag(right_rail,LV_OBJ_FLAG_HIDDEN);}
 static void info_close(lv_event_t *){info_close_now(nullptr);}
 namespace chatview {static void label(lv_obj_t *o,const char *s){if(o&&strcmp(lv_label_get_text(o),s))lv_label_set_text(o,s);}}
 // PRODUCTION_ACTIONS
 static lv_obj_t *context_actions=nullptr;static bool right_compact=false;static int clicked=-1;
-static bool has_context_rail(){return page==4;}
+static bool has_context_rail(){return page==4&&!map_node_info;}
 static void update_context_scroll_track(){}
 static void on_action(lv_event_t *e){clicked=int(intptr_t(lv_event_get_user_data(e)));}
 // PRODUCTION_CONTEXT
@@ -129,6 +130,7 @@ int main(int argc,char **argv){
  lv_area_t badge_area,charge_area;lv_obj_get_coords(gps_satellites,&badge_area);lv_obj_get_coords(top_charge,&charge_area);assert(badge_area.x2<charge_area.x1&&charge_area.x2<430);
  mcxgnss::cfg.enabled=0;gps_refresh(nullptr);assert(!strcmp(lv_label_get_text(gps_satellites),"--"));mcxgnss::cfg.enabled=1;mcxgnss::fix.valid=false;gps_refresh(nullptr);assert(lv_obj_get_style_text_color(gps_icon,0).full==orange.full);
  body=panel_at(lv_scr_act(),40,34,400,286,bg);
+ right_rail=panel_at(lv_scr_act(),440,34,40,286,panel2);
  mcxgnss::fix.valid=false;navui::centered=false;mcxmap::queued=false;navui::create(400);advance();
  pointer_x=210;pointer_y=150;down=true;advance();pointer_x=260;advance();down=false;advance();
  navui::request();assert(!mcxmap::queued&&!navui::inflight&&!navui::centered);
@@ -136,6 +138,9 @@ int main(int argc,char **argv){
  mcxmap::config.online=0;navui::create(400);advance();
  assert(lv_obj_get_x(navui::canvas)==0&&lv_obj_get_y(navui::canvas)==0&&lv_obj_get_height(navui::canvas)==286);
  assert(lv_obj_get_child_cnt(body)==1); // Map owns the entire body; no heading/footer/buttons.
+ assert(lv_obj_get_child_cnt(navui::canvas)>=2);
+ lv_event_send(lv_obj_get_child(navui::canvas,0),LV_EVENT_CLICKED,nullptr);assert(clicked==A_MAP_ZOOM);
+ lv_event_send(lv_obj_get_child(navui::canvas,1),LV_EVENT_CLICKED,nullptr);assert(clicked==A_MAP_CENTER);
  assert(lv_obj_get_style_bg_opa(navui::attribution,0)==LV_OPA_TRANSP);
  navui::toggle_zoom();advance();assert(navui::zoom_overlay&&navui::zoom_slider&&navui::zoom_open);
  const auto before_slider=mcxmap::wanted.load();
@@ -175,7 +180,7 @@ int main(int argc,char **argv){
  lv_dropdown_set_selected(zone_picker,1);lv_event_send(zone_picker,LV_EVENT_VALUE_CHANGED,nullptr);
  assert(mcxclock::selection(mcxgnss::configuration())==1);
  for(unsigned i=0;i<lv_obj_get_child_cnt(info_dialog);++i){lv_area_t a;lv_obj_get_coords(lv_obj_get_child(info_dialog,i),&a);assert(a.x1>=40&&a.x2<440);}
- gpsui::map_options();advance();assert(gpsui::provider_picker&&gpsui::online_switch);
+ gpsui::map_options();advance();assert(gpsui::provider_picker&&gpsui::online_switch&&map_options_active&&!lv_obj_has_flag(right_rail,LV_OBJ_FLAG_HIDDEN));
  lv_dropdown_set_selected(gpsui::provider_picker,1);lv_event_send(gpsui::provider_picker,LV_EVENT_VALUE_CHANGED,nullptr);
  assert(mcxmap::provider(mcxmap::configuration())==mcxmap::TOPO&&strstr(mcxmap::configuration().attribution,"OpenTopoMap"));
  lv_obj_clear_state(gpsui::online_switch,LV_STATE_CHECKED);lv_event_send(gpsui::online_switch,LV_EVENT_VALUE_CHANGED,nullptr);assert(!mcxmap::configuration().online);
@@ -286,7 +291,7 @@ int main(int argc,char **argv){
  mcxmap::set_nodes_grouped(grouping_config,false);navui::build_node_groups(dense,grouping_config);
  assert(dense.cluster_count==dense.node_count);
  for(unsigned i=0;i<dense.node_count;++i)assert(dense.nodes[i].cluster==i&&dense.clusters[i].count==1&&dense.clusters[i].first==i&&dense.clusters[i].point.x==120&&dense.clusters[i].point.y==80);
- navui::open_node_selection(1);assert(info_dialog&&lv_obj_get_child_cnt(info_dialog)!=8); // Individual detail, not group preview.
+ navui::open_node_selection(1);assert(info_dialog&&lv_obj_get_child_cnt(info_dialog)!=8);assert(map_node_info&&lv_obj_has_flag(right_rail,LV_OBJ_FLAG_HIDDEN)); // Individual detail hides map actions.
  mcxmap::set_nodes_grouped(grouping_config,true);navui::build_node_groups(dense,grouping_config);assert(dense.cluster_count==1);
  puts("PASS: saved grouping switch survives config reload; legacy styles preserved; 640 co-located markers remain individual when disabled");
  const auto requests_before=mcxmap::wanted.load();
@@ -316,9 +321,9 @@ int main(int argc,char **argv){
   navui::invalidate();lv_obj_clean(body);navui::after_clean();
  }
  info_close_now(nullptr);context_actions=panel_at(lv_scr_act(),355,34,125,286,panel2);lv_obj_add_flag(context_actions,LV_OBJ_FLAG_SCROLLABLE);
- const int expected[]={A_MAP_HOME,A_MAP_ZOOM,A_MAP_OPTIONS,A_MAP_CENTER,A_RECORD,A_TRACKS,A_POIS,A_MAP_DIAGNOSTICS,A_GNSS};
+ const int expected[]={A_MAP_HOME,A_MAP_OPTIONS,A_RECORD,A_TRACKS,A_POIS,A_MAP_DIAGNOSTICS,A_GNSS};
  for(bool compact:{false,true}){right_compact=compact;rebuild_context();advance();
-  for(unsigned i=0;i<9;++i){auto *button=lv_obj_get_child(context_actions,i);assert(lv_obj_get_style_border_width(button,0)==0);lv_event_send(button,LV_EVENT_CLICKED,nullptr);assert(clicked==expected[i]);}
+  for(unsigned i=0;i<7;++i){auto *button=lv_obj_get_child(context_actions,i);assert(lv_obj_get_style_border_width(button,0)==0);lv_event_send(button,LV_EVENT_CLICKED,nullptr);assert(clicked==expected[i]);}
  }
  mcxmap::clear_tiles();
  puts("PASS: HTTPS cache transactions, corrupt cache repair, 503 backoff, no-SD gating, real PNG SD tiles, Mercator raster crop, stale job cancellation, bad PNG/URL, real LVGL map drag, GPS settings and source editor geometry");

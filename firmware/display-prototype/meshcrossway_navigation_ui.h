@@ -151,6 +151,10 @@ static void create(int w){
   canvas=panel_at(body,0,0,w,lv_obj_get_height(body),lv_color_hex(0x1A2027),0);
   lv_obj_add_flag(canvas,LV_OBJ_FLAG_CLICKABLE|LV_OBJ_FLAG_PRESS_LOCK);
   lv_obj_add_event_cb(canvas,pointer,LV_EVENT_ALL,nullptr);
+  auto *zoom_control=action_button(canvas,"",w-38,8,32,38,panel2,on_action,A_MAP_ZOOM);
+  auto *zoom_glyph=panel_at(zoom_control,4,7,23,24,panel2,0);lv_obj_set_style_bg_opa(zoom_glyph,LV_OPA_TRANSP,0);lv_obj_set_style_text_color(zoom_glyph,orange,0);lv_obj_clear_flag(zoom_glyph,LV_OBJ_FLAG_CLICKABLE);lv_obj_add_event_cb(zoom_glyph,context_icon,LV_EVENT_DRAW_MAIN,(void *)(intptr_t)A_MAP_ZOOM);
+  auto *center_control=action_button(canvas,"",w-38,50,32,38,panel2,on_action,A_MAP_CENTER);
+  auto *center_glyph=panel_at(center_control,4,7,23,24,panel2,0);lv_obj_set_style_bg_opa(center_glyph,LV_OPA_TRANSP,0);lv_obj_set_style_text_color(center_glyph,orange,0);lv_obj_clear_flag(center_glyph,LV_OBJ_FLAG_CLICKABLE);lv_obj_add_event_cb(center_glyph,context_icon,LV_EVENT_DRAW_MAIN,(void *)(intptr_t)A_MAP_CENTER);
   picture=lv_img_create(canvas);lv_obj_clear_flag(picture,LV_OBJ_FLAG_CLICKABLE);
   if(front){lv_img_cache_invalidate_src(&front->image);mcxmap::release(front);front=nullptr;}
   marker=panel_at(canvas,0,0,12,12,orange,6);lv_obj_set_style_border_width(marker,2,0);lv_obj_set_style_border_color(marker,white,0);lv_obj_clear_flag(marker,LV_OBJ_FLAG_CLICKABLE);set_hidden(marker,true);
@@ -379,8 +383,12 @@ static void refresh(){
 }
 static void base(const char *title){
   info_close_now(nullptr);
+  map_node_info=page==4&&strcmp(title,"NODE DETAILS")==0;
+  map_options_active=page==4&&strcmp(title,"MAP OPTIONS")==0;
   dialog=info_dialog=panel_at(body,0,0,lv_obj_get_width(body),286,bg,0);
   navigation_panel=true;
+  if(right_rail){if(has_context_rail())lv_obj_clear_flag(right_rail,LV_OBJ_FLAG_HIDDEN);else lv_obj_add_flag(right_rail,LV_OBJ_FLAG_HIDDEN);}
+  if(context_actions)rebuild_context();
   lv_obj_add_flag(dialog,LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_set_scroll_dir(dialog,LV_DIR_VER);
   lv_obj_set_flex_flow(dialog,LV_FLEX_FLOW_COLUMN);
@@ -720,7 +728,7 @@ static void map_diagnostics(){
 static void show_node_details(unsigned index){
   if(!navui::overlay_cache||index>=navui::overlay_cache->node_count)return;
   const auto &node=navui::overlay_cache->nodes[index];const auto activity=navui::node_activity(node,mcxmap::configuration());char info[420],age[80],role[80];
-  const time_t epoch=time(nullptr);if(!node.heard)snprintf(age,sizeof(age),"No activity timestamp");else if(epoch>0&&node.heard<=uint32_t(epoch)){const uint32_t seconds=uint32_t(epoch)-node.heard;snprintf(age,sizeof(age),"%lu seconds ago",(unsigned long)seconds);}else snprintf(age,sizeof(age),"Timestamp unavailable");
+  const time_t epoch=time(nullptr);if(!node.heard)snprintf(age,sizeof(age),"No activity timestamp");else if(epoch>0&&node.heard<=uint32_t(epoch)){const uint32_t seconds=uint32_t(epoch)-node.heard;snprintf(age,sizeof(age),"%lu h %02lu min %02lu s ago",(unsigned long)(seconds/3600),(unsigned long)((seconds/60)%60),(unsigned long)(seconds%60));}else snprintf(age,sizeof(age),"Timestamp unavailable");
   if(node.meshcore)snprintf(role,sizeof(role),"MeshCore contact type %u%s",unsigned(node.type),node.type==2?" / repeater":"");else snprintf(role,sizeof(role),"Meshtastic hardware type %u",unsigned(node.type));
   snprintf(info,sizeof(info),"%s\n%s\n%s\n%s\n\n%s\nPosition: %.6f, %.6f",node.name,node.id,node.meshcore?"MeshCore":"Meshtastic",role,navui::activity_name(activity),node.latitude,node.longitude);
   base("NODE DETAILS");auto *label=single_label(dialog,info,0,0,440,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);label=single_label(dialog,age,0,0,440,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
