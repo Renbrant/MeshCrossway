@@ -2,7 +2,7 @@
 
 > **Architecture update — 2026-10-28:** Current MeshCrossway development is **software-first, three independently powered detachable devices, two BLE links**. See [modular architecture](modular-architecture.md). The previous UART/single-carrier PCB content on this page is **archived integrated-variant reference**, not the current implementation. **All KiCad files remain untouched.**
 
-> **Historical integrated baseline: October 26, 2026.** The V1 design uses two Seeed XIAO ESP32-S3 + Wio-SX1262 B2B radio kits, a Waveshare ESP32-S3 touchscreen and MAX-M10S GNSS. Project is in design and bench-prototype planning; no interactive interface simulator is currently published. Historical UI mockups remain archived.
+> **Archived integrated variant, October 26, 2026.** This earlier single-carrier concept explored two Seeed XIAO ESP32-S3 + Wio-SX1262 B2B radio kits with a Waveshare touchscreen and MAX-M10S GNSS. It is not a requirement for the current BLE architecture. Project is in design and bench-prototype planning; no interactive interface simulator is currently published. Historical UI mockups remain archived.
 
 [README](../README.md)
 
@@ -18,7 +18,7 @@
 
 MeshCrossway is an open-source offline-capable portable touchscreen communicator integrating **independent Meshtastic and MeshCore networks** in one interface. It targets hiking, travel, emergency preparedness and possible future field/rescue coordination, without claiming safety certification or guaranteed delivery. Native identities, encryption and routing remain separate. There is no default cross-protocol bridge.
 
-## V1 selected hardware (authoritative)
+## Hardware in the archived integrated Rev A variant
 
 | Item | Baseline hardware | Responsibilities |
 |---|---|---|
