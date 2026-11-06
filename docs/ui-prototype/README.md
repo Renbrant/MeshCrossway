@@ -2,7 +2,7 @@
 
 > **Retired:** this browser simulator is no longer published because it no longer reflects current firmware behavior. The files below are kept only as historical design references.
 
-> **Current architecture (2026-10-28):** The UI will connect via two concurrent BLE Central links to independent MX-M Meshtastic and MX-C MeshCore Radio Pods. Hardware remains separate; archived UART/PCB implementation references below are not current. [Approved design](../modular-architecture.md).
+> **Current architecture:** The touchscreen Core connects over two BLE links to independent Meshtastic and MeshCore radios. Radio hardware is user-selectable; Heltec V3 is the current development-tested setup. Each chosen device must expose the corresponding native BLE API with compatible firmware. XIAO/Wio UART/PCB references below are historical and not current requirements. [Approved design](../modular-architecture.md).
 
 This folder contains a **browser-based UI concept** for the 3.5-inch MeshCrossway touchscreen. It is separate from the device's ESP-IDF/LVGL firmware and does not establish that all pictured screens are implemented on hardware. **Older README screenshots were removed from the repository front page and preserved in the [historical UI gallery](archived-readme-gallery.md)**.
 
@@ -53,15 +53,15 @@ This is a UI mockup only. It uses demo data and does not communicate with Meshta
 The prototype deliberately avoids claiming that queued messages were transmitted or delivered. The firmware implementation will need to map each protocol's real evidence into accurate message states.
 
 
-## Selected development hardware — modular BLE architecture
+## Development hardware — modular BLE architecture
 
 The approved system has **three detachable, independently powered units**, each with its **own rechargeable battery and power-management circuit**:
 
 - **MeshCrossway Core:** Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0, with UI, onboard microSD and planned u-blox MAX-M10S GNSS; it will act as a **BLE Central** for two simultaneous radio connections.
-- **MX-M Pod:** Seeed XIAO ESP32-S3 + Wio-SX1262, running **Meshtastic with BLE PhoneAPI**, with its own battery and LoRa antenna.
-- **MX-C Pod:** a separate Seeed XIAO ESP32-S3 + Wio-SX1262, running **MeshCore BLE Companion**, with its own battery and LoRa antenna.
+- **MX-M Pod:** user-selected Meshtastic radio with compatible **BLE PhoneAPI** firmware, its own battery and LoRa antenna. Heltec V3 is development-tested.
+- **MX-C Pod:** user-selected MeshCore radio with compatible **BLE Companion** firmware, its own battery and LoRa antenna. Heltec V3 is development-tested.
 
-**No wired UART, integrated shared carrier PCB, or shared battery connects the three units in the current design.** Earlier UART pinouts, 5 V selectors and the old Rev A KiCad files remain historical references only. BLE integration and real radio operations are still under development. See the [approved modular architecture and software-first plan](../modular-architecture.md).
+**No wired UART, integrated shared carrier PCB, or shared battery connects the three units in the current design.** Earlier UART pinouts, 5 V selectors and the old Rev A KiCad files remain historical references only. The current Heltec V3 BLE integration is working in development testing; compatibility with other selected models and firmware versions must be validated individually. See the [approved modular architecture and software-first plan](../modular-architecture.md).
 
 ## Archived UI screenshots
 
