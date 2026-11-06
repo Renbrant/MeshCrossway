@@ -12,7 +12,7 @@ static bool flipped=false,requested=false,dirty=false;
 static uint32_t changed=0;
 static void mark(){dirty=true;changed=lv_tick_get();}
 static void lock_toggle(){
-  preferences.locked=!preferences.locked;preferences.flipped=flipped;
+  preferences.locked=!preferences.locked;preferences.flipped=flipped;requested=flipped;
   paused.store(preferences.locked);sample.store(0);policy.reset();mark();
 }
 static void manual_flip(){
