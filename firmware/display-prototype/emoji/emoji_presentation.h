@@ -14,12 +14,16 @@ struct EmojiGlyph {
   const char *description;
 };
 
-// Generated from an intentionally small, stable first-pass registry.
+// Append-only glyphs with a separately sorted, flash-resident lookup index.
 // A color image MUST be supplied for each glyph before enabling its display.
 static const EmojiGlyph kGlyphs[] = {
 #include "emoji_registry.inc"
 };
 static const size_t kGlyphCount = sizeof(kGlyphs) / sizeof(kGlyphs[0]);
+static const uint16_t kLookupOrder[] = {
+#include "emoji_lookup_order.inc"
+};
+static_assert(sizeof(kLookupOrder)/sizeof(kLookupOrder[0])==kGlyphCount,"Emoji lookup index mismatch");
 
 struct Report {
   size_t bytes_written;
@@ -87,7 +91,13 @@ inline bool base_emoji(uint32_t cp) {
   // Deliberately conservative outside modern pictograph blocks.
   return (cp >= 0x1f000 && cp <= 0x1faff) ||
          (cp >= 0x2600 && cp <= 0x27bf) || cp == 0x2b50 || cp == 0x2b55 ||
-         cp == 0x2139 || cp == 0x231a || cp == 0x231b || cp == 0x23f0;
+         cp == 0x2139 || cp == 0x231a || cp == 0x231b || cp == 0x23f0 ||
+         cp==0xa9 || cp==0xae || cp==0x203c || cp==0x2049 || cp==0x2122 ||
+         (cp>=0x2194&&cp<=0x2199)||(cp>=0x21a9&&cp<=0x21aa)||
+         (cp>=0x23e9&&cp<=0x23f3)||(cp>=0x23f8&&cp<=0x23fa)||
+         cp==0x25aa||cp==0x25ab||cp==0x25b6||cp==0x25c0||
+         (cp>=0x25fb&&cp<=0x25fe)||cp==0x2934||cp==0x2935||
+         (cp>=0x2b05&&cp<=0x2b07)||cp==0x3030||cp==0x303d||cp==0x3297||cp==0x3299;
 }
 
 // Returns full cluster length in source bytes. ASCII keycap digits are only
@@ -111,29 +121,41 @@ inline size_t cluster_length(const char *src, size_t len, size_t start) {
   }
   while (decode(src, len, pos, next, next_w) && (variation(next) || tone(next))) pos += next_w;
   // Consume ZWJ-qualified sequences atomically; no splitting family/gender emoji.
-  for (unsigned joined = 0; joined < 16; ++joined) {
+  for (;;) {
     size_t zwj_w; uint32_t zwj;
     if (!decode(src, len, pos, zwj, zwj_w) || zwj != 0x200d) break;
     uint32_t part; size_t part_w;
-    if (!decode(src, len, pos + zwj_w, part, part_w) || !base_emoji(part)) break;
+    if (!decode(src, len, pos + zwj_w, part, part_w) || !base_emoji(part)) {pos+=zwj_w;break;}
     pos += zwj_w + part_w;
     while (decode(src, len, pos, next, next_w) && (variation(next) || tone(next))) pos += next_w;
   }
+  // Subdivision flags are one black-flag + tag sequence, not separate glyphs.
+  if(cp==0x1f3f4)while(decode(src,len,pos,next,next_w)&&next>=0xe0020&&next<=0xe007f)pos+=next_w;
   // A valid standalone emoji occupies at least the first Unicode code point.
   return pos - start >= first_width ? pos - start : first_width;
 }
 
-inline const EmojiGlyph *lookup(const char *src, size_t length) {
-  if (!src || !length) return nullptr;
-  for (size_t i = 0; i < kGlyphCount; ++i) {
-    const size_t n = strlen(kGlyphs[i].utf8);
-    if (n == length && !memcmp(src, kGlyphs[i].utf8, n)) return &kGlyphs[i];
+inline bool selector_at(const char *s,size_t n,size_t i,uint8_t tail){
+  return i+2<n&&(uint8_t)s[i]==0xef&&(uint8_t)s[i+1]==0xb8&&(uint8_t)s[i+2]==tail;
+}
+inline int compare_key(const char *a,size_t n,const char *b){
+  const size_t m=strlen(b);size_t i=0,j=0;
+  for(;;){
+    while(selector_at(a,n,i,0x8f))i+=3;
+    while(selector_at(b,m,j,0x8f))j+=3;
+    if(i==n||j==m)return i==n?(j==m?0:-1):1;
+    const uint8_t x=uint8_t(a[i++]),y=uint8_t(b[j++]);if(x!=y)return x<y?-1:1;
   }
-  // Accept an optional presentation selector on already supported emoji.
-  // Do not create a new glyph ID or alter the original UTF-8 source.
-  if(length>3 && (uint8_t)src[length-3]==0xEF &&
-     (uint8_t)src[length-2]==0xB8 && (uint8_t)src[length-1]==0x8F)
-    return lookup(src,length-3);
+}
+inline const EmojiGlyph *lookup(const char *src,size_t length){
+  if(!src||!length)return nullptr;
+  // VS15 requests text; never silently map it to a colored sprite.
+  for(size_t i=0;i<length;++i)if(selector_at(src,length,i,0x8e))return nullptr;
+  size_t lo=0,hi=kGlyphCount;
+  while(lo<hi){const size_t mid=lo+(hi-lo)/2;const auto &glyph=kGlyphs[kLookupOrder[mid]];
+    const int cmp=compare_key(src,length,glyph.utf8);if(!cmp)return &glyph;
+    if(cmp<0)hi=mid;else lo=mid+1;
+  }
   return nullptr;
 }
 
@@ -146,7 +168,7 @@ inline Report transform(const char *src, size_t src_len, char *dst, size_t dst_c
   for (size_t pos = 0; pos < src_len;) {
     // Some old clients send a literal [emoji] placeholder; on-screen only.
     if (src_len - pos >= 7 && !memcmp(src + pos, "[emoji]", 7)) {
-      if (!append(dst, dst_cap, r.bytes_written, "$", 1)) { r.truncated = true; break; }
+      if (!append(dst, dst_cap, r.bytes_written, "[emoji]", 7)) { r.truncated = true; break; }
       ++r.unsupported_clusters; pos += 7;
       continue;
     }
@@ -165,7 +187,7 @@ inline Report transform(const char *src, size_t src_len, char *dst, size_t dst_c
         if (!append(dst, dst_cap, r.bytes_written, pua, pua_len)) { r.truncated = true; break; }
         ++r.emoji_substitutions;
       } else {
-        const char fallback[] = "$";
+        const char fallback[] = "[emoji]";
         if (!append(dst, dst_cap, r.bytes_written, fallback, sizeof(fallback) - 1)) {
           r.truncated = true; break;
         }

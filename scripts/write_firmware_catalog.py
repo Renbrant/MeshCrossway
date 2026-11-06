@@ -80,6 +80,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary="Previous hardware-tested stable; exact image retained for recovery."
         label="Previous stable / recovery" if version=="v0.9.25" else "Legacy stable / recovery"
         status="hardware-tested"
+    elif version=="v0.9.29":
+        summary="EXPERIMENTAL: 750 local color emoji sequences, preserved legacy glyphs, readable unknown fallback and flash-resident sprites. Names and messages retain original UTF-8; physical validation pending. Exact v0.9.28 stable retained."
+        label="Expanded emoji coverage / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.28":
         summary="EXPERIMENTAL: independent last-heard map colors, configurable 0-365 day local node retention, protected favorites/messages and filtered SD/radio imports. Exact v0.9.25 stable image retained."
         label="Node age colors and retention / EXPERIMENTAL"

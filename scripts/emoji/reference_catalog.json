@@ -1,0 +1,1117 @@
+{
+  "repository": "ALLFATHER-BV/wadamesh",
+  "commit": "53d17d0b0f22fc5fe460e13d5ef2e0d3008ca03a",
+  "file": "src/ui-touch/emoji_data.c",
+  "source_sha256": "34c1cdca1787111f92b5329d964b16dd3a7e5b09862fbe8527bc4bda6915d8c1",
+  "declared_images": 272,
+  "entries": [
+    {
+      "codepoint": "U+200D",
+      "visible": false
+    },
+    {
+      "codepoint": "U+231A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2600",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2601",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2614",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2615",
+      "visible": true
+    },
+    {
+      "codepoint": "U+261D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+26A0",
+      "visible": true
+    },
+    {
+      "codepoint": "U+26A1",
+      "visible": true
+    },
+    {
+      "codepoint": "U+26A7",
+      "visible": false
+    },
+    {
+      "codepoint": "U+26BD",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2705",
+      "visible": true
+    },
+    {
+      "codepoint": "U+270A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+270B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+270C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2714",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2716",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2728",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2744",
+      "visible": true
+    },
+    {
+      "codepoint": "U+274C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2753",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2754",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2755",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2757",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2763",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2764",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2795",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2796",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2797",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2B50",
+      "visible": true
+    },
+    {
+      "codepoint": "U+2B55",
+      "visible": true
+    },
+    {
+      "codepoint": "U+FE0E",
+      "visible": false
+    },
+    {
+      "codepoint": "U+FE0F",
+      "visible": false
+    },
+    {
+      "codepoint": "U+1F1F1",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F1F8",
+      "visible": false
+    },
+    {
+      "codepoint": "U+1F308",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F30A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F310",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F319",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F31B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F31E",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F31F",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F320",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F331",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F333",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F334",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F337",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F338",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F339",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F33A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F33B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F33F",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F340",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F341",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F342",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F355",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F37A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F37B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F381",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F382",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F388",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F389",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F38A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F3AF",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F3C6",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F3C8",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F3E0",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F3F3",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F40C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F414",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F417",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F41D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F41E",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F426",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F427",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F428",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F42D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F42E",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F42F",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F430",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F431",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F434",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F435",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F436",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F437",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F438",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F439",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F43A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F43B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F43D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F446",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F447",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F448",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F449",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F44A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F44B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F44C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F44D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F44E",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F44F",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F450",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F451",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F47B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F47D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F47E",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F47F",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F480",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F490",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F493",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F494",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F495",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F496",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F497",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F498",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F499",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F49A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F49B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F49C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F49D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F49E",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F49F",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4A1",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4A2",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4A3",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4A4",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4A5",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4A6",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4A7",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4A8",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4A9",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4AA",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4AB",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4AC",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4AD",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4AF",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4BB",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4C5",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4CC",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4CD",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4E1",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4E7",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4F1",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F4F7",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F50B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F50C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F511",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F512",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F513",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F514",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F515",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F517",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F519",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F51A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F51C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F525",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F590",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F595",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F596",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F5A4",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F5FF",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F600",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F601",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F602",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F603",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F604",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F605",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F606",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F607",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F608",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F609",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F60A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F60B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F60C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F60D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F60E",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F60F",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F610",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F611",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F612",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F613",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F614",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F615",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F616",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F617",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F618",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F619",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F61A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F61B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F61C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F61D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F61E",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F61F",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F620",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F621",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F622",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F623",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F624",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F625",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F626",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F627",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F628",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F629",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F62A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F62B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F62C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F62D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F62E",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F62F",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F630",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F631",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F632",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F633",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F634",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F635",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F636",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F637",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F641",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F642",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F643",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F644",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F648",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F649",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F64A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F64C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F64F",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F680",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F697",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F6AB",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F90D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F90E",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F910",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F911",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F912",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F913",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F914",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F915",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F916",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F917",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F918",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F919",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F91A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F91B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F91C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F91D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F91E",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F91F",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F920",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F921",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F922",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F923",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F924",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F925",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F927",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F928",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F929",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F92A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F92B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F92C",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F92D",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F92E",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F92F",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F932",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F970",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F971",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F973",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F974",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F975",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F976",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F97A",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F981",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F984",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F985",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F986",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F989",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F98B",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F9D0",
+      "visible": true
+    },
+    {
+      "codepoint": "U+1F9E1",
+      "visible": true
+    }
+  ]
+}

@@ -14,7 +14,8 @@ This is an initial source-level notice collection, **not a complete notice bundl
 ## Emoji artwork (read-only message rendering)
 
 - **Noto Color Emoji** (Google Inc. and contributors): glyphs were rasterized from the locally installed `NotoColorEmoji.ttf`, resized to 20×20 and quantized into 16-color per-glyph images; only derived bitmap data is bundled, **not the font file**. Upstream project: https://github.com/googlefonts/noto-emoji. The Noto Color Emoji font software is licensed under **SIL Open Font License 1.1**. [License and copyright](LICENSES/NotoEmoji-OFL-1.1.txt). Rasterization and palette reduction are MeshCrossway adaptations; this does not claim the bitmaps are original emoji artwork or endorsed by Google.
-- The initial set contains **92** sequences (including common multi-codepoint emoji); unrecognized sequences become readable text placeholders in the message display. The original UTF-8 payload is unchanged.
+- The initial 92 glyphs plus the later checkered flag retain their original mapping and exact 14px presentation pixels. The v0.9.29 candidate expands the catalog to **750 sequences**, rasterized from official Noto Color Emoji **v2.047**, commit `22e564626297b4df0a40570ad81d6c05cc7c38bd`, font SHA-256 `39ee3c587e10e89669b9ff32703261d10d5f9c4dd5ad147b6b5a1c5200591817`. New glyphs are derived 14×14 indexed bitmaps stored locally in flash. The font file is not bundled. See [coverage and reproduction](docs/emoji-coverage-v0929.md) and `scripts/emoji/coverage.json` for pinned inputs/tool versions.
+- Unicode 15.1 sequence/property files supply factual codepoint mappings for flags and skin-tone combinations. WadaMesh is consulted only for mapping coverage facts; no WadaMesh implementation or artwork is incorporated. Unrecognized clusters become `[emoji]` in the presentation string. Original UTF-8 names, messages, radio payloads and stored identities remain unchanged.
 
 ## Independent firmware and assets
 

@@ -39,11 +39,11 @@ static void checkered_flag_in_sender_name() {
   assert(!contains(dest,"[emoji]") && contains(dest,"PU2OOM RenBrant 02"));
 }
 static void unknown_and_zwj_stay_atomic() {
-  const char src[] = "A \U0001f468\u200d\U0001f469\u200d\U0001f467 B \U0001f1ef\U0001f1f5";
+  const char src[] = "A \U0001f469\u200d\U0001f600 B \U0001f1ff\U0001f1ff";
   char dst[128];
   const mcxemoji::Report r = mcxemoji::transform(src, strlen(src), dst, sizeof(dst));
   assert(r.emoji_substitutions == 0 && r.unsupported_clusters == 2);
-  assert(strcmp(dst, "A $ B $") == 0);
+  assert(strcmp(dst, "A [emoji] B [emoji]") == 0);
 }
 static void fallback_and_text_only_rendering() {
   const char source[]="A [emoji] B \U0001F90D C \U0001F9D1 D";
@@ -51,11 +51,11 @@ static void fallback_and_text_only_rendering() {
   const mcxemoji::Report r=mcxemoji::transform(source,strlen(source),
                                                  display,sizeof(display));
   assert(r.emoji_substitutions==1 && r.unsupported_clusters==2);
-  assert(!contains(display,"[emoji]"));
+  assert(contains(display,"[emoji]"));
   const mcxemoji::Report no_images=mcxemoji::transform(
     source,strlen(source),display,sizeof(display),false);
   assert(no_images.emoji_substitutions==0 && no_images.unsupported_clusters==3);
-  assert(strcmp(display,"A $ B $ C $ D")==0);
+  assert(strcmp(display,"A [emoji] B [emoji] C [emoji] D")==0);
   assert(strcmp(source,"A [emoji] B \U0001F90D C \U0001F9D1 D")==0);
 }
 static void keycaps_vs_normal_digits() {
@@ -94,10 +94,35 @@ static void no_memory_allocation_or_side_effects() {
   const mcxemoji::Report u = mcxemoji::transform("test", 4, nullptr, 0);
   assert(u.truncated);
 }
+
+static void full_catalog_and_variants() {
+  char dst[256];
+  for(size_t i=0;i<mcxemoji::kGlyphCount;++i){
+    const auto &g=mcxemoji::kGlyphs[i];
+    assert(g.private_use==0xe000+i);
+    assert(mcxemoji::lookup(g.utf8,strlen(g.utf8))==&g);
+    const auto r=mcxemoji::transform(g.utf8,strlen(g.utf8),dst,sizeof(dst));
+    assert(!r.truncated&&r.emoji_substitutions==1&&r.unsupported_clusters==0);
+    uint32_t cp=0;size_t w=0;
+    assert(mcxemoji::decode(dst,strlen(dst),0,cp,w)&&cp==g.private_use&&w==3);
+  }
+  const char *variants[]={"\u2764","\u2764\uFE0F","1\u20E3","1\uFE0F\u20E3",
+    "\U0001F3F3\uFE0F\u200D\U0001F308","\U0001F3F3\u200D\U0001F308",
+    "\U0001F469\u200D\u2695","\U0001F469\u200D\u2695\uFE0F"};
+  for(auto src:variants){const auto r=mcxemoji::transform(src,strlen(src),dst,sizeof(dst));assert(r.emoji_substitutions==1&&!r.unsupported_clusters);}
+  const char *text="before \u2764\uFE0E after";
+  const auto r=mcxemoji::transform(text,strlen(text),dst,sizeof(dst));
+  assert(!r.emoji_substitutions&&r.unsupported_clusters==1&&!strcmp(dst,"before [emoji] after"));
+  char long_chain[512]="\U0001F469";
+  for(int n=0;n<30;++n)strcat(long_chain,"\u200D\U0001F600");
+  strcat(long_chain," tail");
+  const auto q=mcxemoji::transform(long_chain,strlen(long_chain),dst,sizeof(dst));
+  assert(!q.emoji_substitutions&&q.unsupported_clusters==1&&!strcmp(dst,"[emoji] tail"));
+}
 int main() {
-  plain_and_accents(); known_single_and_composed(); checkered_flag_in_sender_name(); unknown_and_zwj_stay_atomic();
+  full_catalog_and_variants(); plain_and_accents(); known_single_and_composed(); checkered_flag_in_sender_name(); unknown_and_zwj_stay_atomic();
   fallback_and_text_only_rendering();
   keycaps_vs_normal_digits(); invalid_utf8_never_overreads();
   truncation_never_splits_utf8(); no_memory_allocation_or_side_effects();
-  printf("emoji presentation: 9 host test groups passed; %zu registry entries\n", mcxemoji::kGlyphCount);
+  printf("emoji presentation: 10 host test groups passed; %zu registry entries\n", mcxemoji::kGlyphCount);
 }

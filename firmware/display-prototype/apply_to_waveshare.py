@@ -194,8 +194,11 @@ shutil.copytree(root / "firmware" / "display-prototype" / "timezone", project / 
 emoji_root = root / "firmware" / "display-prototype" / "emoji"
 emoji_target = project / "main" / "emoji"
 emoji_target.mkdir(parents=True, exist_ok=True)
-for name in ("emoji_presentation.h", "emoji_registry.inc", "emoji_assets_data.h", "emoji_flag_asset.h", "emoji_small_sprite.h", "emoji_display.h"):
+for name in ("emoji_presentation.h", "emoji_registry.inc", "emoji_assets_data.h", "emoji_flag_asset.h", "emoji_small_sprite.h", "emoji_display.h", "emoji_lookup_order.inc", "emoji_sprite_data.h"):
     shutil.copy2(emoji_root / name, emoji_target / name)
+
+for sprite in emoji_root.glob("emoji_sprites_*.inc"):
+    shutil.copy2(sprite,emoji_target/sprite.name)
 
 sdk = project / "sdkconfig.defaults"
 defaults = sdk.read_text()
