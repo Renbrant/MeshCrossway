@@ -1,6 +1,6 @@
 # v0.9.25 stable acceptance record
 
-On 2026-11-05 the device owner reported that v0.9.25 was working well and was stable, and explicitly approved saving it as a stable version. This promotion changes release metadata and distribution only. It does not change or recompile firmware.
+On 2026-11-05 hardware testing confirmed that v0.9.25 was working well and was stable, and this image was explicitly accepted as stable. This promotion changes release metadata and distribution only. It does not change or recompile firmware.
 
 ## Immutable tested image
 
@@ -20,7 +20,7 @@ The submitted console excerpt contains 39 memory samples from one observed boot,
 
 No watchdog, panic, backtrace, or AES/TLS errors appear in this excerpt. The final touch diagnostic reports zero errors and zero overflows, maximum gap 111 ms, queue peak 24, and stack free 1108 bytes. The excerpt also records `rst:0x15 (USB_UART_CHIP_RESET)` at 16:02:33. That reset reason is not a watchdog diagnosis; the initiator cannot be established from this excerpt.
 
-The owner's successful use and explicit acceptance establish this release status. The short console excerpt does not establish indefinite runtime stability. [Memory investigation #137](https://github.com/Renbrant/MeshCrossway/issues/137) remains open for longer observations.
+Successful hardware use and explicit acceptance establish this release status. The short console excerpt does not establish indefinite runtime stability. [Memory investigation #137](https://github.com/Renbrant/MeshCrossway/issues/137) remains open for longer observations.
 
 ## Recovery and publication rules
 

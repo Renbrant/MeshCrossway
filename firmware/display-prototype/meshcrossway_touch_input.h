@@ -1,6 +1,7 @@
 #pragma once
 #include "meshcrossway_memory_log.h"
 #include "meshcrossway_touch_queue.h"
+#include "meshcrossway_orientation_policy.h"
 #include "esp_lcd_touch.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -18,6 +19,7 @@ static uint32_t serial=0,errors=0,max_gap_ms=0,last_activity=0;
 static void (*on_sample)(bool,int,int,uint32_t,bool)=nullptr;
 static void (*old_feedback)(lv_indev_drv_t *,uint8_t)=nullptr;
 static uint32_t notified=UINT32_MAX;
+static bool flipped=false; // LVGL consumer only; producer keeps native coordinates.
 static void notify_sample(){
   if(notified==serial||!serial)return;
   notified=serial;lv_point_t point={};lv_indev_get_point(device,&point);
@@ -50,7 +52,17 @@ static void read(lv_indev_drv_t *,lv_indev_data_t *data){
     }
   }
   data->point.x=delivered.x;data->point.y=delivered.y;
+  mcxorientation::transform(flipped,data->point.x,data->point.y);
   data->state=delivered.down?LV_INDEV_STATE_PRESSED:LV_INDEV_STATE_RELEASED;
+}
+// LVGL lock held and no gesture in progress. Discard queued pre-rotation input.
+static void rotate_input(bool value){
+  portENTER_CRITICAL(&mux);
+  queue.cancel(uint32_t(esp_timer_get_time()/1000));
+  portEXIT_CRITICAL(&mux);
+  flipped=value;delivered.down=false;
+  if(device){lv_indev_reset(device,nullptr);lv_indev_wait_release(device);}
+  if(on_sample)on_sample(false,0,0,uint32_t(esp_timer_get_time()/1000),true);
 }
 static void sample_task(void *){
   uint32_t previous=0,reported=0;unsigned failures=0;

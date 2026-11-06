@@ -45,6 +45,13 @@ if 'mcxtouch::attach(lvgl_touch_indev, touch_handle);' not in source:
 if 'mcxdisplay::init(' not in source:
     source=source.replace('meshcrossway::init();', 'mcxdisplay::init([](unsigned level){esp_3inch5_brightness_port_set(int(level));});\n        meshcrossway::init();',1)
     main.write_text(source)
+# Rotation is serviced by LVGL; sensing shares the existing telemetry worker.
+if 'mcxorientation::init();' not in source:
+    marker = '        meshcrossway::init();'
+    if source.count(marker) != 1:
+        sys.exit('Missing or duplicate orientation initialization marker')
+    source = source.replace(marker, '        mcxorientation::init();\n' + marker, 1)
+    main.write_text(source)
 # Network startup attempts the SD mount. Restoring earlier can mistake an
 # unmounted card for an empty archive. Bootstrap under the UI lock afterwards,
 # still independently of Bluetooth and its 12-second auto-resume delay.
@@ -177,7 +184,7 @@ for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_he
              "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h", "meshcrossway_lvgl_alloc.h", "meshcrossway_runtime.h",
              "meshcrossway_memory_log.h", "meshcrossway_power_status.h", "meshcrossway_battery_decode.h",
              "meshcrossway_chat_presentation.h", "meshcrossway_message_order.h", "meshcrossway_chat_view.h", "meshcrossway_offline_boot.h",
-             "meshcrossway_display_settings.h", "meshcrossway_touch_queue.h", "meshcrossway_touch_input.h", "meshcrossway_gnss.h", "meshcrossway_home_status.h", "meshcrossway_clock.h", "meshcrossway_clock_runtime.h", "meshcrossway_gnss_parser.h", "meshcrossway_gnss_settings.h", "meshcrossway_radio_priority.h", "meshcrossway_map_projection.h", "meshcrossway_map_tiles.h", "meshcrossway_navigation_ui.h", "meshcrossway_navigation.h", "meshcrossway_navigation_store.h", "meshcrossway_navigation_http.h"):
+             "meshcrossway_orientation.h", "meshcrossway_orientation_policy.h", "meshcrossway_orientation_sensor.h", "meshcrossway_display_settings.h", "meshcrossway_touch_queue.h", "meshcrossway_touch_input.h", "meshcrossway_gnss.h", "meshcrossway_home_status.h", "meshcrossway_clock.h", "meshcrossway_clock_runtime.h", "meshcrossway_gnss_parser.h", "meshcrossway_gnss_settings.h", "meshcrossway_radio_priority.h", "meshcrossway_map_projection.h", "meshcrossway_map_tiles.h", "meshcrossway_navigation_ui.h", "meshcrossway_navigation.h", "meshcrossway_navigation_store.h", "meshcrossway_navigation_http.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 

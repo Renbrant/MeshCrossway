@@ -8,6 +8,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "meshcrossway_battery_decode.h"
+#include "meshcrossway_orientation_sensor.h"
 
 // Existing global handle in Waveshare's ESP-IDF 02_lvgl_example BSP.
 extern i2c_master_dev_handle_t i2c_device;
@@ -26,7 +27,13 @@ static bool read_only(uint8_t reg,uint8_t &value){
 static void task(void *){
   // Allow the vendor AXP2101 initialization and the LVGL input service to settle.
   vTaskDelay(pdMS_TO_TICKS(6000));
+  mcxorientation::sensor_init();
+  uint32_t battery_at=0;bool first=true;
   for(;;){
+    mcxorientation::sensor_poll();
+    const uint32_t now=uint32_t(esp_timer_get_time()/1000);
+    if(first||uint32_t(now-battery_at)>=15000){
+    first=false;battery_at=now;
     uint8_t id=0,s1=0,s2=0,pct=255;
     if(read_only(0x03,id)&&read_only(0x00,s1)&&
        read_only(0x01,s2)&&read_only(0xA4,pct)){
@@ -35,7 +42,8 @@ static void task(void *){
     }else{
       published.store(0u,std::memory_order_relaxed); // unknown, not zero!
     }
-    vTaskDelay(pdMS_TO_TICKS(15000));
+    }
+    vTaskDelay(pdMS_TO_TICKS(200));
   }
 }
 static void start(){
