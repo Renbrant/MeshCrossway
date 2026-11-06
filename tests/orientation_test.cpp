@@ -35,6 +35,24 @@ int main(){
   assert(!yaxis.update(1,4000,false,false,false,target)); // portrait edge
   assert(!yaxis.update(-2,5000,false,false,false,target));
   assert(yaxis.update(-2,6000,false,false,false,target)&&target);
+  // Reproduce reversed calibration and movement while locked. The readable
+  // manual choice must define the new reference from the actual held pose.
+  for(int reference:{-2,-1,1,2})for(int held:{-2,-1,1,2}){
+    for(bool before:{false,true}){
+      Policy fixed;fixed.normal=reference;
+      const bool readable=!before;
+      fixed.manual_correction();assert(fixed.normal==0);
+      assert(!fixed.update(held,0,false,false,readable,target));
+      assert(!fixed.update(held,1000,false,false,readable,target));
+      assert(fixed.normal==(readable?-held:held));
+      assert(!fixed.update(held,1200,false,false,readable,target)); // AUTO keeps manual choice
+      assert(target==readable);
+      assert(!fixed.update(-held,2000,false,false,readable,target));
+      assert(fixed.update(-held,3000,false,false,readable,target)&&target==before);
+      fixed.manual_correction();assert(fixed.normal==0);
+    }
+  }
+  Policy unknown;unknown.manual_correction();assert(unknown.normal==0);
   Policy wrap;wrap.normal=1;
   assert(!wrap.update(-1,UINT32_MAX-500,false,false,false,target));
   assert(wrap.update(-1,600,false,false,false,target));

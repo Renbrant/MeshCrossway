@@ -79,6 +79,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary="Previous hardware-tested stable; exact image retained for recovery."
         label="Previous stable / recovery"
         status="hardware-tested"
+    elif version=="v0.9.27":
+        summary="EXPERIMENTAL: fixes reversed auto-rotation reference after manual correction. Use Flip 180 to make the screen readable, then re-enable Auto Rotate; the corrected reference is saved. v0.9.25 remains recommended stable."
+        label="Rotation reference correction / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.26":
         summary="EXPERIMENTAL: sensor-driven 180-degree landscape rotation, saved quick-panel rotation lock and manual flip. Preserves the exact v0.9.25 stable recovery image."
         label="Automatic screen rotation / EXPERIMENTAL"

@@ -14,6 +14,9 @@ static inline int gravity_sign(float x,float y,float z){
 struct Policy {
   int normal=0,candidate=0;uint32_t since=0,last=0;bool has_rotated=false;
   void reset(){candidate=0;}
+  // Relearn from stable gravity while the manually chosen image is readable.
+  // Simply negating the old sign fails if the device moved while locked.
+  void manual_correction(){normal=0;reset();}
   // A full second of consistent gravity; no response to flat placement,
   // transients, expired data, active gestures, or changes while locked.
   bool update(int sign,uint32_t now,bool locked,bool busy,bool current,bool &target){
