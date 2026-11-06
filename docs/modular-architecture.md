@@ -1,6 +1,6 @@
 # MeshCrossway modular architecture — approved decision
 
-**Decision date:** 2026-10-28. **Status:** architecture approved; no electrical, BLE, mechanical, RF or environmental validation completed.
+**Decision date:** 2026-10-28. **Status:** architecture approved. Simultaneous BLE integration and native radio operation are working in development tests with Heltec V3 radios. Final Pod power, enclosures, RF coexistence and environmental qualification remain in progress.
 
 ## Architecture and scope
 
@@ -12,7 +12,7 @@ MeshCrossway shall comprise three **independently powered, detachable devices**:
 
 **BLE is the default and required Core↔Pod data transport.** The two LoRa protocols and identities remain strictly separate. Do not treat the two BLE interfaces as an interchangeable wire protocol: implement one Meshtastic protobuf PhoneAPI BLE client and one MeshCore Companion GATT binary-protocol client.
 
-Radio hardware is user-selectable; there is no XIAO-specific requirement. Each chosen device must expose the correct protocol's native BLE interface and run compatible firmware. Heltec V3 has been used successfully in development testing. Other radio/firmware combinations must be validated individually before compatibility is claimed. The two Pods must continue functioning as native radios if the Core is switched off or out of BLE range. BLE disconnection shall never automatically disable their LoRa reception. Phone interoperability should be tested with native applications where firmware supports it, allowing only intended authenticated client sessions.
+Radio hardware is user-selectable; there is no XIAO-specific requirement. Each chosen device must expose the correct protocol's native BLE interface and run compatible firmware. A pair of Heltec V3 radios has demonstrated the simultaneous BLE integration in development testing. Other radio/firmware combinations must be validated individually before compatibility is claimed. The two Pods must continue functioning as native radios if the Core is switched off or out of BLE range. BLE disconnection shall never automatically disable their LoRa reception. Phone interoperability should be tested with native applications where firmware supports it, allowing only intended authenticated client sessions.
 
 ## Docking and wearability
 
