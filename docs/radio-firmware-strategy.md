@@ -2,7 +2,7 @@
 
 > **SUPERSEDED (2026-10-28):** The integrated single-carrier / UART architecture below remains only a bench reference. The approved MeshCrossway design has [three independently powered detachable devices connected primarily via BLE](modular-architecture.md). Do not treat the following design as the current production baseline.
 
-**Status: design decision, not bench validation.** The MeshCrossway prototype uses a Waveshare ESP32-S3 touchscreen controller and two independent Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kits. We favor upstream Meshtastic and MeshCore firmware and avoid maintaining forks unless a tested, essential capability cannot be exposed otherwise.
+**Historical integrated-radio reference:** the older UART proposal below used a Waveshare controller and two Seeed XIAO ESP32-S3 + Wio-SX1262 kits. The current BLE software has been tested with Heltec V3 radios and does not require a particular radio board. Users may choose devices that expose the native BLE PhoneAPI or BLE Companion interface. We favor upstream firmware and avoid maintaining forks unless a tested, essential capability cannot be exposed otherwise.
 
 ## Illustrated firmware boundaries
 
@@ -15,8 +15,8 @@ The central host handles UI, storage and application policy; each radio keeps it
 | Component | Owns | Does not own |
 |---|---|---|
 | Waveshare ESP32-S3 | LVGL/touch, GNSS, navigation, POIs, tracks/GPX, microSD, location-sharing policy/scheduler, BLE companion bulk-transfer service (future), UI state, independent radio adapters | Full Meshtastic/MeshCore radio stacks |
-| XIAO/Wio kit A | Meshtastic radio stack, SX1262, network identity, native routing, packet queues/status as supported | Map rendering, GPX, app-level tracking schedule |
-| XIAO/Wio kit B | MeshCore Companion radio stack, SX1262, native routing, contact and packet handling as supported | Map rendering, GPX, app-level tracking schedule |
+| User-selected compatible Meshtastic radio A | Meshtastic radio stack, SX1262, network identity, native routing, packet queues/status as supported | Map rendering, GPX, app-level tracking schedule |
+| User-selected compatible MeshCore radio B | MeshCore Companion radio stack, SX1262, native routing, contact and packet handling as supported | Map rendering, GPX, app-level tracking schedule |
 
 The radio devices are **not general-purpose coprocessors** while running standalone upstream protocol firmware. Giving them unrelated application workloads would require firmware changes and create maintainability risks. A failure in either adapter should not block the other adapter, GNSS, UI or stored history.
 
@@ -91,6 +91,6 @@ See [Radio communication architecture and API compatibility](radio-communication
 - The central controller can schedule only application-originated transmissions reliably. Autonomous announcements, ACKs and retransmissions by both radios make RF coexistence and simultaneous transmissions an independent bench-validation concern.
 - Strict zero-hop tracking and truly equivalent group semantics are **not demonstrated**. Do not ship a direct-only guarantee until over-the-air tests prove it; a firmware patch is a last resort after a reproducible API limitation.
 
-## Selected XIAO/Wio firmware integration
+## Archived XIAO/Wio UART firmware example
 
-The V1 uses two **Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kits**, with distinct Meshtastic and MeshCore firmware builds. External XIAO UART candidate: D7/GPIO44 RX, D6/GPIO43 TX; configure firmware explicitly and keep binary transport free from debug output. Wio SPI is internal to the kit. Meshtastic has a matching Seeed image, MeshCore lists Xiao S3 WIO but external Companion UART remains **unverified**. MeshCore initial programming may require a **merged image** for persistent settings. Use the exact Seeed XIAO/Wio B2B firmware target and confirm the external serial mapping on hardware. [Full hardware guide](hardware-wiring.md).
+The archived integrated UART concept used two **Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kits**, with candidate D7/GPIO44 RX and D6/GPIO43 TX pins. These details apply only to that XIAO/Wio board and serial architecture; they are not requirements for the current BLE design. For current development, Heltec V3 is working with the BLE integrations. Users may choose other radio hardware that exposes the correct native BLE API, subject to model/firmware validation. [Archived hardware guide](hardware-wiring.md).
