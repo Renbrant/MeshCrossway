@@ -8,15 +8,15 @@ namespace mcxorientation {
 struct Preferences {uint8_t version=1,locked=0,flipped=0;int8_t normal=0;};
 static Preferences preferences;
 static Policy policy;
-static bool flipped=false,requested=false,dirty=false;
+static bool flipped=false,requested=false,dirty=false,manual_pending=false,calibration_pending=false;
 static uint32_t changed=0;
 static void mark(){dirty=true;changed=lv_tick_get();}
 static void lock_toggle(){
-  preferences.locked=!preferences.locked;preferences.flipped=flipped;requested=flipped;
-  paused.store(preferences.locked);sample.store(0);policy.reset();mark();
+  preferences.locked=!preferences.locked;preferences.flipped=flipped;requested=flipped;manual_pending=false;
+  paused.store(preferences.locked&&!calibration_pending);sample.store(0);policy.reset();mark();
 }
 static void manual_flip(){
-  requested=!requested;preferences.locked=1;preferences.flipped=requested;
+  requested=!requested;preferences.locked=1;preferences.flipped=requested;manual_pending=requested!=flipped;
   paused.store(true);sample.store(0);policy.reset();mark();
 }
 static bool apply(bool target){
@@ -34,13 +34,24 @@ static bool apply(bool target){
 }
 static void tick(lv_timer_t *){
   const uint32_t now=lv_tick_get();
-  if(requested!=flipped){if(apply(requested))policy.applied(now);}
+  if(requested!=flipped){if(apply(requested)){
+    if(manual_pending){
+      policy.manual_correction();preferences.normal=0;manual_pending=false;calibration_pending=true;
+      sample.store(0);paused.store(false);mark();
+      printf("[MCX-ROTATE] hold readable orientation to correct AUTO reference\n");
+    }
+    policy.applied(now);
+  }}
   else {
     bool target=flipped;
-    if(policy.update(fresh_sign(),now,preferences.locked,mcxtouch::busy(),flipped,target)&&apply(target)){
+    if(policy.update(fresh_sign(),now,preferences.locked&&!calibration_pending,mcxtouch::busy(),flipped,target)&&!preferences.locked&&apply(target)){
       requested=target;policy.applied(now);
     }
-    if(policy.normal!=preferences.normal){preferences.normal=int8_t(policy.normal);mark();}
+    if(policy.normal!=preferences.normal){
+      preferences.normal=int8_t(policy.normal);mark();
+      if(calibration_pending&&policy.normal){calibration_pending=false;paused.store(preferences.locked);
+        printf("[MCX-ROTATE] manual reference corrected normal=%d\n",policy.normal);}
+    }
   }
   if(dirty&&uint32_t(now-changed)>=1200){
     nvs_handle_t h;
