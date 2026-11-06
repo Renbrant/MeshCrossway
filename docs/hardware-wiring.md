@@ -1,10 +1,10 @@
-# MeshCrossway V1 — Seeed XIAO ESP32-S3 + Wio-SX1262 hardware and wiring
+# Archived Rev A integrated-carrier concept — Seeed XIAO ESP32-S3 + Wio-SX1262
 
 > **SUPERSEDED (2026-10-28):** The integrated single-carrier / UART architecture below remains only a bench reference. The approved MeshCrossway design has [three independently powered detachable devices connected primarily via BLE](modular-architecture.md). Do not treat the following design as the current production baseline.
 
 [README](../README.md) · [Power design](power-architecture.md) · [Serial APIs](radio-communication-architecture.md) · [Official hardware sources](hardware-sources.md)
 
-> **Current V1 hardware selection (2026-10-26):** two **Seeed Studio XIAO ESP32-S3 & Wio-SX1262 kits**, one running Meshtastic and one MeshCore Companion. No soldered prototype or PCB has been electrically validated.
+> **Historical Rev A selection (2026-10-26; superseded):** the archived integrated-carrier concept evaluated two **Seeed Studio XIAO ESP32-S3 & Wio-SX1262 kits**, one running Meshtastic and one MeshCore Companion. This does not constrain the current user-selectable BLE radio modules. Heltec V3 is the current development-tested radio setup.
 
 ## Physical assembly concept — one carrier PCB, rear battery
 
@@ -121,7 +121,7 @@ For carrier PCB: use footprints matching the **specific XIAO + Wio B2B kit stack
 - GNSS antenna bias/current and I²C compatibility
 - Prove route behavior separately for both firmware releases; zero-hop remains unverified
 
-**Design decision:** two XIAO ESP32-S3 + Wio SX1262 kits are selected for V1 documentation and bench evaluation; PCB release awaits the gates above.
+**Archived Rev A design decision:** two XIAO ESP32-S3 + Wio SX1262 kits were documented for the integrated UART carrier concept. This configuration is superseded and is not required for MeshCrossway's current BLE-connected radios.
 
 
 ## 7. Official hardware sources used for Rev A
