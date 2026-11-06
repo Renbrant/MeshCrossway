@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include "meshcrossway_settings_schema.h"
+#include "meshcrossway_node_age.h"
 
 namespace meshmt {
   static constexpr size_t MAX_FRAME=512, MAX_TEXT=237, MAX_NODES=128, MAX_CHANNELS=8, MAX_MESSAGES=96;
@@ -195,6 +196,7 @@ namespace meshmt {
     Channel channels[MAX_CHANNELS];
     Message messages[MAX_MESSAGES];
     Draft drafts[16];
+    uint8_t favorites[MAX_NODES]={}; // SD schema 2 appends metadata; legacy prefix unchanged.
   };
   #include "meshcrossway_mt_settings.inc"
   struct Client {
@@ -218,6 +220,21 @@ namespace meshmt {
       initialized=false;
       status_text(why);
     }
+    bool keep_node(const Node &n,bool favorite=false)const{
+      if(n.num==data.my_num||favorite||!mcxnodeage::expired(n.last_heard))return true;
+      for(const auto &m:data.messages)if(m.seq&&(m.from==n.num||m.to==n.num))return true;
+      for(const auto &d:data.drafts)if(d.used&&d.target.node==n.num)return true;
+      return false;
+    }
+    bool keep_node_index(unsigned i)const{return i<data.node_count&&keep_node(data.nodes[i],data.favorites[i]!=0);}
+    unsigned prune_nodes(){
+      unsigned out=0,old=data.node_count;
+      for(unsigned i=0;i<old;++i)if(keep_node_index(i)){
+        if(out!=i){data.nodes[out]=data.nodes[i];data.favorites[out]=data.favorites[i];node_roles[out]=node_roles[i];}++out;
+      }
+      for(unsigned i=out;i<old;++i){data.nodes[i]=Node{};data.favorites[i]=node_roles[i]=0;}
+      data.node_count=uint16_t(out);if(old!=out)++generation;return old-out;
+    }
     Node *node(uint32_t id,bool create=false){
       if(!id||id==BROADCAST)return nullptr;
       for(unsigned i=0;i<data.node_count;++i)if(data.nodes[i].num==id)return &data.nodes[i];
@@ -227,7 +244,7 @@ namespace meshmt {
       }
       const unsigned index=data.node_count++;
       auto &n=data.nodes[index];
-      node_roles[index]=0;
+      node_roles[index]=0;data.favorites[index]=0;
       n=Node{};
       n.num=id;
       snprintf(n.name,sizeof(n.name),"!%08lx",(unsigned long)id);
@@ -348,7 +365,7 @@ namespace meshmt {
       while(scan.next(f))if(f.tag==1){if(f.wire!=0||f.value>UINT32_MAX)return false;
         id=f.value;
       }
-      Node temp;
+      Node temp;bool favorite=false;
       auto *old=node(id);
       if(old)temp=*old;
       else temp.num=id;
@@ -363,8 +380,12 @@ namespace meshmt {
           temp.last_heard=f.value;
         }
         if(f.tag==6&&(f.wire!=2||!parse_metrics(f.bytes,temp)))return false;
+        if(f.tag==10){if(f.wire!=0||f.value>1)return false;favorite=f.value!=0;}
       }
-      if(auto *dest=node(id,true))*dest=temp;
+      if(!r.ok)return false;
+      if(old)data.favorites[unsigned(old-data.nodes)]=favorite?1:0;
+      if(!keep_node(temp,favorite))return true; // Parsed stale imports still count toward sync completion.
+      if(auto *dest=node(id,true)){*dest=temp;data.favorites[unsigned(dest-data.nodes)]=favorite?1:0;}
       return r.ok;
     }
     bool parse_channel(View v){

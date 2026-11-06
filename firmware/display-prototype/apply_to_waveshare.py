@@ -184,7 +184,7 @@ for name in ("meshcrossway_capture.h", "meshcrossway_backup.h", "meshcrossway_he
              "meshcrossway_device_key.h", "meshcrossway_brand.h", "meshcrossway_edge_swipe.h", "meshcrossway_lvgl_alloc.h", "meshcrossway_runtime.h",
              "meshcrossway_memory_log.h", "meshcrossway_power_status.h", "meshcrossway_battery_decode.h",
              "meshcrossway_chat_presentation.h", "meshcrossway_message_order.h", "meshcrossway_chat_view.h", "meshcrossway_offline_boot.h",
-             "meshcrossway_orientation.h", "meshcrossway_orientation_policy.h", "meshcrossway_orientation_sensor.h", "meshcrossway_display_settings.h", "meshcrossway_touch_queue.h", "meshcrossway_touch_input.h", "meshcrossway_gnss.h", "meshcrossway_home_status.h", "meshcrossway_clock.h", "meshcrossway_clock_runtime.h", "meshcrossway_gnss_parser.h", "meshcrossway_gnss_settings.h", "meshcrossway_radio_priority.h", "meshcrossway_map_projection.h", "meshcrossway_map_tiles.h", "meshcrossway_navigation_ui.h", "meshcrossway_navigation.h", "meshcrossway_navigation_store.h", "meshcrossway_navigation_http.h"):
+             "meshcrossway_node_age.h", "meshcrossway_orientation.h", "meshcrossway_orientation_policy.h", "meshcrossway_orientation_sensor.h", "meshcrossway_display_settings.h", "meshcrossway_touch_queue.h", "meshcrossway_touch_input.h", "meshcrossway_gnss.h", "meshcrossway_home_status.h", "meshcrossway_clock.h", "meshcrossway_clock_runtime.h", "meshcrossway_gnss_parser.h", "meshcrossway_gnss_settings.h", "meshcrossway_radio_priority.h", "meshcrossway_map_projection.h", "meshcrossway_map_tiles.h", "meshcrossway_navigation_ui.h", "meshcrossway_navigation.h", "meshcrossway_navigation_store.h", "meshcrossway_navigation_http.h"):
     shutil.copy2(root / "firmware" / "display-prototype" / name,
                  project / "main" / name)
 
@@ -202,6 +202,9 @@ defaults = sdk.read_text()
 # Remove the invalid choice name used in the earlier candidate.
 defaults = "\n".join(line for line in defaults.splitlines()
                      if not line.startswith(("CONFIG_ESP_WIFI_TASK_CORE_ID=", "CONFIG_ESP_CONSOLE_UART", "CONFIG_ESP_CONSOLE_SECONDARY_", "CONFIG_MBEDTLS_INTERNAL_MEM_ALLOC=", "CONFIG_MBEDTLS_DEFAULT_MEM_ALLOC=", "CONFIG_MBEDTLS_IRAM_8BIT_MEM_ALLOC=", "CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_INTERNAL=", "CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_DEFAULT=", "CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_IRAM_8BIT="))) + "\n"
+# Required by the bounded retention-days control.
+if "CONFIG_LV_USE_SPINBOX=y" not in defaults:
+    defaults += "CONFIG_LV_USE_SPINBOX=y\n"
 sdk.write_text(defaults)
 # v0.9.22 controlled experiment: only RX code placement changes. Remove any
 # inherited assignment so a vendor default cannot silently keep RX code in IRAM.

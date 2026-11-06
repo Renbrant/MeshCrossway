@@ -44,7 +44,7 @@ static int drag_x=0,drag_y=0,pan_x=0,pan_y=0;static bool gesture_moved=false;
 static constexpr unsigned MAX_DRAW_SEGMENTS=mcxnav::MAX_VISIBLE*(mcxnav::OVERLAY_POINTS-1)+mcxnav::MAX_PREVIEW-1;
 struct DrawSegment {lv_point_t a,b;uint32_t color;};
 static constexpr unsigned MAX_NODE_MARKERS=meshmt::MAX_NODES+meshmc::MAX_CONTACTS;
-enum NodeActivity : uint8_t {NODE_SAVED=0,NODE_RECENT=1,NODE_ACTIVE=2};
+enum NodeActivity : uint8_t {NODE_SAVED=0,NODE_WEEK=1,NODE_RECENT=2,NODE_ACTIVE=3};
 struct NodeMarker {lv_point_t point;bool meshcore=false;uint8_t type=0;uint16_t cluster=0xffff;uint32_t heard=0;double latitude=0,longitude=0;char name[33]={},id[65]={};};
 struct NodeCluster {lv_point_t point;uint16_t count=0,first=0;NodeActivity activity=NODE_SAVED;};
 struct OverlayCache {DrawSegment lines[MAX_DRAW_SEGMENTS];lv_point_t pois[mcxnav::MAX_POIS];NodeMarker nodes[MAX_NODE_MARKERS];NodeCluster clusters[MAX_NODE_MARKERS];unsigned line_count=0,poi_count=0,node_count=0,cluster_count=0;uint32_t generation=0,revision=0;bool ready=false;};
@@ -59,7 +59,7 @@ static uint32_t overlay_signature(){
   return mcxnav::checksum(fields,sizeof(fields))^mcxnav::checksum(nav_state->preferences.styles,sizeof(nav_state->preferences.styles))^mcxnav::checksum(nav_state->pois,nav_state->poi_count*sizeof(mcxnav::Poi));
 }
 static void rebuild_overlay_cache();
-static NodeActivity node_activity(const NodeMarker &);
+static NodeActivity node_activity(const NodeMarker &,const mcxmap::Config &);
 static void refresh_node_activity();
 static void open_node_selection(unsigned);
 
@@ -128,7 +128,7 @@ static void options(lv_event_t *);
 static bool center_on_known_node(){
   if(auto *radio=meshmt::client){
     for(unsigned i=0;i<radio->data.node_count;++i){const auto &node=radio->data.nodes[i];
-      if(!node.position||!node.has_lat||!node.has_lon)continue;
+      if(!radio->keep_node_index(i)||!node.position||!node.has_lat||!node.has_lon)continue;
       const double lat=node.latitude/1e7,lon=node.longitude/1e7;
       if(!isfinite(lat)||!isfinite(lon)||lat<-90||lat>90||lon<-180||lon>180)continue;
       latitude=lat;longitude=lon;centered=true;following=false;return true;
@@ -136,7 +136,7 @@ static bool center_on_known_node(){
   }
   if(auto *radio=meshmc::client){
     for(unsigned i=0;i<radio->contact_count;++i){const auto &node=radio->contacts[i];
-      if((!node.lat&&!node.lon)||node.lat<-90000000||node.lat>90000000||node.lon<-180000000||node.lon>180000000)continue;
+      if(!radio->keep_contact(node)||(!node.lat&&!node.lon)||node.lat<-90000000||node.lat>90000000||node.lon<-180000000||node.lon>180000000)continue;
       latitude=node.lat/1e6;longitude=node.lon/1e6;centered=true;following=false;return true;
     }
   }
@@ -194,7 +194,7 @@ static void poll(){
   if(map_status&&!info_dialog){const bool waiting=worker_start_failed||inflight||(front&&front->missing);if(waiting)chatview::label(map_status,worker_start_failed?"Map worker unavailable · check PSRAM/internal memory":inflight?"Loading map...":mcxmap::configuration().online?"Map tiles unavailable / retrying":"Offline / tiles not saved");set_hidden(map_status,!waiting);}
   if(!canvas||info_dialog||zoom_adjusting)return;
   if(front&&nav_state&&(!overlay_cache||!overlay_cache->ready||overlay_cache->generation!=front->view.generation||overlay_cache->revision!=overlay_signature())){rebuild_overlay_cache();lv_obj_invalidate(picture);}
-  const auto marker_config=mcxmap::configuration();if(front&&(mcxmap::node_icon(marker_config,false)==mcxmap::NODE_NAME||mcxmap::node_icon(marker_config,true)==mcxmap::NODE_NAME)&&int32_t(now-next_activity_redraw)>=0){refresh_node_activity();lv_obj_invalidate(picture);next_activity_redraw=now+10000;}
+  const auto marker_config=mcxmap::configuration();if(front&&(mcxmap::node_icon(marker_config,false)==mcxmap::NODE_NAME||mcxmap::node_icon(marker_config,true)==mcxmap::NODE_NAME||mcxmap::node_color(marker_config,false)==mcxmap::NODE_COLOR_AGE||mcxmap::node_color(marker_config,true)==mcxmap::NODE_COLOR_AGE)&&int32_t(now-next_activity_redraw)>=0){refresh_node_activity();lv_obj_invalidate(picture);next_activity_redraw=now+60000;}
 
   if(seen_config!=mcxmap::configuration_revision()){
     seen_config=mcxmap::configuration_revision();const auto c=mcxmap::configuration();zoom=c.zoom;
@@ -225,7 +225,7 @@ static void build_node_groups(OverlayCache &cache,const mcxmap::Config &marker_c
     // One entry per existing marker: bounded linear pass, no widgets or allocation.
     for(unsigned i=0;i<cache.node_count;++i){
       auto &node=cache.nodes[i];node.cluster=uint16_t(i);
-      auto &group=cache.clusters[i];group.point=node.point;group.count=1;group.first=uint16_t(i);group.activity=node_activity(node);
+      auto &group=cache.clusters[i];group.point=node.point;group.count=1;group.first=uint16_t(i);group.activity=node_activity(node,marker_config);
     }
     cache.cluster_count=cache.node_count;return;
   }
@@ -234,7 +234,7 @@ static void build_node_groups(OverlayCache &cache,const mcxmap::Config &marker_c
   if(mcxmap::node_icon(marker_config,false)==mcxmap::NODE_NAME||mcxmap::node_icon(marker_config,true)==mcxmap::NODE_NAME)cluster_radius=42;
   for(unsigned i=0;i<cache.node_count;++i){if(cache.nodes[i].cluster!=0xffff)continue;const unsigned group=cache.cluster_count++;auto &cluster=cache.clusters[group];cluster.point=cache.nodes[i].point;cluster.count=0;cluster.first=uint16_t(i);cluster.activity=NODE_SAVED;
     int64_t sx=0,sy=0;for(unsigned j=i;j<cache.node_count;++j){if(cache.nodes[j].cluster!=0xffff)continue;const int dx=cache.nodes[j].point.x-cluster.point.x,dy=cache.nodes[j].point.y-cluster.point.y;if(dx*dx+dy*dy>cluster_radius*cluster_radius)continue;
-      cache.nodes[j].cluster=uint16_t(group);++cluster.count;sx+=cache.nodes[j].point.x;sy+=cache.nodes[j].point.y;const auto activity=node_activity(cache.nodes[j]);if(activity>cluster.activity)cluster.activity=activity;}
+      cache.nodes[j].cluster=uint16_t(group);++cluster.count;sx+=cache.nodes[j].point.x;sy+=cache.nodes[j].point.y;const auto activity=node_activity(cache.nodes[j],marker_config);if(activity>cluster.activity)cluster.activity=activity;}
     if(cluster.count){cluster.point.x=lv_coord_t(sx/cluster.count);cluster.point.y=lv_coord_t(sy/cluster.count);}
   }
 }
@@ -273,24 +273,31 @@ static void rebuild_overlay_cache(){
   if(!mcxmap::nodes_hidden(map_config)){
     if(auto *radio=meshmt::client){
       for(unsigned i=0;i<radio->data.node_count&&cache.node_count<MAX_NODE_MARKERS;++i){const auto &node=radio->data.nodes[i];
-        if(!node.position||!node.has_lat||!node.has_lon)continue;
+        if(!radio->keep_node_index(i)||!node.position||!node.has_lat||!node.has_lon)continue;
         char id[16];snprintf(id,sizeof(id),"!%08lX",(unsigned long)node.num);lv_point_t point={};if(project_geo(node.latitude/1e7,node.longitude/1e7,point))save_node(point,false,node.hardware,node.last_heard,node.latitude/1e7,node.longitude/1e7,node.name[0]?node.name:node.short_name,id);
       }
     }
     if(auto *radio=meshmc::client){
       for(unsigned i=0;i<radio->contact_count&&cache.node_count<MAX_NODE_MARKERS;++i){const auto &node=radio->contacts[i];
         if((!node.lat&&!node.lon)||node.lat<-90000000||node.lat>90000000||node.lon<-180000000||node.lon>180000000)continue;
-        static const char hex[]="0123456789ABCDEF";char id[65];for(unsigned b=0;b<32;++b){id[b*2]=hex[node.key[b]>>4];id[b*2+1]=hex[node.key[b]&15];}id[64]=0;lv_point_t point={};if(project_geo(node.lat/1e6,node.lon/1e6,point))save_node(point,true,node.type,node.lastmod>node.advert?node.lastmod:node.advert,node.lat/1e6,node.lon/1e6,node.name,id);
+        static const char hex[]="0123456789ABCDEF";char id[65];for(unsigned b=0;b<32;++b){id[b*2]=hex[node.key[b]>>4];id[b*2+1]=hex[node.key[b]&15];}id[64]=0;lv_point_t point={};if(project_geo(node.lat/1e6,node.lon/1e6,point))save_node(point,true,node.type,node.advert,node.lat/1e6,node.lon/1e6,node.name,id);
       }
     }
   }
   build_node_groups(cache,map_config);
   cache.generation=front->view.generation;cache.revision=overlay_signature();cache.ready=true;++overlay_builds;
 }
-static NodeActivity node_activity(const NodeMarker &node){const time_t epoch=time(nullptr);if(!node.heard||epoch<=0||node.heard>uint32_t(epoch))return NODE_SAVED;const uint32_t age=uint32_t(epoch)-node.heard;return age<=300?NODE_ACTIVE:age<=3600?NODE_RECENT:NODE_SAVED;}
-static void refresh_node_activity(){if(!overlay_cache||!overlay_cache->ready)return;for(unsigned g=0;g<overlay_cache->cluster_count;++g)overlay_cache->clusters[g].activity=NODE_SAVED;for(unsigned i=0;i<overlay_cache->node_count;++i){auto &group=overlay_cache->clusters[overlay_cache->nodes[i].cluster];const auto activity=node_activity(overlay_cache->nodes[i]);if(activity>group.activity)group.activity=activity;}}
-static uint32_t activity_color(NodeActivity state){return state==NODE_ACTIVE?0x36D399:state==NODE_RECENT?0x55C9F5:0x8993A1;}
-static const char *activity_name(NodeActivity state){return state==NODE_ACTIVE?"Active recently":state==NODE_RECENT?"Seen recently":"Saved only / older record";}
+static NodeActivity node_activity(const NodeMarker &node,const mcxmap::Config &config){
+  const uint32_t now=mcxnodeage::epoch.load();
+  if(mcxmap::node_color(config,node.meshcore)==mcxmap::NODE_COLOR_AGE){
+    const auto rgb=mcxnodeage::color(node.heard,now);return rgb==0x36D399?NODE_ACTIVE:rgb==0xFFD45A?NODE_WEEK:NODE_SAVED;
+  }
+  if(node.heard<mcxnodeage::VALID_TIME||now<mcxnodeage::VALID_TIME||node.heard>now)return NODE_SAVED;
+  const uint32_t age=now-node.heard;return age<=300?NODE_ACTIVE:age<=3600?NODE_RECENT:NODE_SAVED;
+}
+static void refresh_node_activity(){const auto config=mcxmap::configuration();if(!overlay_cache||!overlay_cache->ready)return;for(unsigned g=0;g<overlay_cache->cluster_count;++g)overlay_cache->clusters[g].activity=NODE_SAVED;for(unsigned i=0;i<overlay_cache->node_count;++i){auto &group=overlay_cache->clusters[overlay_cache->nodes[i].cluster];const auto activity=node_activity(overlay_cache->nodes[i],config);if(activity>group.activity)group.activity=activity;}}
+static uint32_t activity_color(NodeActivity state){return state==NODE_ACTIVE?0x36D399:state==NODE_RECENT?0x55C9F5:state==NODE_WEEK?0xFFD45A:0x8993A1;}
+static const char *activity_name(NodeActivity state){return state==NODE_ACTIVE?"Active recently":state==NODE_RECENT?"Seen recently":state==NODE_WEEK?"Seen 1-7 days ago":"Older / unknown activity";}
 static void open_node_selection(unsigned group){if(!overlay_cache||group>=overlay_cache->cluster_count)return;const auto &cluster=overlay_cache->clusters[group];if(cluster.count==1)gpsui::show_node_details(cluster.first);else gpsui::show_node_group(group);}
 static void draw_overlays(lv_event_t *event){
   // Called once per DMA stripe: use only integer coordinates cached outside draw.
@@ -319,7 +326,7 @@ static void draw_overlays(lv_event_t *event){
     const int node_size=int(mcxmap::node_size(config,node->meshcore));
     const int width=name_mode?30+node_size/2:node_size,height=name_mode?(node_size>22?20:15):node_size;lv_area_t a={lv_coord_t(nx-(width-1)/2),lv_coord_t(ny-(height-1)/2),lv_coord_t(nx+width/2),lv_coord_t(ny+height/2)};
     if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
-    const auto color=lv_color_hex(name_mode&&mcxmap::node_color(config,node->meshcore)==mcxmap::NODE_COLOR_AUTO?activity_color(node_activity(*node)):mcxmap::node_color_hex(config,node->meshcore));
+    const auto color=lv_color_hex((mcxmap::node_color(config,node->meshcore)==mcxmap::NODE_COLOR_AGE||(name_mode&&mcxmap::node_color(config,node->meshcore)==mcxmap::NODE_COLOR_AUTO))?activity_color(node_activity(*node,config)):mcxmap::node_color_hex(config,node->meshcore));
     if(name_mode){char suffix[5]="????";const size_t len=strlen(node->id);if(len>=4)memcpy(suffix,node->id+len-4,4);suffix[4]=0;
       lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=color;d.border_color=white;d.border_width=1;d.radius=height/2;lv_draw_rect(ctx,&d,&a);
       lv_draw_label_dsc_t label;lv_draw_label_dsc_init(&label);label.color=lv_color_hex(0x101820);label.font=&lv_font_montserrat_10;label.align=LV_TEXT_ALIGN_CENTER;lv_draw_label(ctx,&label,&a,suffix,nullptr);continue;}
@@ -698,6 +705,7 @@ static lv_obj_t *provider_picker=nullptr,*size_picker=nullptr,*online_switch=nul
 static void provider_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::select_provider(c,lv_dropdown_get_selected(provider_picker));mcxmap::configure(c);}
 static void icon_changed(lv_event_t *event){auto c=mcxmap::configuration();const bool meshcore=intptr_t(lv_event_get_user_data(event))!=0;auto *picker=lv_event_get_target(event);mcxmap::set_node_icon(c,meshcore,lv_dropdown_get_selected(picker));mcxmap::configure(c);}
 static void size_changed(lv_event_t *event){auto c=mcxmap::configuration();mcxmap::set_node_size(c,lv_dropdown_get_selected(lv_event_get_target(event)),intptr_t(lv_event_get_user_data(event))!=0);mcxmap::configure(c);}
+static void retention_update(lv_obj_t *widget){auto c=mcxmap::configuration();const unsigned days=unsigned(lv_spinbox_get_value(widget));if(c.retention_days==days)return;c.retention_days=uint16_t(days);mcxmap::configure(c);}
 static void color_changed(lv_event_t *event){auto c=mcxmap::configuration();const bool meshcore=intptr_t(lv_event_get_user_data(event))!=0;auto *picker=lv_event_get_target(event);mcxmap::set_node_color(c,meshcore,lv_dropdown_get_selected(picker));mcxmap::configure(c);}
 static void online_changed(lv_event_t *){auto c=mcxmap::configuration();c.online=lv_obj_has_state(online_switch,LV_STATE_CHECKED);mcxmap::configure(c);}
 static void nodes_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::set_nodes_hidden(c,!lv_obj_has_state(nodes_switch,LV_STATE_CHECKED));mcxmap::configure(c);}
@@ -711,12 +719,12 @@ static void map_diagnostics(){
 }
 static void show_node_details(unsigned index){
   if(!navui::overlay_cache||index>=navui::overlay_cache->node_count)return;
-  const auto &node=navui::overlay_cache->nodes[index];const auto activity=navui::node_activity(node);char info[420],age[80],role[80];
+  const auto &node=navui::overlay_cache->nodes[index];const auto activity=navui::node_activity(node,mcxmap::configuration());char info[420],age[80],role[80];
   const time_t epoch=time(nullptr);if(!node.heard)snprintf(age,sizeof(age),"No activity timestamp");else if(epoch>0&&node.heard<=uint32_t(epoch)){const uint32_t seconds=uint32_t(epoch)-node.heard;snprintf(age,sizeof(age),"%lu seconds ago",(unsigned long)seconds);}else snprintf(age,sizeof(age),"Timestamp unavailable");
   if(node.meshcore)snprintf(role,sizeof(role),"MeshCore contact type %u%s",unsigned(node.type),node.type==2?" / repeater":"");else snprintf(role,sizeof(role),"Meshtastic hardware type %u",unsigned(node.type));
   snprintf(info,sizeof(info),"%s\n%s\n%s\n%s\n\n%s\nPosition: %.6f, %.6f",node.name,node.id,node.meshcore?"MeshCore":"Meshtastic",role,navui::activity_name(activity),node.latitude,node.longitude);
   base("NODE DETAILS");auto *label=single_label(dialog,info,0,0,440,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);label=single_label(dialog,age,0,0,440,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
-  label=single_label(dialog,"Name badge colors: green = heard/advertised within 5 min; cyan = within 60 min; gray = saved without recent activity. This indicates recent radio activity, not a health check.",0,0,440,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
+  label=single_label(dialog,"By last heard colors: green <24 h; yellow 1-7 days; gray >=7 days or unknown. Auto / network color keeps the legacy name-badge activity colors. Reception age is not an online check.",0,0,440,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
 }
 // A cluster preview has a fixed widget/text budget, independent of node count.
 static constexpr unsigned GROUP_PREVIEW_LIMIT=4;
@@ -757,7 +765,7 @@ static void show_node_group(unsigned group){
     for(char *c=text;*c;++c)if(uint8_t(*c)<32)*c=' ';
     auto *label=single_label(card,text,6,1,width-28,white);lv_label_set_long_mode(label,LV_LABEL_LONG_CLIP);lv_obj_set_height(label,18);
     const size_t len=strlen(node.id);const char *suffix=len>=4?node.id+len-4:node.id;
-    snprintf(text,sizeof(text),"%s / %s / %s",suffix,node.meshcore?"MC":"MT",navui::activity_name(navui::node_activity(node)));
+    snprintf(text,sizeof(text),"%s / %s / %s",suffix,node.meshcore?"MC":"MT",navui::activity_name(navui::node_activity(node,mcxmap::configuration())));
     label=single_label(card,text,6,20,width-28,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_CLIP);lv_obj_set_height(label,18);
     ++shown;
   }
@@ -801,13 +809,20 @@ static void map_options(){
     lv_dropdown_set_selected(picker,mcxmap::node_size_index(c,meshcore));lv_obj_add_event_cb(picker,size_changed,LV_EVENT_VALUE_CHANGED,which);
     row=control_row(38);row_label=single_label(row,"Color",0,0,130,white);lv_obj_set_flex_grow(row_label,1);
     picker=lv_dropdown_create(row);lv_obj_set_size(picker,278,34);
-    lv_dropdown_set_options(picker,"Auto / network color\nOrange\nCyan\nGreen\nRed\nPurple\nYellow\nWhite");
+    lv_dropdown_set_options(picker,"Auto / network color\nOrange\nCyan\nGreen\nRed\nPurple\nYellow\nWhite\nBy last heard / age");
     lv_dropdown_set_selected(picker,unsigned(mcxmap::node_color(c,meshcore)));lv_obj_add_event_cb(picker,color_changed,LV_EVENT_VALUE_CHANGED,which);
   }
+  single_label(dialog,"NODE RETENTION / BOTH NETWORKS",0,0,440,orange);
+  row=control_row(38);row_label=single_label(row,"Keep days (0 = off)",0,0,180,white);lv_obj_set_flex_grow(row_label,1);
+  auto *days=lv_spinbox_create(row);lv_obj_set_size(days,110,34);lv_spinbox_set_range(days,0,365);
+  lv_spinbox_set_digit_format(days,3,0);lv_spinbox_set_value(days,c.retention_days);lv_spinbox_set_step(days,1);
+  action_button(row,"-",0,0,48,34,panel2,[](lv_event_t *e){auto *o=static_cast<lv_obj_t *>(lv_event_get_user_data(e));lv_spinbox_decrement(o);retention_update(o);},intptr_t(days));
+  action_button(row,"+",0,0,48,34,panel2,[](lv_event_t *e){auto *o=static_cast<lv_obj_t *>(lv_event_get_user_data(e));lv_spinbox_increment(o);retention_update(o);},intptr_t(days));
+  lv_obj_add_event_cb(days,[](lv_event_t *e){retention_update(lv_event_get_target(e));},LV_EVENT_VALUE_CHANGED,nullptr);
   row=control_row(30);row_label=single_label(row,"Download visible map tiles",0,0,330,white);lv_obj_set_flex_grow(row_label,1);
   online_switch=lv_switch_create(row);lv_obj_set_size(online_switch,44,24);if(c.online)lv_obj_add_state(online_switch,LV_STATE_CHECKED);
   lv_obj_add_event_cb(online_switch,online_changed,LV_EVENT_VALUE_CHANGED,nullptr);
-  auto *help=single_label(dialog,"Name mode shows the last 4 ID digits; tap a marker or cluster for details. Turn off Group nearby nodes to show individual markers. In Name mode: green = active within 5 min, cyan = seen within 60 min, gray = saved/older (recent activity is not a health check).\nOFF uses SD maps and cached tiles only. Format, size and color are independent per network; name visibility is shared.",0,0,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
+  auto *help=single_label(dialog,"Name mode shows the last 4 ID digits; tap a marker or cluster for details. Turn off Group nearby nodes to show individual markers. In Name mode: green = active within 5 min, cyan = seen within 60 min, gray = saved/older (recent activity is not a health check).\nBy last heard: green <24 h; yellow 1-7 days; gray >=7 days or unknown time. This is reception age, not online status. Keep days removes old local discovery records from map/list and SD snapshots; 0 disables expiry. Favorites, local radios, messages and drafts are protected. Cleanup waits for an idle Home/Map screen. OFF uses SD maps and cached tiles only. Format, size and color are independent per network; name visibility is shared.",0,0,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
   map_save_label=single_label(dialog,"",0,0,440,muted);refresh();
 }
 }

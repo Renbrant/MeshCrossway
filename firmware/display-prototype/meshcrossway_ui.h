@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.9.27: bounded, stable recent-node snapshots.
+// MeshCrossway v0.9.28: bounded, stable recent-node snapshots.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -378,15 +378,7 @@ static void node_heard_age(uint32_t stamp,char *out,size_t cap){
   else snprintf(out,cap,"%lu d ago",(unsigned long)(age/86400));
 }
 static constexpr unsigned NODE_MAX_RECENT=32;
-static constexpr uint32_t NODE_RETENTION_SECONDS=14u*24u*60u*60u;
-static bool is_recent_node(uint32_t stamp,bool pinned=false){
-  if(pinned)return true;
-  if(stamp<1577836800u)return false;
-  const time_t now=time(nullptr);
-  if(now<1577836800)return true;
-  if(now<=time_t(stamp))return true;
-  return uint32_t(now-time_t(stamp))<=NODE_RETENTION_SECONDS;
-}
+static bool is_recent_node(uint32_t stamp,bool pinned=false){return pinned||!mcxnodeage::expired(stamp);}
 static lv_obj_t *color_label(lv_obj_t *parent,const char *value,int x,int y,int w,lv_color_t color){
   return txt(parent,value,x,y,w,color);
 }
@@ -667,7 +659,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.9.27","Meshtastic and MeshCore run over independent Bluetooth radios. Node and channel rows keep names and activity in separate columns.");break;
+      notice("MESH CROSSWAY v0.9.28","Meshtastic and MeshCore run over independent Bluetooth radios. Node and channel rows keep names and activity in separate columns.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Adjust brightness, screen timeout and connectivity.");break;
     default:break;
@@ -1077,7 +1069,27 @@ static bool showing_mt(){
 
 #include "meshcrossway_navigation_ui.h"
 static lv_obj_t *gps_position=nullptr,*gps_status=nullptr,*gps_extra=nullptr,*gps_icon=nullptr,*gps_satellites=nullptr;
+static bool node_local_pin(const uint8_t *key){
+  const auto *radio=meshmc::client;if(!radio)return false;
+  for(const auto &p:mcxhistory::preferences().threads)if(p.used&&(p.favorite||p.draft[0])&&
+    !memcmp(p.key.radio,radio->public_key,32)&&!memcmp(p.key.native,key,32))return true;
+  return false;
+}
+static void node_cleanup(lv_timer_t *){
+  static uint32_t last=0,revision=UINT32_MAX;
+  mcxnodeage::epoch.store(uint32_t(time(nullptr)));
+  // Only idle Home/Map surfaces have no index-based contact list/editor open.
+  // Imports still reject stale records on other pages; views filter immediately.
+  if((page!=0&&page!=4)||info_dialog||touch_modal()||navui::dragging||mcxtouch::busy())return;
+  const uint32_t now=lv_tick_get(),rev=mcxmap::configuration_revision();
+  if(last&&rev==revision&&uint32_t(now-last)<60000)return;
+  last=now;revision=rev;unsigned mt=0,mc=0;
+  if(auto *c=meshmt::client)if(c->history_ready&&!c->writing&&!c->pending_ready)mt=c->prune_nodes();
+  if(auto *c=meshmc::client)if(c->history_ready&&!c->busy&&!c->qcount&&!c->contacts_started)mc=c->prune_contacts();
+  if(mt||mc)printf("[MCX-NODES] expired local records MT=%u MC=%u keep_days=%u; SD snapshot queued\n",mt,mc,mcxnodeage::retention.load());
+}
 static void clock_refresh(lv_timer_t *){
+  mcxnodeage::epoch.store(uint32_t(time(nullptr)));
   mcxclock::poll(mcxgnss::snapshot(),mcxgnss::configuration());
   char value[8];mcxclock::label(value,sizeof(value));
   chatview::label(top_clock,value);
@@ -1407,7 +1419,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.9.27] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.9.28] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1429,7 +1441,7 @@ static void refresh(lv_timer_t *){
 static void init(){
   mcxruntime::begin();
   mcxmem::begin();
-  printf("[MCX-DIAG v0.9.27] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.9.28] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1442,7 +1454,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.9.27",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.9.28",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);
@@ -1497,6 +1509,7 @@ static void init(){
   draw();
   mcxmap::wifi_ready=[](){char ip[16]={},state[32]={};meshnetwork::get_status(ip,sizeof(ip),state,sizeof(state));return ip[0]!=0;};
   mcxmap::load_config();
+  mcxnodeage::pin_lookup()=node_local_pin;
 #if MCX_MEMORY_DIAGNOSTICS
   mcxmem::capture(15);
 #endif
@@ -1510,6 +1523,7 @@ static void init(){
 #endif
   clock_refresh(nullptr);
   lv_timer_create(clock_refresh,1000,nullptr);
+  lv_timer_create(node_cleanup,1000,nullptr);
   lv_timer_create(gps_refresh,1000,nullptr);
   meshpower::start(); // Read-only 15s AXP2101 samples on a background task.
   mcxtouch::on_sample=buffered_swipe;

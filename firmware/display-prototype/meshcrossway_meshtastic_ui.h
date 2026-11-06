@@ -346,7 +346,7 @@ namespace mtui {
       }
     };
     if(c&&filter!=2){
-      if(page==1){unsigned count=0;if(!syncing)for(unsigned i=0;i<c->data.node_count;++i){const auto &n=c->data.nodes[i];if(!is_recent_node(n.last_heard))continue;node_order[count++]=uint16_t(i);}
+      if(page==1){unsigned count=0;if(!syncing)for(unsigned i=0;i<c->data.node_count;++i){const auto &n=c->data.nodes[i];if(!c->keep_node_index(i))continue;node_order[count++]=uint16_t(i);}
         const bool gps_valid=mcui::nav_gps_valid;const double gps_latitude=mcui::nav_latitude,gps_longitude=mcui::nav_longitude;
         auto distance=[&](unsigned i){const auto &n=c->data.nodes[i];if(!gps_valid||!n.has_lat||!n.has_lon)return 1.0e30;
           const double lat=double(n.latitude)/1e7,lon=double(n.longitude)/1e7;
@@ -404,7 +404,7 @@ namespace mtui {
     // ALL includes both models, with native callbacks and a visible network label.
     auto *mc=meshmc::client;
     if(filter==0&&mc){
-      if(page==1){unsigned count=0;for(unsigned i=0;i<mc->contact_count;++i){const auto &contact=mc->contacts[i];const uint32_t last=mcui::contact_last_heard(*mc,int(i));const auto key=mcxchat::key_for(*mc,false,uint16_t(i));const auto *pref=mcxhistory::preferences().get(key);if(!is_recent_node(last,pref&&pref->favorite))continue;meshcore_order_set(count++,uint16_t(i));}
+      if(page==1){unsigned count=0;for(unsigned i=0;i<mc->contact_count;++i){const auto &contact=mc->contacts[i];const uint32_t last=mcui::contact_last_heard(*mc,int(i));const auto key=mcxchat::key_for(*mc,false,uint16_t(i));const auto *pref=mcxhistory::preferences().get(key);if(!mc->keep_contact(contact))continue;meshcore_order_set(count++,uint16_t(i));}
         const bool gps_valid=mcui::nav_gps_valid;const double gps_latitude=mcui::nav_latitude,gps_longitude=mcui::nav_longitude;
         auto heard=[&](unsigned i){const auto &contact=mc->contacts[i];return contact.advert>contact.lastmod?contact.advert:contact.lastmod;};
         auto distance=[&](unsigned i){const auto &c=mc->contacts[i];if(!gps_valid||!c.lat||!c.lon)return 1.0e30;
