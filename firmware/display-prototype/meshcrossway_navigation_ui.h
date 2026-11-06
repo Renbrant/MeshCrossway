@@ -1,5 +1,4 @@
 #pragma once
-#include "meshcrossway_touch_input.h"
 // Included inside meshcrossway; all widgets are owned by the LVGL task.
 namespace gpsui {static void show_node_details(unsigned);static void show_node_group(unsigned);}
 namespace navui {
