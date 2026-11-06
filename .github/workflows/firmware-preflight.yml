@@ -30,6 +30,7 @@ on:
       - "scripts/test_ble_pairing_ui.py"
       - "scripts/test_emoji.py"
       - "scripts/build_emoji_catalog.py"
+      - "scripts/write_firmware_notices.py"
       - "scripts/emoji/**"
       - "tests/test_emoji*.cpp"
       - "tests/fixtures/emoji_legacy_registry.json"
@@ -97,6 +98,7 @@ on:
       - "scripts/test_ble_pairing_ui.py"
       - "scripts/test_emoji.py"
       - "scripts/build_emoji_catalog.py"
+      - "scripts/write_firmware_notices.py"
       - "scripts/emoji/**"
       - "tests/test_emoji*.cpp"
       - "tests/fixtures/emoji_legacy_registry.json"
@@ -216,6 +218,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/build_firmware_versions.sh
+      - name: Package source notices and emoji attribution
+        run: python3 scripts/write_firmware_notices.py --output _site/flasher/firmware/notices
       - name: Verify compiled catalog and manifests
         run: python3 scripts/preflight_firmware_catalog.py --catalog _site/flasher/firmware/catalog.json
       - name: Verify embedded firmware UI version

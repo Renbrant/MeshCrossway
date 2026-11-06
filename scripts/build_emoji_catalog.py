@@ -44,6 +44,19 @@ def audit(rows,sprites=None):
  if sprites is not None:report['sprite_sha256']=digest(b''.join(sprites))
  return report
 
+def verify_reference(path):
+ """Read only mapping facts from a hash-pinned reference source, never its art."""
+ ref=json.loads((RESEARCH/'reference_catalog.json').read_text())
+ raw=path.read_bytes()
+ assert digest(raw)==ref['source_sha256'],'Reference source hash mismatch'
+ text=raw.decode()
+ pairs=re.findall(r'\{\s*0x([0-9A-Fa-f]+)u,\s*&d_([a-z0-9]+)\s*\}',text)
+ entries=[{'codepoint':f'U+{int(cp,16):04X}','visible':symbol!='zero'} for cp,symbol in pairs]
+ assert entries==ref['entries'],'Reference mapping facts changed'
+ declared=int(re.search(r'kEmojiGlyphCount\s*=\s*(\d+)',text)[1])
+ assert declared==ref['declared_images']
+ print(f'PASS: pinned reference {len(entries)} mappings, {sum(v["visible"] for v in entries)} visible, declared {declared}')
+
 def generate(cache):
  from PIL import Image,ImageDraw,ImageFont,features,__version__
  assert features.check_feature('raqm'),'RAQM shaping is required for flags/ZWJ'
@@ -78,6 +91,7 @@ def generate(cache):
  font=ImageFont.truetype(str(cache/'NotoColorEmoji.ttf'),109)
  sprites=legacy_sprites()
  for s,_,_ in rows[93:]:
+  assert font.getlength(s)<=140,'Sequence did not shape to one glyph: '+repr(s)
   im=Image.new('RGBA',(320,160));ImageDraw.Draw(im).text((160,80),s,font=font,embedded_color=True,anchor='mm')
   box=im.getbbox();assert box,'Blank Noto glyph '+repr(s)
   glyph=im.crop(box);glyph.thumbnail((12,12),Image.Resampling.LANCZOS)
@@ -109,8 +123,14 @@ def generate(cache):
  body=['# Emoji coverage audit — v0.9.29','',f"Reference: `{ref['repository']}` at `{ref['commit']}`. Only Unicode mapping facts were extracted; no implementation or bitmap bytes are copied.",'',f"The reference declares 272 images but has {len(ref['entries'])} codepoint mappings: {len(ref['entries'])-len(report['zero_reference_mappings'])} visible entries and {len(report['zero_reference_mappings'])} transparent placeholders.",'',f"Legacy: 93 glyphs. New catalog: **{len(rows)} glyphs**, including {report['flags']} flag pairs, {report['tone_sequences']} tone sequences and {report['zwj_sequences']} ZWJ sequences. Missing visible reference mappings: **{len(report['missing_visible_after'])}**.",'',f"Legacy missing mappings: {len(report['missing_visible_before'])}. The original U+E000..U+E05C assignments and exact existing 14px pixels are retained.",'','Transparent reference entries: '+', '.join(report['zero_reference_mappings'])+'. ZWJ/VS are sequence controls; the zero-mapped transgender sign is supported through the composed flag. Standalone regional indicators do not identify a country; the visible reference U+1F1F1 is covered as that Unicode letter, not mislabeled as a country flag.','',f"All indexed-4 sprites occupy {report['sprite_bytes']:,} pixel/palette flash bytes; aligned storage is {report['sprite_storage_bytes']:,} bytes (+ one string terminator per 64-sprite block). Two padding bytes align each palette to four bytes. No full atlas or descriptor table is allocated in RAM. The old runtime atlas used 24,552 PSRAM bytes; the new shared display scratch uses at most 1,200 PSRAM bytes and one image font. Firmware-level flash/DRAM changes must be measured from the CI ELF, not inferred from this asset count.",'','## Reference mapping coverage','','| Unicode | Previously supported | Now supported |','|---|---|---|']
  before=set(report['missing_visible_before']);after=set(report['missing_visible_after'])
  body += [f"| {v['codepoint']} | {'No' if v['codepoint'] in before else 'Yes'} | {'No' if v['codepoint'] in after else 'Yes'} |" for v in ref['entries'] if v['visible']]
- body+=['','## Reproduction','','`python scripts/build_emoji_catalog.py --cache /path/to/input-cache` downloads only missing pinned build-time inputs, checks their SHA-256 and regenerates the append-only registry, sort order, sprites and report. Reproduce with the Pillow/FreeType/RAQM versions recorded in `scripts/emoji/coverage.json`. Normal CI verifies the committed bytes offline using `scripts/test_emoji.py`; no font/image fetch happens on the device.','','This is explicit catalog coverage, not a claim to render every Unicode emoji. Unlisted clusters, text-presentation variants, malformed UTF-8 and allocation failure have tested fallback behavior.']
+ body+=['','## Reproduction','','`python scripts/build_emoji_catalog.py --cache /path/to/input-cache` downloads only missing pinned build-time inputs, checks their SHA-256 and regenerates the append-only registry, sort order, sprites and report. Reproduce with the Pillow/FreeType/RAQM versions recorded in `scripts/emoji/coverage.json`. Independently verify the committed mapping facts with `python scripts/build_emoji_catalog.py --verify-reference /path/to/emoji_data.c`, fetched from the pinned reference commit and path in `scripts/emoji/reference_catalog.json`; the command checks its source hash and extracts only the Unicode-to-visible/transparent mapping facts. Normal CI verifies the committed bytes offline using `scripts/test_emoji.py`; no font/image fetch happens on the device.','','This is explicit catalog coverage, not a claim to render every Unicode emoji. Unlisted clusters, text-presentation variants, malformed UTF-8 and allocation failure have tested fallback behavior.']
  (ROOT/'docs/emoji-coverage-v0929.md').write_text('\n'.join(body)+'\n')
  print(json.dumps({k:report[k] for k in ['current_glyphs','reference_visible_mappings','missing_visible_after','flags','tone_sequences','zwj_sequences','sprite_bytes','sprite_sha256']}))
 if __name__=='__main__':
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--cache',type=Path,required=True);generate(p.parse_args().cache)
+ p=argparse.ArgumentParser(description=__doc__)
+ group=p.add_mutually_exclusive_group(required=True)
+ group.add_argument('--cache',type=Path)
+ group.add_argument('--verify-reference',type=Path,help='Verify committed mapping facts against the pinned reference source')
+ args=p.parse_args()
+ if args.verify_reference:verify_reference(args.verify_reference)
+ else:generate(args.cache)

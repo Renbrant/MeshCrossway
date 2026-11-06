@@ -23,6 +23,25 @@ Names in node/channel/conversation lists use the same display-only renderer as m
 3. Run preflight, independent Meshtastic/MeshCore protocol tests, conversation/history tests and Web Flasher preservation checks. Inspect the ESP-IDF 5.3.2 CI build and memory/stack reports against stable v0.9.28. The installer must continue to default to stable and require experimental opt-in, with `Erase device` unchecked for a normal update.
 4. Regeneration is build-time only: `python3 scripts/build_emoji_catalog.py --cache /path/to/pinned-inputs`. Noto/Unicode input hashes and rasterizer versions are recorded in `scripts/emoji/coverage.json`; CI verifies committed assets offline. No asset downloads occur on the device.
 
+## Measured build comparison
+
+ESP-IDF 5.3.2 preflight [run 42250260865](https://github.com/Renbrant/MeshCrossway/actions/runs/42250260865) passed both jobs, including real LVGL and independent radio/history regression tests with normal CI sanitizers. Comparison uses its debug artifact `13519754274` and stable v0.9.28 debug artifact `13471837771` (run `42150205062`). The recorded merged build source is `33e4245024aeb1e4e2d6853c81055e15d82aeb72`; later documentation/notice packaging does not change the firmware inputs.
+
+| Measurement | Stable v0.9.28 | Candidate v0.9.29 | Change |
+|---|---:|---:|---:|
+| Merged image bytes | 2,219,232 | 2,345,376 | +126,144 |
+| Flash code bytes | 1,420,482 | 1,420,330 | -152 |
+| Flash data bytes | 589,652 | 715,940 | +126,288 |
+| Static DIRAM bytes | 162,204 | 161,092 | -1,112 |
+| Static BSS bytes | 35,008 | 33,896 | -1,112 |
+| `set_message_text` static compiler stack frame | 2,480 | 592 | -1,888 |
+| Explicit renderer backing buffer in PSRAM | 24,552 | 1,200 | -23,352 |
+
+The last row compares explicit atlas/scratch allocation requests after initialization, not whole-device heap measurements. Static compiler frames are individual functions, not complete call-chain stack usage. Runtime free heap, largest block, UI high-water mark and behavior under simultaneous maps/BLE require the physical checklist below. The effective LVGL image cache remains disabled (`CONFIG_LV_IMG_CACHE_DEF_SIZE=0`), matching the stable build and avoiding mutable imagefont descriptor cache reuse.
+
+Candidate merged image SHA-256: `fff99d7c1e5d7bc373f4d72b1511d06cb92ef8f89b5d01f9bf3de940466261c3`.
+Stable v0.9.28 remains byte-identical: `a36970339c00cc327515eac2648c5421e1b9aab460484919a6ed8f57cc040c61`.
+
 ## Physical acceptance checklist
 
 - [ ] Install v0.9.29 using Web Flasher experimental opt-in without erase. Confirm Wi-Fi networks and both independent BLE bonds remain saved.

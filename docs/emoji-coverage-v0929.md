@@ -291,6 +291,6 @@ All indexed-4 sprites occupy 121,500 pixel/palette flash bytes; aligned storage 
 
 ## Reproduction
 
-`python scripts/build_emoji_catalog.py --cache /path/to/input-cache` downloads only missing pinned build-time inputs, checks their SHA-256 and regenerates the append-only registry, sort order, sprites and report. Reproduce with the Pillow/FreeType/RAQM versions recorded in `scripts/emoji/coverage.json`. Normal CI verifies the committed bytes offline using `scripts/test_emoji.py`; no font/image fetch happens on the device.
+`python scripts/build_emoji_catalog.py --cache /path/to/input-cache` downloads only missing pinned build-time inputs, checks their SHA-256 and regenerates the append-only registry, sort order, sprites and report. Reproduce with the Pillow/FreeType/RAQM versions recorded in `scripts/emoji/coverage.json`. Independently verify the committed mapping facts with `python scripts/build_emoji_catalog.py --verify-reference /path/to/emoji_data.c`, fetched from the pinned reference commit and path in `scripts/emoji/reference_catalog.json`; the command checks its source hash and extracts only the Unicode-to-visible/transparent mapping facts. Normal CI verifies the committed bytes offline using `scripts/test_emoji.py`; no font/image fetch happens on the device.
 
 This is explicit catalog coverage, not a claim to render every Unicode emoji. Unlisted clusters, text-presentation variants, malformed UTF-8 and allocation failure have tested fallback behavior.
