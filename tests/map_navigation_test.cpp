@@ -139,8 +139,9 @@ int main(int argc,char **argv){
  assert(lv_obj_get_x(navui::canvas)==0&&lv_obj_get_y(navui::canvas)==0&&lv_obj_get_height(navui::canvas)==286);
  assert(lv_obj_get_child_cnt(body)==1); // Map owns the entire body; no heading/footer/buttons.
  assert(lv_obj_get_child_cnt(navui::canvas)>=2);
- lv_event_send(lv_obj_get_child(navui::canvas,0),LV_EVENT_CLICKED,nullptr);assert(clicked==A_MAP_ZOOM);
- lv_event_send(lv_obj_get_child(navui::canvas,1),LV_EVENT_CLICKED,nullptr);assert(clicked==A_MAP_CENTER);
+ const uint32_t canvas_children=lv_obj_get_child_cnt(navui::canvas);
+ lv_event_send(lv_obj_get_child(navui::canvas,canvas_children-2),LV_EVENT_CLICKED,nullptr);assert(clicked==A_MAP_ZOOM);
+ lv_event_send(lv_obj_get_child(navui::canvas,canvas_children-1),LV_EVENT_CLICKED,nullptr);assert(clicked==A_MAP_CENTER);
  assert(lv_obj_get_style_bg_opa(navui::attribution,0)==LV_OPA_TRANSP);
  navui::toggle_zoom();advance();assert(navui::zoom_overlay&&navui::zoom_slider&&navui::zoom_open);
  const auto before_slider=mcxmap::wanted.load();
