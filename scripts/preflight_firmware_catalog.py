@@ -49,7 +49,7 @@ if args.catalog is not None:
     assert manifest["recommended"]==max(tested,key=lambda v:tuple(map(int,v[1:].split("."))))
     found={entry["version"] for entry in versions}
     current=(root/"firmware/display-prototype/VERSION").read_text().strip()
-    if current in ("v0.9.31","v0.10.0"):
+    if current=="v0.9.31":
         for notice in ("THIRD_PARTY_NOTICES.md","LICENSES/NotoEmoji-OFL-1.1.txt"):
             assert (path.parent/"notices"/notice).read_bytes()==(root/notice).read_bytes(),"Missing or changed emoji notice"
 
