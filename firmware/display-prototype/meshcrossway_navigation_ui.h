@@ -75,10 +75,60 @@ static void request(){
   set_status(generation?"Loading map...":"Map worker unavailable · check PSRAM/internal memory");
   if(map_status){chatview::label(map_status,status_text);set_hidden(map_status,false);}
 }
+static bool pinching=false,pinch_consumed=false;
+static uint64_t pinch_start_distance2=0;
+static unsigned pinch_start_zoom=14,pinch_next_zoom=14;
+static uint64_t pinch_distance2(const lv_point_t &a,const lv_point_t &b){
+  const int64_t dx=int64_t(a.x)-b.x,dy=int64_t(a.y)-b.y;
+  return uint64_t(dx*dx+dy*dy);
+}
+static void pinch_begin(){
+  lv_point_t first={},second={};
+  if(!mcxtouch::current_points(first,second))return;
+  pinch_start_distance2=pinch_distance2(first,second);
+  if(pinch_start_distance2<100)return;
+  pinch_start_zoom=zoom;pinch_next_zoom=zoom;pinching=true;pinch_consumed=true;
+  dragging=false;gesture_moved=true;following=false;mcxmap::stop();inflight=false;
+}
+static void pinch_update(){
+  if(!pinching||!pinch_start_distance2)return;
+  lv_point_t first={},second={};
+  if(!mcxtouch::current_points(first,second))return;
+  const uint64_t current=pinch_distance2(first,second);
+  int delta=0;
+  if(current*100>=pinch_start_distance2*225)delta=2;
+  else if(current*100>=pinch_start_distance2*144)delta=1;
+  else if(current*100<=pinch_start_distance2*45)delta=-2;
+  else if(current*100<=pinch_start_distance2*67)delta=-1;
+  const int maximum=int(mcxmap::max_zoom(mcxmap::configuration()));
+  int next=int(pinch_start_zoom)+delta;if(next<3)next=3;if(next>maximum)next=maximum;
+  if(unsigned(next)==pinch_next_zoom)return;
+  pinch_next_zoom=unsigned(next);preview_zoom(pinch_next_zoom);
+}
+static void pinch_finish(){
+  if(!pinching)return;
+  pinching=false;pinch_start_distance2=0;pinch_consumed=true;
+  if(pinch_next_zoom!=zoom){
+    zoom=pinch_next_zoom;auto c=mcxmap::configuration();c.zoom=uint8_t(zoom);
+    mcxmap::configure(c);request();
+  }else preview_zoom(zoom);
+}
 static void pointer(lv_event_t *event){
   if(!centered||zoom_adjusting||!front)return;
   auto *input=lv_indev_get_act();if(!input)return;
   lv_point_t p={};lv_indev_get_point(input,&p);const auto code=lv_event_get_code(event);
+  const unsigned contacts=mcxtouch::current_contacts();
+  if(contacts>=2){
+    if(!pinching)pinch_begin();
+    if(pinching)pinch_update();
+    return;
+  }
+  if(pinching){pinch_finish();return;}
+  if(pinch_consumed){
+    if(code==LV_EVENT_CLICKED){pinch_consumed=false;gesture_moved=false;}
+    else if(!contacts&&(code==LV_EVENT_RELEASED||code==LV_EVENT_PRESS_LOST))pinch_consumed=false;
+    return;
+  }
   if(code==LV_EVENT_CLICKED){if(!gesture_moved&&overlay_cache&&overlay_cache->ready&&picture){lv_area_t a;lv_obj_get_coords(canvas,&a);const int x=p.x-a.x1-pan_x,y=p.y-a.y1-pan_y;const auto map=mcxmap::configuration();const int radius=mcxmap::node_icon(map,false)==mcxmap::NODE_NAME||mcxmap::node_icon(map,true)==mcxmap::NODE_NAME?25:int((mcxmap::node_size(map)>mcxmap::node_size(map,true)?mcxmap::node_size(map):mcxmap::node_size(map,true))/2)+7;
       for(unsigned i=0;i<overlay_cache->cluster_count;++i){const auto &cluster=overlay_cache->clusters[i];const int dx=x-cluster.point.x,dy=y-cluster.point.y;if(dx*dx+dy*dy<=radius*radius){open_node_selection(i);break;}}}
     gesture_moved=false;return;}
