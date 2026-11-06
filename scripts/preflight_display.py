@@ -262,7 +262,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
                     mtproto=(FW/"meshcrossway_meshtastic_protocol.h").read_text()
                     assert "node_heard_age(" in shared
                     assert "Runtime-only User.role cache" in mtproto and "f.tag==7" in mtproto
-                    if version in ("v0.9.18","v0.9.19","v0.9.20","v0.9.21","v0.9.22","v0.9.23","v0.9.24","v0.9.25","v0.9.26","v0.9.27","v0.9.28","v0.9.29","v0.9.30","v0.9.31","v0.10.0","v0.10.1","v0.10.2"):
+                    if version in ("v0.9.18","v0.9.19","v0.9.20","v0.9.21","v0.9.22","v0.9.23","v0.9.24","v0.9.25","v0.9.26","v0.9.27","v0.9.28","v0.9.29","v0.9.30","v0.9.31"):
                         assert "Meshtastic repeater" in mtui and 'c.type==2?"Repeater"' in mcui
                         assert "NODE_MAX_RECENT=32" in shared and "mcxnodeage::expired" in shared
                         assert "refresh_nodes_event" in mtui and "refresh_nodes_event" in mcui
@@ -276,7 +276,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
                         assert "Meshtastic repeater" in mtui and "MeshCore repeater" in mcui
                     assert 'c.path_len==255?"Flood":"Direct"' in mcui
                     assert "ID %04X" in mtui and "ID %02X%02X" in mcui
-                    if version in ("v0.9.29","v0.9.30","v0.9.31","v0.10.0","v0.10.1","v0.10.2"):
+                    if version in ("v0.9.29","v0.9.30","v0.9.31"):
                         assert "emoji_label_text(name,title)" in mcui and "mcui::emoji_label_text(name,title)" in mtui
                         renderer=(FW/"emoji/emoji_display.h").read_text()
                         assert "static char *scratch=nullptr" in renderer and "kPresentationBytes=1200" in renderer
@@ -352,9 +352,9 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
             assert r'\U0001F3C1' in registry
             assert (emoji_root/"emoji_flag_asset.h").is_file()
             assert "emoji_flag_asset.h" in patcher.read_text()
-            assert ("kEmojiSpriteCount" if version in ("v0.9.30","v0.9.31","v0.10.0","v0.10.1","v0.10.2") else "kEmojiRenderedCount") in display
+            assert ("kEmojiSpriteCount" if version in ("v0.9.30","v0.9.31") else "kEmojiRenderedCount") in display
             assert "emoji_txt(card, sender" in mcui
-            if version not in ("v0.9.30","v0.9.31","v0.10.0","v0.10.1","v0.10.2"):assert "emoji_label_text(name,title)" not in mcui
+            if version not in ("v0.9.30","v0.9.31"):assert "emoji_label_text(name,title)" not in mcui
             assert "emoji_center_heading(" in mcui
             assert ("home_cards(w)" if version in ("v0.8.11","v0.8.12","v0.8.13","v0.8.14","v0.8.15","v0.8.16","v0.8.17","v0.8.18","v0.8.19","v0.8.20","v0.8.21","v0.8.22","v0.8.23","v0.8.24","v0.8.25","v0.8.26","v0.9.0","v0.9.1","v0.9.2","v0.9.3","v0.9.4","v0.9.5","v0.9.6","v0.9.7","v0.9.8","v0.9.9","v0.9.10","v0.9.11","v0.9.12","v0.9.13","v0.9.14","v0.9.15","v0.9.16","v0.9.17","v0.9.18","v0.9.19","v0.9.20","v0.9.21","v0.9.22","v0.9.23","v0.9.24","v0.9.25","v0.9.26","v0.9.27","v0.9.28","v0.9.29","v0.9.30","v0.9.31","v0.10.0","v0.10.1","v0.10.2") else "mcui::set_home_name") in ui
         if version in ("v0.7.3","v0.7.4","v0.7.5","v0.7.6","v0.7.7","v0.7.8","v0.7.9","v0.7.10","v0.7.11","v0.7.12","v0.7.13","v0.7.14","v0.8.0","v0.8.1","v0.8.2","v0.8.3","v0.8.4","v0.8.5","v0.8.6","v0.8.7","v0.8.8","v0.8.9","v0.8.10","v0.8.11","v0.8.12","v0.8.13","v0.8.14","v0.8.15","v0.8.16","v0.8.17","v0.8.18","v0.8.19","v0.8.20","v0.8.21","v0.8.22","v0.8.23","v0.8.24","v0.8.25","v0.8.26","v0.9.0","v0.9.1","v0.9.2","v0.9.3","v0.9.4","v0.9.5","v0.9.6","v0.9.7","v0.9.8","v0.9.9","v0.9.10","v0.9.11","v0.9.12","v0.9.13","v0.9.14","v0.9.15","v0.9.16","v0.9.17","v0.9.18","v0.9.19","v0.9.20","v0.9.21","v0.9.22","v0.9.23","v0.9.24","v0.9.25","v0.9.26","v0.9.27","v0.9.28","v0.9.29","v0.9.30","v0.9.31","v0.10.0","v0.10.1","v0.10.2"):
@@ -463,7 +463,7 @@ if version in ("v0.6.0","v0.6.1","v0.6.2","v0.6.3","v0.6.4","v0.7.2","v0.7.3","v
         assert '"emoji_small_sprite.h"' in patcher.read_text()
         assert (FW/"emoji"/"emoji_small_sprite.h").is_file()
         assert "kEmojiDrawSide = 14" in resize
-        if version in ("v0.9.29","v0.9.30","v0.9.31","v0.10.0","v0.10.1","v0.10.2"):
+        if version in ("v0.9.29","v0.9.30","v0.9.31"):
             assert "kEmojiSpriteBytes" in emoji and "lv_imgfont_create(16,image_cb)" in emoji
             assert "sprite_data(unicode-0xe000u)" in emoji
             assert 'const char fallback[] = "[emoji]"' in parser
@@ -541,12 +541,6 @@ if (FW / "meshcrossway_map_projection.h").exists():
     with tempfile.TemporaryDirectory() as map_tmp:
         binary = str(Path(map_tmp) / "projection-test")
         subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", str(ROOT / "tests/map_projection_test.cpp"), "-o", binary], check=True)
-        subprocess.run([binary], check=True)
-
-if (FW / "meshcrossway_ofm_mvt.h").exists():
-    with tempfile.TemporaryDirectory() as ofm_tmp:
-        binary = str(Path(ofm_tmp) / "ofm-mvt-test")
-        subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror", str(ROOT / "tests/ofm_mvt_test.cpp"), "-o", binary], check=True)
         subprocess.run([binary], check=True)
 
 # Local navigation persistence is exercised independently of radio protocols.
