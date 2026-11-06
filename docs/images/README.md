@@ -6,7 +6,7 @@
 
 ## Archived integrated-device concept (superseded)
 
-The selected arrangement is **one custom carrier PCB** with a Waveshare ESP32-S3-Touch-LCD-3.5, **two Seeed XIAO ESP32S3 + Wio-SX1262 kits**, u-blox MAX-M10S GNSS breakout, onboard microSD and a protected **rear-mounted 1S LiPo battery**. Two LoRa antennas are independent; the enclosure is intended to be nearly invisible and transparent.
+The archived Rev A concept shown in these images explored **one custom carrier PCB** with a Waveshare ESP32-S3-Touch-LCD-3.5, **two Seeed XIAO ESP32S3 + Wio-SX1262 kits**, u-blox MAX-M10S GNSS breakout, onboard microSD and a protected rear-mounted 1S LiPo battery. That integrated design was superseded; the current BLE architecture does not require XIAO/Wio radios.
 
 - [Approved provisional hero image](meshcrossway-hero.webp)
 - [Approved provisional exploded view](architecture/meshcrossway-exploded.jpg)
