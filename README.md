@@ -105,8 +105,8 @@ The implemented software architecture uses three independent devices: a touchscr
 | Unit | Selected hardware | Role |
 |---|---|---|
 | **MeshCrossway Core** | Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0, 480 × 320 touchscreen | LVGL interface, local storage, GNSS integration and two BLE Central connections |
-| **MX-M Radio Pod** | BLE-capable Meshtastic radio; Heltec V3 tested, XIAO/Wio-SX1262 proposed for the detachable Pod | Native Meshtastic radio using its BLE PhoneAPI |
-| **MX-C Radio Pod** | BLE-capable MeshCore radio; Heltec V3 tested, XIAO/Wio-SX1262 proposed for the detachable Pod | Native MeshCore radio using its BLE Companion interface |
+| **MX-M Radio Pod** | Heltec V3 tested for BLE software integration; Seeed XIAO ESP32-S3 + Wio-SX1262 selected as the modular Pod hardware target | Native Meshtastic radio using its BLE PhoneAPI |
+| **MX-C Radio Pod** | Heltec V3 tested for BLE software integration; Seeed XIAO ESP32-S3 + Wio-SX1262 selected as the modular Pod hardware target | Native MeshCore radio using its BLE Companion interface |
 
 Each unit has its own battery and power system. The Core communicates with each Pod wirelessly over BLE; the LoRa radios do not connect to the Core over UART, SPI or GPIO. Each Pod must continue native LoRa operation if the Core is off or out of range.
 
