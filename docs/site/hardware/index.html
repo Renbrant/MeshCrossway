@@ -1,1 +1,70 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Open-source dual-mesh field communicator."><title>Hardware — MeshCrossway</title><link rel="stylesheet" href="/MeshCrossway/assets/site.css"></head><body><nav class="nav"><div class="wrap navin"><a class="brand" href="/MeshCrossway/" aria-label="MeshCrossway home"><img src="/MeshCrossway/assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44"></a><div class="links"><a href="/MeshCrossway/about/">About</a><a href="/MeshCrossway/hardware/">Hardware</a><a href="/MeshCrossway/software/">Software</a><a href="/MeshCrossway/roadmap/">Roadmap</a><a href="/MeshCrossway/project-status/">Project Status</a><a href="/MeshCrossway/faq/">FAQ</a></div><a class="cta" href="/MeshCrossway/flasher/">Web Flasher</a></div></nav><main><section class="pagehero"><div class="wrap"><div class="eyebrow">V1 architecture</div><h1>Three ESP32-S3 brains. Two radios. One console.</h1><p class="sectionintro">The current Rev A architecture separates the user interface from each mesh radio to keep both upstream ecosystems independent and maintainable.</p><div class="grid3"><div class="card"><div class="num">HOST</div><h3>Waveshare ESP32-S3 Touch LCD 3.5</h3><p>480×320 touch UI, orchestration, local storage, GNSS and diagnostics.</p></div><div class="card"><div class="num">RADIO ×2</div><h3>Seeed XIAO ESP32-S3 + Wio-SX1262</h3><p>One dedicated module for Meshtastic and another for MeshCore Companion.</p></div><div class="card"><div class="num">POSITION</div><h3>u-blox MAX-M10S</h3><p>Dedicated GNSS source for navigation, tracks and location workflows.</p></div></div><div class="actions"><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/hardware-wiring.md">Technical wiring</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/project-reference.md">V1 reference</a></div></div></section></main><footer><div class="wrap">MeshCrossway is an independent open-source experimental project. Meshtastic, MeshCore and referenced hardware brands remain the property of their respective projects and owners. Not a certified emergency device.</div></footer></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="MeshCrossway's current modular hardware direction: a touchscreen Core, two independent BLE radio modules and GNSS.">
+  <title>Hardware — MeshCrossway</title>
+  <link rel="stylesheet" href="/MeshCrossway/assets/site.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="wrap navin">
+      <a class="brand" href="/MeshCrossway/" aria-label="MeshCrossway home">
+        <img src="/MeshCrossway/assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44">
+      </a>
+      <div class="links">
+        <a href="/MeshCrossway/about/">About</a>
+        <a href="/MeshCrossway/hardware/" aria-current="page">Hardware</a>
+        <a href="/MeshCrossway/software/">Software</a>
+        <a href="/MeshCrossway/roadmap/">Roadmap</a>
+        <a href="/MeshCrossway/project-status/">Project Status</a>
+        <a href="/MeshCrossway/faq/">FAQ</a>
+      </div>
+      <a class="cta" href="/MeshCrossway/flasher/">Web Flasher</a>
+    </div>
+  </nav>
+  <main>
+    <section class="pagehero">
+      <div class="wrap">
+        <div class="eyebrow">Current hardware direction</div>
+        <h1>One touchscreen Core. Two independent radio modules.</h1>
+        <p class="sectionintro">MeshCrossway is being developed as three separate devices connected over Bluetooth Low Energy: a touchscreen controller, one Meshtastic radio and one MeshCore radio. The radios keep their own native networks and continue operating independently.</p>
+        <div class="grid3">
+          <article class="card">
+            <div class="num">CORE · ACTIVE FIRMWARE TARGET</div>
+            <h3>Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0</h3>
+            <p>The 480 × 320 touchscreen runs the interface, GNSS workflow, microSD storage and two independent BLE connections.</p>
+          </article>
+          <article class="card">
+            <div class="num">RADIO PODS · MODULAR TARGET</div>
+            <h3>Seeed XIAO ESP32-S3 + Wio-SX1262</h3>
+            <p>The selected modular hardware target is one radio kit for Meshtastic and one for MeshCore. Heltec V3 radios are used for current dual-radio software integration tests; qualification of the final Pod hardware is still in progress.</p>
+          </article>
+          <article class="card">
+            <div class="num">POSITION</div>
+            <h3>u-blox MAX-M10S GNSS</h3>
+            <p>Provides local position and timing for the map, track and location workflows.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+    <section class="section">
+      <div class="wrap">
+        <div class="notice">
+          <b>Hardware qualification is ongoing.</b> Pod power and batteries, final enclosures, antenna placement, RF coexistence and longer runtime testing still need validation. The integrated Rev A UART/PCB design is archived and is not the current assembly baseline.
+        </div>
+        <div class="actions">
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/modular-architecture.md">Approved modular architecture</a>
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/firmware/display-prototype/README.md">Current firmware and tested setup</a>
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/hardware-wiring.md">Archived Rev A wiring reference</a>
+          <a class="button secondary" href="/MeshCrossway/project-status/">Firmware release status</a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer>
+    <div class="wrap">MeshCrossway is an independent open-source experimental project. Meshtastic, MeshCore and referenced hardware brands remain the property of their respective projects and owners. Not a certified emergency device.</div>
+  </footer>
+</body>
+</html>
