@@ -6,7 +6,7 @@ v0.9.25 remains the recommended hardware-tested stable image. Additional driving
 
 Open the top-bar quick panel. **AUTO ROTATE** allows the built-in QMI8658 accelerometer to select the landscape edge. Tap it to show **ROTATION LOCKED**, freezing the current orientation. **FLIP 180** manually reverses the image and locks it. Lock and manual orientation survive reboot in a separate, versioned NVS key; existing brightness and timeout settings are unchanged.
 
-On first use, hold the screen upright in its current readable orientation for approximately one second without touching it. That stable gravity direction becomes the saved mounting reference. Subsequent inversions work across reboots. Flat placement, portrait-edge placement, ambiguous gravity and strong acceleration keep the current orientation. Changes require one second of consistent gravity and have a two-second cooldown. No change is applied during an active touch or outstanding LCD flush.
+On first use, hold the screen upright in its current readable orientation for approximately one second without touching it. That stable in-plane gravity axis and direction become the saved mounting reference, allowing for PCB sensor mounting differences. Subsequent inversions work across reboots. Flat placement, portrait-edge placement, ambiguous gravity and strong acceleration keep the current orientation. Changes require one second of consistent gravity and have a two-second cooldown. No change is applied during an active touch or outstanding LCD flush.
 
 ## Resource and failure handling
 

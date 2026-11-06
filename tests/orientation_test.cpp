@@ -5,7 +5,8 @@
 using namespace mcxorientation;
 int main(){
   assert(gravity_sign(1,0,0)==1&&gravity_sign(-1,0,0)==-1);
-  assert(!gravity_sign(0,0,1)&&!gravity_sign(.6f,.8f,0));
+  assert(!gravity_sign(0,0,1)&&!gravity_sign(.7f,.7f,0));
+  assert(gravity_sign(0,1,0)==2&&gravity_sign(0,-1,0)==-2);
   assert(!gravity_sign(1.5f,0,0)&&!gravity_sign(0,0,0));
   assert(!gravity_sign(std::numeric_limits<float>::quiet_NaN(),0,0));
   Policy p;bool target=false;
@@ -27,6 +28,13 @@ int main(){
   assert(p.update(-1,10100,false,false,false,target));
   Policy inverted;assert(!inverted.update(-1,0,false,false,true,target));
   assert(!inverted.update(-1,1000,false,false,true,target)&&inverted.normal==1);
+  Policy yaxis;
+  assert(!yaxis.update(2,0,false,false,false,target));
+  assert(!yaxis.update(2,1000,false,false,false,target)&&yaxis.normal==2);
+  assert(!yaxis.update(1,2000,false,false,false,target));
+  assert(!yaxis.update(1,4000,false,false,false,target)); // portrait edge
+  assert(!yaxis.update(-2,5000,false,false,false,target));
+  assert(yaxis.update(-2,6000,false,false,false,target)&&target);
   Policy wrap;wrap.normal=1;
   assert(!wrap.update(-1,UINT32_MAX-500,false,false,false,target));
   assert(wrap.update(-1,600,false,false,false,target));

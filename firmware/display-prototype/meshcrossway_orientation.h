@@ -56,7 +56,7 @@ static void init(){
   if(nvs_open("mcxdisplay",NVS_READONLY,&h)==ESP_OK){
     Preferences saved;size_t size=sizeof(saved);
     if(nvs_get_blob(h,"orientation",&saved,&size)==ESP_OK&&size==sizeof(saved)&&saved.version==1&&
-       saved.locked<=1&&saved.flipped<=1&&saved.normal>=-1&&saved.normal<=1)preferences=saved;
+       saved.locked<=1&&saved.flipped<=1&&saved.normal>=-2&&saved.normal<=2)preferences=saved;
     nvs_close(h);
   }
   requested=preferences.flipped;policy.normal=preferences.normal;paused.store(preferences.locked);

@@ -41,10 +41,10 @@ static void sensor_poll(){
   auto axis=[&](int i){return float(int16_t(uint16_t(data[i])|(uint16_t(data[i+1])<<8)))/16384.f;};
   const int sign=gravity_sign(axis(0),axis(2),axis(4));
   const uint32_t now=uint32_t(esp_timer_get_time()/1000);
-  sample.store(sign?((now&0x3fffffffu)<<2)|(sign>0?1u:2u):0);
+  sample.store(sign?((now&0x1fffffffu)<<3)|uint32_t(sign+3):0);
 }
 static int fresh_sign(){
-  const uint32_t v=sample.load(),now=uint32_t(esp_timer_get_time()/1000)&0x3fffffffu;
-  return !v||((now-(v>>2))&0x3fffffffu)>750?0:(v&3)==1?1:-1;
+  const uint32_t v=sample.load(),now=uint32_t(esp_timer_get_time()/1000)&0x1fffffffu;
+  return !v||((now-(v>>3))&0x1fffffffu)>750?0:int(v&7)-3;
 }
 }
