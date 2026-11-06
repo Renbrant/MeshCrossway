@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.9.25: bounded, stable recent-node snapshots.
+// MeshCrossway v0.9.26: bounded, stable recent-node snapshots.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -9,6 +9,7 @@
 #include "meshcrossway_edge_swipe.h"
 #include "meshcrossway_touch_input.h"
 #include "meshcrossway_display_settings.h"
+#include "meshcrossway_orientation.h"
 #include <initializer_list>
 #include <new>
 #include "meshcrossway_power_status.h"
@@ -666,7 +667,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.9.25","Meshtastic and MeshCore run over independent Bluetooth radios. Node and channel rows keep names and activity in separate columns.");break;
+      notice("MESH CROSSWAY v0.9.26","Meshtastic and MeshCore run over independent Bluetooth radios. Node and channel rows keep names and activity in separate columns.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Adjust brightness, screen timeout and connectivity.");break;
     default:break;
@@ -819,7 +820,7 @@ static void open_shade(lv_event_t *){
   // Full-height modal background hides the underlying page without touching Wi-Fi setup.
   shade=panel_at(lv_scr_act(),0,34,480,286,bg,0);
   lv_obj_set_style_bg_opa(shade,LV_OPA_80,0);
-  lv_obj_t *sheet=panel_at(shade,8,8,464,235,panel,9);
+  lv_obj_t *sheet=panel_at(shade,8,8,464,270,panel,9);
   single_label(sheet,"QUICK SETTINGS / STATUS",12,10,340,orange);
   action_button(sheet,"CLOSE",366,6,89,37,panel2,shade_close,0);
   action_button(sheet,mcxgnss::snapshot().valid?"GPS FIX":"GPS --",9,54,108,48,panel2,quick_action,0);
@@ -839,6 +840,14 @@ static void open_shade(lv_event_t *){
   lv_dropdown_set_options(delay,"Always on\n30 seconds\n1 minute\n2 minutes\n5 minutes\n10 minutes");
   lv_dropdown_set_selected(delay,mcxdisplay::timeout_slot());
   lv_obj_add_event_cb(delay,[](lv_event_t *e){mcxdisplay::timeout(lv_dropdown_get_selected(lv_event_get_target(e)));},LV_EVENT_VALUE_CHANGED,nullptr);
+  auto *rotation=action_button(sheet,mcxorientation::preferences.locked?"ROTATION LOCKED":"AUTO ROTATE",9,224,220,37,panel2,
+    [](lv_event_t *e){mcxorientation::lock_toggle();
+      lv_label_set_text(lv_obj_get_child(lv_event_get_target(e),0),mcxorientation::preferences.locked?"ROTATION LOCKED":"AUTO ROTATE");},0);
+  auto *flip=action_button(sheet,"FLIP 180",235,224,220,37,panel2,[](lv_event_t *){},0);
+  lv_obj_add_event_cb(flip,[](lv_event_t *e){mcxorientation::manual_flip();
+    lv_label_set_text(static_cast<lv_obj_t *>(lv_event_get_user_data(e)),"ROTATION LOCKED");
+  },LV_EVENT_CLICKED,lv_obj_get_child(rotation,0));
+
 }
 static void show_center_heading(const char *heading_text,const char *subtitle){
   const int w=lv_obj_get_width(body);
@@ -1398,7 +1407,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.9.25] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.9.26] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1420,7 +1429,7 @@ static void refresh(lv_timer_t *){
 static void init(){
   mcxruntime::begin();
   mcxmem::begin();
-  printf("[MCX-DIAG v0.9.25] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.9.26] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1433,7 +1442,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.9.25",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.9.26",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);
