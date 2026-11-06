@@ -52,8 +52,8 @@ build_version() {
     local verify_args=(--dir "$image_dir" --version "$version")
     if [ "$ref" != "HEAD" ]; then verify_args+=(--ref "$ref"); fi
     if python3 "$ROOT/scripts/verify_firmware_version.py" "${verify_args[@]}" &&
-       { [ "$version" != "$STABLE_VERSION" ] ||
-         python3 "$ROOT/scripts/restore_stable_firmware.py" --verify "$image_dir"; }; then
+       { { [ "$version" != "$STABLE_VERSION" ] && [ "$version" != "$RECOVERY_VERSION" ]; } ||
+         python3 "$ROOT/scripts/restore_stable_firmware.py" --version "$version" --verify "$image_dir"; }; then
       echo "RESTORED: $version from verified compiled artifact cache"
       return
     fi
@@ -61,8 +61,8 @@ build_version() {
 
   # Preserve the exact hardware-tested bytes. Rebuilding an old source revision
   # with newly resolved component versions is not an approved rollback image.
-  if [ "$version" = "$STABLE_VERSION" ] && [ "$ref" = "$STABLE_REF" ]; then
-    python3 "$ROOT/scripts/restore_stable_firmware.py" --destination "$image_dir"
+  if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$RECOVERY_VERSION" ]; then
+    python3 "$ROOT/scripts/restore_stable_firmware.py" --version "$version" --destination "$image_dir"
     echo "RESTORED: immutable hardware-tested $version"
     return
   fi
@@ -174,9 +174,11 @@ build_version() {
 # Only one physical rollback and recent candidates are delivered in the Web Flasher.
 # Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
 # Update these two constants whenever a newer hardware build is validated.
-STABLE_VERSION="v0.9.16"
-STABLE_REF="d821b78979b3c2b9d716757f0cff02dbf89e776f"
-STABLE_SHA256="54c99f8c30d352c602f4e4d662701e10f2bd85d5a38af14d8190b3cc4693858a"
+STABLE_VERSION="v0.9.25"
+STABLE_REF="65f4214b15fe9486a7f07e7471380114bcbf8826"
+STABLE_SHA256="daeebb735024fcdcb474acdfe0887c3d72e608ba794ba1343e1b60749f3d6b23"
+RECOVERY_VERSION="v0.9.16"
+RECOVERY_REF="d821b78979b3c2b9d716757f0cff02dbf89e776f"
 
 version_gte() {
   # 0 = first argument is at least the second (GNU coreutils version sort).
@@ -194,6 +196,7 @@ fi
 
 # Always restore the pinned tested bytes, including when stable == latest.
 # Never rebuild an pinned stable version from the publishing commit.
+build_version "$RECOVERY_VERSION" "$RECOVERY_REF"
 build_version "$STABLE_VERSION" "$STABLE_REF"
 if [ "$LATEST_VERSION" != "$STABLE_VERSION" ]; then
   build_version "$LATEST_VERSION" HEAD
@@ -204,7 +207,7 @@ fi
 for archive in "$OUT"/versions/*; do
   [ -d "$archive" ] || continue
   version="$(basename "$archive")"
-  if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$LATEST_VERSION" ]; then
+  if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$RECOVERY_VERSION" ] || [ "$version" = "$LATEST_VERSION" ]; then
     continue
   fi
   rm -rf -- "$archive"
