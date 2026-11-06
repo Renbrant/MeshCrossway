@@ -32,7 +32,7 @@ def archive(version):
                  f"{'Recommended stable.' if version == VERSION else 'Previous stable recovery.'}\n\n"
                  f"Source commit: `{ref}`\n\nCombined-image SHA-256: `{sha}`\n\n"
                  "Installer preserves NVS settings by default. Hardware acceptance record: "
-                 "https://github.com/Renbrant/MeshCrossway/blob/main/docs/stable-v0925.md")
+                 "https://github.com/Renbrant/MeshCrossway/blob/main/docs/stable-" + version.replace(".", "") + ".md")
         subprocess.run(["gh", "release", "create", version, "--repo", REPO, "--target", ref,
                         "--title", f"{version} — {'Stable' if version == VERSION else 'Previous stable recovery'}",
                         "--notes", notes, f"--latest={'true' if version == VERSION else 'false'}",

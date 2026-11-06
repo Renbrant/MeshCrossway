@@ -39,14 +39,14 @@
         <h1>Firmware releases and version history.</h1>
         <p class="sectionintro">This page tracks what changed in each v0.9.x release. A release marked experimental is a development candidate and has not replaced the tested stable firmware.</p>
         <div class="status-summary">
-          <article class="card"><div class="num">RECOMMENDED STABLE</div><h3>v0.9.25</h3><p>Hardware-tested and selected stable on 2026-11-05. Exact tested image preserved.</p></article>
-          <article class="card"><div class="num">NEXT CANDIDATE</div><h3>v0.9.28 — node age and retention</h3><p>Experimental node colors by last reception and configurable local retention; v0.9.25 remains recommended stable.</p></article>
-          <article class="card"><div class="num">PREVIOUS STABLE FALLBACK</div><h3>v0.9.16</h3><p>Exact previous stable image retained in the Web Flasher for recovery.</p></article>
+          <article class="card"><div class="num">RECOMMENDED STABLE</div><h3>v0.9.28</h3><p>Selected stable on 2026-11-05. Exact published image retained, including age colors, configurable retention and display orientation controls.</p></article>
+          <article class="card"><div class="num">PREVIOUS STABLE</div><h3>v0.9.25</h3><p>The earlier hardware-tested image remains available for recovery. No separate newer candidate is published.</p></article>
+          <article class="card"><div class="num">LEGACY RECOVERY</div><h3>v0.9.16</h3><p>The original recovery baseline is also retained unchanged.</p></article>
         </div>
         <div class="actions">
           <a class="button primary" href="/MeshCrossway/flasher/">Open Web Flasher</a>
-          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/stable-v0925.md">v0.9.25 stable record</a>
-          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/releases/tag/v0.9.25">Stable firmware archive</a>
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/stable-v0928.md">v0.9.28 stable record</a>
+          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/releases/tag/v0.9.28">Stable firmware archive</a>
         </div>
       </div>
     </section>
@@ -55,10 +55,10 @@
         <div class="eyebrow">Version history · newest first</div>
         <h2>v0.9.x releases</h2>
         <div class="version-grid">
-<article class="card version-card"><div class="num">v0.9.28 · EXPERIMENTAL</div><h3>Node age and retention</h3><p>Adds independent last-heard colors and a saved 0-365 day retention limit. Protects favorites and conversations, filters stale imports, and preserves legacy SD archives.</p></article>
+<article class="card version-card"><div class="num">v0.9.28 · STABLE</div><h3>Node age and retention</h3><p>Adds independent last-heard colors and a saved 0-365 day retention limit. Protects favorites and conversations, filters stale imports, and preserves legacy SD archives.</p></article>
 <article class="card version-card"><div class="num">v0.9.27 · PREVIOUS CANDIDATE</div><h3>Rotation reference correction</h3><p>A manual Flip 180 also corrects and saves the automatic rotation reference, preventing AUTO from undoing the readable orientation.</p></article>
 <article class="card version-card"><div class="num">v0.9.26 · SUPERSEDED</div><h3>Landscape orientation</h3><p>Uses the built-in accelerometer for 180-degree rotation, with a saved quick-panel lock and manual flip. Reuses the telemetry task and LCD hardware mirrors.</p></article>
-<article class="card version-card"><div class="num">v0.9.25 · STABLE</div><h3>Map controls and stable baseline</h3><p>Selected stable after device testing. Includes independent network styles, zoom dismissal, local night maps and corrected MeshCore GPS markers.</p></article>
+<article class="card version-card"><div class="num">v0.9.25 · PREVIOUS STABLE</div><h3>Map controls and stable baseline</h3><p>Selected stable after device testing. Includes independent network styles, zoom dismissal, local night maps and corrected MeshCore GPS markers.</p></article>
 <article class="card version-card"><div class="num">v0.9.24 · PREVIOUS CANDIDATE</div><h3>Optional map grouping</h3><p>Adds a saved switch to show individual markers instead of nearby groups.</p></article>
 <article class="card version-card"><div class="num">v0.9.23 · PREVIOUS CANDIDATE</div><h3>Reliable map HTTPS path</h3><p>Uses software AES to avoid observed hardware-AES DMA allocation failures; encryption and certificate verification remain enabled.</p></article>
 <article class="card version-card"><div class="num">v0.9.22 · PREVIOUS CANDIDATE</div><h3>Wi-Fi RX memory experiment</h3><p>Moves Wi-Fi RX code from IRAM to flash; the compiled shared-RAM footprint decreases by 9,472 bytes.</p></article>
@@ -89,7 +89,7 @@
     </section>
     <section class="section">
       <div class="wrap">
-        <div class="notice"><b>Hardware status.</b> v0.9.25 is the current hardware-tested stable release; v0.9.16 remains recovery. Future candidates require separate acceptance. Radio coexistence, battery runtime and the final modular enclosures still require broader validation. MeshCrossway is not a certified emergency or safety device.</div>
+        <div class="notice"><b>Hardware status.</b> v0.9.28 is the selected stable software release; v0.9.25 and v0.9.16 remain recovery choices. Future candidates require separate acceptance. Radio coexistence, battery runtime and the final modular enclosures still require broader validation. MeshCrossway is not a certified emergency or safety device.</div>
       </div>
     </section>
   </main>

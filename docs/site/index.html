@@ -40,7 +40,7 @@
         <h1>Two independent mesh networks.<br><span>One field communicator.</span></h1>
         <p class="lead">MeshCrossway is a portable touchscreen that lets you use Meshtastic and MeshCore from one place. It connects to a separate radio for each network, so messages stay on their own network. The project began as an idea for one custom circuit board, but testing led to a more flexible design made from separate devices.</p>
         <div class="actions">
-          <a class="button secondary" href="/MeshCrossway/flasher/">Web Flasher</a>
+          <a class="button secondary" href="/MeshCrossway/flasher/">Install stable v0.9.28</a>
           <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway">View source on GitHub</a>
         </div>
         <div class="heroimg">
@@ -106,21 +106,12 @@
         <div class="eyebrow">Running functionality</div>
         <h2>Device and browser workflows</h2>
         <div class="grid3">
-          <article class="card">
-            <div class="num">01 · COMMUNICATION</div>
-            <h3>Protocol-specific radio support</h3>
-            <p>Meshtastic and MeshCore connect at the same time in the v0.8.26 stable build. Each has its own status, nodes, conversations and configuration entry points; traffic remains separate by protocol.</p>
-          </article>
-          <article class="card">
-            <div class="num">02 · NAVIGATION</div>
-            <h3>GNSS, maps and clock</h3>
-            <p>The device displays live radio and node state, local GNSS fix and Wi-Fi status. GPS maps, clock and timezone support are included in the v0.8.x firmware line.</p>
-          </article>
-          <article class="card">
-            <div class="num">03 · TRACKS</div>
-            <h3>On-device recording and backup</h3>
-            <p>Tracks are stored locally. The touchscreen and local browser interface provide track management; the browser shows a route preview and supports GPX download for backup.</p>
-          </article>
+          <article class="card"><div class="num">01 · COMMUNICATION</div><h3>Two independent radio networks</h3><p>Connect Meshtastic and MeshCore at the same time over separate Bluetooth links. Messages, channels, identities and radio settings remain on their own network; MeshCrossway does not bridge them.</p></article>
+          <article class="card"><div class="num">02 · MAPS & GNSS</div><h3>Street, night and cached maps</h3><p>View local GNSS position, clock and node locations on street or topographic maps. Use local street night colors and cached microSD tiles offline; uncached areas need Wi-Fi.</p></article>
+          <article class="card"><div class="num">03 · TRACKS & BROWSER</div><h3>Record and keep your routes</h3><p>Record tracks and POIs, organize saved routes in folders, review previews and download GPX from the local browser companion. The browser also provides messages and radio settings.</p></article>
+          <article class="card"><div class="num">04 · NODE DISPLAY</div><h3>Choose what the map shows</h3><p>Set shape, size and color separately for each network. Use ID badges or individual markers, turn grouping on or off, and sort readable node lists by distance or last reception with manual refresh.</p></article>
+          <article class="card"><div class="num">05 · AGE & RETENTION</div><h3>See recent activity at a glance</h3><p>Choose colors by last reception: green under 24 hours, yellow from 1 to 7 days, gray for older or unknown records. Set a local retention period from 0 to 365 days; favorites and conversations are protected. Zero disables expiry.</p></article>
+          <article class="card"><div class="num">06 · DEVICE CONTROLS</div><h3>Adapt the screen to the field</h3><p>Use automatic 180-degree landscape rotation, a saved rotation lock and manual flip, plus brightness, screen timeout and Bluetooth/Wi-Fi controls. Console logs and memory snapshots support continued runtime testing.</p></article>
         </div>
         <p class="sectionintro">The screenshots below are captures of the running v0.8.16 device and its local browser interface.</p>
       </div>
