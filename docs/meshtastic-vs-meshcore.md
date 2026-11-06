@@ -16,7 +16,7 @@ This guide starts with everyday questions, then looks at real experiences, and f
 | **[2. Experiences from real users](#part-2-experiences-from-real-users)** | The supplied video, people who preferred each system, people who use both, and what their experiences can teach you. |
 | **[3. Technical deep dive](#part-3-technical-deep-dive)** | Firmware versions, the complete 44-criterion table, routing, radio settings, security, integrations and testing. |
 
-**Technical review: October 26, 2026.** Specific versions and evidence limits are explained in Part 3. MeshCrossway's own radio integration remains a design and simulator project.
+**Technical review: October 26, 2026.** Specific protocol versions and evidence limits are explained in Part 3. MeshCrossway's dual-radio BLE integration is now working in development tests with Heltec V3 radios; other radio/firmware combinations still require validation. The protocol discussion below is not a radio compatibility guarantee.
 
 ## Part 1: Start with the basics
 
@@ -431,7 +431,7 @@ flowchart TD
     MC --> MCNET["MeshCore peers"]
 ```
 
-The dedicated MT node is planned to use the [serial PROTO client API][MT-serial]. The MC node uses the [Companion interface][MC-api]. The selected **Seeed XIAO ESP32-S3 + Wio-SX1262 B2B kits** still need external-UART validation: proposed XIAO D7/GPIO44 RX and D6/GPIO43 TX; stock USB or BLE availability does not prove the intended pin-level API connection. The upstream ESP32 implementation exposes build-time UART choices, but the build must be checked on the delivered board. [Companion entry point][MC-main], [hardware and wiring](hardware-wiring.md)
+An earlier integrated-PCB proposal used the [serial PROTO client API][MT-serial] and MeshCore [Companion interface][MC-api] over UART on Seeed XIAO/Wio boards. That board-specific UART plan is archived. The current product uses BLE native APIs, and the user may select any radio models that support the corresponding API with compatible firmware. A pair of Heltec V3 radios is working in development tests; validate every other model/firmware combination individually. [Companion entry point][MC-main], [hardware and wiring](hardware-wiring.md)
 
 This arrangement supports an interface that can show both ecosystems while preserving their differences:
 
