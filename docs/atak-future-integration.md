@@ -23,7 +23,7 @@ ATAK-CIV (Android)
       |                         |
  Meshtastic adapter       MeshCore Companion adapter
       |                         |
- XIAO + Wio-SX1262        XIAO + Wio-SX1262
+ User-selected MT BLE     User-selected MC BLE
 ```
 
 **Cursor on Target (CoT)** is a candidate common event format for geographic positions and markers. CoT does not itself solve transport, encryption, acknowledgments, or native radio interoperability. A bridge must not assume Meshtastic and MeshCore can exchange packets directly.
