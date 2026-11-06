@@ -2,7 +2,7 @@
 
 **Current stable: v0.9.28.** This directory contains the ESP32-S3 controller firmware for the non-B Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0, using ESP-IDF 5.3.2 and LVGL 8.4 through the pinned Waveshare BSP. The historical directory name `display-prototype` remains for build compatibility; the software now includes real dual-radio BLE, messaging, GNSS and storage.
 
-**Current test candidate: v0.9.31.** Fixes map control layering and active navigation state: zoom/center stay visible after dragging, and Map Options, Record, Tracks and POIs each highlight as the current screen. Keeps v0.9.28 as the recommended stable image. [Change notes and device checks](../../docs/map-ui-v0931.md).
+**Current test candidate: v0.10.0.** Adds an experimental OpenFreeMap vector layer, with a bounded MVT renderer, SD cache for viewed tiles and an offline-only switch. The renderer uses a small built-in style; it does not yet include place-name labels or a user-selected bulk area download. Keeps v0.9.28 as the recommended stable image. [Implementation notes and hardware test plan](../../docs/openfreemap-v0100.md).
 
 Install the exact accepted image with the [Web Flasher](https://renbrant.github.io/MeshCrossway/flasher/). The publisher restores checksum-pinned bytes rather than recompiling the stable source. v0.9.25 is previous stable recovery and v0.9.16 remains legacy recovery. See the [stable record](../../docs/stable-v0928.md).
 
@@ -10,7 +10,7 @@ Install the exact accepted image with the [Web Flasher](https://renbrant.github.
 
 - Independent simultaneous Meshtastic PhoneAPI and MeshCore Companion BLE clients; native messages, channels, pairing, saved radio identities and reconnects. No cross-network forwarding.
 - Home radio/Wi-Fi/GNSS status, readable bounded node rows, distance/last-heard sorting and manual list refresh.
-- Street/topographic maps, cached SD tiles, local street night view, GNSS clock, tracks, POIs, folders/previews and GPX download.
+- Street/topographic/night raster maps, cached SD tiles, experimental OpenFreeMap vector maps (maximum zoom 14; viewed tiles cached to SD), GNSS clock, tracks, POIs, folders/previews and GPX download.
 - Per-network map shape, size and color; optional grouping; ID badges; automatic dismissal of zoom controls.
 - **Color → By last heard / age**: green <24h, yellow 1–7d, gray >=7d or unknown. **Keep days**: 0–365, default 30, with 0 disabling expiry. Cleanup protects favorites, local identities, retained messages/drafts and unknown timestamps. [Controls, storage migration and tests](../../docs/node-age-v0928.md).
 - Quick-panel brightness, screen timeout, automatic 180-degree landscape orientation, saved lock and manual flip. To correct an inverted automatic reference, use **FLIP 180**, hold the readable position hands-off for 1–2 seconds, then enable **AUTO ROTATE**. [Orientation procedure](../../docs/rotation-reference-v0927.md).
@@ -41,7 +41,7 @@ The patcher is repeatable and fail-fast. It configures the landscape LCD/touch p
 |---|---|
 | UI/navigation | `meshcrossway_ui.h`, `meshcrossway_navigation_ui.h` |
 | Separate BLE/protocol adapters | `meshcrossway_ble.h`, `meshcrossway_meshtastic_protocol.h`, `meshcrossway_meshcore_protocol.h` |
-| Maps and preferences | `meshcrossway_map_tiles.h` |
+| Maps and preferences | `meshcrossway_map_tiles.h`, `meshcrossway_ofm_mvt.h` |
 | Age colors/retention | `meshcrossway_node_age.h` and protocol prune/import methods |
 | Orientation | `meshcrossway_orientation.h`, `meshcrossway_orientation_policy.h`, `meshcrossway_orientation_sensor.h` |
 | SD history/recovery | `meshcrossway_sd_history.h`, `meshcrossway_meshtastic_store.h`, `meshcrossway_history_store.h` |

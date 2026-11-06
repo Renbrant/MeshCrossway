@@ -792,14 +792,14 @@ static void map_credits(){
   base("MAP / CREDITS");const auto c=mcxmap::configuration();
   auto *label=single_label(dialog,c.attribution,8,48,440,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
   label=single_label(dialog,c.url,8,100,440,muted);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
-  label=single_label(dialog,mcxmap::provider(c)==mcxmap::TOPO?"Data: OpenStreetMap (ODbL), SRTM.\nStyle: OpenTopoMap (CC-BY-SA).\nhttps://opentopomap.org/about":"OpenStreetMap data: Open Database License (ODbL).\nhttps://www.openstreetmap.org/copyright",8,163,440,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
+  label=single_label(dialog,mcxmap::provider(c)==mcxmap::TOPO?"Data: OpenStreetMap (ODbL), SRTM.\nStyle: OpenTopoMap (CC-BY-SA).\nhttps://opentopomap.org/about":mcxmap::provider(c)==mcxmap::OPENFREEMAP?"OpenFreeMap © OpenMapTiles. Data from OpenStreetMap.\nhttps://openfreemap.org/\nVector tiles are cached on the SD card as you view them.":"OpenStreetMap data: Open Database License (ODbL).\nhttps://www.openstreetmap.org/copyright",8,163,440,white);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);
 }
 static void map_options(){
   base("MAP OPTIONS");mcxmap::start();const auto c=mcxmap::configuration();
   lv_obj_set_height(dialog,420);
   single_label(dialog,"Map style",8,48,140,white);
   provider_picker=lv_dropdown_create(dialog);lv_obj_set_size(provider_picker,440,40);
-  lv_dropdown_set_options(provider_picker,"Street / OpenStreetMap\nTopographic / OpenTopoMap\nStreet / OpenStreetMap night");lv_dropdown_set_selected(provider_picker,unsigned(mcxmap::provider(c)));
+  lv_dropdown_set_options(provider_picker,"Street / OpenStreetMap\nTopographic / OpenTopoMap\nStreet / OpenStreetMap night\nVector / OpenFreeMap (SD cache)");lv_dropdown_set_selected(provider_picker,unsigned(mcxmap::provider(c)));
   lv_obj_add_event_cb(provider_picker,provider_changed,LV_EVENT_VALUE_CHANGED,nullptr);
   auto *row=control_row(30);auto *row_label=single_label(row,"Show saved radio nodes",0,0,330,white);lv_obj_set_flex_grow(row_label,1);
   nodes_switch=lv_switch_create(row);lv_obj_set_size(nodes_switch,44,24);if(!mcxmap::nodes_hidden(c))lv_obj_add_state(nodes_switch,LV_STATE_CHECKED);
@@ -836,7 +836,7 @@ static void map_options(){
   row=control_row(30);row_label=single_label(row,"Download visible map tiles",0,0,330,white);lv_obj_set_flex_grow(row_label,1);
   online_switch=lv_switch_create(row);lv_obj_set_size(online_switch,44,24);if(c.online)lv_obj_add_state(online_switch,LV_STATE_CHECKED);
   lv_obj_add_event_cb(online_switch,online_changed,LV_EVENT_VALUE_CHANGED,nullptr);
-  auto *help=single_label(dialog,"Name mode shows the last 4 ID digits; tap a marker or cluster for details. Turn off Group nearby nodes to show individual markers. In Name mode: green = active within 5 min, cyan = seen within 60 min, gray = saved/older (recent activity is not a health check).\nBy last heard: green <24 h; yellow 1-7 days; gray >=7 days or unknown time. This is reception age, not online status. Keep days removes old local discovery records from map/list and SD snapshots; 0 disables expiry. Favorites, local radios, messages and drafts are protected. Cleanup waits for an idle Home/Map screen. OFF uses SD maps and cached tiles only. Format, size and color are independent per network; name visibility is shared.",0,0,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
+  auto *help=single_label(dialog,"Name mode shows the last 4 ID digits; tap a marker or cluster for details. Turn off Group nearby nodes to show individual markers. In Name mode: green = active within 5 min, cyan = seen within 60 min, gray = saved/older (recent activity is not a health check).\nBy last heard: green <24 h; yellow 1-7 days; gray >=7 days or unknown time. This is reception age, not online status. Keep days removes old local discovery records from map/list and SD snapshots; 0 disables expiry. Favorites, local radios, messages and drafts are protected. Cleanup waits for an idle Home/Map screen. OFF uses SD maps and cached tiles only. OpenFreeMap saves viewed vector tiles under /sdcard/mcx-map-vector; maximum zoom is 14 and only one tile is downloaded at a time. Format, size and color are independent per network; name visibility is shared.",0,0,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
   map_save_label=single_label(dialog,"",0,0,440,muted);refresh();
 }
 }

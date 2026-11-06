@@ -47,7 +47,7 @@ int main(){
  fail_write=true;mcxmem::flush();assert(mcxmem::count==before&&mcxmem::write_errors==1);
  fail_write=false;mcxmem::flush();assert(mcxmem::count==before-4);
  unsigned lines=0;for(char ch:output)if(ch=='\n')++lines;assert(lines==4);
- assert(output.find("[MCX-MEMLOG] v0.9.31,123,")==0);
+ assert(output.find("[MCX-MEMLOG] v0.10.0,123,")==0);
  mcxmem::last_sample=30000;mcxmem::last_flush=59000;us=59999000;before=mcxmem::count;mcxmem::poll();assert(mcxmem::count==before);
  us=60000000;mcxmem::poll();assert(mcxmem::count==before+1-4);
  before=mcxmem::count;mcxmem::page(3);mcxmem::page(3);assert(mcxmem::count==before+1);
