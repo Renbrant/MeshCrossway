@@ -1,6 +1,6 @@
 # OpenFreeMap integration — v0.10.0 candidate
 
-**Status:** Implemented in the v0.10.0 source branch; awaiting ESP-IDF build and physical-device acceptance. **v0.9.28 remains the recommended stable firmware.**
+**Status:** Implemented in the v0.10.0 candidate source. GitHub Actions compiled the ESP-IDF firmware and passed the archive preflight; physical-device acceptance is still pending. **v0.9.28 remains the recommended stable firmware.**
 
 ## What is integrated
 
@@ -20,6 +20,6 @@ Cached tile data is grouped by the `latest` endpoint and can become older than t
 
 - Host test `tests/ofm_mvt_test.cpp`: valid point tile rendering, truncated protobuf rejection and payload-size rejection.
 - A dense Denver PBF tile from OpenFreeMap (z10/x213/y388, 120,853 bytes) parsed successfully with the host renderer during development.
-- Before publishing as a hardware-tested release, build with the pinned ESP-IDF 5.3.2/BSP and verify: map render in online/offline modes; cold/warm SD behavior; zoom 14; maximum PBF; SD absent/full; Wi-Fi loss, 404/429/5xx and cancellation; BLE reconnect and messages during pan; internal/PSRAM minima, touch latency and watchdog stability.
+- CI built the v0.10.0 ESP-IDF image with the pinned BSP. Before publishing as a hardware-tested release, verify on the device: map render in online/offline modes; cold/warm SD behavior; zoom 14; maximum PBF; SD absent/full; Wi-Fi loss, 404/429/5xx and cancellation; BLE reconnect and messages during pan; internal/PSRAM minima, touch latency and watchdog stability.
 
 The Web Flasher candidate must stay **experimental** until those device checks are completed. Do not alter the immutable v0.9.28 stable image.
