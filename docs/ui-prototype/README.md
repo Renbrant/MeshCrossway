@@ -36,9 +36,7 @@ The archived interactive simulator was designed for the **480 × 320 landscape s
 
 ## Open the prototype
 
-Open [the interactive GitHub Pages prototype](https://renbrant.github.io/MeshCrossway/) or open [index.html](index.html) locally in a browser.
-
-> GitHub's normal file view displays the source code rather than executing the HTML. The current demo is published through GitHub Pages.
+This simulator is retired and is not published through GitHub Pages. Open [index.html](index.html) locally only to inspect the historical mockup. Its simulated controls do not communicate with radios or represent current firmware.
 
 ## Static overview — historical browser mockup
 
