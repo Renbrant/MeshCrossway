@@ -1,7 +1,10 @@
 #pragma once
+#include "meshcrossway_touch_input.h"
 // Included inside meshcrossway; all widgets are owned by the LVGL task.
 namespace gpsui {static void show_node_details(unsigned);static void show_node_group(unsigned);}
 namespace navui {
+static int displayed_map_coord(int p,int extent,bool magnified){return magnified?extent/2+((p-extent/2)*5)/4:p;}
+static int source_map_coord(int p,int extent,bool magnified){return magnified?extent/2+((p-extent/2)*4)/5:p;}
 static lv_obj_t *canvas=nullptr,*picture=nullptr,*marker=nullptr,*map_status=nullptr,*attribution=nullptr;
 static mcxmap::Frame *front=nullptr;
 static lv_obj_t *zoom_overlay=nullptr,*zoom_slider=nullptr,*zoom_value=nullptr;
