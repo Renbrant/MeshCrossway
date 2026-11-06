@@ -182,11 +182,11 @@ static bool (*wifi_ready)()=nullptr;
 static bool network_allowed(){return wifi_ready&&wifi_ready();}
 static unsigned char *checked_png(const char *file,size_t &size,unsigned char **decoded=nullptr);
 static bool vector_path(char *out,size_t cap,unsigned z,unsigned x,unsigned y){
-  char root[192],zoom_dir[224],x_dir[256];snprintf(root,sizeof(root),"%s/mcx-map-vector",SD_ROOT);if(mkdir(root,0755)&&errno!=EEXIST)return false;
-  snprintf(zoom_dir,sizeof(zoom_dir),"%s/latest",root);if(mkdir(zoom_dir,0755)&&errno!=EEXIST)return false;
-  snprintf(root,sizeof(root),"%s/%u",zoom_dir,z);if(mkdir(root,0755)&&errno!=EEXIST)return false;
-  snprintf(x_dir,sizeof(x_dir),"%s/%u",root,x);if(mkdir(x_dir,0755)&&errno!=EEXIST)return false;
-  return snprintf(out,cap,"%s/%u.pbf",x_dir,y)>0;
+  char dir[96];const int length=snprintf(dir,sizeof(dir),"%s/mcx-map-vector/latest/%u/%u",SD_ROOT,z,x);
+  if(length<=0||size_t(length)>=sizeof(dir))return false;
+  for(char *p=dir+strlen(SD_ROOT)+1;*p;++p)if(*p=='/'){*p=0;const bool ok=!mkdir(dir,0755)||errno==EEXIST;*p='/';if(!ok)return false;}
+  if(mkdir(dir,0755)&&errno!=EEXIST)return false;
+  const int file_length=snprintf(out,cap,"%s/%u.pbf",dir,y);return file_length>0&&size_t(file_length)<cap;
 }
 static uint8_t *obtain_vector(const Config &c,unsigned z,unsigned x,unsigned y,size_t &size,uint32_t generation){
   size=0;if(z>14||esp_sdcard_port_get_size()==0)return nullptr;
