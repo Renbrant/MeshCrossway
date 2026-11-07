@@ -33,7 +33,7 @@ static bool snapshot(Snapshot &s){s=mock_state;return true;}
 static bool submit(Action a,uint32_t id=0,const char *name=nullptr){last_action=a;last_id=id;if(name)snprintf(last_name,sizeof(last_name),"%s",name);return a!=SAVE_POI||mcxgnss::fix.valid;}
 }
 namespace meshcrossway {
-namespace mcxtouch { static bool current_points(lv_point_t &,lv_point_t &){return false;} static unsigned current_contacts(){return 0;} }
+namespace mcxtouch { static unsigned contacts=0;static lv_point_t first{},second{};static bool current_points(lv_point_t &a,lv_point_t &b){a=first;b=second;return contacts==2;} static unsigned current_contacts(){return contacts;} }
 static int page=4,map_view=0;static void draw();
 static lv_obj_t *body=nullptr,*info_dialog=nullptr,*right_rail=nullptr;
 static bool navigation_panel=false;
@@ -78,6 +78,7 @@ static void make_tiles(const mcxmap::View &v){
   auto file=path/(std::to_string(y)+".png");FILE *f=fopen(file.c_str(),"wb");assert(f);assert(fwrite(png,1,size,f)==size);assert(!fclose(f));lv_mem_free(png);
  }
 }
+#include "offline_raster_cases.h"
 int main(int argc,char **argv){
  assert(argc==2);mcxmap::SD_ROOT=argv[1];
  lv_init();lv_disp_draw_buf_t buf;lv_disp_draw_buf_init(&buf,drawbuf,nullptr,480*20);lv_disp_drv_t d;lv_disp_drv_init(&d);d.hor_res=480;d.ver_res=320;d.draw_buf=&buf;d.flush_cb=flush;lv_disp_drv_register(&d);
@@ -141,8 +142,8 @@ int main(int argc,char **argv){
  assert(lv_obj_get_child_cnt(body)==1); // Map owns the entire body; no heading/footer/buttons.
  assert(lv_obj_get_child_cnt(navui::canvas)>=2);
  const uint32_t canvas_children=lv_obj_get_child_cnt(navui::canvas);
- lv_event_send(lv_obj_get_child(navui::canvas,canvas_children-2),LV_EVENT_CLICKED,nullptr);assert(clicked==A_MAP_ZOOM);
- lv_event_send(lv_obj_get_child(navui::canvas,canvas_children-1),LV_EVENT_CLICKED,nullptr);assert(clicked==A_MAP_CENTER);
+ lv_event_send(navui::map_controls[0],LV_EVENT_CLICKED,nullptr);assert(clicked==A_MAP_ZOOM);
+ lv_event_send(navui::map_controls[1],LV_EVENT_CLICKED,nullptr);assert(clicked==A_MAP_CENTER);
  assert(lv_obj_get_style_bg_opa(navui::attribution,0)==LV_OPA_TRANSP);
  navui::toggle_zoom();advance();assert(navui::zoom_overlay&&navui::zoom_slider&&navui::zoom_open);
  const auto before_slider=mcxmap::wanted.load();
@@ -189,7 +190,8 @@ int main(int argc,char **argv){
  // Network sections keep format/size/color together and update independently.
  std::vector<lv_obj_t *> style_pickers;
  for(unsigned i=0;i<lv_obj_get_child_cnt(gpsui::dialog);++i){auto *o=lv_obj_get_child(gpsui::dialog,i);if(lv_obj_check_type(o,&lv_dropdown_class))style_pickers.push_back(o);else for(unsigned j=0;j<lv_obj_get_child_cnt(o);++j){auto *child=lv_obj_get_child(o,j);if(lv_obj_check_type(child,&lv_dropdown_class))style_pickers.push_back(child);}}
- assert(style_pickers.size()==7);
+ assert(style_pickers.size()==8);
+ style_pickers.erase(style_pickers.begin()); // Node network filter precedes the provider/style controls.
  const unsigned selected[]={2,1,4,3,5,3};for(unsigned i=0;i<6;++i){lv_dropdown_set_selected(style_pickers[i+1],selected[i]);lv_event_send(style_pickers[i+1],LV_EVENT_VALUE_CHANGED,nullptr);}
  const auto styled=mcxmap::configuration();assert(mcxmap::node_icon(styled,false)==mcxmap::NODE_CROSS&&mcxmap::node_icon(styled,true)==mcxmap::NODE_NAME);
  assert(mcxmap::node_size_index(styled,false)==1&&mcxmap::node_size_index(styled,true)==5&&mcxmap::node_color(styled,false)==mcxmap::NODE_COLOR_RED&&mcxmap::node_color(styled,true)==mcxmap::NODE_COLOR_GREEN);
@@ -233,7 +235,7 @@ int main(int argc,char **argv){
  mcxmap::set_node_icon(legacy_map,false,mcxmap::NODE_NAME);mcxmap::set_node_icon(legacy_map,true,mcxmap::NODE_CROSS);mcxmap::set_node_size(legacy_map,4);
  mcxmap::set_node_color(legacy_map,false,mcxmap::NODE_COLOR_PURPLE);mcxmap::set_node_color(legacy_map,true,mcxmap::NODE_COLOR_GREEN);mcxmap::set_node_names(legacy_map,true);
  fake_nvs_available=true;fake_nvs_blob.assign((const unsigned char *)&legacy_map,(const unsigned char *)&legacy_map+offsetof(mcxmap::Config,meshcore_size));
- mcxmap::loaded_config=false;mcxmap::load_config();assert(mcxmap::configuration().version==6&&mcxmap::nodes_grouped(mcxmap::configuration()));
+ mcxmap::loaded_config=false;mcxmap::load_config();assert(mcxmap::configuration().version==7&&mcxmap::nodes_grouped(mcxmap::configuration()));
  assert(mcxmap::configuration().hide_nodes==legacy_map.hide_nodes&&mcxmap::configuration().show_node_names==legacy_map.show_node_names);
  auto saved_style=mcxmap::configuration();mcxmap::set_node_size(saved_style,2,true);mcxmap::select_provider(saved_style,mcxmap::STREET_NIGHT);mcxmap::configure(saved_style);
  gpsui::map_options();advance();assert(lv_obj_has_state(gpsui::grouping_switch,LV_STATE_CHECKED));
@@ -245,7 +247,9 @@ int main(int argc,char **argv){
  gpsui::map_options();advance();assert(!lv_obj_has_state(gpsui::grouping_switch,LV_STATE_CHECKED));
  lv_obj_add_state(gpsui::grouping_switch,LV_STATE_CHECKED);lv_event_send(gpsui::grouping_switch,LV_EVENT_VALUE_CHANGED,nullptr);
  assert(mcxmap::nodes_grouped(mcxmap::configuration()));fake_nvs_available=false;fake_nvs_blob.clear();
- for(unsigned version:{1u,2u,3u,4u,5u}){mcxmap::Config old;old.version=version;assert(mcxmap::migrate_config(old)&&old.version==6&&mcxmap::nodes_grouped(old));}
+ auto old6=mcxmap::configuration();old6.version=6;fake_nvs_available=true;fake_nvs_blob.assign((const unsigned char *)&old6,(const unsigned char *)&old6+336);
+ mcxmap::loaded_config=false;mcxmap::load_config();assert(mcxmap::configuration().version==7&&!mcxmap::configuration().pack[0]);fake_nvs_available=false;
+ for(unsigned version:{1u,2u,3u,4u,5u}){mcxmap::Config old;old.version=version;assert(mcxmap::migrate_config(old)&&old.version==7&&mcxmap::nodes_grouped(old));}
 
  // Real LVGL controls: independent age colors, +/- day edits and NVS reload.
  fake_nvs_available=true;gpsui::map_options();advance();
@@ -280,7 +284,7 @@ int main(int argc,char **argv){
  }
  // Schema-5 records retain fixed network colors/shapes and gain safe new defaults.
  auto old5=mcxmap::configuration();old5.version=5;fake_nvs_blob.assign((const unsigned char *)&old5,(const unsigned char *)&old5+offsetof(mcxmap::Config,retention_days));
- mcxmap::loaded_config=false;mcxmap::load_config();assert(mcxmap::configuration().version==6&&mcxmap::configuration().age_colors==0&&mcxmap::configuration().retention_days==30);
+ mcxmap::loaded_config=false;mcxmap::load_config();assert(mcxmap::configuration().version==7&&mcxmap::configuration().age_colors==0&&mcxmap::configuration().retention_days==30);
  fake_nvs_available=false;mcxnodeage::retention.store(0);mcxnodeage::epoch.store(0);
  // Dense map group: fixed preview budget even with every protocol slot occupied.
  assert(navui::front&&navui::overlay_cache);
@@ -327,6 +331,24 @@ int main(int argc,char **argv){
  for(bool compact:{false,true}){right_compact=compact;rebuild_context();advance();
   for(unsigned i=0;i<7;++i){auto *button=lv_obj_get_child(context_actions,i);assert(lv_obj_get_style_border_width(button,0)==0);lv_event_send(button,LV_EVENT_CLICKED,nullptr);assert(clicked==expected[i]);}
  }
+ // Real LVGL gesture/area screens on top of the production raster worker.
+ info_close_now(nullptr);lv_obj_set_width(body,400);mcxgnss::fix.valid=true;mcxgnss::fix.latitude=40;mcxgnss::fix.longitude=-105;
+ auto cfg=mcxmap::Config{};cfg.online=0;mcxmap::configure(cfg);navui::create(400);navui::request();auto view=mcxmap::requested;make_tiles(view);mcxmap::ready=mcxmap::render(view,cfg);navui::poll();advance();
+ const auto old_zoom=navui::zoom;mcxtouch::contacts=2;mcxtouch::first={150,150};mcxtouch::second={250,150};navui::pinch_begin();assert(navui::pinching);
+ const auto anchor=navui::pinch_anchor;const auto request_count=mcxmap::wanted.load();mcxtouch::first.x=100;mcxtouch::second.x=300;navui::pinch_update();assert(navui::pinch_next_zoom==old_zoom+2&&mcxmap::wanted.load()==request_count);
+ navui::pinch_finish();assert(!navui::pinching&&navui::zoom==old_zoom+2&&mcxmap::wanted.load()>request_count);mcxtouch::contacts=0;
+ const auto anchor_px=mcxmap::project(anchor.x,anchor.y,navui::zoom),center_px=mcxmap::project(navui::latitude,navui::longitude,navui::zoom);
+ assert(fabs(mcxmap::delta(anchor_px.x,center_px.x,navui::zoom)-(navui::pinch_midpoint.x-200))<0.001);
+ auto *fitted_radio=new meshmc::Client();meshmc::client=fitted_radio;fitted_radio->contact_count=3;fitted_radio->contacts[0].lat=40000000;fitted_radio->contacts[0].lon=179900000;fitted_radio->contacts[1].lat=40000000;fitted_radio->contacts[1].lon=-179900000;fitted_radio->contacts[2].lat=91000000;
+ navui::fit_nodes(nullptr);assert(fabs(fabs(navui::longitude)-180)<0.001&&navui::zoom>=9&&!navui::following);
+ auto filtered=mcxmap::configuration();filtered.reserved|=16u;mcxmap::configure(filtered);const auto prior=navui::generation;navui::fit_nodes(nullptr);assert(navui::generation==prior&&strstr(navui::status_text,"No positioned nodes"));meshmc::client=nullptr;delete fitted_radio;
+ gpsui::offline_areas();advance();assert(gpsui::offline_owner==info_dialog);render_preview("offline-map-manager");gpsui::area_create();advance();assert(gpsui::area_estimate);render_preview("offline-area-preview");
+ gpsui::custom_source();advance();assert(gpsui::source_url&&gpsui::source_credit&&lv_keyboard_get_textarea(gpsui::source_keyboard)==gpsui::source_url);render_preview("offline-map-source");
+ for(int width:{276,400}){lv_obj_set_width(body,width);lv_obj_set_x(right_rail,40+width);lv_obj_update_layout(body);gpsui::custom_source();advance();lv_area_t source_bounds,permit_bounds;lv_obj_get_coords(gpsui::dialog,&source_bounds);lv_obj_get_coords(gpsui::source_permit,&permit_bounds);if(width==276)render_preview("offline-source-narrow");assert(permit_bounds.x1>=source_bounds.x1&&permit_bounds.x2<=source_bounds.x2);}
+
+ gpsui::open();advance();gpsui::offline_refresh(); // Reused LVGL addresses must not leave stale area widget pointers.
+ info_close_now(nullptr);navui::invalidate();lv_obj_clean(body);navui::after_clean();
+ run_offline_raster_cases(argv[1]);
  mcxmap::clear_tiles();
  puts("PASS: HTTPS cache transactions, corrupt cache repair, 503 backoff, no-SD gating, real PNG SD tiles, Mercator raster crop, stale job cancellation, bad PNG/URL, real LVGL map drag, GPS settings and source editor geometry");
 }

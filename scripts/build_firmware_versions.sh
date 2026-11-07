@@ -112,6 +112,7 @@ build_version() {
   if [ -f "$source_root/scripts/test_chat_presentation.py" ]; then
     python3 "$source_root/scripts/test_chat_presentation.py"
   fi
+  if [ -f "$source_root/scripts/test_offline_raster.py" ]; then python3 "$source_root/scripts/test_offline_raster.py"; fi
   prepare_waveshare
   if [ -f "$source_root/scripts/test_ble_pairing_ui.py" ]; then
     python3 "$source_root/scripts/test_ble_pairing_ui.py" \

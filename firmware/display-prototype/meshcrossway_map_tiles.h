@@ -1,7 +1,7 @@
 #pragma once
 #include "meshcrossway_node_age.h"
 #include "meshcrossway_memory_log.h"
-#include "meshcrossway_map_projection.h"
+#include "meshcrossway_map_geometry.h"
 #include "meshcrossway_radio_priority.h"
 #include "esp_heap_caps.h"
 #include "esp_http_client.h"
@@ -28,9 +28,10 @@ extern "C" {
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "meshcrossway_map_pack.h"
 namespace mcxmap {
 static constexpr size_t MAX_PNG=256*1024;
-static constexpr uint32_t MAP_WORKER_STACK_BYTES=6144;
+static constexpr uint32_t MAP_WORKER_STACK_BYTES=8192;
 // Worker-owned bounded LRU: twelve RGB565 tiles, 1.5 MiB of PSRAM at most.
 struct Tile {uint64_t source=0;unsigned z=0,x=0,y=0;uint32_t used=0;lv_color_t *pixels=nullptr;};
 static Tile tile_cache[12];static uint32_t tile_clock=0;
@@ -50,7 +51,7 @@ static lv_color_t *keep_tile(uint64_t source,unsigned z,unsigned x,unsigned y,co
 static const char *SD_ROOT="/sdcard";
 // Schema 5 appends independent MeshCore size and local night presentation.
 // The leading schema-1..4 blob layout remains readable for migration.
-struct Config {uint32_t version=6;uint8_t online=1,zoom=14,hide_nodes=0,show_node_names=0;char url[192]="https://tile.openstreetmap.org";char attribution[128]="© OpenStreetMap contributors";uint8_t meshcore_size=0,night=0,age_colors=0,reserved=0;uint16_t retention_days=30;};
+struct Config {uint32_t version=7;uint8_t online=1,zoom=14,hide_nodes=0,show_node_names=0;char url[192]="https://tile.openstreetmap.org";char attribution[128]="© OpenStreetMap contributors";uint8_t meshcore_size=0,night=0,age_colors=0,reserved=0;uint16_t retention_days=30;char pack[64]={};};
 static_assert(offsetof(Config,meshcore_size)==328,"Legacy map configuration prefix changed");
 enum NodeIcon {NODE_CIRCLE=0,NODE_SQUARE=1,NODE_CROSS=2,NODE_NAME=3};
 enum NodeColor {NODE_COLOR_AUTO=0,NODE_COLOR_ORANGE=1,NODE_COLOR_CYAN=2,NODE_COLOR_GREEN=3,NODE_COLOR_RED=4,NODE_COLOR_PURPLE=5,NODE_COLOR_YELLOW=6,NODE_COLOR_WHITE=7,NODE_COLOR_AGE=8};
@@ -71,13 +72,22 @@ static void set_node_color(Config &c,bool meshcore,unsigned color){const uint8_t
 static void set_node_names(Config &c,bool enabled){c.show_node_names=uint8_t((c.show_node_names&~1u)|(enabled?1u:0u));}
 static bool map_text_magnified(const Config &c){return (c.reserved&1u)!=0;}
 static void set_map_text_magnified(Config &c,bool enabled){c.reserved=uint8_t((c.reserved&~1u)|(enabled?1u:0u));}
+static bool overzoom_enabled(const Config &c){return !(c.reserved&2u);}
+static void set_overzoom(Config &c,bool enabled){c.reserved=uint8_t((c.reserved&~2u)|(enabled?0u:2u));}
+static bool bulk_allowed(const Config &c){
+  if(!(c.reserved&4u)||strncmp(c.url,"https://",8))return false;
+  char host[192]={};size_t n=0;
+  for(const char *p=c.url+8;*p&&*p!='/'&&*p!=':'&&n+1<sizeof(host);++p){const unsigned char v=uint8_t(*p);host[n++]=char(v>='A'&&v<='Z'?v+32:v);}
+  for(const char *blocked:{"openstreetmap.org","opentopomap.org"}){const size_t size=strlen(blocked);if(n>=size&&!strcmp(host+n-size,blocked)&&(n==size||host[n-size-1]=='.'))return false;}
+  return n!=0;
+}
 static bool valid_config(const Config &c){
-  if(c.version!=6||c.age_colors>3||c.retention_days>365||c.meshcore_size>=6||c.night>1||c.online>1||((c.hide_nodes>>1)&7)>=6||((c.hide_nodes>>4)&3)>NODE_NAME||((c.hide_nodes>>6)&3)>NODE_NAME||c.zoom<3||c.zoom>19||!memchr(c.url,0,sizeof(c.url))||!memchr(c.attribution,0,sizeof(c.attribution))||!c.attribution[0]||strncmp(c.url,"https://",8)||!c.url[8])return false;
+  if(c.version!=7||!memchr(c.pack,0,sizeof(c.pack))||(c.pack[0]&&!mcxpack::safe_name(c.pack))||c.age_colors>3||c.retention_days>365||c.meshcore_size>=6||c.night>1||c.online>1||((c.hide_nodes>>1)&7)>=6||((c.hide_nodes>>4)&3)>NODE_NAME||((c.hide_nodes>>6)&3)>NODE_NAME||c.zoom>19||!memchr(c.url,0,sizeof(c.url))||!memchr(c.attribution,0,sizeof(c.attribution))||!c.attribution[0]||strncmp(c.url,"https://",8)||!c.url[8])return false;
   for(const char *p=c.url;*p;++p)if(uint8_t(*p)<=32||strchr("?#@{}",*p))return false;
   return true;
 }
 static bool migrate_config(Config &c){
-  if(c.version==6)return valid_config(c);
+  if(c.version==7)return valid_config(c);
   if(c.version==1){
     if(c.online>1||((c.hide_nodes>>1)&3)>NODE_CROSS||c.show_node_names>1)return false;
     const uint8_t old_nodes=c.hide_nodes,old_names=c.show_node_names;
@@ -93,20 +103,23 @@ static bool migrate_config(Config &c){
   if(c.version==3){if(c.show_node_names&0x80)return false;c.version=4;}
   if(c.version==4){c.meshcore_size=uint8_t((c.hide_nodes>>1)&7);c.night=0;c.version=5;}
   if(c.version==5){c.age_colors=0;c.reserved=0;c.retention_days=30;c.version=6;}
+  if(c.version==6){c.pack[0]=0;c.version=7;}
   return valid_config(c);
 }
-enum Provider {STREET=0,TOPO=1,STREET_NIGHT=2};
-static Provider provider(const Config &c){return !strcmp(c.url,"https://a.tile.opentopomap.org")?TOPO:c.night?STREET_NIGHT:STREET;}
+enum Provider {STREET=0,TOPO=1,STREET_NIGHT=2,CUSTOM=3};
+static Provider provider(const Config &c){return !strcmp(c.url,"https://a.tile.opentopomap.org")?TOPO:strcmp(c.url,"https://tile.openstreetmap.org")?CUSTOM:c.night?STREET_NIGHT:STREET;}
 static unsigned max_zoom(const Config &c){return provider(c)==TOPO?17:19;}
-static const char *provider_name(const Config &c){return provider(c)==TOPO?"Topographic / OpenTopoMap":provider(c)==STREET_NIGHT?"Street / OpenStreetMap night":"Street / OpenStreetMap";}
+static const char *provider_name(const Config &c){return provider(c)==CUSTOM?"Custom offline provider":provider(c)==TOPO?"Topographic / OpenTopoMap":provider(c)==STREET_NIGHT?"Street / OpenStreetMap night":"Street / OpenStreetMap";}
 static void select_provider(Config &c,unsigned id){
+  if(id==CUSTOM)return;
+  c.reserved&=uint8_t(~4u);
   c.night=id==STREET_NIGHT;
   snprintf(c.url,sizeof(c.url),"%s",id==TOPO?"https://a.tile.opentopomap.org":"https://tile.openstreetmap.org");
   snprintf(c.attribution,sizeof(c.attribution),"%s",id==TOPO?"© OpenStreetMap contributors, SRTM | © OpenTopoMap (CC-BY-SA)":"© OpenStreetMap contributors");
   if(c.zoom>max_zoom(c))c.zoom=uint8_t(max_zoom(c));
 }
 struct View {double latitude=0,longitude=0;uint32_t generation=0;unsigned zoom=14,width=400,height=155;};
-struct Frame {lv_img_dsc_t image={};View view;uint64_t source=0;unsigned loaded=0,missing=0;char status[96]={};};
+struct Frame {lv_img_dsc_t image={};View view;uint64_t source=0;unsigned loaded=0,missing=0,overzoom=0;char status[96]={};};
 static portMUX_TYPE mux=portMUX_INITIALIZER_UNLOCKED;
 static Config config;
 static View requested;
@@ -120,15 +133,15 @@ static std::atomic<bool> settings_saved{true};
 static uint32_t backoff_started=0,backoff_ms=0,last_request=0;
 static bool backing_off=false;
 static bool sntp_started=false,waiting_clock=false,cache_full=false;
-struct Miss {unsigned z=0,x=0,y=0;uint32_t at=0;bool used=false;};
+struct Miss {uint64_t source=0;unsigned z=0,x=0,y=0;uint32_t at=0;bool used=false;};
 static Miss misses[12];static unsigned miss_slot=0;
 static uint32_t milliseconds(){return uint32_t(esp_timer_get_time()/1000);}
 static void release(Frame *f){if(f){heap_caps_free((void *)f->image.data);heap_caps_free(f);}}
 static void load_config(){
   if(loaded_config)return;
   nvs_handle_t h;if(nvs_open("mcx_map",NVS_READONLY,&h)==ESP_OK){Config c;size_t n=sizeof(c);
-    if(nvs_get_blob(h,"config",&c,&n)==ESP_OK&&((c.version==6&&n==sizeof(c))||(c.version==5&&n==offsetof(Config,retention_days))||(c.version>=1&&c.version<=4&&n==offsetof(Config,meshcore_size)))){const bool legacy=c.version<6;if(migrate_config(c)){config=c;if(legacy){revision=1;changed_ms=milliseconds();settings_saved=false;}}}
-    select_provider(config,provider(config));
+    if(nvs_get_blob(h,"config",&c,&n)==ESP_OK&&((c.version==7&&n==sizeof(c))||(c.version==6&&n==((offsetof(Config,pack)+3u)&~size_t(3u)))||(c.version==5&&n==offsetof(Config,retention_days))||(c.version>=1&&c.version<=4&&n==offsetof(Config,meshcore_size)))){const bool legacy=c.version<7;if(migrate_config(c)){config=c;if(legacy){revision=1;changed_ms=milliseconds();settings_saved=false;}}}
+    if(config.zoom>max_zoom(config))config.zoom=uint8_t(max_zoom(config));
     nvs_close(h);
   }mcxnodeage::retention.store(config.retention_days);loaded_config=true;
 }
@@ -149,10 +162,11 @@ static void persist_config(){
 static uint32_t configuration_revision(){portENTER_CRITICAL(&mux);const auto r=revision;portEXIT_CRITICAL(&mux);return r;}
 static Config configuration(){portENTER_CRITICAL(&mux);auto c=config;portEXIT_CRITICAL(&mux);return c;}
 static void configure(const Config &c){if(!valid_config(c))return;
-  Config chosen=c;select_provider(chosen,provider(chosen));mcxnodeage::retention.store(chosen.retention_days);
+  Config chosen=c;mcxnodeage::retention.store(chosen.retention_days);
   portENTER_CRITICAL(&mux);config=chosen;++revision;changed_ms=milliseconds();settings_saved=false;wanted.fetch_add(1);queued=false;portEXIT_CRITICAL(&mux);
 }
 static uint64_t source_hash(const Config &c){uint64_t hash=14695981039346656037ULL;for(const char *p=c.url;*p;++p)hash=(hash^uint8_t(*p))*1099511628211ULL;return hash;}
+static uint64_t render_hash(const Config &c){uint64_t hash=source_hash(c);for(const char *p=c.pack;*p;++p)hash=(hash^uint8_t(*p))*1099511628211ULL;return hash;}
 static void paths(char *file,size_t cap,const Config &c,unsigned z,unsigned x,unsigned y){snprintf(file,cap,"%s/mcx-map-cache/%016llx/%u/%u/%u.png",SD_ROOT,(unsigned long long)source_hash(c),z,x,y);}
 static bool directories(const Config &c,unsigned z,unsigned x){
   char path[256],root[160];snprintf(root,sizeof(root),"%s/mcx-map-cache",SD_ROOT);
@@ -180,15 +194,17 @@ static bool decode(unsigned char *png,size_t size,unsigned char **rgba){
 static bool (*wifi_ready)()=nullptr;
 static bool network_allowed(){return wifi_ready&&wifi_ready();}
 static unsigned char *checked_png(const char *file,size_t &size,unsigned char **decoded=nullptr);
-static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,size_t &size,unsigned char **decoded=nullptr,uint32_t generation=0){
+static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,size_t &size,unsigned char **decoded=nullptr,uint32_t generation=0,bool local_only=false){
   if(decoded)*decoded=nullptr;
   const auto cancelled=[generation](){return mcxpriority::ble_initializing.load()||(generation&&wanted.load()!=generation);};
   if(cancelled())return nullptr;
   if(esp_sdcard_port_get_size()==0)return nullptr;
+  if(c.pack[0]){auto *p=mcxpack::tile(SD_ROOT,c.pack,z,x,y,size,milliseconds());unsigned char *rgba=nullptr;
+    if(p&&decode(p,size,&rgba)){if(decoded)*decoded=rgba;else lv_mem_free(rgba);return p;}heap_caps_free(p);}
   char file[192];snprintf(file,sizeof(file),"%s/tiles/%s%u/%u/%u.png",SD_ROOT,provider(c)==TOPO?"opentopo/":"",z,x,y);
-  if(auto *p=checked_png(file,size,decoded))return p;
+  if(provider(c)!=CUSTOM)if(auto *p=checked_png(file,size,decoded))return p;
   paths(file,sizeof(file),c,z,x,y);if(auto *p=checked_png(file,size,decoded))return p;
-  const uint32_t now=milliseconds();if(!c.online||!network_allowed())return nullptr;
+  const uint32_t now=milliseconds();if(local_only||!c.online||!network_allowed())return nullptr;
   if(backing_off){if(uint32_t(now-backoff_started)<backoff_ms)return nullptr;backing_off=false;}
   if(time(nullptr)<1700000000){
     waiting_clock=true;
@@ -196,7 +212,7 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
     return nullptr;
   }
   waiting_clock=false;
-  for(const auto &m:misses)if(m.used&&m.z==z&&m.x==x&&m.y==y&&uint32_t(now-m.at)<600000)return nullptr;
+  for(const auto &m:misses)if(m.used&&m.source==source_hash(c)&&m.z==z&&m.x==x&&m.y==y&&uint32_t(now-m.at)<600000)return nullptr;
   uint64_t total=0,free_space=0;
   if(esp_vfs_fat_info(SD_ROOT,&total,&free_space)!=ESP_OK||free_space<8ULL*1024*1024+MAX_PNG){cache_full=true;return nullptr;}
   if(!directories(c,z,x))return nullptr;
@@ -206,7 +222,7 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
   char temporary[200];snprintf(temporary,sizeof(temporary),"%s.tmp",file);FILE *out=fopen(temporary,"wb");if(!out)return nullptr;
   char url[256];snprintf(url,sizeof(url),"%s%s%u/%u/%u.png",c.url,c.url[strlen(c.url)-1]=='/'?"":"/",z,x,y);
   esp_http_client_config_t http={};http.url=url;http.timeout_ms=2500;http.buffer_size=1024;http.buffer_size_tx=512;
-  http.user_agent="MeshCrossway/0.8.4 (+https://github.com/Renbrant/MeshCrossway)";http.crt_bundle_attach=esp_crt_bundle_attach;http.disable_auto_redirect=true;
+  http.user_agent="MeshCrossway/0.10.0 (+https://github.com/Renbrant/MeshCrossway)";http.crt_bundle_attach=esp_crt_bundle_attach;http.disable_auto_redirect=true;
   auto client=esp_http_client_init(&http);bool ok=false,valid_payload=false,decode_attempted=false;int response=0;unsigned char *png=nullptr;size=0;
   if(client&&esp_http_client_open(client,0)==ESP_OK){
     const auto length=esp_http_client_fetch_headers(client);const int status=esp_http_client_get_status_code(client);response=status;
@@ -223,13 +239,15 @@ static unsigned char *obtain(const Config &c,unsigned z,unsigned x,unsigned y,si
   unsigned char *test=nullptr;if(ok&&!cancelled()){decode_attempted=true;valid_payload=decode(png,size,&test);ok=valid_payload;}else ok=false;
   if(ok)ok=fwrite(png,1,size,out)==size&&fflush(out)==0&&fsync(fileno(out))==0;
   if(fclose(out))ok=false;
+  // FATFS cannot replace an existing destination with rename(). Only invalid
+  // cached files reach this branch; the new PNG is already verified and synced.
   if(ok&&remove(file)&&errno!=ENOENT)ok=false;
   if(ok)ok=rename(temporary,file)==0;
   if(!ok){
     lv_mem_free(test);test=nullptr;
     const bool missing=response==404||response==410||(response==200&&decode_attempted&&!valid_payload);
     remove(temporary);heap_caps_free(png);png=nullptr;
-    if(missing){misses[miss_slot]={z,x,y,now,true};miss_slot=(miss_slot+1)%12;}
+    if(missing){misses[miss_slot]={source_hash(c),z,x,y,now,true};miss_slot=(miss_slot+1)%12;}
     else if(!cancelled()&&!backing_off){backoff_started=now;backoff_ms=10000;backing_off=true;}
   }
   // Bound demand from an interactive viewport; never prefetch adjacent regions.
@@ -267,7 +285,7 @@ static void magnify_frame(lv_color_t *pixels,unsigned width,unsigned height){
 static Frame *render(const View &v,const Config &c){
   const auto begun=milliseconds();waiting_clock=cache_full=false;
   if(!esp_sdcard_port_get_size())clear_tiles();
-  auto *f=(Frame *)heap_caps_malloc(sizeof(Frame),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!f)return nullptr;new(f) Frame();f->view=v;f->source=source_hash(c);
+  auto *f=(Frame *)heap_caps_malloc(sizeof(Frame),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);if(!f)return nullptr;new(f) Frame();f->view=v;f->source=render_hash(c);
   const bool night=provider(c)==STREET_NIGHT;
   const size_t count=v.width*v.height;auto *pixels=(lv_color_t *)heap_caps_malloc(count*sizeof(lv_color_t),MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
   if(!pixels){release(f);return nullptr;}
@@ -285,11 +303,18 @@ static Frame *render(const View &v,const Config &c){
       if(!tile){size_t size=0;auto *png=obtain(c,v.zoom,tile_x,tile_y,size,&rgba,v.generation);heap_caps_free(png);
         if(rgba)tile=keep_tile(f->source,v.zoom,tile_x,tile_y,rgba);
       }
+      ParentRegion parent;bool overzoom=false;
+      if(!tile&&!rgba&&overzoom_enabled(c))for(unsigned levels=1;levels<=3&&levels<=v.zoom;++levels){
+        if(!parent_region(v.zoom,tile_x,tile_y,levels,parent))break;
+        tile=cached_tile(f->source,parent.z,parent.x,parent.y);
+        if(!tile){size_t size=0;auto *png=obtain(c,parent.z,parent.x,parent.y,size,&rgba,v.generation,true);heap_caps_free(png);if(rgba)tile=keep_tile(f->source,parent.z,parent.x,parent.y,rgba);}
+        if(tile||rgba){overzoom=true;++f->overzoom;break;}
+      }
       if(wanted.load()!=v.generation){lv_mem_free(rgba);release(f);return nullptr;}
       if(tile||rgba){++f->loaded;
         const int dx=tx*256-left,dy=ty*256-top;
         for(int y=fmax(0,dy);y<int(v.height)&&y<dy+256;++y)for(int x=fmax(0,dx);x<int(v.width)&&x<dx+256;++x){
-          const unsigned i=(y-dy)*256+x-dx;
+          const unsigned i=overzoom?(parent.top+unsigned(y-dy)/parent.scale)*256+parent.left+unsigned(x-dx)/parent.scale:unsigned((y-dy)*256+x-dx);
           if(tile)pixels[y*v.width+x]=tile[i];
           else {const auto *p=rgba+4*i;const unsigned a=p[3];pixels[y*v.width+x]=lv_color_make((p[0]*a+230*(255-a))/255,(p[1]*a+230*(255-a))/255,(p[2]*a+230*(255-a))/255);}
           if(night)pixels[y*v.width+x]=night_pixel(pixels[y*v.width+x]);
@@ -299,8 +324,11 @@ static Frame *render(const View &v,const Config &c){
     }
   }
   if(map_text_magnified(c))magnify_frame(pixels,v.width,v.height);
-  snprintf(f->status,sizeof(f->status),"z%u / %u tiles / %u missing%s",v.zoom,f->loaded,f->missing,!esp_sdcard_port_get_size()?" / SD unavailable":waiting_clock?" / clock sync":cache_full?" / cache reserve":"");last_render_ms=milliseconds()-begun;return f;
+  snprintf(f->status,sizeof(f->status),"z%u / %u tiles / %u missing / %u low-res%s",v.zoom,f->loaded,f->missing,f->overzoom,!esp_sdcard_port_get_size()?" / SD unavailable":waiting_clock?" / clock sync":cache_full?" / cache reserve":"");last_render_ms=milliseconds()-begun;return f;
 }
+}
+#include "meshcrossway_map_offline.h"
+namespace mcxmap {
 static void worker(void *){
   uint64_t previous_source=0;
   for(;;){
@@ -310,8 +338,14 @@ static void worker(void *){
     portENTER_CRITICAL(&mux);const Config c=config;const bool work=queued&&!ready&&!mcxpriority::ble_initializing.load();View v=requested;if(work)queued=false;portEXIT_CRITICAL(&mux);
     if(work){mcxpriority::map_busy=true;
       if(mcxpriority::ble_initializing.load()){mcxpriority::map_busy=false;continue;}
-      if(source_hash(c)!=previous_source){clear_tiles();for(auto &miss:misses)miss=Miss{};backing_off=false;previous_source=source_hash(c);}
+      if(render_hash(c)!=previous_source){clear_tiles();for(auto &miss:misses)miss=Miss{};backing_off=false;previous_source=render_hash(c);}
       mcxmem::capture(10);auto *f=render(v,c);mcxmem::observe(mcxmem::MAP);mcxmem::capture(11);if(f&&wanted.load()==v.generation){portENTER_CRITICAL(&mux);ready=f;portEXIT_CRITICAL(&mux);}else release(f);mcxpriority::map_busy=false;}
+    if(!work&&!mcxpriority::ble_initializing.load()){
+      mcxpriority::map_busy=true;
+      if(!esp_sdcard_port_get_size()){clear_tiles();mcxpack::close();}
+      else {if(mcxpack::scan_requested.exchange(false)){mcxpack::close();clear_tiles();mcxpack::scan(SD_ROOT);}mcxpack::select(SD_ROOT,c.pack,milliseconds());}
+      mcxoffline_map::tick();mcxpriority::map_busy=false;
+    }
     vTaskDelay(pdMS_TO_TICKS(50));
   }
 }
@@ -329,7 +363,7 @@ static bool start(){
   return true;
 }
 static uint32_t request(View v){
-  if(v.zoom<3||v.zoom>19||v.width<64||v.width>480||v.height<64||v.height>286||!isfinite(v.latitude)||!isfinite(v.longitude))return 0;
+  if(v.zoom>19||v.width<64||v.width>480||v.height<64||v.height>286||!isfinite(v.latitude)||!isfinite(v.longitude))return 0;
   if(!start())return 0;
   v.generation=wanted.fetch_add(1)+1;
   portENTER_CRITICAL(&mux);requested=v;queued=true;portEXIT_CRITICAL(&mux);return v.generation;

@@ -1,5 +1,7 @@
 # Map Optimization Knowledge Base
 
+**Implementation update:** [v0.10.3 raster candidate](offline-raster-v0103.md) implements bounded PMTiles reading, ancestor overzoom, navigation and resumable offline areas. Hardware performance/coexistence validation is pending; research alternatives below remain candidates unless explicitly implemented.
+
 **Project:** MeshCrossway  
 **Document type:** Living engineering reference and experiment backlog  
 **Created:** 2026-11-07  

@@ -85,6 +85,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary="EXPERIMENTAL: improves node details and map controls. Last-heard age uses hours/minutes/seconds, node details hide map actions, Map Options shows its active context, and zoom/center controls sit on the map. v0.9.32 remains the recommended stable image; physical validation is pending."
         label="Map details and on-map controls / EXPERIMENTAL"
         status="experimental"
+    elif version=="v0.10.3":
+        summary="EXPERIMENTAL: PNG PMTiles packs, parent-tile overzoom, filtered node fit, anchored pinch and resumable offline areas with permitted custom providers. Includes v0.9.33 controls. Physical validation pending; v0.9.32 remains stable."
+        label="Offline raster maps / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.33":
         summary="EXPERIMENTAL: improves saved-network Wi-Fi feedback, adds quick visibility and color controls for saved tracks, and resets the right-rail highlight when returning to the map. v0.9.32 remains the recommended stable image; physical validation is pending."
         label="Wi-Fi and saved track controls / EXPERIMENTAL"
