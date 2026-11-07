@@ -33,6 +33,7 @@ static bool snapshot(Snapshot &s){s=mock_state;return true;}
 static bool submit(Action a,uint32_t id=0,const char *name=nullptr){last_action=a;last_id=id;if(name)snprintf(last_name,sizeof(last_name),"%s",name);return a!=SAVE_POI||mcxgnss::fix.valid;}
 }
 namespace meshcrossway {
+namespace mcxtouch { static bool current_points(lv_point_t &,lv_point_t &){return false;} static unsigned current_contacts(){return 0;} }
 static int page=4,map_view=0;static void draw();
 static lv_obj_t *body=nullptr,*info_dialog=nullptr,*right_rail=nullptr;
 static bool navigation_panel=false;

@@ -84,6 +84,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary="EXPERIMENTAL: improves node details and map controls. Last-heard age uses hours/minutes/seconds, node details hide map actions, Map Options shows its active context, and zoom/center controls sit on the map. v0.9.28 remains the recommended stable image; physical validation is pending."
         label="Map details and on-map controls / EXPERIMENTAL"
         status="experimental"
+    elif version=="v0.9.32":
+        summary="EXPERIMENTAL: restores the v0.9.31 raster map and adds two-finger pinch zoom. Adds a saved 1.25x map magnification option; it scales all map content, crops the visible area, and leaves cached tile files unchanged. Standard raster tile labels cannot be resized independently. v0.9.28 remains the recommended stable image pending hardware validation."
+        label="Raster map pinch zoom / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.9.31":
         summary="EXPERIMENTAL: keeps zoom/center controls above map tiles after drag and makes the active Map Options, Record, Tracks or POIs screen the only highlighted map action. v0.9.28 remains the recommended stable image; physical validation is pending."
         label="Map controls and navigation state / EXPERIMENTAL"
