@@ -1,6 +1,8 @@
 # MeshCrossway controller firmware
 
-**Current stable: v0.9.32.** This directory contains the ESP32-S3 controller firmware for the non-B Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0, using ESP-IDF 5.3.2 and LVGL 8.4 through the pinned Waveshare BSP. The historical directory name `display-prototype` remains for build compatibility; the software now includes real dual-radio BLE, messaging, GNSS and storage.
+**Current stable: v0.9.32.**
+
+**Current test candidate: v0.9.33.** Adds a saved-password hint when a scanned Wi-Fi network is already known, compact visibility and color controls on each saved-track row, and resets the active map action highlight when returning to the map from another page. Physical validation is pending. This directory contains the ESP32-S3 controller firmware for the non-B Waveshare ESP32-S3-Touch-LCD-3.5 Rev2.0, using ESP-IDF 5.3.2 and LVGL 8.4 through the pinned Waveshare BSP. The historical directory name `display-prototype` remains for build compatibility; the software now includes real dual-radio BLE, messaging, GNSS and storage.
 
 v0.9.32 restores the v0.9.31 raster map, adds two-finger pinch zoom, and adds **Larger map labels / 1.25x** in Map Options. That option magnifies the complete rendered map, including roads and overlays; it shows a smaller area and can look slightly softer. It does not change tile downloads or SD storage. Raster street-label typography is baked into each tile, so reducing source resolution cannot enlarge the labels.
 

@@ -407,6 +407,8 @@ static void draw_overlays(lv_event_t *event){
 }
 namespace gpsui {
 static lv_obj_t *dialog=nullptr,*status_label=nullptr,*metrics_label=nullptr,*enabled_button=nullptr,*baud_button=nullptr,*timeout_button=nullptr,*units_button=nullptr;
+static lv_obj_t *quick_track_color_popup=nullptr,*quick_track_color_swatch=nullptr;
+static uint32_t quick_track_color_id=0;
 static lv_obj_t *map_save_label=nullptr,*clock_status=nullptr;
 static lv_obj_t *edit_value=nullptr,*edit_keyboard=nullptr,*edit_notice=nullptr;
 static int editing=0;
@@ -445,6 +447,7 @@ static void refresh(){
   if(units_button)chatview::label(lv_obj_get_child(units_button,0),c.imperial?"Units: ft / mph":"Units: m / km/h");
 }
 static void base(const char *title){
+  if(quick_track_color_popup){lv_obj_del(quick_track_color_popup);quick_track_color_popup=nullptr;quick_track_color_swatch=nullptr;}
   info_close_now(nullptr);
   map_node_info=page==4&&strcmp(title,"NODE DETAILS")==0;
   map_options_active=page==4&&strcmp(title,"MAP OPTIONS")==0;
@@ -578,6 +581,32 @@ static bool settings_send(const mcxnav::Command &command){
   if(!queued&&nav_detail&&nav_dialog==6){navui::set_hidden(nav_detail,false);chatview::label(nav_detail,"Storage busy / retry");}
   if(nav_detail&&nav_dialog!=6)chatview::label(nav_detail,queued?"Queued / waiting for SD confirmation":"Storage busy / retry SAVE");
   return queued;
+}
+static void quick_track_color(uint32_t id,lv_obj_t *swatch){
+  if(quick_track_color_popup){lv_obj_del(quick_track_color_popup);quick_track_color_popup=nullptr;}
+  quick_track_color_id=id;quick_track_color_swatch=swatch;
+  quick_track_color_popup=panel_at(body,(lv_obj_get_width(body)-224)/2,18,224,244,panel2,10);
+  lv_obj_set_style_pad_all(quick_track_color_popup,8,0);
+  lv_obj_set_style_pad_row(quick_track_color_popup,5,0);
+  lv_obj_set_flex_flow(quick_track_color_popup,LV_FLEX_FLOW_COLUMN);
+  single_label(quick_track_color_popup,"TRACK COLOR",0,0,208,orange);
+  static const char *names[]={"Orange","Blue","Green","Red","Purple","Yellow"};
+  for(unsigned i=0;i<6;++i){
+    auto *choice=action_button(quick_track_color_popup,names[i],0,0,200,24,lv_color_hex(mcxnav::TRACK_COLORS[i]),[](lv_event_t *e){
+      const unsigned color_index=unsigned(uintptr_t(lv_event_get_user_data(e)));
+      mcxnav::Command c;c.action=mcxnav::SET_COLOR;c.id=quick_track_color_id;c.value=mcxnav::TRACK_COLORS[color_index];
+      if(settings_send(c)){
+        if(quick_track_color_swatch)lv_obj_set_style_bg_color(quick_track_color_swatch,lv_color_hex(mcxnav::TRACK_COLORS[color_index]),0);
+        if(quick_track_color_popup){lv_obj_del(quick_track_color_popup);}
+        quick_track_color_popup=nullptr;quick_track_color_swatch=nullptr;
+      }
+    },intptr_t(i));
+    lv_obj_set_width(choice,LV_PCT(100));
+    lv_obj_set_style_bg_color(choice,lv_color_hex(mcxnav::TRACK_COLORS[i]),0);
+    lv_obj_set_style_text_color(lv_obj_get_child(choice,0),white,0);
+  }
+  (void)swatch;
+  action_button(quick_track_color_popup,"CANCEL",0,0,200,24,panel2,[](lv_event_t *){if(quick_track_color_popup){lv_obj_del(quick_track_color_popup);}quick_track_color_popup=nullptr;quick_track_color_swatch=nullptr;},0);
 }
 static void setting_apply(){
   if(!setting_value||settings_owner!=info_dialog)return;
@@ -734,7 +763,18 @@ static void track_folders(){
   auto *row=control_row();control_button(row,"NEW FOLDER",panel2,[](lv_event_t *){lv_async_call([](void *){folder_form(0);},nullptr);},0);control_button(row,"REFRESH",panel2,[](lv_event_t *){lv_async_call([](void *){library(false);},nullptr);},0);
   if(library_folder&&library_folder!=0xffffffffu){row=control_row();control_button(row,"RENAME",panel2,[](lv_event_t *){lv_async_call([](void *){folder_form(library_folder);},nullptr);},0);control_button(row,"REMOVE",panel2,[](lv_event_t *){lv_async_call([](void *){remove_folder();},nullptr);},0);}
   auto *list=panel_at(dialog,0,0,lv_obj_get_width(body)-16,150,bg,0);lv_obj_set_width(list,LV_PCT(100));lv_obj_add_flag(list,LV_OBJ_FLAG_SCROLLABLE);lv_obj_set_scroll_dir(list,LV_DIR_VER);unsigned shown=0;
-  if(s)for(unsigned i=0;i<s->track_count;++i){const auto &t=s->tracks[i];if(library_folder!=0xffffffffu&&t.folder!=library_folder)continue;char text[80];snprintf(text,sizeof(text),"%s / %.2f km",t.name,t.metres/1000);auto *button=action_button(list,text,0,shown++*42,lv_obj_get_width(body)-16,38,panel2,[](lv_event_t *e){lv_async_call([](void *id){track_details(uint32_t(uintptr_t(id)));},lv_event_get_user_data(e));},t.id);lv_obj_set_width(button,LV_PCT(100));lv_obj_set_width(lv_obj_get_child(button,0),LV_PCT(100));}
+  if(s)for(unsigned i=0;i<s->track_count;++i){
+    const auto &t=s->tracks[i];if(library_folder!=0xffffffffu&&t.folder!=library_folder)continue;
+    const mcxnav::Style *style=nullptr;for(const auto &v:s->preferences.styles)if(v.id==t.id){style=&v;break;}
+    auto *track_row=panel_at(list,0,int(shown++)*42,lv_obj_get_width(body)-16,38,bg,0);lv_obj_set_width(track_row,LV_PCT(100));
+    lv_obj_set_flex_flow(track_row,LV_FLEX_FLOW_ROW);lv_obj_set_flex_align(track_row,LV_FLEX_ALIGN_START,LV_FLEX_ALIGN_CENTER,LV_FLEX_ALIGN_CENTER);lv_obj_set_style_pad_column(track_row,4,0);
+    char text[80];snprintf(text,sizeof(text),"%s / %.2f km",t.name[0]?t.name:"Track",t.metres/1000);
+    auto *button=action_button(track_row,text,0,0,100,34,panel2,[](lv_event_t *e){lv_async_call([](void *id){track_details(uint32_t(uintptr_t(id)));},lv_event_get_user_data(e));},t.id);lv_obj_set_width(button,0);lv_obj_set_flex_grow(button,1);
+    auto *toggle=lv_switch_create(track_row);lv_obj_set_size(toggle,38,24);if(style&&style->visible)lv_obj_add_state(toggle,LV_STATE_CHECKED);
+    lv_obj_add_event_cb(toggle,[](lv_event_t *e){auto *control=lv_event_get_target(e);const bool visible=lv_obj_has_state(control,LV_STATE_CHECKED);mcxnav::Command c;c.action=mcxnav::SET_VISIBLE;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));c.value=visible;if(!settings_send(c)){if(visible)lv_obj_clear_state(control,LV_STATE_CHECKED);else lv_obj_add_state(control,LV_STATE_CHECKED);}},LV_EVENT_VALUE_CHANGED,(void *)(uintptr_t(t.id)));
+    auto *color_button=action_button(track_row,"",0,0,34,34,panel2,[](lv_event_t *e){const uint32_t id=uint32_t(uintptr_t(lv_event_get_user_data(e)));auto *swatch=lv_obj_get_child(lv_event_get_target(e),1);quick_track_color(id,swatch);},t.id);lv_obj_set_width(color_button,34);lv_obj_set_flex_grow(color_button,0);
+    auto *swatch=panel_at(color_button,8,8,18,18,lv_color_hex(style?style->color:0xFF8A24),9);lv_obj_clear_flag(color_button,LV_OBJ_FLAG_SCROLLABLE);(void)swatch;
+  }
   if(!shown)single_label(list,"No tracks in this folder.",0,0,lv_obj_get_width(body)-16,muted);
 }
 
