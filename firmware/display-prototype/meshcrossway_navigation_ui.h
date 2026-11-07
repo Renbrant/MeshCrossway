@@ -7,7 +7,7 @@ static int source_map_coord(int p,int extent,bool magnified){return magnified?ex
 static lv_obj_t *canvas=nullptr,*picture=nullptr,*marker=nullptr,*map_status=nullptr,*attribution=nullptr;
 static mcxmap::Frame *front=nullptr;
 static lv_obj_t *zoom_overlay=nullptr,*zoom_slider=nullptr,*zoom_value=nullptr;
-static lv_obj_t *map_controls[4]={};
+static lv_obj_t *map_controls[3]={};
 static bool controls_hidden=false;
 static void reset_gesture();
 static bool zoom_open=false,zoom_adjusting=false,worker_start_failed=false;
@@ -240,8 +240,15 @@ static void create(int w){
   auto *center_control=action_button(canvas,"",w-38,50,32,38,panel2,on_action,A_MAP_CENTER);
   auto *center_glyph=panel_at(center_control,4,7,23,24,panel2,0);lv_obj_set_style_bg_opa(center_glyph,LV_OPA_TRANSP,0);lv_obj_set_style_text_color(center_glyph,orange,0);lv_obj_clear_flag(center_glyph,LV_OBJ_FLAG_CLICKABLE);lv_obj_add_event_cb(center_glyph,context_icon,LV_EVENT_DRAW_MAIN,(void *)(intptr_t)A_MAP_CENTER);
   map_controls[0]=zoom_control;map_controls[1]=center_control;
-  map_controls[2]=action_button(canvas,"FIT",w-38,92,32,34,panel2,fit_nodes,0);
-  map_controls[3]=action_button(canvas,"N",w-38,130,32,30,panel2,[](lv_event_t *){lv_async_call([](void *){gpsui::open();},nullptr);},0);
+  map_controls[2]=action_button(canvas,"",w-38,92,32,34,panel2,fit_nodes,0);
+  auto *fit_glyph=panel_at(map_controls[2],4,5,24,24,panel2,0);
+  lv_obj_set_style_bg_opa(fit_glyph,LV_OPA_TRANSP,0);lv_obj_clear_flag(fit_glyph,LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_event_cb(fit_glyph,[](lv_event_t *e){
+    auto *ctx=lv_event_get_draw_ctx(e);lv_area_t origin;lv_obj_get_coords(lv_event_get_target(e),&origin);
+    lv_draw_rect_dsc_t dot;lv_draw_rect_dsc_init(&dot);dot.bg_color=orange;dot.bg_opa=LV_OPA_COVER;dot.radius=LV_RADIUS_CIRCLE;
+    const int points[][2]={{5,5},{18,6},{11,12},{5,19},{19,18}};
+    for(const auto &p:points){lv_area_t a={lv_coord_t(origin.x1+p[0]-2),lv_coord_t(origin.y1+p[1]-2),lv_coord_t(origin.x1+p[0]+2),lv_coord_t(origin.y1+p[1]+2)};lv_draw_rect(ctx,&dot,&a);}
+  },LV_EVENT_DRAW_MAIN,nullptr);
   controls_hidden=false;
   picture=lv_img_create(canvas);lv_obj_clear_flag(picture,LV_OBJ_FLAG_CLICKABLE);
   if(front){lv_img_cache_invalidate_src(&front->image);mcxmap::release(front);front=nullptr;}
@@ -268,7 +275,7 @@ static void create(int w){
   // the controls above the map image and labels so tile refreshes cannot cover
   // them after a drag finishes.
   lv_obj_move_foreground(zoom_control);
-  lv_obj_move_foreground(center_control);lv_obj_move_foreground(map_controls[2]);lv_obj_move_foreground(map_controls[3]);
+  lv_obj_move_foreground(center_control);lv_obj_move_foreground(map_controls[2]);
   set_status(centered?(gps_center?"Loading map...":"Centered on a saved node · Center GPS to move"):"Waiting for GPS or a node position");if(zoom_open)show_zoom();
   mcxmap::start();if(centered)request();
 }
@@ -1011,7 +1018,7 @@ static void offline_areas(){
   pack_status=single_label(dialog,"",0,0,440,white);
   row=control_row();control_button(row,"REFRESH LIST",panel2,[](lv_event_t *){lv_async_call([](void *){offline_areas();},nullptr);},0);
   control_button(row,"CENTER PACK",panel2,[](lv_event_t *){const auto p=mcxpack::snapshot();if(p.selected[0]&&p.error==mcxpm::OK){info_close_now(nullptr);navui::latitude=p.coverage.latitude;navui::longitude=p.coverage.longitude;navui::zoom=p.coverage.center_zoom>19?19:p.coverage.center_zoom;navui::centered=true;navui::following=false;navui::request();}},0);
-  single_label(dialog,"PNG 256x256 only; none/gzip directory compression. Packs must include visible attribution. Maximum archive 2 GiB for this FATFS build. Missing tiles fall back to compatible XYZ/provider cache. Refresh after copying packs to SD. Map stays north-up; N opens GNSS.",0,0,440,muted);offline_refresh();
+  single_label(dialog,"PNG 256x256 only; none/gzip directory compression. Packs must include visible attribution. Maximum archive 2 GiB for this FATFS build. Missing tiles fall back to compatible XYZ/provider cache. Refresh after copying packs to SD. Map stays north-up; GNSS remains in the right navigation rail.",0,0,440,muted);offline_refresh();
 }
 static void map_options(){
   base("MAP OPTIONS");mcxmap::start();const auto c=mcxmap::configuration();
