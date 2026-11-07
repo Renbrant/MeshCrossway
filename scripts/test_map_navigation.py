@@ -60,7 +60,7 @@ static void esp_http_client_cleanup(void *){}
     test=(ROOT/'tests/map_navigation_test.cpp').read_text().replace('// PRODUCTION_GPS_REFRESH',refresh).replace('// PRODUCTION_GPS_HEADER',header).replace('// PRODUCTION_ACTIONS',actions).replace('// PRODUCTION_CONTEXT',glyphs+icons)
     source=temp/'map_navigation.cpp';source.write_text(allocator+test)
     binary=temp/'map_navigation'
-    subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
+    subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,'-I'+str(ROOT/'tests'),str(source),*objects,'-lm','-o',str(binary)],check=True)
     subprocess.run([str(binary),str(temp/'card')],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
 
     (temp/'driver').mkdir(exist_ok=True)
@@ -89,7 +89,7 @@ static int uart_read_bytes(int,void *p,unsigned cap,unsigned){return fake_uart_r
 ''')
     source=temp/'gnss_runtime.cpp';source.write_text(allocator+(ROOT/'tests/gnss_runtime_test.cpp').read_text())
     binary=temp/'gnss_runtime'
-    subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
+    subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,'-I'+str(ROOT/'tests'),str(source),*objects,'-lm','-o',str(binary)],check=True)
     subprocess.run([str(binary)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
 
     (temp/'freertos/semphr.h').write_text(r'''#pragma once
@@ -103,7 +103,7 @@ static void xSemaphoreGive(void *){}
 ''')
     source=temp/'navigation_runtime.cpp';source.write_text(allocator+(ROOT/'tests/navigation_runtime_test.cpp').read_text())
     binary=temp/'navigation_runtime'
-    subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
+    subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,'-I'+str(ROOT/'tests'),str(source),*objects,'-lm','-o',str(binary)],check=True)
     subprocess.run([str(binary),str(temp/'navigation-card')],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
 
     # Exercise the exact Home adapter and card construction with real LVGL.
@@ -111,5 +111,5 @@ static void xSemaphoreGive(void *){}
     home=ui[ui.index('// Only this timer owns the Home cards.'):ui.index('static void draw(){',ui.index('// Only this timer owns the Home cards.'))]
     source=temp/'home_cards.cpp';source.write_text(allocator+(ROOT/'tests/home_cards_test.cpp').read_text().replace('// PRODUCTION_HOME',helpers+home))
     binary=temp/'home_cards'
-    subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,str(source),*objects,'-lm','-o',str(binary)],check=True)
+    subprocess.run(['c++','-std=c++17','-Wall','-Wextra','-Werror=misleading-indentation','-Wno-unused-function','-Wno-unused-variable','-fsanitize=address,undefined',*flags,'-I'+str(ROOT/'tests'),str(source),*objects,'-lm','-o',str(binary)],check=True)
     subprocess.run([str(binary)],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

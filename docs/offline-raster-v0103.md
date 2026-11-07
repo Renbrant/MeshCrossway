@@ -1,0 +1,48 @@
+# v0.10.3 — offline raster maps (test candidate)
+
+Implements the programming scope of #174, #175, #164 and #163 on top of merged v0.9.33 (`8879a3b`). v0.9.32 remains the hardware-tested stable/recovery image. This is a **test candidate**, pending physical validation with both BLE radios, Wi-Fi, GNSS and active track recording. Version numbers 0.10.0–0.10.2 were used by earlier experiments and are not reused.
+
+## Research and implementation decisions
+
+The existing [map optimization knowledge base](map-optimization-knowledge-base.md), [map worker memory analysis](map-worker-memory-v096.md), [TLS/DMA fix](map-tls-dma-v0923.md), [render latency work](map-render-latency-v087.md) and [map controls](map-controls-v0925.md) informed this implementation. Keep the stable raster pipeline, PSRAM-first allocations and independent radio stacks. No code was copied from OrcMaps or another map engine.
+
+| Resource | Alternatives considered | Selected approach and reason |
+| --- | --- | --- |
+| #174 archives | XYZ directories; MBTiles/SQLite; custom index; PMTiles v3 | Read-only PMTiles v3, independently implemented from its public specification. One file and a standard index, without SQLite page cache or a new private pack format. Keep XYZ for incremental writes and compatibility. Archive format alone does not improve PNG compression/decode time. |
+| #175 overzoom | LVGL image transforms; pre-expanded tile copies; nearest-neighbor crop; bilinear crop | Sample the correct ancestor region directly into the composed viewport, up to three levels. Avoid expanded tile allocations, retain source-coordinate cache identity, preserve geographic overlays. Nearest-neighbor favors bounded CPU and deterministic pixels; it adds no geographic detail. |
+| #164 gestures | Re-render at every sample; continuously resize all overlays; commit after gesture | Lightweight integer-distance gesture state; preview during movement, one worker request on completion, midpoint anchoring. Retain the two-contact touch sampler from v0.9.32 and the v0.9.33 UI. Correct the magnified pan delta. |
+| #164 fit nodes | Naive longitude min/max; largest-gap circular fit | Fit valid, retained nodes from the selected map networks using the largest gap on the longitude circle. Nodes across the date line stay together. Zoom 0–19 allows geographically distant groups to fit. |
+| #163 downloads | Additional task with concurrent TLS; automatic OSM scraping; desktop-only preparation; shared worker | Existing map worker performs at most one request per iteration and yields to viewport work and BLE initialization. No extra TLS client/task. Custom offline-permitted source or externally prepared archive. |
+| #163 durability | One overwritten JSON document; renaming over an existing FATFS destination; append-only unlimited log; two checkpoint banks | Two fixed, checksummed SD checkpoints per area. Flush/fsync before advancing the committed sequence; recover newest valid bank, pause after restart, retry the next tile. A persisted tombstone removes an area safely without deleting shared cached tiles. |
+| Image decode | Existing LodePNG; PNGdec; RAW RGB565; split PNG; vector tiles | Keep strict 256×256 PNG decode in this candidate, avoiding a simultaneous decoder/renderer migration. Existing research on scanline decode, RAW and vectors remains relevant for separate measured experiments. |
+
+Primary references: [PMTiles v3 specification](https://github.com/protomaps/PMTiles/blob/main/spec/v3/spec.md), [MBTiles specification](https://github.com/mapbox/mbtiles-spec), [OSMF tile policy](https://operations.osmfoundation.org/policies/tiles/), [ESP-IDF 5.3.2 external RAM](https://docs.espressif.com/projects/esp-idf/en/v5.3.2/esp32s3/api-guides/external-ram.html), [FreeRTOS capability allocations](https://docs.espressif.com/projects/esp-idf/en/v5.3.2/esp32s3/api-reference/system/freertos_additions.html).
+
+## Using the candidate
+
+- **Map Options → Offline Maps** opens the area/pack manager. Main map **FIT** fits retained, positioned nodes for the selected map networks. **N** opens GNSS information; the map stays north-up. Center GPS enables follow; panning/pinching disables it. Tap empty map space to hide/show the on-map controls. Attribution remains visible.
+- **Reuse parent tiles** can be disabled in Map Options. Exact tiles preserve the existing precedence: selected pack → compatible loose XYZ → provider cache → allowed interactive online request. Only then look locally for ancestors at z−1, z−2 and z−3. Ancestors are never fetched speculatively. Low-resolution status is visible.
+- Choose both networks, Meshtastic or MeshCore in Map Options. The same filter applies to map overlays and FIT, including retention and coordinate validation.
+- Copy licensed, prepared archives into `/sdcard/map-packs/NAME.pmtiles`. Names use letters, digits, hyphens, underscores and dots, at most 63 bytes. Open Offline Maps, refresh the list, choose a pack and use **Center Pack**. At most eight filenames are listed. Selection persists in map settings.
+- Packs need **PMTiles v3, PNG 256×256, uncompressed tile payloads, uncompressed or gzip directory/metadata sections**, and a nonempty root JSON `attribution` string. Attribution is shown as literal UTF-8; HTML is not rendered. Vector/JPEG/WebP/Brotli/Zstd are rejected clearly. Present pack and fallback-source credits remain visible together.
+- This signed-seek FATFS adapter accepts files up to **2 GiB−1**, narrower than FAT32's theoretical limit. Split larger datasets on the computer into suitable regional packs. Header zoom may be 0–30; this screen requests 0–19.
+- **Map Source** accepts an HTTPS base URL (the worker appends `/z/x/y.png`) and visible source attribution. Query-token URLs and automatic redirects are not supported. Enable offline permission only when the source's terms permit it. OSM/OpenTopoMap hostnames, including subdomains/case variants, cannot be used for area downloading.
+- Pan to the desired area, let its frame load, then **Save Visible Area**. Choose the visible zoom or up to two additional levels, review bounds/count/space estimate and start. Maximum **four areas**, **4096 tiles per area**, one running job. Jobs use their saved provider, independent of later source changes.
+- The UI estimates 32 KiB/tile and also shows the conservative 256 KiB/tile space bound plus 8 MiB reserve. Actual PNG sizes vary. The worker verifies existing/source tiles, reports bytes, progress and failed requests, waits for Wi-Fi, backs off after errors and leaves failed/full-SD jobs resumable. Restarted jobs are paused; open the area and choose Resume.
+- **Show Coverage** centers the area and outlines its bounds in yellow. Partial/error areas remain labeled as such in the area details; an outline is not a promise that every tile is present. Completion requires all requested tiles to succeed. Cancel/Remove keep shared cache tiles so other areas and normal browsing remain usable.
+
+## Resource and failure bounds
+
+The existing 12-tile RGB565 LRU remains capped at 1.5 MiB PSRAM. Ancestors occupy normal source-coordinate cache entries; no extra expanded tiles. Root and one most-recent leaf index each hold at most 4096 entries (up to 128 KiB each on the host ABI); directory input/output are each capped at 64 KiB. Depth is limited to four, offsets and run spans are checked and gzip validates CRC/size. Metadata nesting is capped at eight and attribution at 255 bytes. Oversized but otherwise valid archives can be rejected by these embedded limits; repack with smaller directories rather than lifting limits blindly.
+
+Offline state, command storage and the UI snapshot are allocated in PSRAM. The map worker's PSRAM stack is 8192 bytes. No new task is created. Map NVS writes remain on the existing UI task's internal stack; no eFuse, radio protocol, TLS/DMA or partition changes. Job journals are local versioned firmware records, not a portable file interchange format. Updating keeps radio bonds/history; downgrading to pre-schema-7 firmware may reset map presentation settings.
+
+SD operations and TLS remain potentially slow; this is cooperative scheduling, not a hard real-time guarantee. Hardware SD latency, FPS, p50/p95 lookup/decode times, RAM minima and BLE stability must be measured. No performance gain or sustained coexistence result is claimed from host tests alone.
+
+## Validation
+
+`python3 scripts/test_offline_raster.py` exercises the production format/geometry code under ASan/UBSan: official Hilbert vectors, run lengths, root/leaf lookup and cache, missing tiles, cyclic directories, unsupported formats, truncated/out-of-range sections, gzip limits, malformed metadata and 2000 mutated inputs.
+
+`python3 scripts/test_ble_pairing_ui.py --lvgl PATH_TO_LVGL_8_4` exercises the production compositor and screens with real LVGL and PNG: exact synthetic overzoom pixels, disabling overzoom, online precedence, real pack PNG/metadata/gzip, corrupt stream rejection, reboot/torn-checkpoint recovery, Wi-Fi loss, SD full, resume, completion and shared-cache cleanup. It also covers pinch anchoring with no request per sample, date-line node fit, network filtering, source/area forms, schema-6 migration and the earlier UI/radio/navigation regressions.
+
+Physical acceptance still requires both BLE sessions connected, GNSS updates and recording, interactive Wi-Fi, repeated gesture/source changes, SD removal/full/write failures, restart during transfer, small/large permitted areas and comparison against v0.9.32. Keep #163/#164/#174/#175 open until these acceptance results are recorded.

@@ -36,6 +36,9 @@ on:
       - "tests/fixtures/emoji_legacy_registry.json"
       - "scripts/test_map_navigation.py"
       - "tests/map_navigation_test.cpp"
+      - "tests/offline_raster_cases.h"
+      - "tests/pmtiles_test.cpp"
+      - "scripts/test_offline_raster.py"
       - "tests/map_projection_test.cpp"
       - "tests/gnss_runtime_test.cpp"
       - "tests/home_status_test.cpp"
@@ -104,6 +107,9 @@ on:
       - "tests/fixtures/emoji_legacy_registry.json"
       - "scripts/test_map_navigation.py"
       - "tests/map_navigation_test.cpp"
+      - "tests/offline_raster_cases.h"
+      - "tests/pmtiles_test.cpp"
+      - "scripts/test_offline_raster.py"
       - "tests/map_projection_test.cpp"
       - "tests/gnss_runtime_test.cpp"
       - "tests/home_status_test.cpp"
@@ -178,6 +184,7 @@ jobs:
           node scripts/test_remote_settings.cjs
           python3 scripts/test_runtime_diagnostics.py
           python3 scripts/test_memory_log.py
+          python3 scripts/test_offline_raster.py
           python3 scripts/test_remote_chat.py
           python3 scripts/test_conversations_history.py
           python3 scripts/test_meshtastic.py
