@@ -363,14 +363,6 @@ static void refresh_node_activity(){const auto config=mcxmap::configuration();if
 static uint32_t activity_color(NodeActivity state){return state==NODE_ACTIVE?0x36D399:state==NODE_RECENT?0x55C9F5:state==NODE_WEEK?0xFFD45A:0x8993A1;}
 static const char *activity_name(NodeActivity state){return state==NODE_ACTIVE?"Active recently":state==NODE_RECENT?"Seen recently":state==NODE_WEEK?"Seen 1-7 days ago":"Older / unknown activity";}
 static void open_node_selection(unsigned group){if(!overlay_cache||group>=overlay_cache->cluster_count)return;const auto &cluster=overlay_cache->clusters[group];if(cluster.count==1)gpsui::show_node_details(cluster.first);else gpsui::show_node_group(group);}
-static int displayed_map_coord(int value,int extent,bool magnified){
-  if(!magnified)return value;
-  return extent/2+(value-extent/2)*5/4;
-}
-static int source_map_coord(int value,int extent,bool magnified){
-  if(!magnified)return value;
-  return extent/2+(value-extent/2)*4/5;
-}
 static void draw_overlays(lv_event_t *event){
   // Called once per DMA stripe: use only integer coordinates cached outside draw.
   if(!front||!overlay_cache||!overlay_cache->ready||zoom_adjusting||front->view.zoom!=zoom)return;
