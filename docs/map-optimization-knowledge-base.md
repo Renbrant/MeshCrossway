@@ -71,6 +71,9 @@ Implementation references: [map tile worker](../firmware/display-prototype/meshc
 | M10 | Offline pack generation and distribution | Easier user setup and provider choice | Tile licenses and pack size | Medium |
 | M11 | Vector rendering as a separate research track | Independent text sizing and style control | Major CPU, RAM, glyph, and pipeline complexity | Deferred |
 | M12 | Performance instrumentation and regression harness | Objective decisions and safe changes | Engineering effort; diagnostic overhead | Required for every experiment |
+| M13 | Desktop-preprocessed raw RGB565 raster tiles | Eliminate device-side PNG decode for offline tiles; investigate lower cold-load latency | 128 KiB/tile, SD throughput and DMA buffer constraints | Medium — benchmark first |
+| M14 | Direct vector geometry / MVT Protocol Buffers and heading-up | Smaller regional map datasets in some cases; flexible text/style and map bearing | Parsing, styling, labels, CPU and PSRAM; major architecture change | Deferred — isolated proof of concept |
+| M15 | Display-bus optimization / LovyanGFX feasibility | Lower LCD transfer overhead and better scheduling if existing BSP is the bottleneck | Driver/touch/PMU/DMA compatibility and UI regressions | Medium — measurements first |
 
 ## M01. Indexed single-file archives for raster tiles
 
@@ -348,6 +351,69 @@ For each experiment, append a dated entry using this structure:
 
 Never write "faster", "smaller", or "uses less memory" without quantifying the comparison and identifying the test environment.
 
+## M13. Desktop-preprocessed raw RGB565 raster tiles (.bin)
+
+**Status:** CANDIDATE. **Scope:** offline map data and a read-only tile source behind the existing worker, not a replacement for the network cache.
+
+**Method:** On a desktop, transform properly licensed source raster tiles into 256 × 256, 16-bit-per-pixel RGB565 tiles. Store as fixed-size `.bin` files or pack them into an indexed container. Each tile then contains already formatted pixels rather than compressed PNG image data. A reader checks the format, bounds, row layout, endianness and version, reads the RGB565 payload, and passes it to the existing composition path with no PNG/DEFLATE decoding. Define an explicit on-disk format (e.g. version, magic, dimensions, pixel order, optional checksum), and distinguish **raw payload only** from **LVGL-specific binary files** with a display/image header.
+
+**Quantitative costs:** One raw 256 × 256 RGB565 image occupies **131,072 bytes / 128 KiB** before metadata, whether it contains blank terrain or complex streets. A 12-tile cache occupies **1.5 MiB** of PSRAM before metadata. The existing MeshCrossway worker **already caches decoded RGB565** in PSRAM: this technique primarily saves the decode path on **cold/offline cache misses**, not the cost of redrawing a tile already in RAM. Pre-processing adds a desktop workflow and generally increases SD capacity consumption and read bandwidth compared with PNG. If the pre-conversion is performed once on a PC, the controller avoids conversion CPU and transient RGBA decoding for those offline files.
+
+**DMA accuracy:** Raw RGB565 can be closer to the LCD's native transfer representation and can *potentially* avoid a per-pixel conversion before display. However, **a .bin file is not automatically DMA-ready**. The current UI composes tiles with overlays in an LVGL pipeline; drawing still requires correct compositing, clipping, pixel/byte order, flush-buffer ownership, transfer size/alignment and synchronization. DMA capability depends on the ESP32-S3 SPI/LCD peripheral, ESP-IDF configuration and whether the buffer is allocated in DMA-compatible memory. PSRAM DMA/EDMA has constraints; a **small aligned internal DMA-capable staging/stripe buffer** may be required. Do not assume that a pointer into PSRAM or an SD buffer can be submitted directly. Benchmark copying/flush cost and ensure DMA buffers cannot be overwritten until the transfer completes.
+
+**Implementation approach:**
+1. Create a reproducible desktop tile converter with fixed RGB565 byte order, explicit version/checksum, a compact manifest and preservation of attribution/license information. Handle alpha compositing consistently with the existing white/background treatment.
+2. Keep the existing PNG XYZ reader and HTTPS cache intact; add a read-only raw-tile adapter as an optional source for offline packages. Consider M01 indexed archives to reduce the number of large individual `.bin` files.
+3. Reuse the current worker, request-generation cancellation, 12-slot bounded LRU, PSRAM allocation policy and result ownership rules. Do not create a second competing map task or duplicate cached tiles.
+4. Validate invalid/short/truncated files, wrong dimensions/order, SD removal, FAT32 card sizes and disconnected Wi-Fi; never confuse raw binary tiles with existing PNG files.
+5. Compare the **same map imagery and viewport** in PNG and raw RGB565 on the board. Record cold SD read+decode+compose p50/p95, bytes read, first usable frame, PSRAM peak, internal heap/DMA minimum, BLE performance and total region size. Also compare warm-cache performance: it may be essentially unchanged.
+6. If investigating direct LCD DMA, prototype it **independently from the tile format change** to separate gains from hazards.
+
+**External engineering example:** [0015/map_tiles](https://github.com/0015/map_tiles) demonstrates **RGB565 offline tiles**, a **bounded LRU** and **FreeRTOS background tile loading** in its v2 navigation layer. Its file layout includes a small LVGL image header rather than assuming every `.bin` is headerless raw pixels. **It targets LVGL 9.x**; MeshCrossway uses **LVGL 8.x**, so study the principles and data layout rather than integrating the component without adaptation. See also the [offline preparation examples](https://github.com/0015/OfflineMapDownloader). Its background-cache idea is already partially present in MeshCrossway; the novel research question is whether **desktop-predecoded storage** helps.
+
+**Decision gate:** Adopt only if lower cold-map latency/reduced decode CPU outweigh substantially larger offline packages, SD bandwidth and any new memory/DMA constraints. **No hardware improvement has been measured yet.**
+
+## M14. Direct vector geometry, MVT/Protocol Buffers, and heading-up display
+
+**Status:** DEFERRED — standalone research/prototype; complements the broad M11 vector-engine discussion.
+
+**Methodology families (do not conflate them):**
+- **Direct custom geometry**: preprocess roads/areas into a simplified `.vec` (or similar) file for an embedded renderer. A parser can be tailored to a limited set of geometry types, zoom ranges and style rules.
+- **Mapbox Vector Tiles (MVT) in PBF**: encode geometries, tags and layer information with **Protocol Buffers** inside tiled payloads. Requires parsing PBF commands, decoding geometry deltas, applying per-zoom styles and rendering.
+- **Offline vector packages** (e.g. vector PMTiles): an *archive/container* can hold vector tiles but does not remove the need for a working renderer. M02 raster PMTiles is a separate, much smaller experiment.
+
+**Potential benefits:** For particular regions, zoom ranges, feature selections and styling, vector data can use less SD storage than raster tiles repeated across zoom levels; actual size depends on geometry density, generalization and compression. Roads, boundaries and labels can be styled, made larger and prioritized independently, addressing street-name readability more directly than magnifying a finished raster. A vector pipeline can recompute positions around a chosen bearing for a **heading-up/track-up display**, keeping symbols or labels upright while map geometry rotates.
+
+**Heading-up nuance:** Vector geometry makes arbitrary-angle rotation and label-aware orientation *architecturally natural*, but **does not guarantee low CPU cost on ESP32-S3**. Transformation math, geometry clipping, line joins, antialiasing, polygon fills, label collision detection, font/glyph memory and redraw frequency still matter. Conversely, a raster map *can* be rotated by software resampling or hardware assistance; it may produce blur and extra frame-copy costs, but rotation is not inherently impossible. Compare both approaches rather than assuming vector rotation will be faster.
+
+**Recommended bounded prototype:** Parse a preselected small region offline; reduce geometry precision and eliminate unused layers before writing to SD. Prefer one bounded feature/vertex working set, streamed/incremental decode, zoom-level-of-detail geometry, clipped shapes and precomputed glyph atlases. Define limits for malicious or invalid PBF/geometry length, vertex count and nesting; bound labels and collision checks. First render roads/water/areas without text; add labels, markers and heading-up only after collecting peak PSRAM/heap, task-stack and frame-time evidence. Keep all rendering in the map pipeline without blocking BLE tasks and preserve the current raster release untouched.
+
+**Reference and format distinction:** [ihayri/ESP32-S3-Offline-GPS-Maps](https://github.com/ihayri/ESP32-S3-Offline-GPS-Maps) is a useful **embedded direct-vector parsing/rendering example**: its README describes `chernik.vec` and `forests.vec` local geometry in FFat plus offline rendering of roads/forest areas. **That source is not evidence of MVT/PBF/Protocol Buffers support**; verify its custom `.vec` parser separately. For interoperable vector tiles study the [Mapbox Vector Tile specification](https://github.com/mapbox/vector-tile-spec) and [Protobuf](https://protobuf.dev/) with a deliberately bounded MCU parser.
+
+**Experiment plan:** (a) compare a small custom-vector dataset and MVT/PBF built from equivalent legal source data; (b) record regional archive sizes vs raster PNG/PMTiles for the *same* zoom/coverage; (c) compare north-up vs heading-up at fixed bearing and during continuous GNSS heading updates; (d) measure p50/p95 rendering and touch latency, memory peaks, BLE stability, font legibility, labels-at-rotation, clipping and visual correctness; (e) check license and attribution requirements.
+
+**Decision gate:** Keep **DEFERRED** until a hardware prototype demonstrates an objective benefit and fits internal/DMA heap, PSRAM, watchdog, touch and dual-BLE constraints. This must **not silently revive or replace** the previously deferred major vector rewrite.
+
+## M15. Optimizing the LCD transfer pipeline and investigating LovyanGFX
+
+**Status:** CANDIDATE for profiling, **not approval to replace the current display driver**.
+
+**Problem hypothesis:** Even with fast map tile decoding, the display may be bounded by **SPI transfer time**, flush-call count, LVGL draw/invalidation work, color conversion or CPU contention. A framework with efficient DMA transfers, batched drawing, asynchronous flushes and correct bus locking can sometimes reduce per-frame overhead. A faster renderer cannot exceed the fundamental SPI bit-rate limit for a given number of LCD pixels.
+
+**Reference:** [LovyanGFX](https://github.com/lovyan03/LovyanGFX) is an open-source ESP32 graphics framework with SPI, parallel-bus and LVGL integration examples. [IceNav-v3](https://github.com/jgauchia/IceNav-v3) is a GPS mapping project combining **LVGL and LovyanGFX**, using raster/vector map presentation and supporting varied SPI/parallel displays; its documentation explicitly notes special handling when **display and SD share an SPI bus**. This is an **engineering reference, not a proven speedup for MeshCrossway**. Verify its GPL-3.0 licensing before considering reuse of any code; learning architectural techniques does not require copying that code.
+
+**MeshCrossway-specific reality check:** The Waveshare controller uses an ST7796 SPI LCD, ESP-IDF 5.3.2 and the pinned Waveshare BSP/LVGL 8.4 driver. Its SD card uses **SDMMC 1-bit**, not the same SPI bus as the screen in the current configuration. The two LoRa radios are **separate BLE-connected modules**, not SPI transceivers on the controller's display bus. Therefore a claim that LovyanGFX will "fix SPI contention with the radio" is **not applicable as stated**. Possible indirect contention still exists in CPU, PSRAM/memory bandwidth, DMA-capable internal heap, scheduling and Wi-Fi/BLE coexistence; these must be measured and attributed correctly.
+
+**Evaluation method:**
+1. Instrument current LVGL flush callback count/area/bytes, SPI clock and transfer time, queue depth, invalidated pixel area, frame pacing, touch latency, CPU busy time, internal DMA heap and PSRAM bandwidth with radio connections held constant.
+2. First tune **existing** LVGL invalidation, draw-buffer/stripe sizing, bus transaction setup, queueing and transfer schedule, without changing the BSP. Preserve verified display, touch, backlight/AXP2101 and SD behavior.
+3. Only if the current display driver is the measured bottleneck, make an isolated prototype of a **LovyanGFX flush backend**, retaining LVGL 8 and exactly the same UI/map assets. Confirm ST7796 panel support and correct pins, SPI clock/mode, RGB565 byte order, rotation, flush-complete callback, DMA alignment and resource cleanup.
+4. Ensure new/old SPI transactions are serialized correctly. Avoid starving the LVGL task, touch and radio BLE callbacks; avoid invalid buffer reuse while DMA is active.
+5. Compare identical static map redraws, rapid pan, dense node markers, GPS follow, night mode, Wi-Fi HTTPS downloads and dual BLE traffic. Track FPS/visible update latency, transfer throughput, power, RAM minima, largest DMA block, task watermarks, watchdogs and resets.
+6. Retain the current BSP backend as a reversible fallback. No full framework replacement without clear **hardware** evidence.
+
+**Decision gate:** If profiling shows the bottleneck is **PNG decode, SD I/O or label layout**, changing the display framework may provide little value. Consider LovyanGFX only if measured LCD transfer overhead is significant and a compatible flush-backend prototype preserves all controller services.
+
 ## 4. Suggested experimental order
 
 **E01 — Measurement baseline (no functional modification).** Instrument existing raster XYZ PNG workflow and collect reproducible cold/warm/offline/online measurements. Confirm available diagnostics and record the v0.9.32 1.25× cost. **Gate:** reliable benchmark reproduction.
@@ -362,7 +428,13 @@ Never write "faster", "smaller", or "uses less memory" without quantifying the c
 
 **E06 — Decoder experiment.** Benchmark QOI versus the exact PNG sample end-to-end (read + decode + compose + cache). **Gate:** meaningful improvement after file-size and PSRAM costs are included.
 
-**E07 — Optional broader formats.** Reassess MBTiles and more complex codecs only if simpler approaches fail or interoperability clearly justifies the cost.
+**E07 — Raw RGB565 offline A/B (M13).** Generate the same small licensed tile set as PNG and desktop-preprocessed RGB565; test cold read/compose, total SD bytes/size, warm-cache speed, PSRAM, DMA heap and BLE coexistence. **Gate:** measured gain with acceptable storage cost. Keep LCD DMA experiments separate from storage-format experiments.
+
+**E08 — Display-flush profiling (M15).** Quantify existing LVGL flush cost and SPI throughput first. Attempt an isolated alternative backend only if this is a confirmed bottleneck. **Gate:** equivalent visuals/touch/PMU with better physical latency and no stack or DMA regression.
+
+**E09 — Direct vector/heading-up study (M14).** Desktop/custom-geometry and MVT/PBF proof of concept followed by a tightly bounded ESP32-S3 hardware test, without replacing the raster pipeline. **Gate:** demonstrable storage/heading-up/label value at acceptable frame-time and heap cost.
+
+**E10 — Optional broader formats.** Reassess MBTiles and more complex codecs only if simpler approaches fail or interoperability clearly justifies the cost.
 
 Experiments should be independently reversible. Never replace the currently recommended stable firmware as part of a research trial.
 
@@ -377,6 +449,9 @@ Experiments should be independently reversible. Never replace the currently reco
 - Does online tile scheduling increase pressure on the internal DMA-capable heap or NimBLE stack under dual-radio load?
 - Which metrics can be added to the current diagnostic ring without changing timing enough to skew results?
 - What backward-compatible map source selection UX fits the 480 × 320 local screen and the remote HTTP UI?
+- For equal geographic coverage, how much larger are raw RGB565 offline packages and how much lower is actual cold-load latency than PNG?
+- Is the current display flush limited by SPI bandwidth, small transactions, invalidated pixel count, DMA staging, or CPU rendering?
+- Can a heading-up vector prototype maintain legible upright labels and stable dual BLE without significant input latency?
 
 ## 6. Conclusions to preserve
 
@@ -389,7 +464,10 @@ Experiments should be independently reversible. Never replace the currently reco
 7. **Keep dynamic online cache writes and read-only offline packages separate** unless a specific benchmark supports combining them.
 8. **Preserve and enhance the existing map worker and LVGL renderer** before considering a new vector engine.
 9. **Do not bulk-download from public OSM tile servers** to generate offline maps.
-10. An experiment is complete only after reproducible measurements and physical hardware regression tests.
+10. **Raw RGB565 eliminates PNG decoding on offline cold loads, not all rendering costs or DMA staging**; its 128 KiB/tile storage penalty must be measured.
+11. **Vector data enables heading-up rendering by geometry transformation but does not guarantee cheap rotation or label placement** on ESP32-S3. Custom `.vec` parsing and standardized MVT/Protobuf are distinct technologies.
+12. **LovyanGFX is a potential display-backend optimization, not a radio-SPI contention fix in the current modular design.** Profile and isolate the LCD backend first.
+13. An experiment is complete only after reproducible measurements and physical hardware regression tests.
 
 ## 7. Reference material
 
@@ -400,6 +478,15 @@ Experiments should be independently reversible. Never replace the currently reco
 - [QGIS XYZ tile generation (directory and MBTiles)](https://documentation.qgis.org/3.44/en/docs/user_manual/processing_algs/qgis/rastertools.html)
 - [QOI image format](https://github.com/phoboslab/qoi)
 - [OpenStreetMap tile usage policy](https://operations.osmfoundation.org/policies/tiles/)
+- [0015/map_tiles — RGB565 offline tiles, LRU cache, FreeRTOS background loader (LVGL 9)](https://github.com/0015/map_tiles)
+- [0015 OfflineMapDownloader — desktop map preparation examples](https://github.com/0015/OfflineMapDownloader)
+- [ESP32-S3-Offline-GPS-Maps — embedded custom vector geometry example (.vec, not verified MVT/PBF)](https://github.com/ihayri/ESP32-S3-Offline-GPS-Maps)
+- [Mapbox Vector Tile format specification](https://github.com/mapbox/vector-tile-spec)
+- [Protocol Buffers documentation](https://protobuf.dev/)
+- [LovyanGFX — display bus/graphics driver](https://github.com/lovyan03/LovyanGFX)
+- [IceNav-v3 — LVGL and LovyanGFX embedded GPS mapping reference](https://github.com/jgauchia/IceNav-v3)
+- [ESP-IDF 5.3.2 SPI master driver](https://docs.espressif.com/projects/esp-idf/en/v5.3.2/esp32s3/api-reference/peripherals/spi_master.html)
+- [ESP-IDF ESP32-S3 external RAM / DMA constraints](https://docs.espressif.com/projects/esp-idf/en/v5.3.2/esp32s3/api-guides/external-ram.html)
 
 ### MeshCrossway internal source/history
 - [Map worker and caches](../firmware/display-prototype/meshcrossway_map_tiles.h)
@@ -414,4 +501,4 @@ Experiments should be independently reversible. Never replace the currently reco
 
 ---
 
-**Maintenance rule:** This is the **single index of map-optimization methods and experiments**. Keep version-specific implementation notes in their historical documents, but update the methodology status and experiment outcome here whenever new information becomes available. A future method should receive a new stable ID (M13, M14, etc.) rather than rewriting the history of a prior experiment.
+**Maintenance rule:** This is the **single index of map-optimization methods and experiments**. Keep version-specific implementation notes in their historical documents, but update the methodology status and experiment outcome here whenever new information becomes available. A future method should receive a new stable ID (M16, M17, etc.) rather than rewriting the history of a prior experiment.
