@@ -585,7 +585,7 @@ static bool settings_send(const mcxnav::Command &command){
 static void quick_track_color(uint32_t id,lv_obj_t *swatch){
   if(quick_track_color_popup){lv_obj_del(quick_track_color_popup);quick_track_color_popup=nullptr;}
   quick_track_color_id=id;quick_track_color_swatch=swatch;
-  quick_track_color_popup=panel_at(body,(lv_obj_get_width(body)-224)/2,18,224,244,panel,10);
+  quick_track_color_popup=panel_at(body,(lv_obj_get_width(body)-224)/2,18,224,244,panel2,10);
   lv_obj_set_style_pad_all(quick_track_color_popup,8,0);
   lv_obj_set_style_pad_row(quick_track_color_popup,5,0);
   lv_obj_set_flex_flow(quick_track_color_popup,LV_FLEX_FLOW_COLUMN);
@@ -597,7 +597,8 @@ static void quick_track_color(uint32_t id,lv_obj_t *swatch){
       mcxnav::Command c;c.action=mcxnav::SET_COLOR;c.id=quick_track_color_id;c.value=mcxnav::TRACK_COLORS[color_index];
       if(settings_send(c)){
         if(quick_track_color_swatch)lv_obj_set_style_bg_color(quick_track_color_swatch,lv_color_hex(mcxnav::TRACK_COLORS[color_index]),0);
-        if(quick_track_color_popup)lv_obj_del(quick_track_color_popup);quick_track_color_popup=nullptr;quick_track_color_swatch=nullptr;
+        if(quick_track_color_popup){lv_obj_del(quick_track_color_popup);}
+        quick_track_color_popup=nullptr;quick_track_color_swatch=nullptr;
       }
     },intptr_t(i));
     lv_obj_set_width(choice,LV_PCT(100));
@@ -605,7 +606,7 @@ static void quick_track_color(uint32_t id,lv_obj_t *swatch){
     lv_obj_set_style_text_color(lv_obj_get_child(choice,0),white,0);
   }
   (void)swatch;
-  action_button(quick_track_color_popup,"CANCEL",0,0,200,24,panel2,[](lv_event_t *){if(quick_track_color_popup)lv_obj_del(quick_track_color_popup);quick_track_color_popup=nullptr;quick_track_color_swatch=nullptr;},0);
+  action_button(quick_track_color_popup,"CANCEL",0,0,200,24,panel2,[](lv_event_t *){if(quick_track_color_popup){lv_obj_del(quick_track_color_popup);}quick_track_color_popup=nullptr;quick_track_color_swatch=nullptr;},0);
 }
 static void setting_apply(){
   if(!setting_value||settings_owner!=info_dialog)return;
@@ -770,7 +771,7 @@ static void track_folders(){
     char text[80];snprintf(text,sizeof(text),"%s / %.2f km",t.name[0]?t.name:"Track",t.metres/1000);
     auto *button=action_button(track_row,text,0,0,100,34,panel2,[](lv_event_t *e){lv_async_call([](void *id){track_details(uint32_t(uintptr_t(id)));},lv_event_get_user_data(e));},t.id);lv_obj_set_width(button,0);lv_obj_set_flex_grow(button,1);
     auto *toggle=lv_switch_create(track_row);lv_obj_set_size(toggle,38,24);if(style&&style->visible)lv_obj_add_state(toggle,LV_STATE_CHECKED);
-    lv_obj_add_event_cb(toggle,[](lv_event_t *e){auto *control=lv_event_get_target(e);const bool visible=lv_obj_has_state(control,LV_STATE_CHECKED);mcxnav::Command c;c.action=mcxnav::SET_VISIBLE;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));c.value=visible;if(!settings_send(c)){if(visible)lv_obj_clear_state(control,LV_STATE_CHECKED);else lv_obj_add_state(control,LV_STATE_CHECKED);}},LV_EVENT_VALUE_CHANGED,(void *)(uintptr_t(t.id));
+    lv_obj_add_event_cb(toggle,[](lv_event_t *e){auto *control=lv_event_get_target(e);const bool visible=lv_obj_has_state(control,LV_STATE_CHECKED);mcxnav::Command c;c.action=mcxnav::SET_VISIBLE;c.id=uint32_t(uintptr_t(lv_event_get_user_data(e)));c.value=visible;if(!settings_send(c)){if(visible)lv_obj_clear_state(control,LV_STATE_CHECKED);else lv_obj_add_state(control,LV_STATE_CHECKED);}},LV_EVENT_VALUE_CHANGED,(void *)(uintptr_t(t.id)));
     auto *color_button=action_button(track_row,"",0,0,34,34,panel2,[](lv_event_t *e){const uint32_t id=uint32_t(uintptr_t(lv_event_get_user_data(e)));auto *swatch=lv_obj_get_child(lv_event_get_target(e),1);quick_track_color(id,swatch);},t.id);lv_obj_set_width(color_button,34);lv_obj_set_flex_grow(color_button,0);
     auto *swatch=panel_at(color_button,8,8,18,18,lv_color_hex(style?style->color:0xFF8A24),9);lv_obj_clear_flag(color_button,LV_OBJ_FLAG_SCROLLABLE);(void)swatch;
   }
