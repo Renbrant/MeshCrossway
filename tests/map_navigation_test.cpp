@@ -344,6 +344,8 @@ int main(int argc,char **argv){
  auto filtered=mcxmap::configuration();filtered.reserved|=16u;mcxmap::configure(filtered);const auto prior=navui::generation;navui::fit_nodes(nullptr);assert(navui::generation==prior&&strstr(navui::status_text,"No positioned nodes"));meshmc::client=nullptr;delete fitted_radio;
  gpsui::offline_areas();advance();assert(gpsui::offline_owner==info_dialog);render_preview("offline-map-manager");gpsui::area_create();advance();assert(gpsui::area_estimate);render_preview("offline-area-preview");
  gpsui::custom_source();advance();assert(gpsui::source_url&&gpsui::source_credit&&lv_keyboard_get_textarea(gpsui::source_keyboard)==gpsui::source_url);render_preview("offline-map-source");
+ for(int width:{276,400}){lv_obj_set_width(body,width);lv_obj_set_x(right_rail,40+width);lv_obj_update_layout(body);gpsui::custom_source();advance();lv_area_t source_bounds,permit_bounds;lv_obj_get_coords(gpsui::dialog,&source_bounds);lv_obj_get_coords(gpsui::source_permit,&permit_bounds);if(width==276)render_preview("offline-source-narrow");assert(permit_bounds.x1>=source_bounds.x1&&permit_bounds.x2<=source_bounds.x2);}
+
  gpsui::open();advance();gpsui::offline_refresh(); // Reused LVGL addresses must not leave stale area widget pointers.
  info_close_now(nullptr);navui::invalidate();lv_obj_clean(body);navui::after_clean();
  run_offline_raster_cases(argv[1]);

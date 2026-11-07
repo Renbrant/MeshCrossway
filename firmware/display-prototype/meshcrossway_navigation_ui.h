@@ -290,7 +290,7 @@ static void poll(){
   }
   if(map_status&&!info_dialog){const auto fix=mcxgnss::snapshot();const auto pack=mcxpack::snapshot();const auto cfg=mcxmap::configuration();const bool pack_error=cfg.pack[0]&&!strcmp(cfg.pack,pack.selected)&&pack.error!=mcxpm::OK;
     const bool waiting=worker_start_failed||inflight||!fix.valid||pack_error||(front&&(front->missing||front->overzoom));
-    if(waiting)chatview::label(map_status,worker_start_failed?"Map worker unavailable":inflight?"Loading map...":pack_error?mcxpm::message(pack.error):!fix.valid?"No GNSS fix / map position retained":front&&front->missing?(cfg.online?"Tiles unavailable / retrying":"Offline / tiles not saved"):"Low resolution / parent tiles");
+    if(waiting)chatview::label(map_status,worker_start_failed?"Map worker unavailable":inflight?"Loading map...":pack_error?mcxpm::message(pack.error):!fix.valid?(front&&front->overzoom?"No GNSS fix / low-resolution parent tiles":"No GNSS fix / map position retained"):front&&front->missing?(cfg.online?"Tiles unavailable / retrying":"Offline / tiles not saved"):"Low resolution / parent tiles");
     set_hidden(map_status,!waiting);}
   if(!canvas||info_dialog||zoom_adjusting||pinching)return;
   if(attribution){const auto pack=mcxpack::snapshot();const auto cfg=mcxmap::configuration();char credit[400];
@@ -991,7 +991,7 @@ static void custom_source(){
   const auto c=mcxmap::configuration();base("CUSTOM MAP SOURCE");offline_owner=nullptr;
   source_url=lv_textarea_create(dialog);lv_textarea_set_one_line(source_url,true);lv_textarea_set_max_length(source_url,191);lv_obj_set_height(source_url,36);lv_textarea_set_text(source_url,mcxmap::provider(c)==mcxmap::CUSTOM?c.url:"https://");lv_textarea_set_placeholder_text(source_url,"HTTPS base URL / z/x/y.png appended");
   source_credit=lv_textarea_create(dialog);lv_textarea_set_one_line(source_credit,true);lv_textarea_set_max_length(source_credit,127);lv_obj_set_height(source_credit,36);lv_textarea_set_text(source_credit,c.attribution);
-  auto *row=control_row(30);auto *label=single_label(row,"Source permits offline area downloads",0,0,290,white);lv_obj_set_flex_grow(label,1);source_permit=lv_switch_create(row);if(mcxmap::bulk_allowed(c))lv_obj_add_state(source_permit,LV_STATE_CHECKED);
+  auto *row=control_row(44);auto *label=single_label(row,"Source permits offline area downloads",0,0,0,white);lv_obj_set_flex_grow(label,1);lv_label_set_long_mode(label,LV_LABEL_LONG_WRAP);lv_obj_set_height(label,LV_SIZE_CONTENT);source_permit=lv_switch_create(row);lv_obj_set_size(source_permit,44,24);if(mcxmap::bulk_allowed(c))lv_obj_add_state(source_permit,LV_STATE_CHECKED);
   source_notice=single_label(dialog,"Enter a provider you operate or whose terms allow offline downloads.",0,0,440,muted);
   row=control_row();control_button(row,"SAVE SOURCE",orange,[](lv_event_t *){auto c=mcxmap::configuration();const char *url=lv_textarea_get_text(source_url),*credit=lv_textarea_get_text(source_credit);if(strlen(url)>=sizeof(c.url)||strlen(credit)>=sizeof(c.attribution))return;snprintf(c.url,sizeof(c.url),"%s",url);snprintf(c.attribution,sizeof(c.attribution),"%s",credit);c.night=0;c.pack[0]=0;c.reserved=uint8_t((c.reserved&~4u)|(lv_obj_has_state(source_permit,LV_STATE_CHECKED)?4u:0u));
     if(!mcxmap::valid_config(c)||((c.reserved&4u)&&!mcxmap::bulk_allowed(c))){chatview::label(source_notice,"Use HTTPS base URL, visible attribution and an allowed offline source");return;}mcxmap::configure(c);lv_async_call([](void *){offline_areas();},nullptr);},0);
@@ -1017,7 +1017,7 @@ static void map_options(){
   base("MAP OPTIONS");mcxmap::start();const auto c=mcxmap::configuration();
   lv_obj_set_height(dialog,420);
   auto *offline_row=control_row();control_button(offline_row,"OFFLINE MAPS",panel2,[](lv_event_t *){lv_async_call([](void *){offline_areas();},nullptr);},0);
-  auto *overzoom_row=control_row(30);auto *overzoom_label=single_label(overzoom_row,"Reuse parent tiles / up to 3 zooms",0,0,260,white);lv_obj_set_flex_grow(overzoom_label,1);
+  auto *overzoom_row=control_row(30);auto *overzoom_label=single_label(overzoom_row,"Reuse parent tiles / up to 3 zooms",0,0,0,white);lv_obj_set_flex_grow(overzoom_label,1);lv_label_set_long_mode(overzoom_label,LV_LABEL_LONG_WRAP);lv_obj_set_height(overzoom_label,LV_SIZE_CONTENT);lv_obj_set_height(overzoom_row,44);
   auto *overzoom_toggle=lv_switch_create(overzoom_row);if(mcxmap::overzoom_enabled(c))lv_obj_add_state(overzoom_toggle,LV_STATE_CHECKED);
   lv_obj_add_event_cb(overzoom_toggle,[](lv_event_t *e){auto c=mcxmap::configuration();mcxmap::set_overzoom(c,lv_obj_has_state(lv_event_get_target(e),LV_STATE_CHECKED));mcxmap::configure(c);},LV_EVENT_VALUE_CHANGED,nullptr);
   auto *networks=lv_dropdown_create(dialog);lv_dropdown_set_options(networks,"Map nodes: both networks\nMap nodes: Meshtastic\nMap nodes: MeshCore");lv_dropdown_set_selected(networks,(c.reserved&16u)?1:(c.reserved&8u)?2:0);

@@ -49,7 +49,10 @@ static bool initialize() {
       heap_caps_malloc(sizeof(Storage), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   if (!p)
     return false;
-  storage = new (p) Storage();
+  auto *created = new (p) Storage();
+  portENTER_CRITICAL(&mux);
+  storage = created;
+  portEXIT_CRITICAL(&mux);
   return true;
 }
 static Snapshot &state() { return storage->worker_state; }
@@ -83,10 +86,10 @@ static void publish() {
   portEXIT_CRITICAL(&mux);
 }
 static bool submit(const Command &command) {
-  if (!storage || command.slot >= MAX_AREAS)
+  if (command.slot >= MAX_AREAS)
     return false;
   portENTER_CRITICAL(&mux);
-  const bool ok = !queued;
+  const bool ok = storage && !queued;
   if (ok) {
     storage->pending = command;
     queued = true;
