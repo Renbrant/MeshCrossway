@@ -27,7 +27,7 @@ Retain the existing Waveshare ESP32-S3 3.5-inch controller as the tested baselin
 | Elecrow CrowPanel Advanced P4 5-inch | ESP32-P4 + ESP32-C6 via ESP-Hosted SDIO | 800×480 IPS, **parallel RGB** on this 5-inch variant | 32 / 16 MB | More RAM, larger map, faster graphics pipeline | Hosted BLE + Wi-Fi integration; power and enclosure |
 | Waveshare ESP32-P4 WiFi6 Touch LCD 4.3 | P4 + wireless coprocessor (check exact revision) | 800×480-class | Verify per SKU | More compact P4 candidate | Exact board revision, hosted stack, battery/GNSS pins |
 | M5Stack Tab5 | ESP32-P4 + ESP32-C6 | 5-inch 1280×720 | 32 / 16 MB | Integrated tablet, removable battery, SD, sensors | High framebuffer cost; porting; BLE/Hosted validation |
-| LILYGO T-Deck Plus | ESP32-S3, integrated Wi-Fi/BLE, SX1262 | 2.8-inch 320×240 | 8 / 16 MB | Keyboard, trackball, touch, GNSS, battery, SD; compact | Smaller map and same memory class as current |
+| Elecrow ThinkNode M9 | ESP32-S3 Wi-Fi/BLE, LR1110 | 2.4-inch 320×240, keyboard, no touch | 8 / 16 MB | Compact text-first terminal, GNSS, 2300 mAh | Shared SPI, small screen, dual-BLE + AP/STA untested |\n| Seeed Wio Tracker L2 Pro | ESP32-S3 Wi-Fi/BLE, SX1262 | 3.2-inch 320×240 touch | 8 / 16 MB | Compact touchscreen, GNSS, SD, 3000 mAh | Not a CPU/RAM upgrade; dual-BLE + AP/STA untested |\n| LILYGO T-Deck Plus | ESP32-S3, integrated Wi-Fi/BLE, SX1262 | 2.8-inch 320×240 | 8 / 16 MB | Keyboard, trackball, touch, GNSS, battery, SD; compact | Smaller map and same memory class as current |
 | LILYGO T-Deck | ESP32-S3, Wi-Fi/BLE, SX1262 | 2.8-inch 320×240 | Check SKU | Ready-made compact terminal | GNSS not standard; not a CPU/RAM upgrade |
 | Guition ESP32-S3 display boards | ESP32-S3 integrated Wi-Fi/BLE | Varies by SKU | Varies | Lower-cost porting experiments | Often no meaningful performance uplift |
 | Cduino devices (model TBD) | **Unverified** | **Unverified** | **Unverified** | Potential ready-made alternative | Need exact vendor URL/model, BLE central support, SDK and schematics |
@@ -123,6 +123,36 @@ The term “Cduino” is not sufficiently specific to identify a verified produc
 - LILYGO T-Deck Plus manufacturer documentation: https://wiki.lilygo.cc/products/t-deck-series/t-deck-plus/
 - LILYGO T-Deck manufacturer documentation: https://wiki.lilygo.cc/products/t-deck-series/t-deck/
 - Elecrow Amazon candidate: https://www.amazon.com/dp/B0GLGWJP8B
+
+
+## Additional ready-made candidates: ThinkNode M9 and Wio Tracker L2 Pro
+
+### Elecrow ThinkNode M9 (ESP32-S3 + LR1110)
+
+- **Hardware:** ESP32-S3-R8 (240 MHz, 8 MB PSRAM), LR1110 LoRa, 2.4-inch 320×240 LCD **without touch**, 37-key QWERTY keyboard, GNSS, compass, microSD, Wi-Fi/BLE, 2300 mAh battery. A separate ESP32-S2 handles the keyboard. Flash is 16 MB NOR according to the schematic; do not confuse the product's 16 GB storage claim with flash (it refers to removable card storage).
+- **Strength:** complete compact handheld with physical keyboard, GPS, case and battery; suitable for a text-first MeshCrossway variant.
+- **Constraints:** 8 MB PSRAM (no memory upgrade), much smaller non-touch display, LCD/SD/LR1110 share SPI, custom BSP and keyboard-controller integration needed. The integrated LR1110 can run one LoRa firmware/network at a time; its presence does not deliver simultaneous MT + MC. For the existing modular architecture, two **additional BLE radios** are still needed, unless the architecture is explicitly redesigned.
+- **Connectivity gate:** prove that custom ESP-IDF firmware can act as two BLE central GATT clients while serving Wi-Fi STA and SoftAP with a connected browser; the preinstalled Meshtastic or MeshCore firmware is not evidence of this capability.
+- **Assessment:** strong ready-made **mini/keyboard edition**, not a replacement for the high-performance 5-inch P4 map-oriented controller.
+- Sources: [Elecrow hardware wiki (MeshCore)](https://www.elecrow.com/wiki/ThinkNode_M9_MeshCore_Communication_Terminal_with_Full_Keyboard.html), [Elecrow hardware wiki (Meshtastic)](https://www.elecrow.com/wiki/ThinkNode_M9_Meshtastic_Communication_Terminal_with_Full_Keyboard.html), [Meshtastic official hardware listing](https://meshtastic.org/docs/hardware/devices/elecrow/thinknode/).
+
+### Seeed Studio Wio Tracker L2 Pro (ESP32-S3 + SX1262)
+
+- **Hardware:** ESP32-S3 with integrated SX1262 LoRa, 16 MB flash, 8 MB PSRAM, 3.2-inch 320×240 touch display (orientation differs across documentation), L76K GNSS, microSD, Wi-Fi/BLE 5.0, 3000 mAh battery, USB-C, speaker/audio codec, and solar-input option. Seeed publishes pin assignments and a schematic.
+- **Strength:** a compact, self-contained, touchscreen-oriented controller; particularly interesting for a smaller, field-ready MeshCrossway edition with GNSS and offline maps.
+- **Constraints:** same ESP32-S3/8 MB PSRAM class as current hardware, smaller map viewport and custom display/touch/power drivers. Its integrated SX1262 is **one** LoRa radio, not simultaneous Meshtastic + MeshCore. Continue to use two independent external BLE radios for the existing architecture.
+- **Connectivity gate:** dual BLE central GATT sessions + Wi-Fi STA/SoftAP with active browser, and power/map stress testing. Official Meshtastic firmware support does not certify MeshCrossway dual-network operation.
+- **Assessment:** preferable to M9 for a compact **touch/map** variant; M9 is preferable for hardware-keyboard messaging. Neither delivers the P4 memory/graphics performance upgrade.
+- Sources: [Seeed official Wio Tracker L2 documentation](https://wiki.seeedstudio.com/meshtastic_wio_tracker_l2_intro/), [Meshtastic official L2 Pro listing](https://meshtastic.org/docs/hardware/devices/seeed-studio/wio-series/tracker-l2-pro/).
+
+### Updated platform ranking
+
+1. **Performance / map-oriented:** Elecrow P4 5-inch; compare with Waveshare P4 4.3-inch and M5Stack Tab5 after ESP-Hosted connectivity proof.
+2. **Compact touch edition:** Wio Tracker L2 Pro.
+3. **Compact keyboard edition:** ThinkNode M9 or T-Deck Plus.
+4. **Production baseline:** current Waveshare ESP32-S3 3.5-inch until all dual-BLE/Wi-Fi acceptance tests pass.
+
+The M9 and L2 Pro are **alternative controller enclosures/platforms**, not evidence that a single built-in LoRa transceiver can replace two concurrently operating independent networks.
 
 ## Research limitations
 
