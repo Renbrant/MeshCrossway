@@ -74,6 +74,13 @@ Implementation references: [map tile worker](../firmware/display-prototype/meshc
 | M13 | Desktop-preprocessed raw RGB565 raster tiles | Eliminate device-side PNG decode for offline tiles; investigate lower cold-load latency | 128 KiB/tile, SD throughput and DMA buffer constraints | Medium — benchmark first |
 | M14 | Direct vector geometry / MVT Protocol Buffers and heading-up | Smaller regional map datasets in some cases; flexible text/style and map bearing | Parsing, styling, labels, CPU and PSRAM; major architecture change | Deferred — isolated proof of concept |
 | M15 | Display-bus optimization / LovyanGFX feasibility | Lower LCD transfer overhead and better scheduling if existing BSP is the bottleneck | Driver/touch/PMU/DMA compatibility and UI regressions | Medium — measurements first |
+| M16 | Incremental PNG scanline-to-RGB565 decoder | Retain existing PNG packs, potentially avoid full RGBA decode buffer | Decoder integration, PNG compatibility, working buffers | High — first embedded prototype |
+| M17 | Split-image/strip decompression (SPNG, SQOI, SJPG) | Bounded temporary decode memory | Offline converter, SD adapter and no built-in image rotation/zoom | Medium |
+| M18 | LZ4/heatshrink blocks over RGB565 raster | Balance raw RGB565 cold-load CPU gains with smaller SD files | Compression ratio varies; block index, memory and decode CPU | Medium |
+| M19 | Indexed/palette raster tiles (4-bit/8-bit) | Lower raw tile storage and possibly fast decode | Quantization can damage labels/roads; palette conversion | Medium |
+| M20 | Hybrid raster base + locally drawn labels/selected features | Larger, selectable street labels without full-vector basemap replacement | Offline feature indexing, text layout, collision and synchronization | Medium — targeted legibility prototype |
+| M21 | Dual-core tile decode/composition scheduling | Potentially overlap SD reads, decode and rendering | Severe BLE/UI contention risk; secure TLS and task ownership | Low until profiling |
+
 
 ## M01. Indexed single-file archives for raster tiles
 
@@ -414,6 +421,112 @@ Never write "faster", "smaller", or "uses less memory" without quantifying the c
 
 **Decision gate:** If profiling shows the bottleneck is **PNG decode, SD I/O or label layout**, changing the display framework may provide little value. Consider LovyanGFX only if measured LCD transfer overhead is significant and a compatible flush-backend prototype preserves all controller services.
 
+## M16. Incremental PNG scanline decoding directly into RGB565
+
+**Status:** CANDIDATE; **recommended first implementation-oriented experiment**.
+
+**Finding:** [bitbank2/PNGdec](https://github.com/bitbank2/PNGdec) is an Apache-2.0 decoder designed for embedded systems. It supports callback-based scanline decoding and conversion of each decoded line to RGB565. It can be built in C/C++ and supports standard PNG features except interlacing. The decoder's own documentation indicates a minimum memory requirement around 48 KiB in a constrained configuration, but the **actual ESP32-S3 heap capability and temporary buffers must be measured**, not inferred from marketing benchmarks.
+
+**Fit to MeshCrossway:** The existing `meshcrossway_map_tiles.h` uses LodePNG to decode a PNG into a **256 × 256 RGBA intermediate buffer (256 KiB)**, then converts that buffer into the existing **128 KiB RGB565 LRU slot**. A row-at-a-time path could populate the RGB565 slot as the decoder produces pixels, potentially avoiding the full RGBA allocation and a separate conversion traversal. The SD PNG cache, normal XYZ pack structure, HTTPS validation/caching, 12-slot PSRAM LRU and LVGL compositor could all remain unchanged.
+
+**Important qualifications:**
+- PNGdec is not a drop-in guaranteed faster decoder. The DEFLATE and PNG filtering work still occur; latency depends on actual map tiles and whether line conversion saves sufficient copies.
+- Understand PNGdec's working memory, allocation mode, reentrancy, thread safety, supported alpha/transparency modes and treatment of indexed PNGs. Match the present background compositing, pixel ordering, error behavior and reject interlaced samples if necessary.
+- Preserve PNG validity and strict upper bounds. Do not disable CRC/integrity checks just to claim performance improvements; first run a controlled, documented experiment on verified offline assets.
+- Run decode on the **existing map worker**, not the LVGL task; ensure cancellation, PSRAM ownership and incomplete-cache-slot cleanup are safe.
+- Benchmark PNG with labels/transparent pixels and offline/online cached variants; compare **peak internal heap, PSRAM, largest contiguous block, p50/p95 per tile and actual visual equality**. A lower temporary memory footprint may be more valuable than higher FPS.
+
+**Reference:** [PNGdec](https://github.com/bitbank2/PNGdec), [PNGdec README](https://github.com/bitbank2/PNGdec/blob/master/README.md).
+
+**Decision gate:** Test before changing any packaging or UI. Retain the LodePNG fallback until the scanline path is validated on both real radios with concurrent HTTPS and map gestures.
+
+## M17. Split/strip-encoded image tiles (SPNG, SQOI, SJPG)
+
+**Status:** CANDIDATE; compare after M16.
+
+**Finding:** Espressif's [esp_lv_decoder](https://docs.espressif.com/projects/esp-iot-solution/en/latest/display/tools/esp_lv_decoder.html) supports **split PNG (SPNG)**, **split QOI (SQOI)** and **split JPEG (SJPG)** as well as regular image formats. Its documentation lists compatibility with **ESP-IDF >= 5.3** and **LVGL >= 8.3, < 10**, potentially matching the MeshCrossway **ESP-IDF 5.3.2 / LVGL 8.4** build. Examples use 16-line strips; only each strip is decoded during drawing. The split formats **do not support LVGL image zoom/rotation directly**.
+
+**Possible approach:**
+1. Use the computer to generate equivalent licensed source tiles as PNG XYZ, SPNG, SQOI and (only when image quality permits) SJPG.
+2. Measure storage/packing overhead, per-strip index/headers, SD seeks and actual working buffers. Segmenting PNG independently can lose cross-row compression opportunities; file sizes are not inherently smaller.
+3. Evaluate whether an SD-file reader can feed the **existing worker/compositor**. Espressif's canned build workflow uses `esp_mmap_assets` / packaged assets, which is not automatically a runtime microSD map-pack solution.
+4. Compare two models separately: streaming strips into RGB565 cache tiles vs drawing strip-by-strip with no full decoded tile cache. The second changes the rendering architecture and could increase decoding on each redraw.
+5. Keep zoom/pan/pinch behavior in the **map view geometry**, not depend on unsupported LVGL image transformations.
+
+**Reference:** [Espressif decoder documentation](https://docs.espressif.com/projects/esp-iot-solution/en/latest/display/tools/esp_lv_decoder.html), [ESP32-S3 compatible decoder example](https://github.com/espressif/esp-iot-solution/blob/master/examples/display/gui/lvgl_decode_image/README.md).
+
+**Decision gate:** Proceed only if a strip workflow offers meaningful improvements beyond the simpler M16 scanline decoder at acceptable I/O and compatibility cost.
+
+## M18. Lightly compressed RGB565 blocks: LZ4 and heatshrink
+
+**Status:** CANDIDATE.
+
+**Problem:** M13 raw RGB565 skips PNG decoding but consumes **128 KiB per 256 × 256 tile**, often substantially more than its PNG equivalent. Test lightweight **lossless** compression of offline RGB565 tiles to reduce SD bytes without returning to the full PNG pipeline.
+
+**Alternatives:**
+- [LZ4](https://github.com/lz4/lz4): fast block-oriented decompressor (library BSD-2-Clause). Prefer **independent bounded blocks** so the MCU never needs to allocate a whole region or archive to decode one tile. Desktop throughput figures **do not extrapolate** to the ESP32-S3.
+- [heatshrink](https://github.com/atomicobject/heatshrink) or its [ESP32-oriented fork](https://github.com/BitsForPeople/esp-heatshrink): incremental decoding with small configurable work memory; potentially useful on particularly memory-sensitive paths, though it may spend more CPU than LZ4.
+
+**Experimental variants:** Whole-tile LZ4 blocks vs rows/16–32-row strips; no compression (M13); PNG baseline; QOI (M04); and optional 8-bit indexed pixels (M19). Store explicit tile sizes, dimensions, codec, version, checksum and bounded offsets in the manifest/index. Stream into an existing RGB565 cache slot or one bounded staging buffer; avoid duplicate full-tile copies. Decompress only when a tile is requested, do not compress on-device during routine navigation.
+
+**What can go wrong:** Some tiles are complex/high-entropy or have little redundancy; LZ4/heatshrink can be larger than hoped. More SD reads versus decode CPU is a real tradeoff. Block framing, corruption checks, endian handling, cache effects and sparse reads need test coverage.
+
+**Measurements:** Identical input tile imagery and 50–200 representative tiles across rural/urban/terrain styles; package bytes, compression ratios (p50/p95 and worst), cold lookup latency, decode CPU, internal/DMA heap, PSRAM peak and warm-cache performance. Compare against PNG with **no claim of compression win until measured**.
+
+**Decision gate:** Accept only if smaller packages *and* real end-to-end latency/memory benefits survive hardware testing.
+
+## M19. Paletted/indexed raster tiles (4-bit or 8-bit)
+
+**Status:** CANDIDATE.
+
+**Method:** Quantize properly licensed raster tiles to a limited palette on a desktop; store **per-pixel indices** and a small tile/shared palette, either raw or as indexed PNG and/or indexed archive blocks. LVGL 8 supports 1-, 2-, 4- and 8-bit indexed images, but the current MeshCrossway worker uses **its own RGB565 tile cache/compositor**, so it would need a bounded index-to-RGB565 conversion or a separate index-aware composition path.
+
+**Size math, excluding palette/headers:** A 256 × 256 tile in raw **8-bit indices = 64 KiB** vs RGB565 **128 KiB**; **4-bit indices = 32 KiB**. A local RGBA8888 256-color palette costs **1 KiB**. Actual indexed PNG size can be much smaller/larger depending on deflate and map content. If the map is rendered into a standard RGB565 frame, palette expansion still costs CPU; no automatic DMA direct-draw claim is justified.
+
+**Map-specific strengths:** Flat areas and a constrained cartographic style can quantize well. A **purpose-built street style** with a small designed palette may make labels larger/clearer and keep road/terrain contrast reliable. A generic photograph/satellite image or dither-heavy palette can compress poorly or visibly damage fine text, anti-aliased edges, thin roads and symbols.
+
+**Test plan:**
+1. Prepare representative dense-city, countryside, topo and night tiles; compare original PNG, indexed 8-bit, indexed 4-bit and RGB565.
+2. Check **human readability** of street labels at 480 × 320 before optimizing bytes.
+3. Measure p50/p95 SD reads, conversion time, RAM peaks, overall package size and reuse under map/night settings. Account for palette changes that may invalidate the decoded cache.
+4. Preserve exact geographic tile boundaries, coordinates and provider attributions.
+
+**Reference:** [LVGL 8.x indexed image formats](https://lvgl.io/docs/open/8.3/overview/image), [PNGdec indexed-PNG decoding](https://github.com/bitbank2/PNGdec).
+
+**Decision gate:** Prioritize label quality; do not trade readable maps for superficial size gains.
+
+## M20. Hybrid map: existing raster base with independent label/feature overlays
+
+**Status:** CANDIDATE / TARGETED PROOF OF CONCEPT. **Not a full MVT renderer.**
+
+**Goal:** Address the underlying complaint that **raster street names are too small** while avoiding wholesale map-engine replacement. Retain the existing PNG XYZ basemap, then draw a **small, selected set of important place names, road labels, and/or navigation features** from a desktop-generated georeferenced sidecar. Font size, contrast, language and orientation become independently adjustable.
+
+**Method:**
+- Desktop generation from licensed OSM regional extracts or local data produces a compact **position-indexed** and **zoom-banded** record set (e.g. name, Unicode string ID, type/importance, bounding box or line geometry, min/max zoom).
+- Stream only the visible viewport's records from SD or an indexed archive. Avoid loading the entire area's labels into PSRAM.
+- Project labels using existing Web Mercator routines and current pan/zoom geometry; clip against viewport and reserve a **bounded, fixed-size label/glyph set**.
+- Render labels above base imagery but **below GPS, track/POI and radio-node overlays**; use a small label-placement budget, readability-aware priorities and clipping.
+- To avoid *duplicate* baked-in labels from the raster source, pair this with an optional **label-free raster style** or constrain the overlay to emergency/POI names not present in the raster base.
+- Document offline licensing/attribution and safe fallbacks to plain raster when sidecar data is unavailable.
+
+**Alternative upstream research:** [OrcMaps](https://github.com/hardcoreerik/orcmaps) is an early-stage ESP32-class **offline PMTiles/MVT streaming architecture** with host-tested PMTiles reader, MVT parsing, feature translation and styling. Its base geography / application-overlay separation is relevant as architectural inspiration, but **OrcMaps is not yet an established, hardware-validated drop-in for MeshCrossway**. Its source is **AGPL-3.0-only** (with a separate commercial-license option): do **not copy its implementation** into the MeshCrossway repository without an explicit licensing decision. Its planned overlay/cache subsystems are not proof of a finished production renderer. [Planetiler](https://github.com/onthegomap/planetiler) is an upstream desktop generator for legal OSM-derived vector packs and feature processing.
+
+**Comparison:** (a) existing 1.25× full-image enlargement, (b) custom raster with larger baked-in labels (M07), (c) label sidecar and bounded overlay, (d) full vector M14. Compare label readability and p95 input latency, memory, overdraw and tile alignment, multi-language handling, and whether road names overlap radio-node markers.
+
+**Decision gate:** Continue only if it improves label usability without making the map slower or more complex than dedicated larger-label raster tiles.
+
+## M21. Concurrent decode/composition and multi-core scheduling
+
+**Status:** LOW PRIORITY until profiling; **the present map worker is already asynchronous**.
+
+**Reference:** [CelliesProjects/OpenStreetMap-esp32](https://github.com/CelliesProjects/OpenStreetMap-esp32) uses LovyanGFX, PNGdec and concurrent work on both ESP32 cores to fetch/decode/composite OSM raster maps, with reusable PSRAM tiles. This is a useful **pipeline design example, not a safe drop-in**: its README warns that it uses **`WiFiClientSecure::setInsecure()`**, disabling TLS certificate validation. MeshCrossway must **retain its current verified HTTPS certificate/hostname checks**.
+
+**Potential experiment:** Separate I/O, decode and composition phases with explicit ownership and bounded queues; optionally overlap SD read of the next *offline* tile with decoding of an already-read tile. If introducing a new task, enforce strict peak memory/stack, core-affinity, cancellation, race-free PSRAM object lifetimes and deterministic LVGL ownership. Do not run LVGL APIs off-thread, and do not create a second HTTPS fetcher bypassing backoff/provider policies.
+
+**Why risky:** Dual BLE, Wi-Fi HTTPS, TLS allocations, SD card access and touch rendering already compete for internal heap, CPU and PSRAM. More parallelism can produce **higher latency, DMA pressure, radio stalls or watchdogs** instead of speedups. On-screen throughput might remain SPI-limited.
+
+**Gate:** First use M12 profiling to prove idle capacity and an actual pipeline bottleneck, then prototype *one* bounded asynchronous change with both radios active. If memory/task scheduling regress, reject even if a desktop benchmark appears faster.
+
 ## 4. Suggested experimental order
 
 **E01 — Measurement baseline (no functional modification).** Instrument existing raster XYZ PNG workflow and collect reproducible cold/warm/offline/online measurements. Confirm available diagnostics and record the v0.9.32 1.25× cost. **Gate:** reliable benchmark reproduction.
@@ -434,7 +547,15 @@ Never write "faster", "smaller", or "uses less memory" without quantifying the c
 
 **E09 — Direct vector/heading-up study (M14).** Desktop/custom-geometry and MVT/PBF proof of concept followed by a tightly bounded ESP32-S3 hardware test, without replacing the raster pipeline. **Gate:** demonstrable storage/heading-up/label value at acceptable frame-time and heap cost.
 
-**E10 — Optional broader formats.** Reassess MBTiles and more complex codecs only if simpler approaches fail or interoperability clearly justifies the cost.
+**E10 — Streamed PNG decoder (M16).** Before any new offline format, compare current LodePNG RGBA intermediate to PNGdec scanline→RGB565 into the same cached tile, with regression cases for alpha, indexed colors and malformed PNG. **Gate:** stable PNG interoperability plus lower memory or latency on hardware.
+
+**E11 — Encoded strips / compressed RGB565 (M17, M18).** Generate fixed licensed sample data and compare sliced SPNG/SQOI/SJPG, raw RGB565, LZ4 block RGB565 and heatshrink, with SD read, working memory, cache and on-screen latency measurements.
+
+**E12 — Palette and label usability (M19, M20).** Compare color-indexed tiles and a small georeferenced label sidecar against the current 1.25x zoomed raster and larger-label raster style. **Gate:** improved label readability without UI/BLE regressions.
+
+**E13 — Multi-core pipeline (M21).** Profile first; proceed only with a bounded experimental task/queue that retains existing HTTPS security and map worker ownership. **Gate:** measured physical improvement without increased watchdog, DMA or Bluetooth risk.
+
+**E14 — Optional broader formats.** Reassess MBTiles and more complex codecs only if simpler approaches fail or interoperability clearly justifies the cost.
 
 Experiments should be independently reversible. Never replace the currently recommended stable firmware as part of a research trial.
 
@@ -452,6 +573,11 @@ Experiments should be independently reversible. Never replace the currently reco
 - For equal geographic coverage, how much larger are raw RGB565 offline packages and how much lower is actual cold-load latency than PNG?
 - Is the current display flush limited by SPI bandwidth, small transactions, invalidated pixel count, DMA staging, or CPU rendering?
 - Can a heading-up vector prototype maintain legible upright labels and stable dual BLE without significant input latency?
+- How much peak RAM can a PNG scanline-to-RGB565 path save compared with LodePNG's RGBA intermediate, without losing PNG compatibility?
+- Do split-image tile formats remain useful once a full RGB565 LRU is already kept warm, or do repeated strip reads dominate?
+- Which cartographic styles tolerate 4/8-bit color quantization without damaging street labels?
+- Does a small georeferenced name/feature sidecar improve readability more than fully re-rendered vector tiles or improved raster styles?
+- With two BLE radios and Wi-Fi active, does parallel tile decode improve end-to-end latency, or just intensify internal heap/PSRAM contention?
 
 ## 6. Conclusions to preserve
 
@@ -467,7 +593,11 @@ Experiments should be independently reversible. Never replace the currently reco
 10. **Raw RGB565 eliminates PNG decoding on offline cold loads, not all rendering costs or DMA staging**; its 128 KiB/tile storage penalty must be measured.
 11. **Vector data enables heading-up rendering by geometry transformation but does not guarantee cheap rotation or label placement** on ESP32-S3. Custom `.vec` parsing and standardized MVT/Protobuf are distinct technologies.
 12. **LovyanGFX is a potential display-backend optimization, not a radio-SPI contention fix in the current modular design.** Profile and isolate the LCD backend first.
-13. An experiment is complete only after reproducible measurements and physical hardware regression tests.
+13. **Before replacing PNG, evaluate incremental scanline→RGB565 decode** because it can preserve all existing offline datasets while avoiding a full RGBA intermediate.
+14. **Split-image and LZ4/heatshrink are separate ways to trade decode memory, SD bytes and CPU**; no codec is inherently optimal for all map styles.
+15. **Indexed 4/8-bit raster and independent georeferenced label overlays deserve legibility testing**, not just compression benchmarks.
+16. **Early-stage offline map engines and concurrent multicore demos are research references**, not production readiness claims; review licenses and never copy insecure HTTPS settings.
+17. An experiment is complete only after reproducible measurements and physical hardware regression tests.
 
 ## 7. Reference material
 
@@ -487,6 +617,14 @@ Experiments should be independently reversible. Never replace the currently reco
 - [IceNav-v3 — LVGL and LovyanGFX embedded GPS mapping reference](https://github.com/jgauchia/IceNav-v3)
 - [ESP-IDF 5.3.2 SPI master driver](https://docs.espressif.com/projects/esp-idf/en/v5.3.2/esp32s3/api-reference/peripherals/spi_master.html)
 - [ESP-IDF ESP32-S3 external RAM / DMA constraints](https://docs.espressif.com/projects/esp-idf/en/v5.3.2/esp32s3/api-guides/external-ram.html)
+- [PNGdec — incremental scanline decoder and RGB565 conversion](https://github.com/bitbank2/PNGdec)
+- [Espressif esp_lv_decoder — split-image PNG/QOI/JPEG](https://docs.espressif.com/projects/esp-iot-solution/en/latest/display/tools/esp_lv_decoder.html)
+- [LZ4 — fast block compression](https://github.com/lz4/lz4)
+- [heatshrink — bounded incremental decompression](https://github.com/atomicobject/heatshrink)
+- [LVGL 8 indexed color formats](https://lvgl.io/docs/open/8.3/overview/image)
+- [OrcMaps — early-stage bounded offline PMTiles/MVT research (AGPL-3.0)](https://github.com/hardcoreerik/orcmaps)
+- [Planetiler — vector tile/offline pack generation](https://github.com/onthegomap/planetiler)
+- [OpenStreetMap-esp32 — concurrency/PNGdec/LovyanGFX reference; insecure TLS warning](https://github.com/CelliesProjects/OpenStreetMap-esp32)
 
 ### MeshCrossway internal source/history
 - [Map worker and caches](../firmware/display-prototype/meshcrossway_map_tiles.h)
@@ -501,4 +639,4 @@ Experiments should be independently reversible. Never replace the currently reco
 
 ---
 
-**Maintenance rule:** This is the **single index of map-optimization methods and experiments**. Keep version-specific implementation notes in their historical documents, but update the methodology status and experiment outcome here whenever new information becomes available. A future method should receive a new stable ID (M16, M17, etc.) rather than rewriting the history of a prior experiment.
+**Maintenance rule:** This is the **single index of map-optimization methods and experiments**. Keep version-specific implementation notes in their historical documents, but update the methodology status and experiment outcome here whenever new information becomes available. A future method should receive a new stable ID (M22, M23, etc.) rather than rewriting the history of a prior experiment.
