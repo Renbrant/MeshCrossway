@@ -8,13 +8,13 @@
 </p>
 <p align="center">
   <a href="https://github.com/Renbrant/MeshCrossway/tree/main/docs"><img alt="Project documentation" src="https://img.shields.io/badge/DOCUMENTATION-READ-444444?style=for-the-badge"></a>
-  <a href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/stable-v0928.md"><img alt="Recommended stable firmware v0.9.28" src="https://img.shields.io/badge/STABLE%20FIRMWARE-v0.9.28-2ea44f?style=for-the-badge"></a>
+  <a href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/stable-v0932.md"><img alt="Recommended stable firmware v0.9.32" src="https://img.shields.io/badge/STABLE%20FIRMWARE-v0.9.32-2ea44f?style=for-the-badge"></a>
   <a href="https://github.com/sponsors/Renbrant"><img alt="Donate or become a sponsor" src="https://img.shields.io/badge/DONATE%20%2F%20SPONSOR-SUPPORT%20THE%20PROJECT-ff8a24?style=for-the-badge"></a>
 </p>
 
 **A portable, offline-first touchscreen communicator for Meshtastic and MeshCore.** MeshCrossway brings two independent LoRa networks, messaging, GNSS and track tools into one interface. It does not bridge or mix traffic between the networks.
 
-> **Current stable:** v0.9.28. [Install with Web Flasher](https://renbrant.github.io/MeshCrossway/flasher/) or explore the [firmware release history](https://renbrant.github.io/MeshCrossway/project-status/). Research and experimental builds are not stable releases.
+> **Current stable:** v0.9.32, selected after the user confirmed it is functioning very well and remains extremely stable. It includes raster-map pinch zoom and saved 1.25× map magnification. [Install with Web Flasher](https://renbrant.github.io/MeshCrossway/flasher/) or explore the [firmware release history](https://renbrant.github.io/MeshCrossway/project-status/). v0.9.28 is the previous stable recovery; v0.9.25 and v0.9.16 remain earlier recovery options.
 
 ## See it in operation
 
