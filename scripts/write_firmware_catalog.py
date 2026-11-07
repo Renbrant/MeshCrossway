@@ -85,6 +85,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary="EXPERIMENTAL: improves node details and map controls. Last-heard age uses hours/minutes/seconds, node details hide map actions, Map Options shows its active context, and zoom/center controls sit on the map. v0.9.32 remains the recommended stable image; physical validation is pending."
         label="Map details and on-map controls / EXPERIMENTAL"
         status="experimental"
+    elif version=="v0.10.4":
+        summary="EXPERIMENTAL: replaces the map FIT text with five node dots and removes the redundant N/GNSS shortcut from the map. Includes all v0.10.3 offline map features and v0.9.33 controls. v0.9.32 remains stable."
+        label="Map fit icon cleanup / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.10.3":
         summary="EXPERIMENTAL: PNG PMTiles packs, parent-tile overzoom, filtered node fit, anchored pinch and resumable offline areas with permitted custom providers. Includes v0.9.33 controls. Physical validation pending; v0.9.32 remains stable."
         label="Offline raster maps / EXPERIMENTAL"

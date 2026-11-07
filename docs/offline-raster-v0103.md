@@ -20,7 +20,7 @@ Primary references: [PMTiles v3 specification](https://github.com/protomaps/PMTi
 
 ## Using the candidate
 
-- **Map Options → Offline Maps** opens the area/pack manager. Main map **FIT** fits retained, positioned nodes for the selected map networks. **N** opens GNSS information; the map stays north-up. Center GPS enables follow; panning/pinching disables it. Tap empty map space to hide/show the on-map controls. Attribution remains visible.
+- **Map Options → Offline Maps** opens the area/pack manager. The map fit control fits retained, positioned nodes for the selected map networks. In v0.10.4 it uses five node dots instead of FIT text, and the redundant N button was removed. GNSS remains in the right navigation rail; the map stays north-up. Center GPS enables follow; panning/pinching disables it. Tap empty map space to hide/show the on-map controls. Attribution remains visible.
 - **Reuse parent tiles** can be disabled in Map Options. Exact tiles preserve the existing precedence: selected pack → compatible loose XYZ → provider cache → allowed interactive online request. Only then look locally for ancestors at z−1, z−2 and z−3. Ancestors are never fetched speculatively. Low-resolution status is visible.
 - Choose both networks, Meshtastic or MeshCore in Map Options. The same filter applies to map overlays and FIT, including retention and coordinate validation.
 - Copy licensed, prepared archives into `/sdcard/map-packs/NAME.pmtiles`. Names use letters, digits, hyphens, underscores and dots, at most 63 bytes. Open Offline Maps, refresh the list, choose a pack and use **Center Pack**. At most eight filenames are listed. Selection persists in map settings.

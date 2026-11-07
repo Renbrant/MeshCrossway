@@ -162,7 +162,7 @@ int main(int argc,char **argv){
  lv_event_send(navui::zoom_slider,LV_EVENT_RELEASED,nullptr);navui::toggle_zoom();
  navui::zoom=14;restore.zoom=14;mcxmap::configure(restore);navui::request();
  current=mcxmap::requested;mcxmap::ready=mcxmap::render(current,restore);navui::poll();assert(lv_img_get_zoom(navui::picture)==256);
- advance();const auto idle_builds=navui::overlay_builds;display_flushes=0;
+ advance();render_preview("map-fit-dots");const auto idle_builds=navui::overlay_builds;display_flushes=0;
  for(unsigned i=0;i<3;++i){navui::poll();advance();}
  assert(navui::overlay_builds==idle_builds&&display_flushes==0);
  const double before=navui::longitude;pointer_x=210;pointer_y=150;down=true;advance();for(int x=215;x<=265;x+=5){pointer_x=x;advance(35);}down=false;advance();assert(!navui::following&&navui::longitude<before);
