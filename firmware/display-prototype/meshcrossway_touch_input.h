@@ -26,6 +26,16 @@ static void notify_sample(){
   if(on_sample)on_sample(delivered.down,point.x,point.y,delivered.ms,delivered.cancel);
 }
 static bool active(){return task!=nullptr;}
+static unsigned current_contacts(){return delivered.contacts;}
+static bool current_points(lv_point_t &first,lv_point_t &second){
+  if(!delivered.contacts)return false;
+  first.x=delivered.x;first.y=delivered.y;
+  second.x=delivered.contacts>1?delivered.x2:delivered.x;
+  second.y=delivered.contacts>1?delivered.y2:delivered.y;
+  mcxorientation::transform(flipped,first.x,first.y);
+  mcxorientation::transform(flipped,second.x,second.y);
+  return true;
+}
 static bool busy(){
   portENTER_CRITICAL(&mux);const bool result=queue.busy();const uint32_t at=last_activity;portEXIT_CRITICAL(&mux);
   return result||uint32_t(uint32_t(esp_timer_get_time()/1000)-at)<120;
@@ -74,14 +84,16 @@ static void sample_task(void *){
     const uint32_t gap=previous?now-previous:0;previous=now;
     // Only this task accesses the touch controller after attach().
     const esp_err_t result=esp_lcd_touch_read_data(hardware);
-    uint16_t x=0,y=0,strength=0;uint8_t points=0;
-    const bool down=result==ESP_OK&&esp_lcd_touch_get_coordinates(hardware,&x,&y,&strength,&points,1);
+    uint16_t x[2]={},y[2]={},strength[2]={};uint8_t points=0;
+    const bool down=result==ESP_OK&&esp_lcd_touch_get_coordinates(hardware,x,y,strength,&points,2);
     portENTER_CRITICAL(&mux);
     if(gap>max_gap_ms)max_gap_ms=gap;
     if(result!=ESP_OK){++errors;if(++failures==3){queue.cancel(now);last_activity=now;}}
     else {failures=0;
       if(gap>250&&queue.last.down)queue.cancel(now);
-      Sample s;s.x=down?x:queue.last.x;s.y=down?y:queue.last.y;s.ms=now;s.down=down;
+      Sample s;s.x=down?x[0]:queue.last.x;s.y=down?y[0]:queue.last.y;
+      s.x2=down&&points>1?x[1]:s.x;s.y2=down&&points>1?y[1]:s.y;
+      s.contacts=down?(points>1?2:1):0;s.ms=now;s.down=down;
       if(down||queue.last.down)last_activity=now;
       queue.push(s);
     }

@@ -2,6 +2,8 @@
 // Included inside meshcrossway; all widgets are owned by the LVGL task.
 namespace gpsui {static void show_node_details(unsigned);static void show_node_group(unsigned);}
 namespace navui {
+static int displayed_map_coord(int p,int extent,bool magnified){return magnified?extent/2+((p-extent/2)*5)/4:p;}
+static int source_map_coord(int p,int extent,bool magnified){return magnified?extent/2+((p-extent/2)*4)/5:p;}
 static lv_obj_t *canvas=nullptr,*picture=nullptr,*marker=nullptr,*map_status=nullptr,*attribution=nullptr;
 static mcxmap::Frame *front=nullptr;
 static lv_obj_t *zoom_overlay=nullptr,*zoom_slider=nullptr,*zoom_value=nullptr;
@@ -75,11 +77,64 @@ static void request(){
   set_status(generation?"Loading map...":"Map worker unavailable · check PSRAM/internal memory");
   if(map_status){chatview::label(map_status,status_text);set_hidden(map_status,false);}
 }
+static bool pinching=false,pinch_consumed=false;
+static uint64_t pinch_start_distance2=0;
+static unsigned pinch_start_zoom=14,pinch_next_zoom=14;
+static uint64_t pinch_distance2(const lv_point_t &a,const lv_point_t &b){
+  const int64_t dx=int64_t(a.x)-b.x,dy=int64_t(a.y)-b.y;
+  return uint64_t(dx*dx+dy*dy);
+}
+static void pinch_begin(){
+  lv_point_t first={},second={};
+  if(!mcxtouch::current_points(first,second))return;
+  pinch_start_distance2=pinch_distance2(first,second);
+  if(pinch_start_distance2<100)return;
+  pinch_start_zoom=zoom;pinch_next_zoom=zoom;pinching=true;pinch_consumed=true;
+  if(picture)lv_obj_set_pos(picture,pan_x,pan_y);
+  drag_x=pan_x;drag_y=pan_y;dragging=false;gesture_moved=true;following=false;mcxmap::stop();inflight=false;
+}
+static void pinch_update(){
+  if(!pinching||!pinch_start_distance2)return;
+  lv_point_t first={},second={};
+  if(!mcxtouch::current_points(first,second))return;
+  const uint64_t current=pinch_distance2(first,second);
+  int delta=0;
+  if(current*100>=pinch_start_distance2*225)delta=2;
+  else if(current*100>=pinch_start_distance2*144)delta=1;
+  else if(current*100<=pinch_start_distance2*45)delta=-2;
+  else if(current*100<=pinch_start_distance2*67)delta=-1;
+  const int maximum=int(mcxmap::max_zoom(mcxmap::configuration()));
+  int next=int(pinch_start_zoom)+delta;if(next<3)next=3;if(next>maximum)next=maximum;
+  if(unsigned(next)==pinch_next_zoom)return;
+  pinch_next_zoom=unsigned(next);preview_zoom(pinch_next_zoom);
+}
+static void pinch_finish(){
+  if(!pinching)return;
+  pinching=false;pinch_start_distance2=0;pinch_consumed=true;
+  if(pinch_next_zoom!=zoom){
+    zoom=pinch_next_zoom;auto c=mcxmap::configuration();c.zoom=uint8_t(zoom);
+    mcxmap::configure(c);request();
+  }else preview_zoom(zoom);
+}
 static void pointer(lv_event_t *event){
   if(!centered||zoom_adjusting||!front)return;
   auto *input=lv_indev_get_act();if(!input)return;
   lv_point_t p={};lv_indev_get_point(input,&p);const auto code=lv_event_get_code(event);
-  if(code==LV_EVENT_CLICKED){if(!gesture_moved&&overlay_cache&&overlay_cache->ready&&picture){lv_area_t a;lv_obj_get_coords(canvas,&a);const int x=p.x-a.x1-pan_x,y=p.y-a.y1-pan_y;const auto map=mcxmap::configuration();const int radius=mcxmap::node_icon(map,false)==mcxmap::NODE_NAME||mcxmap::node_icon(map,true)==mcxmap::NODE_NAME?25:int((mcxmap::node_size(map)>mcxmap::node_size(map,true)?mcxmap::node_size(map):mcxmap::node_size(map,true))/2)+7;
+  const unsigned contacts=mcxtouch::current_contacts();
+  if(contacts>=2){
+    if(!pinching)pinch_begin();
+    if(pinching)pinch_update();
+    return;
+  }
+  if(pinching){pinch_finish();return;}
+  if(pinch_consumed){
+    if(code==LV_EVENT_CLICKED){pinch_consumed=false;gesture_moved=false;}
+    else if(!contacts&&(code==LV_EVENT_RELEASED||code==LV_EVENT_PRESS_LOST))pinch_consumed=false;
+    return;
+  }
+  if(code==LV_EVENT_CLICKED){if(!gesture_moved&&overlay_cache&&overlay_cache->ready&&picture){lv_area_t a;lv_obj_get_coords(canvas,&a);const auto map=mcxmap::configuration();const int raw_x=p.x-a.x1-pan_x,raw_y=p.y-a.y1-pan_y;
+      const int x=source_map_coord(raw_x,int(front->view.width),mcxmap::map_text_magnified(map));
+      const int y=source_map_coord(raw_y,int(front->view.height),mcxmap::map_text_magnified(map));const int radius=mcxmap::node_icon(map,false)==mcxmap::NODE_NAME||mcxmap::node_icon(map,true)==mcxmap::NODE_NAME?25:int((mcxmap::node_size(map)>mcxmap::node_size(map,true)?mcxmap::node_size(map):mcxmap::node_size(map,true))/2)+7;
       for(unsigned i=0;i<overlay_cache->cluster_count;++i){const auto &cluster=overlay_cache->clusters[i];const int dx=x-cluster.point.x,dy=y-cluster.point.y;if(dx*dx+dy*dy<=radius*radius){open_node_selection(i);break;}}}
     gesture_moved=false;return;}
   if(code==LV_EVENT_PRESSED){drag_start=p;drag_x=pan_x;drag_y=pan_y;dragging=true;gesture_moved=false;}
@@ -88,7 +143,7 @@ static void pointer(lv_event_t *event){
     if(abs(p.x-drag_start.x)+abs(p.y-drag_start.y)>8)gesture_moved=true;
     if(picture)lv_obj_set_pos(picture,drag_x,drag_y);
   }else if((code==LV_EVENT_RELEASED||code==LV_EVENT_PRESS_LOST)&&dragging){dragging=false;
-    if(gesture_moved){following=false;auto at=mcxmap::project(front->view.latitude,front->view.longitude,zoom);auto geo=mcxmap::unproject(at.x-drag_x,at.y-drag_y,zoom);latitude=geo.x;longitude=geo.y;request();}
+    if(gesture_moved){following=false;auto at=mcxmap::project(front->view.latitude,front->view.longitude,zoom);auto geo=mcxmap::unproject(at.x-source_map_coord(drag_x,int(front->view.width),mcxmap::map_text_magnified(mcxmap::configuration())),at.y-source_map_coord(drag_y,int(front->view.height),mcxmap::map_text_magnified(mcxmap::configuration())),zoom);latitude=geo.x;longitude=geo.y;request();}
     pan_x=drag_x;pan_y=drag_y;
   }
 }
@@ -222,7 +277,7 @@ static void poll(){
   if(f.valid&&front&&!dragging&&!pan_x&&!pan_y&&front->view.zoom==zoom){
     const auto origin=mcxmap::project(front->view.latitude,front->view.longitude,front->view.zoom),pos=mcxmap::project(f.latitude,f.longitude,front->view.zoom);
     const int x=int(lround(mcxmap::delta(pos.x,origin.x,front->view.zoom)+double(front->view.width)/2));const int y=int(lround(pos.y-origin.y+double(front->view.height)/2));
-    if(x>=0&&x<int(front->view.width)&&y>=0&&y<int(front->view.height)){set_hidden(marker,false);lv_obj_set_pos(marker,x-6,y-6);}
+    if(x>=0&&x<int(front->view.width)&&y>=0&&y<int(front->view.height)){set_hidden(marker,false);const auto c=mcxmap::configuration();lv_obj_set_pos(marker,displayed_map_coord(x,int(front->view.width),mcxmap::map_text_magnified(c))-6,displayed_map_coord(y,int(front->view.height),mcxmap::map_text_magnified(c))-6);}
     else set_hidden(marker,true);
   }else set_hidden(marker,true);
 }
@@ -313,25 +368,28 @@ static void draw_overlays(lv_event_t *event){
   if(!front||!overlay_cache||!overlay_cache->ready||zoom_adjusting||front->view.zoom!=zoom)return;
   auto *ctx=lv_event_get_draw_ctx(event);lv_area_t area;lv_obj_get_coords(picture,&area);
   const auto &clip=*ctx->clip_area;
+  const auto map_config=mcxmap::configuration();
+  const bool magnified=mcxmap::map_text_magnified(map_config);
+  const int map_width=int(front->view.width),map_height=int(front->view.height);
   lv_draw_line_dsc_t line;lv_draw_line_dsc_init(&line);line.width=3;line.round_start=line.round_end=1;
   for(unsigned i=0;i<overlay_cache->line_count;++i){const auto &s=overlay_cache->lines[i];
-    lv_point_t a={lv_coord_t(s.a.x+area.x1),lv_coord_t(s.a.y+area.y1)},b={lv_coord_t(s.b.x+area.x1),lv_coord_t(s.b.y+area.y1)};
+    lv_point_t a={lv_coord_t(displayed_map_coord(s.a.x,map_width,magnified)+area.x1),lv_coord_t(displayed_map_coord(s.a.y,map_height,magnified)+area.y1)},b={lv_coord_t(displayed_map_coord(s.b.x,map_width,magnified)+area.x1),lv_coord_t(displayed_map_coord(s.b.y,map_height,magnified)+area.y1)};
     if((a.x<clip.x1-3&&b.x<clip.x1-3)||(a.x>clip.x2+3&&b.x>clip.x2+3)||(a.y<clip.y1-3&&b.y<clip.y1-3)||(a.y>clip.y2+3&&b.y>clip.y2+3))continue;
     line.color=lv_color_hex(s.color);lv_draw_line(ctx,&line,&a,&b);
   }
-  for(unsigned i=0;i<overlay_cache->poi_count;++i){const auto &p=overlay_cache->pois[i];lv_area_t a={lv_coord_t(p.x+area.x1-4),lv_coord_t(p.y+area.y1-4),lv_coord_t(p.x+area.x1+4),lv_coord_t(p.y+area.y1+4)};
+  for(unsigned i=0;i<overlay_cache->poi_count;++i){const auto &p=overlay_cache->pois[i];const int px=displayed_map_coord(p.x,map_width,magnified)+area.x1,py=displayed_map_coord(p.y,map_height,magnified)+area.y1;lv_area_t a={lv_coord_t(px-4),lv_coord_t(py-4),lv_coord_t(px+4),lv_coord_t(py+4)};
     if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
     lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=cyan;d.border_color=white;d.border_width=1;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
   }
-  const auto config=mcxmap::configuration();
-  for(unsigned g=0;g<overlay_cache->cluster_count;++g){const auto &cluster=overlay_cache->clusters[g];const int x=lv_coord_t(cluster.point.x+area.x1),y=lv_coord_t(cluster.point.y+area.y1);
+  const auto &config=map_config;
+  for(unsigned g=0;g<overlay_cache->cluster_count;++g){const auto &cluster=overlay_cache->clusters[g];const int x=lv_coord_t(displayed_map_coord(cluster.point.x,map_width,magnified)+area.x1),y=lv_coord_t(displayed_map_coord(cluster.point.y,map_height,magnified)+area.y1);
     if(cluster.count>1){lv_area_t a={lv_coord_t(x-11),lv_coord_t(y-11),lv_coord_t(x+11),lv_coord_t(y+11)};if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
       lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.bg_color=lv_color_hex(activity_color(cluster.activity));d.border_color=white;d.border_width=2;d.radius=LV_RADIUS_CIRCLE;lv_draw_rect(ctx,&d,&a);
       char n[8];snprintf(n,sizeof(n),"%u",unsigned(cluster.count));lv_draw_label_dsc_t label;lv_draw_label_dsc_init(&label);label.color=lv_color_hex(0x101820);label.font=&lv_font_montserrat_10;label.align=LV_TEXT_ALIGN_CENTER;lv_draw_label(ctx,&label,&a,n,nullptr);continue;
     }
     if(cluster.first>=overlay_cache->node_count)continue;
     const NodeMarker *node=&overlay_cache->nodes[cluster.first];
-    const int nx=lv_coord_t(node->point.x+area.x1),ny=lv_coord_t(node->point.y+area.y1);const auto icon=mcxmap::node_icon(config,node->meshcore);const bool name_mode=icon==mcxmap::NODE_NAME;
+    const int nx=lv_coord_t(displayed_map_coord(node->point.x,map_width,magnified)+area.x1),ny=lv_coord_t(displayed_map_coord(node->point.y,map_height,magnified)+area.y1);const auto icon=mcxmap::node_icon(config,node->meshcore);const bool name_mode=icon==mcxmap::NODE_NAME;
     const int node_size=int(mcxmap::node_size(config,node->meshcore));
     const int width=name_mode?30+node_size/2:node_size,height=name_mode?(node_size>22?20:15):node_size;lv_area_t a={lv_coord_t(nx-(width-1)/2),lv_coord_t(ny-(height-1)/2),lv_coord_t(nx+width/2),lv_coord_t(ny+height/2)};
     if(a.x2<clip.x1||a.x1>clip.x2||a.y2<clip.y1||a.y1>clip.y2)continue;
@@ -715,7 +773,7 @@ static void library(bool pois){
   }
   auto *help=single_label(dialog,pois?"POIs export automatically to navigation/pois.gpx.":"Finished/recovered tracks have a GPX beside the journal.",8,259,440,muted);lv_obj_set_style_text_font(help,&lv_font_montserrat_10,0);
 }
-static lv_obj_t *provider_picker=nullptr,*size_picker=nullptr,*online_switch=nullptr,*nodes_switch=nullptr,*names_switch=nullptr,*grouping_switch=nullptr;
+static lv_obj_t *provider_picker=nullptr,*size_picker=nullptr,*online_switch=nullptr,*nodes_switch=nullptr,*names_switch=nullptr,*grouping_switch=nullptr,*map_magnify_switch=nullptr;
 static void provider_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::select_provider(c,lv_dropdown_get_selected(provider_picker));mcxmap::configure(c);}
 static void icon_changed(lv_event_t *event){auto c=mcxmap::configuration();const bool meshcore=intptr_t(lv_event_get_user_data(event))!=0;auto *picker=lv_event_get_target(event);mcxmap::set_node_icon(c,meshcore,lv_dropdown_get_selected(picker));mcxmap::configure(c);}
 static void size_changed(lv_event_t *event){auto c=mcxmap::configuration();mcxmap::set_node_size(c,lv_dropdown_get_selected(lv_event_get_target(event)),intptr_t(lv_event_get_user_data(event))!=0);mcxmap::configure(c);}
@@ -725,6 +783,7 @@ static void online_changed(lv_event_t *){auto c=mcxmap::configuration();c.online
 static void nodes_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::set_nodes_hidden(c,!lv_obj_has_state(nodes_switch,LV_STATE_CHECKED));mcxmap::configure(c);}
 static void grouping_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::set_nodes_grouped(c,lv_obj_has_state(grouping_switch,LV_STATE_CHECKED));mcxmap::configure(c);}
 static void names_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::set_node_names(c,lv_obj_has_state(names_switch,LV_STATE_CHECKED));mcxmap::configure(c);}
+static void map_magnify_changed(lv_event_t *){auto c=mcxmap::configuration();mcxmap::set_map_text_magnified(c,lv_obj_has_state(map_magnify_switch,LV_STATE_CHECKED));mcxmap::configure(c);if(navui::canvas)navui::request();}
 static void map_diagnostics(){
   base("MAP / DIAGNOSTICS");
   auto *detail=single_label(dialog,navui::status_text,8,50,440,white);lv_label_set_long_mode(detail,LV_LABEL_LONG_WRAP);
@@ -810,6 +869,9 @@ static void map_options(){
   row=control_row(30);row_label=single_label(row,"Show node names",0,0,330,white);lv_obj_set_flex_grow(row_label,1);
   names_switch=lv_switch_create(row);lv_obj_set_size(names_switch,44,24);if(c.show_node_names&1u)lv_obj_add_state(names_switch,LV_STATE_CHECKED);
   lv_obj_add_event_cb(names_switch,names_changed,LV_EVENT_VALUE_CHANGED,nullptr);
+  row=control_row(30);row_label=single_label(row,"Larger map labels / 1.25x",0,0,330,white);lv_obj_set_flex_grow(row_label,1);
+  map_magnify_switch=lv_switch_create(row);lv_obj_set_size(map_magnify_switch,44,24);if(mcxmap::map_text_magnified(c))lv_obj_add_state(map_magnify_switch,LV_STATE_CHECKED);
+  lv_obj_add_event_cb(map_magnify_switch,map_magnify_changed,LV_EVENT_VALUE_CHANGED,nullptr);
   for(unsigned network=0;network<2;++network){
     const bool meshcore=network!=0;void *which=meshcore?(void *)1:nullptr;
     single_label(dialog,meshcore?"MESHCORE":"MESHTASTIC",0,0,440,orange);
@@ -836,7 +898,7 @@ static void map_options(){
   row=control_row(30);row_label=single_label(row,"Download visible map tiles",0,0,330,white);lv_obj_set_flex_grow(row_label,1);
   online_switch=lv_switch_create(row);lv_obj_set_size(online_switch,44,24);if(c.online)lv_obj_add_state(online_switch,LV_STATE_CHECKED);
   lv_obj_add_event_cb(online_switch,online_changed,LV_EVENT_VALUE_CHANGED,nullptr);
-  auto *help=single_label(dialog,"Name mode shows the last 4 ID digits; tap a marker or cluster for details. Turn off Group nearby nodes to show individual markers. In Name mode: green = active within 5 min, cyan = seen within 60 min, gray = saved/older (recent activity is not a health check).\nBy last heard: green <24 h; yellow 1-7 days; gray >=7 days or unknown time. This is reception age, not online status. Keep days removes old local discovery records from map/list and SD snapshots; 0 disables expiry. Favorites, local radios, messages and drafts are protected. Cleanup waits for an idle Home/Map screen. OFF uses SD maps and cached tiles only. Format, size and color are independent per network; name visibility is shared.",0,0,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
+  auto *help=single_label(dialog,"Larger map labels magnifies the complete raster by 1.25x, so the visible area shrinks and the image may look softer; cached/downloaded tiles are unchanged. Standard OpenStreetMap raster labels are baked into the tiles. Name mode shows the last 4 ID digits; tap a marker or cluster for details. Turn off Group nearby nodes to show individual markers. In Name mode: green = active within 5 min, cyan = seen within 60 min, gray = saved/older (recent activity is not a health check).\nBy last heard: green <24 h; yellow 1-7 days; gray >=7 days or unknown time. This is reception age, not online status. Keep days removes old local discovery records from map/list and SD snapshots; 0 disables expiry. Favorites, local radios, messages and drafts are protected. Cleanup waits for an idle Home/Map screen. OFF uses SD maps and cached tiles only. Format, size and color are independent per network; name visibility is shared.",0,0,440,muted);lv_label_set_long_mode(help,LV_LABEL_LONG_WRAP);lv_obj_set_height(help,LV_SIZE_CONTENT);
   map_save_label=single_label(dialog,"",0,0,440,muted);refresh();
 }
 }

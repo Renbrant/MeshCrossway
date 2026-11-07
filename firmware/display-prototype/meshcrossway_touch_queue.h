@@ -2,14 +2,14 @@
 #include <stdint.h>
 // Single producer/consumer, externally locked. Never discard an edge silently.
 namespace mcxtouch {
-struct Sample { int16_t x=0,y=0; uint32_t ms=0; bool down=false,cancel=false; };
+struct Sample { int16_t x=0,y=0,x2=0,y2=0; uint32_t ms=0; uint8_t contacts=0; bool down=false,cancel=false; };
 template<unsigned N=64> struct Queue {
   static_assert(N>=4,"Need room for edges and motion");
   Sample items[N]={},last={};
   unsigned head=0,count=0,peak=0,overflows=0;
   bool quarantine=false;
   void cancel(uint32_t ms){
-    head=0;count=1;items[0]=last;items[0].down=false;
+    head=0;count=1;items[0]=last;items[0].down=false;items[0].contacts=0;
     items[0].cancel=true;items[0].ms=ms;quarantine=true;
   }
   void push(Sample s){

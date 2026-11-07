@@ -69,6 +69,8 @@ static void set_node_icon(Config &c,bool meshcore,unsigned icon){const unsigned 
 static void set_node_size(Config &c,unsigned size,bool meshcore=false){if(meshcore)c.meshcore_size=uint8_t(size%6u);else c.hide_nodes=uint8_t((c.hide_nodes&0xF1u)|((size%6u)<<1));}
 static void set_node_color(Config &c,bool meshcore,unsigned color){const uint8_t bit=meshcore?2:1;if(color==NODE_COLOR_AGE){c.age_colors|=bit;return;}if(color>NODE_COLOR_WHITE)return;c.age_colors&=uint8_t(~bit);const unsigned shift=meshcore?4:1;const uint8_t mask=uint8_t(~(7u<<shift));c.show_node_names=uint8_t((c.show_node_names&mask)|((color&7u)<<shift));}
 static void set_node_names(Config &c,bool enabled){c.show_node_names=uint8_t((c.show_node_names&~1u)|(enabled?1u:0u));}
+static bool map_text_magnified(const Config &c){return (c.reserved&1u)!=0;}
+static void set_map_text_magnified(Config &c,bool enabled){c.reserved=uint8_t((c.reserved&~1u)|(enabled?1u:0u));}
 static bool valid_config(const Config &c){
   if(c.version!=6||c.age_colors>3||c.retention_days>365||c.meshcore_size>=6||c.night>1||c.online>1||((c.hide_nodes>>1)&7)>=6||((c.hide_nodes>>4)&3)>NODE_NAME||((c.hide_nodes>>6)&3)>NODE_NAME||c.zoom<3||c.zoom>19||!memchr(c.url,0,sizeof(c.url))||!memchr(c.attribution,0,sizeof(c.attribution))||!c.attribution[0]||strncmp(c.url,"https://",8)||!c.url[8])return false;
   for(const char *p=c.url;*p;++p)if(uint8_t(*p)<=32||strchr("?#@{}",*p))return false;
@@ -250,6 +252,18 @@ static lv_color_t night_pixel(lv_color_t color){
   const int shift=255-hi-lo;
   return lv_color_make(uint8_t(8+(r+shift)*200/255),uint8_t(12+(g+shift)*200/255),uint8_t(18+(b+shift)*210/255));
 }
+// 1.25x accessibility magnification for the complete raster frame.
+// Tile files remain unchanged; crop the surrounding area instead of enlarging downloads.
+static void magnify_frame(lv_color_t *pixels,unsigned width,unsigned height){
+  const int cx=int(width/2),cy=int(height/2);
+  auto row=[&](int y){
+    const int sy=cy+(y-cy)*4/5;
+    for(int x=0;x<cx;++x){const int sx=cx+(x-cx)*4/5;pixels[y*width+x]=pixels[sy*width+sx];}
+    for(int x=int(width)-1;x>=cx;--x){const int sx=cx+(x-cx)*4/5;pixels[y*width+x]=pixels[sy*width+sx];}
+  };
+  for(int y=0;y<cy;++y)row(y);
+  for(int y=int(height)-1;y>=cy;--y)row(y);
+}
 static Frame *render(const View &v,const Config &c){
   const auto begun=milliseconds();waiting_clock=cache_full=false;
   if(!esp_sdcard_port_get_size())clear_tiles();
@@ -284,6 +298,7 @@ static Frame *render(const View &v,const Config &c){
       lv_mem_free(rgba);
     }
   }
+  if(map_text_magnified(c))magnify_frame(pixels,v.width,v.height);
   snprintf(f->status,sizeof(f->status),"z%u / %u tiles / %u missing%s",v.zoom,f->loaded,f->missing,!esp_sdcard_port_get_size()?" / SD unavailable":waiting_clock?" / clock sync":cache_full?" / cache reserve":"");last_render_ms=milliseconds()-begun;return f;
 }
 static void worker(void *){
