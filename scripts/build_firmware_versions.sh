@@ -52,7 +52,7 @@ build_version() {
     local verify_args=(--dir "$image_dir" --version "$version")
     if [ "$ref" != "HEAD" ]; then verify_args+=(--ref "$ref"); fi
     if python3 "$ROOT/scripts/verify_firmware_version.py" "${verify_args[@]}" &&
-       { { [ "$version" != "$STABLE_VERSION" ] && [ "$version" != "$RECOVERY_VERSION" ] && [ "$version" != "$LEGACY_VERSION" ]; } ||
+       { { [ "$version" != "$STABLE_VERSION" ] && [ "$version" != "$PREVIOUS_STABLE_VERSION" ] && [ "$version" != "$RECOVERY_VERSION" ] && [ "$version" != "$LEGACY_VERSION" ]; } ||
          python3 "$ROOT/scripts/restore_stable_firmware.py" --version "$version" --verify "$image_dir"; }; then
       echo "RESTORED: $version from verified compiled artifact cache"
       return
@@ -61,7 +61,7 @@ build_version() {
 
   # Preserve the exact hardware-tested bytes. Rebuilding an old source revision
   # with newly resolved component versions is not an approved rollback image.
-  if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$RECOVERY_VERSION" ] || [ "$version" = "$LEGACY_VERSION" ]; then
+  if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$PREVIOUS_STABLE_VERSION" ] || [ "$version" = "$RECOVERY_VERSION" ] || [ "$version" = "$LEGACY_VERSION" ]; then
     python3 "$ROOT/scripts/restore_stable_firmware.py" --version "$version" --destination "$image_dir"
     echo "RESTORED: immutable hardware-tested $version"
     return
@@ -174,9 +174,11 @@ build_version() {
 # Deliver the current stable, previous stable, legacy recovery and any newer candidate.
 # Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
 # Update these pins whenever a newer hardware build is accepted.
-STABLE_VERSION="v0.9.28"
-STABLE_REF="37a8caca1ce57e2795be78e7a40012890a6b7147"
-STABLE_SHA256="a36970339c00cc327515eac2648c5421e1b9aab460484919a6ed8f57cc040c61"
+STABLE_VERSION="v0.9.32"
+STABLE_REF="c83f21adc5a3b35486ed7bd70fa6e5260cc13cce"
+STABLE_SHA256="87abaeb2b6bb9e954e752f9e610cd1150e3ebe7c8d11fe0c2652b98aa06daf2c"
+PREVIOUS_STABLE_VERSION="v0.9.28"
+PREVIOUS_STABLE_REF="37a8caca1ce57e2795be78e7a40012890a6b7147"
 RECOVERY_VERSION="v0.9.25"
 RECOVERY_REF="65f4214b15fe9486a7f07e7471380114bcbf8826"
 LEGACY_VERSION="v0.9.16"
@@ -200,6 +202,7 @@ fi
 # Never rebuild a pinned stable version from the publishing commit.
 build_version "$LEGACY_VERSION" "$LEGACY_REF"
 build_version "$RECOVERY_VERSION" "$RECOVERY_REF"
+build_version "$PREVIOUS_STABLE_VERSION" "$PREVIOUS_STABLE_REF"
 build_version "$STABLE_VERSION" "$STABLE_REF"
 if [ "$LATEST_VERSION" != "$STABLE_VERSION" ]; then
   build_version "$LATEST_VERSION" HEAD
@@ -210,7 +213,7 @@ fi
 for archive in "$OUT"/versions/*; do
   [ -d "$archive" ] || continue
   version="$(basename "$archive")"
-  if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$RECOVERY_VERSION" ] || [ "$version" = "$LATEST_VERSION" ] || [ "$version" = "$LEGACY_VERSION" ]; then
+  if [ "$version" = "$STABLE_VERSION" ] || [ "$version" = "$PREVIOUS_STABLE_VERSION" ] || [ "$version" = "$RECOVERY_VERSION" ] || [ "$version" = "$LATEST_VERSION" ] || [ "$version" = "$LEGACY_VERSION" ]; then
     continue
   fi
   rm -rf -- "$archive"

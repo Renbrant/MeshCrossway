@@ -25,6 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit release approval.
 approved={
+    "v0.9.32":("Selected stable by explicit device acceptance on 2026-11-07. User reports the raster map, pinch zoom and 1.25x map magnification are functioning very well and remain extremely stable. Exact firmware bytes are checksum-pinned.", "Recommended stable / hardware-tested"),
     "v0.9.28":("Selected stable by explicit acceptance on 2026-11-05. Exact published image retained: dual radios, street/night maps, orientation lock, node age colors and configurable local retention.", "Recommended stable / hardware-tested"),
     "v0.9.25":("Hardware-tested and selected stable on 2026-11-05. Exact tested binary retained: software-AES map downloads, optional grouping, per-network styles, zoom dismissal and local night view.", "Recommended stable / hardware-tested"),
     "v0.9.16":("Hardware-tested v0.9.16; retain exact published binary.", "Recommended stable / hardware-tested"),
@@ -55,7 +56,7 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if not folder.is_dir():
         continue
     version=folder.name
-    if (version_key(version)<version_key(stable) and version not in ("v0.9.16","v0.9.25")) or version_key(version)>version_key(latest) or version in blocked:
+    if (version_key(version)<version_key(stable) and version not in ("v0.9.16","v0.9.25","v0.9.28")) or version_key(version)>version_key(latest) or version in blocked:
         continue
     manifest=folder/"manifest.json"
     info_file=folder/"build-info.json"
@@ -76,24 +77,28 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
-    elif version in ("v0.9.16","v0.9.25"):
+    elif version in ("v0.9.16","v0.9.25","v0.9.28"):
         summary="Previous hardware-tested stable; exact image retained for recovery."
-        label="Previous stable / recovery" if version=="v0.9.25" else "Legacy stable / recovery"
+        label=("Previous stable / recovery" if version in ("v0.9.25","v0.9.28") else "Legacy stable / recovery")
         status="hardware-tested"
     elif version=="v0.9.30":
-        summary="EXPERIMENTAL: improves node details and map controls. Last-heard age uses hours/minutes/seconds, node details hide map actions, Map Options shows its active context, and zoom/center controls sit on the map. v0.9.28 remains the recommended stable image; physical validation is pending."
+        summary="EXPERIMENTAL: improves node details and map controls. Last-heard age uses hours/minutes/seconds, node details hide map actions, Map Options shows its active context, and zoom/center controls sit on the map. v0.9.32 remains the recommended stable image; physical validation is pending."
         label="Map details and on-map controls / EXPERIMENTAL"
         status="experimental"
-    elif version=="v0.9.32":
-        summary="EXPERIMENTAL: restores the v0.9.31 raster map and adds two-finger pinch zoom. Adds a saved 1.25x map magnification option; it scales all map content, crops the visible area, and leaves cached tile files unchanged. Standard raster tile labels cannot be resized independently. v0.9.28 remains the recommended stable image pending hardware validation."
-        label="Raster map pinch zoom / EXPERIMENTAL"
+    elif version=="v0.9.33":
+        summary="EXPERIMENTAL: improves saved-network Wi-Fi feedback, adds quick visibility and color controls for saved tracks, and resets the right-rail highlight when returning to the map. v0.9.32 remains the recommended stable image; physical validation is pending."
+        label="Wi-Fi and saved track controls / EXPERIMENTAL"
         status="experimental"
+    elif version=="v0.9.32":
+        summary="Selected stable after device use. Restores the v0.9.31 raster map, adds two-finger pinch zoom and saved 1.25x map magnification. Raster tile files and downloads remain unchanged; magnification applies to all map content and crops the visible area."
+        label="Raster map pinch zoom / STABLE"
+        status="hardware-tested"
     elif version=="v0.9.31":
-        summary="EXPERIMENTAL: keeps zoom/center controls above map tiles after drag and makes the active Map Options, Record, Tracks or POIs screen the only highlighted map action. v0.9.28 remains the recommended stable image; physical validation is pending."
+        summary="EXPERIMENTAL: keeps zoom/center controls above map tiles after drag and makes the active Map Options, Record, Tracks or POIs screen the only highlighted map action. v0.9.32 remains recommended stable."
         label="Map controls and navigation state / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.9.29":
-        summary="EXPERIMENTAL: 750 local color emoji sequences, preserved legacy glyphs, readable unknown fallback and flash-resident sprites. Names and messages retain original UTF-8; physical validation pending. Exact v0.9.28 stable retained."
+        summary="EXPERIMENTAL: 750 local color emoji sequences, preserved legacy glyphs, readable unknown fallback and flash-resident sprites. Names and messages retain original UTF-8; physical validation pending. Exact v0.9.32 stable retained."
         label="Expanded emoji coverage / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.9.28":

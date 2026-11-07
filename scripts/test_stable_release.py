@@ -35,23 +35,23 @@ class StableReleaseTests(unittest.TestCase):
 
     def test_pinned_image_rejects_consistently_rewritten_metadata(self):
         with tempfile.TemporaryDirectory() as t:
-            folder=Path(t);ref='0'*40;self.image(folder,'v0.9.28',ref)
+            folder=Path(t);ref='0'*40;self.image(folder,'v0.9.32',ref)
             sha=hashlib.sha256((folder/'meshcrossway-display-dev.bin').read_bytes()).hexdigest()
-            with patch.dict(stable.APPROVED,{'v0.9.28':(ref,sha,0,'unused')}):
-                stable.verify(folder,'v0.9.28')
+            with patch.dict(stable.APPROVED,{'v0.9.32':(ref,sha,0,'unused')}):
+                stable.verify(folder,'v0.9.32')
                 image=folder/'meshcrossway-display-dev.bin';data=bytearray(image.read_bytes());data[0x10020]=42;image.write_bytes(data)
-                self.write(folder,'v0.9.28',ref) # All self-reported hashes now agree with the altered image.
-                with self.assertRaises(ValueError):stable.verify(folder,'v0.9.28')
+                self.write(folder,'v0.9.32',ref) # All self-reported hashes now agree with the altered image.
+                with self.assertRaises(ValueError):stable.verify(folder,'v0.9.32')
 
     def test_catalog_retains_recovery_and_selects_new_stable(self):
         with tempfile.TemporaryDirectory() as t:
             root=Path(t)
-            for version in ('v0.9.16','v0.9.25','v0.9.28'):self.image(root/'versions'/version,version,'0'*40)
+            for version in ('v0.9.16','v0.9.25','v0.9.28','v0.9.32'):self.image(root/'versions'/version,version,'0'*40)
             subprocess.run(['python3',str(ROOT/'scripts/write_firmware_catalog.py'),'--root',str(root),
-                            '--stable','v0.9.28','--latest','v0.9.28'],check=True,capture_output=True)
+                            '--stable','v0.9.32','--latest','v0.9.32'],check=True,capture_output=True)
             c=json.loads((root/'catalog.json').read_text())
-            self.assertEqual(c['recommended'],'v0.9.28')
-            self.assertEqual({v['version'] for v in c['versions']},{'v0.9.16','v0.9.25','v0.9.28'})
+            self.assertEqual(c['recommended'],'v0.9.32')
+            self.assertEqual({v['version'] for v in c['versions']},{'v0.9.16','v0.9.25','v0.9.28','v0.9.32'})
             self.assertTrue(all(v['status']=='hardware-tested' for v in c['versions']))
 
 if __name__=='__main__':unittest.main()

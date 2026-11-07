@@ -9,11 +9,14 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "v0.9.28"
-REF = "37a8caca1ce57e2795be78e7a40012890a6b7147"
-SHA = "a36970339c00cc327515eac2648c5421e1b9aab460484919a6ed8f57cc040c61"
+VERSION = "v0.9.32"
+REF = "c83f21adc5a3b35486ed7bd70fa6e5260cc13cce"
+SHA = "87abaeb2b6bb9e954e752f9e610cd1150e3ebe7c8d11fe0c2652b98aa06daf2c"
 APPROVED = {
-    VERSION: (REF, SHA, 13471144384, "1e6d628a0cb3c3a3508818349c05b03a3f4726d8ce1a032cba8cdc5fe350c58a"),
+    VERSION: (REF, SHA, 13551122742, "6278a40dfcedca12c421265e8d6cd27141fa3cbf6d80610e50d6b3a10cb1c35c"),
+    "v0.9.28": ("37a8caca1ce57e2795be78e7a40012890a6b7147",
+                "a36970339c00cc327515eac2648c5421e1b9aab460484919a6ed8f57cc040c61",
+                13471144384, "1e6d628a0cb3c3a3508818349c05b03a3f4726d8ce1a032cba8cdc5fe350c58a"),
     "v0.9.25": ("65f4214b15fe9486a7f07e7471380114bcbf8826",
                 "daeebb735024fcdcb474acdfe0887c3d72e608ba794ba1343e1b60749f3d6b23",
                 13461246425, "ac2bb8afc73245cc8d062df3237dd41cb424699ecb0945a4a142db1401896dd0"),
