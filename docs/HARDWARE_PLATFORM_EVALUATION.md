@@ -154,6 +154,56 @@ The term “Cduino” is not sufficiently specific to identify a verified produc
 
 The M9 and L2 Pro are **alternative controller enclosures/platforms**, not evidence that a single built-in LoRa transceiver can replace two concurrently operating independent networks.
 
+
+## Mobile application alternative — Android and iOS
+
+**Recommendation:** treat a smartphone as a fully capable alternative controller, not as a replacement for the two independent external BLE LoRa radios. Start with an **Android APK proof of concept**; consider iOS after dual-GATT and background-operation validation. The existing embedded-controller firmware remains an independent product line.
+
+### Distribution and store tradeoffs
+
+| Distribution | Developer account / fees | Release route | Principal caveat |
+|---|---|---|---|
+| Android signed APK via GitHub Releases / project website | No Google Play enrollment required for building/signing | Direct download and sideload | Users authorize installation; follow evolving Android developer-verification requirements |
+| Android Google Play | Play Console enrollment, typically US$25 one-time | Managed store updates | App review, policy and testing requirements |
+| iOS App Store | Apple Developer Program, typically US$99/year | Store distribution | App Review, signing, privacy disclosures |
+| iOS TestFlight | Apple Developer Program, typically US$99/year | Beta distribution | External testing can require beta review; builds expire |
+| iOS local development | Free Apple developer account supports device testing via Xcode | Personal development device | Not an unrestricted public IPA distribution mechanism |
+
+Android officially permits website-distributed APKs. Android's developer verification rollout adds possible additional steps for broad off-store distribution; reassess at launch. Apple supports TestFlight and App Store via its paid program; do not promise iOS public distribution as a simple APK-like download.
+
+### Architecture
+
+Phone app: shared application state, message storage, nodes/chats/groups, offline maps, phone GNSS, tracks and settings. Independent transport clients: **Meshtastic BLE GATT** and **MeshCore BLE GATT**, each with independent session, pairing, reconnect, subscription and send queues. No inter-network forwarding. Phone Wi-Fi/cellular can be used for map downloads or optional services but is **not required** for local LoRa communications.
+
+### Framework choice
+
+A **Flutter** shared UI with native Kotlin/Android BLE and Swift/CoreBluetooth adapters is a promising starting point; Kotlin-first Android proof of concept may be faster to debug. Validate supported BLE libraries against Meshtastic and MeshCore security requirements before committing. Reusing embedded C++ LVGL screens directly is not a realistic assumption; reuse workflows, protocol definitions and UX, not hardware-specific display code.
+
+### BLE/background reliability gates
+
+- Two concurrent BLE central GATT links, with real Heltec V3 devices running MT and MC, including secure pairing/PIN, notifications and bidirectional traffic.
+- Android 12+ Bluetooth permissions, location requirements for mapping, foreground-service type and notification behavior, OEM battery optimization, screen lock, process death and reconnection.
+- iOS CoreBluetooth central background mode and state restoration; OS may suspend or terminate the app, and background scans are constrained. Never promise permanent 24/7 links.
+- Validate foreground, screen-off, background, Wi-Fi/cellular handoff, airplane mode with Bluetooth re-enabled, and recovery after each peripheral power-cycle.
+- Ensure notifications and storage behave without network access; measure battery drain and 24-hour stability.
+
+### Suggested phases
+
+1. Android **connectivity-only APK**: two BLE connections, logs, send/receive and reconnect; distribute test APK in GitHub Releases.
+2. Android MVP: chats, nodes, basic settings, GNSS and offline map.
+3. Long-duration/background testing across several Android vendors and versions.
+4. Cross-platform UI and iOS CoreBluetooth adapter; distribute beta with TestFlight.
+5. Consider Play Store / App Store only after a stable mobile release.
+
+### Mobile sources
+
+- Android alternative APK distribution: https://developer.android.com/distribute/marketing-tools/alternative-distribution
+- Android BLE background behavior: https://developer.android.com/develop/connectivity/bluetooth/ble/background
+- Android developer verification: https://developer.android.com/developer-verification/guides
+- Apple Developer Program: https://developer.apple.com/programs/
+- Apple TestFlight: https://developer.apple.com/testflight/
+- Apple CoreBluetooth background behavior: https://developer.apple.com/library/archive/documentation/NetworkingInternetWeb/Conceptual/CoreBluetooth_concepts/CoreBluetoothBackgroundProcessingForIOSApps/PerformingTasksWhileYourAppIsInTheBackground.html
+
 ## Research limitations
 
 This is a documentation-based assessment, not a compiled or bench-tested validation. Exact Cduino models, some Waveshare variants, firmware versions, power figures and Elecrow C6 update procedures remain to be verified. Any earlier statement that P4/C6 automatically guarantees the complete MeshCrossway BLE+AP+STA scenario should be read with these limitations.
