@@ -70,6 +70,7 @@ The two BLE links use separate protocol adapters: Meshtastic protobuf PhoneAPI o
 
 ## Research, experiments and performance analysis
 
+- [CAIRN feature review and adoption roadmap](CAIRN_FEATURE_REVIEW.md) — comparison of mapping, diagnostics, radio constraints, user experience and memory impact
 - [Hardware platform alternatives: ESP32-P4, T-Deck, ThinkNode and mobile apps](HARDWARE_PLATFORM_EVALUATION.md)
 - [Map rendering latency and memory investigation](map-render-latency-v087.md)
 - [Maps, GNSS and tile architecture](maps-gps-v081.md)
