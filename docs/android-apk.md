@@ -123,3 +123,44 @@ Reference: https://github.com/meshcore-dev/MeshCore/blob/main/src/helpers/esp32/
 
 Regression fixtures cover 23, 175, 176 and 185. Initial physical dual-radio acceptance
 was reported on November 8, 2026; see the current functional reference above for its scope and remaining checks.
+
+## 0.4.0-alpha05 — tracks and field usability
+
+Built on the hardware-accepted alpha04 without changing either BLE transport.
+
+- Local GPS tracks: start, pause, resume, finish/save, rename, color, show/hide,
+  delete saved tracks and export GPX using Android's file picker. Access from
+  **Home → Tracks**, **Map → Tracks** or **Settings → Tracks and GPX export**.
+- Recording uses a dedicated location foreground service and its own SQLite
+  worker/database, independent of both radio queues. Precise GPS permission is
+  requested only when recording is started. A notification offers Pause.
+- Fresh GPS samples (no older than 30 s), reported accuracy ≤50 m, minimum
+  2-second sampling and ≥3 m movement reduce cached fixes and stationary noise.
+  Implausible jumps over 150 m/s are rejected. Gaps over 2 minutes and manual
+  resumes create separate segments and do not add straight-line gap distance.
+- Up to 100 tracks / 100,000 points per track. On-map preview uses at most
+  approximately 5,000 sampled points per visible track; GPX contains all saved
+  points. Accuracy filtering is not a navigation guarantee.
+- Phone GPS card: coordinates, accuracy, fix age, available altitude and speed.
+  Track recording is distinct from the optional foreground map-position switch.
+- Node types: clients/repeaters/rooms for MeshCore, with independent network and
+  favorite filters; distance ordering updates the displayed selected order.
+- Node/POI distance and true-north bearing use the latest phone position and the
+  saved target coordinates. They are straight-line measurements, not turn-by-turn
+  routes or device-heading compass guidance.
+- Groups sort by latest loaded message and show unread counters using exact
+  channel topic identities. Chat decimal coordinates open on the local map.
+- Up to 8 editable quick replies (120 characters each), inserted into the current
+  network's draft without sending or replacing existing text.
+
+Tracks are local and never broadcast automatically. **JSON history backup does
+not include tracks**; export each required track as GPX before uninstalling or
+switching to an APK with an incompatible signing key. GPX import is not included
+in this increment. Force-stop/restart preserves committed points and reopens an
+interrupted track as paused; it does not restart recording automatically.
+
+Validation for this increment includes pure GPS quality/geometry/GPX fixtures
+and Android SQLite lifecycle/export tests in addition to existing dual-protocol,
+history migration, map and navigation checks. Hardware acceptance must confirm
+real GPS with screen off and simultaneous BLE sessions before promotion above
+the alpha04 recovery reference.

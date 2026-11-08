@@ -22,3 +22,28 @@ Offline regions depend on provider availability and may be incomplete after a pa
 ## Acceptance scope
 
 Alpha02 is the user-tested S25/two-Heltec baseline. Alpha03 adds independently testable field tools and setup changes; hardware coexistence, pairing, real map downloads, location permission behavior and background endurance still require device acceptance. Tracks, remote administration and radio configuration are outside this increment.
+
+## Alpha05 field workflow increment (November 8, 2026)
+
+The alpha04 tested APK remains the recovery reference. Public documentation was
+reviewed again for all five references, including MeshMapper:
+
+| Reference | Additional workflow reviewed | Alpha05 implementation / boundary |
+| --- | --- | --- |
+| [Meshtastic Android](https://github.com/meshtastic/Meshtastic-Android) | Node details, maps and waypoint workflows | Coordinates in chat open on the local map; saved-target distance and true-north bearing |
+| [MeshCore companion protocol](https://github.com/meshcore-dev/MeshCore/blob/main/docs/companion_protocol.md) | Typed client/repeater/room contacts and channel identity | Type filters and readable contact roles; channel activity/unread remains scoped to the originating network, radio and topic |
+| [CAIRN](https://www.cvhvisuals.com/cairn.html) | GPS dashboard, compass-to-node, field map workflows | Phone position/altitude/speed card and distance/bearing sheets; no claims of copied compass or RF diagnostics |
+| [Wadamesh guide](https://wadamesh.com/docs.html) | Editable quick replies, coordinates in chat and map tools | Saved quick-reply templates, append-to-draft, channel unread/activity order and local map shortcuts |
+| [MeshMapper overview](https://wiki.meshmapper.net/app_overview/) | Moving field sessions, map history and network-specific coverage | Local phone-GPS track sessions, pause/resume, colored track overlays and GPX export; these are travel tracks, not RF coverage measurements or MeshMapper uploads |
+
+Track recording is an independent location foreground service. It never receives
+or sends mesh commands. Screen-off operation is implemented using Android's
+[location service requirements](https://developer.android.com/develop/background-work/services/fgs/service-types#location),
+with explicit foreground start, precise-location permission and an ongoing
+notification. Force-stop, process termination and device restart do not restart
+recording automatically. On reopening, interrupted recordings are paused and
+require explicit resume; resume starts a new GPX segment.
+
+No reference application source/assets were copied. Remote administration,
+active wardriving/pings, traceroute, coverage uploads and radio settings remain
+separate future work; none are silently enabled by track recording.

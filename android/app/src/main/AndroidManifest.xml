@@ -9,6 +9,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <application android:theme="@style/AppTheme" android:label="MeshCrossway" android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules" tools:targetApi="s" android:supportsRtl="true" android:icon="@drawable/ic_launcher">
@@ -16,5 +17,6 @@
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
         <service android:name="com.meshcrossway.android.RadioService" android:exported="false" android:foregroundServiceType="connectedDevice" />
+        <service android:name="com.meshcrossway.android.TrackService" android:exported="false" android:foregroundServiceType="location" />
     </application>
 </manifest>
