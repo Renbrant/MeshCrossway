@@ -598,7 +598,7 @@ static void memory_open(){
 }
 namespace mcui {static void tools();static void compose();static void form(uint8_t);static void thread_info();static void chat_tools();static void show_list();}
 namespace mtui {static void tools();static void compose();static void node_details();static void close();}
-namespace navui {static void recording();static void library(bool);static void toggle_zoom();static bool adjusting();static void recenter(lv_event_t *);static void options(lv_event_t *);static void diagnostics();}
+namespace navui {static void recording();static void library(bool);static void toggle_zoom();static bool adjusting();static void recenter(lv_event_t *);static void options(lv_event_t *);static void downloads(lv_event_t *);static void diagnostics();}
 static void run_action(void *data){
   int id=(int)(intptr_t)data;
   if(showing_mt()){
