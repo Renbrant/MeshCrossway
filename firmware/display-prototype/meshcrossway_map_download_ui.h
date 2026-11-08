@@ -31,6 +31,7 @@ static void download_reset() {
           download_notice = nullptr;
   for (auto &p : download_cards)
     p = nullptr;
+  download_area = mcxoffline_map::Area{};
   download_drag = false;
   download_creating = false;
   download_pending = 0;
@@ -142,8 +143,9 @@ static void download_refresh() {
     download_reset();
     return;
   }
-  if (download_pending && navui::front &&
-      navui::front->view.generation == download_pending)
+  if (navui::front &&
+      ((!download_frame && !download_pending) ||
+       (download_pending && navui::front->view.generation == download_pending)))
     if (download_copy_frame() && download_selected == 4 &&
         download_area.north <= download_area.south)
       download_from_rect(0, 0, lv_obj_get_width(download_preview) - 1,

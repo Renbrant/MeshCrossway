@@ -364,6 +364,9 @@ int main(int argc,char **argv){
  mcxoffline_map::state()=mcxoffline_map::Snapshot{};mcxoffline_map::publish();
  for(int width:{276,400}){lv_obj_set_width(body,width);gpsui::downloads();advance();lv_area_t outer,inner;lv_obj_get_coords(gpsui::dialog,&outer);lv_obj_get_coords(gpsui::download_preview,&inner);assert(inner.x1>=outer.x1&&inner.x2<=outer.x2);lv_obj_get_coords(gpsui::download_delete,&inner);assert(inner.x1>=outer.x1&&inner.x2<=outer.x2);if(width==276)render_preview("map-download-narrow");}
  gpsui::open();advance();
+ auto *late_front=navui::front;navui::front=nullptr;gpsui::downloads();advance();assert(!gpsui::download_frame&&gpsui::download_area.north==0&&gpsui::download_area.south==0);
+ navui::front=late_front;gpsui::download_pending=0;gpsui::download_refresh();assert(gpsui::download_frame&&gpsui::download_area.north>gpsui::download_area.south);
+ gpsui::open();advance();
  gpsui::map_storage_options();advance();assert(gpsui::offline_owner==info_dialog);render_preview("offline-map-manager");gpsui::area_create();advance();assert(gpsui::area_estimate);render_preview("offline-area-preview");
  gpsui::custom_source();advance();assert(gpsui::source_url&&gpsui::source_credit&&lv_keyboard_get_textarea(gpsui::source_keyboard)==gpsui::source_url);render_preview("offline-map-source");
  for(int width:{276,400}){lv_obj_set_width(body,width);lv_obj_set_x(right_rail,40+width);lv_obj_update_layout(body);gpsui::custom_source();advance();lv_area_t source_bounds,permit_bounds;lv_obj_get_coords(gpsui::dialog,&source_bounds);lv_obj_get_coords(gpsui::source_permit,&permit_bounds);if(width==276)render_preview("offline-source-narrow");assert(permit_bounds.x1>=source_bounds.x1&&permit_bounds.x2<=source_bounds.x2);}
