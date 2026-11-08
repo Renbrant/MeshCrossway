@@ -44,7 +44,7 @@ final class MapPanel {
     }
     private int dp(int value){return Math.round(value*activity.getResources().getDisplayMetrics().density);}
     private TextView label(String text,int size){TextView view=new TextView(activity);view.setText(text);view.setTextSize(size);view.setTextColor(0xfff2f4f7);return view;}
-    private void control(LinearLayout parent,String name,Runnable action){Button button=new Button(activity);button.setAllCaps(false);button.setText(name);button.setTextColor(MT);button.setTextSize(11);button.setPadding(0,0,0,0);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(48));p.bottomMargin=dp(5);parent.addView(button,p);button.setOnClickListener(v->action.run());}
+    private void control(LinearLayout parent,String name,Runnable action){Button button=new Button(activity);button.setAllCaps(false);button.setText(name);button.setTextColor(MT);button.setTextSize(11);button.setPadding(0,0,0,0);android.graphics.drawable.GradientDrawable surface=new android.graphics.drawable.GradientDrawable();surface.setColor(0xff242b34);surface.setCornerRadius(dp(12));button.setBackground(surface);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(48));p.bottomMargin=dp(5);parent.addView(button,p);button.setOnClickListener(v->action.run());}
     private String styleUrl(){return override!=null?override:preferences.getBoolean("light",false)?MapEngine.LIGHT:MapEngine.DARK;}
     private void loadStyle(){if(map==null||destroyed)return;styleReady=false;fallback=false;MapLibre.setConnected(preferences.getBoolean("offline",false)?Boolean.FALSE:null);map.setStyle(new Style.Builder().fromUri(styleUrl()),this::install);}
     private void install(Style style){if(destroyed)return;
