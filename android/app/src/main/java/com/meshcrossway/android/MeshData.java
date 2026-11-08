@@ -15,7 +15,7 @@ final class MeshData {
         final String topic,title,peer,identity;final int slot;final boolean group;
         Target(String topic,String title,String peer,String identity,int slot,boolean group){this.topic=topic;this.title=title;this.peer=peer;this.identity=identity;this.slot=slot;this.group=group;}
         static Target channel(Channel c){return new Target(c.topic(),c.name,"",c.identity,c.slot,true);}
-        static Target node(Node n){return new Target("d:"+n.id,n.name.isEmpty()?n.id:n.name,n.id,"",0,false);}
+        static Target node(Node n){return new Target("d:"+(n.id.length()==64?n.id.substring(0,12):n.id),n.name.isEmpty()?n.id:n.name,n.id,"",0,false);}
     }
     static final class Message {
         String uid="",topic="",title="",sender="",body="",state="received",peer="",identity="";long timestamp;boolean outgoing,read,group;int slot;
