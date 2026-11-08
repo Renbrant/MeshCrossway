@@ -51,3 +51,7 @@ The offline dashboard and mailbox are original MeshCrossway code; the unchanged 
 ## v0.8.12 browser map and folders
 
 The folder/geometry/viewer code is original MeshCrossway code. No map JavaScript library, copied schema or new firmware dependency is incorporated. OpenStreetMap raster tiles are fetched directly by the browser for visible interactive views, attributed in the map, and governed by the [OSMF Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/). Browser tests intercept tile requests and serve synthetic fixtures; they do not contact the tile service. Existing dependency and binary-release review items remain open.
+
+## Android alpha03 maps
+
+MapLibre Native Android 11.13.5 is distributed under BSD-2-Clause, including its upstream notices in `android/app/src/main/assets/MAPLIBRE_LICENSE.txt`. Android runtime dependencies retain upstream licenses. OpenFreeMap styles/data include OpenMapTiles and © OpenStreetMap contributors (ODbL); attribution is shown in the map. Provider terms, sources and independent functional research are recorded in [Android references](docs/android-feature-references.md).

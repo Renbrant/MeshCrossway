@@ -6,7 +6,7 @@ Tracking: [#187](https://github.com/Renbrant/MeshCrossway/issues/187). Implement
 
 Android is the priority for a broadly accessible MeshCrossway controller. The ESP32-S3 controller remains a dedicated option. Both use independent Meshtastic and MeshCore radios; no bridging, forwarding or automatic retransmission across networks.
 
-On a Samsung Galaxy S25, the first APK (`0.1.0-alpha01`) was installed and displayed **Protocol verified** for two different Heltec V3 radios simultaneously: Meshtastic PhoneAPI configuration and MeshCore Companion identity. This is user-reported hardware evidence of initial simultaneous connection/protocol identification, not validation of message delivery, long-duration background operation, all Android phones, or the new alpha02 functionality.
+On a Samsung Galaxy S25, the first APK (`0.1.0-alpha01`) was installed and displayed **Protocol verified** for two different Heltec V3 radios simultaneously: Meshtastic PhoneAPI configuration and MeshCore Companion identity. This is user-reported hardware evidence of initial simultaneous connection/protocol identification, initial evidence only. The user subsequently tested alpha02 on the same S25 with both radios Ready, 203 Meshtastic nodes and 350 MeshCore contacts/6 channels. Both radios accepted outgoing text; a MeshCore weather bot replied to an app request. Initial connection required repeated attempts. Long-duration background reliability and other phone models remain unverified.
 
 ## 0.2.0-alpha02 — messaging increment
 
@@ -27,22 +27,36 @@ Implemented together:
 | Background ownership | A connectedDevice foreground service owns both GATT sessions independently of screen navigation. The notification can disconnect all radios. No boot receiver or automatic process-death service restart. |
 | UI | Firmware palette, official logo, six bottom navigation destinations and left context rail. Composer remains intact during incoming updates; system bars and keyboard insets are handled. |
 
-Lists and conversation messages initially render 100 entries, with explicit buttons to show more. Recent history loads up to 2,000 messages per radio initially. **Load older messages** increases the window by 2,000 up to 20,000; the database keeps older records. Unread counts and conversation lists apply to the currently loaded window. History export, deletion controls and unlimited pagination are subsequent work.
+Lists and conversation messages initially render 100 entries, with explicit buttons to show more. Recent history loads up to 2,000 messages per radio initially. **Load older messages** increases the window by 2,000 up to 20,000; the database keeps older records. Unread counts and conversation lists apply to the currently loaded window. Alpha03 adds history export/import; full history deletion and unlimited pagination remain subsequent work.
 
 Transmission guards include protocol readiness, current radio identity, enabled/current channel identity, LoRa region/TX enable for Meshtastic, destination availability, UTF-8 byte limits, queue bounds and negotiated ATT payload. Text limits are conservative (220 bytes for Meshtastic; MeshCore derives its limit from the name prefix and frame size, at most 150). The UI displays the UTF-8 byte count and keeps the draft if validation fails.
 
 A connection loss or app restart marks pending outbound messages **delivery unknown**. The app does not resend them automatically: they might already have reached the radio or recipient. Duplicate suppression uses the Meshtastic sender/packet ID, or MeshCore conversation/timestamp/sender/text hash; MeshCore replay detection ignores changing SNR/path metadata.
 
+## 0.3.0-alpha03 — dual-network field tools
+
+Tracking: [#189](https://github.com/Renbrant/MeshCrossway/issues/189). Functional research and independent adaptations: [reference matrix](android-feature-references.md).
+
+- Unified map: Meshtastic orange, MeshCore cyan, clustered markers, network/favorite/recent filters, pinch zoom and node-to-map shortcuts. Node identity always includes its network and radio.
+- Optional foreground phone GPS for local position and distance sorting. Local POIs support add, inspect and delete. GPS/POIs are never automatically transmitted.
+- Named offline map areas use the visible viewport and selected maximum zoom. Inspect bounds, pause/resume or delete saved areas. OpenFreeMap limits apply: this app conservatively estimates at most 2,400 tiles, stops near 2,800 tiles or 45 MB, uses one active region and at most four HTTP requests. Downloads pause when the app leaves the foreground. Oversized areas must be reduced; an incomplete area does not provide full offline coverage.
+- Combined inbox with network/unread/pinned filters; node favorites, pinned/muted conversations, quick-reply drafts and per-network message alerts. Message previews are opt-in. Backlog imports do not generate live-message notifications.
+- Connection assistant shows protocol hints, signal and pairing state, serializes initial GATT setup, then keeps both networks active. Saved-radio reconnect, explicit Android pairing and phase diagnostics are available independently.
+- User-initiated JSON export/import via Android's document picker. Import merges without erasing existing rows; network/radio keys remain separate and pending outgoing messages become delivery-unknown rather than being resent. Treat exports as private: they include messages, node public keys, drafts and location data.
+
+### Installation and signing
+
+Alpha03 uses package **com.meshcrossway.mobile**, label **MeshCrossway**, version code **3**. It installs alongside alpha02 (**com.meshcrossway.android**, **MeshCrossway Alpha**) so existing history can remain intact. There is no automatic access to alpha02 private storage; alpha02 has no export feature. Disconnect radios in the old app before connecting them in the new one.
+
+The distributed preview APK is signed with a persistent private preview key. The CI artifact uses the runner's debug key and is not an interchangeable upgrade source. Never commit the private signing key or password. Keep alpha02 installed until its history is no longer needed; uninstalling either app deletes that app's private data.
+
 ### Still pending
 
-- Actual map rendering, phone GNSS/location, pinch zoom, tracks, POIs and offline-area downloads/deletion. Map tools remain explicitly marked as future work.
-- Creating/editing channels and radio configuration, MeshCore repeater administration/rooms, attachments, notifications for individual messages and localization.
-- Production signing/distribution, extended history management and robust process-death/background acceptance on physical phones.
-- Hardware validation of alpha02 send/receive, ACKs, reconnection and background behavior on the S25 + both Heltec V3 radios.
+Track recording, radio/channel editing, repeater/room administration, attachments, localization and process-death/background recovery acceptance remain future work. Alpha03 map, GPS, offline downloads and improved pairing require physical-phone acceptance.
 
 ## Design and source references
 
-Native Android Java, minimum Android 8/API 26; compile/target API 35. No third-party runtime dependencies. `RadioService` owns GATT sessions; `ProtocolClient` implements the two independent wire clients; `HistoryStore` owns private SQLite data; `MainActivity` renders state and conversations. The two networks have no forwarding path.
+Native Android Java, minimum Android 8/API 26; compile/target API 35. MapLibre Native Android 11.13.5 renders maps with OpenFreeMap vector data; the map attribution and SDK license are included. `RadioService` owns GATT sessions; `ProtocolClient` implements the two independent wire clients; `HistoryStore` owns private SQLite data; `MainActivity` renders state and conversations. The two networks have no forwarding path.
 
 Palette from `firmware/display-prototype/meshcrossway_ui.h`: background `#090C10`, panels `#181D24` / `#242B34`, accent `#FF8A24`, text `#F2F4F7`, muted `#9AA6B4`. The official logo retains its own `#F07120` / `#F2F2F2` colors and proportions; the bitmap was rasterized from the unchanged SVG. The generic radio launcher icon is not a replacement brand mark.
 
@@ -64,11 +78,9 @@ cd android
 
 The dependency-free JVM fixtures test bootstrapping, channel/DM encoding, Meshtastic PKI, ACK ordering, malformed frames, byte limits, replay IDs, network isolation and unread aggregation. Device instrumentation exercises the real SQLite schema (duplicates, network/radio separation, monotonic delivery state, read markers, reopening and draft persistence), navigation and draft preservation during Activity recreation. Neither replaces physical-radio acceptance.
 
-The **Android alpha APK** GitHub Actions workflow builds/lints, runs JVM fixtures, uploads a named APK plus SHA-256 checksum, and runs the device/storage smoke test on Android API 29 and 35 emulators. Download the latest successful run's `MeshCrossway-Android-0.2.0-alpha02` artifact under **Actions → Artifacts**, extract its ZIP and install the APK inside.
+The **Android alpha APK** GitHub Actions workflow builds/lints, runs JVM fixtures, uploads a named APK plus SHA-256 checksum, and runs the device/storage smoke test on Android API 29 and 35 emulators. Download the latest successful run's `MeshCrossway-Android-0.3.0-alpha03` artifact under **Actions → Artifacts**, extract its ZIP and install the APK inside.
 
-Output: `android/app/build/outputs/apk/debug/app-debug.apk`. Version code 2 / version name `0.2.0-alpha02`. Package `com.meshcrossway.android`; label **MeshCrossway Alpha**.
-
-**Signing limitation:** this is a debug-signed test APK. Different CI machines may use different debug keys. If Android rejects an update due to a signature mismatch, uninstalling alpha01 may be necessary; alpha01 has no message history, but its saved radio selection will be removed. Once alpha02 contains history, keep it installed until a compatible update or export path is available. A durable project-managed signing key is required before routine upgrade distribution; never commit signing keys/passwords.
+Outputs: `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk` for phones and `app-x86_64-debug.apk` for emulators. CI runs API 29/35 SQLite, backup migration/import, navigation, native dual-map fixture and offline-region lifecycle smoke tests. Fixture maps do not require a public tile service. Successful automated checks do not replace physical-radio testing.
 
 ## Physical acceptance on the S25
 

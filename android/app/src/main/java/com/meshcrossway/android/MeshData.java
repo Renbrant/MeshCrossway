@@ -21,14 +21,17 @@ final class MeshData {
         String uid="",topic="",title="",sender="",body="",state="received",peer="",identity="";long timestamp;boolean outgoing,read,group;int slot;
         Target target(){return new Target(topic,title,peer,identity,slot,group);}
     }
-    static final class Conversation {
-        Target target;Message last;int unread;
-    }
+    static final class Flags {boolean favorite,pinned,muted;}
+    static final class Poi {String id,name;double lat,lon;long created;}
+    static final class Conversation {Target target;Message last;int unread;boolean pinned,muted;}
+
     static final class Snapshot {
-        final List<Node> nodes;final List<Channel> channels;final List<Message> messages;
-        Snapshot(List<Node> n,List<Channel> c,List<Message> m){nodes=Collections.unmodifiableList(n);channels=Collections.unmodifiableList(c);messages=Collections.unmodifiableList(m);}
+        final List<Node> nodes;final List<Channel> channels;final List<Message> messages;final Map<String,Flags> flags;
+        Snapshot(List<Node> n,List<Channel> c,List<Message> m){this(n,c,m,new HashMap<>());}
+        Snapshot(List<Node> n,List<Channel> c,List<Message> m,Map<String,Flags> flags){this.flags=Collections.unmodifiableMap(flags);nodes=Collections.unmodifiableList(n);channels=Collections.unmodifiableList(c);messages=Collections.unmodifiableList(m);}
         static Snapshot empty(){return new Snapshot(new ArrayList<>(),new ArrayList<>(),new ArrayList<>());}
-        List<Conversation> conversations(){LinkedHashMap<String,Conversation> map=new LinkedHashMap<>();for(Message m:messages){Conversation c=map.get(m.topic);if(c==null){c=new Conversation();c.target=m.target();map.put(m.topic,c);}if(c.last==null||m.timestamp>=c.last.timestamp)c.last=m;if(!m.read&&!m.outgoing)c.unread++;}ArrayList<Conversation> list=new ArrayList<>(map.values());list.sort((a,b)->Long.compare(b.last.timestamp,a.last.timestamp));return list;}
+        List<Conversation> conversations(){LinkedHashMap<String,Conversation> map=new LinkedHashMap<>();for(Message m:messages){Conversation c=map.get(m.topic);if(c==null){c=new Conversation();c.target=m.target();map.put(m.topic,c);}if(c.last==null||m.timestamp>=c.last.timestamp){c.last=m;c.target=m.target();}if(!m.read&&!m.outgoing)c.unread++;}ArrayList<Conversation> list=new ArrayList<>(map.values());for(Conversation c:list){Flags f=flags("chat",c.target.topic);c.pinned=f.pinned;c.muted=f.muted;}list.sort((a,b)->a.pinned!=b.pinned?(a.pinned?-1:1):Long.compare(b.last.timestamp,a.last.timestamp));return list;}
+        Flags flags(String kind,String target){Flags f=flags.get(kind+":"+target);return f==null?new Flags():f;}
         int unread(){int n=0;for(Message m:messages)if(!m.read&&!m.outgoing)n++;return n;}
     }
 }

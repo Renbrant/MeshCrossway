@@ -74,7 +74,7 @@ final class ProtocolClient {
         if(code==13&&matched){if(data.length<8||(data[1]&255)<3)throw Wire.bad("MeshCore Companion v3+ required");channelCount=data[3]&255;queue(ProtocolProbe.meshcoreAppStart(),5,"");}
         else if(code==5&&matched){if(data.length<58)throw Wire.bad("Truncated MeshCore identity");localName=Wire.fixedText(data,58,data.length-58);myNum=1;queue(new byte[]{4},4,"");description="Synchronizing MeshCore contacts…";}
         else if(code==2&&command==4){if(data.length<5)throw Wire.bad("Invalid contacts header");contactsExpected=(int)Wire.u32(data,1);if(contactsExpected<0||contactsExpected>4096)throw Wire.bad("Too many contacts");contactsSeen=0;contactsStarted=true;}
-        else if(code==3||code==138){mcContact(data);if(code==3&&command==4){contactsSeen++;active.deadline=now+30000;}}
+        else if(code==3||code==138){mcContact(data);if(code==3&&command==4){contactsSeen++;description="MeshCore contacts "+contactsSeen+" / "+contactsExpected;active.deadline=now+30000;}}
         else if(code==4&&matched){if(!contactsStarted||contactsSeen!=contactsExpected)throw Wire.bad("Incomplete contacts sync");contactsStarted=false;nextMcChannel();}
         else if(code==18&&matched){if(data.length<50)throw Wire.bad("Truncated MeshCore channel");Channel c=new Channel();c.slot=data[1]&255;c.name=Wire.fixedText(data,2,32);c.identity=Wire.hash(Arrays.copyOfRange(data,34,50));c.enabled=!c.name.isEmpty();channels.put(c.slot,c);listener.channel(c);nextMcChannel();}
         else if(code==0&&matched&&!active.uid.isEmpty()){listener.delivery(active.uid,"radio accepted");removeSent(active.uid);}

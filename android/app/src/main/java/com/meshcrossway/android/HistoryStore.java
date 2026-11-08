@@ -5,6 +5,8 @@ import android.database.Cursor;
 import android.database.sqlite.*;
 import android.os.*;
 import java.util.*;
+import java.io.*;
+import org.json.*;
 import static com.meshcrossway.android.MeshData.*;
 import com.meshcrossway.android.MeshData.Message;
 
@@ -14,10 +16,13 @@ final class HistoryStore extends SQLiteOpenHelper {
     private final HandlerThread thread=new HandlerThread("mesh-history");private final Handler worker,main=new Handler(Looper.getMainLooper());
     final EnumMap<RadioProfile,Snapshot> snapshots=new EnumMap<>(RadioProfile.class);private final EnumMap<RadioProfile,String> radios=new EnumMap<>(RadioProfile.class);
     int historyLimit=2000;
+    final List<Poi> pois=new ArrayList<>();
     Runnable listener;String error="";private boolean closed;
     private final Runnable reloadTask=this::reload;
+    private final LinkedHashMap<String,ContentValues> pendingNodes=new LinkedHashMap<>();private boolean nodeFlushQueued;
+    private final Context context;
     HistoryStore(Context context){this(context,"meshcrossway-history.db");}
-    HistoryStore(Context context,String name){super(context,name,null,1);thread.start();worker=new Handler(thread.getLooper());for(RadioProfile p:RadioProfile.values())snapshots.put(p,Snapshot.empty());}
+    HistoryStore(Context context,String name){super(context,name,null,2);this.context=context.getApplicationContext();thread.start();worker=new Handler(thread.getLooper());for(RadioProfile p:RadioProfile.values())snapshots.put(p,Snapshot.empty());}
     @Override public void onConfigure(SQLiteDatabase db){db.enableWriteAheadLogging();}
     @Override public void onCreate(SQLiteDatabase db){
         db.execSQL("CREATE TABLE nodes(network TEXT,radio TEXT,id TEXT,name TEXT,key TEXT,heard INTEGER,lat REAL,lon REAL,position INTEGER,battery INTEGER,type INTEGER,blocked INTEGER,PRIMARY KEY(network,radio,id))");
@@ -25,18 +30,32 @@ final class HistoryStore extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE messages(network TEXT,radio TEXT,uid TEXT,topic TEXT,title TEXT,sender TEXT,body TEXT,state TEXT,time INTEGER,outgoing INTEGER,is_read INTEGER,peer TEXT,identity_hash TEXT,slot INTEGER,is_group INTEGER,PRIMARY KEY(network,radio,uid))");
         db.execSQL("CREATE INDEX message_scope_time ON messages(network,radio,time)");
         db.execSQL("CREATE INDEX message_conversation ON messages(network,radio,topic,is_read)");
+        createLocalTables(db);
         db.execSQL("CREATE TABLE drafts(network TEXT,radio TEXT,topic TEXT,body TEXT,PRIMARY KEY(network,radio,topic))");
     }
-    @Override public void onUpgrade(SQLiteDatabase db,int old,int version){throw new IllegalStateException("Unsupported history migration");}
+    private void createLocalTables(SQLiteDatabase db){
+        db.execSQL("CREATE TABLE IF NOT EXISTS flags(network TEXT,radio TEXT,kind TEXT,target TEXT,favorite INTEGER DEFAULT 0,pinned INTEGER DEFAULT 0,muted INTEGER DEFAULT 0,PRIMARY KEY(network,radio,kind,target))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS pois(uid TEXT PRIMARY KEY,name TEXT,lat REAL,lon REAL,created INTEGER)");
+    }
+    @Override public void onUpgrade(SQLiteDatabase db,int old,int version){if(old<2)createLocalTables(db);}
+    void flag(RadioProfile p,String r,String kind,String target,String field,boolean enabled){
+        if(!Arrays.asList("favorite","pinned","muted").contains(field)||!Arrays.asList("node","chat").contains(kind))throw new IllegalArgumentException();
+        work(db->{ContentValues v=scope(p,r);v.put("kind",kind);v.put("target",target);try(Cursor c=db.query("flags",new String[]{"favorite","pinned","muted"},"network=? AND radio=? AND kind=? AND target=?",new String[]{p.name(),r,kind,target},null,null,null)){if(c.moveToFirst())for(String key:new String[]{"favorite","pinned","muted"})v.put(key,l(c,key));}v.put(field,enabled?1:0);db.insertWithOnConflict("flags",null,v,SQLiteDatabase.CONFLICT_REPLACE);});
+    }
+    void poi(String name,double lat,double lon){if(!GeoMath.valid(lat,lon)||name.trim().isEmpty())return;ContentValues v=new ContentValues();v.put("uid",UUID.randomUUID().toString());v.put("name",name.substring(0,Math.min(80,name.length())));v.put("lat",lat);v.put("lon",lon);v.put("created",System.currentTimeMillis()/1000);work(db->db.insertOrThrow("pois",null,v));}
+    void deletePoi(String id){work(db->db.delete("pois","uid=?",new String[]{id}));}
+
     private interface Work {void run(SQLiteDatabase db);}
     private void work(Work action){work(action,true);}
     private void work(Work action,boolean refresh){if(closed)return;worker.post(()->{try{action.run(getWritableDatabase());main.post(()->{error="";if(refresh){main.removeCallbacks(reloadTask);main.postDelayed(reloadTask,150);}});}catch(SQLiteException e){main.post(()->{error="History storage unavailable • do not uninstall; free phone storage and reopen";if(listener!=null)listener.run();});}});}
     void select(RadioProfile p,String radio){radios.put(p,radio);snapshots.put(p,Snapshot.empty());reload();}
     private static ContentValues scope(RadioProfile p,String r){ContentValues v=new ContentValues();v.put("network",p.name());v.put("radio",r);return v;}
-    void node(RadioProfile p,String r,Node n){ContentValues v=scope(p,r);v.put("id",n.id);v.put("name",n.name);v.put("key",n.key);v.put("heard",n.heard);v.put("lat",n.lat);v.put("lon",n.lon);v.put("position",n.position?1:0);v.put("battery",n.battery);v.put("type",n.type);v.put("blocked",n.unmessagable?1:0);work(db->db.insertWithOnConflict("nodes",null,v,SQLiteDatabase.CONFLICT_REPLACE));}
+    void node(RadioProfile p,String r,Node n){ContentValues v=scope(p,r);v.put("id",n.id);v.put("name",n.name);v.put("key",n.key);v.put("heard",n.heard);v.put("lat",n.lat);v.put("lon",n.lon);v.put("position",n.position?1:0);v.put("battery",n.battery);v.put("type",n.type);v.put("blocked",n.unmessagable?1:0);if(closed)return;worker.post(()->{pendingNodes.put(p.name()+"|"+r+"|"+n.id,v);if(!nodeFlushQueued){nodeFlushQueued=true;worker.postDelayed(this::flushNodes,100);}});}
+    private void flushNodes(){nodeFlushQueued=false;if(pendingNodes.isEmpty())return;try{SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{for(ContentValues v:pendingNodes.values())db.insertWithOnConflict("nodes",null,v,SQLiteDatabase.CONFLICT_REPLACE);db.setTransactionSuccessful();}finally{db.endTransaction();}pendingNodes.clear();main.post(()->{main.removeCallbacks(reloadTask);main.postDelayed(reloadTask,100);});}catch(SQLiteException e){main.post(()->{error="Node history could not be saved • check storage";if(listener!=null)listener.run();});}}
     void channel(RadioProfile p,String r,Channel c){ContentValues v=scope(p,r);v.put("slot",c.slot);v.put("name",c.name);v.put("identity_hash",c.identity);v.put("enabled",c.enabled?1:0);work(db->db.insertWithOnConflict("channels",null,v,SQLiteDatabase.CONFLICT_REPLACE));}
     private ContentValues messageValues(RadioProfile p,String r,Message m){ContentValues v=scope(p,r);v.put("uid",m.uid);v.put("topic",m.topic);v.put("title",m.title);v.put("sender",m.sender);v.put("body",m.body);v.put("state",m.state);v.put("time",m.timestamp);v.put("outgoing",m.outgoing?1:0);v.put("is_read",m.read?1:0);v.put("peer",m.peer);v.put("identity_hash",m.identity);v.put("slot",m.slot);v.put("is_group",m.group?1:0);return v;}
-    void message(RadioProfile p,String r,Message m){ContentValues v=messageValues(p,r,m);work(db->db.insertWithOnConflict("messages",null,v,SQLiteDatabase.CONFLICT_IGNORE));}
+    void message(RadioProfile p,String r,Message m){message(p,r,m,null);}
+    void message(RadioProfile p,String r,Message m,java.util.function.Consumer<Boolean> inserted){ContentValues v=messageValues(p,r,m);work(db->{long row=db.insertWithOnConflict("messages",null,v,SQLiteDatabase.CONFLICT_IGNORE);if(row>=0&&inserted!=null){boolean muted=false;try(Cursor c=db.query("flags",new String[]{"muted"},"network=? AND radio=? AND kind='chat' AND target=?",new String[]{p.name(),r,m.topic},null,null,null)){if(c.moveToFirst())muted=c.getInt(0)==1;}boolean quiet=muted;main.post(()->inserted.accept(quiet));}});}
     void outgoing(RadioProfile p,String r,Message m,Runnable onSaved,Runnable onError){ContentValues v=messageValues(p,r,m);if(closed){onError.run();return;}worker.post(()->{try{long row=getWritableDatabase().insertOrThrow("messages",null,v);if(row<0)throw new SQLiteException();main.post(()->{onSaved.run();reload();});}catch(SQLiteException e){main.post(()->{error="Could not save message • transmission cancelled";onError.run();if(listener!=null)listener.run();});}});}
     void delivery(RadioProfile p,String r,String uid,String state){work(db->{
         // Late BLE callbacks cannot downgrade an acknowledged or accepted packet.
@@ -49,7 +68,8 @@ final class HistoryStore extends SQLiteOpenHelper {
     private void reload(){
         if(closed)return;EnumMap<RadioProfile,String> selection=new EnumMap<>(radios);
         worker.post(()->{try{EnumMap<RadioProfile,Snapshot> result=new EnumMap<>(RadioProfile.class);for(Map.Entry<RadioProfile,String> entry:selection.entrySet())result.put(entry.getKey(),load(getReadableDatabase(),entry.getKey(),entry.getValue(),historyLimit));
-            main.post(()->{if(!selection.equals(radios)||closed)return;snapshots.putAll(result);if(listener!=null)listener.run();});
+            ArrayList<Poi> points=new ArrayList<>();try(Cursor c=getReadableDatabase().query("pois",null,null,null,null,null,"created DESC","1000")){while(c.moveToNext()){Poi point=new Poi();point.id=s(c,"uid");point.name=s(c,"name");point.lat=c.getDouble(c.getColumnIndexOrThrow("lat"));point.lon=c.getDouble(c.getColumnIndexOrThrow("lon"));point.created=l(c,"created");points.add(point);}}
+            main.post(()->{if(!selection.equals(radios)||closed)return;snapshots.putAll(result);pois.clear();pois.addAll(points);if(listener!=null)listener.run();});
         }catch(SQLiteException e){main.post(()->{error="History could not be loaded";if(listener!=null)listener.run();});}});
     }
     void older(){historyLimit=Math.min(20000,historyLimit+2000);reload();}
@@ -58,8 +78,22 @@ final class HistoryStore extends SQLiteOpenHelper {
         try(Cursor c=db.query("nodes",null,where,args,null,null,"heard DESC","4096")){while(c.moveToNext()){Node n=new Node();n.id=s(c,"id");n.name=s(c,"name");n.key=s(c,"key");n.heard=l(c,"heard");n.lat=c.getDouble(c.getColumnIndexOrThrow("lat"));n.lon=c.getDouble(c.getColumnIndexOrThrow("lon"));n.position=l(c,"position")==1;n.battery=(int)l(c,"battery");n.type=(int)l(c,"type");n.unmessagable=l(c,"blocked")==1;ns.add(n);}}
         try(Cursor c=db.query("channels",null,where,args,null,null,"slot ASC")){while(c.moveToNext()){Channel channel=new Channel();channel.slot=(int)l(c,"slot");channel.name=s(c,"name");channel.identity=s(c,"identity_hash");channel.enabled=l(c,"enabled")==1;cs.add(channel);}}
         try(Cursor c=db.query("messages",null,where,args,null,null,"time DESC,rowid DESC",Integer.toString(limit))){while(c.moveToNext()){Message m=new Message();m.uid=s(c,"uid");m.topic=s(c,"topic");m.title=s(c,"title");m.sender=s(c,"sender");m.body=s(c,"body");m.state=s(c,"state");m.timestamp=l(c,"time");m.outgoing=l(c,"outgoing")==1;m.read=l(c,"is_read")==1;m.peer=s(c,"peer");m.identity=s(c,"identity_hash");m.slot=(int)l(c,"slot");m.group=l(c,"is_group")==1;ms.add(m);}}
-        Collections.reverse(ms);return new Snapshot(ns,cs,ms);
+        Collections.reverse(ms);Map<String,Flags> flags=new HashMap<>();try(Cursor c=db.query("flags",null,where,args,null,null,null)){while(c.moveToNext()){Flags f=new Flags();f.favorite=l(c,"favorite")==1;f.pinned=l(c,"pinned")==1;f.muted=l(c,"muted")==1;flags.put(s(c,"kind")+":"+s(c,"target"),f);}}
+        return new Snapshot(ns,cs,ms,flags);
     }
+    private static final String[] BACKUP_TABLES={"nodes","channels","messages","drafts","flags","pois"};
+    void exportBackup(OutputStream output,java.util.function.Consumer<String> done){worker.post(()->{try(OutputStream out=output){JSONObject root=new JSONObject();root.put("format","MeshCrosswayAndroid");root.put("version",1);JSONObject tables=new JSONObject();flushNodes();SQLiteDatabase db=getReadableDatabase();db.beginTransaction();try{for(String table:BACKUP_TABLES){JSONArray rows=new JSONArray();try(Cursor c=db.query(table,null,null,null,null,null,null)){while(c.moveToNext()){JSONObject row=new JSONObject();for(int col=0;col<c.getColumnCount();col++){Object v=c.isNull(col)?JSONObject.NULL:c.getType(col)==Cursor.FIELD_TYPE_INTEGER?c.getLong(col):c.getType(col)==Cursor.FIELD_TYPE_FLOAT?c.getDouble(col):c.getString(col);row.put(c.getColumnName(col),v);}rows.put(row);if(rows.length()>100000)throw new IOException("Backup exceeds export row limit");}}tables.put(table,rows);}db.setTransactionSuccessful();}finally{db.endTransaction();}root.put("tables",tables);JSONObject selected=new JSONObject();for(RadioProfile p:RadioProfile.values())selected.put(p.name(),context.getSharedPreferences("radios",Context.MODE_PRIVATE).getString(p.name(),""));root.put("selection",selected);out.write(root.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));main.post(()->done.accept(""));}catch(Exception e){main.post(()->done.accept("Backup could not be written • keep the installed app"));}});}
+    void importBackup(InputStream input,java.util.function.Consumer<String> done){worker.post(()->{try(InputStream in=input){ByteArrayOutputStream bytes=new ByteArrayOutputStream();byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){if(bytes.size()+n>25*1024*1024)throw new IOException("Backup too large");bytes.write(buffer,0,n);}JSONObject root=new JSONObject(bytes.toString("UTF-8"));if(!root.getString("format").equals("MeshCrosswayAndroid")||root.getInt("version")!=1)throw new IOException("Unsupported backup");JSONObject tables=root.getJSONObject("tables");SQLiteDatabase db=getWritableDatabase();db.beginTransaction();try{int total=0;for(String table:BACKUP_TABLES){JSONArray rows=tables.optJSONArray(table);if(rows==null)continue;Set<String> columns=new HashSet<>();try(Cursor c=db.rawQuery("SELECT * FROM "+table+" LIMIT 0",null)){columns.addAll(Arrays.asList(c.getColumnNames()));}for(int i=0;i<rows.length();i++){if(++total>100000)throw new IOException("Too many rows");JSONObject row=rows.getJSONObject(i);ContentValues values=new ContentValues();for(String key:columns){if(!row.has(key)||row.isNull(key))continue;Object value=row.get(key);if(value instanceof Number){double d=((Number)value).doubleValue();if(!Double.isFinite(d))throw new IOException("Invalid number");if(value instanceof Float||value instanceof Double)values.put(key,d);else values.put(key,((Number)value).longValue());}else{String text=value.toString();if(text.length()>(key.equals("body")?4000:512))throw new IOException("Invalid field length");values.put(key,text);}}
+                        if(values.size()!=columns.size())throw new IOException("Incomplete backup row");
+                        if(!table.equals("pois")){RadioProfile profile=RadioProfile.valueOf(values.getAsString("network"));String radio=values.getAsString("radio");if(radio==null||radio.isEmpty()||radio.length()>64)throw new IOException("Invalid radio scope");
+                            if(table.equals("nodes")){String id=values.getAsString("id");if(profile==RadioProfile.MESHTASTIC){long number=Long.parseLong(id);if(number<=0||number>0xffffffffL)throw new IOException("Invalid node");}else if(id.length()!=64||Wire.unhex(id).length!=32)throw new IOException("Invalid public identity");}
+                            if(table.equals("channels")){int slot=values.getAsInteger("slot");if(slot<0||slot>=(profile==RadioProfile.MESHTASTIC?8:256))throw new IOException("Invalid channel");}
+                        }
+                        if(table.equals("pois")&&!GeoMath.valid(values.getAsDouble("lat"),values.getAsDouble("lon")))throw new IOException("Invalid coordinates");
+                        if(table.equals("messages")&&values.getAsInteger("outgoing")==1&&Arrays.asList("queued","submitted","radio accepted").contains(values.getAsString("state")))values.put("state","uncertain");
+                        db.insertWithOnConflict(table,null,values,SQLiteDatabase.CONFLICT_IGNORE);
+                    }}db.setTransactionSuccessful();}finally{db.endTransaction();}JSONObject selected=root.optJSONObject("selection");if(selected!=null){SharedPreferences pref=context.getSharedPreferences("radios",Context.MODE_PRIVATE);SharedPreferences.Editor edit=pref.edit();for(RadioProfile p:RadioProfile.values()){String address=selected.optString(p.name(),"");if(pref.getString(p.name(),"").isEmpty()&&android.bluetooth.BluetoothAdapter.checkBluetoothAddress(address))edit.putString(p.name(),address).putBoolean(p.name()+".desired",false);}edit.apply();}
+                main.post(()->{reload();done.accept("");});}catch(Exception e){main.post(()->done.accept("Backup rejected • existing data was preserved"));}});}
     private static String s(Cursor c,String key){return c.getString(c.getColumnIndexOrThrow(key));}private static long l(Cursor c,String key){return c.getLong(c.getColumnIndexOrThrow(key));}
-    @Override public void close(){closed=true;listener=null;main.removeCallbacksAndMessages(null);worker.post(()->{super.close();thread.quitSafely();});}
+    @Override public void close(){closed=true;listener=null;main.removeCallbacksAndMessages(null);worker.post(()->{flushNodes();super.close();thread.quitSafely();});}
 }
