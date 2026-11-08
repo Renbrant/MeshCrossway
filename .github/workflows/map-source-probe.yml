@@ -1,0 +1,30 @@
+name: Verify public offline map source
+on:
+  pull_request:
+    paths: ['.github/workflows/map-source-probe.yml']
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Read provider public endpoint metadata
+        run: |
+          python3 - <<'PY'
+          import urllib.request,urllib.parse,re
+          root='https://download.tiles.coalition.space/'
+          def read(url):
+            request=urllib.request.Request(url,headers={'User-Agent':'MeshCrossway-source-validation (+https://github.com/Renbrant/MeshCrossway)'})
+            with urllib.request.urlopen(request,timeout=20) as response:
+              return response.read(2500000).decode('utf-8')
+          html=read(root)
+          scripts=re.findall(r'<script[^>]*src=[\"\']([^\"\']+)',html)
+          print('Public script URLs:',scripts)
+          for url in [root]+[urllib.parse.urljoin(root,p) for p in scripts[:8]]:
+            source=html if url==root else read(url)
+            source=source.replace('\\/','/')
+            for value in re.findall(r'[\"\'`]([^\"\'`\n]{1,240})[\"\'`]',source):
+              if ('coalition.space' in value or '/styles/' in value or '.png' in value or 'tileUrl' in value) and not any(k in value.lower() for k in ('token','api_key','apikey')):
+                print('Endpoint literal:',value.split('?')[0])
+          PY
