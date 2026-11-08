@@ -91,7 +91,7 @@ cd android
 
 The dependency-free JVM fixtures test bootstrapping, channel/DM encoding, Meshtastic PKI, ACK ordering, malformed frames, byte limits, replay IDs, network isolation and unread aggregation. Device instrumentation exercises the real SQLite schema (duplicates, network/radio separation, monotonic delivery state, read markers, reopening and draft persistence), navigation and draft preservation during Activity recreation. Neither replaces physical-radio acceptance.
 
-The **Android alpha APK** GitHub Actions workflow builds/lints, runs JVM fixtures, uploads a named APK plus SHA-256 checksum, and runs the device/storage smoke test on Android API 29 and 35 emulators. Download the latest successful run's `MeshCrossway-Android-0.3.1-alpha04` artifact under **Actions → Artifacts**, extract its ZIP and install the APK inside.
+The **Android alpha APK** GitHub Actions workflow builds/lints, runs JVM fixtures, uploads a named APK plus SHA-256 checksum, and runs the device/storage smoke test on Android API 29 and 35 emulators. Download the latest successful run's `MeshCrossway-Android-0.4.0-alpha05` artifact under **Actions → Artifacts**, extract its ZIP and install the APK inside.
 
 Outputs: `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk` for phones and `app-x86_64-debug.apk` for emulators. CI runs API 29/35 SQLite, backup migration/import, navigation, native dual-map fixture and offline-region lifecycle smoke tests. Fixture maps do not require a public tile service. Successful automated checks do not replace physical-radio testing.
 
@@ -164,3 +164,23 @@ and Android SQLite lifecycle/export tests in addition to existing dual-protocol,
 history migration, map and navigation checks. Hardware acceptance must confirm
 real GPS with screen off and simultaneous BLE sessions before promotion above
 the alpha04 recovery reference.
+
+
+### Alpha05 automated validation and download
+
+- Tested source: `a8de13c35cb5583969568b1331670ffb08fb459e`.
+- [Build, lint, protocol fixtures and API 29/35 tests](https://github.com/Renbrant/MeshCrossway/actions/runs/42527357099) all passed.
+- [APK ZIP artifact](https://github.com/Renbrant/MeshCrossway/actions/runs/42527357099/artifacts/13635622269): `MeshCrossway-0.4.0-alpha05.apk` (version code 5, package `com.meshcrossway.mobile`).
+- APK SHA-256: `abc17a79408e0102e365c62dad3a2ee48a7aab560ff6ad1772f0dfb7b4ce82cb`.
+- Device tests cover SQLite persistence, interrupted-track recovery, GPX export,
+  the real location foreground-service lifecycle and notification, simulated GPS
+  points, activity backgrounding, pause/resume/finish and existing dual-map/history
+  navigation. Emulator default fixes are suspended during synthetic-point
+  injection so GPS jump rejection is tested independently of that fixture.
+- The APK signing certificate differs from the distributed alpha04 CI APK.
+  Export history first; if Android refuses an in-place update, uninstall the old
+  app only after exporting, then install alpha05 and import the JSON backup.
+  Uninstalling deletes private app data. Alpha04 remains the hardware-tested recovery reference.
+
+Real phone GPS endurance with screen off and two physical BLE radios still needs
+maintainer acceptance; passing emulator tests does not promote alpha05 to stable.
