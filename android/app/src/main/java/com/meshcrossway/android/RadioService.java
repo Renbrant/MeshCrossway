@@ -24,8 +24,12 @@ public final class RadioService extends Service {
         private BluetoothGattCharacteristic tx, rx, notice;
         private final ArrayDeque<Op> queue=new ArrayDeque<>();
         private Op active;
-        private ProtocolProbe probe;
-        private boolean readPending, appStartSent;
+        ProtocolClient client;
+        boolean desired, transportReady, persisting;
+        int retries, mtu=23;
+        long nextWriteAt;
+        Runnable retry;
+        private boolean readPending;
         private Runnable timeout, probeTimeout, poll;
         Session(RadioProfile p){profile=p;}
     }
@@ -35,6 +39,8 @@ public final class RadioService extends Service {
     }
     public final EnumMap<RadioProfile,Session> sessions=new EnumMap<>(RadioProfile.class);
     public final LinkedHashMap<String,BluetoothDevice> devices=new LinkedHashMap<>();
+    HistoryStore history;
+    boolean running, autoReconnect=true;
     public boolean scanning;
     public String scanStatus="";
     public Runnable listener;
@@ -42,17 +48,25 @@ public final class RadioService extends Service {
     private BluetoothAdapter adapter;
     private BluetoothLeScanner scanner;
     private final Runnable stopScanTask=this::stopScan;
+    private final Runnable tick=new Runnable(){public void run(){if(!running)return;for(Session s:sessions.values())advance(s);handler.postDelayed(this,500);}};
+    private long now(){return SystemClock.elapsedRealtime();}
+    MeshData.Snapshot data(RadioProfile p){return history.snapshots.get(p);}
+    void setAutoReconnect(boolean enabled){autoReconnect=enabled;getSharedPreferences("radios",MODE_PRIVATE).edit().putBoolean("autoReconnect",enabled).apply();for(Session s:sessions.values()){if(s.retry!=null)handler.removeCallbacks(s.retry);if(enabled&&s.desired&&s.gatt==null)scheduleReconnect(s);}}
+    boolean shouldResume(){for(Session s:sessions.values())if(s.desired&&!s.address.isEmpty())return autoReconnect;return false;}
+
     private final BroadcastReceiver adapterChanges=new BroadcastReceiver(){
         @Override public void onReceive(Context c,Intent i){
             if(i.getIntExtra(BluetoothAdapter.EXTRA_STATE,-1)!=BluetoothAdapter.STATE_ON){
-                stopScan(); for(Session s:sessions.values()) close(s,"Bluetooth is off • enable it and reconnect");
-            }
+                stopScan(); for(Session s:sessions.values()) close(s,"Bluetooth is off • waiting for Bluetooth");
+            }else if(running&&autoReconnect){for(Session s:sessions.values())if(s.desired&&s.gatt==null){s.retries=0;scheduleReconnect(s);}}
         }
     };
     @Override public void onCreate(){
         super.onCreate();
+        history=new HistoryStore(this);history.listener=this::changed;
+        autoReconnect=getSharedPreferences("radios",MODE_PRIVATE).getBoolean("autoReconnect",true);
         for(RadioProfile p:RadioProfile.values()){
-            Session s=new Session(p);s.address=getSharedPreferences("radios",MODE_PRIVATE).getString(p.name(),"");sessions.put(p,s);
+            Session s=new Session(p);s.address=getSharedPreferences("radios",MODE_PRIVATE).getString(p.name(),"");s.desired=getSharedPreferences("radios",MODE_PRIVATE).getBoolean(p.name()+".desired",false);sessions.put(p,s);history.select(p,s.address);history.uncertain(p,s.address);
         }
         BluetoothManager manager=getSystemService(BluetoothManager.class);adapter=manager==null?null:manager.getAdapter();
         registerReceiver(adapterChanges,new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
@@ -60,7 +74,7 @@ public final class RadioService extends Service {
     }
     @Override public int onStartCommand(Intent intent,int flags,int id){
         if(intent!=null && "STOP".equals(intent.getAction())){
-            stopScan();for(Session s:sessions.values())close(s,"Disconnected");stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();return START_NOT_STICKY;
+            running=false;handler.removeCallbacks(tick);stopScan();for(RadioProfile p:RadioProfile.values())disconnect(p);stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();return START_NOT_STICKY;
         }
         if(!allowed()){stopSelf();return START_NOT_STICKY;}
         Intent open=new Intent(this,MainActivity.class);
@@ -69,7 +83,9 @@ public final class RadioService extends Service {
         Notification notification=new Notification.Builder(this,"radios").setSmallIcon(R.drawable.ic_launcher)
             .setContentTitle("MeshCrossway radio controller").setContentText("Two independent radios • tap to view connections")
             .setContentIntent(content).addAction(new Notification.Action.Builder(null,"Disconnect all",stop).build()).setOngoing(true).build();
-        startForeground(1,notification);return START_NOT_STICKY;
+        startForeground(1,notification);
+        if(!running){running=true;handler.post(tick);if(autoReconnect)for(Session s:sessions.values())if(s.desired&&s.gatt==null&&!s.address.isEmpty())open(s,s.address);}
+        return START_NOT_STICKY;
     }
     @Override public IBinder onBind(Intent intent){return new LocalBinder();}
     public boolean allowed(){return Build.VERSION.SDK_INT>=31 ? checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN)==PackageManager.PERMISSION_GRANTED && checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)==PackageManager.PERMISSION_GRANTED : checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED;}
@@ -107,11 +123,20 @@ public final class RadioService extends Service {
     }
     public String deviceName(BluetoothDevice d){try{String name=d.getName();return name==null?"Unnamed BLE device":name;}catch(SecurityException e){return "Permission required";}}
     public void connect(RadioProfile profile,String address){
-        Session s=sessions.get(profile);
+        Session s=sessions.get(profile);s.retries=0;s.desired=true;open(s,address);
+    }
+    private void open(Session s,String address){
         if(!allowed() || adapter==null || !adapter.isEnabled()){s.status="Enable Bluetooth and grant Nearby devices permission";changed();return;}
-        for(Session other:sessions.values())if(other!=s && other.gatt!=null && address.equals(other.address)){s.status="This radio is already assigned to "+other.profile.title;changed();return;}
-        stopScan();close(s,"Connecting…");s.address=address;s.frames=0;long nonce=(new SecureRandom().nextInt() & 0x7fffffffL)+1;
-        if(nonce==69420 || nonce==69421)nonce+=2;s.probe=new ProtocolProbe(nonce);
+        for(Session other:sessions.values())if(other!=s && (other.gatt!=null||other.desired) && address.equals(other.address)){s.status="This radio is already assigned to "+other.profile.title;s.desired=false;changed();return;}
+        stopScan();release(s,"Connecting…");s.address=address;s.frames=0;history.select(s.profile,address);
+        long nonce=(new SecureRandom().nextInt() & 0x7fffffffL)+1;if(nonce==69420||nonce==69421)nonce+=2;
+        final String radio=address;final RadioProfile profile=s.profile;
+        s.client=new ProtocolClient(profile,nonce,new ProtocolClient.Listener(){
+            public void node(MeshData.Node n){history.node(profile,radio,n);}
+            public void channel(MeshData.Channel c){history.channel(profile,radio,c);}
+            public void message(MeshData.Message m){history.message(profile,radio,m);}
+            public void delivery(String uid,String state){history.delivery(profile,radio,uid,state);}
+        });
         try{
             BluetoothDevice device=adapter.getRemoteDevice(address);s.name=deviceName(device);
             s.gatt=device.connectGatt(this,false,callback(s),BluetoothDevice.TRANSPORT_LE);
@@ -119,15 +144,41 @@ public final class RadioService extends Service {
         }catch(SecurityException|IllegalArgumentException|IllegalStateException e){close(s,"Cannot connect • check address and permissions");}
         changed();
     }
-    public void disconnect(RadioProfile profile){close(sessions.get(profile),"Disconnected");}
+    public void disconnect(RadioProfile profile){Session s=sessions.get(profile);s.desired=false;getSharedPreferences("radios",MODE_PRIVATE).edit().putBoolean(profile.name()+".desired",false).apply();release(s,"Disconnected by you");}
+    private void scheduleReconnect(Session s){
+        if(!running||!autoReconnect||!s.desired||!allowed()||adapter==null||!adapter.isEnabled()||s.address.isEmpty())return;
+        if(s.retries>=5){s.status+=" • automatic retries paused; tap Reconnect";changed();return;}
+        long delay=Math.min(60000,2000L<<s.retries++);s.status+=" • retry in "+delay/1000+" s";
+        s.retry=()->{if(running&&s.desired&&s.gatt==null)open(s,s.address);};handler.postDelayed(s.retry,delay);changed();
+    }
+    void send(RadioProfile profile,String radio,MeshData.Target target,String text,java.util.function.Consumer<String> result){
+        Session s=sessions.get(profile);if(!s.address.equals(radio)||!s.connected||!s.verified||s.client==null){result.accept("This conversation's radio is offline • draft kept");return;}
+        if(!history.error.isEmpty()){result.accept(history.error);return;}if(s.persisting){result.accept("Saving previous message • please wait");return;}
+        final ProtocolClient client=s.client;final MeshData.Message message;
+        try{long id;do{id=new SecureRandom().nextInt()&0xffffffffL;}while(id==0||client.sent.containsKey(id));message=client.send(target,text,id,now());}
+        catch(IllegalArgumentException e){result.accept(e.getMessage());return;}
+        s.persisting=true;
+        history.outgoing(profile,radio,message,()->{
+            if(s.client!=client||!s.connected){history.delivery(profile,radio,message.uid,"uncertain");result.accept("Radio disconnected while saving • message was not retried");return;}
+            s.persisting=false;history.draft(profile,radio,target.topic,"");result.accept("");advance(s);
+        },()->{client.cancel(message.uid);if(s.client==client)s.persisting=false;result.accept("Could not save message • transmission cancelled; draft kept");});
+    }
+    private void advance(Session s){
+        if(!running||!s.transportReady||s.gatt==null||s.client==null||s.persisting||s.active!=null||!s.queue.isEmpty()||now()<s.nextWriteAt)return;
+        try{ProtocolClient.Command command=s.client.next(now());if(command!=null)enqueue(s,2,command.data);}
+        catch(IllegalArgumentException e){close(s,e.getMessage());}
+    }
     private void arm(Session s,String reason){
         if(s.timeout!=null)handler.removeCallbacks(s.timeout);
         s.timeout=()->close(s,reason);handler.postDelayed(s.timeout,20000);
     }
     private void cancelTimeout(Session s){if(s.timeout!=null)handler.removeCallbacks(s.timeout);s.timeout=null;}
-    private void close(Session s,String reason){
+    private void close(Session s,String reason){release(s,reason);scheduleReconnect(s);}
+    private void release(Session s,String reason){
+        if(s.retry!=null)handler.removeCallbacks(s.retry);s.retry=null;
+        if(s.client!=null)history.uncertain(s.profile,s.address);s.client=null;s.transportReady=false;s.persisting=false;
         cancelTimeout(s);if(s.probeTimeout!=null)handler.removeCallbacks(s.probeTimeout);if(s.poll!=null)handler.removeCallbacks(s.poll);
-        BluetoothGatt old=s.gatt;s.gatt=null;s.queue.clear();s.active=null;s.connected=s.verified=s.readPending=s.appStartSent=false;
+        BluetoothGatt old=s.gatt;s.gatt=null;s.queue.clear();s.active=null;s.connected=s.verified=s.readPending=false;
         s.tx=s.rx=s.notice=null;s.status=reason;
         if(old!=null)try{old.disconnect();old.close();}catch(SecurityException|IllegalStateException ignored){}
         changed();
@@ -147,22 +198,20 @@ public final class RadioService extends Service {
         }catch(SecurityException|IllegalStateException e){ok=false;}
         if(!ok){close(s,"Bluetooth operation failed • reconnect");return;}arm(s,"Bluetooth operation timed out • reconnect");
     }
-    private void done(Session s){cancelTimeout(s);s.active=null;pump(s);}
-    private void read(Session s){if(s.gatt!=null && !s.verified && !s.readPending){s.readPending=true;enqueue(s,3,null);}}
+    private void done(Session s){cancelTimeout(s);s.active=null;pump(s);handler.postDelayed(()->advance(s),90);}
+    private void read(Session s){if(s.gatt!=null && s.transportReady && !s.readPending){s.readPending=true;enqueue(s,3,null);}}
     private void beginProbe(Session s){
-        s.status="BLE subscribed • checking "+s.profile.title;changed();
-        s.probeTimeout=()->{if(!s.verified)close(s,"Protocol probe timed out • verify firmware and reconnect");};handler.postDelayed(s.probeTimeout,45000);
-        enqueue(s,2,s.profile==RadioProfile.MESHTASTIC?s.probe.meshtasticRequest():ProtocolProbe.meshcoreQuery());
-        if(s.profile==RadioProfile.MESHTASTIC){s.poll=new Runnable(){public void run(){if(s.gatt!=null){read(s);handler.postDelayed(this,2000);}}};handler.post(s.poll);}
+        s.transportReady=true;s.status="BLE subscribed • synchronizing "+s.profile.title;changed();
+        s.probeTimeout=()->{if(!s.verified)close(s,"Radio synchronization timed out • reconnect");};handler.postDelayed(s.probeTimeout,180000);
+        advance(s);
+        if(s.profile==RadioProfile.MESHTASTIC){s.poll=new Runnable(){public void run(){if(s.gatt!=null){read(s);handler.postDelayed(this,3000);}}};handler.postDelayed(s.poll,100);}
     }
     private void received(Session s,byte[] data){
-        if(data.length==0)return;s.frames++;
+        if(data.length==0||s.client==null)return;s.frames++;
         try{
-            if(s.profile==RadioProfile.MESHTASTIC)s.probe.meshtastic(data);
-            else if(s.probe.meshcore(data) && !s.appStartSent){s.appStartSent=true;enqueue(s,2,ProtocolProbe.meshcoreAppStart());}
-            s.verified=s.probe.complete;s.status=s.probe.detail;
-            if(s.verified){handler.removeCallbacks(s.probeTimeout);if(s.poll!=null)handler.removeCallbacks(s.poll);getSharedPreferences("radios",MODE_PRIVATE).edit().putString(s.profile.name(),s.address).apply();}
-        }catch(IllegalArgumentException e){close(s,e.getMessage());return;}changed();
+            s.client.receive(data,now());s.verified=s.client.ready;s.status=s.client.description;
+            if(s.verified){handler.removeCallbacks(s.probeTimeout);s.retries=0;getSharedPreferences("radios",MODE_PRIVATE).edit().putString(s.profile.name(),s.address).putBoolean(s.profile.name()+".desired",s.desired).apply();}
+        }catch(IllegalArgumentException e){close(s,e.getMessage());return;}changed();handler.postDelayed(()->advance(s),90);
     }
     private BluetoothGattCallback callback(Session s){return new BluetoothGattCallback(){
         private void onCurrent(BluetoothGatt g,Runnable action){handler.post(()->{if(g==s.gatt)action.run();});}
@@ -179,13 +228,14 @@ public final class RadioService extends Service {
         });}
         @Override public void onMtuChanged(BluetoothGatt g,int mtu,int status){onCurrent(g,()->{
             // Never allow a short-MTU write to silently truncate the protocol probe.
-            if(status!=0 || mtu<32){close(s,"MTU negotiation failed • reconnect");return;}done(s);enqueue(s,1,null);
+            if(s.active==null||s.active.kind!=0)return;
+            if(status!=0 || mtu<32){close(s,"MTU negotiation failed • reconnect");return;}s.mtu=mtu;s.client.payloadLimit=Math.min(s.profile==RadioProfile.MESHTASTIC?512:176,mtu-3);done(s);enqueue(s,1,null);
         });}
         @Override public void onDescriptorWrite(BluetoothGatt g,BluetoothGattDescriptor d,int status){onCurrent(g,()->{
             if(status!=0){close(s,"Notification subscription failed ("+status+") • pair and reconnect");return;}done(s);beginProbe(s);
         });}
         @Override public void onCharacteristicWrite(BluetoothGatt g,BluetoothGattCharacteristic c,int status){onCurrent(g,()->{
-            if(status!=0){close(s,"Radio write failed ("+status+") • check system pairing");return;}done(s);
+            if(status!=0){close(s,"Radio write failed ("+status+") • check system pairing");return;}try{if(s.client!=null)s.client.written(now());}catch(IllegalArgumentException e){close(s,e.getMessage());return;}s.nextWriteAt=now()+80;done(s);
         });}
         @Override public void onCharacteristicRead(BluetoothGatt g,BluetoothGattCharacteristic c,int status){byte[] value=c.getValue();byte[] copy=value==null?new byte[0]:value.clone();onCurrent(g,()->{
             if(status!=0){close(s,"Radio read failed ("+status+") • reconnect");return;}
@@ -195,5 +245,5 @@ public final class RadioService extends Service {
             if(s.profile==RadioProfile.MESHTASTIC)read(s);else received(s,copy);
         });}
     };}
-    @Override public void onDestroy(){listener=null;stopScan();for(Session s:sessions.values())close(s,"Disconnected");handler.removeCallbacksAndMessages(null);unregisterReceiver(adapterChanges);super.onDestroy();}
+    @Override public void onDestroy(){running=false;listener=null;stopScan();for(Session s:sessions.values())release(s,"Disconnected");handler.removeCallbacksAndMessages(null);history.close();unregisterReceiver(adapterChanges);super.onDestroy();}
 }

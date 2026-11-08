@@ -87,4 +87,4 @@ MeshCrossway is experimental and is not certified for safety-critical use. Do no
 
 ## Android controller development
 
-An Android APK is now in development, bringing the MeshCrossway controller to phones with the same independent Meshtastic and MeshCore radio architecture. The first alpha tests BLE connections and protocol identification; messaging and maps are planned. See the [Android build and installation guide](docs/android-apk.md) and [tracking issue #187](https://github.com/Renbrant/MeshCrossway/issues/187).
+An Android APK is now in development, bringing the MeshCrossway controller to phones with the same independent Meshtastic and MeshCore radio architecture. The Android messaging alpha adds channel/direct text, nodes, private history, drafts, unread counters and independent reconnection. Initial dual-radio protocol verification was confirmed on a Galaxy S25; the expanded messaging features are awaiting physical validation. Maps remain planned. See the [Android build and installation guide](docs/android-apk.md) and [tracking issue #187](https://github.com/Renbrant/MeshCrossway/issues/187).

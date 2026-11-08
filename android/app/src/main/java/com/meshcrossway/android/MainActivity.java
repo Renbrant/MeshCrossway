@@ -5,145 +5,120 @@ import android.app.*;
 import android.bluetooth.BluetoothDevice;
 import android.content.*;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.*;
 import android.provider.Settings;
+import android.text.*;
 import android.view.*;
 import android.widget.*;
-import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
+import java.util.*;
+import static com.meshcrossway.android.MeshData.*;
+import com.meshcrossway.android.MeshData.Message;
 
 public final class MainActivity extends Activity {
-    // Exact palette from firmware/display-prototype/meshcrossway_ui.h.
-    private static final int BG=0xff090c10,PANEL=0xff181d24,PANEL2=0xff242b34,ORANGE=0xffff8a24,WHITE=0xfff2f4f7,MUTED=0xff9aa6b4,GREEN=0xff72d8a5;
-    private final String[] pages={"Home","Nodes","Groups","Chats","Map","Settings"};
-    private final String[] symbols={"⌂","⋮","☷","▤","◇","⚙"};
+    private static final int BG=0xff090c10,PANEL=0xff181d24,PANEL2=0xff242b34,ORANGE=0xffff8a24,WHITE=0xfff2f4f7,MUTED=0xff9aa6b4,GREEN=0xff72d8a5,RED=0xffff7777;
+    private final String[] pages={"Home","Nodes","Groups","Chats","Map","Settings"},symbols={"⌂","⋮","☷","▤","◇","⚙"};
     private final Handler handler=new Handler(Looper.getMainLooper());
-    private RadioService service;
-    private LinearLayout root,body,nav;
-    private int selected;
-    private boolean bound,visible;
-    private RadioProfile choosing;
-    private Runnable pending;
-    private ScrollView scroll;
-    private final Runnable refresh=this::render;
+    private RadioService service;private LinearLayout root,body,nav,results;private ScrollView scroll;private EditText composer,search;private TextView count,chatStatus;private Button sendButton;
+    private int selected,filter;private String query="",chatRadio="";private RadioProfile choosing,chatProfile;private Target chat;private boolean bound,visible,sending,loadingDraft;private Runnable pending;
+    private final HashMap<String,String> drafts=new HashMap<>();
+    private final Runnable refresh=this::refreshContent,saveDraftTask=this::saveDraft;
     private final ServiceConnection connection=new ServiceConnection(){
-        @Override public void onServiceConnected(ComponentName name,IBinder binder){service=((RadioService.LocalBinder)binder).service();if(visible)service.listener=MainActivity.this::scheduleRender;render();}
-        @Override public void onServiceDisconnected(ComponentName name){service=null;render();}
+        @Override public void onServiceConnected(ComponentName name,IBinder binder){service=((RadioService.LocalBinder)binder).service();if(visible){service.listener=MainActivity.this::scheduleRefresh;if(service.allowed()&&service.shouldResume())startForegroundService(new Intent(MainActivity.this,RadioService.class));}loadDraft();refreshContent();}
+        @Override public void onServiceDisconnected(ComponentName name){service=null;refreshContent();}
     };
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);if(state!=null)selected=state.getInt("page",0);
-        getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(PANEL);
-        root=new LinearLayout(this);root.setOrientation(LinearLayout.VERTICAL);root.setBackgroundColor(BG);
-        root.setOnApplyWindowInsetsListener((view,insets)->{
-            view.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets.consumeSystemWindowInsets();
-        });
-        setContentView(root);root.requestApplyInsets();
-        LinearLayout header=row();header.setPadding(dp(18),dp(12),dp(18),dp(12));
-        ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.meshcrossway_logo);logo.setContentDescription("MeshCrossway");logo.setAdjustViewBounds(true);logo.setScaleType(ImageView.ScaleType.FIT_START);
-        header.addView(logo,new LinearLayout.LayoutParams(0,dp(32),1));TextView alpha=text("α 0.1.0",11,ORANGE);header.addView(alpha);root.addView(header);
-        View divider=new View(this);divider.setBackgroundColor(PANEL2);root.addView(divider,new LinearLayout.LayoutParams(-1,dp(1)));
-        body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);root.addView(body,new LinearLayout.LayoutParams(-1,0,1));
-        nav=row();nav.setBackgroundColor(PANEL);root.addView(nav,new LinearLayout.LayoutParams(-1,dp(64)));
-        bound=bindService(new Intent(this,RadioService.class),connection,BIND_AUTO_CREATE);render();
+        super.onCreate(state);if(state!=null){selected=state.getInt("page");filter=state.getInt("filter");query=state.getString("query","");if(state.containsKey("topic")){chatProfile=RadioProfile.valueOf(state.getString("profile"));chatRadio=state.getString("radio","");chat=new Target(state.getString("topic"),state.getString("title"),state.getString("peer"),state.getString("identity"),state.getInt("slot"),state.getBoolean("group"));drafts.put(draftKey(),state.getString("draft",""));}}
+        getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(PANEL);getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        root=column();root.setBackgroundColor(BG);root.setOnApplyWindowInsetsListener((view,insets)->{
+            if(Build.VERSION.SDK_INT>=30){android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars()),ime=insets.getInsets(WindowInsets.Type.ime());view.setPadding(bars.left,bars.top,bars.right,Math.max(bars.bottom,ime.bottom));}
+            else view.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;
+        });setContentView(root);root.requestApplyInsets();
+        LinearLayout header=row();header.setPadding(dp(18),dp(12),dp(18),dp(12));ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.meshcrossway_logo);logo.setContentDescription("MeshCrossway");logo.setScaleType(ImageView.ScaleType.FIT_START);header.addView(logo,new LinearLayout.LayoutParams(0,dp(32),1));header.addView(text("α 0.2.0",11,ORANGE));root.addView(header);
+        View line=new View(this);line.setBackgroundColor(PANEL2);root.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));
+        body=column();root.addView(body,new LinearLayout.LayoutParams(-1,0,1));nav=row();nav.setBackgroundColor(PANEL);root.addView(nav,new LinearLayout.LayoutParams(-1,dp(64)));
+        if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,this::handleBack);
+        buildPage();bound=bindService(new Intent(this,RadioService.class),connection,BIND_AUTO_CREATE);
     }
-    @Override protected void onStart(){super.onStart();visible=true;if(service!=null)service.listener=this::scheduleRender;render();}
-    @Override protected void onStop(){visible=false;if(service!=null)service.listener=null;handler.removeCallbacks(refresh);super.onStop();}
-    @Override protected void onDestroy(){if(service!=null)service.listener=null;if(bound)unbindService(connection);handler.removeCallbacksAndMessages(null);super.onDestroy();}
-    @Override protected void onSaveInstanceState(Bundle out){out.putInt("page",selected);super.onSaveInstanceState(out);}
-    private void scheduleRender(){handler.removeCallbacks(refresh);handler.postDelayed(refresh,150);}
-    private int dp(float value){return Math.round(value*getResources().getDisplayMetrics().density);}
-    private TextView text(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);t.setGravity(Gravity.CENTER_VERTICAL);return t;}
+    @Override protected void onStart(){super.onStart();visible=true;if(service!=null)service.listener=this::scheduleRefresh;refreshContent();}
+    @Override protected void onStop(){saveDraft();visible=false;if(service!=null)service.listener=null;handler.removeCallbacks(refresh);super.onStop();}
+    @Override protected void onDestroy(){handler.removeCallbacksAndMessages(null);if(service!=null)service.listener=null;if(bound)unbindService(connection);super.onDestroy();}
+    @Override protected void onSaveInstanceState(Bundle out){saveDraft();out.putInt("page",selected);out.putInt("filter",filter);out.putString("query",query);if(chat!=null){out.putString("profile",chatProfile.name());out.putString("radio",chatRadio);out.putString("topic",chat.topic);out.putString("title",chat.title);out.putString("peer",chat.peer);out.putString("identity",chat.identity);out.putInt("slot",chat.slot);out.putBoolean("group",chat.group);out.putString("draft",drafts.getOrDefault(draftKey(),""));}super.onSaveInstanceState(out);}
+    @Override public void onBackPressed(){handleBack();}
+    private void handleBack(){if(chat!=null){saveDraft();chat=null;buildPage();}else if(selected!=0)page(0);else finish();}
+    private int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
     private LinearLayout column(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);return l;}
-    private LinearLayout row(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.HORIZONTAL);l.setGravity(Gravity.CENTER_VERTICAL);return l;}
+    private LinearLayout row(){LinearLayout l=new LinearLayout(this);l.setGravity(Gravity.CENTER_VERTICAL);return l;}
+    private TextView text(String value,int size,int color){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(color);t.setGravity(Gravity.CENTER_VERTICAL);return t;}
     private GradientDrawable surface(int color){GradientDrawable d=new GradientDrawable();d.setColor(color);d.setCornerRadius(dp(16));return d;}
-    private void space(LinearLayout l,int height){l.addView(new View(this),new LinearLayout.LayoutParams(1,dp(height)));}
-    private void title(LinearLayout l,String value,String description){TextView h=text(value,28,WHITE);h.setTypeface(null,Typeface.BOLD);l.addView(h);space(l,8);l.addView(text(description,14,MUTED));space(l,20);}
-    private Button button(String label,Runnable action){Button b=new Button(this);b.setText(label);b.setTextSize(13);b.setAllCaps(false);b.setTextColor(ORANGE);b.setMinHeight(dp(48));b.setBackground(surface(PANEL2));b.setPadding(dp(12),dp(4),dp(12),dp(4));b.setOnClickListener(v->action.run());return b;}
-    private void addButton(LinearLayout parent,String label,Runnable action){Button b=button(label,action);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(48));p.topMargin=dp(10);parent.addView(b,p);}
-    private LinearLayout card(LinearLayout parent){LinearLayout c=column();c.setPadding(dp(18),dp(18),dp(18),dp(18));c.setBackground(surface(PANEL));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.bottomMargin=dp(14);parent.addView(c,p);return c;}
-    private void page(int index){selected=index;choosing=null;scroll=null;render();}
-    private void render(){
-        if(body==null)return;
-        int oldY=scroll==null?0:scroll.getScrollY();body.removeAllViews();nav.removeAllViews();
-        for(int i=0;i<pages.length;i++){
-            final int target=i;LinearLayout item=column();item.setGravity(Gravity.CENTER);item.setMinimumHeight(dp(56));
-            TextView icon=text(symbols[i],23,i==selected?ORANGE:MUTED);icon.setGravity(Gravity.CENTER);item.addView(icon);
-            TextView label=text(pages[i],10,i==selected?ORANGE:MUTED);label.setGravity(Gravity.CENTER);item.addView(label);
-            item.setContentDescription(pages[i]);item.setFocusable(true);item.setOnClickListener(v->page(target));nav.addView(item,new LinearLayout.LayoutParams(0,-1,1));
-        }
+    private void space(LinearLayout l,int n){l.addView(new View(this),new LinearLayout.LayoutParams(1,dp(n)));}
+    private void title(LinearLayout l,String h,String description){TextView t=text(h,25,WHITE);t.setTypeface(null,Typeface.BOLD);l.addView(t);space(l,8);l.addView(text(description,14,MUTED));space(l,18);}
+    private Button button(String label,Runnable action){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(13);b.setTextColor(ORANGE);b.setMinHeight(dp(48));b.setPadding(dp(10),dp(4),dp(10),dp(4));b.setBackground(surface(PANEL2));b.setOnClickListener(v->action.run());return b;}
+    private void addButton(LinearLayout l,String label,Runnable action){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(10);l.addView(button(label,action),p);}
+    private LinearLayout card(LinearLayout l){LinearLayout c=column();c.setPadding(dp(16),dp(16),dp(16),dp(16));c.setBackground(surface(PANEL));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.bottomMargin=dp(12);l.addView(c,p);return c;}
+    private void scheduleRefresh(){handler.removeCallbacks(refresh);handler.postDelayed(refresh,180);}
+    private void page(int index){saveDraft();selected=index;chat=null;choosing=null;query="";buildPage();}
+    private void buildPage(){
+        body.removeAllViews();nav.removeAllViews();composer=null;search=null;results=null;scroll=null;chatStatus=null;sendButton=null;
+        for(int i=0;i<pages.length;i++){final int index=i;LinearLayout item=column();item.setGravity(Gravity.CENTER);TextView icon=text(symbols[i],23,i==selected?ORANGE:MUTED);icon.setGravity(Gravity.CENTER);item.addView(icon);TextView label=text(pages[i],10,i==selected?ORANGE:MUTED);label.setGravity(Gravity.CENTER);item.addView(label);item.setMinimumHeight(dp(56));item.setContentDescription(pages[i]);item.setFocusable(true);item.setOnClickListener(v->page(index));nav.addView(item,new LinearLayout.LayoutParams(0,-1,1));}
         if(selected==4){map();return;}
-        scroll=new ScrollView(this);scroll.setFillViewport(true);LinearLayout content=column();content.setPadding(dp(18),dp(22),dp(18),dp(24));scroll.addView(content);body.addView(scroll,new LinearLayout.LayoutParams(-1,-1));
-        if(selected==0)home(content);else if(selected==5)settings(content);else empty(content);
-        scroll.post(()->{if(scroll!=null)scroll.scrollTo(0,oldY);});
+        if(chat!=null&&selected==3){chatPage();return;}
+        if(selected>=1&&selected<=3){LinearLayout tools=column();tools.setPadding(dp(16),dp(12),dp(16),dp(8));TextView h=text(pages[selected],24,WHITE);h.setTypeface(null,Typeface.BOLD);tools.addView(h);LinearLayout filters=row();String[] labels={"All","Meshtastic","MeshCore"};for(int i=0;i<3;i++){final int choice=i;Button b=button(labels[i],()->{filter=choice;buildPage();});b.setTextColor(i==filter?WHITE:ORANGE);LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,dp(48),1);p.setMargins(0,dp(8),dp(5),0);filters.addView(b,p);}tools.addView(filters);search=new EditText(this);search.setTextColor(WHITE);search.setHintTextColor(MUTED);search.setTextSize(14);search.setHint("Search "+pages[selected].toLowerCase(Locale.ROOT));search.setSingleLine(true);search.setText(query);search.addTextChangedListener(watcher(()->{query=search.getText().toString();refreshContent();}));tools.addView(search,new LinearLayout.LayoutParams(-1,dp(48)));body.addView(tools);}
+        scroll=new ScrollView(this);results=column();results.setPadding(dp(16),dp(16),dp(16),dp(20));scroll.addView(results);body.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));refreshContent();
     }
-    private void home(LinearLayout content){
-        title(content,"Two networks. One view.","Your independent off-grid radio connections.");
-        for(RadioProfile p:RadioProfile.values()){
-            RadioService.Session s=service==null?null:service.sessions.get(p);LinearLayout c=card(content);
-            TextView name=text(p.title,21,WHITE);name.setTypeface(null,Typeface.BOLD);c.addView(name);space(c,10);
-            c.addView(text(s==null?"Disconnected":s.verified?"● Protocol verified":s.connected?"● BLE connected":"○ Offline",14,s!=null&&s.verified?GREEN:ORANGE));space(c,8);
-            c.addView(text(s==null?"Choose a compatible radio to begin.":s.status,13,MUTED));
-            if(s!=null&&!s.name.isEmpty()){space(c,8);c.addView(text(s.name+" • "+s.frames+" frames received",12,MUTED));}
-            addButton(c,"Manage "+p.title,()->{selected=5;choosing=p;scroll=null;render();});
-        }
-        LinearLayout note=card(content);note.addView(text("Connection test • alpha01",16,ORANGE));space(note,8);
-        note.addView(text("This first APK tests two BLE links and protocol identification. Chat, nodes, phone GPS and maps are the next development stages.",14,MUTED));
+    private boolean included(RadioProfile p){return filter==0||filter==p.ordinal()+1;}
+    private boolean matches(String value){return value.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT));}
+    private Snapshot snapshot(RadioProfile p){return service==null?Snapshot.empty():service.data(p);}
+    private String radio(RadioProfile p){return service==null?"":service.sessions.get(p).address;}
+    private boolean ready(RadioProfile p,String address){return service!=null&&service.sessions.get(p).verified&&radio(p).equals(address);}
+    private void refreshContent(){
+        if(results==null)return;int y=scroll==null?0:scroll.getScrollY();boolean bottom=scroll!=null&&(results.getHeight()-scroll.getHeight()-y<dp(80));results.removeAllViews();
+        if(service!=null&&!service.history.error.isEmpty())results.addView(text(service.history.error,14,RED));
+        if(chat!=null&&selected==3){messages();if(scroll!=null)scroll.post(()->{if(scroll!=null)scroll.scrollTo(0,bottom?results.getHeight():y);});return;}
+        if(selected==0)home();else if(selected==5)settings();else lists();
+        if(scroll!=null)scroll.post(()->{if(scroll!=null)scroll.scrollTo(0,y);});
     }
-    private void settings(LinearLayout content){
-        title(content,"Radio connections","Meshtastic and MeshCore remain independent.");
-        if(choosing!=null){
-            LinearLayout chooser=card(content);chooser.addView(text("Choose "+choosing.title+" radio",20,WHITE));space(chooser,8);
-            chooser.addView(text("Close other mesh apps before connecting. Android handles Bluetooth PIN and pairing prompts.",13,MUTED));
-            final RadioProfile target=choosing;
-            addButton(chooser,service!=null&&service.scanning?"Stop scan":"Scan nearby radios",()->withPermission(()->{if(service.scanning)service.stopScan();else service.scan();}));
-            space(chooser,10);chooser.addView(text(service==null?"Starting controller…":service.scanStatus,13,MUTED));
-            if(service!=null)for(BluetoothDevice device:new ArrayList<>(service.devices.values())){
-                String address=device.getAddress();addButton(chooser,service.deviceName(device)+"\n"+address,()->withPermission(()->{service.connect(target,address);choosing=null;render();}));
-            }
-            addButton(chooser,"Cancel selection",()->{if(service!=null)service.stopScan();choosing=null;render();});
-        }
-        for(RadioProfile p:RadioProfile.values()){
-            RadioService.Session s=service==null?null:service.sessions.get(p);LinearLayout c=card(content);c.addView(text(p.title,20,WHITE));space(c,8);
-            c.addView(text(s==null?"Controller starting…":s.status,13,MUTED));
-            if(s!=null&&!s.address.isEmpty()){space(c,8);c.addView(text(s.address,12,MUTED));}
-            addButton(c,"Choose radio",()->withPermission(()->{choosing=p;service.scan();render();}));
-            if(s!=null&&!s.address.isEmpty())addButton(c,"Reconnect selected radio",()->withPermission(()->service.connect(p,s.address)));
-            if(s!=null&&s.connected)addButton(c,"Disconnect",()->service.disconnect(p));
-        }
-        addButton(content,"Android Bluetooth settings",()->startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)));
-        addButton(content,"Disconnect all and stop controller",()->{if(service!=null){service.stopScan();for(RadioProfile p:RadioProfile.values())service.disconnect(p);startService(new Intent(this,RadioService.class).setAction("STOP"));}});
-        space(content,18);content.addView(text("MeshCrossway Android 0.1.0-alpha01\nNo forwarding between networks. Saved radio addresses stay in this app's private storage.",12,MUTED));
+    private void home(){title(results,"Two networks. One view.","Messages, channels and nodes from your radios.");for(RadioProfile p:RadioProfile.values()){
+        RadioService.Session s=service==null?null:service.sessions.get(p);Snapshot data=snapshot(p);LinearLayout c=card(results);TextView h=text(p.title,21,WHITE);h.setTypeface(null,Typeface.BOLD);c.addView(h);space(c,8);c.addView(text(s==null?"○ Offline":s.verified?"● Ready":s.connected?"● Synchronizing":"○ Offline",14,s!=null&&s.verified?GREEN:ORANGE));space(c,6);c.addView(text(s==null?"Choose a radio in Settings":s.status,13,MUTED));space(c,10);c.addView(text(data.nodes.size()+" nodes • "+data.channels.stream().filter(ch->ch.enabled).count()+" channels • "+data.unread()+" unread",14,WHITE));if(s!=null&&!s.name.isEmpty()){space(c,6);c.addView(text(s.name+" • "+s.frames+" frames received",12,MUTED));}addButton(c,"Open "+p.title+" chats",()->{filter=p.ordinal()+1;page(3);});addButton(c,"Manage radio",()->{selected=5;choosing=p;buildPage();});}
+        LinearLayout note=card(results);note.addView(text("Messaging alpha • 0.2.0",16,ORANGE));space(note,8);note.addView(text("History and drafts stay on this phone. Radio acceptance is different from a recipient delivery confirmation. Maps and tracks are still in development.",14,MUTED));}
+    private void lists(){int shown=0;for(RadioProfile p:RadioProfile.values()){if(!included(p))continue;Snapshot data=snapshot(p);
+        if(selected==1){for(Node n:data.nodes){String display=nodeName(p,n);if(!matches(display+" "+n.id))continue;shown++;LinearLayout c=card(results);c.addView(text(display,18,WHITE));space(c,6);c.addView(text(p.title+" • "+ago(n.heard)+(n.battery>=0?" • battery "+n.battery+"%":""),12,MUTED));c.setOnClickListener(v->nodeDetails(p,n));c.setFocusable(true);c.setContentDescription(display+", node details");}}
+        else if(selected==2){for(Channel channel:data.channels){if(!channel.enabled||!matches(channel.name))continue;shown++;LinearLayout c=card(results);c.addView(text(channel.name,18,WHITE));space(c,6);c.addView(text(p.title+" • channel "+channel.slot+(ready(p,radio(p))?"":" • saved"),12,MUTED));addButton(c,"Open conversation",()->openChat(p,radio(p),Target.channel(channel)));}}
+        else for(Conversation conversation:data.conversations()){if(!matches(conversation.target.title+" "+conversation.last.body))continue;shown++;LinearLayout c=card(results);c.addView(text(conversation.target.title+(conversation.unread>0?"  • "+conversation.unread+" unread":""),18,conversation.unread>0?ORANGE:WHITE));space(c,6);TextView preview=text(conversation.last.body,14,MUTED);preview.setMaxLines(2);c.addView(preview);space(c,6);c.addView(text(p.title+" • "+when(conversation.last.timestamp),12,MUTED));c.setOnClickListener(v->openChat(p,radio(p),conversation.target));c.setFocusable(true);}
     }
-    private void empty(LinearLayout content){
-        String[] descriptions={"","Nearby and saved nodes from both networks.","Channels and groups, separated by network.","Conversations from both networks in one place."};
-        title(content,pages[selected],descriptions[selected]);LinearLayout c=card(content);
-        c.addView(text("Coming in the next stages",19,ORANGE));space(c,12);
-        c.addView(text("Alpha01 validates radio connections first. This screen will use real synchronized data as the protocol clients are implemented.",15,MUTED));
-        addButton(c,"Manage radio connections",()->page(5));
+        if(shown==0){LinearLayout c=card(results);c.addView(text(query.isEmpty()?"No "+pages[selected].toLowerCase(Locale.ROOT)+" yet":"No matching results",20,ORANGE));space(c,8);c.addView(text(selected==3?"Open a channel in Groups or a client in Nodes to start a conversation.":"Connect a radio and wait for synchronization. Saved data remains available when offline.",14,MUTED));}
+        if(selected==3&&service!=null){results.addView(text("Showing up to "+service.history.historyLimit+" recent messages per radio. Older history stays in the database.",12,MUTED));if(service.history.historyLimit<20000)addButton(results,"Load older messages",()->service.history.older());}
     }
-    private void map(){
-        LinearLayout layout=row();layout.setGravity(Gravity.TOP);body.addView(layout,new LinearLayout.LayoutParams(-1,-1));
-        ScrollView railScroll=new ScrollView(this);LinearLayout rail=column();rail.setPadding(dp(6),dp(12),dp(6),dp(12));rail.setBackgroundColor(PANEL);railScroll.addView(rail);layout.addView(railScroll,new LinearLayout.LayoutParams(dp(76),-1));
-        String[] tools={"View","Zoom +","Zoom −","GPS","Track","POIs","Offline","Details"};
-        for(String tool:tools){Button b=button(tool,()->new AlertDialog.Builder(this).setTitle(tool).setMessage("Map tools are planned for a later alpha. This APK validates the independent Bluetooth connections first.").setPositiveButton("OK",null).show());LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,dp(52));p.bottomMargin=dp(8);rail.addView(b,p);}
-        LinearLayout panel=column();panel.setGravity(Gravity.CENTER);panel.setPadding(dp(20),dp(20),dp(20),dp(20));layout.addView(panel,new LinearLayout.LayoutParams(0,-1,1));
-        TextView icon=text("◇",56,ORANGE);icon.setGravity(Gravity.CENTER);panel.addView(icon);space(panel,16);
-        TextView heading=text("Map workspace",23,WHITE);heading.setGravity(Gravity.CENTER);panel.addView(heading);space(panel,12);
-        TextView note=text("Map rendering, phone location, tracks and offline areas will arrive in a later alpha.\n\nContext tools stay on the left; primary navigation stays below.",14,MUTED);note.setGravity(Gravity.CENTER);panel.addView(note);
+    private String nodeName(RadioProfile p,Node n){if(!n.name.isEmpty())return n.name;return p==RadioProfile.MESHTASTIC?String.format(Locale.ROOT,"!%08x",Long.parseLong(n.id)):n.id.substring(0,Math.min(12,n.id.length()));}
+    private void nodeDetails(RadioProfile p,Node n){String description=p.title+"\n"+n.id+"\nLast heard: "+when(n.heard)+(n.battery>=0?"\nBattery: "+n.battery+"%":"")+(n.position?String.format(Locale.ROOT,"\nPosition: %.6f, %.6f",n.lat,n.lon):"");AlertDialog.Builder b=new AlertDialog.Builder(this).setTitle(nodeName(p,n)).setMessage(description).setNegativeButton("Close",null);if(!n.unmessagable&&(p==RadioProfile.MESHTASTIC||n.type==1))b.setPositiveButton("Message",(dialog,which)->openChat(p,radio(p),Target.node(n)));b.show();}
+    private void openChat(RadioProfile p,String radio,Target target){saveDraft();selected=3;chatProfile=p;chatRadio=radio;chat=target;buildPage();}
+    private String draftKey(){return chatProfile+"|"+chatRadio+"|"+(chat==null?"":chat.topic);}
+    private void saveDraft(){handler.removeCallbacks(saveDraftTask);if(chat==null||composer==null)return;String value=composer.getText().toString();drafts.put(draftKey(),value);if(service!=null)service.history.draft(chatProfile,chatRadio,chat.topic,value);}
+    private void loadDraft(){if(chat==null||composer==null||service==null)return;final String key=draftKey();if(drafts.containsKey(key)){composer.setText(drafts.get(key));return;}loadingDraft=true;service.history.loadDraft(chatProfile,chatRadio,chat.topic,value->{loadingDraft=false;if(chat!=null&&key.equals(draftKey())&&composer!=null&&composer.length()==0){drafts.put(key,value);composer.setText(value);}});}
+    private void chatPage(){LinearLayout h=column();h.setPadding(dp(16),dp(8),dp(16),dp(8));h.addView(button("‹ Conversations",()->{saveDraft();chat=null;buildPage();}));TextView title=text(chat.title,21,WHITE);title.setTypeface(null,Typeface.BOLD);h.addView(title);chatStatus=text(chatProfile.title,12,MUTED);h.addView(chatStatus);body.addView(h);
+        scroll=new ScrollView(this);results=column();results.setPadding(dp(16),dp(12),dp(16),dp(12));scroll.addView(results);body.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
+        LinearLayout entry=column();entry.setPadding(dp(12),dp(6),dp(12),dp(8));entry.setBackgroundColor(PANEL);composer=new EditText(this);composer.setTextColor(WHITE);composer.setHintTextColor(MUTED);composer.setHint("Write a message…");composer.setTextSize(15);composer.setMinLines(1);composer.setMaxLines(4);composer.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE|android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);composer.setFilters(new InputFilter[]{new InputFilter.LengthFilter(1000)});entry.addView(composer,new LinearLayout.LayoutParams(-1,-2));LinearLayout controls=row();count=text("0 bytes",12,MUTED);controls.addView(count,new LinearLayout.LayoutParams(0,-2,1));sendButton=button("Send",this::send);controls.addView(sendButton,new LinearLayout.LayoutParams(dp(112),dp(48)));entry.addView(controls);body.addView(entry);
+        composer.addTextChangedListener(watcher(()->{updateComposer();if(!loadingDraft){drafts.put(draftKey(),composer.getText().toString());handler.removeCallbacks(saveDraftTask);handler.postDelayed(saveDraftTask,500);}}));loadDraft();refreshContent();scroll.post(()->scroll.fullScroll(View.FOCUS_DOWN));}
+    private void updateComposer(){if(composer==null)return;int size=composer.getText().toString().getBytes(StandardCharsets.UTF_8).length;count.setText(size+" UTF-8 bytes");sendButton.setEnabled(!sending&&ready(chatProfile,chatRadio)&&size>0);sendButton.setText(sending?"Saving…":"Send");}
+    private void send(){if(service==null||chat==null||sending)return;final String value=composer.getText().toString(),key=draftKey();saveDraft();sending=true;updateComposer();withPermission(()->service.send(chatProfile,chatRadio,chat,value,error->{sending=false;if(!error.isEmpty())Toast.makeText(this,error,Toast.LENGTH_LONG).show();else if(chat!=null&&key.equals(draftKey())&&composer!=null&&composer.getText().toString().equals(value)){composer.setText("");saveDraft();}else if(chat!=null&&key.equals(draftKey()))saveDraft();updateComposer();scheduleRefresh();}));}
+    private void messages(){
+        boolean connected=ready(chatProfile,chatRadio);chatStatus.setText(chatProfile.title+" • "+(connected?"ready":"offline / synchronizing • draft stays here"));updateComposer();int shown=0;boolean unread=false;
+        if(radio(chatProfile).equals(chatRadio))for(Message m:snapshot(chatProfile).messages){if(!m.topic.equals(chat.topic))continue;shown++;LinearLayout c=card(results);c.setBackground(surface(m.outgoing?PANEL2:PANEL));TextView author=text(m.outgoing?"You":m.sender,13,m.outgoing?ORANGE:GREEN);author.setTypeface(null,Typeface.BOLD);c.addView(author);space(c,6);TextView body=text(m.body,16,WHITE);body.setTextIsSelectable(true);c.addView(body);space(c,8);c.addView(text(when(m.timestamp)+(m.outgoing?" • "+deliveryLabel(m.state):""),11,m.state.equals("delivered")?GREEN:m.state.equals("rejected")?RED:MUTED));if(!m.read&&!m.outgoing)unread=true;}
+        if(shown==0)results.addView(text("No messages in this conversation yet. Your draft is saved automatically.",14,MUTED));
+        if(unread&&visible&&service!=null)service.history.read(chatProfile,chatRadio,chat.topic);
     }
-    private void withPermission(Runnable action){
-        if(service==null){Toast.makeText(this,"Controller is starting; try again",Toast.LENGTH_SHORT).show();return;}
-        ArrayList<String> missing=new ArrayList<>();
-        if(Build.VERSION.SDK_INT>=31){for(String p:new String[]{Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT})if(checkSelfPermission(p)!=PackageManager.PERMISSION_GRANTED)missing.add(p);}
-        else if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)missing.add(Manifest.permission.ACCESS_FINE_LOCATION);
-        if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)missing.add(Manifest.permission.POST_NOTIFICATIONS);
-        if(!missing.isEmpty()){pending=action;requestPermissions(missing.toArray(new String[0]),7);return;}
-        startForegroundService(new Intent(this,RadioService.class));action.run();
-    }
-    @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] results){
-        super.onRequestPermissionsResult(request,permissions,results);
-        if(request==7){Runnable action=pending;pending=null;if(service!=null&&service.allowed()&&action!=null){startForegroundService(new Intent(this,RadioService.class));action.run();}else Toast.makeText(this,"Nearby devices permission is required. Enable it in Android app settings if denied.",Toast.LENGTH_LONG).show();}
-    }
+    static String deliveryLabel(String state){switch(state){case "queued":return "Saved / queued";case "submitted":return "Submitted over Bluetooth";case "radio accepted":return "Accepted by radio";case "delivered":return "Recipient acknowledged";case "rejected":return "Rejected";case "uncertain":return "Delivery unknown • no automatic resend";default:return state;}}
+    private void settings(){title(results,"Radio connections","Meshtastic and MeshCore remain independent.");if(service!=null){Switch auto=new Switch(this);auto.setText("Automatic reconnection");auto.setTextColor(WHITE);auto.setChecked(service.autoReconnect);auto.setOnCheckedChangeListener((b,on)->service.setAutoReconnect(on));results.addView(auto);space(results,16);}
+        if(choosing!=null){LinearLayout c=card(results);c.addView(text("Choose "+choosing.title+" radio",19,WHITE));space(c,8);c.addView(text("Close other mesh apps first. Android handles pairing and PIN prompts.",13,MUTED));RadioProfile target=choosing;addButton(c,service!=null&&service.scanning?"Stop scan":"Scan nearby radios",()->withPermission(()->{if(service.scanning)service.stopScan();else service.scan();}));space(c,8);c.addView(text(service==null?"Starting…":service.scanStatus,12,MUTED));if(service!=null)for(BluetoothDevice d:new ArrayList<>(service.devices.values())){String address=d.getAddress();addButton(c,service.deviceName(d)+"\n"+address,()->withPermission(()->{service.connect(target,address);choosing=null;refreshContent();}));}addButton(c,"Cancel selection",()->{if(service!=null)service.stopScan();choosing=null;refreshContent();});}
+        for(RadioProfile p:RadioProfile.values()){RadioService.Session s=service==null?null:service.sessions.get(p);LinearLayout c=card(results);c.addView(text(p.title,20,WHITE));space(c,8);c.addView(text(s==null?"Starting…":s.status,13,MUTED));if(s!=null&&!s.address.isEmpty()){space(c,6);c.addView(text(s.address,12,MUTED));}addButton(c,"Choose radio",()->withPermission(()->{choosing=p;service.scan();refreshContent();}));if(s!=null&&!s.address.isEmpty())addButton(c,"Reconnect / synchronize",()->withPermission(()->service.connect(p,s.address)));if(s!=null&&(s.connected||s.desired))addButton(c,"Disconnect",()->service.disconnect(p));}
+        addButton(results,"Android Bluetooth settings",()->startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)));addButton(results,"Disconnect all and stop controller",()->{if(service!=null)startService(new Intent(this,RadioService.class).setAction("STOP"));});space(results,16);results.addView(text("MeshCrossway Android 0.2.0-alpha02\nHistory is private to this app. Updating with the same signing key retains it. Uninstalling deletes app data.",12,MUTED));}
+    private void map(){LinearLayout layout=row();layout.setGravity(Gravity.TOP);body.addView(layout,new LinearLayout.LayoutParams(-1,-1));ScrollView side=new ScrollView(this);LinearLayout rail=column();rail.setPadding(dp(6),dp(10),dp(6),dp(10));rail.setBackgroundColor(PANEL);side.addView(rail);layout.addView(side,new LinearLayout.LayoutParams(dp(76),-1));for(String tool:new String[]{"View","Zoom +","Zoom −","GPS","Track","POIs","Offline","Details"})addButton(rail,tool,()->new AlertDialog.Builder(this).setTitle(tool).setMessage("Map rendering, phone location and tracks are the next stage. Messaging is available in Chats, Groups and Nodes.").setPositiveButton("OK",null).show());LinearLayout note=column();note.setGravity(Gravity.CENTER);note.setPadding(dp(20),dp(20),dp(20),dp(20));layout.addView(note,new LinearLayout.LayoutParams(0,-1,1));title(note,"Map workspace","Maps, phone GPS, tracks and offline areas are planned for the next stage.");}
+    private static String when(long seconds){return seconds<=0?"Unknown":DateFormat.getDateTimeInstance(DateFormat.SHORT,DateFormat.SHORT).format(new Date(seconds*1000));}
+    private static String ago(long seconds){if(seconds<=0)return "last heard unknown";long delta=Math.max(0,System.currentTimeMillis()/1000-seconds);return delta<60?"heard just now":delta<3600?"heard "+delta/60+" min ago":delta<86400?"heard "+delta/3600+" h ago":"heard "+delta/86400+" days ago";}
+    private TextWatcher watcher(Runnable changed){return new TextWatcher(){public void beforeTextChanged(CharSequence s,int start,int count,int after){}public void onTextChanged(CharSequence s,int start,int before,int count){changed.run();}public void afterTextChanged(Editable e){}};}
+    private void withPermission(Runnable action){if(service==null){sending=false;Toast.makeText(this,"Controller is starting; try again",Toast.LENGTH_SHORT).show();return;}ArrayList<String> missing=new ArrayList<>();if(Build.VERSION.SDK_INT>=31){for(String p:new String[]{Manifest.permission.BLUETOOTH_SCAN,Manifest.permission.BLUETOOTH_CONNECT})if(checkSelfPermission(p)!=PackageManager.PERMISSION_GRANTED)missing.add(p);}else if(checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)missing.add(Manifest.permission.ACCESS_FINE_LOCATION);if(Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)missing.add(Manifest.permission.POST_NOTIFICATIONS);if(!missing.isEmpty()){pending=action;requestPermissions(missing.toArray(new String[0]),7);return;}startForegroundService(new Intent(this,RadioService.class));action.run();}
+    @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] grants){super.onRequestPermissionsResult(request,permissions,grants);if(request==7){Runnable action=pending;pending=null;if(service!=null&&service.allowed()&&action!=null){startForegroundService(new Intent(this,RadioService.class));action.run();}else{sending=false;updateComposer();Toast.makeText(this,"Nearby devices permission is required. Draft kept.",Toast.LENGTH_LONG).show();}}}
 }
