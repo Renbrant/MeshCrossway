@@ -24,6 +24,9 @@ jobs:
           for url in [root]+[urllib.parse.urljoin(root,p) for p in scripts[:8]]:
             source=html if url==root else read(url)
             source=source.replace('\\/','/')
+            for key in ('https://tiles.coalition.space','osm-bright','/styles/','/256/'):
+              for match in list(re.finditer(re.escape(key),source))[:6]:
+                print('Provider context:',source[max(0,match.start()-180):match.end()+260])
             for value in re.findall(r'[\"\'`]([^\"\'`\n]{1,240})[\"\'`]',source):
               if ('coalition.space' in value or '/styles/' in value or '.png' in value or 'tileUrl' in value) and not any(k in value.lower() for k in ('token','api_key','apikey')):
                 print('Endpoint literal:',value.split('?')[0])
