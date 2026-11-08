@@ -2,32 +2,23 @@ name: Verify public offline map source
 on:
   pull_request:
     paths: ['.github/workflows/map-source-probe.yml']
-permissions:
-  contents: read
+permissions: { contents: read }
 jobs:
   source:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Read provider public endpoint metadata
+      - name: Verify provider PNG and public FAQ
         run: |
           python3 - <<'PY'
-          import urllib.request,urllib.parse,re
-          root='https://download.tiles.coalition.space/'
-          def read(url):
-            request=urllib.request.Request(url,headers={'User-Agent':'MeshCrossway-source-validation (+https://github.com/Renbrant/MeshCrossway)'})
-            with urllib.request.urlopen(request,timeout=20) as response:
-              return response.read(2500000).decode('utf-8')
-          html=read(root)
-          scripts=re.findall(r'<script[^>]*src=[\"\']([^\"\']+)',html)
-          print('Public script URLs:',scripts)
-          for url in [root]+[urllib.parse.urljoin(root,p) for p in scripts[:8]]:
-            source=html if url==root else read(url)
-            source=source.replace('\\/','/')
-            for key in ('https://tiles.coalition.space','osm-bright','/styles/','/256/'):
-              for match in list(re.finditer(re.escape(key),source))[:6]:
-                print('Provider context:',source[max(0,match.start()-180):match.end()+260])
-            for value in re.findall(r'[\"\'`]([^\"\'`\n]{1,240})[\"\'`]',source):
-              if ('coalition.space' in value or '/styles/' in value or '.png' in value or 'tileUrl' in value) and not any(k in value.lower() for k in ('token','api_key','apikey')):
-                print('Endpoint literal:',value.split('?')[0])
+          import urllib.request,struct,hashlib
+          for url in ['https://tiles.coalition.space/raster/styles/osm-bright/14/3069/6213.png','https://download.tiles.coalition.space/faq']:
+            request=urllib.request.Request(url,headers={'User-Agent':'MeshCrossway/0.10.5 (+https://github.com/Renbrant/MeshCrossway)'})
+            with urllib.request.urlopen(request,timeout=30) as r:
+              data=r.read(2000000)
+              print(url,r.status,r.headers.get('Content-Type'),len(data))
+              if url.endswith('.png'):
+                assert data[:8]==b'\x89PNG\r\n\x1a\n'
+                assert struct.unpack('>II',data[16:24])==(256,256)
+                print('Verified 256x256 PNG',hashlib.sha256(data).hexdigest())
           PY
