@@ -14,7 +14,7 @@ Implemented together:
 
 | Feature | Behavior |
 | --- | --- |
-| Independent live clients | Continuous Meshtastic FromRadio reads and MeshCore waiting-message polling/subscriptions; separate state and queues for each radio. |
+| Independent live clients | Continuous Meshtastic FromRadio reads with a 30-second PhoneAPI heartbeat and MeshCore waiting-message polling/subscriptions; separate state and queues for each radio. |
 | Synchronization | Meshtastic PhoneAPI configuration, NodeDB and channels; MeshCore identity, contacts and all advertised channel slots. No radio-region, key or frequency changes. |
 | Channel text | Open Groups, choose a synchronized channel and compose text. Channel history includes a fingerprint of its configuration/key, preventing a changed slot from mixing conversations. |
 | Direct text | Open Nodes, select a peer and choose Message. Meshtastic supplies the recipient public key when the radio supports PKI. MeshCore direct chat requires a client contact and an unambiguous six-byte public-key prefix; repeater/room commands are not implemented. |
@@ -27,7 +27,7 @@ Implemented together:
 | Background ownership | A connectedDevice foreground service owns both GATT sessions independently of screen navigation. The notification can disconnect all radios. No boot receiver or automatic process-death service restart. |
 | UI | Firmware palette, official logo, six bottom navigation destinations and left context rail. Composer remains intact during incoming updates; system bars and keyboard insets are handled. |
 
-Recent history loads up to 2,000 messages per radio initially. **Load older messages** increases the window by 2,000 up to 20,000; the database keeps older records. Unread counts and conversation lists apply to the currently loaded window. History export, deletion controls and unlimited pagination are subsequent work.
+Lists and conversation messages initially render 100 entries, with explicit buttons to show more. Recent history loads up to 2,000 messages per radio initially. **Load older messages** increases the window by 2,000 up to 20,000; the database keeps older records. Unread counts and conversation lists apply to the currently loaded window. History export, deletion controls and unlimited pagination are subsequent work.
 
 Transmission guards include protocol readiness, current radio identity, enabled/current channel identity, LoRa region/TX enable for Meshtastic, destination availability, UTF-8 byte limits, queue bounds and negotiated ATT payload. Text limits are conservative (220 bytes for Meshtastic; MeshCore derives its limit from the name prefix and frame size, at most 150). The UI displays the UTF-8 byte count and keeps the draft if validation fails.
 
@@ -64,7 +64,7 @@ cd android
 
 The dependency-free JVM fixtures test bootstrapping, channel/DM encoding, Meshtastic PKI, ACK ordering, malformed frames, byte limits, replay IDs, network isolation and unread aggregation. Device instrumentation exercises the real SQLite schema (duplicates, network/radio separation, monotonic delivery state, read markers, reopening and draft persistence), navigation and draft preservation during Activity recreation. Neither replaces physical-radio acceptance.
 
-The **Android alpha APK** GitHub Actions workflow builds/lints, runs JVM fixtures, uploads a named APK plus SHA-256 checksum, and runs the device/storage smoke test on an Android emulator. Download the latest successful run's `MeshCrossway-Android-0.2.0-alpha02` artifact under **Actions → Artifacts**, extract its ZIP and install the APK inside.
+The **Android alpha APK** GitHub Actions workflow builds/lints, runs JVM fixtures, uploads a named APK plus SHA-256 checksum, and runs the device/storage smoke test on Android API 29 and 35 emulators. Download the latest successful run's `MeshCrossway-Android-0.2.0-alpha02` artifact under **Actions → Artifacts**, extract its ZIP and install the APK inside.
 
 Output: `android/app/build/outputs/apk/debug/app-debug.apk`. Version code 2 / version name `0.2.0-alpha02`. Package `com.meshcrossway.android`; label **MeshCrossway Alpha**.
 

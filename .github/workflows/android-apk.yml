@@ -46,6 +46,10 @@ jobs:
           if-no-files-found: ignore
 
   device-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [29, 35]
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -62,14 +66,22 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 29
+          api-level: ${{ matrix.api }}
           arch: x86_64
-          target: default
+          target: google_apis
           disable-animations: true
-          script: cd android && ./gradlew --no-daemon connectedDebugAndroidTest
+          script: |
+            cd android && ./gradlew --no-daemon connectedDebugAndroidTest
+            adb pull /sdcard/Android/data/com.meshcrossway.android/files/screenshots ../android-device-screenshots
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Android-device-smoke-report
+          name: Android-device-smoke-report-${{ matrix.api }}
           path: android/app/build/reports/androidTests/
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Android-ui-${{ matrix.api }}
+          path: android-device-screenshots/
           if-no-files-found: ignore

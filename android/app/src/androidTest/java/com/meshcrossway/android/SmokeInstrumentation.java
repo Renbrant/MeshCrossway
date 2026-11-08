@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.view.*;
 import android.widget.*;
 import java.lang.reflect.Method;
+import java.io.*;
+import android.graphics.*;
 import java.util.concurrent.*;
 import static com.meshcrossway.android.MeshData.*;
 
@@ -28,10 +30,12 @@ public final class SmokeInstrumentation extends Instrumentation {
     private View find(View root,String label){if(root instanceof TextView&&((TextView)root).getText().toString().equals(label))return root;if(root instanceof ViewGroup){ViewGroup group=(ViewGroup)root;for(int i=0;i<group.getChildCount();i++){View found=find(group.getChildAt(i),label);if(found!=null)return found;}}return null;}
     private void click(MainActivity activity,String label){runOnMainSync(()->{View view=find(activity.getWindow().getDecorView(),label);check(view!=null,"Missing navigation: "+label);while(!view.isClickable()&&view.getParent() instanceof View)view=(View)view.getParent();check(view.performClick(),"Cannot click "+label);});waitForIdleSync();}
     private EditText composer(View root){if(root instanceof EditText&&"Write a message…".contentEquals(((EditText)root).getHint()))return (EditText)root;if(root instanceof ViewGroup){ViewGroup g=(ViewGroup)root;for(int i=0;i<g.getChildCount();i++){EditText e=composer(g.getChildAt(i));if(e!=null)return e;}}return null;}
+    private void screenshot(MainActivity activity,String name){runOnMainSync(()->{View view=activity.getWindow().getDecorView();Bitmap image=Bitmap.createBitmap(view.getWidth(),view.getHeight(),Bitmap.Config.ARGB_8888);view.draw(new Canvas(image));File folder=new File(getTargetContext().getExternalFilesDir(null),"screenshots");check(folder.mkdirs()||folder.isDirectory(),"Screenshot folder unavailable");try(FileOutputStream out=new FileOutputStream(new File(folder,name+".png"))){check(image.compress(Bitmap.CompressFormat.PNG,100,out),"Screenshot failed");}catch(IOException error){throw new RuntimeException(error);}finally{image.recycle();}});}
     private void activity()throws Exception{
-        Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();
+        Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();screenshot(activity,"home");
         for(String page:new String[]{"Nodes","Groups","Chats","Map","Settings","Home"})click(activity,page);
         Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);runOnMainSync(()->{try{open.invoke(activity,RadioProfile.MESHTASTIC,"offline-test",new Target("c:0:test","Test channel","","test",0,true));EditText entry=composer(activity.getWindow().getDecorView());check(entry!=null,"Composer missing");entry.setText("Draft survives rotation 👋");}catch(Exception e){throw new RuntimeException(e);}});
+        waitForIdleSync();screenshot(activity,"chat-draft");
         ActivityMonitor monitor=addMonitor(MainActivity.class.getName(),null,false);runOnMainSync(activity::recreate);MainActivity recreated=(MainActivity)waitForMonitorWithTimeout(monitor,10000);check(recreated!=null,"Activity recreation timed out");waitForIdleSync();runOnMainSync(()->{EditText entry=composer(recreated.getWindow().getDecorView());check(entry!=null&&entry.getText().toString().equals("Draft survives rotation 👋"),"Rotation lost composer draft");recreated.finish();});removeMonitor(monitor);
     }
     @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();activity();sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}

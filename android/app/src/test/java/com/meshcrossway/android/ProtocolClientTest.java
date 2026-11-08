@@ -40,6 +40,7 @@ public final class ProtocolClientTest {
         byte[] incoming=new byte[14];incoming[0]=8;Wire.put32(incoming,4,1700000000);System.arraycopy("hello!".getBytes(),0,incoming,8,6);mc.receive(incoming,111);check(b.messages.size()==1,"MC channel receive");String uid=b.messages.get(0).uid;byte[] v3=new byte[17];v3[0]=17;System.arraycopy(incoming,1,v3,4,incoming.length-1);mc.receive(v3,112);check(uid.equals(b.messages.get(1).uid),"backlog dedup ignores SNR/path metadata");
         rejects(()->mc.receive(new byte[]{17},113));check(a.messages.size()==1,"MC cannot inject MT history");
         Snapshot snap=new Snapshot(new ArrayList<>(),new ArrayList<>(),b.messages);check(snap.conversations().get(0).unread==2,"unread aggregation");
+        check(Wire.field(Wire.fields(mt.next(31000).data),7)!=null,"PhoneAPI keepalive");
         System.out.println("Protocol clients: bootstrap, text, PKI, ACK ordering, dedup, isolation, limits passed");
     }
 }

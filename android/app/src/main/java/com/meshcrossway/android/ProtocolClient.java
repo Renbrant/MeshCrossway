@@ -16,7 +16,7 @@ final class ProtocolClient {
     final LinkedHashMap<String,Node> nodes=new LinkedHashMap<>();final TreeMap<Integer,Channel> channels=new TreeMap<>();
     final ArrayDeque<Command> commands=new ArrayDeque<>();final LinkedHashMap<Long,Sent> sent=new LinkedHashMap<>();
     final ArrayDeque<byte[]> earlyPackets=new ArrayDeque<>();
-    Command active;boolean ready;String description="Synchronizing…",localName="";long myNum,lastPoll,lastStamp;int hopLimit=3,region,channelCount,nextChannel,contactsExpected,contactsSeen,payloadLimit=173;boolean txEnabled,pki,waiting,contactsStarted;
+    Command active;boolean ready;String description="Synchronizing…",localName="";long myNum,lastPoll,lastStamp,lastWrite;int hopLimit=3,region,channelCount,nextChannel,contactsExpected,contactsSeen,payloadLimit=173;boolean txEnabled,pki,waiting,contactsStarted;
     ProtocolClient(RadioProfile profile,long nonce,Listener listener){this.profile=profile;this.listener=listener;probe=new ProtocolProbe(nonce);
         queue(profile==RadioProfile.MESHTASTIC?probe.meshtasticRequest():ProtocolProbe.meshcoreQuery(),profile==RadioProfile.MESHTASTIC?-1:13,"");}
     void cancel(String uid){commands.removeIf(c->c.uid.equals(uid));removeSent(uid);}
@@ -25,9 +25,10 @@ final class ProtocolClient {
         for(Iterator<Map.Entry<Long,Sent>> it=sent.entrySet().iterator();it.hasNext();){Sent s=it.next().getValue();if(now>=s.deadline){listener.delivery(s.uid,"uncertain");it.remove();}}
         if(active!=null){if(now>=active.deadline)throw Wire.bad("Radio command timed out • delivery may be unknown");if(active.written && active.replied)active=null;else return null;}
         if(profile==RadioProfile.MESHCORE&&ready&&commands.isEmpty()&&(waiting||now-lastPoll>=20000)){waiting=false;lastPoll=now;queue(new byte[]{10},10,"");}
+        if(profile==RadioProfile.MESHTASTIC&&ready&&commands.isEmpty()&&now-lastWrite>=30000)queue(new Wire.Out().bytes(7,Wire.EMPTY).array(),-1,"");
         if(commands.isEmpty())return null;active=commands.remove();active.deadline=now+30000;return active;
     }
-    void written(long now){if(active==null)throw Wire.bad("Unexpected write completion");if(!active.uid.isEmpty()&&!active.replied)listener.delivery(active.uid,"submitted");active.written=true;if(active.response<0)active.replied=true;}
+    void written(long now){lastWrite=now;if(active==null)throw Wire.bad("Unexpected write completion");if(!active.uid.isEmpty()&&!active.replied)listener.delivery(active.uid,"submitted");active.written=true;if(active.response<0)active.replied=true;}
     void receive(byte[] data,long now){if(profile==RadioProfile.MESHTASTIC)meshtastic(data,now);else meshcore(data,now);}
     private Node node(String id){Node old=nodes.get(id);Node n=old==null?new Node():new Node(old);n.id=id;return n;}
     private void publish(Node n){if(!nodes.containsKey(n.id)&&nodes.size()>=4096)return;nodes.put(n.id,n);listener.node(n);}

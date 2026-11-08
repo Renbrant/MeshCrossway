@@ -35,7 +35,7 @@ final class Wire {
     static IllegalArgumentException bad(String message){return new IllegalArgumentException(message);}
     static long u32(byte[] data,int pos){if(pos<0||pos+4>data.length)throw bad("Truncated integer");return (data[pos]&255L)|((data[pos+1]&255L)<<8)|((data[pos+2]&255L)<<16)|((data[pos+3]&255L)<<24);}
     static void put32(byte[] data,int pos,long value){for(int i=0;i<4;i++)data[pos+i]=(byte)(value>>>(i*8));}
-    static String hex(byte[] bytes){StringBuilder b=new StringBuilder();for(byte v:bytes)b.append(String.format(Locale.ROOT,"%02x",v&255));return b.toString();}
+    static String hex(byte[] bytes){char[] digits="0123456789abcdef".toCharArray(),result=new char[bytes.length*2];for(int i=0;i<bytes.length;i++){result[i*2]=digits[(bytes[i]&255)>>>4];result[i*2+1]=digits[bytes[i]&15];}return new String(result);}
     static byte[] unhex(String hex){if(hex.length()%2!=0)throw bad("Invalid public key");byte[] result=new byte[hex.length()/2];for(int i=0;i<result.length;i++){int a=Character.digit(hex.charAt(i*2),16),b=Character.digit(hex.charAt(i*2+1),16);if(a<0||b<0)throw bad("Invalid public key");result[i]=(byte)(a*16+b);}return result;}
     static String hash(byte[] data){try{return hex(MessageDigest.getInstance("SHA-256").digest(data)).substring(0,24);}catch(NoSuchAlgorithmException e){throw new AssertionError(e);}}
     static final class Out {
