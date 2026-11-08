@@ -1,10 +1,10 @@
 name: Android alpha APK
 on:
   pull_request:
-    paths: ['android/**', 'scripts/test_android_probe.sh', '.github/workflows/android-apk.yml']
+    paths: ['android/**', 'scripts/test_android_probe.sh', 'scripts/test_android_device.sh', '.github/workflows/android-apk.yml']
   push:
     branches: [main]
-    paths: ['android/**', 'scripts/test_android_probe.sh', '.github/workflows/android-apk.yml']
+    paths: ['android/**', 'scripts/test_android_probe.sh', 'scripts/test_android_device.sh', '.github/workflows/android-apk.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -70,9 +70,7 @@ jobs:
           arch: x86_64
           target: google_apis
           disable-animations: true
-          script: |
-            cd android && ./gradlew --no-daemon connectedDebugAndroidTest
-            adb pull /sdcard/Android/data/com.meshcrossway.android/files/screenshots ../android-device-screenshots
+          script: bash scripts/test_android_device.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:

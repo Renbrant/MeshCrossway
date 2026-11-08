@@ -24,7 +24,7 @@ public final class MainActivity extends Activity {
     private final Handler handler=new Handler(Looper.getMainLooper());
     private RadioService service;private LinearLayout root,body,nav,results;private ScrollView scroll;private EditText composer,search;private TextView count,chatStatus;private Button sendButton;
     private int selected,filter,listLimit=100,chatLimit=100;
-    private final DateFormat timestampFormat=DateFormat.getDateTimeInstance(DateFormat.SHORT,DateFormat.SHORT);private String query="",chatRadio="";private RadioProfile choosing,chatProfile;private Target chat;private boolean bound,visible,sending,loadingDraft;private Runnable pending;
+    private final DateFormat timestampFormat=DateFormat.getDateTimeInstance(DateFormat.SHORT,DateFormat.SHORT);private String query="",chatRadio="";private RadioProfile choosing,chatProfile;private Target chat;private boolean bound,visible,sending,applyingDraft;private int composerRevision;private Runnable pending;
     private final HashMap<String,String> drafts=new HashMap<>();
     private final Runnable refresh=this::refreshContent,saveDraftTask=this::saveDraft;
     private final ServiceConnection connection=new ServiceConnection(){
@@ -99,11 +99,19 @@ public final class MainActivity extends Activity {
     private void openChat(RadioProfile p,String radio,Target target){saveDraft();selected=3;chatProfile=p;chatRadio=radio;chat=target;chatLimit=100;buildPage();}
     private String draftKey(){return chatProfile+"|"+chatRadio+"|"+(chat==null?"":chat.topic);}
     private void saveDraft(){handler.removeCallbacks(saveDraftTask);if(chat==null||composer==null)return;String value=composer.getText().toString();drafts.put(draftKey(),value);if(service!=null)service.history.draft(chatProfile,chatRadio,chat.topic,value);}
-    private void loadDraft(){if(chat==null||composer==null||service==null)return;final String key=draftKey();if(drafts.containsKey(key)){composer.setText(drafts.get(key));return;}loadingDraft=true;service.history.loadDraft(chatProfile,chatRadio,chat.topic,value->{loadingDraft=false;if(chat!=null&&key.equals(draftKey())&&composer!=null&&composer.length()==0){drafts.put(key,value);composer.setText(value);}});}
+    private void applyDraft(String value){applyingDraft=true;composer.setText(value);applyingDraft=false;}
+    private void loadDraft(){
+        if(chat==null||composer==null||service==null)return;final String key=draftKey();
+        if(drafts.containsKey(key)){applyDraft(drafts.get(key));return;}
+        final EditText editor=composer;final int revision=composerRevision;
+        service.history.loadDraft(chatProfile,chatRadio,chat.topic,value->{
+            if(chat!=null&&key.equals(draftKey())&&composer==editor&&composerRevision==revision&&!drafts.containsKey(key))applyDraft(value);
+        });
+    }
     private void chatPage(){LinearLayout h=column();h.setPadding(dp(16),dp(8),dp(16),dp(8));h.addView(button("‹ Conversations",()->{saveDraft();chat=null;buildPage();}));TextView title=text(chat.title,21,WHITE);title.setTypeface(null,Typeface.BOLD);h.addView(title);chatStatus=text(chatProfile.title,12,MUTED);h.addView(chatStatus);body.addView(h);
         scroll=new ScrollView(this);results=column();results.setPadding(dp(16),dp(12),dp(16),dp(12));scroll.addView(results);body.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout entry=column();entry.setPadding(dp(12),dp(6),dp(12),dp(8));entry.setBackgroundColor(PANEL);composer=new EditText(this);composer.setTextColor(WHITE);composer.setHintTextColor(MUTED);composer.setHint("Write a message…");composer.setTextSize(15);composer.setMinLines(1);composer.setMaxLines(4);composer.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE|android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);composer.setFilters(new InputFilter[]{new InputFilter.LengthFilter(1000)});entry.addView(composer,new LinearLayout.LayoutParams(-1,-2));LinearLayout controls=row();count=text("0 bytes",12,MUTED);controls.addView(count,new LinearLayout.LayoutParams(0,-2,1));sendButton=button("Send",this::send);controls.addView(sendButton,new LinearLayout.LayoutParams(dp(112),dp(48)));entry.addView(controls);body.addView(entry);
-        composer.addTextChangedListener(watcher(()->{updateComposer();if(!loadingDraft){drafts.put(draftKey(),composer.getText().toString());handler.removeCallbacks(saveDraftTask);handler.postDelayed(saveDraftTask,500);}}));loadDraft();refreshContent();scroll.post(()->scroll.fullScroll(View.FOCUS_DOWN));}
+        composer.addTextChangedListener(watcher(()->{composerRevision++;drafts.put(draftKey(),composer.getText().toString());updateComposer();if(!applyingDraft){handler.removeCallbacks(saveDraftTask);handler.postDelayed(saveDraftTask,500);}}));if(drafts.containsKey(draftKey()))applyDraft(drafts.get(draftKey()));loadDraft();refreshContent();scroll.post(()->scroll.fullScroll(View.FOCUS_DOWN));}
     private void updateComposer(){if(composer==null)return;int size=composer.getText().toString().getBytes(StandardCharsets.UTF_8).length;count.setText(size+" UTF-8 bytes");sendButton.setEnabled(!sending&&ready(chatProfile,chatRadio)&&size>0);sendButton.setText(sending?"Saving…":"Send");}
     private void send(){if(service==null||chat==null||sending)return;final String value=composer.getText().toString(),key=draftKey();saveDraft();sending=true;updateComposer();withPermission(()->service.send(chatProfile,chatRadio,chat,value,error->{sending=false;if(!error.isEmpty())Toast.makeText(this,error,Toast.LENGTH_LONG).show();else if(chat!=null&&key.equals(draftKey())&&composer!=null&&composer.getText().toString().equals(value)){composer.setText("");saveDraft();}else if(chat!=null&&key.equals(draftKey()))saveDraft();updateComposer();scheduleRefresh();}));}
     private void messages(){
