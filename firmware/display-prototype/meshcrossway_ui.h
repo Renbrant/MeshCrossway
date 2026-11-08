@@ -1,5 +1,5 @@
 #pragma once
-// MeshCrossway v0.10.4: bounded, stable recent-node snapshots.
+// MeshCrossway v0.10.5: bounded, stable recent-node snapshots.
 #include "lvgl.h"
 #include "meshcrossway_health.h"
 #include "meshcrossway_runtime.h"
@@ -337,7 +337,7 @@ enum Action {
   A_MAP_HOME,A_INBOX,A_NEW,A_POSITION,A_NETWORKS,A_WIFI,A_POIS,A_TRACKS,A_RECORD,A_SHARE,
   A_GPS_SETTINGS,A_GNSS,A_TEAM,A_PATHS,A_SCANNER,A_PACKETS,A_REPEATERS,A_SETUP,A_DIAGNOSTIC,
   A_MEMORY,A_VIEW,A_PRIVACY,A_ABOUT,A_CHAT_MT,A_CHAT_MC,A_CHAT_ALL,A_QUICK,
-  A_NODES,A_GROUPS,A_CHAT_OPEN,A_RADIOS,A_GROUP_NEW,A_THREAD_INFO,A_NODE_DETAILS,A_BLE_SCAN,A_BLE_DISCONNECT,A_BLE_ENABLE,A_SETTINGS,A_RETURN_HOME,A_MAP_ZOOM,A_MAP_CENTER,A_MAP_OPTIONS,A_MAP_DIAGNOSTICS,A_WIFI_POWER,A_BLE_POWER
+  A_NODES,A_GROUPS,A_CHAT_OPEN,A_RADIOS,A_GROUP_NEW,A_THREAD_INFO,A_NODE_DETAILS,A_BLE_SCAN,A_BLE_DISCONNECT,A_BLE_ENABLE,A_SETTINGS,A_RETURN_HOME,A_MAP_ZOOM,A_MAP_CENTER,A_MAP_OPTIONS,A_MAP_DIAGNOSTICS,A_WIFI_POWER,A_BLE_POWER,A_MAP_DOWNLOAD
 };
 struct ActionInfo {const char *label;int id;lv_color_t color;};
 // No right rail on Home, Nodes, Groups or Settings. Those screens already
@@ -346,7 +346,7 @@ static const ActionInfo chat_actions[]={
   {"Compose",A_NEW,orange},{"Chat tools",A_PACKETS,cyan},{"Chat info",A_THREAD_INFO,purple}
 };
 static const ActionInfo map_actions[]={
-  {"Map View",A_MAP_HOME,orange},{"Map Options",A_MAP_OPTIONS,orange},
+  {"Map View",A_MAP_HOME,orange},{"Map Options",A_MAP_OPTIONS,orange},{"Download",A_MAP_DOWNLOAD,orange},
   {"Record",A_RECORD,orange},{"Tracks",A_TRACKS,orange},{"POIs",A_POIS,orange},
   {"Map Details",A_MAP_DIAGNOSTICS,orange},{"GNSS",A_GNSS,orange},
   {"Live Share",A_SHARE,orange},{"Team",A_TEAM,orange}
@@ -366,6 +366,7 @@ static int map_action_for_view(){
 }
 static int map_action_for_title(const char *title){
   if(!title)return map_action_for_view();
+  if(strcmp(title,"MAP DOWNLOADS")==0)return A_MAP_DOWNLOAD;
   if(strcmp(title,"MAP OPTIONS")==0)return A_MAP_OPTIONS;
   if(strstr(title,"RECORD")||strstr(title,"PRESET"))return A_RECORD;
   if(strstr(title,"TRACK"))return A_TRACKS;
@@ -597,7 +598,7 @@ static void memory_open(){
 }
 namespace mcui {static void tools();static void compose();static void form(uint8_t);static void thread_info();static void chat_tools();static void show_list();}
 namespace mtui {static void tools();static void compose();static void node_details();static void close();}
-namespace navui {static void recording();static void library(bool);static void toggle_zoom();static bool adjusting();static void recenter(lv_event_t *);static void options(lv_event_t *);static void diagnostics();}
+namespace navui {static void recording();static void library(bool);static void toggle_zoom();static bool adjusting();static void recenter(lv_event_t *);static void options(lv_event_t *);static void downloads(lv_event_t *);static void diagnostics();}
 static void run_action(void *data){
   int id=(int)(intptr_t)data;
   if(showing_mt()){
@@ -625,11 +626,12 @@ static void run_action(void *data){
   if(id==A_TRACKS){navui::library(false);return;}
   if(id==A_POIS){navui::library(true);return;}
   if(id==A_GPS_SETTINGS){gps_settings_open();return;}
-  if(id==A_MAP_ZOOM||id==A_MAP_CENTER||id==A_MAP_OPTIONS||id==A_MAP_DIAGNOSTICS){
+  if(id==A_MAP_ZOOM||id==A_MAP_CENTER||id==A_MAP_OPTIONS||id==A_MAP_DOWNLOAD||id==A_MAP_DIAGNOSTICS){
     if(page!=4||map_view!=0){page=4;map_view=0;draw();}
     if(id==A_MAP_ZOOM)navui::toggle_zoom();
     else if(id==A_MAP_CENTER)navui::recenter(nullptr);
     else if(id==A_MAP_OPTIONS)navui::options(nullptr);
+    else if(id==A_MAP_DOWNLOAD)navui::downloads(nullptr);
     else navui::diagnostics();
     return;
   }
@@ -713,7 +715,7 @@ static void run_action(void *data){
     case A_PRIVACY:
       notice("PRIVACY","Messages use the selected native radio. Automatic location sharing is off. Local SD history and Wi-Fi backup are plaintext.");break;
     case A_ABOUT:
-      notice("MESH CROSSWAY v0.10.4","Meshtastic and MeshCore run over independent Bluetooth radios. Node and channel rows keep names and activity in separate columns.");break;
+      notice("MESH CROSSWAY v0.10.5","Meshtastic and MeshCore run over independent Bluetooth radios. Node and channel rows keep names and activity in separate columns.");break;
     case A_QUICK:
       notice("QUICK SETTINGS","Tap the top bar for quick settings. Adjust brightness, screen timeout and connectivity.");break;
     default:break;
@@ -939,6 +941,7 @@ static const char *context_glyph(int id){
     case A_NEW:return LV_SYMBOL_EDIT;
     case A_PACKETS:return LV_SYMBOL_LIST;
     case A_THREAD_INFO:return LV_SYMBOL_FILE;
+    case A_MAP_DOWNLOAD:return LV_SYMBOL_DOWNLOAD;
     case A_MAP_ZOOM:return LV_SYMBOL_PLUS;
     case A_MAP_CENTER:return LV_SYMBOL_GPS;
     case A_MAP_OPTIONS:return LV_SYMBOL_SETTINGS;
@@ -984,6 +987,7 @@ static void context_icon(lv_event_t *e){
   auto line=[&](int x1,int y1,int x2,int y2){lv_point_t p={lv_coord_t(a.x1+x1),lv_coord_t(a.y1+y1)},q={lv_coord_t(a.x1+x2),lv_coord_t(a.y1+y2)};lv_draw_line_dsc_t d;lv_draw_line_dsc_init(&d);d.color=tint;d.width=2;d.round_start=d.round_end=1;lv_draw_line(ctx,&d,&p,&q);};
   auto circle=[&](int x,int y,int size,bool fill_circle){lv_area_t r={lv_coord_t(a.x1+x),lv_coord_t(a.y1+y),lv_coord_t(a.x1+x+size),lv_coord_t(a.y1+y+size)};lv_draw_rect_dsc_t d;lv_draw_rect_dsc_init(&d);d.radius=LV_RADIUS_CIRCLE;d.bg_color=tint;d.bg_opa=fill_circle?LV_OPA_COVER:LV_OPA_TRANSP;d.border_color=tint;d.border_width=2;lv_draw_rect(ctx,&d,&r);};
   switch(id){
+    case A_MAP_DOWNLOAD:line(11,1,11,15);line(5,9,11,15);line(17,9,11,15);line(2,16,2,21);line(2,21,20,21);line(20,21,20,16);break;
     case A_MAP_ZOOM:circle(2,2,12,false);line(14,14,21,21);break;
     case A_MAP_CENTER:circle(5,5,12,false);line(11,0,11,6);line(11,16,11,22);line(0,11,6,11);line(16,11,22,11);break;
     case A_RECORD:circle(3,3,16,true);break;
@@ -1471,7 +1475,7 @@ static void refresh(lv_timer_t *){
       lv_label_set_text(top_charge,charging);
     lv_obj_set_style_text_color(top_charge,b.charging?orange:muted,0);
   }
-  printf("[MCX-DIAG v0.10.4] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
+  printf("[MCX-DIAG v0.10.5] uptime_ms=%llu heap=%lu page=%d capture=%lu keys=%lu\n",
          (unsigned long long)(esp_timer_get_time()/1000),
          (unsigned long)esp_get_free_heap_size(),page,
          (unsigned long)meshcapture::captures.load(),(unsigned long)editor_key_count);
@@ -1493,7 +1497,7 @@ static void refresh(lv_timer_t *){
 static void init(){
   mcxruntime::begin();
   mcxmem::begin();
-  printf("[MCX-DIAG v0.10.4] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
+  printf("[MCX-DIAG v0.10.5] boot reset_reason=%d heap=%lu http=MANUAL_CAPTURE touch=OFF wifi=ON\n",
          (int)esp_reset_reason(),(unsigned long)esp_get_free_heap_size());
   lv_obj_t *screen=lv_scr_act();fill(screen,bg);
   lv_obj_clear_flag(screen,LV_OBJ_FLAG_SCROLLABLE);
@@ -1506,7 +1510,7 @@ static void init(){
   lv_img_set_src(brand,&mcxbrand::official_lockup);
   lv_obj_set_pos(brand,6,5);
   // No DEV, IP, overlapping MT/MC symbols or external battery percentage.
-  lv_obj_t *version=color_label(top,"0.10.4",187,11,43,muted);
+  lv_obj_t *version=color_label(top,"0.10.5",187,11,43,muted);
   lv_obj_set_style_text_font(version,&lv_font_montserrat_10,0);
   top_wifi=color_label(top,LV_SYMBOL_WIFI,233,8,18,muted);
   top_mt=color_label(top,LV_SYMBOL_BLUETOOTH,254,8,13,muted);

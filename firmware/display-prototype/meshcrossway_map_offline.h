@@ -11,7 +11,8 @@ enum Mode : uint8_t {
   COMPLETE,
   CANCELLED,
   ERROR,
-  TOMBSTONE
+  TOMBSTONE,
+  DELETING
 };
 struct Area {
   uint32_t magic = 0x31414d43, version = 1, sequence = 0;
@@ -130,7 +131,7 @@ static bool tile_at(const Area &a, uint32_t index, unsigned &z, unsigned &x,
 }
 static bool valid(const Area &a) {
   return a.magic == 0x31414d43 && a.version == 1 && a.mode > EMPTY &&
-         a.mode <= TOMBSTONE && mcxmap::valid_config(a.source) &&
+         a.mode <= DELETING && mcxmap::valid_config(a.source) &&
          !a.source.pack[0] && a.source.online &&
          mcxmap::bulk_allowed(a.source) && memchr(a.name, 0, sizeof(a.name)) &&
          a.name[0] && count(a) == a.total && a.total && a.cursor <= a.total &&
@@ -243,7 +244,7 @@ static void handle(const Command &c) {
     attempts = 0;
     retry_at = 0;
   } else if (c.action == RESUME && a.mode != EMPTY && a.mode != CANCELLED &&
-             a.mode != COMPLETE) {
+             a.mode != COMPLETE && a.mode != DELETING) {
     for (const auto &other : state().areas)
       if (other.mode == RUNNING) {
         snprintf(state().status, sizeof(state().status),
@@ -255,25 +256,23 @@ static void handle(const Command &c) {
     retry_at = 0;
   } else if (c.action == PAUSE && a.mode == RUNNING)
     a.mode = PAUSED;
-  else if (c.action == CANCEL && a.mode != EMPTY)
+  else if (c.action == CANCEL && a.mode != EMPTY && a.mode != DELETING)
     a.mode = CANCELLED;
-  else if (c.action == REMOVE && a.mode != RUNNING) {
-    // Cache tiles may be shared with other areas and interactive views.
-    // Remove only this area's journal, never recursively erase shared map data.
-    if (a.mode == EMPTY)
+  else if (c.action == REMOVE) {
+    if (a.mode == EMPTY || a.mode == DELETING)
       return;
-    a.mode = TOMBSTONE;
-    if (save(c.slot, a)) {
-      const auto sequence = a.sequence;
-      a = Area{};
-      a.sequence = sequence;
+    const auto previous = a.mode;
+    const auto previous_cursor = a.cursor;
+    a.mode = DELETING;
+    a.cursor = 0;
+    if (!save(c.slot, a)) {
+      a.mode = previous;
+      a.cursor = previous_cursor;
       snprintf(state().status, sizeof(state().status),
-               "Area removed / shared tile cache retained");
-    } else {
-      a.mode = ERROR;
+               "Could not start deletion / check SD");
+    } else
       snprintf(state().status, sizeof(state().status),
-               "Area removal failed / retry with SD available");
-    }
+               "Deleting area / preserving shared tiles");
     return;
   } else
     return;
@@ -286,6 +285,77 @@ static void handle(const Command &c) {
              a.mode == RUNNING  ? "downloading"
              : a.mode == PAUSED ? "paused"
                                 : "cancelled / shared tiles retained");
+}
+static bool contains_tile(const Area &a, unsigned z, unsigned x, unsigned y) {
+  if (a.mode == EMPTY || a.mode == TOMBSTONE || z < a.min_zoom ||
+      z > a.max_zoom)
+    return false;
+  const auto range = mcxmap::tile_range(a.south, a.west, a.north, a.east, z);
+  return range.count && y >= range.y0 && y <= range.y1 &&
+         (x + (1u << z) - range.x0) % (1u << z) < range.width;
+}
+static void delete_batch(unsigned slot) {
+  auto &a = state().areas[slot];
+  if (!esp_sdcard_port_get_size()) {
+    snprintf(state().status, sizeof(state().status), "Deletion waiting for SD");
+    return;
+  }
+  const uint32_t before = a.cursor;
+  uint64_t freed = 0;
+  for (unsigned step = 0; step < 8 && a.cursor < a.total; ++step) {
+    unsigned z, x, y;
+    if (!tile_at(a, a.cursor, z, x, y)) {
+      snprintf(state().status, sizeof(state().status),
+               "Invalid deletion bounds");
+      return;
+    }
+    bool shared = false;
+    for (unsigned other = 0; other < MAX_AREAS; ++other)
+      if (other != slot &&
+          mcxmap::source_hash(a.source) ==
+              mcxmap::source_hash(state().areas[other].source) &&
+          contains_tile(state().areas[other], z, x, y)) {
+        shared = true;
+        break;
+      }
+    if (!shared) {
+      char file[192];
+      mcxmap::paths(file, sizeof(file), a.source, z, x, y);
+      struct stat st = {};
+      const bool exists = stat(file, &st) == 0;
+      if (remove(file) && errno != ENOENT) {
+        snprintf(state().status, sizeof(state().status),
+                 "Deletion paused / SD write error");
+        a.cursor = before;
+        return;
+      }
+      if (exists && st.st_size > 0)
+        freed += uint64_t(st.st_size);
+    }
+    ++a.cursor;
+  }
+  const bool done = a.cursor == a.total;
+  a.mode = done ? TOMBSTONE : DELETING;
+  if (!save(slot, a)) {
+    a.mode = DELETING;
+    a.cursor = before;
+    snprintf(state().status, sizeof(state().status),
+             "Deletion checkpoint failed / retrying safely");
+    return;
+  }
+  if (done) {
+    const auto sequence = a.sequence;
+    a = Area{};
+    a.sequence = sequence;
+    mcxmap::clear_tiles();
+    snprintf(state().status, sizeof(state().status),
+             "Area deleted / unshared tiles removed");
+  } else
+    snprintf(state().status, sizeof(state().status),
+             "Deleting area / %lu of %lu tiles checked",
+             (unsigned long)a.cursor, (unsigned long)a.total);
+  (void)freed;
+  last_space_check = 0;
 }
 static void tick() {
   if (!loaded) {
@@ -315,6 +385,12 @@ static void tick() {
     publish();
     return;
   }
+  for (unsigned slot = 0; slot < MAX_AREAS; ++slot)
+    if (state().areas[slot].mode == DELETING) {
+      delete_batch(slot);
+      publish();
+      return;
+    }
   for (unsigned slot = 0; slot < MAX_AREAS; ++slot) {
     auto &a = state().areas[slot];
     if (a.mode != RUNNING)

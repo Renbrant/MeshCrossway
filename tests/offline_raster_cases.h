@@ -31,6 +31,12 @@ static void run_offline_raster_cases(const char *base) {
     strcpy(denied.url, blocked);
     assert(!mcxmap::bulk_allowed(denied));
   }
+  auto preset = mcxmap::Config{};
+  mcxmap::prepare_offline(preset);
+  assert(mcxmap::valid_config(preset) && mcxmap::bulk_allowed(preset) &&
+         !preset.pack[0]);
+  assert(!strcmp(preset.url,
+                 "https://tiles.coalition.space/raster/styles/osm-bright"));
   Bytes rgba(256 * 256 * 4);
   for (unsigned y = 0; y < 256; ++y)
     for (unsigned x = 0; x < 256; ++x) {
@@ -249,18 +255,55 @@ static void run_offline_raster_cases(const char *base) {
   assert(submit(command));
   tick();
   assert(state().areas[1].mode == EMPTY);
-  auto before_files =
-      std::distance(fs::recursive_directory_iterator(root + "/mcx-map-cache"),
-                    fs::recursive_directory_iterator{});
+  // A second saved area protects shared tile files, including after reboot.
+  const Area original = state().areas[0];
+  state().areas[1] = original;
+  state().areas[1].sequence = 0;
+  state().areas[1].max_zoom = state().areas[1].min_zoom;
+  state().areas[1].total = count(state().areas[1]);
+  state().areas[1].cursor = state().areas[1].total;
+  assert(save(1, state().areas[1]));
+  unsigned z, x, y;
+  assert(tile_at(original, 0, z, x, y));
+  char shared[192];
+  mcxmap::paths(shared, sizeof(shared), original.source, z, x, y);
+  assert(fs::exists(shared));
+  unsigned uz, ux, uy;
+  assert(tile_at(original, original.total - 1, uz, ux, uy));
+  char unique[192];
+  mcxmap::paths(unique, sizeof(unique), original.source, uz, ux, uy);
+  assert(uz != z && fs::exists(unique));
+  const std::string unrelated = root + "/tracks/keep.gpx";
+  write(unrelated, Bytes{1, 2, 3});
   Command remove;
   remove.action = REMOVE;
   remove.slot = 0;
   assert(submit(remove));
   tick();
-  assert(state().areas[0].mode == EMPTY);
-  assert(before_files == std::distance(fs::recursive_directory_iterator(
-                                           root + "/mcx-map-cache"),
-                                       fs::recursive_directory_iterator{}));
+  assert(state().areas[0].mode == DELETING);
+  loaded = false;
+  state() = Snapshot{};
+  load();
+  assert(state().areas[0].mode == DELETING);
+  for (unsigned i = 0; i < 100 && state().areas[0].mode != EMPTY; ++i)
+    tick();
+  assert(state().areas[0].mode == EMPTY && fs::exists(shared) &&
+         !fs::exists(unique));
+  remove.slot = 1;
+  assert(submit(remove));
+  tick();
+  fake_sd_size = 0;
+  tick();
+  assert(state().areas[1].mode == DELETING && fs::exists(shared));
+  fake_sd_size = 1000000;
+  for (unsigned i = 0; i < 100 && state().areas[1].mode != EMPTY; ++i)
+    tick();
+  assert(state().areas[1].mode == EMPTY && !fs::exists(shared) &&
+         fs::exists(unrelated));
+  loaded = false;
+  state() = Snapshot{};
+  load();
+  assert(state().areas[0].mode == EMPTY && state().areas[1].mode == EMPTY);
   mcxmap::clear_tiles();
   mcxpack::close();
   mcxmap::SD_ROOT = base;

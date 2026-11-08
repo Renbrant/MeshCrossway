@@ -81,6 +81,13 @@ static bool bulk_allowed(const Config &c){
   for(const char *blocked:{"openstreetmap.org","opentopomap.org"}){const size_t size=strlen(blocked);if(n>=size&&!strcmp(host+n-size,blocked)&&(n==size||host[n-size-1]=='.'))return false;}
   return n!=0;
 }
+// Public community service explicitly supports user-selected offline areas.
+// XYZ path and 256px raster format verified against the provider's application.
+static void prepare_offline(Config &c){
+  snprintf(c.url,sizeof(c.url),"https://tiles.coalition.space/raster/styles/osm-bright");
+  snprintf(c.attribution,sizeof(c.attribution),"© OpenStreetMap contributors | Coalition Maps");
+  c.reserved|=4u;c.pack[0]=0;c.online=1;
+}
 static bool valid_config(const Config &c){
   if(c.version!=7||!memchr(c.pack,0,sizeof(c.pack))||(c.pack[0]&&!mcxpack::safe_name(c.pack))||c.age_colors>3||c.retention_days>365||c.meshcore_size>=6||c.night>1||c.online>1||((c.hide_nodes>>1)&7)>=6||((c.hide_nodes>>4)&3)>NODE_NAME||((c.hide_nodes>>6)&3)>NODE_NAME||c.zoom>19||!memchr(c.url,0,sizeof(c.url))||!memchr(c.attribution,0,sizeof(c.attribution))||!c.attribution[0]||strncmp(c.url,"https://",8)||!c.url[8])return false;
   for(const char *p=c.url;*p;++p)if(uint8_t(*p)<=32||strchr("?#@{}",*p))return false;
@@ -109,7 +116,7 @@ static bool migrate_config(Config &c){
 enum Provider {STREET=0,TOPO=1,STREET_NIGHT=2,CUSTOM=3};
 static Provider provider(const Config &c){return !strcmp(c.url,"https://a.tile.opentopomap.org")?TOPO:strcmp(c.url,"https://tile.openstreetmap.org")?CUSTOM:c.night?STREET_NIGHT:STREET;}
 static unsigned max_zoom(const Config &c){return provider(c)==TOPO?17:19;}
-static const char *provider_name(const Config &c){return provider(c)==CUSTOM?"Custom offline provider":provider(c)==TOPO?"Topographic / OpenTopoMap":provider(c)==STREET_NIGHT?"Street / OpenStreetMap night":"Street / OpenStreetMap";}
+static const char *provider_name(const Config &c){return strstr(c.url,"https://tiles.coalition.space/")==c.url?"OSM Bright / Coalition Maps":provider(c)==CUSTOM?"Custom offline provider":provider(c)==TOPO?"Topographic / OpenTopoMap":provider(c)==STREET_NIGHT?"Street / OpenStreetMap night":"Street / OpenStreetMap";}
 static void select_provider(Config &c,unsigned id){
   if(id==CUSTOM)return;
   c.reserved&=uint8_t(~4u);

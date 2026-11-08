@@ -85,6 +85,10 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
         summary="EXPERIMENTAL: improves node details and map controls. Last-heard age uses hours/minutes/seconds, node details hide map actions, Map Options shows its active context, and zoom/center controls sit on the map. v0.9.32 remains the recommended stable image; physical validation is pending."
         label="Map details and on-map controls / EXPERIMENTAL"
         status="experimental"
+    elif version=="v0.10.5":
+        summary="EXPERIMENTAL: map download button with touch area selection, detail zoom, predefined OSM Bright source, saved-area map previews and resumable SD cleanup preserving shared tiles. Hardware validation pending; v0.9.32 remains stable."
+        label="Offline area selection / EXPERIMENTAL"
+        status="experimental"
     elif version=="v0.10.4":
         summary="EXPERIMENTAL: replaces the map FIT text with five node dots and removes the redundant N/GNSS shortcut from the map. Includes all v0.10.3 offline map features and v0.9.33 controls. v0.9.32 remains stable."
         label="Map fit icon cleanup / EXPERIMENTAL"

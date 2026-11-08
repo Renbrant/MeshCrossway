@@ -327,9 +327,9 @@ int main(int argc,char **argv){
   navui::invalidate();lv_obj_clean(body);navui::after_clean();
  }
  info_close_now(nullptr);context_actions=panel_at(lv_scr_act(),355,34,125,286,panel2);lv_obj_add_flag(context_actions,LV_OBJ_FLAG_SCROLLABLE);
- const int expected[]={A_MAP_HOME,A_MAP_OPTIONS,A_RECORD,A_TRACKS,A_POIS,A_MAP_DIAGNOSTICS,A_GNSS};
+ const int expected[]={A_MAP_HOME,A_MAP_OPTIONS,A_MAP_DOWNLOAD,A_RECORD,A_TRACKS,A_POIS,A_MAP_DIAGNOSTICS,A_GNSS};
  for(bool compact:{false,true}){right_compact=compact;rebuild_context();advance();
-  for(unsigned i=0;i<7;++i){auto *button=lv_obj_get_child(context_actions,i);assert(lv_obj_get_style_border_width(button,0)==0);lv_event_send(button,LV_EVENT_CLICKED,nullptr);assert(clicked==expected[i]);}
+  for(unsigned i=0;i<8;++i){auto *button=lv_obj_get_child(context_actions,i);assert(lv_obj_get_style_border_width(button,0)==0);lv_event_send(button,LV_EVENT_CLICKED,nullptr);assert(clicked==expected[i]);}
  }
  // Real LVGL gesture/area screens on top of the production raster worker.
  info_close_now(nullptr);lv_obj_set_width(body,400);mcxgnss::fix.valid=true;mcxgnss::fix.latitude=40;mcxgnss::fix.longitude=-105;
@@ -342,7 +342,32 @@ int main(int argc,char **argv){
  auto *fitted_radio=new meshmc::Client();meshmc::client=fitted_radio;fitted_radio->contact_count=3;fitted_radio->contacts[0].lat=40000000;fitted_radio->contacts[0].lon=179900000;fitted_radio->contacts[1].lat=40000000;fitted_radio->contacts[1].lon=-179900000;fitted_radio->contacts[2].lat=91000000;
  navui::fit_nodes(nullptr);assert(fabs(fabs(navui::longitude)-180)<0.001&&navui::zoom>=9&&!navui::following);
  auto filtered=mcxmap::configuration();filtered.reserved|=16u;mcxmap::configure(filtered);const auto prior=navui::generation;navui::fit_nodes(nullptr);assert(navui::generation==prior&&strstr(navui::status_text,"No positioned nodes"));meshmc::client=nullptr;delete fitted_radio;
- gpsui::offline_areas();advance();assert(gpsui::offline_owner==info_dialog);render_preview("offline-map-manager");gpsui::area_create();advance();assert(gpsui::area_estimate);render_preview("offline-area-preview");
+ // Offline selector: actual LVGL pointer drag, source preset, zoom and saved-area fit.
+ right_compact=true;lv_obj_set_pos(context_actions,440,34);lv_obj_set_width(context_actions,40);lv_obj_set_x(right_rail,440);lv_obj_set_width(right_rail,40);
+ filtered=mcxmap::configuration();filtered.reserved&=uint8_t(~16u);filtered.online=0;mcxmap::configure(filtered);
+ navui::latitude=40;navui::longitude=-105;navui::zoom=14;navui::request();view=mcxmap::requested;make_tiles(view);mcxmap::ready=mcxmap::render(view,filtered);navui::poll();
+ gpsui::downloads();advance();assert(gpsui::download_owner==info_dialog&&mcxmap::bulk_allowed(mcxmap::configuration()));
+ view=mcxmap::requested;filtered=mcxmap::configuration();filtered.online=0;mcxmap::ready=mcxmap::render(view,filtered);navui::poll();navui::poll();advance();assert(!gpsui::download_pending&&gpsui::download_frame);
+ assert(mcxoffline_map::initialize());mcxoffline_map::state().ready=true;mcxoffline_map::state().free_bytes=1024ULL*1024*1024;mcxoffline_map::publish();gpsui::download_refresh();
+ lv_area_t preview;lv_obj_get_coords(gpsui::download_preview,&preview);
+ pointer_x=preview.x1+30;pointer_y=preview.y1+20;down=true;advance();pointer_x=preview.x1+180;pointer_y=preview.y1+95;advance();down=false;advance();
+ assert(gpsui::download_selected==4&&gpsui::download_area.north>gpsui::download_area.south);
+ auto nw=gpsui::download_pixel(gpsui::download_area.north,gpsui::download_area.west);assert(abs(nw.x-30)<2&&abs(nw.y-20)<2);
+ lv_slider_set_value(gpsui::download_zoom,15,LV_ANIM_OFF);lv_event_send(gpsui::download_zoom,LV_EVENT_VALUE_CHANGED,nullptr);assert(gpsui::download_area.max_zoom==15&&gpsui::download_area.min_zoom==0);
+ render_preview("map-download-selection");
+ auto saved=gpsui::download_area;saved.mode=mcxoffline_map::COMPLETE;saved.total=mcxoffline_map::count(saved);saved.cursor=saved.total;saved.bytes=800000;strcpy(saved.name,"Thornton test area");mcxoffline_map::state().areas[0]=saved;mcxoffline_map::publish();gpsui::download_refresh();advance();
+ gpsui::download_show_area(0);assert(gpsui::download_selected==0&&gpsui::download_pending&&fabs(navui::latitude-40)<0.1);
+ view=mcxmap::requested;filtered=mcxmap::configuration();filtered.online=0;make_tiles(view);mcxmap::ready=mcxmap::render(view,filtered);navui::poll();navui::poll();advance();assert(!gpsui::download_pending&&gpsui::download_rectangles[0].visible);
+ render_preview("map-download-saved-area");
+ lv_obj_scroll_to_view(gpsui::download_cards[0],LV_ANIM_OFF);advance();render_preview("map-download-saved-list");
+ gpsui::open();advance();assert(!gpsui::download_frame&&!gpsui::download_owner);
+ mcxoffline_map::state()=mcxoffline_map::Snapshot{};mcxoffline_map::publish();
+ for(int width:{276,400}){lv_obj_set_width(body,width);gpsui::downloads();advance();lv_area_t outer,inner;lv_obj_get_coords(gpsui::dialog,&outer);lv_obj_get_coords(gpsui::download_preview,&inner);assert(inner.x1>=outer.x1&&inner.x2<=outer.x2);lv_obj_get_coords(gpsui::download_delete,&inner);assert(inner.x1>=outer.x1&&inner.x2<=outer.x2);if(width==276)render_preview("map-download-narrow");}
+ gpsui::open();advance();
+ auto *late_front=navui::front;navui::front=nullptr;gpsui::downloads();advance();assert(!gpsui::download_frame&&gpsui::download_area.north==0&&gpsui::download_area.south==0);
+ navui::front=late_front;gpsui::download_pending=0;gpsui::download_refresh();assert(gpsui::download_frame&&gpsui::download_area.north>gpsui::download_area.south);
+ gpsui::open();advance();
+ gpsui::map_storage_options();advance();assert(gpsui::offline_owner==info_dialog);render_preview("offline-map-manager");gpsui::area_create();advance();assert(gpsui::area_estimate);render_preview("offline-area-preview");
  gpsui::custom_source();advance();assert(gpsui::source_url&&gpsui::source_credit&&lv_keyboard_get_textarea(gpsui::source_keyboard)==gpsui::source_url);render_preview("offline-map-source");
  for(int width:{276,400}){lv_obj_set_width(body,width);lv_obj_set_x(right_rail,40+width);lv_obj_update_layout(body);gpsui::custom_source();advance();lv_area_t source_bounds,permit_bounds;lv_obj_get_coords(gpsui::dialog,&source_bounds);lv_obj_get_coords(gpsui::source_permit,&permit_bounds);if(width==276)render_preview("offline-source-narrow");assert(permit_bounds.x1>=source_bounds.x1&&permit_bounds.x2<=source_bounds.x2);}
 
