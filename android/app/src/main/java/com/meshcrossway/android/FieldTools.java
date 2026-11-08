@@ -1,7 +1,6 @@
 package com.meshcrossway.android;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.regex.*;

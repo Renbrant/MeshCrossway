@@ -21,7 +21,7 @@ Offline regions depend on provider availability and may be incomplete after a pa
 
 ## Acceptance scope
 
-Alpha02 is the user-tested S25/two-Heltec baseline. Alpha03 adds independently testable field tools and setup changes; hardware coexistence, pairing, real map downloads, location permission behavior and background endurance still require device acceptance. Tracks, remote administration and radio configuration are outside this increment.
+Alpha04 is the hardware-accepted S25/two-Heltec functional recovery reference. Alpha05 adds tracks and field usability as described below; real GPS recording with screen off, simultaneous radio use and endurance still require device acceptance. Remote administration and radio configuration remain future work.
 
 ## Alpha05 field workflow increment (November 8, 2026)
 
