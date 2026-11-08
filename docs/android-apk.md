@@ -8,6 +8,19 @@ Android is the priority for a broadly accessible MeshCrossway controller. The ES
 
 On a Samsung Galaxy S25, the first APK (`0.1.0-alpha01`) was installed and displayed **Protocol verified** for two different Heltec V3 radios simultaneously: Meshtastic PhoneAPI configuration and MeshCore Companion identity. This is user-reported hardware evidence of initial simultaneous connection/protocol identification, initial evidence only. The user subsequently tested alpha02 on the same S25 with both radios Ready, 203 Meshtastic nodes and 350 MeshCore contacts/6 channels. Both radios accepted outgoing text; a MeshCore weather bot replied to an app request. Initial connection required repeated attempts. Long-duration background reliability and other phone models remain unverified.
 
+## Current functional reference: 0.3.1-alpha04
+
+Accepted by the project maintainer on November 8, 2026 as the Android functional reference for subsequent changes. Preserve this tested APK as a recovery reference; this acceptance does not establish production stability.
+
+- Tested source: `d7052bbf9dcc1c0f4f24e06da6665ec660da6c56`.
+- APK: `MeshCrossway-0.3.1-alpha04.apk`; SHA-256: `c0be5760d51f7d2389cdb2f23d891136436ad9f431178a246eec7c06503c6102`.
+- [Validated build and downloadable APK artifact](https://github.com/Renbrant/MeshCrossway/actions/runs/42524563365): protocol fixtures, build/lint and API 29/35 emulator smoke tests passed.
+- User report and screenshots on the Samsung Galaxy S25 show both Meshtastic and MeshCore Ready concurrently, synchronized nodes/channels, MeshCore outgoing messages and weather/test bot replies, plus map markers/clusters and phone GPS with displayed accuracy of ±4 m.
+- The previously reported MeshCore connection failure no longer occurs in this test after the MTU compatibility fix.
+- Still unverified for alpha04: peer-confirmed Meshtastic send/receive, direct-message delivery, offline region downloads in the field, persistence/reconnect after restart, prolonged screen-off/background use, car audio coexistence and other phone models.
+
+CI APKs use a runner-generated debug signing key. A different run may require backup/export before uninstalling an incompatible installed build; keep the exact tested APK above for recovery.
+
 ## 0.2.0-alpha02 — messaging increment
 
 Implemented together:
@@ -78,7 +91,7 @@ cd android
 
 The dependency-free JVM fixtures test bootstrapping, channel/DM encoding, Meshtastic PKI, ACK ordering, malformed frames, byte limits, replay IDs, network isolation and unread aggregation. Device instrumentation exercises the real SQLite schema (duplicates, network/radio separation, monotonic delivery state, read markers, reopening and draft persistence), navigation and draft preservation during Activity recreation. Neither replaces physical-radio acceptance.
 
-The **Android alpha APK** GitHub Actions workflow builds/lints, runs JVM fixtures, uploads a named APK plus SHA-256 checksum, and runs the device/storage smoke test on Android API 29 and 35 emulators. Download the latest successful run's `MeshCrossway-Android-0.3.0-alpha03` artifact under **Actions → Artifacts**, extract its ZIP and install the APK inside.
+The **Android alpha APK** GitHub Actions workflow builds/lints, runs JVM fixtures, uploads a named APK plus SHA-256 checksum, and runs the device/storage smoke test on Android API 29 and 35 emulators. Download the latest successful run's `MeshCrossway-Android-0.3.1-alpha04` artifact under **Actions → Artifacts**, extract its ZIP and install the APK inside.
 
 Outputs: `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk` for phones and `app-x86_64-debug.apk` for emulators. CI runs API 29/35 SQLite, backup migration/import, navigation, native dual-map fixture and offline-region lifecycle smoke tests. Fixture maps do not require a public tile service. Successful automated checks do not replace physical-radio testing.
 
@@ -108,5 +121,5 @@ updated that field only after passing the incorrect threshold.
 
 Reference: https://github.com/meshcore-dev/MeshCore/blob/main/src/helpers/esp32/SerialBLEInterface.cpp
 
-Regression fixtures cover 23, 175, 176 and 185; physical dual-radio acceptance
-is still required on the reported phone/radio after installing alpha04.
+Regression fixtures cover 23, 175, 176 and 185. Initial physical dual-radio acceptance
+was reported on November 8, 2026; see the current functional reference above for its scope and remaining checks.
