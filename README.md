@@ -84,3 +84,7 @@ This modular approach also lets the radios be positioned away from one another, 
 MeshCrossway is open to contributions in firmware, hardware, documentation and testing. [Open an issue](https://github.com/Renbrant/MeshCrossway/issues), review the [contribution guide](CONTRIBUTING.md), or [support the project through GitHub Sponsors](https://github.com/sponsors/Renbrant).
 
 MeshCrossway is experimental and is not certified for safety-critical use. Do not rely on it as the only communication system in an emergency. Original project code and documentation are provided under the [MIT License](LICENSE); third-party components retain their own licenses. See [licensing details](docs/licensing.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+## Android controller development
+
+An Android APK is now in development, bringing the MeshCrossway controller to phones with the same independent Meshtastic and MeshCore radio architecture. The first alpha tests BLE connections and protocol identification; messaging and maps are planned. See the [Android build and installation guide](docs/android-apk.md) and [tracking issue #187](https://github.com/Renbrant/MeshCrossway/issues/187).
