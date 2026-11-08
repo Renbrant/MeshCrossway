@@ -30,12 +30,12 @@ jobs:
       - name: Package test APK
         run: |
           mkdir -p android-artifact
-          cp android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk android-artifact/MeshCrossway-0.3.0-alpha03.apk
+          cp android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk android-artifact/MeshCrossway-0.3.1-alpha04.apk
           cd android-artifact
-          sha256sum MeshCrossway-0.3.0-alpha03.apk > SHA256SUMS.txt
+          sha256sum MeshCrossway-0.3.1-alpha04.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: MeshCrossway-Android-0.3.0-alpha03
+          name: MeshCrossway-Android-0.3.1-alpha04
           path: android-artifact/
           retention-days: 30
       - uses: actions/upload-artifact@v4

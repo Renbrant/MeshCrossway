@@ -152,7 +152,7 @@ public final class RadioService extends Service {
         for(Session other:sessions.values())if(other!=s && (other.gatt!=null||other.desired) && address.equals(other.address)){s.status="This radio is already assigned to "+other.profile.title;s.desired=false;changed();return;}
         s.pendingAddress=address;
         if(!gate.acquire(s.profile)){phase(s,"Queued","Waiting for "+gate.owner().title+" Bluetooth setup");return;}
-        stopScan();release(s,"Connecting…");s.address=address;s.frames=0;history.select(s.profile,address);
+        stopScan();release(s,"Connecting…");s.mtu=23;s.address=address;s.frames=0;history.select(s.profile,address);
         long nonce=(new SecureRandom().nextInt() & 0x7fffffffL)+1;if(nonce==69420||nonce==69421)nonce+=2;
         final String radio=address;final RadioProfile profile=s.profile;
         s.client=new ProtocolClient(profile,nonce,new ProtocolClient.Listener(){
@@ -226,7 +226,7 @@ public final class RadioService extends Service {
                 BluetoothGattDescriptor cccd=s.notice.getDescriptor(RadioProfile.CCCD);
                 if(cccd==null || !s.gatt.setCharacteristicNotification(s.notice,true)){close(s,"Required notification descriptor missing");return;}
                 cccd.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);ok=s.gatt.writeDescriptor(cccd);
-            }else if(s.active.kind==2){s.tx.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);s.tx.setValue(s.active.data);ok=s.gatt.writeCharacteristic(s.tx);}
+            }else if(s.active.kind==2){if(s.active.data.length>s.profile.payloadLimit(s.mtu)){close(s,"Command exceeds negotiated Bluetooth frame size • not sent");return;}s.tx.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);s.tx.setValue(s.active.data);ok=s.gatt.writeCharacteristic(s.tx);}
             else ok=s.gatt.readCharacteristic(s.rx);
         }catch(SecurityException|IllegalStateException e){ok=false;}
         if(!ok){close(s,"Bluetooth operation failed • reconnect");return;}arm(s,"Bluetooth operation timed out • reconnect");
@@ -262,8 +262,8 @@ public final class RadioService extends Service {
         @Override public void onMtuChanged(BluetoothGatt g,int mtu,int status){onCurrent(g,()->{
             // Never allow a short-MTU write to silently truncate the protocol probe.
             if(s.active==null||s.active.kind!=0)return;
-            int negotiated=status==0?mtu:23;
-            if(negotiated<23||(s.profile==RadioProfile.MESHCORE&&negotiated<179)){close(s,"Bluetooth MTU too small for this radio • reconnect after pairing");return;}s.mtu=negotiated;s.client.payloadLimit=Math.min(s.profile==RadioProfile.MESHTASTIC?512:176,negotiated-3);done(s);phase(s,"Subscribing","Enabling radio notifications…");enqueue(s,1,null);
+            int negotiated=status==0?mtu:23;s.mtu=negotiated;
+            if(status!=0||!s.profile.supportsMtu(negotiated)){close(s,"Bluetooth MTU negotiation failed (status "+status+", MTU "+mtu+") • reconnect");return;}s.client.payloadLimit=s.profile.payloadLimit(negotiated);done(s);phase(s,"Subscribing","Enabling radio notifications…");enqueue(s,1,null);
         });}
         @Override public void onDescriptorWrite(BluetoothGatt g,BluetoothGattDescriptor d,int status){onCurrent(g,()->{
             if(status!=0){close(s,"Notification subscription failed ("+status+") • pair and reconnect");return;}done(s);beginProbe(s);

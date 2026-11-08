@@ -93,3 +93,20 @@ Outputs: `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk` for phone
 7. Leave the screen off for 30+ minutes; repeat with Wi-Fi and car Bluetooth audio. Toggle Bluetooth and verify desired-session recovery. Repeat on another Android vendor before claiming broad compatibility.
 
 No successful build or emulator smoke result establishes physical send/receive, coexistence with car audio, or long-duration radio reliability.
+
+
+### Alpha04 MeshCore MTU compatibility fix
+
+The alpha03 transport incorrectly required an ATT MTU of 179 for MeshCore.
+ESP32 MeshCore configures its MTU to `MAX_FRAME_SIZE` (176), so a valid
+176-byte negotiation was rejected before notifications or protocol synchronization.
+Alpha04 accepts 176, reserves the three-byte ATT header (173-byte write budget),
+and checks every command before writing; it does not split protocol frames.
+Diagnostics now retain the negotiated MTU and report callback status/value on failure.
+A displayed 23 in alpha03 is not proof that the peer negotiated 23: the old code
+updated that field only after passing the incorrect threshold.
+
+Reference: https://github.com/meshcore-dev/MeshCore/blob/main/src/helpers/esp32/SerialBLEInterface.cpp
+
+Regression fixtures cover 23, 175, 176 and 185; physical dual-radio acceptance
+is still required on the reported phone/radio after installing alpha04.

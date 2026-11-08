@@ -8,6 +8,10 @@ public enum RadioProfile {
     public final String title;
     public final UUID service, write, read, notify;
     public static final UUID CCCD = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+    // ESP32 MeshCore sets its ATT MTU to MAX_FRAME_SIZE (176), not 176 + 3.
+    // ATT consumes three bytes, leaving a safe 173-byte command budget.
+    boolean supportsMtu(int mtu) { return mtu >= (this == MESHCORE ? 176 : 23); }
+    int payloadLimit(int mtu) { return Math.min(this == MESHTASTIC ? 512 : 176, mtu - 3); }
     RadioProfile(String title, String service, String write, String read, String notify) {
         this.title=title; this.service=UUID.fromString(service); this.write=UUID.fromString(write);
         this.read=UUID.fromString(read); this.notify=UUID.fromString(notify);
