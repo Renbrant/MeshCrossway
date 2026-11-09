@@ -45,9 +45,7 @@ Android uses its own version sequence, independent of the embedded controller fi
 
 A functional recovery baseline is not a production guarantee. Send reproducible problems through [GitHub Issues](https://github.com/Renbrant/MeshCrossway/issues), including your phone, radio models and firmware versions.
 
-## The ESP32 controller project
-
-The separate ESP32 touchscreen controller is a **secondary development track**; its hardware, firmware, status, roadmap and Web Flasher are collected in the [ESP32 project area](https://meshcrossway.renbrant.com/esp32/).
+The ESP32 touchscreen device remains a secondary development project; hardware, firmware, status, roadmap and Web Flasher details are in the [ESP32 project area](https://meshcrossway.renbrant.com/esp32/).
 
 ## Contributing and license
 
