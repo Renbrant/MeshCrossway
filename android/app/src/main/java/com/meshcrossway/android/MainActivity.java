@@ -272,9 +272,10 @@ public final class MainActivity extends Activity {
         section(results,"REMOTE WORKSPACE");
         LinearLayout remote=group(results);
         String remoteUrl=service==null?"":service.remoteUrl();
+        String wifi=RemoteWorkspace.wifiName(this);
         String remoteDetail=remoteUrl.isEmpty()?
-            "Off · tap to enable private HTTPS access on Wi-Fi":
-            remoteUrl+" · tap for access code";
+            "Off · "+wifi+" · tap to enable private HTTPS access":
+            wifi+" · "+remoteUrl+" · tap for access code";
         menuRow(remote,"settings","Remote Access",remoteDetail,
             this::remotePanel,remoteUrl.isEmpty()?MUTED:GREEN);
         if(service!=null&&!service.remoteError.isEmpty())
