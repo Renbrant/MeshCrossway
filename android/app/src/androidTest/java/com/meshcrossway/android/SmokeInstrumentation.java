@@ -38,7 +38,22 @@ public final class SmokeInstrumentation extends Instrumentation {
     private void tracks()throws Exception{
         Context context=getTargetContext();String name="track-instrumentation.db";context.deleteDatabase(name);TrackStore store=new TrackStore(context,name);CountDownLatch started=new CountDownLatch(1);store.start("Field & trail",ok->{check(ok,"Track did not start");started.countDown();});await(started);CountDownLatch loaded=new CountDownLatch(1);store.barrier(loaded::countDown);await(loaded);String id=store.tracks.get(0).id;
         long now=System.currentTimeMillis();store.add(new FieldTools.Fix(40,-105,4,Double.NaN,now,0),now);store.add(new FieldTools.Fix(40.0001,-105,4,123,now+3000,0),now+3000);store.add(new FieldTools.Fix(41,-105,4,123,now+6000,0),now+6000);store.pause(false);CountDownLatch resumed=new CountDownLatch(1);store.resume(id,ok->{check(ok,"Resume failed");resumed.countDown();});await(resumed);store.add(new FieldTools.Fix(41,-104,4,124,now+9000,0),now+9000);store.pause(true);CountDownLatch saved=new CountDownLatch(1);store.barrier(saved::countDown);await(saved);TrackStore.Track track=store.tracks.get(0);check(track.count==3&&track.state.equals("saved"),"Track points/status not persisted");check(track.distance>10&&track.distance<12,"Pause gap or GPS jump added to distance");
-        ByteArrayOutputStream bytes=new ByteArrayOutputStream();CountDownLatch exported=new CountDownLatch(1);store.export(id,bytes,error->{check(error.isEmpty(),"GPX export failed");exported.countDown();});await(exported);String gpx=bytes.toString("UTF-8");check(gpx.contains("Field &amp; trail")&&gpx.split("<trkseg>",-1).length==3,"Export lost name or segment break");store.createFolder("Hiking");
+        ByteArrayOutputStream bytes=new ByteArrayOutputStream();CountDownLatch exported=new CountDownLatch(1);store.export(id,bytes,error->{check(error.isEmpty(),"GPX export failed");exported.countDown();});await(exported);String gpx=bytes.toString("UTF-8");check(gpx.contains("Field &amp; trail")&&gpx.split("<trkseg>",-1).length==3,"Export lost name or segment break");
+        String gpxTestName="track-gpx-imported.db";context.deleteDatabase(gpxTestName);
+        TrackStore gpxRestored=new TrackStore(context,gpxTestName);
+        CountDownLatch gpxImport=new CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicReference<String> gpxError=new java.util.concurrent.atomic.AtomicReference<>("");
+        gpxRestored.importGpx(new ByteArrayInputStream(bytes.toByteArray()),result->{
+            gpxError.set(result);gpxImport.countDown();
+        });
+        await(gpxImport);
+        check(gpxError.get().isEmpty()&&gpxRestored.tracks.size()==1,
+            "Legacy GPX track could not be imported");
+        check(gpxRestored.tracks.get(0).count==3&&
+            gpxRestored.tracks.get(0).name.equals("Field & trail"),
+            "GPX import lost recorded points or escaped track name");
+        gpxRestored.close();
+        store.createFolder("Hiking");
         CountDownLatch folderAdded=new CountDownLatch(1);store.barrier(folderAdded::countDown);await(folderAdded);
         check(store.folders.size()==1&&store.folders.get(0).name.equals("Hiking"),"Track folder did not persist");
         String folderId=store.folders.get(0).id;
