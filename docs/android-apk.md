@@ -184,3 +184,46 @@ the alpha04 recovery reference.
 
 Real phone GPS endurance with screen off and two physical BLE radios still needs
 maintainer acceptance; passing emulator tests does not promote alpha05 to stable.
+
+## 0.5.0-alpha06 — navigation and settings redesign
+
+The maintainer reported alpha05 working before requesting this UI-only increment.
+Preserve the alpha05 APK as the immediate functional recovery reference; alpha04
+remains the earlier explicitly documented dual-radio reference. No changes in
+alpha06 are made to the radio protocols, GATT transport, history schema, map
+provider/download limits or track-recording service.
+
+- Five primary destinations: Home, Chats, Contacts, Map and Settings. Chats has
+  Conversations / Channels tabs; Home also has direct entry points to both.
+- Compact dashboard: separate Meshtastic/MeshCore connection rows, combined
+  messaging entry points and field tools. Orange/cyan network identification
+  remains visible in the status strip, lists and radio settings.
+- Settings index: individual radio pages, Connections, Notifications & messages,
+  Map & location, Data & backup and About. Existing actions are grouped as icon,
+  title and subtitle rows, with switches beside the settings they control.
+- Each radio has its own identity/status, device picker and connection actions.
+  Diagnostics and system pairing are under Advanced on that radio's page.
+- Consistent toolbar Back and Android Back restore the prior screen, including a
+  chat draft when returning from settings. The nested route stack survives
+  Activity recreation. Contact search and scroll position survive tab changes.
+- Chat actions move to the toolbar overflow; contact sorting and type selection
+  use labeled choices rather than buttons that cycle through hidden states.
+- Full-width map with a compact Layers / GPS / Fit / Tools toolbar. Offline maps,
+  tracks, POIs, zoom and north-up remain available from Tools. Settings shortcuts
+  open those tools on the map. Native pinch/zoom remains available.
+- Original scalable line icons replace font-dependent navigation symbols.
+
+Functional UX research: the public MeshCore Open dev settings screen, app
+settings screen, contacts screen and quick-switch widget were inspected. The
+useful patterns were grouped compact settings rows, explicit subpages, Back,
+contextual overflow actions and a small primary navigation surface. This is an
+independent Java UI implementation; no Flutter code, icons or assets were copied.
+
+Reference: https://github.com/zjs81/meshcore-open/tree/dev/lib/screens
+and https://github.com/zjs81/meshcore-open/blob/dev/lib/widgets/quick_switch_bar.dart
+
+Acceptance: Android API 29/35 navigation, back-stack/draft recreation, menu entry
+points and map rendering are checked in instrumentation. Real-phone usability
+and simultaneous physical BLE sessions still need maintainer acceptance of this
+new interface. The JSON backup and separate GPX export remain under Settings →
+Data & backup; export before uninstalling an incompatible signed CI build.

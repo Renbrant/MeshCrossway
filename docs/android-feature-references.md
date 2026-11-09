@@ -47,3 +47,15 @@ require explicit resume; resume starts a new GPX segment.
 No reference application source/assets were copied. Remote administration,
 active wardriving/pings, traceroute, coverage uploads and radio settings remain
 separate future work; none are silently enabled by track recording.
+
+## Alpha06 navigation reference
+
+[MeshCore Open](https://github.com/zjs81/meshcore-open) public dev UI was reviewed:
+`settings_screen.dart`, `app_settings_screen.dart`, `contacts_screen.dart` and
+`quick_switch_bar.dart`. Grouped icon/title/subtitle settings, separate app and
+radio concerns, contextual overflow and explicit Back navigation inform the
+MeshCrossway redesign. Five primary destinations accommodate the dual-network
+inbox; Channels remains directly accessible within Chats. The implementation and
+line icons are original Java, retaining MeshCrossway branding and network colors.
+No additional radio configuration commands or remote-management features are
+implied by reorganizing the existing settings.
