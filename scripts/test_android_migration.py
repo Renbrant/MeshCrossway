@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 import sqlite3
 import tempfile
+import subprocess
+import sys
 import zipfile
 
 script = Path(__file__).resolve().parent / "migrate_android_debug_install.py"
@@ -40,7 +42,51 @@ with tempfile.TemporaryDirectory() as temp:
         encoding="utf-8"
     )
     archive = base / "export.zip"
+    counts = migration.archive_counts(base)
+    assert counts["nodes"] == 1
+    assert counts["flags"] == 1
+    assert counts["fixes"] == 1
     migration.write_output(base, archive)
+    digest = migration.validate_archive(archive)
+    assert len(digest) == 64 and int(digest, 16) > 0
+    verified = subprocess.run([sys.executable, str(script), "--verify-only", str(archive)],
+                              text=True, capture_output=True)
+    assert verified.returncode == 0 and "PASS" in verified.stdout, verified.stderr
+    try:
+        migration.unique_output(archive)
+    except FileExistsError:
+        pass
+    else:
+        raise AssertionError("Existing backup was allowed to be overwritten")
+    # Duplicate ZIP filenames and missing data must never look like valid backups.
+    duplicate = base / "duplicate.zip"
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        with zipfile.ZipFile(duplicate, "w") as output:
+            for name in migration.EXPECTED_FILES:
+                with zipfile.ZipFile(archive) as source:
+                    output.writestr(name, source.read(name))
+            output.writestr("tracks.json", b"{}")
+    try:
+        migration.validate_archive(duplicate)
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("Duplicate tracks.json was accepted")
+    invalid = base / "invalid.zip"
+    with zipfile.ZipFile(archive) as source, zipfile.ZipFile(invalid, "w") as output:
+        for name in migration.EXPECTED_FILES:
+            content = source.read(name)
+            if name == "tracks.json":
+                content = b'{"format":"WRONG","version":1,"tracks":[],"fixes":[],"folders":[]}'
+            output.writestr(name, content)
+    try:
+        migration.validate_archive(invalid)
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("Invalid track backup was accepted")
     with zipfile.ZipFile(archive) as result:
         assert set(result.namelist()) == {
             "manifest.json", "settings.json", "history.json", "tracks.json"
@@ -59,4 +105,4 @@ with tempfile.TemporaryDirectory() as temp:
         prefs = json.loads(result.read("settings.json"))
         assert prefs["files"]["ui"]["gpsEnabled"]["value"] is True
         assert prefs["files"]["ui"]["quickReplies"]["value"] == "Hello"
-    print("Offline debug migration fixture passed: history, settings, favorites, tracks, folders, all fixes.")
+    print("ADB migration fixture passed: private rows, CRC/schema verification, duplicate and corrupt backup rejection, no overwrite.")
