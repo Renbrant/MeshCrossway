@@ -19,9 +19,20 @@ The supplied reference was a 337 × 62 raster image containing the symbol, the m
 2. Maintain the original geometry, letter outlines, color fills, relative spacing and 330:44 aspect ratio.
 3. Place it over a dark background for readable near-white lettering; do not add a background rectangle inside the file.
 4. Do not use substitute text styled as the official logo; for ordinary body copy, existing website/UI typography is independent of the approved logo.
-5. Do not derive symbol-only, vertical, stacked, animated or recolored versions without explicit approval.
+5. Approved 2026-11-09: the official symbol-only PNG and dark Android app icon are authorized derivatives. Use the exact approved symbol geometry and `#F07120`; do not redraw, recolor or restyle the official master. Other variants still require approval.
 6. Do not add previously proposed gray/orange rings, alter the mountain peaks, or reintroduce the previous approximate SVGs.
 7. Marketing illustrations and historical technical images are not logo masters. The logo's approval is independent of hardware validation, certification, or trademark clearance.
+
+## Approved PNG brand assets (2026-11-09)
+
+Derived from the approved vector paths, with the master SVG unchanged:
+
+- [`meshcrossway-symbol.png`](logo/meshcrossway-symbol.png): transparent orange-only mark for website favicon and interface accents.
+- [`meshcrossway-app-icon.png`](logo/meshcrossway-app-icon.png): dark app icon with orange mark, for the Android launcher and app shortcuts.
+- [`meshcrossway-logo-horizontal.png`](logo/meshcrossway-logo-horizontal.png): horizontal transparent PNG for screens and documents.
+- [`meshcrossway-profile-badge.png`](logo/meshcrossway-profile-badge.png): dark circular profile badge.
+
+The website copies the symbol and app icon into its published assets so GitHub Pages can resolve them. The Android source on the `baseline/android-0.1.0` branch uses the same reference artwork; published APKs are immutable and receive branding changes only on a subsequent release.
 
 ## Previous branding — retired
 

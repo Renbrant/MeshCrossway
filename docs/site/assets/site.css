@@ -28,3 +28,6 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #ff
 .site-menu-panel a{padding:10px 12px;border-radius:7px;color:var(--text);text-decoration:none}
 .site-menu-panel a:hover{background:#292322;color:#ffb052}
 @media(max-width:800px){.navin{gap:10px}.brand img{width:min(38vw,170px)}.site-menu{font-size:13px}.site-menu summary{padding:9px 10px}.nav .cta{font-size:12px;padding:9px 10px}}
+
+/* Approved orange symbol, kept compact beside primary download actions. */
+.button .brand-mini{display:inline-block;width:20px;height:20px;flex:none;object-fit:contain;margin-right:8px;vertical-align:middle}
