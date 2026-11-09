@@ -19,16 +19,18 @@ label{color:var(--muted);font-size:13px}label input,label select{color:white}tex
 .columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.workspace{display:grid;grid-template-columns:290px minmax(0,1fr);gap:13px}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
 .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}.tabs button[aria-selected=true]{background:#382719;color:var(--mt);border-color:var(--mt)}
+.message-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.message-tabs button[aria-selected=true]{background:#382719;color:var(--mt);border-color:var(--mt)}.map-toolbar{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.map-toolbar button[aria-pressed=true]{background:#382719;border-color:var(--mt);color:var(--mt)}
 .muted,.hint{color:var(--muted);font-size:12px}.mt{color:var(--mt)}.mc{color:var(--mc)}.good{color:var(--good)}
 strong.metric{font-size:24px;display:block;margin:3px 0}.item{display:block;border:1px solid var(--line);border-radius:9px;background:#131a21;padding:10px;margin:7px 0;overflow-wrap:anywhere}
 .item:focus,.item:hover{border-color:var(--mt)}.item button{max-width:100%}.item.selected{border-color:var(--mt)}.conversation{max-height:420px;overflow:auto}
 .message{border-radius:11px;background:#1f2a33;border:1px solid #334554;padding:9px 12px;margin:10px 0;overflow-wrap:anywhere}
 .message.outgoing{margin-left:15%;background:#38271d;border-color:#684129}.message .meta{color:var(--muted);font-size:11px;margin-bottom:4px}
 .hidden,[hidden]{display:none!important}.notice{padding:10px 12px;border:1px solid var(--line);border-radius:8px;color:var(--good);margin:10px 0;overflow-wrap:anywhere}
-.scroll{max-height:560px;overflow-y:auto}.map-preview{display:block;width:100%;height:310px;background:#0b1920;border:1px solid #35505b;border-radius:9px;touch-action:none}
+.scroll{max-height:560px;overflow-y:auto}.slippy-map{position:relative;width:100%;height:clamp(290px,49vh,540px);overflow:hidden;background:#15222a;border:1px solid var(--line);border-radius:11px;cursor:grab;touch-action:none;outline-offset:2px}.slippy-map.drawing{cursor:crosshair}.slippy-map:active:not(.drawing){cursor:grabbing}.map-tiles,.map-overlays{position:absolute;inset:0;pointer-events:none}.map-tile{position:absolute;width:256px;height:256px;max-width:none;user-select:none;pointer-events:none}.area-box{position:absolute;border:2px solid var(--mc);background:rgba(108,189,230,.11);box-sizing:border-box;pointer-events:none}.area-box.selected{border:3px solid var(--mt);background:rgba(255,138,36,.22);z-index:3}.area-box.draft{border:2px dashed #fff;z-index:4;background:rgba(255,138,36,.19)}.map-attribution{position:absolute;bottom:6px;right:6px;background:#090c10dd;padding:2px 6px;border-radius:5px;font-size:11px;z-index:6;pointer-events:auto}.map-attribution a{color:#c7e9f7}.map-info{padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#131a21;margin-top:10px;min-height:44px}.map-preview{display:block;width:100%;height:310px;background:#0b1920;border:1px solid #35505b;border-radius:9px;touch-action:none}
 footer{padding:25px 18px;text-align:center;font-size:12px;color:var(--muted)}
-@media(max-width:740px){.columns,.workspace,.grid3{grid-template-columns:1fr}header,main{padding:12px}.map-preview{height:240px}}
+@media(max-width:740px){.columns,.workspace,.grid3{grid-template-columns:1fr}header,main{padding:12px}.map-preview{height:240px}.slippy-map{height:340px}}
 </style>
+<script defer src="/remote-map.js"></script>
 <script defer src="/app.js"></script>
 </head>
 <body>
@@ -54,29 +56,70 @@ footer{padding:25px 18px;text-align:center;font-size:12px;color:var(--muted)}
 <div class="card"><h2>Workspace capabilities</h2><p>Messages are sent through the selected network only. Maps are downloaded to this phone, not the computer. GPS tracks remain private to this phone unless you export them.</p></div>
 </section>
 <section id="messages" data-panel hidden>
-<h1>Messages & contacts</h1>
-<div class="actions"><button id="switch-mt">Meshtastic</button><button id="switch-mc">MeshCore</button><button id="refresh-messages">Refresh</button></div>
-<div class="workspace" style="margin-top:13px">
-<div class="card"><h2>Conversations</h2><label>Filter<input id="conversation-search" placeholder="Search conversations"></label><div id="conversations" class="scroll"></div><h3>Contacts</h3><div id="contacts" class="scroll"></div></div>
-<div class="card"><h2 id="conversation-title">Select a conversation</h2><div class="conversation" id="message-list"></div>
-<form id="compose-form"><label>New message<textarea id="message-text" maxlength="2000" required placeholder="Type a message to the selected network…"></textarea></label>
-<div class="actions"><button class="primary" id="send-message" type="submit" disabled>Send via selected radio</button><button id="mark-read" type="button" disabled>Mark read</button></div></form>
-<p class="hint">Saved or accepted by a radio does not mean that another node received the message. A failed or uncertain send is never retried automatically.</p></div>
+<h1>Messages</h1>
+<div class="actions" role="group" aria-label="Mesh network"><button id="switch-mt">Meshtastic</button><button id="switch-mc">MeshCore</button><button id="refresh-messages">Refresh</button></div>
+<div class="message-tabs" role="group" aria-label="Message categories">
+<button data-message-view="chats" aria-selected="true">Chats</button>
+<button data-message-view="channels" aria-selected="false">Channels</button>
+<button data-message-view="nodes" aria-selected="false">Nodes</button>
+</div>
+<div class="workspace">
+<div class="card">
+<h2 id="view-heading">Chats</h2>
+<p class="hint" id="view-count">Private conversations</p>
+<label>Search <input id="conversation-search" placeholder="Search this list" aria-label="Search chats, channels or nodes"></label>
+<div id="message-directory" class="scroll" aria-live="polite"></div>
+</div>
+<div class="card">
+<h2 id="conversation-title">Select a chat, channel or node</h2>
+<p class="hint" id="selected-context">Select an entry from the left to read or send messages.</p>
+<div class="conversation" id="message-list" aria-live="polite"></div>
+<form id="compose-form">
+<label>New message<textarea id="message-text" maxlength="2000" required placeholder="Type a message to the selected network…"></textarea></label>
+<div class="actions"><button class="primary" id="send-message" type="submit" disabled>Send via selected radio</button><button id="mark-read" type="button" disabled>Mark read</button></div>
+</form>
+<p class="hint">Messages are sent only on the selected network. Radio queue acceptance does not guarantee delivery.</p>
+</div>
 </div>
 </section>
 <section id="maps" data-panel hidden>
-<h1>Offline areas on the phone</h1><p>Browse stored regions or enter a geographic rectangle to download into the phone's MapLibre offline database. Downloads use the same limits as the Android app.</p>
-<div class="columns"><div class="card">
-<h2>Saved regions</h2><button id="refresh-maps">Refresh list</button><div id="area-list"></div></div>
-<div class="card"><h2>New region</h2>
-<form id="area-form"><label>Name<input name="name" maxlength="80" required placeholder="Mountain trip"></label>
-<div class="grid3"><label>North<input name="north" type="number" step="any" min="-90" max="90" required></label><label>South<input name="south" type="number" step="any" min="-90" max="90" required></label><label>West<input name="west" type="number" step="any" min="-180" max="180" required></label></div>
-<div class="grid3"><label>East<input name="east" type="number" step="any" min="-180" max="180" required></label>
-<label>Maximum zoom<input name="zoom" type="number" min="1" max="15" value="12" required></label>
-<label>Style<select name="style"><option value="dark">Dark</option><option value="light">Light</option></select></label></div>
-<p class="hint">Enter bounds for the area you want; existing regions show their coordinates below. Map download requires internet on the phone.</p>
-<button class="primary" type="submit">Download to phone</button></form>
-</div></div>
+<h1>Offline maps</h1>
+<p>Move around the map, click <b>Draw area</b>, then drag to select a rectangle. Choose the offline detail and save the area to your phone. No coordinates to type.</p>
+<div class="card">
+<div class="map-toolbar" role="group" aria-label="Map navigation">
+<button id="map-pan" type="button" aria-pressed="true">Move map</button>
+<button id="map-draw" type="button" aria-pressed="false">Draw area</button>
+<button id="map-clear" type="button">Clear selection</button>
+<button id="map-zoom-in" type="button" aria-label="Zoom in map">＋</button>
+<button id="map-zoom-out" type="button" aria-label="Zoom out map">−</button>
+<button id="map-my-location" type="button">My location</button>
+<span class="muted" id="map-view-label">Map preview</span>
+</div>
+<div id="map-viewport" class="slippy-map" tabindex="0" aria-label="Interactive map: drag to move, or select Draw area and drag to draw a rectangle">
+<div class="map-attribution">Preview only · <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a></div>
+</div>
+<div class="map-info" id="map-selection-info" role="status">No area selected. Choose <b>Draw area</b> and drag on the map.</div>
+<p class="hint">The map preview loads only visible OpenStreetMap tiles. Offline downloads use the phone's OpenFreeMap/MapLibre source and its separate quotas. The phone must be online to download new map areas.</p>
+</div>
+<div class="columns">
+<div class="card">
+<h2>Download selected area</h2>
+<form id="area-form">
+<label>Area name<input name="name" maxlength="80" required placeholder="Trip map, hiking area, city…"></label>
+<div class="grid3">
+<label>Offline detail (max zoom)<input id="download-zoom" name="zoom" type="range" min="1" max="15" value="12"><span id="download-zoom-label">12</span></label>
+<label>Offline style<select name="style"><option value="dark">Dark</option><option value="light">Light</option></select></label>
+</div>
+<p class="hint" id="map-quota">Select an area to estimate tile count (limit: 2,400 tiles and 45 MB per region).</p>
+<button class="primary" id="download-area" type="submit" disabled>Download area to phone</button>
+</form>
+</div>
+<div class="card">
+<h2>Saved offline regions</h2>
+<button id="refresh-maps" type="button">Refresh regions</button>
+<div id="area-list" aria-live="polite"></div>
+</div>
+</div>
 </section>
 <section id="tracks" data-panel hidden>
 <h1>Tracks and folders</h1><p>Organize local GPS tracks without moving private database files. Export GPX to the computer when needed.</p>
