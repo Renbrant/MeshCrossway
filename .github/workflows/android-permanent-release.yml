@@ -102,7 +102,9 @@ jobs:
 
           **First persistent-signing release**: every future compatible APK must use the same long-lived signing certificate. Updates from this APK onward can be installed over the existing app while retaining its private SQLite databases, settings, network selections, favorites, tracks and downloaded offline maps.
 
-          **One-time migration from 0.2.2 or older**: earlier CI builds had different debug certificates. Before uninstalling an older APK, use **Settings → Data & backup → Export complete backup** (available in $REQUESTED; an older APK cannot retroactively export this new format). If the older APK lacks this exporter, use its history JSON and individual GPX export, or retain it until migration is arranged. Android system Bluetooth/location permissions cannot be carried by a file backup. The complete ZIP has private messages/location data and is unencrypted; store it securely.
+          **New install / starting fresh**: Install this permanently signed 0.2.3 APK normally. No ADB, ZIP backup or migration is needed. It begins saving messages, favorites, settings, selected radios, GPS tracks and map regions in the phone's persistent local storage. Every future compatible APK signed with the same key can be installed **over** the existing app, retaining that data. Never uninstall to update.
+
+          **Only for users who still have the old 0.2.2 debug APK with data:** earlier public betas used different signing certificates. A one-time migration may be needed before the new permanent signing line. Save history JSON/GPX in the older app, or use the optional private ADB/ZIP migration tool while that version is still installed; the new export feature cannot be retroactively added to an older APK. Android system permissions do not transfer through ZIP backups.
 
           The full ZIP backup includes both radio histories, favorites, radio preferences, settings, all track points and track folders. Offline MapLibre tiles remain on the phone across normal in-place upgrades; a full uninstall removes private offline tiles and they must be downloaded again.
 
