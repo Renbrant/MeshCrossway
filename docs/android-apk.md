@@ -24,7 +24,7 @@ Heltec V3 and a Samsung S25 are used in development. Other phone, board and firm
 
 **Development signatures:** this APK is signed with a CI debug certificate. Some earlier builds have a different certificate. If Android refuses the update due to a signature conflict, export JSON history and required GPX tracks first, then uninstall and install. Uninstalling deletes local app data. The public version reset does not itself erase history.
 
-SHA-256 (`MeshCrossway-0.2.2.apk`): see the `SHA256SUMS.txt` asset included in the release to verify the exact APK.
+SHA-256 (`MeshCrossway-0.2.2.apk`): `0ce51bd68d0f899753a156c2bd17aeee8f32389b2d919c4dd72833404fffd505` (verified against the exact successful CI artifact; also included in the release's `SHA256SUMS.txt`).
 ## Included in this beta
 
 **New in 0.2.2:** Messages now has independent **Chats, Channels and Nodes** lists for both radios. Channels appear even without a message history, and selecting a messageable node starts a direct chat. Offline Maps has a **visual map with pan/zoom and Draw area rectangle**, maximum offline zoom, estimated tile limits and saved-region overlays. The 0.2.1 short numeric PIN remains unchanged. The 0.2.0 local HTTPS workspace, independent Meshtastic/MeshCore browser messaging, offline regions and track folders remain. The paired Home cards from 0.1.1 are retained. This does not bridge or relay mesh traffic.
