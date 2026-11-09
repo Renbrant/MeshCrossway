@@ -162,11 +162,12 @@ public final class SmokeInstrumentation extends Instrumentation {
                 while((n=in.read(buffer))!=-1)html.write(buffer,0,n);
             }
             String page=html.toString("UTF-8");
-            check(page.contains("data-message-view=\\\"chats\\\"") &&
-                  page.contains("data-message-view=\\\"channels\\\"") &&
-                  page.contains("data-message-view=\\\"nodes\\\""),
+            check(page.contains("data-message-view="+(char)34+"chats"+(char)34) &&
+                  page.contains("data-message-view="+(char)34+"channels"+(char)34) &&
+                  page.contains("data-message-view="+(char)34+"nodes"+(char)34),
                 "Remote Home is missing separate Chats, Channels and Nodes");
-            check(page.contains("id=\\\"map-viewport\\\"") && page.contains("id=\\\"map-draw\\\""),
+            check(page.contains("id="+(char)34+"map-viewport"+(char)34) &&
+                  page.contains("id="+(char)34+"map-draw"+(char)34),
                 "Remote Home is missing visual offline map selection");
             check(homepage.getHeaderField("Content-Security-Policy").contains("tile.openstreetmap.org"),
                 "Map preview tile host is not restricted by CSP");
