@@ -38,8 +38,15 @@ public final class SmokeInstrumentation extends Instrumentation {
     private void tracks()throws Exception{
         Context context=getTargetContext();String name="track-instrumentation.db";context.deleteDatabase(name);TrackStore store=new TrackStore(context,name);CountDownLatch started=new CountDownLatch(1);store.start("Field & trail",ok->{check(ok,"Track did not start");started.countDown();});await(started);CountDownLatch loaded=new CountDownLatch(1);store.barrier(loaded::countDown);await(loaded);String id=store.tracks.get(0).id;
         long now=System.currentTimeMillis();store.add(new FieldTools.Fix(40,-105,4,Double.NaN,now,0),now);store.add(new FieldTools.Fix(40.0001,-105,4,123,now+3000,0),now+3000);store.add(new FieldTools.Fix(41,-105,4,123,now+6000,0),now+6000);store.pause(false);CountDownLatch resumed=new CountDownLatch(1);store.resume(id,ok->{check(ok,"Resume failed");resumed.countDown();});await(resumed);store.add(new FieldTools.Fix(41,-104,4,124,now+9000,0),now+9000);store.pause(true);CountDownLatch saved=new CountDownLatch(1);store.barrier(saved::countDown);await(saved);TrackStore.Track track=store.tracks.get(0);check(track.count==3&&track.state.equals("saved"),"Track points/status not persisted");check(track.distance>10&&track.distance<12,"Pause gap or GPS jump added to distance");
-        ByteArrayOutputStream bytes=new ByteArrayOutputStream();CountDownLatch exported=new CountDownLatch(1);store.export(id,bytes,error->{check(error.isEmpty(),"GPX export failed");exported.countDown();});await(exported);String gpx=bytes.toString("UTF-8");check(gpx.contains("Field &amp; trail")&&gpx.split("<trkseg>",-1).length==3,"Export lost name or segment break");store.metadata(id,"Renamed",TrackStore.COLORS[1],false);CountDownLatch updated=new CountDownLatch(1);store.barrier(updated::countDown);await(updated);check(!store.tracks.get(0).visible&&store.tracks.get(0).name.equals("Renamed"),"Track metadata not updated");store.close();
-        TrackStore reopened=new TrackStore(context,name);CountDownLatch ready=new CountDownLatch(1);reopened.barrier(ready::countDown);await(ready);check(reopened.tracks.size()==1&&reopened.tracks.get(0).count==3,"Track lost after reopen");reopened.delete(id);CountDownLatch deleted=new CountDownLatch(1);reopened.barrier(deleted::countDown);await(deleted);check(reopened.tracks.isEmpty(),"Track delete failed");CountDownLatch interrupted=new CountDownLatch(1);reopened.start("Interrupted",ok->{check(ok,"Interrupted track start failed");interrupted.countDown();});await(interrupted);CountDownLatch committed=new CountDownLatch(1);reopened.barrier(committed::countDown);await(committed);reopened.close();TrackStore recovered=new TrackStore(context,name);CountDownLatch recovery=new CountDownLatch(1);recovered.barrier(recovery::countDown);await(recovery);check(recovered.current()!=null&&recovered.current().state.equals("paused"),"Interrupted recording did not recover as paused");recovered.close();
+        ByteArrayOutputStream bytes=new ByteArrayOutputStream();CountDownLatch exported=new CountDownLatch(1);store.export(id,bytes,error->{check(error.isEmpty(),"GPX export failed");exported.countDown();});await(exported);String gpx=bytes.toString("UTF-8");check(gpx.contains("Field &amp; trail")&&gpx.split("<trkseg>",-1).length==3,"Export lost name or segment break");store.createFolder("Hiking");
+        CountDownLatch folderAdded=new CountDownLatch(1);store.barrier(folderAdded::countDown);await(folderAdded);
+        check(store.folders.size()==1&&store.folders.get(0).name.equals("Hiking"),"Track folder did not persist");
+        String folderId=store.folders.get(0).id;
+        store.moveTrack(id,folderId);
+        CountDownLatch moved=new CountDownLatch(1);store.barrier(moved::countDown);await(moved);
+        check(store.tracks.get(0).folderId.equals(folderId),"Track folder assignment did not persist");
+        store.metadata(id,"Renamed",TrackStore.COLORS[1],false);CountDownLatch updated=new CountDownLatch(1);store.barrier(updated::countDown);await(updated);check(!store.tracks.get(0).visible&&store.tracks.get(0).name.equals("Renamed"),"Track metadata not updated");store.close();
+        TrackStore reopened=new TrackStore(context,name);CountDownLatch ready=new CountDownLatch(1);reopened.barrier(ready::countDown);await(ready);check(reopened.tracks.size()==1&&reopened.tracks.get(0).count==3,"Track lost after reopen");check(reopened.tracks.get(0).folderId.equals(folderId)&&reopened.folders.size()==1,"Track folders lost on reopen");reopened.deleteFolder(folderId);CountDownLatch unfoldered=new CountDownLatch(1);reopened.barrier(unfoldered::countDown);await(unfoldered);check(reopened.folders.isEmpty()&&reopened.tracks.get(0).folderId.isEmpty(),"Deleting folder removed track or left an orphan");reopened.delete(id);CountDownLatch deleted=new CountDownLatch(1);reopened.barrier(deleted::countDown);await(deleted);check(reopened.tracks.isEmpty(),"Track delete failed");CountDownLatch interrupted=new CountDownLatch(1);reopened.start("Interrupted",ok->{check(ok,"Interrupted track start failed");interrupted.countDown();});await(interrupted);CountDownLatch committed=new CountDownLatch(1);reopened.barrier(committed::countDown);await(committed);reopened.close();TrackStore recovered=new TrackStore(context,name);CountDownLatch recovery=new CountDownLatch(1);recovered.barrier(recovery::countDown);await(recovery);check(recovered.current()!=null&&recovered.current().state.equals("paused"),"Interrupted recording did not recover as paused");recovered.close();
     }
     private void waitUntil(java.util.function.BooleanSupplier condition,String message)throws Exception{long deadline=android.os.SystemClock.elapsedRealtime()+20000;java.util.concurrent.atomic.AtomicBoolean ready=new java.util.concurrent.atomic.AtomicBoolean();do{onUi(()->ready.set(condition.getAsBoolean()));if(ready.get())return;Thread.sleep(50);}while(android.os.SystemClock.elapsedRealtime()<deadline);throw new AssertionError(message);}
     private void maps(MainActivity activity)throws Exception{
@@ -84,6 +91,99 @@ public final class SmokeInstrumentation extends Instrumentation {
     private void receptionDetails(MainActivity activity)throws Exception{
         java.lang.reflect.Field field=MainActivity.class.getDeclaredField("service");field.setAccessible(true);RadioService service=(RadioService)field.get(activity);Message incoming=message("route-fixture","Route fixture");incoming.sender="Route test";incoming.rx.kind="flood";incoming.rx.observed=true;incoming.rx.width=2;incoming.rx.path="1234abcd";incoming.rx.hops=2;incoming.rx.snr=-3;incoming.rx.rssi=-90;onUi(()->service.history.message(RadioProfile.MESHCORE,"map-mc",incoming));waitUntil(()->service.data(RadioProfile.MESHCORE).messages.stream().anyMatch(m->m.uid.equals("route-fixture")),"Received route fixture not stored");Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);onUi(()->{try{open.invoke(activity,RadioProfile.MESHCORE,"map-mc",incoming.target());}catch(Exception e){throw new RuntimeException(e);}});click(activity,"Route fixture");android.view.accessibility.AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();check(root!=null&&!root.findAccessibilityNodeInfosByText("Message details").isEmpty(),"Tapping received text did not open details");screenshot(activity,"message-route");shell("input keyevent 4");waitForIdleSync();
     }
+    /** Loopback integration: proves Android Keystore HTTPS, auth and independent radio state. */
+    private void remoteSecurity(MainActivity activity)throws Exception{
+        java.lang.reflect.Field serviceField=MainActivity.class.getDeclaredField("service");
+        serviceField.setAccessible(true);
+        waitUntil(()->{try{return serviceField.get(activity)!=null;}catch(Exception e){return false;}},
+            "RadioService did not bind for HTTPS test");
+        RadioService service=(RadioService)serviceField.get(activity);
+        RemoteWorkspace workspace=new RemoteWorkspace(service,"127.0.0.1");
+        workspace.start(3000,false);
+        javax.net.ssl.SSLContext ssl=javax.net.ssl.SSLContext.getInstance("TLS");
+        // TEST ONLY: trust the locally generated test certificate; production browser must
+        // verify the SHA-256 fingerprint displayed by the phone.
+        javax.net.ssl.X509TrustManager permissiveTestManager=new javax.net.ssl.X509TrustManager(){
+            public java.security.cert.X509Certificate[] getAcceptedIssuers(){
+                return new java.security.cert.X509Certificate[0];
+            }
+            public void checkClientTrusted(java.security.cert.X509Certificate[] chain,String type){}
+            public void checkServerTrusted(java.security.cert.X509Certificate[] chain,String type){}
+        };
+        ssl.init(null,new javax.net.ssl.TrustManager[]{permissiveTestManager},new java.security.SecureRandom());
+        // Isolate Android TLS crypto from the NanoHTTPD request parser. Capture
+        // the server-side exception, which is otherwise hidden behind a client EOF.
+        java.util.concurrent.atomic.AtomicReference<Throwable> serverError=new java.util.concurrent.atomic.AtomicReference<>();
+        javax.net.ssl.SSLServerSocket tlsListener=(javax.net.ssl.SSLServerSocket)
+            workspace.tlsContext.getServerSocketFactory().createServerSocket(0,1,
+                java.net.InetAddress.getByName("127.0.0.1"));
+        tlsListener.setEnabledProtocols(new String[]{"TLSv1.2"});
+        Thread tlsServer=new Thread(()->{
+            try(javax.net.ssl.SSLSocket accepted=(javax.net.ssl.SSLSocket)tlsListener.accept()){
+                accepted.startHandshake();
+            }catch(Throwable error){serverError.set(error);}
+        },"TLS smoke server");
+        tlsServer.start();
+        Throwable clientError=null;
+        try(javax.net.ssl.SSLSocket client=(javax.net.ssl.SSLSocket)
+            ssl.getSocketFactory().createSocket("127.0.0.1",tlsListener.getLocalPort())){
+            client.setEnabledProtocols(new String[]{"TLSv1.2"});
+            client.setSoTimeout(6000);
+            client.startHandshake();
+        }catch(Throwable error){clientError=error;}
+        tlsServer.join(8000);
+        tlsListener.close();
+        if(clientError!=null||serverError.get()!=null)
+            throw new AssertionError("Isolated TLS failed: server="+serverError.get()+
+                " client="+clientError+"; "+workspace.tlsDiagnostics(),clientError);
+
+        try{
+            String base="https://127.0.0.1:8080";
+            java.util.function.Function<String,javax.net.ssl.HttpsURLConnection> connect=path->{
+                try{
+                    javax.net.ssl.HttpsURLConnection conn=(javax.net.ssl.HttpsURLConnection)new java.net.URL(base+path).openConnection();
+                    conn.setSSLSocketFactory(ssl.getSocketFactory());
+                    conn.setHostnameVerifier((host,session)->host.equals("127.0.0.1"));
+                    conn.setConnectTimeout(4000);conn.setReadTimeout(4000);
+                    return conn;
+                }catch(Exception e){throw new RuntimeException(e);}
+            };
+            javax.net.ssl.HttpsURLConnection denied=connect.apply("/api/state");
+            check(denied.getResponseCode()==401,"API allowed unauthenticated data");
+            denied.disconnect();
+            javax.net.ssl.HttpsURLConnection login=connect.apply("/api/login");
+            login.setRequestMethod("POST");login.setDoOutput(true);
+            login.setRequestProperty("Content-Type","application/json");
+            byte[] payload=new org.json.JSONObject().put("code",workspace.code).toString()
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            login.setFixedLengthStreamingMode(payload.length);
+            try(OutputStream out=login.getOutputStream()){out.write(payload);}
+            check(login.getResponseCode()==200,"Local HTTPS login failed");
+            String cookie=login.getHeaderField("Set-Cookie");
+            check(cookie!=null&&cookie.contains("HttpOnly")&&cookie.contains("SameSite=Strict"),
+                "Login cookie is not protected");
+            login.disconnect();
+            javax.net.ssl.HttpsURLConnection authenticated=connect.apply("/api/state");
+            authenticated.setRequestProperty("Cookie",cookie.split(";",2)[0]);
+            check(authenticated.getResponseCode()==200,"Authorized HTTPS state denied");
+            ByteArrayOutputStream response=new ByteArrayOutputStream();
+            try(InputStream in=authenticated.getInputStream()){
+                byte[] buffer=new byte[512];int n;
+                while((n=in.read(buffer))!=-1)response.write(buffer,0,n);
+            }
+            String data=response.toString("UTF-8");
+            check(data.contains("Meshtastic")&&data.contains("MeshCore"),
+                "HTTPS dashboard failed to keep both radios separate");
+            authenticated.disconnect();
+            javax.net.ssl.HttpsURLConnection csrf=connect.apply("/api/logout");
+            csrf.setRequestMethod("POST");
+            csrf.setRequestProperty("Cookie",cookie.split(";",2)[0]);
+            check(csrf.getResponseCode()==403,"Mutating HTTP endpoint accepted request without CSRF header");
+            csrf.disconnect();
+        }catch(Throwable failure){
+            throw new AssertionError("HTTPS diagnostics ("+workspace.tlsDiagnostics()+")",failure);
+        }finally{workspace.stop();}
+    }
     private void activity()throws Exception{
         MainActivity.mapStyleOverride="asset://map-test-style.json";Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();
         onUi(()->{
@@ -94,7 +194,7 @@ public final class SmokeInstrumentation extends Instrumentation {
             check(find(screen,"MT · CHATS")!=null,"Meshtastic chat card is missing");
             check(find(screen,"MC · CHATS")!=null,"MeshCore chat card is missing");
         });
-        screenshot(activity,"home");
+        screenshot(activity,"home");remoteSecurity(activity);
         for(String page:new String[]{"Contacts","Chats","Channels","Map","Settings","Home"})click(activity,page);menus(activity);recording(activity);maps(activity);mapPanels(activity);click(activity,"Home");receptionDetails(activity);
         Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);onUi(()->{try{open.invoke(activity,RadioProfile.MESHTASTIC,"offline-test",new Target("c:0:test","Test channel","","test",0,true));EditText entry=composer(activity.getWindow().getDecorView());check(entry!=null,"Composer missing");entry.setText("Draft survives rotation 👋");}catch(Exception e){throw new RuntimeException(e);}});
         waitForIdleSync();screenshot(activity,"chat-draft");Method settings=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);settings.setAccessible(true);onUi(()->{try{settings.invoke(activity,"data",null);}catch(Exception e){throw new RuntimeException(e);}});screenshot(activity,"settings-data");
