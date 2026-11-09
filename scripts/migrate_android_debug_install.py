@@ -262,7 +262,7 @@ def validate_archive(archive_path):
                     raise RuntimeError("Unexpected format in " + filename)
                 required = HISTORY if filename == "history.json" else TRACKS
                 tables = record.get("tables") if filename == "history.json" else record
-                if not all(isinstance(tables.get(table), list) for table in required):
+                if not isinstance(tables, dict) or not all(isinstance(tables.get(table), list) for table in required):
                     raise RuntimeError("Missing data table in " + filename)
             else:
                 # This is structural integrity validation, not an importer
@@ -271,7 +271,11 @@ def validate_archive(archive_path):
                     prefix = entry.read(256).lstrip()
                 if not prefix.startswith(b'{"format":"MeshCrosswayTracks","version":1,'):
                     raise RuntimeError("Unexpected large-track archive header")
-    return hashlib.sha256(archive_path.read_bytes()).hexdigest()
+    digest = hashlib.sha256()
+    with archive_path.open("rb") as stream:
+        for block in iter(lambda: stream.read(65536), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
 
 def archive_counts(folder):
@@ -283,6 +287,13 @@ def archive_counts(folder):
     ):
         db = connect(folder / "databases" / filename)
         try:
+            required = ("messages", "nodes", "channels") if filename.endswith("history.db") else ("tracks", "fixes")
+            for must_have in required:
+                present = db.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (must_have,)
+                ).fetchone()
+                if not present:
+                    raise RuntimeError("Installed database is missing a required table: " + must_have)
             integrity = db.execute("PRAGMA quick_check(1)").fetchone()
             if not integrity or integrity[0] != "ok":
                 raise RuntimeError("Local SQLite integrity check failed")
