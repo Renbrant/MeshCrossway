@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Install MeshCrossway development firmware directly from a compatible desktop browser."><title>Web Flasher — MeshCrossway</title><link rel="stylesheet" href="/MeshCrossway/assets/site.css"></head><body><nav class="nav"><div class="wrap navin"><a class="brand" href="/MeshCrossway/" aria-label="MeshCrossway home"><img src="/MeshCrossway/assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44"></a><div class="links"><a href="/MeshCrossway/about/">About</a><a href="/MeshCrossway/hardware/">Hardware</a><a href="/MeshCrossway/software/">Software</a><a href="/MeshCrossway/android/">Android beta</a><a href="/MeshCrossway/roadmap/">Roadmap</a><a href="/MeshCrossway/project-status/">Project Status</a><a href="/MeshCrossway/faq/">FAQ</a></div><a class="cta" href="/MeshCrossway/flasher/">Web Flasher</a></div></nav><script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Install MeshCrossway development firmware directly from a compatible desktop browser."><title>Web Flasher — MeshCrossway</title><link rel="stylesheet" href="../assets/site.css"></head><body><nav class="nav"><div class="wrap navin"><a class="brand" href="../" aria-label="MeshCrossway home"><img src="../assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44"></a><div class="links"><a href="../about/">About</a><a href="../hardware/">Hardware</a><a href="../software/">Software</a><a href="../android/">Android beta</a><a href="../roadmap/">Roadmap</a><a href="../project-status/">Project Status</a><a href="../faq/">FAQ</a></div><a class="cta" href="../flasher/">Web Flasher</a></div></nav><script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script><style>
 #flasher-app{--mcx-orange:#ff8a24;--mcx-panel:#111820;--mcx-line:#79502c}
 #flasher-app .flashbox{border-color:#684627;background:#111820}
 #flasher-app .version-select{display:block;width:100%;max-width:640px;margin:12px 0 16px;padding:15px 14px;border:1px solid #aa682f;border-radius:10px;background:#19212b;color:#fff;font:inherit;font-weight:800;cursor:pointer}
@@ -49,12 +49,12 @@
 <div class="notice"><b>Target limitation:</b> these images are for the Waveshare ESP32-S3-Touch-LCD-3.5 <b>non-B, Rev2.0</b> display. Do not flash a XIAO radio module or a Waveshare 3.5B with this image. Firmware installation may overwrite data.</div>
 <h2>How versions are maintained</h2>
 <p>The newest candidate is <b>automatically published after the GitHub Actions build and checks succeed</b>; it remains labeled experimental until hardware validation. The latest stable firmware is selected by default. Firmware images are <b>compiled automatically in GitHub Actions</b> from pinned source commits. The browser installs the compiled binary; it does not compile ESP-IDF source code locally. Each selectable build keeps its own manifest and SHA-256 checksum. Obsolete and known-broken versions are excluded from the active Web Flasher list; historical source commits remain in GitHub.</p>
-<p><a class="inset-link" href="https://github.com/Renbrant/MeshCrossway/actions">View build and deployment history on GitHub</a></p>
+<p><a class="inset-link" href="https://github.com/Renbrant../actions">View build and deployment history on GitHub</a></p>
 </div></section></main>
 <script>
 (() => {
   'use strict';
-  const base='/MeshCrossway/flasher/firmware/';
+  const base='../flasher/firmware/';
   const select=document.getElementById('firmware-picker');
   const status=document.getElementById('build-status');
   const release=document.getElementById('firmware-release');
