@@ -66,7 +66,7 @@ final class RemoteWorkspace extends NanoHTTPD {
         server.start(SOCKET_READ_TIMEOUT,false);
         return server;
     }
-    private RemoteWorkspace(RadioService owner,String ip)throws Exception{
+    RemoteWorkspace(RadioService owner,String ip)throws Exception{
         super(ip,PORT);this.owner=owner;this.ip=ip;code=randomToken(18);
         KeyStore keyStore=KeyStore.getInstance("AndroidKeyStore");keyStore.load(null);
         if(!keyStore.containsAlias(ALIAS)){
@@ -269,6 +269,7 @@ final class RemoteWorkspace extends NanoHTTPD {
     }
     private static Target target(Snapshot data,String topic){
         if(topic==null||topic.length()>256)return null;
+        for(Conversation conversation:data.conversations())if(conversation.target.topic.equals(topic))return conversation.target;
         for(Channel channel:data.channels)
             if(channel.enabled&&channel.topic().equals(topic))return Target.channel(channel);
         for(Node node:data.nodes){
@@ -348,7 +349,7 @@ final class RemoteWorkspace extends NanoHTTPD {
             double east=body.optDouble("east",Double.NaN),west=body.optDouble("west",Double.NaN);
             int zoom=body.optInt("zoom",-1);
             if(name.length()<1||name.length()>80||!GeoMath.valid(north,east)||
-               !GeoMath.valid(south,west)||north<=south||west>=east||zoom<0||zoom>17)
+               !GeoMath.valid(south,west)||north<=south||west>=east||zoom<1||zoom>15)
                 throw new IllegalArgumentException("Invalid map bounds, name or zoom");
             long estimated=GeoMath.tileEstimate(south,west,north,east,zoom);
             if(estimated>GeoMath.MAX_TILES)throw new IllegalArgumentException("Area exceeds tile limit");
