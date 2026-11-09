@@ -164,34 +164,99 @@ public final class MainActivity extends Activity {
     }
     private void remotePanel(){
         if(service==null){
-            Toast.makeText(this,"Radio service is starting",Toast.LENGTH_SHORT).show();return;
+            Toast.makeText(this,"Radio service is starting",Toast.LENGTH_SHORT).show();
+            return;
         }
-        if(service.remoteWorkspace==null){
-            new AlertDialog.Builder(this).setTitle("Remote Access · HTTPS")
-                .setMessage("Host a private workspace on the same Wi-Fi network. A computer must confirm this phone's certificate fingerprint and enter the temporary access code shown on the phone. No internet, relay or port forwarding is required. Keep the access code private.")
-                .setPositiveButton("Enable",(dialog,which)->{
-                    if(service.allowed())startForegroundService(new Intent(this,RadioService.class));
-                    if(service.startRemote())showRemoteCredentials();
-                    else Toast.makeText(this,service.remoteError,Toast.LENGTH_LONG).show();
-                    rebuildContent();
-                }).setNegativeButton("Cancel",null).show();
-        }else showRemoteCredentials();
+        if(service.remoteWorkspace==null)showRemotePinEditor(false);
+        else showRemoteCredentials();
+    }
+    /** Numeric PIN is intentionally visible on the phone so it is easy to copy to a PC. */
+    private void showRemotePinEditor(boolean changing){
+        if(service==null)return;
+        LinearLayout container=column();
+        container.setPadding(dp(22),dp(4),dp(22),dp(4));
+        EditText pin=new EditText(this);
+        pin.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        pin.setSingleLine(true);
+        pin.setTextSize(24);
+        pin.setTextColor(WHITE);
+        pin.setHintTextColor(MUTED);
+        pin.setHint("4–8 digit PIN");
+        pin.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(8)});
+        pin.setText(changing?service.remoteCode():RemoteWorkspace.newShortPin());
+        pin.setSelectAllOnFocus(true);
+        pin.setContentDescription("Remote Access PIN, four to eight digits");
+        container.addView(pin,new LinearLayout.LayoutParams(-1,dp(56)));
+        String guidance=changing?
+            "Choose a new 4–8 digit numeric PIN. Existing browser sessions will sign out immediately.":
+            "Choose your own 4–8 digit numeric PIN, or keep the suggested 6-digit PIN. "+
+            "Type the same PIN in your computer browser. Use a trusted local Wi-Fi network.";
+        AlertDialog dialog=new AlertDialog.Builder(this)
+            .setTitle(changing?"Change Remote Access PIN":"Enable Remote Access")
+            .setMessage(guidance)
+            .setView(container)
+            .setNegativeButton("Cancel",null)
+            .setPositiveButton(changing?"Save PIN":"Enable",null)
+            .create();
+        dialog.setOnShowListener(ignored->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view->{
+            String entered=pin.getText().toString();
+            if(!RemoteWorkspace.validPin(entered)){
+                pin.setError("Enter 4 to 8 numbers (0–9)");
+                return;
+            }
+            if(service==null){dialog.dismiss();return;}
+            if(changing){
+                if(service.changeRemotePin(entered)){
+                    dialog.dismiss();showRemoteCredentials();rebuildContent();
+                }else pin.setError("Could not change PIN");
+            }else{
+                if(service.allowed())startForegroundService(new Intent(this,RadioService.class));
+                if(service.startRemote(entered)){
+                    dialog.dismiss();showRemoteCredentials();rebuildContent();
+                }else Toast.makeText(this,service.remoteError,Toast.LENGTH_LONG).show();
+            }
+        }));
+        dialog.show();
     }
     private void showRemoteCredentials(){
         if(service==null||service.remoteWorkspace==null)return;
-        String message="Address: "+service.remoteUrl()+"\n\nOne-time session code:\n"+
-            service.remoteCode()+"\n\nTLS certificate SHA-256 fingerprint:\n"+
-            service.remoteFingerprint()+"\n\nVerify the fingerprint displayed by your computer before entering the code. "+
-            "The browser will warn about the local self-signed certificate. "+
-            "Use only trusted devices on a private LAN. Stop access when finished.";
+        LinearLayout details=column();
+        details.setPadding(dp(22),dp(8),dp(22),dp(4));
+        details.addView(text("Open this address on your computer:",13,MUTED));
+        space(details,4);
+        TextView url=text(service.remoteUrl(),16,WHITE);
+        url.setTextIsSelectable(true);
+        details.addView(url);
+        space(details,15);
+        details.addView(text("ACCESS PIN",12,MUTED));
+        space(details,3);
+        TextView displayedPin=text(service.remoteCode(),30,ORANGE);
+        displayedPin.setTypeface(null,Typeface.BOLD);
+        displayedPin.setTextIsSelectable(true);
+        details.addView(displayedPin);
+        space(details,9);
+        details.addView(text("Enter this same PIN in the browser. Only use on trusted local Wi-Fi.",13,MUTED));
+        space(details,13);
+        TextView fingerprintLink=text("View HTTPS certificate fingerprint",13,WHITE);
+        fingerprintLink.setPadding(dp(8),dp(10),dp(8),dp(10));
+        fingerprintLink.setBackground(surface(PANEL));
+        fingerprintLink.setOnClickListener(v->{
+            if(service==null||service.remoteWorkspace==null)return;
+            new AlertDialog.Builder(this).setTitle("HTTPS certificate fingerprint")
+                .setMessage("Confirm that the certificate fingerprint shown by your browser matches this value:\n\n"+
+                    service.remoteFingerprint())
+                .setPositiveButton("Back",null).show();
+        });
+        details.addView(fingerprintLink);
         new AlertDialog.Builder(this).setTitle("Remote Access · Active")
-            .setMessage(message)
+            .setView(details)
             .setNeutralButton("Copy address",(dialog,which)->{
                 ((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE))
                     .setPrimaryClip(ClipData.newPlainText("MeshCrossway remote URL",service.remoteUrl()));
             })
             .setNegativeButton("Stop server",(dialog,which)->{service.stopRemote();rebuildContent();})
-            .setPositiveButton("Done",null).show();
+            .setPositiveButton("Change PIN",(dialog,which)->showRemotePinEditor(true))
+            .show();
     }
     // Home reads the same independent per-radio snapshots as Contacts, Chats and Channels.
     private LinearLayout dashboardRow(){

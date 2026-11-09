@@ -61,7 +61,7 @@ public final class RadioService extends Service {
         @Override public void onServiceDisconnected(ComponentName name){remoteTracks=null;changed();}
     };
     String remoteUrl(){return remoteWorkspace==null?"":remoteWorkspace.url();}
-    String remoteCode(){return remoteWorkspace==null?"":remoteWorkspace.code;}
+    String remoteCode(){return remoteWorkspace==null?"":remoteWorkspace.accessPin();}
     String remoteFingerprint(){return remoteWorkspace==null?"":remoteWorkspace.fingerprint;}
     String remoteError="";
     private final Runnable remoteNetworkWatch=new Runnable(){
@@ -73,10 +73,14 @@ public final class RadioService extends Service {
             }else handler.postDelayed(this,10000);
         }
     };
-    boolean startRemote(){
+    boolean startRemote(String pin){
         if(remoteWorkspace!=null)return true;
+        if(!RemoteWorkspace.validPin(pin)){
+            remoteError="Remote Access PIN must contain 4–8 digits";
+            changed();return false;
+        }
         try{
-            remoteWorkspace=RemoteWorkspace.start(this);
+            remoteWorkspace=RemoteWorkspace.start(this,pin);
             remoteTrackBound=bindService(new Intent(this,TrackService.class),remoteTrackConnection,BIND_AUTO_CREATE);
             remoteError="";
             handler.removeCallbacks(remoteNetworkWatch);
@@ -86,6 +90,10 @@ public final class RadioService extends Service {
             remoteError="Local HTTPS server unavailable • check Wi-Fi, port 8080 and certificate setup";
             changed();return false;
         }
+    }
+    boolean changeRemotePin(String pin){
+        if(remoteWorkspace==null||!RemoteWorkspace.validPin(pin))return false;
+        remoteWorkspace.changePin(pin);changed();return true;
     }
     void stopRemote(){
         handler.removeCallbacks(remoteNetworkWatch);
