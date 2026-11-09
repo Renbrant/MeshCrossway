@@ -365,8 +365,8 @@ public final class MainActivity extends Activity {
         indicator.setPadding(0,dp(9),0,0);
         for(int index=0;index<4;index++){
             View bar=new View(this);
-            int color=!BleSignal.valid(rssi)?MUTED:!current?MUTED:
-                index<bars?accent:PANEL2;
+            int color=!BleSignal.valid(rssi)?PANEL2:
+                index<bars?(current?accent:MUTED):PANEL2;
             GradientDrawable shape=new GradientDrawable();
             shape.setColor(color);
             shape.setCornerRadius(dp(2));
