@@ -1,0 +1,48 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.meshcrossway.android'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+    defaultConfig {
+        applicationId 'com.meshcrossway.mobile'
+        minSdk 26
+        targetSdk 35
+        versionCode 15
+        versionName '0.2.5'
+        testInstrumentationRunner 'com.meshcrossway.android.SmokeInstrumentation'
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    splits { abi { enable true; reset(); include 'arm64-v8a', 'x86_64'; universalApk false } }
+    packaging { jniLibs { useLegacyPackaging true } }
+    lint { abortOnError true }
+    // All published releases MUST use the same long-lived signing certificate.
+    // Keystore and passwords are injected by CI secrets; never commit them.
+    signingConfigs {
+        permanent {
+            def keystorePath = System.getenv('MCX_SIGNING_KEYSTORE')
+            if (keystorePath != null && !keystorePath.isEmpty()) {
+                storeFile file(keystorePath)
+                storePassword System.getenv('MCX_SIGNING_STORE_PASSWORD')
+                keyAlias System.getenv('MCX_SIGNING_KEY_ALIAS')
+                keyPassword System.getenv('MCX_SIGNING_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            // If no keystore is configured, the APK is unsigned and must NOT
+            // be published. The release workflow fails closed before building.
+            if (System.getenv('MCX_SIGNING_KEYSTORE')) {
+                signingConfig signingConfigs.permanent
+            }
+        }
+    }
+}
+
+dependencies {
+    implementation 'org.maplibre.gl:android-sdk:11.13.5'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'com.squareup.okio:okio-jvm:3.6.0'
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
+    testImplementation 'junit:junit:4.13.2'
+}

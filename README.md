@@ -16,7 +16,7 @@
 
 **Updating from 0.2.4:** Install 0.2.5 over the existing app. It uses the same permanent release signing certificate, so local messages, settings, favorites, tracks and offline maps remain in place. Do not uninstall to update.
 
-Builds **0.2.2 and earlier** used temporary debug signing. If you still have local data on one of those builds, follow the [one-time signing migration and backup guide](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md) before changing versions. Uninstalling deletes app data.
+Builds **0.2.2 and earlier** used temporary debug signing. If you still have local data on one of those builds, follow the [one-time signing migration and backup guide](https://github.com/Renbrant/MeshCrossway/blob/main/docs/android-permanent-signing-backup.md) before changing versions. Uninstalling deletes app data.
 
 ## What the beta includes
 
@@ -51,3 +51,7 @@ The ESP32 touchscreen device remains a secondary development project; its hardwa
 ## Contributing and license
 
 Contributions to the Android app, documentation and testing are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and open an [issue](https://github.com/Renbrant/MeshCrossway/issues). MeshCrossway is experimental and is not certified for safety-critical use. Original project code and documentation use the [MIT License](LICENSE); see [licensing](docs/licensing.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+## Development branch policy
+
+The **`main` branch is the source of truth** for both the Android application (`android/`) and the ESP32 controller (`firmware/display-prototype/`). The former `baseline/android-0.1.0` branch is retained as a historical/reference baseline, not the active Android development branch. Android tests are checked from `main`, while published signed APKs remain immutable and require an explicit reviewed release process. **Source code on `main` can include unreleased features**; do not confuse it with the latest installable beta. See [Android development](android/README.md) and [message context actions](docs/android-message-actions.md).

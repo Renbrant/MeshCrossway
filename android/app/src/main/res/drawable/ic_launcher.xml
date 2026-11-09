@@ -1,0 +1,9 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="64" android:viewportHeight="64">
+    <!-- Monochrome notification small icon; Android tints the supplied silhouette. -->
+    <group android:translateY="10">
+        <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+            android:pathData="M61.11,41.00 L61.08,40.00 L59.26,37.00 L58.40,36.00 L52.37,27.00 L51.45,26.00 L38.00,6.07 L37.00,5.28 L34.84,8.00 L32.27,12.00 L30.71,14.00 L29.60,16.00 L28.12,18.00 L27.00,19.12 L26.00,18.34 L22.00,12.41 L21.00,12.03 L18.54,16.00 L17.64,17.00 L2.21,40.00 L2.43,41.00 L3.00,41.15 L10.00,41.22 L11.00,40.98 L20.45,27.00 L22.00,25.63 L27.00,32.61 L28.00,32.25 L34.94,22.00 L37.00,19.34 L38.00,20.14 L39.45,22.00 L44.66,30.00 L46.25,32.00 L52.00,40.57 L53.00,41.22 L60.00,41.18 Z M40.58,41.00 L40.62,40.00 L40.09,39.00 L35.00,31.70 L34.00,32.15 L30.59,37.00 L30.60,38.00 L31.76,40.00 L33.00,41.18 L39.00,41.22 Z" />
+    </group>
+</vector>

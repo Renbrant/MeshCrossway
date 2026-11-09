@@ -1,0 +1,17 @@
+package com.meshcrossway.android;
+
+import java.util.*;
+
+public final class RxInfoTest {
+    static void check(boolean condition,String message){if(!condition)throw new AssertionError(message);}
+    public static void main(String[] args){
+        check(RxInfo.meshcore(0x46).hops==6&&RxInfo.meshcore(0x46).width==2,"encoded two-byte hashes are six hops, not seventy");check(RxInfo.meshcore(255).hops==-1&&RxInfo.meshcore(255).kind.equals("direct"),"direct routing does not mean zero hops");check(RxInfo.meshcore(0).hops==0,"zero-hop flood");check(RxInfo.meshcore(0xc1).hops==-1&&RxInfo.meshcore(0x7f).hops==-1,"invalid hash mode and oversize path ignored");
+        // Static fixture independently generated using Python cryptography AES and stdlib HMAC.
+        byte[] key=Wire.unhex("8b3387e9c5cdea6ac9e5edbaa115cd72"),raw=Wire.unhex("88f4a615421234abcd119662e924784958d0e787f10ccab78ae95f21");RxInfo.Observation observed=RxInfo.channelLog(raw,key,100);
+        check(observed!=null&&observed.time==1700000000L&&observed.body.equals("Bot: reply"),"validated channel log plaintext");check(observed.info.path.equals("1234abcd")&&observed.info.hops==2&&observed.info.width==2&&observed.info.snr==-3&&observed.info.rssi==-90,"observed ordered hashes and receive signal");byte[] corrupt=raw.clone();corrupt[corrupt.length-1]^=1;check(RxInfo.channelLog(corrupt,key,100)==null,"bad MAC cannot supply a route");check(RxInfo.channelLog(Arrays.copyOf(raw,8),key,100)==null,"truncated log ignored");check(RxInfo.channelLog(raw,new byte[16],100)==null,"other channel cannot supply a route");
+        ProtocolClientTest.Events events=new ProtocolClientTest.Events();ProtocolClient mc=ProtocolClientTest.mc(events);mc.channelKeys.put(0,key);mc.channels.get(0).identity=Wire.hash(key);mc.receive(raw,101);check(events.messages.isEmpty(),"raw log cannot create a user message");byte[] text=new byte[21];text[0]=17;text[1]=8;text[5]=66;Wire.put32(text,7,1700000000L);System.arraycopy("Bot: reply".getBytes(),0,text,11,10);mc.receive(text,102);check(events.messages.size()==1&&events.messages.get(0).rx.observed,"raw-before-notification exact matching");
+        ProtocolClientTest.Events late=new ProtocolClientTest.Events();ProtocolClient second=ProtocolClientTest.mc(late);second.channelKeys.put(0,key);second.channels.get(0).identity=Wire.hash(key);second.receive(text,110);String uid=late.messages.get(0).uid;check(!late.messages.get(0).rx.observed,"notification alone has no invented path");second.receive(raw,111);check(late.messages.size()==2&&late.messages.get(1).uid.equals(uid)&&late.messages.get(1).rx.observed,"late log enriches the same message identity");
+        ProtocolClientTest.Events mtEvents=new ProtocolClientTest.Events();ProtocolClient mt=ProtocolClientTest.mt(mtEvents);byte[] packet=new Wire.Out().fixed(1,200).fixed(2,0xffffffffL).fixed(6,99).scalar(15,3).scalar(9,1).fixed(8,Float.floatToIntBits(7.25f)).scalar(12,-90).scalar(19,42).scalar(14,1).bytes(4,new Wire.Out().scalar(1,1).bytes(2,"hello".getBytes()).array()).array();mt.receive(ProtocolClientTest.wrapped(2,packet),120);RxInfo info=mtEvents.messages.get(0).rx;check(info.hops==2&&info.snr==7.25&&info.rssi==-90&&info.relay==42&&info.mqtt&&!info.observed,"Meshtastic metadata with no fabricated full route");
+        System.out.println("Receive metadata: encoded hops, MAC-checked routes, correlation, malformed logs and MT signal passed");
+    }
+}
