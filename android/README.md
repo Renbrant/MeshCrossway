@@ -1,6 +1,6 @@
 # MeshCrossway Android
 
-**Development: 0.2.4 beta (versionCode 14), using the permanent signing identity established by 0.2.3** · [Install the Android APK](../docs/android-apk.md) · [Previous 0.2.1 recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
+**Development: 0.2.5 beta (versionCode 15), using the permanent signing identity established by 0.2.3** · [Install the Android APK](../docs/android-apk.md) · [Previous 0.2.1 recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
 
 Native ARM64 Android 8.0+ app for **two independent, simultaneous BLE radio sessions**: one Meshtastic and one MeshCore Companion. The application does **not** bridge, route or relay messages across networks. Its primary UI includes chats, channels, contacts, offline MapLibre areas, local phone GPS tracks/GPX and saved message history.
 
@@ -44,6 +44,14 @@ manual migration to another phone. They are NOT the normal update procedure.
 An uninstall deliberately destroys the app-private data; no app can silently
 read those erased files later. Android Auto Backup is currently disabled for
 private messages and location histories, and is not needed for normal updates.
+
+## New in 0.2.5 — Compact Home and Bluetooth signal strength
+
+The Home opens with the **Meshtastic** and **MeshCore** connection cards side by side, immediately under the app header. The redundant global `MT ready · MC ready` line and full-width `Dual mesh dashboard` summary were removed from Home, as were the repeated headings between **Nodes, Chats, Channels, GPS and Tracks**. Card margins and vertical spacing are tighter, while every existing card retains its tap action and the independent per-radio colors.
+
+Each connection card now has **four Bluetooth signal bars** and a measured **BLE RSSI in dBm**, read with Android's `BluetoothGatt.readRemoteRssi()` only when the corresponding radio's normal BLE operation queue is idle (approximately once every 20 seconds). The last valid RSSI reading is stored *for that exact radio address*, and shown as **Last BLE** in muted colors after disconnection. If no measurement is available, the card says **BLE signal unavailable**. The value is the signal strength of the **phone-to-radio BLE connection**, **not** a LoRa link-quality measurement. Skipping or failing an RSSI read does not disconnect the radios or interrupt messaging.
+
+**Remote Access** remains available lower on Home and retains the same HTTPS/PIN functionality. No message, node, channel, GPS-track, offline-map or firmware protocol schema has changed. The release still uses the same permanent Android signing certificate introduced in 0.2.3; install newer APKs **on top of** the existing app without uninstalling, to preserve local data.
 
 ## New in 0.2.4 — Appearance and color themes
 
@@ -94,6 +102,7 @@ The `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk` output is a de
 - **0.2.2**: browser Chats, Channels and Nodes tabs, visual rectangle-based offline map selection and saved-area previews ([recovery beta](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.2)).
 - **0.2.3**: first permanent release signing and complete backup/restore; one-time recovery from old debug-signed APKs.
 - **0.2.4**: System, Color, Gradient (Linear/Mesh) and Photo appearance options, with persistent customization.
+- **0.2.5**: compact Home, two leading connection cards, true per-radio BLE RSSI bars, no duplicate section headings.
 - **0.2.3+**: subsequent small fixes; **0.3.0** or later for larger feature releases; **1.0.0** remains a future production milestone.
 
 The installed app may be signed with a different CI debug key. If Android rejects an update due to a signing conflict, first export JSON history and required GPX tracks, then uninstall/reinstall. **Uninstalling deletes local application data.**

@@ -398,11 +398,33 @@ public final class SmokeInstrumentation extends Instrumentation {
             }else image.delete();
         }
     }
+    private void bleSignal()throws Exception{
+        check(BleSignal.bars(BleSignal.UNKNOWN)==0&&
+            BleSignal.bars(-50)==4&&BleSignal.bars(-64)==3&&
+            BleSignal.bars(-74)==2&&BleSignal.bars(-85)==1&&
+            BleSignal.bars(-105)==0,"BLE RSSI four-bar mapping is wrong");
+        check(BleSignal.label(BleSignal.UNKNOWN,false).equals("BLE signal unavailable"),
+            "Unknown RSSI must not be misrepresented as signal strength");
+        check(BleSignal.label(-71,true).startsWith("BLE -71 dBm")&&
+            BleSignal.label(-71,false).startsWith("Last BLE -71 dBm"),
+            "Current and previous BLE readings must be identified separately");
+        check(BleSignal.recent(System.currentTimeMillis()-1000,System.currentTimeMillis())&&
+            !BleSignal.recent(System.currentTimeMillis()-25L*60*60*1000,
+                System.currentTimeMillis()),"Old RSSI should not be treated as current");
+    }
     private void activity()throws Exception{
         MainActivity.mapStyleOverride="asset://map-test-style.json";Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();
         onUi(()->{
             View screen=activity.getWindow().getDecorView();
-            check(find(screen,"Dual mesh dashboard")!=null,"Dual-mesh dashboard is missing");
+            check(find(screen,"Dual mesh dashboard")==null,
+                "Home should not repeat the radio status in a full-width summary");
+            check(find(screen,"RADIO CONNECTIONS")==null&&
+                find(screen,"NODES")==null&&find(screen,"FIELD TOOLS")==null,
+                "Home should not waste vertical space on duplicate section headings");
+            check(find(screen,"MESHTASTIC")!=null&&find(screen,"MESHCORE")!=null,
+                "Both radio status cards must appear at the top");
+            check(find(screen,"Remote Access")!=null,
+                "Remote Access must remain available after the layout change");
             check(find(screen,"MT · NODES")!=null,"Meshtastic node card is missing");
             check(find(screen,"MC · NODES")!=null,"MeshCore node card is missing");
             check(find(screen,"MT · CHATS")!=null,"Meshtastic chat card is missing");
@@ -429,5 +451,5 @@ public final class SmokeInstrumentation extends Instrumentation {
         waitForIdleSync();screenshot(activity,"chat-draft");Method settings=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);settings.setAccessible(true);onUi(()->{try{settings.invoke(activity,"data",null);}catch(Exception e){throw new RuntimeException(e);}});screenshot(activity,"settings-data");
         ActivityMonitor monitor=addMonitor(MainActivity.class.getName(),null,false);onUi(activity::recreate);MainActivity recreated=(MainActivity)waitForMonitorWithTimeout(monitor,10000);check(recreated!=null,"Activity recreation timed out");waitForIdleSync();onUi(recreated::onBackPressed);waitForIdleSync();java.util.concurrent.atomic.AtomicReference<String> restored=new java.util.concurrent.atomic.AtomicReference<>("");long deadline=android.os.SystemClock.elapsedRealtime()+10000;do{onUi(()->{EditText entry=composer(recreated.getWindow().getDecorView());restored.set(entry==null?"<no composer>":entry.getText().toString());});if(restored.get().equals("Draft survives rotation 👋"))break;Thread.sleep(50);}while(android.os.SystemClock.elapsedRealtime()<deadline);screenshot(recreated,"chat-restored");check(restored.get().equals("Draft survives rotation 👋"),"Rotation lost composer draft: "+restored.get());onUi(recreated::finish);removeMonitor(monitor);
     }
-    @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();backups();tracks();appearance();activity();sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
+    @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();backups();tracks();appearance();bleSignal();activity();sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
 }
