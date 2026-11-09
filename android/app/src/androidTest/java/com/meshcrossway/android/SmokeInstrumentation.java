@@ -160,7 +160,7 @@ public final class SmokeInstrumentation extends Instrumentation {
             javax.net.ssl.HttpsURLConnection login=connect.apply("/api/login");
             login.setRequestMethod("POST");login.setDoOutput(true);
             login.setRequestProperty("Content-Type","application/json");
-            byte[] payload=new org.json.JSONObject().put("code",workspace.code).toString()
+            byte[] payload=new org.json.JSONObject().put("code",workspace.accessPin()).toString()
                 .getBytes(java.nio.charset.StandardCharsets.UTF_8);
             login.setFixedLengthStreamingMode(payload.length);
             try(OutputStream out=login.getOutputStream()){out.write(payload);}
