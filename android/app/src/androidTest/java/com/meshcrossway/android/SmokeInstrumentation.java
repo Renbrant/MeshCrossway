@@ -45,7 +45,46 @@ public final class SmokeInstrumentation extends Instrumentation {
         store.moveTrack(id,folderId);
         CountDownLatch moved=new CountDownLatch(1);store.barrier(moved::countDown);await(moved);
         check(store.tracks.get(0).folderId.equals(folderId),"Track folder assignment did not persist");
-        store.metadata(id,"Renamed",TrackStore.COLORS[1],false);CountDownLatch updated=new CountDownLatch(1);store.barrier(updated::countDown);await(updated);check(!store.tracks.get(0).visible&&store.tracks.get(0).name.equals("Renamed"),"Track metadata not updated");store.close();
+        store.metadata(id,"Renamed",TrackStore.COLORS[1],false);CountDownLatch updated=new CountDownLatch(1);store.barrier(updated::countDown);await(updated);check(!store.tracks.get(0).visible&&store.tracks.get(0).name.equals("Renamed"),"Track metadata not updated");
+        ByteArrayOutputStream fullTrackBackup=new ByteArrayOutputStream();
+        CountDownLatch fullExport=new CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicReference<String> archiveStatus=new java.util.concurrent.atomic.AtomicReference<>("");
+        store.exportArchive(fullTrackBackup,status->{archiveStatus.set(status);fullExport.countDown();});
+        await(fullExport);
+        check(archiveStatus.get().isEmpty(),"Complete track archive could not export");
+        String backupJSON=fullTrackBackup.toString("UTF-8");
+        check(backupJSON.contains("MeshCrosswayTracks")&&backupJSON.contains("Hiking")&&
+            backupJSON.contains("Renamed"),"Full backup lost folder/track metadata");
+        String migrateDb="track-migration-destination.db";
+        context.deleteDatabase(migrateDb);
+        TrackStore imported=new TrackStore(context,migrateDb);
+        CountDownLatch fullImport=new CountDownLatch(1);
+        imported.importArchive(new ByteArrayInputStream(fullTrackBackup.toByteArray()),status->{
+            archiveStatus.set(status);fullImport.countDown();
+        });
+        await(fullImport);
+        check(archiveStatus.get().isEmpty(),"Complete track archive import failed");
+        CountDownLatch migrated=new CountDownLatch(1);imported.barrier(migrated::countDown);await(migrated);
+        check(imported.tracks.size()==1&&imported.folders.size()==1,"Full archive lost track/folder");
+        TrackStore.Track migratedTrack=imported.tracks.get(0);
+        check(migratedTrack.id.equals(id)&&migratedTrack.count==3&&
+            migratedTrack.folderId.equals(folderId)&&migratedTrack.name.equals("Renamed")&&
+            !migratedTrack.visible,"Complete track archive lost recording or metadata");
+        try(android.database.Cursor points=imported.getReadableDatabase().rawQuery(
+            "SELECT count(*) FROM fixes WHERE track=?",new String[]{id})){
+            check(points.moveToFirst()&&points.getInt(0)==3,
+                "Complete track archive did not restore ALL GPS points");
+        }
+        String corrupted=backupJSON.replace("MeshCrosswayTracks","InvalidTrackArchive");
+        CountDownLatch rejectedBackup=new CountDownLatch(1);
+        imported.importArchive(new ByteArrayInputStream(corrupted.getBytes("UTF-8")),status->{
+            archiveStatus.set(status);rejectedBackup.countDown();
+        });
+        await(rejectedBackup);
+        check(!archiveStatus.get().isEmpty()&&imported.tracks.size()==1,
+            "Malformed track archive should be rejected without deleting existing records");
+        imported.close();
+        store.close();
         TrackStore reopened=new TrackStore(context,name);CountDownLatch ready=new CountDownLatch(1);reopened.barrier(ready::countDown);await(ready);check(reopened.tracks.size()==1&&reopened.tracks.get(0).count==3,"Track lost after reopen");check(reopened.tracks.get(0).folderId.equals(folderId)&&reopened.folders.size()==1,"Track folders lost on reopen");reopened.deleteFolder(folderId);CountDownLatch unfoldered=new CountDownLatch(1);reopened.barrier(unfoldered::countDown);await(unfoldered);check(reopened.folders.isEmpty()&&reopened.tracks.get(0).folderId.isEmpty(),"Deleting folder removed track or left an orphan");reopened.delete(id);CountDownLatch deleted=new CountDownLatch(1);reopened.barrier(deleted::countDown);await(deleted);check(reopened.tracks.isEmpty(),"Track delete failed");CountDownLatch interrupted=new CountDownLatch(1);reopened.start("Interrupted",ok->{check(ok,"Interrupted track start failed");interrupted.countDown();});await(interrupted);CountDownLatch committed=new CountDownLatch(1);reopened.barrier(committed::countDown);await(committed);reopened.close();TrackStore recovered=new TrackStore(context,name);CountDownLatch recovery=new CountDownLatch(1);recovered.barrier(recovery::countDown);await(recovery);check(recovered.current()!=null&&recovered.current().state.equals("paused"),"Interrupted recording did not recover as paused");recovered.close();
     }
     private void waitUntil(java.util.function.BooleanSupplier condition,String message)throws Exception{long deadline=android.os.SystemClock.elapsedRealtime()+20000;java.util.concurrent.atomic.AtomicBoolean ready=new java.util.concurrent.atomic.AtomicBoolean();do{onUi(()->ready.set(condition.getAsBoolean()));if(ready.get())return;Thread.sleep(50);}while(android.os.SystemClock.elapsedRealtime()<deadline);throw new AssertionError(message);}
