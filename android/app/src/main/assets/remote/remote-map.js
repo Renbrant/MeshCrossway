@@ -49,7 +49,7 @@
   constructor(viewport,options){
    this.viewport=viewport;
    this.options=options||{};
-   this.lat=39.7;this.lon=-104.9; // only a temporary initial view; no location is inferred
+   this.lat=0;this.lon=0; // Neutral global default; My location requires browser permission.
    this.zoom=3;this.mode="pan";this.selection=null;this.saved=[];
    this.tiles=new Map();this.pending=null;this.drag=null;
    this.host=document.createElement("div");this.host.className="map-tiles";
