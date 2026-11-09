@@ -1,0 +1,11 @@
+# Never commit Android private signing material.
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.key
+
+# Local Android build environment.
+android/**/local.properties
+android/**/.gradle/
+android/**/build/

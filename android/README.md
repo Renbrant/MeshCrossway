@@ -1,6 +1,6 @@
 # MeshCrossway Android
 
-**Development: 0.2.2 beta (versionCode 12)** · [Install the Android APK](../docs/android-apk.md) · [Previous 0.2.1 recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
+**Development: 0.2.3 beta (versionCode 13), permanently signed release pending maintainer setup** · [Install the Android APK](../docs/android-apk.md) · [Previous 0.2.1 recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
 
 Native ARM64 Android 8.0+ app for **two independent, simultaneous BLE radio sessions**: one Meshtastic and one MeshCore Companion. The application does **not** bridge, route or relay messages across networks. Its primary UI includes chats, channels, contacts, offline MapLibre areas, local phone GPS tracks/GPX and saved message history.
 
@@ -19,6 +19,16 @@ From Home, tap **Remote Access**. The app suggests a six-digit numeric PIN; you 
 The browser workspace includes an independent Meshtastic/MeshCore dashboard, radio-specific messaging, contacts/channels, offline map area management and tracks organized in virtual folders with GPX export. New offline map areas use geographic coordinate bounds and zoom; the map drawing UI is not yet implemented remotely.
 
 Remote Access is **off by default** and binds only to the local Wi-Fi IP. It has no internet relay, no open port forwarding and no unattended remote login. Stop it from the phone when finished. The PIN is not stored between server activations: a fresh six-digit suggestion is generated every time. Use **Change PIN** at any time to immediately log out browser sessions and require the new PIN. The TLS private key is encrypted at rest by an AES-GCM key held in Android Keystore.
+
+## New in 0.2.3 — data durability and portable recovery
+
+Public Android APKs will use **one permanent release signing identity**, so future updates can be installed over the existing app without uninstalling or erasing private data. The release workflow refuses to publish an APK unless its certificate matches the pinned long-lived signer fingerprint; the maintainer must configure the private signing-key GitHub secrets once.
+
+**Settings → Data & backup** now includes **Export complete backup** and **Restore complete backup**. The backup ZIP covers both radio histories, channel/node lists, favorites, pinned/muted chats, POIs, drafts, selected radios, app/map preferences, all GPS tracks with every point, and track folders. Import merges rather than clearing existing data. Existing individual JSON history and GPX export remain; new **Import GPX track** supports migration from 0.2.2.
+
+**Important:** 0.2.2 and earlier debug-signed APKs used different certificates and may require one final manual migration. Do not uninstall an older version before exporting its history/GPX or using the optional one-time ADB migration script. The current 0.2.2 APK cannot retroactively export the new complete ZIP; the ADB migration helper can extract this data from debuggable installations. Android operating-system permissions and offline map tile blobs are not part of the ZIP. Normal in-place updates do retain offline maps and permissions.
+
+See [Permanent signing & data migration](../docs/android-permanent-signing-backup.md) for detailed precautions and private GitHub secret setup. The complete ZIP contains private messages and GPS history **without encryption**: store it securely.
 
 ## Build and validation
 
@@ -40,7 +50,8 @@ The `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk` output is a de
 - **0.1.1**: paired Cairn-style Meshtastic/MeshCore Home dashboard ([recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.1)).
 - **0.2.0**: local HTTPS remote workspace, browser messaging, offline region management and track folders ([recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.0)).
 - **0.2.1**: user-chosen four-to-eight-digit numeric PIN; random six-digit suggestion, simplified phone/browser sign-in and immediate session revocation on PIN change ([recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1)).
-- **0.2.2**: browser Chats, Channels and Nodes tabs, visual rectangle-based offline map selection and saved-area previews.
+- **0.2.2**: browser Chats, Channels and Nodes tabs, visual rectangle-based offline map selection and saved-area previews ([recovery beta](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.2)).
+- **0.2.3**: permanent release signing and complete backup/restore; one-time recovery from old debug-signed APKs.
 - **0.2.3+**: subsequent small fixes; **0.3.0** or later for larger feature releases; **1.0.0** remains a future production milestone.
 
 The installed app may be signed with a different CI debug key. If Android rejects an update due to a signing conflict, first export JSON history and required GPX tracks, then uninstall/reinstall. **Uninstalling deletes local application data.**

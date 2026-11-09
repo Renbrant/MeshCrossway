@@ -25,6 +25,7 @@ public final class MainActivity extends Activity {
     private RadioService service;private LinearLayout root,body,nav,results;private ScrollView scroll;private EditText composer,search;private TextView count,chatStatus;private Button sendButton;
     private int selected,filter,listLimit=100,chatLimit=100,nodeOrder;private boolean favoritesOnly,unreadOnly,pinnedOnly,resumed,refreshQueued;
     private TrackService trackService;private boolean tracksBound;private Intent pendingTrack;private String exportingTrack="";private int nodeType;
+    private boolean backupBusy;
     private String settingsSection="";private RadioProfile settingsRadio;private final ArrayDeque<Screen> backStack=new ArrayDeque<>();private final HashMap<String,Integer> scrollPositions=new HashMap<>();private String renderedRoute="";private LinearLayout header;private boolean rendering;private String settingsFingerprint="",homeFingerprint="";private final HashMap<Integer,String> pageQueries=new HashMap<>();
     private static final class Screen{int selected,filter,y;String query,section,radio;RadioProfile profile;Target chat;RadioProfile chatProfile;}
     private TextView dualStatus;MapPanel mapPanel;static String mapStyleOverride;private org.maplibre.android.geometry.LatLng mapFocus;PhonePosition position;
@@ -475,13 +476,95 @@ public final class MainActivity extends Activity {
         if(settingsSection.equals("connections")){section(results,"CONNECTIONS");LinearLayout c=group(results);toggleRow(c,"Automatic reconnection","Reconnect each saved radio independently",service!=null&&service.autoReconnect,on->{if(service!=null)service.setAutoReconnect(on);});menuRow(c,"radio","Connect saved radios","Start both saved connections",()->withPermission(()->{service.connectSaved();rebuildContent();}),ORANGE);menuRow(c,"settings","Android Bluetooth settings","System pairing and paired devices",()->startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)),ORANGE);menuRow(c,"radio","Disconnect both radios","Stops radio connections; track recording is separate",()->new AlertDialog.Builder(this).setTitle("Disconnect both radios?").setPositiveButton("Disconnect",(d,w)->{if(service!=null)startService(new Intent(this,RadioService.class).setAction("STOP"));rebuildContent();}).setNegativeButton("Cancel",null).show(),RED);return;}
         if(settingsSection.equals("messages")){section(results,"NOTIFICATIONS");LinearLayout c=group(results);toggleRow(c,"Message previews","Show message contents in notifications",getSharedPreferences("ui",MODE_PRIVATE).getBoolean("messagePreviews",false),on->getSharedPreferences("ui",MODE_PRIVATE).edit().putBoolean("messagePreviews",on).apply());menuRow(c,"bell","Android notification settings","Sound, vibration and notification permission",()->startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,getPackageName())),ORANGE);section(results,"MESSAGES");menuRow(group(results),"chats","Quick replies","Edit the phrases available in conversations",this::editQuickReplies,ORANGE);return;}
         if(settingsSection.equals("location")){section(results,"PHONE LOCATION");LinearLayout c=group(results);toggleRow(c,"Use phone location","Show your position on the map and calculate distances",phoneEnabled(),on->{if(on)requestPhonePosition();else{getSharedPreferences("ui",MODE_PRIVATE).edit().putBoolean("gpsEnabled",false).apply();position.stop();position.location=null;}rebuildContent();});if(position.location!=null&&phoneEnabled())c.addView(text(String.format(Locale.ROOT,"  %.5f, %.5f · ±%.0f m",position.location.getLatitude(),position.location.getLongitude(),position.location.getAccuracy()),13,MUTED));section(results,"MAP & FIELD TOOLS");LinearLayout tools=group(results);menuRow(tools,"map","Map layers","Basemap, network layers and labels",()->openMapTool("layers"),ORANGE);menuRow(tools,"backup","Offline maps","Download or manage saved areas",()->openMapTool("offline"),ORANGE);menuRow(tools,"tracks","Tracks","Record, manage and export GPX",this::manageTracks,ORANGE);menuRow(tools,"gps","Points of interest","Saved local places",()->openMapTool("pois"),ORANGE);return;}
-        if(settingsSection.equals("data")){section(results,"PRIVATE HISTORY");LinearLayout c=group(results);menuRow(c,"backup","Export history backup","Messages, contacts, drafts, favorites and POIs",this::exportHistory,ORANGE);menuRow(c,"backup","Import history backup","Merge a saved JSON file with existing history",()->startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE),41),ORANGE);section(results,"TRACKS");menuRow(group(results),"tracks","Export a track as GPX","Tracks are exported separately from history",this::manageTracks,ORANGE);TextView note=text("Uninstalling deletes private app data. Export your history and tracks before replacing an incompatible build.",13,MUTED);note.setPadding(dp(4),dp(8),dp(4),0);results.addView(note);return;}
+        if(settingsSection.equals("data")){
+            section(results,"COMPLETE DEVICE BACKUP");
+            LinearLayout backup=group(results);
+            menuRow(backup,"backup","Export complete backup","One ZIP: messages, favorites, radio selections, settings and every GPS track/folder",this::exportFullBackup,ORANGE);
+            menuRow(backup,"backup","Restore complete backup","Merge a saved ZIP into this phone without deleting existing data",this::importFullBackup,ORANGE);
+            TextView note=text("Keep your backup ZIP outside the app (Files or secure storage). It contains private messages and locations and is NOT encrypted. Offline map tiles and Android permission grants cannot be restored from the ZIP.",13,MUTED);
+            note.setPadding(dp(4),dp(8),dp(4),0);results.addView(note);
+            section(results,"INDIVIDUAL EXPORTS");
+            LinearLayout individual=group(results);
+            menuRow(individual,"backup","Export history JSON","Messages, contacts, drafts, favorites and POIs",this::exportHistory,ORANGE);
+            menuRow(individual,"backup","Import history JSON","Merge a saved history backup",()->startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE),41),ORANGE);
+            menuRow(individual,"tracks","Export an individual GPX track","Your track recordings remain on the phone during normal updates",this::manageTracks,ORANGE);
+            menuRow(individual,"tracks","Import GPX track","Restore GPX files exported by earlier incompatible APKs",()->
+                startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                    .setType("*/*").addCategory(Intent.CATEGORY_OPENABLE),52),ORANGE);
+            results.addView(text("Normal signed updates keep all app data. Uninstalling erases the private app database; use Export complete backup BEFORE uninstalling a differently signed APK.",13,MUTED));
+            return;
+        }
         section(results,"MESHCROSSWAY");LinearLayout c=group(results);menuRow(c,"info","Android 0.6.0-alpha07","Two independent networks. No automatic forwarding.",null,ORANGE);menuRow(c,"info","Software licenses","MapLibre Native and bundled software",this::showMapLicenses,ORANGE);menuRow(c,"map","Map attribution","OpenFreeMap · OpenMapTiles · OpenStreetMap",()->new AlertDialog.Builder(this).setTitle("Map attribution").setMessage("© OpenStreetMap contributors · OpenMapTiles · OpenFreeMap. Basemaps use the internet or saved areas.").setPositiveButton("OpenFreeMap",(d,w)->startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://openfreemap.org/")))).setNegativeButton("Back",null).show(),ORANGE);
     }
     private void radioPage(){RadioProfile p=settingsRadio==null?RadioProfile.MESHCORE:settingsRadio;RadioService.Session session=service==null?null:service.sessions.get(p);section(results,p.title.toUpperCase(Locale.ROOT));LinearLayout info=group(results);TextView name=text(session!=null&&!session.name.isEmpty()?session.name:"No radio selected",18,WHITE);name.setTypeface(null,Typeface.BOLD);name.setPadding(dp(16),dp(14),dp(16),dp(4));info.addView(name);TextView status=text(session==null?"Controller starting":session.status,13,session!=null&&session.verified?GREEN:MUTED);status.setPadding(dp(16),dp(4),dp(16),dp(14));info.addView(status);
         if(choosing!=null){section(results,"CHOOSE RADIO");LinearLayout scan=group(results);menuRow(scan,"radio",service!=null&&service.scanning?"Stop scan":"Scan nearby radios",service==null?"Starting":service.scanStatus,()->withPermission(()->{if(service.scanning)service.stopScan();else service.scan(p);rebuildContent();}),ORANGE);if(service!=null)for(BluetoothDevice device:service.discovered(p)){String address=device.getAddress();menuRow(scan,"radio",service.deviceName(device),service.discoveryLabel(device),()->withPermission(()->{service.connect(p,address);choosing=null;rebuildContent();}),p==RadioProfile.MESHTASTIC?ORANGE:MapPanel.MC);}menuRow(scan,"settings",service!=null&&service.showOtherDevices?"Show matching radios":"Show other BLE devices","",()->{if(service!=null)service.showOtherDevices=!service.showOtherDevices;rebuildContent();},MUTED);return;}
         section(results,"CONNECTION");LinearLayout actions=group(results);menuRow(actions,"radio","Choose radio","Find a different "+p.title+" device",()->withPermission(()->{choosing=p;service.scan(p);buildPage();}),ORANGE);if(session!=null&&!session.address.isEmpty()){menuRow(actions,"radio","Reconnect / synchronize",session.address,()->withPermission(()->{service.connect(p,session.address);rebuildContent();}),ORANGE);if(session.connected||session.desired)menuRow(actions,"radio",session.connected?"Disconnect":"Cancel connection","Only this radio is affected",()->{service.disconnect(p);rebuildContent();},RED);}
         section(results,"ADVANCED");LinearLayout advanced=group(results);menuRow(advanced,"info","Connection details","Connection phases, MTU and diagnostics",()->{if(service!=null)new AlertDialog.Builder(this).setTitle(p.title).setMessage(service.diagnostics(p)).setPositiveButton("Back",null).show();},MUTED);if(session!=null&&!session.address.isEmpty())menuRow(advanced,"settings","Pair in Android","Open the system pairing process",()->withPermission(()->service.pair(p)),MUTED);
+    }
+    private void exportFullBackup(){
+        if(backupBusy)return;
+        if(service==null||trackService==null){
+            Toast.makeText(this,"Radio and track databases are still starting",Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this).setTitle("Export complete phone backup")
+            .setMessage("The backup ZIP includes both mesh histories, favorites, selected radios, app settings, track folders and every recorded GPS point.\n\n"+
+                "Save it in Documents or another location outside MeshCrossway before uninstalling any APK. "+
+                "This ZIP contains private messages and locations and is NOT encrypted. Store it securely. "+
+                "Offline map tiles and Android permission grants are not included.")
+            .setPositiveButton("Choose backup file",(d,w)->
+                startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT)
+                    .setType("application/zip").addCategory(Intent.CATEGORY_OPENABLE)
+                    .putExtra(Intent.EXTRA_TITLE,"MeshCrossway-complete-backup.zip"),50))
+            .setNegativeButton("Cancel",null).show();
+    }
+    private void importFullBackup(){
+        if(backupBusy)return;
+        if(service==null||trackService==null){
+            Toast.makeText(this,"Radio and track databases are still starting",Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this).setTitle("Restore complete phone backup")
+            .setMessage("This merges saved messages, favorites, radio selections, settings, "+
+                "GPS tracks and track folders. It will not delete existing records. "+
+                "You may need to grant Bluetooth, location and notification permissions again. "+
+                "Offline maps are not contained in the backup and must be downloaded again.")
+            .setPositiveButton("Select ZIP",(d,w)->
+                startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT)
+                    .setType("application/zip").addCategory(Intent.CATEGORY_OPENABLE),51))
+            .setNegativeButton("Cancel",null).show();
+    }
+    private void handleFullBackup(int request,android.net.Uri file){
+        if(backupBusy)return;
+        if(service==null||trackService==null){
+            Toast.makeText(this,"App data services not ready",Toast.LENGTH_LONG).show();return;
+        }
+        backupBusy=true;
+        AlertDialog progress=new AlertDialog.Builder(this)
+            .setTitle(request==50?"Exporting complete backup":"Restoring complete backup")
+            .setMessage("Copying saved messages, favorites, settings, and all GPS track points. Please keep MeshCrossway installed.")
+            .setCancelable(false).create();
+        progress.show();
+        java.util.function.Consumer<String> done=error->{
+            backupBusy=false;progress.dismiss();
+            if(error.isEmpty()){
+                if(request==51)service.reloadSavedSelection();
+                new AlertDialog.Builder(this).setTitle(request==50?"Backup saved":"Backup restored")
+                    .setMessage(request==50?
+                        "Your complete ZIP was saved to the location you selected. "+
+                        "Verify that the file is present before uninstalling any app version.":
+                        "Messages, settings and all track data were merged. "+
+                        "Reopen/authorize your radios as needed. Offline map tiles may require new downloads.")
+                    .setPositiveButton("Done",null).show();
+                rebuildContent();
+            }else{
+                new AlertDialog.Builder(this).setTitle("Backup needs attention")
+                    .setMessage(error+"\n\nDo not uninstall the current app until a complete backup is saved and verified.")
+                    .setPositiveButton("OK",null).show();
+            }
+        };
+        if(request==50)FullBackup.export(this,service.history,trackService.store,file,done);
+        else FullBackup.restore(this,service.history,trackService.store,file,done);
     }
     private void exportHistory(){new AlertDialog.Builder(this).setTitle("Export private history").setMessage("Includes messages, drafts, contacts, favorites and local POIs. Tracks are exported separately as GPX.").setPositiveButton("Choose file",(d,w)->startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("application/json").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE,"MeshCrossway-backup.json"),40)).setNegativeButton("Cancel",null).show();}
     private void showMapLicenses(){try(java.io.InputStream in=getAssets().open("MAPLIBRE_LICENSE.txt")){java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();byte[] buffer=new byte[4096];int n;while((n=in.read(buffer))!=-1)out.write(buffer,0,n);ScrollView scroll=new ScrollView(this);TextView content=text(out.toString("UTF-8"),12,WHITE);content.setPadding(dp(16),dp(12),dp(16),dp(12));content.setTextIsSelectable(true);scroll.addView(content);new AlertDialog.Builder(this).setTitle("Software licenses").setView(scroll).setPositiveButton("Close",null).show();}catch(java.io.IOException e){Toast.makeText(this,"Licenses could not be opened",Toast.LENGTH_LONG).show();}}
@@ -490,7 +573,20 @@ public final class MainActivity extends Activity {
     private void requestPhonePosition(){if(!position.permitted()){requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION},8);return;}getSharedPreferences("ui",MODE_PRIVATE).edit().putBoolean("gpsEnabled",true).apply();if(resumed)position.start();if(position.location==null)Toast.makeText(this,"Waiting for phone location • check Android Location settings",Toast.LENGTH_LONG).show();if(mapPanel!=null)mapPanel.update();if(selected==5)rebuildContent();}
     private void quickReply(){ArrayList<String> templates=new ArrayList<>();for(String line:getSharedPreferences("ui",MODE_PRIVATE).getString("quickReplies","OK\nOn my way\nNeed assistance").split("\n")){String trimmed=line.trim();if(!trimmed.isEmpty()&&templates.size()<8)templates.add(trimmed.substring(0,Math.min(120,trimmed.length())));}ArrayList<String> choices=new ArrayList<>(templates);int locationIndex=-1;if(position.location!=null&&phoneEnabled()&&System.currentTimeMillis()-position.location.getTime()<120000){locationIndex=choices.size();choices.add("Insert phone coordinates");}int editIndex=choices.size();choices.add("Edit saved replies…");final int coordinateChoice=locationIndex;final RadioProfile network=chatProfile;final String key=draftKey();new AlertDialog.Builder(this).setTitle("Insert into "+network.title+" draft").setItems(choices.toArray(new String[0]),(d,index)->{if(index==editIndex){editQuickReplies();return;}if(chat==null||composer==null||!key.equals(draftKey()))return;String value=index==coordinateChoice?String.format(Locale.ROOT,"%.5f,%.5f",position.location.getLatitude(),position.location.getLongitude()):templates.get(index);if(composer.length()>0)value=composer.getText()+" "+value;composer.setText(value);composer.setSelection(composer.length());}).setNegativeButton("Cancel",null).show();}
     private void editQuickReplies(){EditText editor=new EditText(this);editor.setText(getSharedPreferences("ui",MODE_PRIVATE).getString("quickReplies","OK\nOn my way\nNeed assistance"));editor.setMinLines(4);editor.setTextColor(WHITE);new AlertDialog.Builder(this).setTitle("Quick replies").setMessage("One reply per line. Up to 8 replies, 120 characters each.").setView(editor).setPositiveButton("Save",(a,b)->getSharedPreferences("ui",MODE_PRIVATE).edit().putString("quickReplies",editor.getText().toString().substring(0,Math.min(2000,editor.length()))).apply()).setNegativeButton("Cancel",null).show();}
-    @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(result!=RESULT_OK||data==null||data.getData()==null)return;if(request==42){if(trackService!=null)try{trackService.store.export(exportingTrack,getContentResolver().openOutputStream(data.getData()),error->Toast.makeText(this,error.isEmpty()?"GPX exported":error,Toast.LENGTH_LONG).show());}catch(java.io.IOException e){Toast.makeText(this,"Could not open GPX file",Toast.LENGTH_LONG).show();}return;}if(service==null)return;try{java.util.function.Consumer<String> done=error->{if(error.isEmpty()){service.reloadSavedSelection();Toast.makeText(this,request==40?"History exported":"History imported • existing messages retained",Toast.LENGTH_LONG).show();}else Toast.makeText(this,error,Toast.LENGTH_LONG).show();};if(request==40)service.history.exportBackup(getContentResolver().openOutputStream(data.getData()),done);else if(request==41)service.history.importBackup(getContentResolver().openInputStream(data.getData()),done);}catch(java.io.IOException e){Toast.makeText(this,"Could not open the selected file",Toast.LENGTH_LONG).show();}}
+    @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(result!=RESULT_OK||data==null||data.getData()==null)return;if(request==50||request==51){handleFullBackup(request,data.getData());return;}
+        if(request==52){
+            if(trackService==null){Toast.makeText(this,"Tracks are not ready",Toast.LENGTH_LONG).show();return;}
+            try{
+                trackService.store.importGpx(getContentResolver().openInputStream(data.getData()),error->{
+                    Toast.makeText(this,error.isEmpty()?"GPX track imported into phone":error,Toast.LENGTH_LONG).show();
+                    rebuildContent();
+                });
+            }catch(java.io.IOException e){
+                Toast.makeText(this,"Could not read GPX file",Toast.LENGTH_LONG).show();
+            }
+            return;
+        }
+        if(request==42){if(trackService!=null)try{trackService.store.export(exportingTrack,getContentResolver().openOutputStream(data.getData()),error->Toast.makeText(this,error.isEmpty()?"GPX exported":error,Toast.LENGTH_LONG).show());}catch(java.io.IOException e){Toast.makeText(this,"Could not open GPX file",Toast.LENGTH_LONG).show();}return;}if(service==null)return;try{java.util.function.Consumer<String> done=error->{if(error.isEmpty()){service.reloadSavedSelection();Toast.makeText(this,request==40?"History exported":"History imported • existing messages retained",Toast.LENGTH_LONG).show();}else Toast.makeText(this,error,Toast.LENGTH_LONG).show();};if(request==40)service.history.exportBackup(getContentResolver().openOutputStream(data.getData()),done);else if(request==41)service.history.importBackup(getContentResolver().openInputStream(data.getData()),done);}catch(java.io.IOException e){Toast.makeText(this,"Could not open the selected file",Toast.LENGTH_LONG).show();}}
     private void fieldHome(){
         LinearLayout c=card(results);c.addView(text("Phone GPS & tracks",18,WHITE));android.location.Location fix=position.location;
         if(fix==null||!phoneEnabled())c.addView(text("Phone location is off or waiting for a fix",13,MUTED));else{long age=Math.max(0,(System.currentTimeMillis()-fix.getTime())/1000);c.addView(text(String.format(Locale.ROOT,"%.5f, %.5f · ±%.0f m · %d s old",fix.getLatitude(),fix.getLongitude(),fix.getAccuracy(),age),13,MUTED));if(fix.hasAltitude())c.addView(text(String.format(Locale.ROOT,"Altitude %.0f m%s",fix.getAltitude(),fix.hasSpeed()?String.format(Locale.ROOT," · %.1f km/h",fix.getSpeed()*3.6):""),13,MUTED));}

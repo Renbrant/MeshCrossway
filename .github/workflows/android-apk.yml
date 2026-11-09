@@ -1,10 +1,10 @@
 name: Android alpha APK
 on:
   pull_request:
-    paths: ['android/**', 'scripts/test_android_probe.sh', 'scripts/test_android_device.sh', 'scripts/test_android_remote_web.cjs', '.github/workflows/android-apk.yml']
+    paths: ['android/**', 'scripts/test_android_probe.sh', 'scripts/test_android_device.sh', 'scripts/test_android_remote_web.cjs', 'scripts/test_android_migration.py', 'scripts/migrate_android_debug_install.py', '.github/workflows/android-apk.yml']
   push:
     branches: [main]
-    paths: ['android/**', 'scripts/test_android_probe.sh', 'scripts/test_android_device.sh', 'scripts/test_android_remote_web.cjs', '.github/workflows/android-apk.yml']
+    paths: ['android/**', 'scripts/test_android_probe.sh', 'scripts/test_android_device.sh', 'scripts/test_android_remote_web.cjs', 'scripts/test_android_migration.py', 'scripts/migrate_android_debug_install.py', '.github/workflows/android-apk.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,6 +26,8 @@ jobs:
         run: bash scripts/test_android_probe.sh
       - name: Browser chats and map selector unit tests
         run: node scripts/test_android_remote_web.cjs
+      - name: Complete backup migration fixture tests
+        run: python3 scripts/test_android_migration.py
       - name: Build and lint
         working-directory: android
         run: ./gradlew --no-daemon assembleDebug lintDebug

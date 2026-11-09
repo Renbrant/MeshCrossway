@@ -38,14 +38,68 @@ public final class SmokeInstrumentation extends Instrumentation {
     private void tracks()throws Exception{
         Context context=getTargetContext();String name="track-instrumentation.db";context.deleteDatabase(name);TrackStore store=new TrackStore(context,name);CountDownLatch started=new CountDownLatch(1);store.start("Field & trail",ok->{check(ok,"Track did not start");started.countDown();});await(started);CountDownLatch loaded=new CountDownLatch(1);store.barrier(loaded::countDown);await(loaded);String id=store.tracks.get(0).id;
         long now=System.currentTimeMillis();store.add(new FieldTools.Fix(40,-105,4,Double.NaN,now,0),now);store.add(new FieldTools.Fix(40.0001,-105,4,123,now+3000,0),now+3000);store.add(new FieldTools.Fix(41,-105,4,123,now+6000,0),now+6000);store.pause(false);CountDownLatch resumed=new CountDownLatch(1);store.resume(id,ok->{check(ok,"Resume failed");resumed.countDown();});await(resumed);store.add(new FieldTools.Fix(41,-104,4,124,now+9000,0),now+9000);store.pause(true);CountDownLatch saved=new CountDownLatch(1);store.barrier(saved::countDown);await(saved);TrackStore.Track track=store.tracks.get(0);check(track.count==3&&track.state.equals("saved"),"Track points/status not persisted");check(track.distance>10&&track.distance<12,"Pause gap or GPS jump added to distance");
-        ByteArrayOutputStream bytes=new ByteArrayOutputStream();CountDownLatch exported=new CountDownLatch(1);store.export(id,bytes,error->{check(error.isEmpty(),"GPX export failed");exported.countDown();});await(exported);String gpx=bytes.toString("UTF-8");check(gpx.contains("Field &amp; trail")&&gpx.split("<trkseg>",-1).length==3,"Export lost name or segment break");store.createFolder("Hiking");
+        ByteArrayOutputStream bytes=new ByteArrayOutputStream();CountDownLatch exported=new CountDownLatch(1);store.export(id,bytes,error->{check(error.isEmpty(),"GPX export failed");exported.countDown();});await(exported);String gpx=bytes.toString("UTF-8");check(gpx.contains("Field &amp; trail")&&gpx.split("<trkseg>",-1).length==3,"Export lost name or segment break");
+        String gpxTestName="track-gpx-imported.db";context.deleteDatabase(gpxTestName);
+        TrackStore gpxRestored=new TrackStore(context,gpxTestName);
+        CountDownLatch gpxImport=new CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicReference<String> gpxError=new java.util.concurrent.atomic.AtomicReference<>("");
+        gpxRestored.importGpx(new ByteArrayInputStream(bytes.toByteArray()),result->{
+            gpxError.set(result);gpxImport.countDown();
+        });
+        await(gpxImport);
+        check(gpxError.get().isEmpty()&&gpxRestored.tracks.size()==1,
+            "Legacy GPX track could not be imported");
+        check(gpxRestored.tracks.get(0).count==3&&
+            gpxRestored.tracks.get(0).name.equals("Field & trail"),
+            "GPX import lost recorded points or escaped track name");
+        gpxRestored.close();
+        store.createFolder("Hiking");
         CountDownLatch folderAdded=new CountDownLatch(1);store.barrier(folderAdded::countDown);await(folderAdded);
         check(store.folders.size()==1&&store.folders.get(0).name.equals("Hiking"),"Track folder did not persist");
         String folderId=store.folders.get(0).id;
         store.moveTrack(id,folderId);
         CountDownLatch moved=new CountDownLatch(1);store.barrier(moved::countDown);await(moved);
         check(store.tracks.get(0).folderId.equals(folderId),"Track folder assignment did not persist");
-        store.metadata(id,"Renamed",TrackStore.COLORS[1],false);CountDownLatch updated=new CountDownLatch(1);store.barrier(updated::countDown);await(updated);check(!store.tracks.get(0).visible&&store.tracks.get(0).name.equals("Renamed"),"Track metadata not updated");store.close();
+        store.metadata(id,"Renamed",TrackStore.COLORS[1],false);CountDownLatch updated=new CountDownLatch(1);store.barrier(updated::countDown);await(updated);check(!store.tracks.get(0).visible&&store.tracks.get(0).name.equals("Renamed"),"Track metadata not updated");
+        ByteArrayOutputStream fullTrackBackup=new ByteArrayOutputStream();
+        CountDownLatch fullExport=new CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicReference<String> archiveStatus=new java.util.concurrent.atomic.AtomicReference<>("");
+        store.exportArchive(fullTrackBackup,status->{archiveStatus.set(status);fullExport.countDown();});
+        await(fullExport);
+        check(archiveStatus.get().isEmpty(),"Complete track archive could not export");
+        String backupJSON=fullTrackBackup.toString("UTF-8");
+        check(backupJSON.contains("MeshCrosswayTracks")&&backupJSON.contains("Hiking")&&
+            backupJSON.contains("Renamed"),"Full backup lost folder/track metadata");
+        String migrateDb="track-migration-destination.db";
+        context.deleteDatabase(migrateDb);
+        TrackStore imported=new TrackStore(context,migrateDb);
+        CountDownLatch fullImport=new CountDownLatch(1);
+        imported.importArchive(new ByteArrayInputStream(fullTrackBackup.toByteArray()),status->{
+            archiveStatus.set(status);fullImport.countDown();
+        });
+        await(fullImport);
+        check(archiveStatus.get().isEmpty(),"Complete track archive import failed");
+        CountDownLatch migrated=new CountDownLatch(1);imported.barrier(migrated::countDown);await(migrated);
+        check(imported.tracks.size()==1&&imported.folders.size()==1,"Full archive lost track/folder");
+        TrackStore.Track migratedTrack=imported.tracks.get(0);
+        check(migratedTrack.id.equals(id)&&migratedTrack.count==3&&
+            migratedTrack.folderId.equals(folderId)&&migratedTrack.name.equals("Renamed")&&
+            !migratedTrack.visible,"Complete track archive lost recording or metadata");
+        try(android.database.Cursor points=imported.getReadableDatabase().rawQuery(
+            "SELECT count(*) FROM fixes WHERE track=?",new String[]{id})){
+            check(points.moveToFirst()&&points.getInt(0)==3,
+                "Complete track archive did not restore ALL GPS points");
+        }
+        String corrupted=backupJSON.replace("MeshCrosswayTracks","InvalidTrackArchive");
+        CountDownLatch rejectedBackup=new CountDownLatch(1);
+        imported.importArchive(new ByteArrayInputStream(corrupted.getBytes("UTF-8")),status->{
+            archiveStatus.set(status);rejectedBackup.countDown();
+        });
+        await(rejectedBackup);
+        check(!archiveStatus.get().isEmpty()&&imported.tracks.size()==1,
+            "Malformed track archive should be rejected without deleting existing records");
+        imported.close();
+        store.close();
         TrackStore reopened=new TrackStore(context,name);CountDownLatch ready=new CountDownLatch(1);reopened.barrier(ready::countDown);await(ready);check(reopened.tracks.size()==1&&reopened.tracks.get(0).count==3,"Track lost after reopen");check(reopened.tracks.get(0).folderId.equals(folderId)&&reopened.folders.size()==1,"Track folders lost on reopen");reopened.deleteFolder(folderId);CountDownLatch unfoldered=new CountDownLatch(1);reopened.barrier(unfoldered::countDown);await(unfoldered);check(reopened.folders.isEmpty()&&reopened.tracks.get(0).folderId.isEmpty(),"Deleting folder removed track or left an orphan");reopened.delete(id);CountDownLatch deleted=new CountDownLatch(1);reopened.barrier(deleted::countDown);await(deleted);check(reopened.tracks.isEmpty(),"Track delete failed");CountDownLatch interrupted=new CountDownLatch(1);reopened.start("Interrupted",ok->{check(ok,"Interrupted track start failed");interrupted.countDown();});await(interrupted);CountDownLatch committed=new CountDownLatch(1);reopened.barrier(committed::countDown);await(committed);reopened.close();TrackStore recovered=new TrackStore(context,name);CountDownLatch recovery=new CountDownLatch(1);recovered.barrier(recovery::countDown);await(recovery);check(recovered.current()!=null&&recovered.current().state.equals("paused"),"Interrupted recording did not recover as paused");recovered.close();
     }
     private void waitUntil(java.util.function.BooleanSupplier condition,String message)throws Exception{long deadline=android.os.SystemClock.elapsedRealtime()+20000;java.util.concurrent.atomic.AtomicBoolean ready=new java.util.concurrent.atomic.AtomicBoolean();do{onUi(()->ready.set(condition.getAsBoolean()));if(ready.get())return;Thread.sleep(50);}while(android.os.SystemClock.elapsedRealtime()<deadline);throw new AssertionError(message);}
@@ -239,6 +293,35 @@ public final class SmokeInstrumentation extends Instrumentation {
             throw new AssertionError("HTTPS diagnostics ("+workspace.tlsDiagnostics()+")",failure);
         }finally{workspace.stop();}
     }
+    private void completeBackup(MainActivity activity)throws Exception{
+        java.lang.reflect.Field radioField=MainActivity.class.getDeclaredField("service");
+        java.lang.reflect.Field trackField=MainActivity.class.getDeclaredField("trackService");
+        radioField.setAccessible(true);trackField.setAccessible(true);
+        waitUntil(()->{
+            try{return radioField.get(activity)!=null&&trackField.get(activity)!=null;}
+            catch(Exception e){return false;}
+        },"Backup stores did not bind");
+        RadioService radios=(RadioService)radioField.get(activity);
+        TrackService tracks=(TrackService)trackField.get(activity);
+        File zip=new File(getTargetContext().getCacheDir(),"migration-instrumentation.zip");
+        if(zip.exists())zip.delete();
+        java.util.concurrent.atomic.AtomicReference<String> error=new java.util.concurrent.atomic.AtomicReference<>("");
+        CountDownLatch exported=new CountDownLatch(1);
+        FullBackup.export(getTargetContext(),radios.history,tracks.store,android.net.Uri.fromFile(zip),
+            result->{error.set(result);exported.countDown();});
+        check(exported.await(40,TimeUnit.SECONDS),"Complete backup export timed out");
+        check(error.get().isEmpty()&&zip.length()>300,"Complete backup ZIP could not be saved: "+error.get());
+        try(java.util.zip.ZipFile archive=new java.util.zip.ZipFile(zip)){
+            for(String name:new String[]{"manifest.json","history.json","tracks.json","settings.json"})
+                check(archive.getEntry(name)!=null,"Complete backup missing "+name);
+        }
+        CountDownLatch imported=new CountDownLatch(1);
+        FullBackup.restore(getTargetContext(),radios.history,tracks.store,android.net.Uri.fromFile(zip),
+            result->{error.set(result);imported.countDown();});
+        check(imported.await(40,TimeUnit.SECONDS),"Complete backup restore timed out");
+        check(error.get().isEmpty(),"Complete backup restore failed: "+error.get());
+        zip.delete();
+    }
     private void activity()throws Exception{
         MainActivity.mapStyleOverride="asset://map-test-style.json";Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();
         onUi(()->{
@@ -249,7 +332,7 @@ public final class SmokeInstrumentation extends Instrumentation {
             check(find(screen,"MT · CHATS")!=null,"Meshtastic chat card is missing");
             check(find(screen,"MC · CHATS")!=null,"MeshCore chat card is missing");
         });
-        screenshot(activity,"home");remoteSecurity(activity);
+        screenshot(activity,"home");remoteSecurity(activity);completeBackup(activity);
         for(String page:new String[]{"Contacts","Chats","Channels","Map","Settings","Home"})click(activity,page);menus(activity);recording(activity);maps(activity);mapPanels(activity);click(activity,"Home");receptionDetails(activity);
         Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);onUi(()->{try{open.invoke(activity,RadioProfile.MESHTASTIC,"offline-test",new Target("c:0:test","Test channel","","test",0,true));EditText entry=composer(activity.getWindow().getDecorView());check(entry!=null,"Composer missing");entry.setText("Draft survives rotation 👋");}catch(Exception e){throw new RuntimeException(e);}});
         waitForIdleSync();screenshot(activity,"chat-draft");Method settings=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);settings.setAccessible(true);onUi(()->{try{settings.invoke(activity,"data",null);}catch(Exception e){throw new RuntimeException(e);}});screenshot(activity,"settings-data");
