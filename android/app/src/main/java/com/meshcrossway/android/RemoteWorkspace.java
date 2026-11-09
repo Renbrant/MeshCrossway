@@ -30,22 +30,12 @@ import static com.meshcrossway.android.MeshData.*;
 final class RemoteWorkspace extends NanoHTTPD {
     static final int PORT=8080;
     private static final SecureRandom RANDOM=new SecureRandom();
-    private static final String ALIAS="meshcrossway-remote-https-v1";
     private static final long SESSION_MS=3_600_000;
     private final RadioService owner;
     private final Handler main=new Handler(Looper.getMainLooper());
     final String ip,code,fingerprint;
     private final ConcurrentHashMap<String,Long> sessions=new ConcurrentHashMap<>();
-    private volatile int tlsAliasCalls,tlsCertCalls,tlsKeyCalls;
-    private volatile String tlsLastAlias="";
-    private void noteAlias(String scope,String keyType){
-        tlsAliasCalls++;
-        tlsLastAlias=scope+":"+keyType;
-    }
-    String tlsDiagnostics(){
-        return "alias="+tlsAliasCalls+" last="+tlsLastAlias+
-            " cert="+tlsCertCalls+" key="+tlsKeyCalls;
-    }
+    String tlsDiagnostics(){return "AES-GCM sealed local RSA TLS identity";}
     SSLContext tlsContext; // Package-local for isolated Android TLS smoke tests.
     private int failures;
     private long lockedUntil;
@@ -89,77 +79,14 @@ final class RemoteWorkspace extends NanoHTTPD {
     }
     RemoteWorkspace(RadioService owner,String ip)throws Exception{
         super(ip,PORT);this.owner=owner;this.ip=ip;code=randomToken(18);
-        KeyStore keyStore=KeyStore.getInstance("AndroidKeyStore");keyStore.load(null);
-        if(!keyStore.containsAlias(ALIAS)){
-            long now=System.currentTimeMillis();
-            KeyPairGenerator generator=KeyPairGenerator.getInstance("RSA","AndroidKeyStore");
-            generator.initialize(new KeyGenParameterSpec.Builder(ALIAS,
-                KeyProperties.PURPOSE_SIGN|KeyProperties.PURPOSE_VERIFY)
-                .setKeySize(2048)
-                .setDigests(KeyProperties.DIGEST_SHA256)
-                .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
-                .setCertificateSubject(new X500Principal("CN=MeshCrossway Local Access"))
-                .setCertificateSerialNumber(BigInteger.valueOf(1))
-                .setCertificateNotBefore(new Date(now-60_000))
-                .setCertificateNotAfter(new Date(now+10L*365*24*60*60*1000))
-                .build());
-            generator.generateKeyPair();
-            keyStore.load(null);
-        }
-        Certificate cert=keyStore.getCertificate(ALIAS);
-        if(cert==null)throw new GeneralSecurityException("No HTTPS certificate");
+        RemoteTlsIdentity identity=RemoteTlsIdentity.load(owner,ip);
+        Certificate cert=identity.certificate;
         byte[] digest=MessageDigest.getInstance("SHA-256").digest(cert.getEncoded());
         StringBuilder formatted=new StringBuilder();
         for(byte b:digest)formatted.append(String.format(Locale.ROOT,"%02X",b&255));
         fingerprint=formatted.toString();
-        // AndroidKeyStore private keys are non-exportable, so an ordinary
-        // KeyManagerFactory may not select them for server authentication.
-        // Present the exact RSA alias via a KeyManager instead.
-        final java.security.PrivateKey privateKey=(java.security.PrivateKey)keyStore.getKey(ALIAS,null);
-        final java.security.cert.X509Certificate[] chain=new java.security.cert.X509Certificate[]{
-            (java.security.cert.X509Certificate)cert
-        };
-        if(privateKey==null)throw new GeneralSecurityException("HTTPS private key missing");
-        Signature proof=Signature.getInstance("SHA256withRSA");
-        proof.initSign(privateKey);
-        proof.update("MeshCrossway TLS signing check".getBytes(StandardCharsets.UTF_8));
-        byte[] signature=proof.sign();
-        Signature verify=Signature.getInstance("SHA256withRSA");
-        verify.initVerify(cert.getPublicKey());
-        verify.update("MeshCrossway TLS signing check".getBytes(StandardCharsets.UTF_8));
-        if(!verify.verify(signature))
-            throw new GeneralSecurityException("TLS certificate key does not match signing key");
-
-        javax.net.ssl.X509ExtendedKeyManager serverKeys=new javax.net.ssl.X509ExtendedKeyManager(){
-            public String[] getClientAliases(String keyType,java.security.Principal[] issuers){return null;}
-            public String chooseClientAlias(String[] keyTypes,java.security.Principal[] issuers,java.net.Socket socket){return null;}
-            public String chooseEngineClientAlias(String[] keyTypes,java.security.Principal[] issuers,SSLEngine engine){return null;}
-            public String[] getServerAliases(String keyType,java.security.Principal[] issuers){
-                return "RSA".equalsIgnoreCase(keyType)?new String[]{ALIAS}:null;
-            }
-            public String chooseServerAlias(String keyType,java.security.Principal[] issuers,java.net.Socket socket){
-                noteAlias("socket",keyType);
-                return "RSA".equalsIgnoreCase(keyType)?ALIAS:null;
-            }
-            public String chooseEngineServerAlias(String keyType,java.security.Principal[] issuers,SSLEngine engine){
-                noteAlias("engine",keyType);
-                return "RSA".equalsIgnoreCase(keyType)?ALIAS:null;
-            }
-            public java.security.cert.X509Certificate[] getCertificateChain(String alias){
-                tlsCertCalls++;
-                return ALIAS.equals(alias)?chain.clone():null;
-            }
-            public java.security.PrivateKey getPrivateKey(String alias){
-                tlsKeyCalls++;
-                return ALIAS.equals(alias)?privateKey:null;
-            }
-        };
-        SSLContext tls=SSLContext.getInstance("TLS");
-        tls.init(new KeyManager[]{serverKeys},null,RANDOM);
-        tlsContext=tls;
-        // TLS 1.2 supports RSA PKCS#1 signatures on Android Keystore keys across API 26+.
-        // TLS 1.3 would require RSA-PSS permission and provider support.
-        makeSecure(tls.getServerSocketFactory(),new String[]{"TLSv1.2"});
+        tlsContext=identity.context;
+        makeSecure(tlsContext.getServerSocketFactory(),new String[]{"TLSv1.2"});
     }
     String url(){return "https://"+ip+":"+PORT+"/";}
     private <T> T onMain(Callable<T> action)throws Exception{
