@@ -195,7 +195,7 @@ function drawTrack(points){
 }
 async function pulse(){
  if(app.busy||$("app").hidden)return;app.busy=true;
- try{await reload();if(app.tab==="messages"&&app.topic)await renderMessages();}
+ try{await reload();if(app.tab==="messages"&&app.topic)await renderMessages();if(app.tab==="maps")await renderMaps();if(app.tab==="tracks")await renderTracks();}
  catch(e){notice(e.message,true);}finally{app.busy=false;}
 }
 $("login-form").addEventListener("submit",async e=>{
