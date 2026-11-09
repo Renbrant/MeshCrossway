@@ -1,8 +1,8 @@
-# MeshCrossway Android — 0.2.1 beta
+# MeshCrossway Android — 0.2.2 beta
 
 > **Public beta for testing. Not version 1.0.0 and not a production release.**
 
-[Download MeshCrossway-0.2.1.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.1/MeshCrossway-0.2.1.apk) · [Release notes and SHA256SUMS.txt](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1) · [Android download page](https://renbrant.github.io/MeshCrossway/android/)
+[Download MeshCrossway-0.2.2.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.2/MeshCrossway-0.2.2.apk) · [Release notes and SHA256SUMS.txt](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.2) · [Android download page](https://renbrant.github.io/MeshCrossway/android/)
 
 ## Requirements
 
@@ -24,12 +24,12 @@ Heltec V3 and a Samsung S25 are used in development. Other phone, board and firm
 
 **Development signatures:** this APK is signed with a CI debug certificate. Some earlier builds have a different certificate. If Android refuses the update due to a signature conflict, export JSON history and required GPX tracks first, then uninstall and install. Uninstalling deletes local app data. The public version reset does not itself erase history.
 
-SHA-256 (`MeshCrossway-0.2.1.apk`): `a3f01b8bd63b515bbd13f5eaae6f791a1278554a74661254e98c36467394f978` (also available in the release's `SHA256SUMS.txt` asset).
+SHA-256 (`MeshCrossway-0.2.2.apk`): see the `SHA256SUMS.txt` asset included in the release to verify the exact APK.
 ## Included in this beta
 
-**New in 0.2.1:** simple numeric Remote Access PIN (4–8 digits), selectable on the phone with a suggested random 6-digit code; existing browser sessions are revoked when it changes. The 0.2.0 local HTTPS workspace, independent Meshtastic/MeshCore browser messaging, offline regions and track folders remain. The paired Home cards from 0.1.1 are retained. This does not bridge or relay mesh traffic.
+**New in 0.2.2:** Messages now has independent **Chats, Channels and Nodes** lists for both radios. Channels appear even without a message history, and selecting a messageable node starts a direct chat. Offline Maps has a **visual map with pan/zoom and Draw area rectangle**, maximum offline zoom, estimated tile limits and saved-region overlays. The 0.2.1 short numeric PIN remains unchanged. The 0.2.0 local HTTPS workspace, independent Meshtastic/MeshCore browser messaging, offline regions and track folders remain. The paired Home cards from 0.1.1 are retained. This does not bridge or relay mesh traffic.
 
-**Recovery:** [Android 0.2.0](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.0), [Android 0.1.1](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.1) and [0.1.0](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.0) remain available.
+**Recovery:** [Android 0.2.1](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1), [Android 0.2.0](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.0), [Android 0.1.1](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.1) and [0.1.0](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.0) remain available.
 
 Independent dual BLE connections; chats, channels and contacts; a map with right-side icons and nonmodal lower panels; optional node grouping in Layers; tracks, GPX, POIs and offline map areas; persistent message history and JSON import/export. Each network keeps its own messages, identities and routing. There is no bridging.
 
@@ -51,6 +51,14 @@ The web server uses a local TLS identity with its private key encrypted at rest 
 
 [Remote workspace technical design](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-remote-workspace.md).
 
+## What changed in the remote browser (0.2.2)
+
+**Messages:** choose Meshtastic or MeshCore, then the **Chats** tab to open private chats, **Channels** for configured channels and group conversations, or **Nodes** to initiate a private message even without an earlier conversation. Select an entry to view its history, send a reply and mark as read. No cross-network forwarding occurs.
+
+**Offline maps:** click **Offline maps** → **Draw area**. Navigate around the map using drag, mouse wheel and +/- zoom; then draw the desired rectangle. Give the area a name, select the *maximum offline zoom* and click **Download area to phone**. The browser calculates the geographic coordinates automatically, and prevents requests over 2,400 tiles; the phone also enforces its 45-MB region budget. Under **Saved offline regions**, click **Show on map**, pause, resume or delete as needed.
+
+The browser map preview fetches only live visible OpenStreetMap raster tiles; it does not download tiles from that service for offline use. The phone downloads the requested offline area through OpenFreeMap/MapLibre. Previewing the map requires internet on the computer; downloading new offline regions requires internet on the phone. [OSM raster tile policy](https://operations.osmfoundation.org/policies/tiles/) · [OpenFreeMap offline quota](https://openfreemap.org/quick_start/).
+
 ## Message hops and path limits
 
 Received messages show available hop count and SNR/RSSI. Tapping one opens its details.
@@ -63,14 +71,15 @@ Private messages, old backlog, direct-routing and unsupported/truncated MeshCore
 
 - Functional alpha07 behavior was accepted in maintainer device use, with both networks working.
 - 0.2.0 adds the LAN HTTPS workspace, browser messaging, offline region management and virtual track folders.
-- 0.2.1 adds the short user-selected numeric PIN and immediate browser-session revocation on PIN change. 0.2.0 remains available for recovery.
+- 0.2.1 adds the short numeric PIN. 0.2.2 adds browser Chats/Channels/Nodes and visual offline-area selection, retaining the same security model. 0.2.0 remains available for recovery.
 - [0.1.0 CI run](https://github.com/Renbrant/MeshCrossway/actions/runs/42560950710): APK/lint/JVM checks and API 29/API 35 device smoke suites passed.
 - Source: [ae80e8d](https://github.com/Renbrant/MeshCrossway/commit/ae80e8dbcf2909f13c721e2cb71785056df1d0ce); retained [baseline/android-0.1.0](https://github.com/Renbrant/MeshCrossway/tree/baseline/android-0.1.0).
 - The APK is preserved as a public GitHub **prerelease**, separately from controller firmware releases. More device/firmware testing remains necessary.
 
 - [0.1.1 CI run](https://github.com/Renbrant/MeshCrossway/actions/runs/42632459274): previously accepted beta checks passed.
 - [0.2.0 CI run](https://github.com/Renbrant/MeshCrossway/actions/runs/42648549926): original HTTPS/browser workspace validated.
-- [0.2.1 CI run](https://github.com/Renbrant/MeshCrossway/actions/runs/42655097137): build/lint and Android API 29/35 emulator tests passed including numeric PIN login with leading zero, PIN change and session invalidation. See [PR #191](https://github.com/Renbrant/MeshCrossway/pull/191). Physical S25 + dual BLE + PC validation remains pending.
+- [0.2.1 CI run](https://github.com/Renbrant/MeshCrossway/actions/runs/42655097137): short-PIN login validated.
+- [0.2.2 CI run](https://github.com/Renbrant/MeshCrossway/actions/runs/42667980890): build/lint, browser map geometry tests and Android API 29/35 emulator tests passed. [PR #193](https://github.com/Renbrant/MeshCrossway/pull/193). See [PR #191](https://github.com/Renbrant/MeshCrossway/pull/191). Physical S25 + dual BLE + PC validation remains pending.
 
 ## Version strategy
 
@@ -79,18 +88,19 @@ Private messages, old backlog, direct-routing and unsupported/truncated MeshCore
 | 0.1.0 | Preserved functional beta recovery baseline |
 | 0.1.1 | Paired dual-network dashboard cards; recovery beta |
 | 0.2.0 | HTTPS Remote Access, maps and track folders; recovery beta |
-| 0.2.1 | Short numeric user-selected Remote Access PIN |
-| 0.2.2, 0.2.3, etc. | Fixes and small improvements |
+| 0.2.1 | Short numeric Remote Access PIN; recovery beta |
+| 0.2.2 | Separate web Chats, Channels, Nodes and visual offline map selection |
+| 0.2.3, 0.2.4, etc. | Fixes and small improvements |
 | 0.3.0, 0.4.0, etc. | Future substantial changes; patch resets to zero |
 | 1.0.0 | First production release after core scope and stability acceptance |
 
-All 0.x versions remain in development. The earlier alpha02–alpha07 public-looking numbers were development iteration labels, not releases in the new sequence. Android versionCode remains strictly increasing (0.1.0 uses 8, 0.1.1 uses 9, 0.2.0 uses 10, 0.2.1 uses 11). Controller firmware keeps its independent numbering and recovery images.
+All 0.x versions remain in development. The earlier alpha02–alpha07 public-looking numbers were development iteration labels, not releases in the new sequence. Android versionCode remains strictly increasing (0.1.0 uses 8, 0.1.1 uses 9, 0.2.0 uses 10, 0.2.1 uses 11, 0.2.2 uses 12). Controller firmware keeps its independent numbering and recovery images.
 
 ## Help test
 
 Check initial connection and reconnection to both radios, sending/receiving, unread state, map grouping, offline areas, tracks and backup/import on your setup. [Report a bug](https://github.com/Renbrant/MeshCrossway/issues) with app version, phone/Android version, each radio model/firmware, steps, expected result and actual result. Redact keys, personal messages and precise locations.
 
-Wardriving/MeshMapper upload is a future possibility and is **not included** in 0.2.1.
+Wardriving/MeshMapper upload is a future possibility and is **not included** in 0.2.2.
 
 ## Development references
 
