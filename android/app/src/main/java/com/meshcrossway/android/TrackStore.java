@@ -95,6 +95,108 @@ final class TrackStore extends SQLiteOpenHelper {
     // Full-device migration backup. Structured JSON streams every recorded
     // point, unlike GPX preview/export, and includes virtual folder metadata.
     private static final String[] ARCHIVE_TABLES={"folders","tracks","fixes"};
+    /** Import GPX files exported from older, incompatibly signed APKs. */
+    void importGpx(InputStream stream,Consumer<String> done){
+        if(closed){main.post(()->done.accept("Track database unavailable"));return;}
+        worker.post(()->{
+            String status="";
+            try(InputStream input=stream){
+                final int MAX_BYTES=25*1024*1024;
+                FilterInputStream limited=new FilterInputStream(new BufferedInputStream(input)){
+                    int consumed;
+                    private void checked(int n)throws IOException{
+                        if(n>0&&(consumed+=n)>MAX_BYTES)
+                            throw new IOException("GPX file exceeds 25 MB");
+                    }
+                    @Override public int read()throws IOException{
+                        int value=super.read();if(value!=-1)checked(1);return value;
+                    }
+                    @Override public int read(byte[] b,int off,int len)throws IOException{
+                        int n=super.read(b,off,len);checked(n);return n;
+                    }
+                };
+                org.xmlpull.v1.XmlPullParser parser=android.util.Xml.newPullParser();
+                parser.setInput(limited,"UTF-8");
+                ArrayList<FieldTools.Fix> points=new ArrayList<>();
+                String name="Imported GPX";
+                boolean insideTrack=false,insidePoint=false;
+                int segment=-1;
+                double lat=0,lon=0,alt=Double.NaN;
+                long when=0;
+                for(int event=parser.getEventType();
+                    event!=org.xmlpull.v1.XmlPullParser.END_DOCUMENT;
+                    event=parser.next()){
+                    if(event==org.xmlpull.v1.XmlPullParser.DOCDECL)
+                        throw new IOException("GPX document types are not accepted");
+                    if(event==org.xmlpull.v1.XmlPullParser.START_TAG){
+                        String tag=parser.getName();
+                        if(tag.equals("trk"))insideTrack=true;
+                        else if(insideTrack&&tag.equals("trkseg"))segment++;
+                        else if(insideTrack&&tag.equals("trkpt")){
+                            insidePoint=true;alt=Double.NaN;when=0;
+                            lat=Double.parseDouble(parser.getAttributeValue(null,"lat"));
+                            lon=Double.parseDouble(parser.getAttributeValue(null,"lon"));
+                            if(!GeoMath.valid(lat,lon))throw new IOException("Invalid GPX coordinate");
+                        }else if(insidePoint&&tag.equals("ele"))
+                            alt=Double.parseDouble(parser.nextText());
+                        else if(insidePoint&&tag.equals("time"))
+                            when=java.time.Instant.parse(parser.nextText()).toEpochMilli();
+                        else if(insideTrack&&!insidePoint&&tag.equals("name")){
+                            String candidate=parser.nextText().trim();
+                            if(!candidate.isEmpty())name=candidate.substring(0,Math.min(80,candidate.length()));
+                        }
+                    }else if(event==org.xmlpull.v1.XmlPullParser.END_TAG){
+                        String tag=parser.getName();
+                        if(tag.equals("trkpt")&&insidePoint){
+                            insidePoint=false;
+                            if(!Double.isFinite(alt)&&!Double.isNaN(alt))
+                                throw new IOException("Invalid GPX altitude");
+                            if(when<=0)when=System.currentTimeMillis();
+                            points.add(new FieldTools.Fix(lat,lon,10,alt,when,Math.max(0,segment)));
+                            if(points.size()>100000)throw new IOException("Too many GPX track points");
+                        }else if(tag.equals("trk"))insideTrack=false;
+                    }
+                }
+                if(points.isEmpty())throw new IOException("GPX file has no track points");
+                SQLiteDatabase db=getWritableDatabase();
+                try(Cursor c=db.rawQuery("SELECT count(*) FROM tracks",null)){
+                    c.moveToFirst();if(c.getInt(0)>=100)throw new IOException("Track storage is full");
+                }
+                String id=UUID.randomUUID().toString();
+                double distance=0;
+                FieldTools.Fix previous=null;
+                for(FieldTools.Fix point:points){
+                    if(previous!=null&&point.segment==previous.segment)
+                        distance+=GeoMath.distance(previous.lat,previous.lon,point.lat,point.lon);
+                    previous=point;
+                }
+                db.beginTransaction();
+                try{
+                    ContentValues row=new ContentValues();
+                    row.put("id",id);row.put("name",name);row.put("state","saved");
+                    row.put("color",COLORS[0]);row.put("visible",1);
+                    row.put("created",System.currentTimeMillis());row.put("distance",distance);
+                    row.put("count",points.size());row.put("folder_id","");
+                    db.insertOrThrow("tracks",null,row);
+                    for(int seq=0;seq<points.size();seq++){
+                        FieldTools.Fix point=points.get(seq);
+                        ContentValues value=new ContentValues();
+                        value.put("track",id);value.put("seq",seq);
+                        value.put("segment",point.segment);
+                        value.put("lat",point.lat);value.put("lon",point.lon);
+                        value.put("accuracy",point.accuracy);
+                        if(Double.isFinite(point.altitude))value.put("altitude",point.altitude);
+                        value.put("time",point.time);
+                        db.insertOrThrow("fixes",null,value);
+                    }
+                    db.setTransactionSuccessful();
+                }finally{db.endTransaction();}
+                publish();
+            }catch(Exception ignored){status="GPX import failed • existing tracks were retained";}
+            String outcome=status;
+            main.post(()->done.accept(outcome));
+        });
+    }
     void exportArchive(OutputStream output,Consumer<String> done){
         if(closed){main.post(()->done.accept("Track database unavailable"));return;}
         worker.post(()->{
