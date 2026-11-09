@@ -39,6 +39,16 @@ final class RemoteWorkspace extends NanoHTTPD {
     private int failures;
     private long lockedUntil;
 
+    static String wifiName(Context context){
+        try{
+            android.net.wifi.WifiManager manager=(android.net.wifi.WifiManager)
+                context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if(manager==null||manager.getConnectionInfo()==null)return "Wi-Fi";
+            String ssid=manager.getConnectionInfo().getSSID();
+            if(ssid==null||ssid.isEmpty()||ssid.contains("unknown ssid"))return "Wi-Fi";
+            return ssid.replace("\\\"","");
+        }catch(SecurityException e){return "Wi-Fi";}
+    }
     static String wifiAddress(Context context){
         ConnectivityManager cm=(ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
         if(cm==null)return null;
