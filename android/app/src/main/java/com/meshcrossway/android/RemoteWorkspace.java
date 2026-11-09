@@ -36,6 +36,16 @@ final class RemoteWorkspace extends NanoHTTPD {
     private final Handler main=new Handler(Looper.getMainLooper());
     final String ip,code,fingerprint;
     private final ConcurrentHashMap<String,Long> sessions=new ConcurrentHashMap<>();
+    private volatile int tlsAliasCalls,tlsCertCalls,tlsKeyCalls;
+    private volatile String tlsLastAlias="";
+    private void noteAlias(String scope,String keyType){
+        tlsAliasCalls++;
+        tlsLastAlias=scope+":"+keyType;
+    }
+    String tlsDiagnostics(){
+        return "alias="+tlsAliasCalls+" last="+tlsLastAlias+
+            " cert="+tlsCertCalls+" key="+tlsKeyCalls;
+    }
     private int failures;
     private long lockedUntil;
 
@@ -109,19 +119,37 @@ final class RemoteWorkspace extends NanoHTTPD {
             (java.security.cert.X509Certificate)cert
         };
         if(privateKey==null)throw new GeneralSecurityException("HTTPS private key missing");
-        javax.net.ssl.X509KeyManager serverKeys=new javax.net.ssl.X509KeyManager(){
+        Signature proof=Signature.getInstance("SHA256withRSA");
+        proof.initSign(privateKey);
+        proof.update("MeshCrossway TLS signing check".getBytes(StandardCharsets.UTF_8));
+        byte[] signature=proof.sign();
+        Signature verify=Signature.getInstance("SHA256withRSA");
+        verify.initVerify(cert.getPublicKey());
+        verify.update("MeshCrossway TLS signing check".getBytes(StandardCharsets.UTF_8));
+        if(!verify.verify(signature))
+            throw new GeneralSecurityException("TLS certificate key does not match signing key");
+
+        javax.net.ssl.X509ExtendedKeyManager serverKeys=new javax.net.ssl.X509ExtendedKeyManager(){
             public String[] getClientAliases(String keyType,java.security.Principal[] issuers){return null;}
             public String chooseClientAlias(String[] keyTypes,java.security.Principal[] issuers,java.net.Socket socket){return null;}
+            public String chooseEngineClientAlias(String[] keyTypes,java.security.Principal[] issuers,SSLEngine engine){return null;}
             public String[] getServerAliases(String keyType,java.security.Principal[] issuers){
                 return "RSA".equalsIgnoreCase(keyType)?new String[]{ALIAS}:null;
             }
             public String chooseServerAlias(String keyType,java.security.Principal[] issuers,java.net.Socket socket){
+                noteAlias("socket",keyType);
+                return "RSA".equalsIgnoreCase(keyType)?ALIAS:null;
+            }
+            public String chooseEngineServerAlias(String keyType,java.security.Principal[] issuers,SSLEngine engine){
+                noteAlias("engine",keyType);
                 return "RSA".equalsIgnoreCase(keyType)?ALIAS:null;
             }
             public java.security.cert.X509Certificate[] getCertificateChain(String alias){
+                tlsCertCalls++;
                 return ALIAS.equals(alias)?chain.clone():null;
             }
             public java.security.PrivateKey getPrivateKey(String alias){
+                tlsKeyCalls++;
                 return ALIAS.equals(alias)?privateKey:null;
             }
         };
