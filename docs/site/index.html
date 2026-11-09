@@ -1,223 +1,26 @@
 <!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Use Meshtastic and MeshCore independently from one interface. Download the Android 0.2.5 beta APK for testing, or explore the dedicated touchscreen controller.">
-  <title>MeshCrossway — Android Beta and Dual-Mesh Controller</title>
-  <link rel="stylesheet" href="./assets/site.css">
-  <style>
-    .evidence-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:28px}
-    .evidence-grid figure{margin:0;min-width:0}
-    .evidence-grid img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:#0b0d10}
-    .evidence-grid figcaption{padding:12px 2px 4px;color:var(--muted);font-size:14px}
-    @media(max-width:800px){.evidence-grid{grid-template-columns:1fr}}
-  </style>
-</head>
-<body>
-  <nav class="nav">
-    <div class="wrap navin">
-      <a class="brand" href="./" aria-label="MeshCrossway home">
-        <img src="./assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44">
-      </a>
-      <div class="links">
-        <a href="./about/">About</a>
-        <a href="./hardware/">Hardware</a>
-        <a href="./software/">Software</a><a href="./android/">Android beta</a>
-        <a href="./roadmap/">Roadmap</a>
-        <a href="./project-status/">Project Status</a>
-        <a href="./faq/">FAQ</a>
-        
-      </div>
-      <a class="cta" href="./flasher/">Web Flasher</a>
-    </div>
-  </nav>
-
-  <main>
-    <section class="hero">
-      <div class="wrap">
-        <div class="eyebrow">Open-source · Android beta · Independent dual radios</div>
-        <h1>Two independent mesh networks.<br><span>One interface.</span></h1>
-        <p class="lead">Use Meshtastic and MeshCore together from your Android phone or a dedicated touchscreen controller. Connect a separate Bluetooth radio for each network; messages stay on their own network. The Android app is now available as a public beta for testing.</p>
-        <div class="actions">
-          <a class="button primary" href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.5/MeshCrossway-0.2.5.apk">Download Android 0.2.5 beta APK</a>
-          <a class="button secondary" href="./android/">Beta install guide</a>
-          <a class="button secondary" href="./flasher/">Controller Web Flasher</a>
-          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway">View source on GitHub</a>
-        </div>
-        <p class="sectionintro"><strong>Beta for testing — not version 1.0.0.</strong> Android 8.0+ on ARM64. Use two compatible BLE radios for both networks. Broader phone and radio compatibility is still being tested.</p>
-        <div class="heroimg">
-          <img src="https://raw.githubusercontent.com/Renbrant/MeshCrossway/main/docs/images/meshcrossway-modular-hero.jpg" alt="MeshCrossway modular Core and independent Meshtastic and MeshCore radio devices">
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="android-beta">
-      <div class="wrap">
-        <div class="eyebrow">Android 0.2.5 · Public beta</div>
-        <h2>Try MeshCrossway with the phone you carry.</h2>
-        <p class="sectionintro">Connect directly to one Meshtastic radio and one MeshCore radio. No Waveshare controller is needed. Both networks keep their native protocols, identities and routing.</p>
-        <div class="grid3">
-          <article class="card"><h3>Messages and contacts</h3><p>Browser and phone messaging now offer clear Chats, Channels and Nodes lists for both networks, unread counts and native message reception details.</p></article>
-          <article class="card"><h3>Maps and field tools</h3><p>Right-side map icons, lower control panels, optional node grouping, track recording, POIs, GPX export and offline map areas. The computer browser now lets you navigate a map, draw a rectangle and download that offline region onto the phone, without typing coordinates.</p></article>
-          <article class="card"><h3>A beta you can help test</h3><p>0.1.1 remains a recovery beta. 0.2.0 added local HTTPS browser access for messages, maps and tracks; 0.2.1 made login simple with a short numeric PIN; 0.2.2 added dedicated browser chats/channels and visual map selection; 0.2.3 introduced permanent signing for in-place updates; 0.2.4 adds appearance themes; 0.2.5 adds a compact Home with radio BLE RSSI signal bars and fewer redundant headings. Physical acceptance of the new browser features is still pending. Version 1.0.0 has not been released.</p></article>
-        </div>
-        <div class="actions"><a class="button primary" href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.5/MeshCrossway-0.2.5.apk">Download beta APK · 0.2.5</a><a class="button secondary" href="./android/">Requirements and installation</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.5">Release notes and checksums</a></div>
-        <p class="sectionintro">Public download, no GitHub Actions login required. If replacing an earlier development build causes a signing conflict, export your history and GPX tracks before uninstalling. Uninstalling deletes app data.</p>
-      </div>
-    </section>
-
-    <section class="section" id="product-photos">
-      <div class="wrap">
-        <div class="eyebrow">Product photos · v0.9.8 field test</div>
-        <h2>The MeshCrossway device in operation</h2>
-        <p class="sectionintro">These photos show the touchscreen prototype during v0.9.8 field testing. The selected modular Core and separate Radio Pods remain in development; these images document the tested console and its software.</p>
-        <div class="evidence-grid">
-          <figure class="card">
-            <img src="./media/v0.9.8-field/01-assembled-device.jpg" alt="Assembled MeshCrossway touchscreen prototype with external GNSS antenna">
-            <figcaption>Assembled touchscreen prototype with its external GNSS antenna.</figcaption>
-          </figure>
-          <figure class="card">
-            <img src="./media/v0.9.8-field/02-home-status.jpg" alt="MeshCrossway home dashboard with Meshtastic, MeshCore, GPS and Wi-Fi status">
-            <figcaption>Home dashboard showing both radio networks, GNSS and Wi-Fi status.</figcaption>
-          </figure>
-          <figure class="card">
-            <img src="./media/v0.9.8-field/03-map-view.jpg" alt="MeshCrossway map view with nearby network nodes">
-            <figcaption>Map view with nearby nodes and navigation information.</figcaption>
-          </figure>
-          <figure class="card">
-            <img src="./media/v0.9.8-field/04-messages-view.jpg" alt="MeshCrossway touchscreen displaying received mesh messages">
-            <figcaption>Message view running on the touchscreen prototype.</figcaption>
-          </figure>
-        </div>
-      </div>
-    </section>
-
-    
-
-    <section class="section">
-      <div class="wrap">
-        <div class="eyebrow">Product architecture</div>
-        <h2>Your interface. Two separate radios.</h2>
-        <p class="sectionintro">Choose an Android phone or the dedicated touchscreen Core as your screen and controls. Bluetooth connects it to each radio. One runs Meshtastic and the other MeshCore; their messages and networks stay completely separate.</p>
-        <div class="network">
-          <article class="card">
-            <div class="num">CORE</div>
-            <h3>Phone or touchscreen Core</h3>
-            <p>The Android beta uses your phone for messages, maps and location. The separate Waveshare controller track provides a dedicated touchscreen and local browser companion.</p>
-          </article>
-          <div class="plus" aria-hidden="true">+</div>
-          <div>
-            <article class="card">
-              <div class="num">RADIO PODS</div>
-              <h3>Two separate radio modules</h3>
-            <p>Each module handles one network: one runs Meshtastic and the other MeshCore. They can work at the same time, but they do not pass messages between each other. The modular design also leaves room to choose compatible radio hardware.</p>
-            </article>
-            <p class="sectionintro">Keeping the radios in separate modules also makes it easier to place their antennas apart, reducing the chance that one radio interferes with or overloads the other. The user can choose compatible radio modules instead of being locked into one custom all-in-one board.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap">
-        <div class="eyebrow">Dedicated controller · firmware track</div>
-        <h2>Controller and local browser workflows</h2>
-        <div class="grid3">
-          <article class="card"><div class="num">01 · COMMUNICATION</div><h3>Two independent radio networks</h3><p>Connect Meshtastic and MeshCore at the same time over separate Bluetooth links. Messages, channels, identities and radio settings remain on their own network; MeshCrossway does not bridge them.</p></article>
-          <article class="card"><div class="num">02 · MAPS & GNSS</div><h3>Street, night and cached maps</h3><p>View local GNSS position, clock and node locations on street or topographic maps. Use local street night colors and cached microSD tiles offline; uncached areas need Wi-Fi.</p></article>
-          <article class="card"><div class="num">03 · TRACKS & BROWSER</div><h3>Record and keep your routes</h3><p>Record tracks and POIs, organize saved routes in folders, review previews and download GPX from the local browser companion. The browser also provides messages and radio settings.</p></article>
-          <article class="card"><div class="num">04 · NODE DISPLAY</div><h3>Choose what the map shows</h3><p>Set shape, size and color separately for each network. Use ID badges or individual markers, turn grouping on or off, and sort readable node lists by distance or last reception with manual refresh.</p></article>
-          <article class="card"><div class="num">05 · AGE & RETENTION</div><h3>See recent activity at a glance</h3><p>Choose colors by last reception: green under 24 hours, yellow from 1 to 7 days, gray for older or unknown records. Set a local retention period from 0 to 365 days; favorites and conversations are protected. Zero disables expiry.</p></article>
-          <article class="card"><div class="num">06 · DEVICE CONTROLS</div><h3>Adapt the screen to the field</h3><p>Use automatic 180-degree landscape rotation, a saved rotation lock and manual flip, plus brightness, screen timeout and Bluetooth/Wi-Fi controls. Console logs and memory snapshots support continued runtime testing.</p></article>
-        </div>
-        <p class="sectionintro">The screenshots below are captures of the running v0.8.16 device and its local browser interface.</p>
-      </div>
-    </section>
-
-    <section class="section" id="working-screenshots">
-      <div class="wrap">
-        <div class="eyebrow">Operation screenshots · v0.8.16</div>
-        <h2>Working on the device and over the local network</h2>
-        <p class="sectionintro">These captures show the touchscreen firmware and the browser companion connected to the same device. Remote access is available on the user's local network; it is not a cloud service.</p>
-
-        <h3>Touchscreen device</h3>
-        <div class="evidence-grid">
-          <figure class="card">
-            <img src="./media/v0.8.16/01-device-home-radio-gps.png" alt="MeshCrossway home screen showing Meshtastic and MeshCore connected, local GPS fix and Wi-Fi status">
-            <figcaption>Home status shows both Meshtastic and MeshCore connected at the same time, with node counts, GNSS fix and Wi-Fi state.</figcaption>
-          </figure>
-          <figure class="card">
-            <img src="./media/v0.8.16/02-device-network-nodes.png" alt="MeshCrossway node list with All, Meshtastic and MeshCore filters">
-            <figcaption>Nodes and networks view with All, Meshtastic and MeshCore filters and a live Meshtastic node list.</figcaption>
-          </figure>
-          <figure class="card">
-            <img src="./media/v0.8.16/03-device-message-list.png" alt="MeshCrossway device message feed showing sender, time and hop count">
-            <figcaption>On-device message feed with sender identity, local message time and hop information.</figcaption>
-          </figure>
-          <figure class="card">
-            <img src="./media/v0.8.16/04-device-conversation.png" alt="MeshCrossway device conversation showing received and unconfirmed message states">
-            <figcaption>Conversation history on the touchscreen with received and unconfirmed message states.</figcaption>
-          </figure>
-        </div>
-
-        <h3 style="margin-top:44px">Remote browser companion</h3>
-        <div class="evidence-grid">
-          <figure class="card">
-            <img src="./media/v0.8.16/05-remote-tracks-map.png" alt="Remote Tracks and recording page showing track folders, saved routes and a map preview">
-            <figcaption>Tracks and recording page shows saved routes, folder controls, route details and an interactive map preview. GPX downloads provide portable track backups.</figcaption>
-          </figure>
-          <figure class="card">
-            <img src="./media/v0.8.16/06-remote-messages.png" alt="Remote Messages page showing MeshCore conversations, groups, nodes and message composer">
-            <figcaption>Remote Messages page shows MeshCore conversations, groups, nodes, message history and the message composer.</figcaption>
-          </figure>
-        </div>
-        <div class="actions">
-          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/field-evidence-v0816.md">Read the screenshot evidence record</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap">
-        <div class="eyebrow">Hardware status</div>
-        <h2>Modular design; hardware qualification remains</h2>
-        <div class="grid3">
-          <article class="card">
-            <div class="num">SELECTED CORE</div>
-            <h3>Waveshare ESP32-S3-Touch-LCD-3.5</h3>
-            <p>The touchscreen Core is the active firmware development target. MAX-M10S GNSS and microSD support the local navigation workflow.</p>
-          </article>
-          <article class="card">
-            <div class="num">USER-SELECTABLE RADIO HARDWARE</div>
-            <h3>Choose a compatible radio for each network</h3>
-            <p>No XIAO model is required. Heltec V3 is the development-tested setup; chosen radios must support the correct native BLE interface and compatible firmware. Other combinations need validation.</p>
-          </article>
-          <article class="card">
-            <div class="num">MECHANICAL DESIGN</div>
-            <h3>Prototype cases; modular packaging in progress</h3>
-            <p>The repository contains 3D case files for the Waveshare Core and a 10,000 mAh battery case. Final fit, separate Pod enclosures and a dock still need mechanical validation. KiCad Rev A is an archived integrated variant.</p>
-          </article>
-        </div>
-        <div class="actions">
-          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/modular-architecture.md">Modular architecture</a>
-          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/navigation-and-sharing.md">Navigation and track workflow</a>
-          <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/track-folders-remote-v0812.md">Track folders and remote workspace</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="wrap">
-        <div class="notice">
-          <b>Experimental development project.</b> Broader radio, RF coexistence, battery, runtime and mechanical qualification is ongoing. MeshCrossway is not a certified emergency or safety device.
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <div class="wrap">MeshCrossway is an independent open-source project. Meshtastic, MeshCore and referenced hardware brands remain the property of their respective projects and owners.</div>
-  </footer>
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Download the MeshCrossway Android 0.2.5 beta. Use Meshtastic and MeshCore from one phone with separate Bluetooth radios.">
+<title>MeshCrossway for Android — Download the public beta</title><link rel="stylesheet" href="./assets/site.css"></head>
+<body><nav class="nav"><div class="wrap navin"><a class="brand" href="./" aria-label="MeshCrossway home"><img src="./assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44"></a><details class="site-menu"><summary>Explore</summary><div class="site-menu-panel"><a href="./android/">Android app</a><a href="./esp32/">ESP32 project</a><a href="./faq/">FAQ</a><a href="https://github.com/Renbrant/MeshCrossway">GitHub repository</a></div></details><a class="cta" href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.5/MeshCrossway-0.2.5.apk">Get Android APK</a></div></nav><main>
+<section class="hero"><div class="wrap"><div class="eyebrow">MeshCrossway for Android · Public beta</div>
+<h1>Two mesh networks.<br><span>One Android app.</span></h1>
+<p class="lead">Use Meshtastic and MeshCore side by side from the phone you carry. Connect to each network through its own Bluetooth radio; messages and network identities stay separate.</p>
+<div class="actions"><a class="button primary" href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.5/MeshCrossway-0.2.5.apk">Download Android 0.2.5 beta APK</a><a class="button secondary" href="./android/">Installation and requirements</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.5">Release notes</a></div>
+<p class="sectionintro"><strong>Beta for testing — not version 1.0.0.</strong> Android 8.0+ on ARM64. Install over the existing 0.2.4 app to retain local data.</p></div></section>
+<section class="section"><div class="wrap"><div class="eyebrow">Made for the field</div><h2>Keep both networks in view.</h2>
+<p class="sectionintro">MeshCrossway puts the tools for two independent mesh radios into one Android interface.</p>
+<div class="grid3">
+<article class="card"><div class="num">01 · MESSAGING</div><h3>Chats, channels and nodes</h3><p>Read and send messages on Meshtastic and MeshCore, with each conversation clearly tied to its own network.</p></article>
+<article class="card"><div class="num">02 · MAPS</div><h3>Maps and field tools</h3><p>See network nodes, record tracks, save points of interest, export GPX files and manage downloaded offline map areas.</p></article>
+<article class="card"><div class="num">03 · BLUETOOTH</div><h3>Measured radio-link signal</h3><p>See Bluetooth signal strength between your phone and each radio. This is the BLE connection signal, not the LoRa network signal.</p></article>
+</div></div></section>
+<section class="section"><div class="wrap prose"><div class="eyebrow">Get started</div><h2>Install the beta in a few steps.</h2>
+<ol><li>Download the APK on an ARM64 Android phone running Android 8.0 or newer.</li><li>Open the file and allow your browser or file manager to install apps when Android asks.</li><li>In MeshCrossway, connect one compatible Meshtastic radio and one compatible MeshCore radio over Bluetooth.</li></ol>
+<p><strong>Updating:</strong> Install 0.2.5 over 0.2.4 to preserve app data. Builds 0.2.2 and earlier used temporary signing certificates; read the <a href="https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md">one-time migration guide</a> before switching from those builds. Do not uninstall to update.</p>
+<p><a href="./android/">See requirements, known limits and the full install guide →</a></p></div></section>
+<section class="section"><div class="wrap prose"><div class="eyebrow">A beta you can help improve</div><h2>Test it with your radios.</h2>
+<p>Compatibility with more Android phones, radio models and firmware versions is still being evaluated. The Bluetooth signal indicator measures the phone-to-radio link, not LoRa reception. Android Remote Access is optional, off by default and intended for a private local network.</p>
+<p>Report reproducible problems on <a href="https://github.com/Renbrant/MeshCrossway/issues">GitHub Issues</a> and include your phone, radio models and firmware versions.</p>
+<p class="sectionintro">The embedded touchscreen controller remains a secondary project; its hardware, firmware, roadmap and Web Flasher are grouped in the <a href="./esp32/">ESP32 project area</a>.</p></div></section>
+</main><footer><div class="wrap">MeshCrossway is experimental and is not certified for safety-critical use. Do not rely on it as the only communication system in an emergency.</div></footer></body></html>
