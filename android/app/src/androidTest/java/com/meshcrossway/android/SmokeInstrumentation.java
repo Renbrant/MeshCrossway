@@ -322,6 +322,82 @@ public final class SmokeInstrumentation extends Instrumentation {
         check(error.get().isEmpty(),"Complete backup restore failed: "+error.get());
         zip.delete();
     }
+    private void appearance()throws Exception{
+        Context context=getTargetContext();
+        android.content.SharedPreferences ui=context.getSharedPreferences("ui",Context.MODE_PRIVATE);
+        String[] keys={"appearance.mode","appearance.gradient","appearance.hue",
+            "appearance.dim","appearance.blur"};
+        java.util.HashMap<String,Object> original=new java.util.HashMap<>();
+        for(String key:keys)if(ui.contains(key))original.put(key,ui.getAll().get(key));
+        File image=Appearance.photoFile(context);
+        File temporary=new File(context.getFilesDir(),"appearance-test-backup.jpg");
+        if(image.exists()){
+            try(java.io.InputStream in=new FileInputStream(image);
+                java.io.OutputStream out=new FileOutputStream(temporary)){
+                byte[] block=new byte[4096];int n;
+                while((n=in.read(block))!=-1)out.write(block,0,n);
+            }
+        }
+        try{
+            check(Appearance.validMode(Appearance.SYSTEM)&&
+                Appearance.validMode(Appearance.COLOR)&&
+                Appearance.validMode(Appearance.GRADIENT)&&
+                Appearance.validMode(Appearance.PHOTO)&&
+                !Appearance.validMode("other"),"Theme mode whitelist failed");
+            Appearance.setMode(context,Appearance.COLOR);
+            Appearance.setHue(context,202);
+            Appearance color=Appearance.load(context);
+            check(color.mode.equals(Appearance.COLOR)&&color.hue==202,
+                "Saved solid theme did not survive reload");
+            check(color.colors.bg!=Appearance.palette(context,Appearance.SYSTEM,202).bg,
+                "Solid theme should change app background");
+            Appearance.setMode(context,Appearance.GRADIENT);
+            Appearance.setGradient(context,Appearance.MESH);
+            Appearance mesh=Appearance.load(context);
+            check(mesh.mode.equals(Appearance.GRADIENT)&&mesh.gradientType.equals(Appearance.MESH),
+                "Saved mesh gradient did not survive reload");
+            check(mesh.background()!=null&&
+                Appearance.gradientDrawable(200,Appearance.LINEAR)!=null,
+                "Both gradient modes must render without external resources");
+            Appearance.setDim(context,70);
+            Appearance.setBlur(context,13);
+            check(Appearance.load(context).dim==70&&Appearance.load(context).blur==13,
+                "Photo dim/blur controls were not persisted");
+            Appearance.setMode(context,Appearance.PHOTO);
+            android.graphics.Bitmap bitmap=android.graphics.Bitmap.createBitmap(
+                160,120,android.graphics.Bitmap.Config.ARGB_8888);
+            bitmap.eraseColor(0xff224466);
+            try(FileOutputStream out=new FileOutputStream(image)){
+                check(bitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG,83,out),
+                    "Could not create private test photo");
+            }
+            bitmap.recycle();
+            Appearance photo=Appearance.load(context);
+            check(photo.hasPhoto&&photo.loadPhoto(context)!=null,
+                "Stored private appearance photo could not be loaded");
+            check(photo.colors.text!=photo.colors.bg,
+                "Photo overlay must keep text visually distinct");
+            boolean rejected=false;
+            try{Appearance.setMode(context,"invalid");}catch(IllegalArgumentException e){rejected=true;}
+            check(rejected,"Unrecognized theme mode should be rejected");
+            rejected=false;
+            try{Appearance.setHue(context,400);}catch(IllegalArgumentException e){rejected=true;}
+            check(rejected,"Invalid hue accepted");
+        }finally{
+            android.content.SharedPreferences.Editor reset=ui.edit();
+            for(String key:keys){
+                Object value=original.get(key);
+                if(value==null)reset.remove(key);
+                else if(value instanceof String)reset.putString(key,(String)value);
+                else if(value instanceof Integer)reset.putInt(key,(Integer)value);
+            }
+            reset.commit();
+            if(temporary.exists()){
+                image.delete();
+                temporary.renameTo(image);
+            }else image.delete();
+        }
+    }
     private void activity()throws Exception{
         MainActivity.mapStyleOverride="asset://map-test-style.json";Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();
         onUi(()->{
@@ -331,12 +407,27 @@ public final class SmokeInstrumentation extends Instrumentation {
             check(find(screen,"MC · NODES")!=null,"MeshCore node card is missing");
             check(find(screen,"MT · CHATS")!=null,"Meshtastic chat card is missing");
             check(find(screen,"MC · CHATS")!=null,"MeshCore chat card is missing");
+            check(Appearance.validMode(Appearance.load(activity).mode), "Appearance preference not loaded");
         });
         screenshot(activity,"home");remoteSecurity(activity);completeBackup(activity);
+        Method openAppearance=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);
+        openAppearance.setAccessible(true);
+        onUi(()->{
+            try{openAppearance.invoke(activity,"appearance",null);}
+            catch(Exception e){throw new RuntimeException(e);}
+            View view=activity.getWindow().getDecorView();
+            check((find(view,"System")!=null||find(view,"✓  System")!=null)&&
+                (find(view,"Color")!=null||find(view,"✓  Color")!=null)&&
+                (find(view,"Gradient")!=null||find(view,"✓  Gradient")!=null)&&
+                (find(view,"Photo")!=null||find(view,"✓  Photo")!=null),
+                "Appearance settings must expose all four selectable theme choices");
+        });
+        screenshot(activity,"settings-appearance");
+        onUi(activity::onBackPressed);
         for(String page:new String[]{"Contacts","Chats","Channels","Map","Settings","Home"})click(activity,page);menus(activity);recording(activity);maps(activity);mapPanels(activity);click(activity,"Home");receptionDetails(activity);
         Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);onUi(()->{try{open.invoke(activity,RadioProfile.MESHTASTIC,"offline-test",new Target("c:0:test","Test channel","","test",0,true));EditText entry=composer(activity.getWindow().getDecorView());check(entry!=null,"Composer missing");entry.setText("Draft survives rotation 👋");}catch(Exception e){throw new RuntimeException(e);}});
         waitForIdleSync();screenshot(activity,"chat-draft");Method settings=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);settings.setAccessible(true);onUi(()->{try{settings.invoke(activity,"data",null);}catch(Exception e){throw new RuntimeException(e);}});screenshot(activity,"settings-data");
         ActivityMonitor monitor=addMonitor(MainActivity.class.getName(),null,false);onUi(activity::recreate);MainActivity recreated=(MainActivity)waitForMonitorWithTimeout(monitor,10000);check(recreated!=null,"Activity recreation timed out");waitForIdleSync();onUi(recreated::onBackPressed);waitForIdleSync();java.util.concurrent.atomic.AtomicReference<String> restored=new java.util.concurrent.atomic.AtomicReference<>("");long deadline=android.os.SystemClock.elapsedRealtime()+10000;do{onUi(()->{EditText entry=composer(recreated.getWindow().getDecorView());restored.set(entry==null?"<no composer>":entry.getText().toString());});if(restored.get().equals("Draft survives rotation 👋"))break;Thread.sleep(50);}while(android.os.SystemClock.elapsedRealtime()<deadline);screenshot(recreated,"chat-restored");check(restored.get().equals("Draft survives rotation 👋"),"Rotation lost composer draft: "+restored.get());onUi(recreated::finish);removeMonitor(monitor);
     }
-    @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();backups();tracks();activity();sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
+    @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();backups();tracks();appearance();activity();sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
 }

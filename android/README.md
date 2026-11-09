@@ -1,6 +1,6 @@
 # MeshCrossway Android
 
-**Development: 0.2.3 beta (versionCode 13), permanently signed release pending maintainer setup** · [Install the Android APK](../docs/android-apk.md) · [Previous 0.2.1 recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
+**Development: 0.2.4 beta (versionCode 14), using the permanent signing identity established by 0.2.3** · [Install the Android APK](../docs/android-apk.md) · [Previous 0.2.1 recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
 
 Native ARM64 Android 8.0+ app for **two independent, simultaneous BLE radio sessions**: one Meshtastic and one MeshCore Companion. The application does **not** bridge, route or relay messages across networks. Its primary UI includes chats, channels, contacts, offline MapLibre areas, local phone GPS tracks/GPX and saved message history.
 
@@ -45,6 +45,20 @@ An uninstall deliberately destroys the app-private data; no app can silently
 read those erased files later. Android Auto Backup is currently disabled for
 private messages and location histories, and is not needed for normal updates.
 
+## New in 0.2.4 — Appearance and color themes
+
+Go to **Settings → Appearance & colors**. Four styles are available:
+
+- **System** — automatically follows Android's light/dark system appearance; the original dark style keeps its orange accent.
+- **Color** — choose any hue using the slider or preset swatches; tinted surfaces and app buttons update throughout the UI.
+- **Gradient** — choose any hue and switch between **Linear** and soft multi-point **Mesh** backgrounds.
+- **Photo** — choose a picture from the phone and adjust **Dim** and **Blur** separately. MeshCrossway re-encodes the photo (stripping EXIF information) and saves a private copy under app storage so it survives future in-place APK updates. The source image is not uploaded.
+- **Reset** — switch back to System at any time; in Photo mode, Remove background photo deletes the app's private copy.
+
+All theme settings are stored in the existing `ui` preferences file, and **survive future same-signature APK updates**, just like local chats and recorded GPS tracks. Color changes do not alter BLE or LoRa protocols. Meshtastic remains orange and MeshCore remains cyan in their network-status cards and map markers. An offline browser companion currently keeps its own dark presentation independent of these native Android theme options.
+
+A complete portable ZIP backup includes the theme preference values but **not the user's photo file**; a full uninstall or app data wipe removes that private image, even though ordinary updates do not. In that case, reselect the photo after reinstalling.
+
 ## New in 0.2.3 — data durability and portable recovery
 
 Public Android APKs will use **one permanent release signing identity**, so future updates can be installed over the existing app without uninstalling or erasing private data. The release workflow refuses to publish an APK unless its certificate matches the pinned long-lived signer fingerprint; the maintainer must configure the private signing-key GitHub secrets once.
@@ -78,7 +92,8 @@ The `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk` output is a de
 - **0.2.0**: local HTTPS remote workspace, browser messaging, offline region management and track folders ([recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.0)).
 - **0.2.1**: user-chosen four-to-eight-digit numeric PIN; random six-digit suggestion, simplified phone/browser sign-in and immediate session revocation on PIN change ([recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1)).
 - **0.2.2**: browser Chats, Channels and Nodes tabs, visual rectangle-based offline map selection and saved-area previews ([recovery beta](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.2)).
-- **0.2.3**: permanent release signing and complete backup/restore; one-time recovery from old debug-signed APKs.
+- **0.2.3**: first permanent release signing and complete backup/restore; one-time recovery from old debug-signed APKs.
+- **0.2.4**: System, Color, Gradient (Linear/Mesh) and Photo appearance options, with persistent customization.
 - **0.2.3+**: subsequent small fixes; **0.3.0** or later for larger feature releases; **1.0.0** remains a future production milestone.
 
 The installed app may be signed with a different CI debug key. If Android rejects an update due to a signing conflict, first export JSON history and required GPX tracks, then uninstall/reinstall. **Uninstalling deletes local application data.**
