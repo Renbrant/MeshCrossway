@@ -101,10 +101,32 @@ final class RemoteWorkspace extends NanoHTTPD {
         StringBuilder formatted=new StringBuilder();
         for(byte b:digest)formatted.append(String.format(Locale.ROOT,"%02X",b&255));
         fingerprint=formatted.toString();
-        KeyManagerFactory managers=KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        managers.init(keyStore,null);
+        // AndroidKeyStore private keys are non-exportable, so an ordinary
+        // KeyManagerFactory may not select them for server authentication.
+        // Present the exact RSA alias via a KeyManager instead.
+        final java.security.PrivateKey privateKey=(java.security.PrivateKey)keyStore.getKey(ALIAS,null);
+        final java.security.cert.X509Certificate[] chain=new java.security.cert.X509Certificate[]{
+            (java.security.cert.X509Certificate)cert
+        };
+        if(privateKey==null)throw new GeneralSecurityException("HTTPS private key missing");
+        javax.net.ssl.X509KeyManager serverKeys=new javax.net.ssl.X509KeyManager(){
+            public String[] getClientAliases(String keyType,java.security.Principal[] issuers){return null;}
+            public String chooseClientAlias(String[] keyTypes,java.security.Principal[] issuers,java.net.Socket socket){return null;}
+            public String[] getServerAliases(String keyType,java.security.Principal[] issuers){
+                return "RSA".equalsIgnoreCase(keyType)?new String[]{ALIAS}:null;
+            }
+            public String chooseServerAlias(String keyType,java.security.Principal[] issuers,java.net.Socket socket){
+                return "RSA".equalsIgnoreCase(keyType)?ALIAS:null;
+            }
+            public java.security.cert.X509Certificate[] getCertificateChain(String alias){
+                return ALIAS.equals(alias)?chain.clone():null;
+            }
+            public java.security.PrivateKey getPrivateKey(String alias){
+                return ALIAS.equals(alias)?privateKey:null;
+            }
+        };
         SSLContext tls=SSLContext.getInstance("TLS");
-        tls.init(managers.getKeyManagers(),null,RANDOM);
+        tls.init(new KeyManager[]{serverKeys},null,RANDOM);
         // TLS 1.2 supports RSA PKCS#1 signatures on Android Keystore keys across API 26+.
         // TLS 1.3 would require RSA-PSS permission and provider support.
         makeSecure(tls.getServerSocketFactory(),new String[]{"TLSv1.2"});
