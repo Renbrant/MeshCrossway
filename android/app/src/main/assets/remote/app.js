@@ -28,9 +28,9 @@ function renderHome(){
   card.append(element("h2",radio.name),element("strong",radio.status+" · "+(radio.device||"Device not chosen"),"metric"));
   card.append(element("p",radio.nodes+" contacts · "+radio.unread+" unread · "+radio.channels.filter(c=>c.enabled).length+" channels"));
   const shortcuts=element("div",undefined,"actions");
-  shortcuts.append(btn("Chats",()=>{app.network=radio.network;app.messageView="chats";app.topic="";showTab("messages");}));
-  shortcuts.append(btn("Channels",()=>{app.network=radio.network;app.messageView="channels";app.topic="";showTab("messages");}));
-  shortcuts.append(btn("Nodes",()=>{app.network=radio.network;app.messageView="nodes";app.topic="";showTab("messages");}));
+  shortcuts.append(btn("Chats",()=>{app.network=radio.network;app.messageView="chats";resetSelected();showTab("messages");}));
+  shortcuts.append(btn("Channels",()=>{app.network=radio.network;app.messageView="channels";resetSelected();showTab("messages");}));
+  shortcuts.append(btn("Nodes",()=>{app.network=radio.network;app.messageView="nodes";resetSelected();showTab("messages");}));
   card.append(shortcuts);
   holder.append(card);
  }
@@ -59,6 +59,7 @@ function switchNetwork(value){
 }
 function changeMessageView(view){
  if(!["chats","channels","nodes"].includes(view))return;
+ if(app.messageView!==view)resetSelected();
  app.messageView=view;
  renderMessageDirectory();
 }
