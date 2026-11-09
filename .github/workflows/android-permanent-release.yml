@@ -1,0 +1,119 @@
+name: Android permanent-key release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish, such as 0.2.3 (must match android/app/build.gradle)'
+        required: true
+        default: '0.2.3'
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: android-permanent-release
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.ref == 'refs/heads/baseline/android-0.1.0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MCX_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+      MCX_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+      MCX_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+      MCX_EXPECTED_CERT: ${{ secrets.ANDROID_RELEASE_CERT_SHA256 }}
+      RELEASE_KEYSTORE_B64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_B64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify requested version and permanent signing credentials
+        shell: bash
+        env:
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          [[ "$REQUESTED" =~ ^0\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version"; exit 1; }
+          grep -Fq "versionName '$REQUESTED'" android/app/build.gradle ||
+            { echo "The requested version does not match source code"; exit 1; }
+          for name in RELEASE_KEYSTORE_B64 MCX_SIGNING_STORE_PASSWORD MCX_SIGNING_KEY_ALIAS MCX_SIGNING_KEY_PASSWORD MCX_EXPECTED_CERT; do
+            if [ -z "${!name}" ]; then
+              echo "Missing permanent signing GitHub secret $name. Do not publish another disposable debug key."
+              exit 1
+            fi
+          done
+          printf '%s' "$RELEASE_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/meshcrossway-release.p12"
+          chmod 600 "$RUNNER_TEMP/meshcrossway-release.p12"
+          printf 'MCX_SIGNING_KEYSTORE=%s\n' "$RUNNER_TEMP/meshcrossway-release.p12" >> "$GITHUB_ENV"
+          # The secret itself is never echoed or uploaded.
+          keytool -list -keystore "$RUNNER_TEMP/meshcrossway-release.p12" \
+            -storetype PKCS12 -storepass "$MCX_SIGNING_STORE_PASSWORD" >/dev/null
+      - name: Protocol and browser fixture checks
+        run: |
+          bash scripts/test_android_probe.sh
+          node scripts/test_android_remote_web.cjs
+      - name: Build permanent-key signed release and lint
+        working-directory: android
+        run: ./gradlew --no-daemon assembleRelease lintRelease
+      - name: Verify APK signature identity and version before publishing
+        shell: bash
+        env:
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
+          test -s "$APK"
+          TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+          "$TOOLS/apksigner" verify --verbose --print-certs "$APK" > cert-info.txt
+          actual=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' cert-info.txt | head -n 1 | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+          expected=$(printf '%s' "$MCX_EXPECTED_CERT" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+          test -n "$actual" && test "$actual" = "$expected" ||
+            { echo "Release signing certificate changed: refusing to publish"; exit 1; }
+          "$TOOLS/aapt" dump badging "$APK" | grep -F "versionName='$REQUESTED'"
+          mkdir -p release
+          cp "$APK" "release/MeshCrossway-$REQUESTED.apk"
+          (cd release && sha256sum *.apk > SHA256SUMS.txt)
+          printf '%s\n' "$actual" > release/SIGNING-CERT-SHA256.txt
+          echo "Signed release identity matches the long-lived certificate."
+      - name: Publish only if no version tag or release exists
+        shell: bash
+        env:
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          TAG="android-v$REQUESTED"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Version already published; never overwrite an APK/certificate"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag already exists; refusing to overwrite"
+            exit 1
+          fi
+          cat > release-notes.md <<EOF
+          ## MeshCrossway Android $REQUESTED — permanently signed beta
+
+          **First persistent-signing release**: every future compatible APK must use the same long-lived signing certificate. Updates from this APK onward can be installed over the existing app while retaining its private SQLite databases, settings, network selections, favorites, tracks and downloaded offline maps.
+
+          **One-time migration from 0.2.2 or older**: earlier CI builds had different debug certificates. Before uninstalling an older APK, use **Settings → Data & backup → Export complete backup** (available in $REQUESTED; an older APK cannot retroactively export this new format). If the older APK lacks this exporter, use its history JSON and individual GPX export, or retain it until migration is arranged. Android system Bluetooth/location permissions cannot be carried by a file backup. The complete ZIP has private messages/location data and is unencrypted; store it securely.
+
+          The full ZIP backup includes both radio histories, favorites, radio preferences, settings, all track points and track folders. Offline MapLibre tiles remain on the phone across normal in-place upgrades; a full uninstall removes private offline tiles and they must be downloaded again.
+
+          Signer fingerprint: see SIGNING-CERT-SHA256.txt. Keep this certificate unchanged for every release. Existing radio independence, HTTPS local access, numeric PIN, chats, channels, tracks and visual offline maps remain available. Physical device testing is required before a final 1.0 release.
+          EOF
+          gh release create "$TAG" "release/MeshCrossway-$REQUESTED.apk" \
+             release/SHA256SUMS.txt release/SIGNING-CERT-SHA256.txt \
+             --target "$GITHUB_SHA" \
+             --title "Android $REQUESTED — persistent signing and complete backups beta" \
+             --notes-file release-notes.md --prerelease --latest=false
+      - name: Remove ephemeral keystore
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/meshcrossway-release.p12"
