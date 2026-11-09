@@ -47,10 +47,10 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle state){
         super.onCreate(state);appearance=Appearance.load(this);applyAppearancePalette();position=new PhonePosition(this);position.listener=()->{if(mapPanel!=null)mapPanel.update();if(selected==0||(selected==1&&nodeOrder==2))scheduleRefresh();};if(state!=null){ArrayList<Bundle> history=state.getParcelableArrayList("navigation");if(history!=null)for(Bundle entry:history)backStack.addLast(decodeScreen(entry));exportingTrack=state.getString("exportingTrack","");nodeOrder=state.getInt("nodeOrder");nodeType=state.getInt("nodeType");settingsSection=state.getString("settingsSection","");if(state.containsKey("settingsRadio"))settingsRadio=RadioProfile.valueOf(state.getString("settingsRadio"));selected=state.getInt("page");filter=state.getInt("filter");query=state.getString("query","");if(state.containsKey("topic")){chatProfile=RadioProfile.valueOf(state.getString("profile"));chatRadio=state.getString("radio","");chat=new Target(state.getString("topic"),state.getString("title"),state.getString("peer"),state.getString("identity"),state.getInt("slot"),state.getBoolean("group"));drafts.put(draftKey(),state.getString("draft",""));}}
         getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(PANEL);
-        int bars=getWindow().getDecorView().getSystemUiVisibility();
-        if(appearance.colors.light)bars|=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-        else bars&=~(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        getWindow().getDecorView().setSystemUiVisibility(bars);
+        int systemUiFlags=getWindow().getDecorView().getSystemUiVisibility();
+        if(appearance.colors.light)systemUiFlags|=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        else systemUiFlags&=~(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        getWindow().getDecorView().setSystemUiVisibility(systemUiFlags);
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         root=column();root.setBackgroundColor(android.graphics.Color.TRANSPARENT);
         android.widget.FrameLayout appearanceHost=new android.widget.FrameLayout(this);
