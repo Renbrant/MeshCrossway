@@ -6,6 +6,8 @@
 
 [Project website](https://renbrant.github.io/MeshCrossway/) · [Download Android beta APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.2/MeshCrossway-0.2.2.apk) · [Beta release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.2) · [Documentation](docs/TECHNICAL_DOCUMENTATION.md)
 
+> **Android 0.2.3 implementation passed its Android tests, but the APK must NOT be installed or distributed yet.** Permanent release signing is being configured to prevent data loss on future updates. The [signing and migration guide](docs/android-permanent-signing-backup.md) explains the one-time transition and complete ZIP backups; [issue #195](https://github.com/Renbrant/MeshCrossway/issues/195) tracks private signing-key setup. **Do not uninstall your current app until you have saved your history and tracks.**
+
 > **Android 0.2.2 is a public beta for testing, not version 1.0.0.** The functional baseline has been tested with both radios, but broader phone, radio and firmware compatibility still needs community testing. Feedback and bug reports are welcome.
 
 ## Choose how to use MeshCrossway
