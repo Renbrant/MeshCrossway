@@ -83,20 +83,20 @@ final class ProtocolClient {
         else if(code==18&&matched){if(data.length<50)throw Wire.bad("Truncated MeshCore channel");Channel c=new Channel();c.slot=data[1]&255;c.name=Wire.fixedText(data,2,32);byte[] secret=Arrays.copyOfRange(data,34,50);channelKeys.put(c.slot,secret);c.identity=Wire.hash(secret);c.enabled=!c.name.isEmpty();channels.put(c.slot,c);listener.channel(c);nextMcChannel();}
         else if(code==0&&matched&&!active.uid.isEmpty()){listener.delivery(active.uid,"radio accepted");removeSent(active.uid);}
         else if(code==6&&matched){if(data.length<10)throw Wire.bad("Truncated send acknowledgement");for(Sent s:sent.values())if(s.uid.equals(active.uid)){s.ack=Wire.u32(data,2);s.deadline=now+Math.max(5000,Math.min(600000,Wire.u32(data,6)));listener.delivery(s.uid,"radio accepted");}}
-        else if(code==7||code==8||code==16||code==17){mcMessage(data);waiting=true;}
+        else if(code==7||code==8||code==16||code==17){mcMessage(data,now);waiting=true;}
         else if(code==130){if(data.length<9)throw Wire.bad("Truncated delivery ACK");long ack=Wire.u32(data,1);Sent found=null;int matches=0;for(Sent s:sent.values())if(s.ack!=0&&s.ack==ack){found=s;matches++;}if(matches==1){listener.delivery(found.uid,"delivered");removeSent(found.uid);}}
         else if(code==131)waiting=true;
         else if(code==128&&ready&&data.length>=33&&commands.size()<8){byte[] request=Arrays.copyOf(data,33);request[0]=30;queue(request,3,"");}
         if(matched)active.replied=true;
     }
-    private void mcMessage(byte[] data){
+    private void mcMessage(byte[] data,long now){
         int code=data[0]&255;boolean group=code==8||code==17,v3=code==16||code==17;int start=v3?4:1,meta=group?3:8,typepos=start+(group?2:7);
         if(data.length<start+meta+4)throw Wire.bad("Truncated MeshCore message");int type=data[typepos]&255,offset=start+meta+4+(type==2?4:0);if(type!=0&&type!=2)return;if(offset>data.length)throw Wire.bad("Truncated signed message");
         Message m=new Message();m.rx=RxInfo.meshcore(data[start+(group?1:6)]&255);if(v3)m.rx.snr=data[1]/4.0;m.group=group;m.timestamp=Wire.u32(data,start+meta);if(m.timestamp<1577836800L)m.timestamp=System.currentTimeMillis()/1000;m.body=Wire.utf8(Arrays.copyOfRange(data,offset,data.length));if(m.body.isEmpty())return;
         if(group){m.slot=data[start]&255;Channel c=channels.get(m.slot);if(c==null||!c.enabled)return;m.topic=c.topic();m.title=c.name;m.identity=c.identity;int colon=m.body.indexOf(": ");m.sender=colon>0&&colon<40?m.body.substring(0,colon):"Channel participant";}
         else{String prefix=Wire.hex(Arrays.copyOfRange(data,start,start+6));Node found=null;int count=0;for(Node n:nodes.values())if(n.id.startsWith(prefix)){found=n;count++;}m.peer=count==1?found.id:prefix;m.topic="d:"+prefix;m.title=count==1?nodeName(m.peer):prefix;m.sender=m.title;}
         // SNR/path metadata can change when the same radio backlog packet is replayed.
-        m.uid="mc:"+Wire.hash((m.topic+"|"+Wire.u32(data,start+meta)+"|"+type+"|"+(type==2?Wire.hex(Arrays.copyOfRange(data,start+meta+4,offset)):"")+"|"+m.body).getBytes(StandardCharsets.UTF_8));if(group){String key=routeKey(m.slot,Wire.u32(data,start+meta),type,m.body);RxInfo.Observation observation=observedRoutes.get(key);if(observation!=null)m.rx=RxInfo.merge(m.rx,observation.info);receivedChannels.put(key,m);trim(receivedChannels,256);}listener.message(m);
+        m.uid="mc:"+Wire.hash((m.topic+"|"+Wire.u32(data,start+meta)+"|"+type+"|"+(type==2?Wire.hex(Arrays.copyOfRange(data,start+meta+4,offset)):"")+"|"+m.body).getBytes(StandardCharsets.UTF_8));if(group){String key=routeKey(m.slot,Wire.u32(data,start+meta),type,m.body);RxInfo.Observation observation=observedRoutes.get(key);if(observation!=null&&now-observation.at<=120000)m.rx=RxInfo.merge(m.rx,observation.info);receivedChannels.put(key,m);trim(receivedChannels,256);}listener.message(m);
     }
     private String routeKey(int slot,long time,int type,String body){Channel c=channels.get(slot);return (c==null?"":c.topic())+"|"+time+"|"+type+"|"+body;}
     private static void trim(LinkedHashMap<?,?> map,int maximum){while(map.size()>maximum)map.remove(map.keySet().iterator().next());}
