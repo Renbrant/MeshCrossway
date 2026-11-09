@@ -490,8 +490,7 @@ public final class MainActivity extends Activity {
             menuRow(individual,"tracks","Export an individual GPX track","Your track recordings remain on the phone during normal updates",this::manageTracks,ORANGE);
             menuRow(individual,"tracks","Import GPX track","Restore GPX files exported by earlier incompatible APKs",()->
                 startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT)
-                    .setType("*/*").addCategory(Intent.CATEGORY_OPENABLE)
-                    .putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"application/gpx+xml","application/xml","text/xml","application/octet-stream"}),52),ORANGE);
+                    .setType("*/*").addCategory(Intent.CATEGORY_OPENABLE),52),ORANGE);
             results.addView(text("Normal signed updates keep all app data. Uninstalling erases the private app database; use Export complete backup BEFORE uninstalling a differently signed APK.",13,MUTED));
             return;
         }
