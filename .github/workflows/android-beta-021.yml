@@ -1,0 +1,85 @@
+name: Publish Android 0.2.1 beta
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-beta-021.yml']
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: android-beta-0.2.1
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SOURCE_RUN: '42655097137'
+      SOURCE_SHA: 665368ffc0055aafbd269c370cc1cfba9caadb73
+      RELEASE_SHA: 8370eee36de6ccaed696f522a7c9f9d94d67886f
+    steps:
+      - name: Verify exact tested source and success of full Android matrix
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GH_REPO/actions/runs/$SOURCE_RUN" > run.json
+          jq -e --arg sha "$SOURCE_SHA" '.head_sha == $sha and .conclusion == "success"' run.json
+          gh api "repos/$GH_REPO/actions/runs/$SOURCE_RUN/jobs?per_page=100" > jobs.json
+          jq -e '[.jobs[] | select(.name == "apk" or .name == "device-smoke (29)" or .name == "device-smoke (35)")] | length == 3 and all(.[]; .conclusion == "success")' jobs.json
+          gh api "repos/$GH_REPO/commits/$RELEASE_SHA" > commit.json
+          jq -e --arg sha "$RELEASE_SHA" '.sha == $sha' commit.json
+      - name: Download exact approved APK
+        uses: actions/download-artifact@v4
+        with:
+          name: MeshCrossway-Android-0.1.0
+          path: release
+          run-id: 42655097137
+          github-token: ${{ github.token }}
+      - name: Publish reproducible public prerelease
+        working-directory: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s MeshCrossway-0.1.0.apk
+          mv MeshCrossway-0.1.0.apk MeshCrossway-0.2.1.apk
+          sha256sum MeshCrossway-0.2.1.apk > SHA256SUMS.txt
+          cat > release-notes.md <<'NOTES'
+          ## MeshCrossway Android 0.2.1 — Short Remote Access PIN beta
+
+          This is a **public beta for testing**, not version 1.0.0 or a production-grade remote administration system.
+
+          ### Simpler Remote Access
+          - On the phone, go to **Home → Remote Access**. A randomly generated six-digit numeric PIN is suggested.
+          - **Edit the PIN directly on your phone** to any 4–8 digits, including leading zeros, and tap Enable.
+          - Open the HTTPS address shown on the phone from a computer on the same trusted Wi-Fi network. In the browser, enter **the same numeric PIN**. No more long mixed-case session codes to type.
+          - The active phone screen prominently displays the address and PIN. The HTTPS certificate fingerprint is available separately via **View HTTPS certificate fingerprint**, so it no longer clutters the main access information.
+          - Use **Change PIN** to choose another code without restarting the server. All existing browser sessions immediately sign out and must authenticate again.
+          - **Stop server** ends all sessions. Each new activation suggests a fresh six-digit PIN; custom PINs are not persisted to storage.
+
+          ### Security & other features
+          - The existing HTTPS encryption, rate-limited login (five failed tries before a 60-second lock), local Wi-Fi binding, and encrypted TLS identity remain. Short PINs are easier to guess; enable access only on a private trusted Wi-Fi LAN. Do not expose port 8080 to the internet.
+          - The browser's self-signed certificate fingerprint must still be verified against the phone before accepting a trust exception; it is now under the Certificate details control.
+          - Dual independent Meshtastic and MeshCore Bluetooth, messaging, MapLibre offline regions, and GPS track folders remain unchanged from 0.2.0. No radio bridging or cloud relay.
+
+          ### Validated
+          [CI run 42655097137](https://github.com/Renbrant/MeshCrossway/actions/runs/42655097137) passed build/lint and Android API 29/35 emulator smoke tests, including four-digit login with a leading zero, PIN rotation and invalidation of prior browser sessions. [Source PR #192](https://github.com/Renbrant/MeshCrossway/pull/192).
+
+          ### Install & backup
+          Download **MeshCrossway-0.2.1.apk** below. It is a CI debug-signed prerelease for ARM64 Android 8+. Different signing keys between test builds can block in-place upgrades. **Export JSON message history and needed GPX tracks before uninstalling any earlier build**; uninstalling erases local app data.
+
+          The [0.2.0](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.0) and [0.1.1](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.1) betas remain available for recovery. Device testing with real dual BLE radios, Wi-Fi browser access and screen-off operation is still needed.
+          NOTES
+          if gh release view android-v0.2.1 >/dev/null 2>&1; then
+            mkdir previous
+            gh release download android-v0.2.1 -p MeshCrossway-0.2.1.apk -D previous
+            cmp previous/MeshCrossway-0.2.1.apk MeshCrossway-0.2.1.apk
+            echo "The same APK was already published"
+          else
+            gh release create android-v0.2.1 MeshCrossway-0.2.1.apk SHA256SUMS.txt \
+              --target "$RELEASE_SHA" \
+              --title "Android 0.2.1 — Simple numeric Remote Access PIN beta" \
+              --notes-file release-notes.md --prerelease --latest=false
+          fi
