@@ -18,7 +18,7 @@ final class MeshData {
         static Target node(Node n){return new Target("d:"+(n.id.length()==64?n.id.substring(0,12):n.id),n.name.isEmpty()?n.id:n.name,n.id,"",0,false);}
     }
     static final class Message {
-        String uid="",topic="",title="",sender="",body="",state="received",peer="",identity="";long timestamp;boolean outgoing,read,group;int slot;
+        String uid="",topic="",title="",sender="",body="",state="received",peer="",identity="";long timestamp;boolean outgoing,read,group;int slot;RxInfo rx=new RxInfo();
         Target target(){return new Target(topic,title,peer,identity,slot,group);}
     }
     static final class Flags {boolean favorite,pinned,muted;}

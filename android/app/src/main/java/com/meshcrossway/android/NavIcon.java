@@ -16,6 +16,13 @@ final class NavIcon extends View {
             case "chats":c.drawRoundRect(3,3,21,18,3,3,paint);line(c,7,18,7,22);line(c,7,22,12,18);line(c,7,8,17,8);line(c,7,12,14,12);break;
             case "map":line(c,3,5,9,3);line(c,9,3,15,6);line(c,15,6,21,4);line(c,21,4,21,20);line(c,21,20,15,22);line(c,15,22,9,19);line(c,9,19,3,21);line(c,3,21,3,5);line(c,9,3,9,19);line(c,15,6,15,22);break;
             case "settings":c.drawCircle(12,12,7,paint);c.drawCircle(12,12,2.5f,paint);for(int i=0;i<8;i++){double a=i*Math.PI/4;line(c,12+(float)Math.cos(a)*7,12+(float)Math.sin(a)*7,12+(float)Math.cos(a)*10,12+(float)Math.sin(a)*10);}break;
+            case "poi":c.drawCircle(12,9,5,paint);line(c,7,11,12,22);line(c,17,11,12,22);c.drawCircle(12,9,1.5f,paint);break;
+            case "layers":for(int i=0;i<3;i++){Path p=new Path();p.moveTo(3,7+i*5);p.lineTo(12,2+i*5);p.lineTo(21,7+i*5);p.lineTo(12,12+i*5);p.close();c.drawPath(p,paint);}break;
+            case "download":line(c,12,3,12,15);line(c,7,10,12,15);line(c,12,15,17,10);line(c,4,16,4,21);line(c,4,21,20,21);line(c,20,21,20,16);break;
+            case "zoom+":line(c,5,12,19,12);line(c,12,5,12,19);break;
+            case "zoom-":line(c,5,12,19,12);break;
+            case "north":Path north=new Path();north.moveTo(12,2);north.lineTo(5,21);north.lineTo(12,16);north.lineTo(19,21);north.close();c.drawPath(north,paint);break;
+            case "fit":line(c,3,9,3,3);line(c,3,3,9,3);line(c,15,3,21,3);line(c,21,3,21,9);line(c,21,15,21,21);line(c,21,21,15,21);line(c,9,21,3,21);line(c,3,21,3,15);break;
             case "back":line(c,20,12,4,12);line(c,4,12,10,6);line(c,4,12,10,18);break;
             case "more":paint.setStyle(Paint.Style.FILL);for(int y=5;y<=19;y+=7)c.drawCircle(12,y,1.5f,paint);break;
             case "arrow":line(c,9,6,15,12);line(c,15,12,9,18);break;

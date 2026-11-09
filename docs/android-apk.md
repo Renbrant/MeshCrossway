@@ -239,3 +239,67 @@ Data & backup; export before uninstalling an incompatible signed CI build.
 - APK SHA-256: `60157f96be8cf28de0fd2ea79aeec12e426e298a383aebc65c37a29d83e30b0e`.
 
 This is a new CI debug signature. Export JSON history and required GPX tracks before replacing an incompatible installation. Alpha05 stays the immediate maintainer-reported functional recovery reference. Physical acceptance of the new menu layout on the S25 is still pending.
+
+## 0.6.0-alpha07 — map side controls, live panels and message reception details
+
+Alpha06 was accepted by the maintainer as a substantial usability improvement;
+it remains the recovery reference for this increment.
+
+- The map has original right-hand icon controls: basemap, Layers, GPS, fit nodes,
+  tracks, offline maps, POIs, zoom and north-up. A scrollable rail remains usable
+  while the lower panel is open.
+- Layers, basemap controls, GPS information, tracks/track editing, POIs and offline
+  region management use a nonmodal lower panel. The exposed map can still be
+  panned/zoomed. Collapse/close controls and Android Back leave the map visible.
+- Layers → Group nearby nodes is persistent and changes only the local GeoJSON
+  source; it does not reload the basemap or reset the camera. Individual markers
+  remain available at low zoom when grouping is off.
+- Offline download selection uses the exposed map above the panel. Pan/zoom and
+  use Update selection from map before downloading; the outline previews the
+  selected bounds. Existing size/tile/request limits remain unchanged.
+- Received messages show hops and available SNR/RSSI; tap the message or Details
+  to inspect reception metadata and the available path. No new traceroute or
+  mesh traffic is sent automatically.
+
+### What a received path means
+
+For MeshCore, the Companion path-length byte packs hash width and hop count.
+The lower 6 bits are a hop count; the high bits select 1/2/3-byte hash prefixes.
+0xFF means direct routing, not a proven zero-hop path. V3 adds receive SNR but
+ordinary text notifications contain no complete path list.
+
+For live MeshCore channel copies, the app can observe firmware RX-log frames.
+It verifies the channel hash and firmware HMAC-SHA256 tag, then decrypts the
+version-1 group payload using the already-synchronized channel key. That key is
+kept only in the current client's memory, never written to history or logs.
+The observed ordered path is attached only to a canonical radio text notification
+matching channel identity, sender timestamp, text type and complete body. A raw
+log cannot create a new user message. Correlation caches are bounded; observations
+expire after two minutes. A late observation enriches an existing message without
+resetting read/delivery state or generating another notification.
+
+The details view labels this as **one observed copy**, resolves hash prefixes
+against saved contacts, and explicitly marks unknown/ambiguous matches. Prefixes
+are not unique proof of a repeater's identity. Later copies can take other routes.
+Private messages, old backlog, truncated/unsupported logs and direct-routing
+packets may have no complete captured path. The app states that limitation.
+
+For Meshtastic text, hop_start minus remaining hop_limit gives the count when
+hop_start is populated and consistent. A missing/zero hop_start stays unknown
+rather than falsely direct. Available SNR, RSSI, MQTT flag and relay-node suffix
+are shown; that suffix is not a complete route. A new traceroute cannot reconstruct
+the historical path of an already received text and is not presented as one.
+
+History schema 3 adds reception metadata without deleting messages. Old JSON
+backups import with unknown metadata; new exports preserve metadata and observed
+hashes. Existing deduplication identities and network/radio scoping are unchanged.
+
+Primary wire references:
+- https://github.com/meshcore-dev/MeshCore/blob/main/examples/companion_radio/MyMesh.cpp
+- https://github.com/meshcore-dev/MeshCore/blob/main/src/Packet.cpp
+- https://github.com/meshcore-dev/MeshCore/blob/main/src/Utils.cpp
+- https://github.com/meshtastic/protobufs/blob/master/meshtastic/mesh.proto
+
+The supplied MeshMapper screenshot informed the right-side controls and live
+lower-panel workflow; no source, icons or assets were copied. Physical acceptance
+must confirm live RX logs on the radio firmware and the new touch workflow.

@@ -16,6 +16,9 @@ final class ProtocolClient {
     final LinkedHashMap<String,Node> nodes=new LinkedHashMap<>();final TreeMap<Integer,Channel> channels=new TreeMap<>();
     final ArrayDeque<Command> commands=new ArrayDeque<>();final LinkedHashMap<Long,Sent> sent=new LinkedHashMap<>();
     final ArrayDeque<byte[]> earlyPackets=new ArrayDeque<>();
+    final Map<Integer,byte[]> channelKeys=new HashMap<>();
+    private final LinkedHashMap<String,RxInfo.Observation> observedRoutes=new LinkedHashMap<>();
+    private final LinkedHashMap<String,Message> receivedChannels=new LinkedHashMap<>();
     Command active;boolean ready;String description="Synchronizing…",localName="";long myNum,lastPoll,lastStamp,lastWrite;int hopLimit=3,region,channelCount,nextChannel,contactsExpected,contactsSeen,payloadLimit=173;boolean txEnabled,pki,waiting,contactsStarted;
     ProtocolClient(RadioProfile profile,long nonce,Listener listener){this.profile=profile;this.listener=listener;probe=new ProtocolProbe(nonce);
         queue(profile==RadioProfile.MESHTASTIC?probe.meshtasticRequest():ProtocolProbe.meshcoreQuery(),profile==RadioProfile.MESHTASTIC?-1:13,"");}
@@ -60,13 +63,14 @@ final class ProtocolClient {
         Message m=new Message();m.uid="mt:"+from+":"+id;m.body=Wire.utf8(payload);m.outgoing=from==myNum;m.read=m.outgoing;m.timestamp=time>=1577836800L?time:System.currentTimeMillis()/1000;m.slot=slot;m.sender=nodeName(Long.toString(from));m.group=to==0xffffffffL;
         if(m.group){Channel c=channels.get(slot);if(c==null||!c.enabled){c=new Channel();c.slot=slot;c.name="Channel "+slot;c.identity="unknown";}m.topic=c.topic();m.title=c.name;m.identity=c.identity;}
         else{m.peer=Long.toString(m.outgoing?to:from);m.topic="d:"+m.peer;m.title=nodeName(m.peer);}
+        m.rx.kind="meshtastic";int start=(int)Wire.number(ps,15,0),remaining=(int)Wire.number(ps,9,0);if(start>0&&start<=7&&remaining>=0&&remaining<=start)m.rx.hops=start-remaining;Wire.F snr=Wire.field(ps,8),rssi=Wire.field(ps,12);if(snr!=null&&snr.wire==5){float value=Float.intBitsToFloat((int)snr.number);if(Float.isFinite(value))m.rx.snr=value;}if(rssi!=null)m.rx.rssi=(int)rssi.number;int relay=(int)Wire.number(ps,19,0);if(relay>0&&relay<=255)m.rx.relay=relay;m.rx.mqtt=Wire.number(ps,14,0)!=0;
         m.state=m.outgoing?"radio accepted":"received";listener.message(m);
     }
     String nodeName(String id){Node n=nodes.get(id);if(n!=null&&!n.name.isEmpty())return n.name;return profile==RadioProfile.MESHTASTIC?String.format(Locale.ROOT,"!%08x",Long.parseLong(id)):id.substring(0,Math.min(12,id.length()));}
     private void mcContact(byte[] data){if(data.length<148)throw Wire.bad("Truncated MeshCore contact");String id=Wire.hex(Arrays.copyOfRange(data,1,33));Node n=node(id);n.key=id;n.type=data[33]&255;n.name=Wire.fixedText(data,100,32);n.heard=Wire.u32(data,132);n.lat=(int)Wire.u32(data,136)/1e6;n.lon=(int)Wire.u32(data,140)/1e6;n.position=(n.lat!=0||n.lon!=0)&&Math.abs(n.lat)<=90&&Math.abs(n.lon)<=180;publish(n);}
     private void nextMcChannel(){if(nextChannel<channelCount){description="Synchronizing channel "+(nextChannel+1)+" / "+channelCount;queue(new byte[]{31,(byte)nextChannel++},18,"");}else{ready=true;waiting=true;description="Ready • live messages";}}
     private void meshcore(byte[] data,long now){
-        if(data.length==0||data.length>176)throw Wire.bad("Invalid MeshCore frame");int code=data[0]&255;
+        if(data.length==0||data.length>176)throw Wire.bad("Invalid MeshCore frame");int code=data[0]&255;if(code==136){observeChannel(data,now);return;}
         int command=active==null?-1:active.data[0]&255;boolean matched=active!=null&&(code==active.response||code==1||code==15||(command==4&&code==4)||(command==10&&(code==7||code==8||code==16||code==17||code==27)));
         if(command==31&&code==18)matched=data.length>=2&&data[1]==active.data[1];
         if((code==1||code==15)&&matched){active.replied=true;if(!active.uid.isEmpty()){listener.delivery(active.uid,"rejected");removeSent(active.uid);return;}
@@ -76,7 +80,7 @@ final class ProtocolClient {
         else if(code==2&&command==4){if(data.length<5)throw Wire.bad("Invalid contacts header");contactsExpected=(int)Wire.u32(data,1);if(contactsExpected<0||contactsExpected>4096)throw Wire.bad("Too many contacts");contactsSeen=0;contactsStarted=true;}
         else if(code==3||code==138){mcContact(data);if(code==3&&command==4){contactsSeen++;description="MeshCore contacts "+contactsSeen+" / "+contactsExpected;active.deadline=now+30000;}}
         else if(code==4&&matched){if(!contactsStarted||contactsSeen!=contactsExpected)throw Wire.bad("Incomplete contacts sync");contactsStarted=false;nextMcChannel();}
-        else if(code==18&&matched){if(data.length<50)throw Wire.bad("Truncated MeshCore channel");Channel c=new Channel();c.slot=data[1]&255;c.name=Wire.fixedText(data,2,32);c.identity=Wire.hash(Arrays.copyOfRange(data,34,50));c.enabled=!c.name.isEmpty();channels.put(c.slot,c);listener.channel(c);nextMcChannel();}
+        else if(code==18&&matched){if(data.length<50)throw Wire.bad("Truncated MeshCore channel");Channel c=new Channel();c.slot=data[1]&255;c.name=Wire.fixedText(data,2,32);byte[] secret=Arrays.copyOfRange(data,34,50);channelKeys.put(c.slot,secret);c.identity=Wire.hash(secret);c.enabled=!c.name.isEmpty();channels.put(c.slot,c);listener.channel(c);nextMcChannel();}
         else if(code==0&&matched&&!active.uid.isEmpty()){listener.delivery(active.uid,"radio accepted");removeSent(active.uid);}
         else if(code==6&&matched){if(data.length<10)throw Wire.bad("Truncated send acknowledgement");for(Sent s:sent.values())if(s.uid.equals(active.uid)){s.ack=Wire.u32(data,2);s.deadline=now+Math.max(5000,Math.min(600000,Wire.u32(data,6)));listener.delivery(s.uid,"radio accepted");}}
         else if(code==7||code==8||code==16||code==17){mcMessage(data);waiting=true;}
@@ -88,11 +92,17 @@ final class ProtocolClient {
     private void mcMessage(byte[] data){
         int code=data[0]&255;boolean group=code==8||code==17,v3=code==16||code==17;int start=v3?4:1,meta=group?3:8,typepos=start+(group?2:7);
         if(data.length<start+meta+4)throw Wire.bad("Truncated MeshCore message");int type=data[typepos]&255,offset=start+meta+4+(type==2?4:0);if(type!=0&&type!=2)return;if(offset>data.length)throw Wire.bad("Truncated signed message");
-        Message m=new Message();m.group=group;m.timestamp=Wire.u32(data,start+meta);if(m.timestamp<1577836800L)m.timestamp=System.currentTimeMillis()/1000;m.body=Wire.utf8(Arrays.copyOfRange(data,offset,data.length));if(m.body.isEmpty())return;
+        Message m=new Message();m.rx=RxInfo.meshcore(data[start+(group?1:6)]&255);if(v3)m.rx.snr=data[1]/4.0;m.group=group;m.timestamp=Wire.u32(data,start+meta);if(m.timestamp<1577836800L)m.timestamp=System.currentTimeMillis()/1000;m.body=Wire.utf8(Arrays.copyOfRange(data,offset,data.length));if(m.body.isEmpty())return;
         if(group){m.slot=data[start]&255;Channel c=channels.get(m.slot);if(c==null||!c.enabled)return;m.topic=c.topic();m.title=c.name;m.identity=c.identity;int colon=m.body.indexOf(": ");m.sender=colon>0&&colon<40?m.body.substring(0,colon):"Channel participant";}
         else{String prefix=Wire.hex(Arrays.copyOfRange(data,start,start+6));Node found=null;int count=0;for(Node n:nodes.values())if(n.id.startsWith(prefix)){found=n;count++;}m.peer=count==1?found.id:prefix;m.topic="d:"+prefix;m.title=count==1?nodeName(m.peer):prefix;m.sender=m.title;}
         // SNR/path metadata can change when the same radio backlog packet is replayed.
-        m.uid="mc:"+Wire.hash((m.topic+"|"+Wire.u32(data,start+meta)+"|"+type+"|"+(type==2?Wire.hex(Arrays.copyOfRange(data,start+meta+4,offset)):"")+"|"+m.body).getBytes(StandardCharsets.UTF_8));listener.message(m);
+        m.uid="mc:"+Wire.hash((m.topic+"|"+Wire.u32(data,start+meta)+"|"+type+"|"+(type==2?Wire.hex(Arrays.copyOfRange(data,start+meta+4,offset)):"")+"|"+m.body).getBytes(StandardCharsets.UTF_8));if(group){String key=routeKey(m.slot,Wire.u32(data,start+meta),type,m.body);RxInfo.Observation observation=observedRoutes.get(key);if(observation!=null)m.rx=RxInfo.merge(m.rx,observation.info);receivedChannels.put(key,m);trim(receivedChannels,256);}listener.message(m);
+    }
+    private String routeKey(int slot,long time,int type,String body){Channel c=channels.get(slot);return (c==null?"":c.topic())+"|"+time+"|"+type+"|"+body;}
+    private static void trim(LinkedHashMap<?,?> map,int maximum){while(map.size()>maximum)map.remove(map.keySet().iterator().next());}
+    private void observeChannel(byte[] data,long now){
+        observedRoutes.entrySet().removeIf(entry->now-entry.getValue().at>120000);
+        for(Map.Entry<Integer,byte[]> key:channelKeys.entrySet()){Channel channel=channels.get(key.getKey());if(channel==null||!channel.enabled)continue;RxInfo.Observation observation=RxInfo.channelLog(data,key.getValue(),now);if(observation==null)continue;String match=routeKey(key.getKey(),observation.time,observation.type,observation.body);observedRoutes.putIfAbsent(match,observation);trim(observedRoutes,256);Message message=receivedChannels.get(match);if(message!=null&&!message.rx.observed){message.rx=RxInfo.merge(message.rx,observation.info);listener.message(message);}}
     }
     private void removeSent(String uid){sent.values().removeIf(s->s.uid.equals(uid));}
     Message send(Target target,String text,long id,long now){
