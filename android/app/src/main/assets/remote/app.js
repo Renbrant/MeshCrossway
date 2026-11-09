@@ -40,7 +40,7 @@ function showTab(tab){
  document.querySelectorAll("[data-panel]").forEach(e=>e.hidden=e.id!==tab);
  document.querySelectorAll("[data-tab]").forEach(e=>e.setAttribute("aria-selected",String(e.dataset.tab===tab)));
  if(tab==="messages")renderMessageDirectory();
- if(tab==="maps")renderMaps();
+ if(tab==="maps"){ensureMap();renderMaps();}
  if(tab==="tracks")renderTracks();
 }
 function resetSelected(){
