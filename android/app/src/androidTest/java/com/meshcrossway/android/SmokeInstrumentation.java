@@ -85,7 +85,16 @@ public final class SmokeInstrumentation extends Instrumentation {
         java.lang.reflect.Field field=MainActivity.class.getDeclaredField("service");field.setAccessible(true);RadioService service=(RadioService)field.get(activity);Message incoming=message("route-fixture","Route fixture");incoming.sender="Route test";incoming.rx.kind="flood";incoming.rx.observed=true;incoming.rx.width=2;incoming.rx.path="1234abcd";incoming.rx.hops=2;incoming.rx.snr=-3;incoming.rx.rssi=-90;onUi(()->service.history.message(RadioProfile.MESHCORE,"map-mc",incoming));waitUntil(()->service.data(RadioProfile.MESHCORE).messages.stream().anyMatch(m->m.uid.equals("route-fixture")),"Received route fixture not stored");Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);onUi(()->{try{open.invoke(activity,RadioProfile.MESHCORE,"map-mc",incoming.target());}catch(Exception e){throw new RuntimeException(e);}});click(activity,"Route fixture");android.view.accessibility.AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();check(root!=null&&!root.findAccessibilityNodeInfosByText("Message details").isEmpty(),"Tapping received text did not open details");screenshot(activity,"message-route");shell("input keyevent 4");waitForIdleSync();
     }
     private void activity()throws Exception{
-        MainActivity.mapStyleOverride="asset://map-test-style.json";Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();screenshot(activity,"home");
+        MainActivity.mapStyleOverride="asset://map-test-style.json";Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();
+        onUi(()->{
+            View screen=activity.getWindow().getDecorView();
+            check(find(screen,"Dual mesh dashboard")!=null,"Dual-mesh dashboard is missing");
+            check(find(screen,"MT · NODES")!=null,"Meshtastic node card is missing");
+            check(find(screen,"MC · NODES")!=null,"MeshCore node card is missing");
+            check(find(screen,"MT · CHATS")!=null,"Meshtastic chat card is missing");
+            check(find(screen,"MC · CHATS")!=null,"MeshCore chat card is missing");
+        });
+        screenshot(activity,"home");
         for(String page:new String[]{"Contacts","Chats","Channels","Map","Settings","Home"})click(activity,page);menus(activity);recording(activity);maps(activity);mapPanels(activity);click(activity,"Home");receptionDetails(activity);
         Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);onUi(()->{try{open.invoke(activity,RadioProfile.MESHTASTIC,"offline-test",new Target("c:0:test","Test channel","","test",0,true));EditText entry=composer(activity.getWindow().getDecorView());check(entry!=null,"Composer missing");entry.setText("Draft survives rotation 👋");}catch(Exception e){throw new RuntimeException(e);}});
         waitForIdleSync();screenshot(activity,"chat-draft");Method settings=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);settings.setAccessible(true);onUi(()->{try{settings.invoke(activity,"data",null);}catch(Exception e){throw new RuntimeException(e);}});screenshot(activity,"settings-data");
