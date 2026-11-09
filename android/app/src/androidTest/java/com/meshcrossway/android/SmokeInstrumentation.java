@@ -410,6 +410,18 @@ public final class SmokeInstrumentation extends Instrumentation {
             check(Appearance.validMode(Appearance.load(activity).mode), "Appearance preference not loaded");
         });
         screenshot(activity,"home");remoteSecurity(activity);completeBackup(activity);
+        Method openAppearance=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);
+        openAppearance.setAccessible(true);
+        onUi(()->{
+            try{openAppearance.invoke(activity,"appearance",null);}
+            catch(Exception e){throw new RuntimeException(e);}
+            View view=activity.getWindow().getDecorView();
+            check(find(view,"System")!=null&&find(view,"Color")!=null&&
+                find(view,"Gradient")!=null&&find(view,"Photo")!=null,
+                "Appearance settings must expose all four selectable theme choices");
+        });
+        screenshot(activity,"settings-appearance");
+        onUi(activity::onBackPressed);
         for(String page:new String[]{"Contacts","Chats","Channels","Map","Settings","Home"})click(activity,page);menus(activity);recording(activity);maps(activity);mapPanels(activity);click(activity,"Home");receptionDetails(activity);
         Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);onUi(()->{try{open.invoke(activity,RadioProfile.MESHTASTIC,"offline-test",new Target("c:0:test","Test channel","","test",0,true));EditText entry=composer(activity.getWindow().getDecorView());check(entry!=null,"Composer missing");entry.setText("Draft survives rotation 👋");}catch(Exception e){throw new RuntimeException(e);}});
         waitForIdleSync();screenshot(activity,"chat-draft");Method settings=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);settings.setAccessible(true);onUi(()->{try{settings.invoke(activity,"data",null);}catch(Exception e){throw new RuntimeException(e);}});screenshot(activity,"settings-data");
