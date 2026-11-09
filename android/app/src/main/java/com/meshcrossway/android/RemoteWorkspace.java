@@ -33,7 +33,19 @@ final class RemoteWorkspace extends NanoHTTPD {
     private static final long SESSION_MS=3_600_000;
     private final RadioService owner;
     private final Handler main=new Handler(Looper.getMainLooper());
-    final String ip,code,fingerprint;
+    final String ip,fingerprint;
+    private volatile String code;
+    static String newShortPin(){return String.format(Locale.ROOT,"%06d",RANDOM.nextInt(1_000_000));}
+    static boolean validPin(String pin){return pin!=null&&pin.matches("[0-9]{4,8}");}
+    String accessPin(){return code;}
+    /** Changing a PIN terminates existing authenticated browser sessions. */
+    synchronized void changePin(String pin){
+        if(!validPin(pin))throw new IllegalArgumentException("Enter 4 to 8 digits");
+        code=pin;
+        sessions.clear();
+        failures=0;
+        lockedUntil=0;
+    }
     private final ConcurrentHashMap<String,Long> sessions=new ConcurrentHashMap<>();
     String tlsDiagnostics(){return "AES-GCM sealed local RSA TLS identity";}
     SSLContext tlsContext; // Package-local for isolated Android TLS smoke tests.
@@ -70,15 +82,17 @@ final class RemoteWorkspace extends NanoHTTPD {
         byte[] data=new byte[bytes];RANDOM.nextBytes(data);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(data);
     }
-    static RemoteWorkspace start(RadioService owner)throws Exception{
+    static RemoteWorkspace start(RadioService owner,String pin)throws Exception{
         String ip=wifiAddress(owner);
         if(ip==null)throw new IOException("Connect the phone to a local Wi-Fi network first");
-        RemoteWorkspace server=new RemoteWorkspace(owner,ip);
+        RemoteWorkspace server=new RemoteWorkspace(owner,ip,pin);
         server.start(SOCKET_READ_TIMEOUT,false);
         return server;
     }
-    RemoteWorkspace(RadioService owner,String ip)throws Exception{
-        super(ip,PORT);this.owner=owner;this.ip=ip;code=randomToken(18);
+    RemoteWorkspace(RadioService owner,String ip)throws Exception{this(owner,ip,null);}
+    RemoteWorkspace(RadioService owner,String ip,String chosenPin)throws Exception{
+        super(ip,PORT);this.owner=owner;this.ip=ip;
+        changePin(chosenPin==null?newShortPin():chosenPin);
         RemoteTlsIdentity identity=RemoteTlsIdentity.load(owner,ip);
         Certificate cert=identity.certificate;
         byte[] digest=MessageDigest.getInstance("SHA-256").digest(cert.getEncoded());
