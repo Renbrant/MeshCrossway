@@ -23,6 +23,7 @@ public final class RadioService extends Service {
         /** Latest phone-to-radio BLE RSSI; unrelated to the received LoRa signal. */
         public int rssiDbm=BleSignal.UNKNOWN;
         public long rssiMeasuredAtMs;
+        public boolean rssiCurrentLink;
         private boolean rssiPending;
         private Runnable rssiPoll;
         private BluetoothGatt gatt;
@@ -284,7 +285,7 @@ public final class RadioService extends Service {
     private void release(Session s,String reason){
         if(s.retry!=null)handler.removeCallbacks(s.retry);s.retry=null;
         if(s.rssiPoll!=null)handler.removeCallbacks(s.rssiPoll);
-        s.rssiPoll=null;s.rssiPending=false;
+        s.rssiPoll=null;s.rssiPending=false;s.rssiCurrentLink=false;
         if(s.client!=null)history.uncertain(s.profile,s.address);s.client=null;s.transportReady=false;s.persisting=false;
         cancelTimeout(s);if(s.probeTimeout!=null)handler.removeCallbacks(s.probeTimeout);if(s.poll!=null)handler.removeCallbacks(s.poll);
         BluetoothGatt old=s.gatt;s.gatt=null;s.queue.clear();s.active=null;s.connected=s.verified=s.readPending=false;
@@ -360,7 +361,7 @@ public final class RadioService extends Service {
                 if(!s.rssiPending)return;
                 s.rssiPending=false;
                 if(status==BluetoothGatt.GATT_SUCCESS&&BleSignal.valid(rssi)){
-                    s.rssiDbm=rssi;s.rssiMeasuredAtMs=System.currentTimeMillis();
+                    s.rssiDbm=rssi;s.rssiMeasuredAtMs=System.currentTimeMillis();s.rssiCurrentLink=true;
                     // Persist only the last reading and the matching device address.
                     getSharedPreferences("radios",MODE_PRIVATE).edit()
                         .putString(s.profile.name()+".rssi.address",s.address)
