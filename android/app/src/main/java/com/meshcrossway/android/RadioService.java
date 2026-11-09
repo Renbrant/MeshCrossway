@@ -20,6 +20,11 @@ public final class RadioService extends Service {
         public String address="", name="", status="Disconnected";
         public long frames;
         public boolean connected, verified;
+        /** Latest phone-to-radio BLE RSSI; unrelated to the received LoRa signal. */
+        public int rssiDbm=BleSignal.UNKNOWN;
+        public long rssiMeasuredAtMs;
+        private boolean rssiPending;
+        private Runnable rssiPoll;
         private BluetoothGatt gatt;
         private BluetoothGattCharacteristic tx, rx, notice;
         private final ArrayDeque<Op> queue=new ArrayDeque<>();
@@ -139,7 +144,19 @@ public final class RadioService extends Service {
         history=new HistoryStore(this);history.listener=this::changed;alerts=new MessageAlerts(this);
         autoReconnect=getSharedPreferences("radios",MODE_PRIVATE).getBoolean("autoReconnect",true);
         for(RadioProfile p:RadioProfile.values()){
-            Session s=new Session(p);s.address=getSharedPreferences("radios",MODE_PRIVATE).getString(p.name(),"");s.desired=getSharedPreferences("radios",MODE_PRIVATE).getBoolean(p.name()+".desired",false);sessions.put(p,s);history.select(p,s.address);history.uncertain(p,s.address);
+            Session s=new Session(p);
+            SharedPreferences radios=getSharedPreferences("radios",MODE_PRIVATE);
+            s.address=radios.getString(p.name(),"");
+            s.desired=radios.getBoolean(p.name()+".desired",false);
+            // A previous reading belongs only to this same radio MAC address.
+            if(s.address.equals(radios.getString(p.name()+".rssi.address",""))){
+                int previous=radios.getInt(p.name()+".rssi.dbm",BleSignal.UNKNOWN);
+                long measured=radios.getLong(p.name()+".rssi.at",0);
+                if(BleSignal.valid(previous)&&BleSignal.recent(measured,System.currentTimeMillis())){
+                    s.rssiDbm=previous;s.rssiMeasuredAtMs=measured;
+                }
+            }
+            sessions.put(p,s);history.select(p,s.address);history.uncertain(p,s.address);
         }
         BluetoothManager manager=getSystemService(BluetoothManager.class);adapter=manager==null?null:manager.getAdapter();
         IntentFilter events=new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);events.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);registerReceiver(adapterChanges,events);
@@ -205,7 +222,11 @@ public final class RadioService extends Service {
         for(Session other:sessions.values())if(other!=s && (other.gatt!=null||other.desired) && address.equals(other.address)){s.status="This radio is already assigned to "+other.profile.title;s.desired=false;changed();return;}
         s.pendingAddress=address;
         if(!gate.acquire(s.profile)){phase(s,"Queued","Waiting for "+gate.owner().title+" Bluetooth setup");return;}
-        stopScan();release(s,"Connecting…");s.mtu=23;s.address=address;s.frames=0;history.select(s.profile,address);
+        stopScan();release(s,"Connecting…");s.mtu=23;
+        if(!address.equals(s.address)){
+            s.rssiDbm=BleSignal.UNKNOWN;s.rssiMeasuredAtMs=0;
+        }
+        s.address=address;s.frames=0;history.select(s.profile,address);
         long nonce=(new SecureRandom().nextInt() & 0x7fffffffL)+1;if(nonce==69420||nonce==69421)nonce+=2;
         final String radio=address;final RadioProfile profile=s.profile;
         s.client=new ProtocolClient(profile,nonce,new ProtocolClient.Listener(){
@@ -249,7 +270,7 @@ public final class RadioService extends Service {
         },()->{client.cancel(message.uid);if(s.client==client)s.persisting=false;result.accept("Could not save message • transmission cancelled; draft kept");});
     }
     private void advance(Session s){
-        if(!running||!s.transportReady||s.gatt==null||s.client==null||s.persisting||s.active!=null||!s.queue.isEmpty()||now()<s.nextWriteAt)return;
+        if(!running||!s.transportReady||s.gatt==null||s.client==null||s.persisting||s.rssiPending||s.active!=null||!s.queue.isEmpty()||now()<s.nextWriteAt)return;
         try{ProtocolClient.Command command=s.client.next(now());if(command!=null)enqueue(s,2,command.data);}
         catch(IllegalArgumentException e){close(s,e.getMessage());}
     }
@@ -262,6 +283,8 @@ public final class RadioService extends Service {
     private void close(Session s,String reason){release(s,reason);releaseSetup(s);scheduleReconnect(s);}
     private void release(Session s,String reason){
         if(s.retry!=null)handler.removeCallbacks(s.retry);s.retry=null;
+        if(s.rssiPoll!=null)handler.removeCallbacks(s.rssiPoll);
+        s.rssiPoll=null;s.rssiPending=false;
         if(s.client!=null)history.uncertain(s.profile,s.address);s.client=null;s.transportReady=false;s.persisting=false;
         cancelTimeout(s);if(s.probeTimeout!=null)handler.removeCallbacks(s.probeTimeout);if(s.poll!=null)handler.removeCallbacks(s.poll);
         BluetoothGatt old=s.gatt;s.gatt=null;s.queue.clear();s.active=null;s.connected=s.verified=s.readPending=false;
@@ -271,7 +294,7 @@ public final class RadioService extends Service {
     }
     private void enqueue(Session s,int kind,byte[] data){s.queue.add(new Op(kind,data));pump(s);}
     private void pump(Session s){
-        if(s.gatt==null || s.active!=null || s.queue.isEmpty())return;
+        if(s.gatt==null || s.rssiPending || s.active!=null || s.queue.isEmpty())return;
         s.active=s.queue.remove();boolean ok;
         try{
             if(s.active.kind==0)ok=s.gatt.requestMtu(517);
@@ -295,12 +318,60 @@ public final class RadioService extends Service {
     private void received(Session s,byte[] data){
         if(data.length==0||s.client==null)return;s.frames++;
         try{
-            boolean wasReady=s.verified;s.client.receive(data,now());s.verified=s.client.ready;s.status=s.client.description;if(s.verified&&!wasReady)phase(s,"Ready",s.status);
+            boolean wasReady=s.verified;s.client.receive(data,now());s.verified=s.client.ready;s.status=s.client.description;if(s.verified&&!wasReady){phase(s,"Ready",s.status);startSignalMonitoring(s);}
             if(s.verified){handler.removeCallbacks(s.probeTimeout);s.retries=0;getSharedPreferences("radios",MODE_PRIVATE).edit().putString(s.profile.name(),s.address).putBoolean(s.profile.name()+".desired",s.desired).apply();}
         }catch(IllegalArgumentException e){close(s,e.getMessage());return;}changed();handler.postDelayed(()->advance(s),90);
     }
+    /**
+     * RSSI polling is independent for each GATT link. Only request a reading
+     * when its normal protocol operation queue is idle. A failed RSSI read
+     * must never disconnect a radio or mark a message as delivered.
+     */
+    private void startSignalMonitoring(Session s){
+        if(s.rssiPoll!=null)handler.removeCallbacks(s.rssiPoll);
+        s.rssiPoll=new Runnable(){
+            @Override public void run(){
+                if(!running||!s.verified||s.gatt==null)return;
+                // Always schedule the next measurement, including while radio is busy.
+                handler.postDelayed(this,20000);
+                if(s.rssiPending||s.active!=null||!s.queue.isEmpty()||
+                   s.readPending||s.persisting||now()<s.nextWriteAt)return;
+                final BluetoothGatt current=s.gatt;
+                try{
+                    if(!current.readRemoteRssi())return;
+                    s.rssiPending=true;
+                    handler.postDelayed(()->{
+                        if(s.gatt==current&&s.rssiPending){
+                            s.rssiPending=false;
+                            pump(s);advance(s);
+                        }
+                    },3000);
+                }catch(SecurityException|IllegalStateException ignored){
+                    // RSSI is optional; message delivery takes priority.
+                }
+            }
+        };
+        handler.postDelayed(s.rssiPoll,2200);
+    }
     private BluetoothGattCallback callback(Session s){return new BluetoothGattCallback(){
         private void onCurrent(BluetoothGatt g,Runnable action){handler.post(()->{if(g==s.gatt)action.run();});}
+        @Override public void onReadRemoteRssi(BluetoothGatt g,int rssi,int status){
+            onCurrent(g,()->{
+                if(!s.rssiPending)return;
+                s.rssiPending=false;
+                if(status==BluetoothGatt.GATT_SUCCESS&&BleSignal.valid(rssi)){
+                    s.rssiDbm=rssi;s.rssiMeasuredAtMs=System.currentTimeMillis();
+                    // Persist only the last reading and the matching device address.
+                    getSharedPreferences("radios",MODE_PRIVATE).edit()
+                        .putString(s.profile.name()+".rssi.address",s.address)
+                        .putInt(s.profile.name()+".rssi.dbm",rssi)
+                        .putLong(s.profile.name()+".rssi.at",s.rssiMeasuredAtMs)
+                        .apply();
+                    changed();
+                }
+                pump(s);advance(s);
+            });
+        }
         @Override public void onConnectionStateChange(BluetoothGatt g,int status,int state){onCurrent(g,()->{
             if(status!=BluetoothGatt.GATT_SUCCESS || state==BluetoothProfile.STATE_DISCONNECTED){close(s,"Disconnected (GATT "+status+") • tap reconnect");return;}
             if(state==BluetoothProfile.STATE_CONNECTED){s.connected=true;phase(s,"Discovering","Connected • discovering radio services");arm(s,"Service discovery timed out • check pairing and other mesh apps");handler.postDelayed(()->{if(s.gatt!=g)return;try{if(!g.discoverServices())close(s,"Service discovery could not start");}catch(SecurityException e){close(s,"Bluetooth permission revoked");}},350);}
