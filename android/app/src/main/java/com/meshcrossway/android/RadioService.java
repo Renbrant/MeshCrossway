@@ -50,6 +50,38 @@ public final class RadioService extends Service {
     public String scanStatus="";
     public Runnable listener;
     private final Handler handler=new Handler(Looper.getMainLooper());
+    RemoteWorkspace remoteWorkspace;
+    TrackService remoteTracks;
+    private boolean remoteTrackBound;
+    private final ServiceConnection remoteTrackConnection=new ServiceConnection(){
+        @Override public void onServiceConnected(ComponentName name,IBinder binder){
+            remoteTracks=((TrackService.LocalBinder)binder).service();
+            changed();
+        }
+        @Override public void onServiceDisconnected(ComponentName name){remoteTracks=null;changed();}
+    };
+    String remoteUrl(){return remoteWorkspace==null?"":remoteWorkspace.url();}
+    String remoteCode(){return remoteWorkspace==null?"":remoteWorkspace.code;}
+    String remoteFingerprint(){return remoteWorkspace==null?"":remoteWorkspace.fingerprint;}
+    String remoteError="";
+    boolean startRemote(){
+        if(remoteWorkspace!=null)return true;
+        try{
+            remoteWorkspace=RemoteWorkspace.start(this);
+            remoteTrackBound=bindService(new Intent(this,TrackService.class),remoteTrackConnection,BIND_AUTO_CREATE);
+            remoteError="";
+            changed();return true;
+        }catch(Exception e){
+            remoteError="Local HTTPS server unavailable • check Wi-Fi, port 8080 and certificate setup";
+            changed();return false;
+        }
+    }
+    void stopRemote(){
+        if(remoteWorkspace!=null){remoteWorkspace.stop();remoteWorkspace=null;}
+        if(remoteTrackBound){unbindService(remoteTrackConnection);remoteTrackBound=false;}
+        remoteTracks=null;remoteError="";changed();
+    }
+
     private BluetoothAdapter adapter;
     private BluetoothLeScanner scanner;
     private final Runnable stopScanTask=this::stopScan;
@@ -95,6 +127,7 @@ public final class RadioService extends Service {
     }
     @Override public int onStartCommand(Intent intent,int flags,int id){
         if(intent!=null && "STOP".equals(intent.getAction())){
+            stopRemote();
             running=false;handler.removeCallbacks(tick);stopScan();for(RadioProfile p:RadioProfile.values())disconnect(p);stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();return START_NOT_STICKY;
         }
         if(!allowed()){stopSelf();return START_NOT_STICKY;}
@@ -279,5 +312,5 @@ public final class RadioService extends Service {
             if(s.profile==RadioProfile.MESHTASTIC)read(s);else received(s,copy);
         });}
     };}
-    @Override public void onDestroy(){running=false;gate.clear();listener=null;stopScan();for(Session s:sessions.values())release(s,"Disconnected");handler.removeCallbacksAndMessages(null);history.close();unregisterReceiver(adapterChanges);super.onDestroy();}
+    @Override public void onDestroy(){stopRemote();running=false;gate.clear();listener=null;stopScan();for(Session s:sessions.values())release(s,"Disconnected");handler.removeCallbacksAndMessages(null);history.close();unregisterReceiver(adapterChanges);super.onDestroy();}
 }
