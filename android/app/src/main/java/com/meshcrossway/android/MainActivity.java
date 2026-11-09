@@ -84,7 +84,37 @@ public final class MainActivity extends Activity {
     private Button button(String label,Runnable action){Button b=new Button(this);b.setText(label);b.setAllCaps(false);b.setTextSize(13);b.setTextColor(ORANGE);b.setMinHeight(dp(48));b.setPadding(dp(10),dp(4),dp(10),dp(4));b.setBackground(surface(PANEL2));b.setOnClickListener(v->action.run());return b;}
     private void addButton(LinearLayout l,String label,Runnable action){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(10);l.addView(button(label,action),p);}
     private LinearLayout card(LinearLayout l){LinearLayout c=column();c.setPadding(dp(14),dp(12),dp(14),dp(12));c.setBackground(surface(PANEL));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.bottomMargin=dp(8);l.addView(c,p);return c;}
-    private String homeFingerprint(){StringBuilder key=new StringBuilder();for(RadioProfile p:RadioProfile.values()){Snapshot data=snapshot(p);key.append(data.nodes.size()).append(':').append(data.channels.size()).append(':').append(data.unread());if(service!=null){RadioService.Session session=service.sessions.get(p);key.append(session.verified).append(session.phase);}}key.append(phoneEnabled());if(position.location!=null)key.append(position.location.getAccuracy());if(trackService!=null){TrackStore.Track track=trackService.store.current();if(track!=null)key.append(track.id).append(track.state).append(track.count);}return key.toString();}
+    private String homeFingerprint(){
+        StringBuilder key=new StringBuilder();
+        for(RadioProfile p:RadioProfile.values()){
+            Snapshot data=snapshot(p);
+            key.append(data.nodes.size()).append(':').append(data.channels.size()).append(':')
+                .append(data.messages.size()).append(':').append(data.unread());
+            long latest=0,heard=0;
+            for(Message message:data.messages)latest=Math.max(latest,message.timestamp);
+            for(Node node:data.nodes)heard=Math.max(heard,node.heard);
+            key.append(':').append(latest).append(':').append(heard);
+            if(service!=null){
+                RadioService.Session session=service.sessions.get(p);
+                key.append(':').append(session.verified).append(':').append(session.desired)
+                    .append(':').append(session.phase).append(':').append(session.name)
+                    .append(':').append(session.address);
+            }
+        }
+        key.append(':').append(phoneEnabled());
+        if(position.location!=null){
+            key.append(':').append(Math.round(position.location.getLatitude()*10000))
+                .append(':').append(Math.round(position.location.getLongitude()*10000))
+                .append(':').append(Math.round(position.location.getAccuracy()))
+                .append(':').append(position.location.getTime()/30000);
+        }
+        if(trackService!=null){
+            TrackStore.Track track=trackService.store.current();
+            key.append(':').append(trackService.store.tracks.size());
+            if(track!=null)key.append(':').append(track.id).append(':').append(track.state).append(':').append(track.count);
+        }
+        return key.toString();
+    }
     private String settingsFingerprint(){StringBuilder value=new StringBuilder(settingsSection);if(service!=null&&(settingsSection.isEmpty()||settingsSection.equals("radio")||settingsSection.equals("connections"))){for(RadioService.Session session:service.sessions.values())value.append(session.address).append(session.phase).append(session.status);if(choosing!=null)value.append(service.devices.keySet()).append(service.scanning).append(service.showOtherDevices);}return value.toString();}
     private void rebuildContent(){rendering=true;refreshContent();rendering=false;}
     private Button chip(String label,boolean active,Runnable action){Button b=button(label,action);b.setTextSize(12);b.setTextColor(active?ORANGE:MUTED);b.setBackground(surface(active?0xff33261e:BG));b.setPadding(dp(5),0,dp(5),0);return b;}
@@ -130,10 +160,141 @@ public final class MainActivity extends Activity {
         if(selected==0)home();else if(selected==5)settings();else lists();
         ScrollView target=scroll;if(target!=null)target.post(()->target.scrollTo(0,y));
     }
+    // Home reads the same independent per-radio snapshots as Contacts, Chats and Channels.
+    private LinearLayout dashboardRow(){
+        LinearLayout row=row();
+        row.setGravity(Gravity.TOP);
+        LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-1,-2);
+        params.bottomMargin=dp(8);
+        results.addView(row,params);
+        return row;
+    }
+    private void dashboardTile(LinearLayout parent,String heading,String value,String detail,int accent,Runnable action,boolean featured){
+        LinearLayout tile=column();
+        tile.setPadding(dp(13),dp(13),dp(13),dp(13));
+        tile.setMinimumHeight(dp(featured?128:118));
+        GradientDrawable background=surface(featured?(accent==ORANGE?0xff28201c:0xff19282b):PANEL);
+        background.setStroke(dp(1),featured?accent:PANEL2);
+        tile.setBackground(new android.graphics.drawable.RippleDrawable(
+            android.content.res.ColorStateList.valueOf(0x33ffffff),background,null));
+        LinearLayout headingRow=row();
+        TextView label=text(heading,11,accent);
+        label.setTypeface(null,Typeface.BOLD);
+        label.setLetterSpacing(.05f);
+        headingRow.addView(label,new LinearLayout.LayoutParams(0,-2,1));
+        headingRow.addView(new NavIcon(this,"arrow",MUTED),new LinearLayout.LayoutParams(dp(14),dp(14)));
+        tile.addView(headingRow);
+        space(tile,10);
+        TextView main=text(value,featured?20:21,WHITE);
+        main.setTypeface(null,Typeface.BOLD);
+        main.setMaxLines(2);
+        main.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        tile.addView(main);
+        space(tile,6);
+        TextView subtitle=text(detail,12,MUTED);
+        subtitle.setMaxLines(2);
+        subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        tile.addView(subtitle);
+        tile.setContentDescription(heading+". "+value+". "+detail);
+        tile.setFocusable(true);
+        tile.setOnClickListener(v->action.run());
+        LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,-2,1);
+        params.leftMargin=dp(4);
+        params.rightMargin=dp(4);
+        parent.addView(tile,params);
+    }
+    private void openDashboardNetwork(RadioProfile profile,int destination){
+        filter=profile.ordinal()+1;
+        page(destination);
+    }
+    private int recentlyHeard(Snapshot data){
+        int total=0;
+        long cutoff=System.currentTimeMillis()/1000-3600;
+        for(Node node:data.nodes)if(node.heard>=cutoff&&node.heard>0)total++;
+        return total;
+    }
+    private String latestPreview(Snapshot data){
+        Message last=null;
+        for(Message message:data.messages)
+            if(last==null||message.timestamp>last.timestamp)last=message;
+        if(last==null)return "No conversations yet";
+        String sender=last.outgoing?"You":last.sender==null||last.sender.trim().isEmpty()?"Received":last.sender.trim();
+        String body=last.body==null?"":last.body.replace('\n',' ').replace('\r',' ').trim();
+        if(body.length()>56)body=body.substring(0,56)+"…";
+        return sender+": "+(body.isEmpty()?"Message":body);
+    }
     private void home(){
-        section(results,"NETWORKS");LinearLayout networks=group(results);for(RadioProfile p:RadioProfile.values()){RadioService.Session session=service==null?null:service.sessions.get(p);Snapshot data=snapshot(p);menuRow(networks,"radio",p.title,(session!=null&&session.verified?"Connected":session!=null&&session.desired?session.phase:"Not connected")+" · "+data.nodes.size()+" contacts · "+data.unread()+" unread",()->openSettings("radio",p),p==RadioProfile.MESHTASTIC?ORANGE:MapPanel.MC);}
-        section(results,"MESSAGES");LinearLayout messages=group(results);int unread=0;for(RadioProfile p:RadioProfile.values())unread+=snapshot(p).unread();menuRow(messages,"chats","Conversations",unread+" unread across both networks",()->{filter=0;page(3);},ORANGE);menuRow(messages,"channels","Channels","Browse Meshtastic and MeshCore channels",()->page(2),ORANGE);
-        section(results,"FIELD TOOLS");LinearLayout tools=group(results);menuRow(tools,"map","Map","Both networks, saved areas and points of interest",()->page(4),ORANGE);menuRow(tools,"tracks","Tracks",trackService!=null&&trackService.store.current()!=null?trackService.store.current().summary():"Record phone GPS and export GPX",this::manageTracks,ORANGE);menuRow(tools,"gps","Phone location",position.location!=null&&phoneEnabled()?String.format(Locale.ROOT,"±%.0f m accuracy",position.location.getAccuracy()):phoneEnabled()?"Waiting for a fix":"Off",()->openSettings("location",null),ORANGE);
+        int connected=0,totalUnread=0;
+        for(RadioProfile profile:RadioProfile.values()){
+            if(service!=null&&service.sessions.get(profile).verified)connected++;
+            totalUnread+=snapshot(profile).unread();
+        }
+        LinearLayout summary=card(results);
+        summary.setBackground(surface(0xff232126));
+        TextView title=text("Dual mesh dashboard",20,WHITE);
+        title.setTypeface(null,Typeface.BOLD);
+        summary.addView(title);
+        space(summary,5);
+        summary.addView(text(connected+" of 2 radios ready  ·  "+totalUnread+" unread across both networks",13,MUTED));
+        section(results,"RADIO CONNECTIONS");
+        LinearLayout radios=dashboardRow();
+        for(RadioProfile profile:RadioProfile.values()){
+            RadioService.Session session=service==null?null:service.sessions.get(profile);
+            boolean ready=session!=null&&session.verified;
+            String state=ready?"Ready":session!=null&&session.desired?"Connecting":"Offline";
+            String device=session==null?"Connect a radio":session.name!=null&&!session.name.isEmpty()?session.name:
+                session.address.isEmpty()?"Choose a device":"Saved device";
+            if(session!=null&&session.desired&&!ready)device+=" · "+session.phase;
+            dashboardTile(radios,profile.title.toUpperCase(Locale.ROOT),state,device,
+                profile==RadioProfile.MESHTASTIC?ORANGE:MapPanel.MC,
+                ()->openSettings("radio",profile),true);
+        }
+        section(results,"NODES");
+        LinearLayout nodes=dashboardRow();
+        for(RadioProfile profile:RadioProfile.values()){
+            Snapshot data=snapshot(profile);
+            int recent=recentlyHeard(data);
+            dashboardTile(nodes,profile==RadioProfile.MESHTASTIC?"MT · NODES":"MC · NODES",
+                String.valueOf(data.nodes.size()),recent+" heard in the last hour",
+                profile==RadioProfile.MESHTASTIC?ORANGE:MapPanel.MC,
+                ()->openDashboardNetwork(profile,1),false);
+        }
+        section(results,"CHATS");
+        LinearLayout chats=dashboardRow();
+        for(RadioProfile profile:RadioProfile.values()){
+            Snapshot data=snapshot(profile);
+            dashboardTile(chats,profile==RadioProfile.MESHTASTIC?"MT · CHATS":"MC · CHATS",
+                data.unread()+" unread",latestPreview(data),
+                profile==RadioProfile.MESHTASTIC?ORANGE:MapPanel.MC,
+                ()->openDashboardNetwork(profile,3),false);
+        }
+        section(results,"CHANNELS");
+        LinearLayout channels=dashboardRow();
+        for(RadioProfile profile:RadioProfile.values()){
+            int configured=0;
+            for(Channel channel:snapshot(profile).channels)if(channel.enabled)configured++;
+            dashboardTile(channels,profile==RadioProfile.MESHTASTIC?"MT · CHANNELS":"MC · CHANNELS",
+                String.valueOf(configured),"Configured channels",
+                profile==RadioProfile.MESHTASTIC?ORANGE:MapPanel.MC,
+                ()->openDashboardNetwork(profile,2),false);
+        }
+        section(results,"FIELD TOOLS");
+        LinearLayout tools=dashboardRow();
+        android.location.Location fix=position.location;
+        boolean gpsOn=phoneEnabled();
+        boolean fresh=gpsOn&&fix!=null&&System.currentTimeMillis()-fix.getTime()<=120000;
+        String gpsValue=!gpsOn?"Off":fresh?String.format(Locale.ROOT,"±%.0f m",fix.getAccuracy()):"Waiting";
+        String gpsDetail=fresh?String.format(Locale.ROOT,"%.4f, %.4f · phone fix",fix.getLatitude(),fix.getLongitude()):
+            "Phone location · never auto-shared";
+        dashboardTile(tools,"PHONE GPS",gpsValue,gpsDetail,GREEN,
+            ()->openSettings("location",null),false);
+        TrackStore.Track current=trackService==null?null:trackService.store.current();
+        String trackValue=current==null?"No active track":current.state;
+        String trackDetail=current==null?"Record and export GPX":current.name+" · "+current.summary();
+        dashboardTile(tools,"TRACKS",trackValue,trackDetail,ORANGE,this::manageTracks,false);
+        LinearLayout shortcuts=group(results);
+        menuRow(shortcuts,"map","Open unified map","Meshtastic + MeshCore · offline areas · POIs",
+            ()->page(4),ORANGE);
     }
     private void lists(){
         int shown=0;
