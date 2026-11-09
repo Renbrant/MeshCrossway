@@ -146,8 +146,10 @@
    if(!this.pending){
     this.pending=document.createElement("div");
     this.pending.className="area-box draft";
-    this.overlays.append(this.pending);
    }
+   // A background map-progress refresh may rebuild the overlay layer while
+   // the mouse is still drawing; restore the active rectangle if detached.
+   if(!this.pending.isConnected)this.overlays.append(this.pending);
    return this.pending;
   }
   up(e){
