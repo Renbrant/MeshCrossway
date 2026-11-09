@@ -67,6 +67,21 @@ The ZIP is **unencrypted**. It includes private chats, GPS tracks and device pre
 
 **Limits of verification:** passing ZIP/SQLite checks does not guarantee that every record will import. The final acceptance check is to restore it and compare message, favorites and track counts. The script itself has no automatic uninstall/restore step by design.
 
+## Future updates via ADB (without uninstalling)
+
+Once Android 0.2.3 has been installed with the **permanent signing key**, downloading later official APKs and updating by ADB is easy:
+
+1. On Windows, connect the phone using the same authorized USB debugging connection.
+2. Download the next official **signed** MeshCrossway APK (0.2.4 or later).
+3. Drag the APK onto `scripts/MeshCrossway-Update-Windows.cmd`, or open Command Prompt and run:
+
+       scripts\\MeshCrossway-Update-Windows.cmd "C:\\path\\MeshCrossway-0.2.4.apk"
+
+4. The launcher runs only `adb install -r`, which requests an in-place replacement. **No `adb uninstall`, `pm clear` or reset is used.** If the APK has a different signing certificate or incompatible package ID, Android rejects the update and the old installation/data remain intact. Never uninstall to get around that error.
+5. Reopen the app to confirm both radios, favorites, downloaded offline regions and tracks are present.
+
+This update helper **does not bypass Android's certificate verification**. It cannot convert an already installed 0.2.2 debug build to a newly signed 0.2.3 build in place. For that one-time transition, first use the complete ADB backup described above and the new app's Restore complete backup feature.
+
 ## Normal upgrades after the permanent-key release
 
 1. Download the official new APK.
