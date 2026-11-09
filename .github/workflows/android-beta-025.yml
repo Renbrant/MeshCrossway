@@ -19,7 +19,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
       SOURCE_RUN: '42716563284'
       SOURCE_SHA: 'a8f226633bd9e85480358c96a6f72d8bb13832ca'
-      RELEASE_SHA: 'aa703e05d97842272e35b4d872f72025b68ef531'
+      RELEASE_SHA: '0f14b3847fb69257c175d854968ad0d57ae1d2a5'
       MCX_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
       MCX_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
       MCX_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
@@ -51,7 +51,7 @@ jobs:
       - name: Check out exact merged, tested version
         uses: actions/checkout@v4
         with:
-          ref: aa703e05d97842272e35b4d872f72025b68ef531
+          ref: 0f14b3847fb69257c175d854968ad0d57ae1d2a5
           persist-credentials: true
       - uses: actions/setup-java@v4
         with:
