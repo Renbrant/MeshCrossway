@@ -4,44 +4,46 @@
 
 **Two independent mesh networks. One interface.** Use Meshtastic and MeshCore together for messages, contacts, maps and tracks, with a separate Bluetooth radio for each network. Messages, identities and routing stay on their own network; MeshCrossway does not bridge or relay between them.
 
-[Project website](https://renbrant.github.io/MeshCrossway/) · [Download Android beta APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.1.1/MeshCrossway-0.1.1.apk) · [Beta release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.1) · [Documentation](docs/TECHNICAL_DOCUMENTATION.md)
+[Project website](https://renbrant.github.io/MeshCrossway/) · [Download Android beta APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.0/MeshCrossway-0.2.0.apk) · [Beta release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.0) · [Documentation](docs/TECHNICAL_DOCUMENTATION.md)
 
-> **Android 0.1.1 is a public beta for testing, not version 1.0.0.** The functional baseline has been tested with both radios, but broader phone, radio and firmware compatibility still needs community testing. Feedback and bug reports are welcome.
+> **Android 0.2.0 is a public beta for testing, not version 1.0.0.** The functional baseline has been tested with both radios, but broader phone, radio and firmware compatibility still needs community testing. Feedback and bug reports are welcome.
 
 ## Choose how to use MeshCrossway
 
 | Edition | Current reference | What you need | Get started |
 |---|---|---|---|
-| **Android app** | **0.1.1 beta** — dual-network Home dashboard | ARM64 Android phone (Android 8.0+) and two compatible BLE radios | [Download APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.1.1/MeshCrossway-0.1.1.apk) · [Install and test](docs/android-apk.md) |
+| **Android app** | **0.2.0 beta** — local HTTPS remote workspace | ARM64 Android phone (Android 8.0+) and two compatible BLE radios | [Download APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.0/MeshCrossway-0.2.0.apk) · [Install and test](docs/android-apk.md) |
 | **Touchscreen controller** | **Firmware v0.10.5** — accepted stable controller release within an experimental project | Supported Waveshare ESP32-S3 touchscreen, GNSS/storage and two compatible BLE radios | [Web Flasher](https://renbrant.github.io/MeshCrossway/flasher/) · [Firmware guide](firmware/display-prototype/README.md) |
 
-The Android app connects directly to the radios; it does not require the Waveshare controller. The controller remains an active, separate development track. Its local Wi-Fi browser companion belongs to the controller edition.
+The Android app connects directly to the radios; it does not require the Waveshare controller. The controller remains an active, separate development track. Both the controller and Android editions now have separate local browser companions; Android Remote Access must be explicitly enabled.
 
 ## Try the Android beta
 
-1. [Download MeshCrossway-0.1.1.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.1.1/MeshCrossway-0.1.1.apk) on your Android phone. It is a public release asset; no GitHub Actions login is required.
+1. [Download MeshCrossway-0.2.0.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.0/MeshCrossway-0.2.0.apk) on your Android phone. It is a public release asset; no GitHub Actions login is required.
 2. Open the APK and allow installation from your browser or file manager when Android asks.
 3. Close other apps using the same radios, then select one Meshtastic radio and one MeshCore radio in MeshCrossway.
-4. Test connections, messages, maps and reconnection, and [report reproducible issues](https://github.com/Renbrant/MeshCrossway/issues).
+4. In Home, optionally enable Remote Access on private Wi-Fi, verify the browser certificate fingerprint against the phone, then test web chats, map regions and track folders. Test connections, messages, maps and reconnection, and [report reproducible issues](https://github.com/Renbrant/MeshCrossway/issues).
 
-This beta uses a development signing certificate. If Android reports a signature conflict, **export JSON history and needed GPX tracks before uninstalling the previous build**; uninstalling removes local app data. Downloading basemaps/offline areas needs internet; native LoRa messages do not.
+This beta uses a development signing certificate. If Android reports a signature conflict, **export JSON history and needed GPX tracks before uninstalling the previous build**; uninstalling removes local app data. Downloading basemaps/offline areas needs internet; native LoRa messages and the browser interface over local Wi-Fi do not. Remote Access is off by default and must not be exposed to the public internet.
 
-[Installation, requirements and known limits](docs/android-apk.md) · [Checksums and release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.1)
+[Installation, requirements and known limits](docs/android-apk.md) · [Checksums and release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.0)
 
 ## Strategy and version numbers
 
-Android development continues from the preserved **0.1.0** functional baseline; **0.1.1** adds the Cairn-inspired dual-network Home dashboard. Earlier `0.2.0-alpha02` through `0.6.0-alpha07` labels were internal development iterations; they do not represent newer public releases in this sequence. The alpha07 behavior is retained in 0.1.0.
+Android development continues from the preserved **0.1.0** functional baseline; **0.1.1** adds the paired dual-network Home dashboard and **0.2.0** adds local HTTPS Remote Access with messages, offline map regions and track folders. Earlier `0.2.0-alpha02` through `0.6.0-alpha07` labels were internal development iterations; they do not represent newer public releases in this sequence. The alpha07 behavior is retained in 0.1.0.
 
 | Version | Meaning |
 |---|---|
-| **0.1.0** | Preserved functional beta recovery baseline |\n| **0.1.1** | Dual-network Home dashboard with paired status, node, chat and channel cards |
-| **0.1.1, 0.1.2, 0.1.3…** | Corrections and small improvements |
-| **0.2.0, 0.3.0…** | Substantial features or workflow changes; patch numbering restarts at zero |
+| **0.1.0** | Preserved functional beta recovery baseline |
+| **0.1.1** | Preserved paired Home-card recovery beta |
+| **0.2.0** | Local HTTPS Remote Access, independent dual-radio browser messaging, offline regions and track folders |
+| **0.2.1, 0.2.2…** | Corrections and small improvements |
+| **0.3.0, 0.4.0…** | Future substantial features or workflow changes; patch numbering restarts at zero |
 | **1.0.0** | First production release after core functionality and stability acceptance; not released yet |
 
 All Android **0.x builds are development versions**. A functional recovery baseline is not a production guarantee. Android and controller firmware use **independent version sequences**; controller v0.9.32 does not mean the Android beta is nearly at 1.0. Android's internal versionCode keeps increasing even when public labels are reset.
 
-## What works in Android 0.1.1 beta
+## What works in Android 0.2.0 beta
 
 - Independent simultaneous Meshtastic and MeshCore BLE sessions, messages, contacts and channels.
 - Five main tabs: Home, Chats, Contacts, Map and Settings, with network filters.
@@ -50,10 +52,11 @@ All Android **0.x builds are development versions**. A functional recovery basel
 - Track recording/pause/resume, GPX export, saved POIs and offline map area management.
 - Available received-message hops and signal details; tap a message to inspect reception metadata.
 - Persistent local history and JSON backup/import.
+- Optional on-phone HTTPS workspace accessible by computer on the same private Wi-Fi, showing both independent networks, messages, contacts, MapLibre offline regions and GPX tracks organized in virtual folders.
 
 A complete received path is shown only when captured from a live MeshCore channel copy. Private/backlog MeshCore messages and Meshtastic text may lack the full historical route. Names matched to repeater hash prefixes can be unknown or ambiguous. A successful send accepted by the radio is not proof of end-to-end delivery.
 
-The 0.1.1 APK passed build/lint/protocol checks and Android API 29/35 smoke tests. The new Home requires physical-phone acceptance. The preceding functional alpha07 build was accepted in device use; other phone/radio/firmware combinations still need validation. [Validation and limitations](docs/android-apk.md).
+The 0.2.0 APK passed build/lint/protocol checks and Android API 29/35 smoke tests, including the HTTPS handshake and login. Real-device acceptance of remote access, Wi-Fi changes and two active BLE radios is still pending. The preceding functional alpha07 build was accepted in device use; other phone/radio/firmware combinations still need validation. [Validation and limitations](docs/android-apk.md). [Remote workspace design and security](docs/android-apk.md#remote-access-from-a-computer).
 
 ## Architecture and hardware
 
