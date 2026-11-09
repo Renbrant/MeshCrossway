@@ -19,7 +19,10 @@ import static com.meshcrossway.android.MeshData.*;
 import com.meshcrossway.android.MeshData.Message;
 
 public final class MainActivity extends Activity {
-    private static final int BG=0xff090c10,PANEL=0xff181d24,PANEL2=0xff242b34,ORANGE=0xffff8a24,WHITE=0xfff2f4f7,MUTED=0xff9aa6b4,GREEN=0xff72d8a5,RED=0xffff7777;
+    // Network identity colors never change with the app appearance.
+    private static final int RADIO_MT=0xffff8a24,RADIO_MC=0xff6cbde6;
+    private int BG=0xff090c10,PANEL=0xff181d24,PANEL2=0xff242b34,ORANGE=0xffff8a24,WHITE=0xfff2f4f7,MUTED=0xff9aa6b4,GREEN=0xff72d8a5,RED=0xffff7777;
+    private Appearance appearance;
     private final String[] pages={"Home","Contacts","Channels","Chats","Map","Settings"},symbols={"⌂","⋮","☷","▤","◇","⚙"};
     private final Handler handler=new Handler(Looper.getMainLooper());
     private RadioService service;private LinearLayout root,body,nav,results;private ScrollView scroll;private EditText composer,search;private TextView count,chatStatus;private Button sendButton;
@@ -42,12 +45,21 @@ public final class MainActivity extends Activity {
         @Override public void onServiceDisconnected(ComponentName name){trackService=null;scheduleRefresh();}
     };
     @Override public void onCreate(Bundle state){
-        super.onCreate(state);position=new PhonePosition(this);position.listener=()->{if(mapPanel!=null)mapPanel.update();if(selected==0||(selected==1&&nodeOrder==2))scheduleRefresh();};if(state!=null){ArrayList<Bundle> history=state.getParcelableArrayList("navigation");if(history!=null)for(Bundle entry:history)backStack.addLast(decodeScreen(entry));exportingTrack=state.getString("exportingTrack","");nodeOrder=state.getInt("nodeOrder");nodeType=state.getInt("nodeType");settingsSection=state.getString("settingsSection","");if(state.containsKey("settingsRadio"))settingsRadio=RadioProfile.valueOf(state.getString("settingsRadio"));selected=state.getInt("page");filter=state.getInt("filter");query=state.getString("query","");if(state.containsKey("topic")){chatProfile=RadioProfile.valueOf(state.getString("profile"));chatRadio=state.getString("radio","");chat=new Target(state.getString("topic"),state.getString("title"),state.getString("peer"),state.getString("identity"),state.getInt("slot"),state.getBoolean("group"));drafts.put(draftKey(),state.getString("draft",""));}}
-        getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(PANEL);getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-        root=column();root.setBackgroundColor(BG);root.setOnApplyWindowInsetsListener((view,insets)->{
+        super.onCreate(state);appearance=Appearance.load(this);applyAppearancePalette();position=new PhonePosition(this);position.listener=()->{if(mapPanel!=null)mapPanel.update();if(selected==0||(selected==1&&nodeOrder==2))scheduleRefresh();};if(state!=null){ArrayList<Bundle> history=state.getParcelableArrayList("navigation");if(history!=null)for(Bundle entry:history)backStack.addLast(decodeScreen(entry));exportingTrack=state.getString("exportingTrack","");nodeOrder=state.getInt("nodeOrder");nodeType=state.getInt("nodeType");settingsSection=state.getString("settingsSection","");if(state.containsKey("settingsRadio"))settingsRadio=RadioProfile.valueOf(state.getString("settingsRadio"));selected=state.getInt("page");filter=state.getInt("filter");query=state.getString("query","");if(state.containsKey("topic")){chatProfile=RadioProfile.valueOf(state.getString("profile"));chatRadio=state.getString("radio","");chat=new Target(state.getString("topic"),state.getString("title"),state.getString("peer"),state.getString("identity"),state.getInt("slot"),state.getBoolean("group"));drafts.put(draftKey(),state.getString("draft",""));}}
+        getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(PANEL);
+        int bars=getWindow().getDecorView().getSystemUiVisibility();
+        if(appearance.colors.light)bars|=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+        else bars&=~(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        getWindow().getDecorView().setSystemUiVisibility(bars);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        root=column();root.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        android.widget.FrameLayout appearanceHost=new android.widget.FrameLayout(this);
+        installAppearanceBackground(appearanceHost);
+        appearanceHost.addView(root,new android.widget.FrameLayout.LayoutParams(-1,-1));
+        root.setOnApplyWindowInsetsListener((view,insets)->{
             if(Build.VERSION.SDK_INT>=30){android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars()),ime=insets.getInsets(WindowInsets.Type.ime());view.setPadding(bars.left,bars.top,bars.right,Math.max(bars.bottom,ime.bottom));}
             else view.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;
-        });setContentView(root);root.requestApplyInsets();
+        });setContentView(appearanceHost);root.requestApplyInsets();
         header=row();header.setPadding(dp(12),dp(4),dp(8),dp(4));root.addView(header,new LinearLayout.LayoutParams(-1,dp(52)));
         View line=new View(this);line.setBackgroundColor(PANEL2);root.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));dualStatus=text("MT offline · MC offline",11,MUTED);dualStatus.setPadding(dp(16),dp(5),dp(16),dp(5));dualStatus.setContentDescription("Radio connections");dualStatus.setOnClickListener(v->openSettings("connections",null));root.addView(dualStatus);
         body=column();root.addView(body,new LinearLayout.LayoutParams(-1,0,1));nav=row();nav.setBackgroundColor(PANEL);root.addView(nav,new LinearLayout.LayoutParams(-1,dp(64)));
@@ -75,6 +87,34 @@ public final class MainActivity extends Activity {
     private Bundle encodeScreen(Screen screen){Bundle b=new Bundle();b.putInt("selected",screen.selected);b.putInt("filter",screen.filter);b.putInt("y",screen.y);b.putString("query",screen.query);b.putString("section",screen.section);b.putString("radio",screen.radio);if(screen.profile!=null)b.putString("profile",screen.profile.name());if(screen.chatProfile!=null)b.putString("chatProfile",screen.chatProfile.name());if(screen.chat!=null){Target t=screen.chat;b.putString("topic",t.topic);b.putString("title",t.title);b.putString("peer",t.peer);b.putString("identity",t.identity);b.putInt("slot",t.slot);b.putBoolean("group",t.group);}return b;}
     private Screen decodeScreen(Bundle b){Screen screen=new Screen();screen.selected=b.getInt("selected");screen.filter=b.getInt("filter");screen.y=b.getInt("y");screen.query=b.getString("query","");screen.section=b.getString("section","");screen.radio=b.getString("radio","");if(b.containsKey("profile"))screen.profile=RadioProfile.valueOf(b.getString("profile"));if(b.containsKey("chatProfile"))screen.chatProfile=RadioProfile.valueOf(b.getString("chatProfile"));if(b.containsKey("topic"))screen.chat=new Target(b.getString("topic"),b.getString("title"),b.getString("peer"),b.getString("identity"),b.getInt("slot"),b.getBoolean("group"));return screen;}
     private String route(){return selected+":"+settingsSection+":"+settingsRadio+":"+(chat==null?"":chatRadio+chat.topic);}
+    private void applyAppearancePalette(){
+        Appearance.Palette color=appearance.colors;
+        BG=color.bg;PANEL=color.panel;PANEL2=color.panel2;
+        ORANGE=color.accent;WHITE=color.text;MUTED=color.muted;
+    }
+    private void installAppearanceBackground(android.widget.FrameLayout parent){
+        parent.setBackground(appearance.background());
+        if(!Appearance.PHOTO.equals(appearance.mode)||!appearance.hasPhoto)return;
+        android.graphics.Bitmap photo=appearance.loadPhoto(this);
+        if(photo==null)return;
+        android.widget.ImageView background=new android.widget.ImageView(this);
+        background.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+        if(Build.VERSION.SDK_INT>=31&&appearance.blur>0){
+            background.setImageBitmap(photo);
+            float pixels=dp(Math.max(1,appearance.blur));
+            background.setRenderEffect(android.graphics.RenderEffect.createBlurEffect(
+                pixels,pixels,android.graphics.Shader.TileMode.CLAMP));
+        }else if(appearance.blur>0){
+            android.graphics.Bitmap blurred=Appearance.approximateBlur(photo,appearance.blur);
+            background.setImageBitmap(blurred);
+            if(blurred!=photo)photo.recycle();
+        }else background.setImageBitmap(photo);
+        parent.addView(background,new android.widget.FrameLayout.LayoutParams(-1,-1));
+        View darken=new View(this);
+        darken.setBackgroundColor(android.graphics.Color.argb(
+            Math.round(appearance.dim*2.55f),0,0,0));
+        parent.addView(darken,new android.widget.FrameLayout.LayoutParams(-1,-1));
+    }
     private int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
     private LinearLayout column(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);return l;}
     private LinearLayout row(){LinearLayout l=new LinearLayout(this);l.setGravity(Gravity.CENTER_VERTICAL);return l;}
@@ -120,15 +160,15 @@ public final class MainActivity extends Activity {
     }
     private String settingsFingerprint(){StringBuilder value=new StringBuilder(settingsSection);if(service!=null&&(settingsSection.isEmpty()||settingsSection.equals("radio")||settingsSection.equals("connections"))){for(RadioService.Session session:service.sessions.values())value.append(session.address).append(session.phase).append(session.status);if(choosing!=null)value.append(service.devices.keySet()).append(service.scanning).append(service.showOtherDevices);}return value.toString();}
     private void rebuildContent(){rendering=true;refreshContent();rendering=false;}
-    private Button chip(String label,boolean active,Runnable action){Button b=button(label,action);b.setTextSize(12);b.setTextColor(active?ORANGE:MUTED);b.setBackground(surface(active?0xff33261e:BG));b.setPadding(dp(5),0,dp(5),0);return b;}
+    private Button chip(String label,boolean active,Runnable action){Button b=button(label,action);b.setTextSize(12);b.setTextColor(active?ORANGE:MUTED);b.setBackground(surface(active?appearance.colors.navActive:BG));b.setPadding(dp(5),0,dp(5),0);return b;}
     private void section(LinearLayout parent,String label){TextView view=text(label,11,MUTED);view.setTypeface(null,Typeface.BOLD);view.setLetterSpacing(.1f);view.setPadding(dp(6),dp(14),0,dp(8));parent.addView(view);}
     private LinearLayout group(LinearLayout parent){LinearLayout group=column();group.setBackground(surface(PANEL));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.bottomMargin=dp(6);parent.addView(group,p);return group;}
     private void menuRow(LinearLayout parent,String icon,String title,String subtitle,Runnable action,int color){if(parent.getChildCount()>0){View divider=new View(this);divider.setBackgroundColor(PANEL2);LinearLayout.LayoutParams line=new LinearLayout.LayoutParams(-1,dp(1));line.leftMargin=dp(54);line.rightMargin=dp(14);parent.addView(divider,line);}LinearLayout row=row();row.setPadding(dp(14),dp(12),dp(14),dp(12));row.setMinimumHeight(dp(64));row.addView(new NavIcon(this,icon,color),new LinearLayout.LayoutParams(dp(24),dp(24)));LinearLayout labels=column();labels.setPadding(dp(14),0,dp(8),0);TextView heading=text(title,15,WHITE);heading.setTypeface(null,Typeface.BOLD);labels.addView(heading);if(!subtitle.isEmpty()){TextView detail=text(subtitle,12,MUTED);detail.setPadding(0,dp(4),0,0);detail.setMaxLines(3);labels.addView(detail);}row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));if(action!=null){row.addView(new NavIcon(this,"arrow",MUTED),new LinearLayout.LayoutParams(dp(16),dp(16)));row.setBackground(clickSurface());row.setFocusable(true);row.setOnClickListener(v->action.run());}row.setContentDescription(title+". "+subtitle);parent.addView(row,new LinearLayout.LayoutParams(-1,-2));}
-    private android.graphics.drawable.Drawable clickSurface(){return new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33ff8a24),null,new android.graphics.drawable.ColorDrawable(WHITE));}
+    private android.graphics.drawable.Drawable clickSurface(){return new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf((ORANGE&0x00ffffff)|0x33000000),null,new android.graphics.drawable.ColorDrawable(WHITE));}
     private void toggleRow(LinearLayout parent,String title,String subtitle,boolean checked,java.util.function.Consumer<Boolean> changed){LinearLayout row=row();row.setPadding(dp(16),dp(12),dp(12),dp(12));LinearLayout labels=column();labels.addView(text(title,15,WHITE));TextView hint=text(subtitle,12,MUTED);hint.setPadding(0,dp(4),dp(8),0);labels.addView(hint);row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));Switch toggle=new Switch(this);toggle.setContentDescription(title);toggle.setChecked(checked);toggle.setMinimumHeight(dp(48));toggle.setOnCheckedChangeListener((b,on)->changed.accept(on));row.addView(toggle);row.setOnClickListener(v->toggle.setChecked(!toggle.isChecked()));parent.addView(row);}
     private void toolbar(){header.removeAllViews();boolean back=chat!=null||(selected==5&&!settingsSection.isEmpty())||!backStack.isEmpty();if(back)header.addView(iconButton("back","Back",this::handleBack));if(selected==0&&!back){ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.meshcrossway_logo);logo.setContentDescription("MeshCrossway");logo.setScaleType(ImageView.ScaleType.FIT_START);header.addView(logo,new LinearLayout.LayoutParams(0,dp(27),1));}else{String title=chat!=null?chat.title:selected==5?settingsTitle():pages[selected];TextView label=text(title,20,WHITE);label.setTypeface(null,Typeface.BOLD);label.setMaxLines(1);label.setEllipsize(android.text.TextUtils.TruncateAt.END);header.addView(label,new LinearLayout.LayoutParams(0,-1,1));}if(chat!=null)header.addView(iconButton("settings","Settings",()->openSettings("",null)));header.addView(iconButton("more","More options",this::moreMenu));}
     private View iconButton(String icon,String label,Runnable action){android.widget.FrameLayout target=new android.widget.FrameLayout(this);target.setContentDescription(label);target.setFocusable(true);target.setBackground(clickSurface());NavIcon image=new NavIcon(this,icon,MUTED);android.widget.FrameLayout.LayoutParams size=new android.widget.FrameLayout.LayoutParams(dp(24),dp(24),Gravity.CENTER);target.addView(image,size);target.setLayoutParams(new LinearLayout.LayoutParams(dp(44),dp(44)));target.setOnClickListener(v->action.run());return target;}
-    private String settingsTitle(){switch(settingsSection){case "radio":return settingsRadio==null?"Radio":settingsRadio.title;case "connections":return "Connections";case "messages":return "Notifications & messages";case "location":return "Map & location";case "data":return "Data & backup";case "about":return "About";default:return "Settings";}}
+    private String settingsTitle(){switch(settingsSection){case "appearance":return "Appearance";case "radio":return settingsRadio==null?"Radio":settingsRadio.title;case "connections":return "Connections";case "messages":return "Notifications & messages";case "location":return "Map & location";case "data":return "Data & backup";case "about":return "About";default:return "Settings";}}
     private void moreMenu(){PopupMenu menu=new PopupMenu(this,header.getChildAt(header.getChildCount()-1));if(chat!=null){menu.getMenu().add("Conversation options").setOnMenuItemClickListener(item->{conversationOptions(chatProfile,chatRadio,chat);return true;});}else{menu.getMenu().add("Conversations").setOnMenuItemClickListener(item->{page(3);return true;});menu.getMenu().add("Channels").setOnMenuItemClickListener(item->{page(2);return true;});menu.getMenu().add("Tracks").setOnMenuItemClickListener(item->{manageTracks();return true;});}menu.getMenu().add("Radio connections").setOnMenuItemClickListener(item->{openSettings("connections",null);return true;});menu.show();}
     private void sortMenu(){new AlertDialog.Builder(this).setTitle("Sort contacts").setSingleChoiceItems(new String[]{"Recently heard","Name","Distance"},nodeOrder,(d,index)->{nodeOrder=index;if(index==2&&position.location==null)requestPhonePosition();d.dismiss();buildPage();}).setNegativeButton("Back",null).show();}
     private void typeMenu(){new AlertDialog.Builder(this).setTitle("Contact type").setSingleChoiceItems(new String[]{"All types","Clients","Repeaters","Rooms"},nodeType,(d,index)->{nodeType=index;d.dismiss();buildPage();}).setNegativeButton("Back",null).show();}
@@ -138,7 +178,7 @@ public final class MainActivity extends Activity {
     private void buildPage(){
         if(scroll!=null&&!renderedRoute.isEmpty())scrollPositions.put(renderedRoute,scroll.getScrollY());renderedRoute=route();
         if(mapPanel!=null){mapPanel.destroy();mapPanel=null;}body.removeAllViews();nav.removeAllViews();composer=null;search=null;results=null;scroll=null;chatStatus=null;sendButton=null;
-        toolbar();int[] destinations={0,3,1,4,5};String[] icons={"home","chats","contacts","map","settings"};for(int i=0;i<destinations.length;i++){final int index=destinations[i];boolean active=selected==index||(index==3&&selected==2);LinearLayout item=column();item.setGravity(Gravity.CENTER);LinearLayout marker=row();marker.setGravity(Gravity.CENTER);if(active)marker.setBackground(surface(0xff53321c));marker.addView(new NavIcon(this,icons[i],active?ORANGE:MUTED),new LinearLayout.LayoutParams(dp(23),dp(23)));item.addView(marker,new LinearLayout.LayoutParams(dp(54),dp(30)));TextView label=text(pages[index],11,active?WHITE:MUTED);label.setGravity(Gravity.CENTER);item.addView(label);item.setContentDescription(pages[index]);item.setFocusable(true);item.setOnClickListener(v->page(index));nav.addView(item,new LinearLayout.LayoutParams(0,-1,1));}
+        toolbar();int[] destinations={0,3,1,4,5};String[] icons={"home","chats","contacts","map","settings"};for(int i=0;i<destinations.length;i++){final int index=destinations[i];boolean active=selected==index||(index==3&&selected==2);LinearLayout item=column();item.setGravity(Gravity.CENTER);LinearLayout marker=row();marker.setGravity(Gravity.CENTER);if(active)marker.setBackground(surface(appearance.colors.navActive));marker.addView(new NavIcon(this,icons[i],active?ORANGE:MUTED),new LinearLayout.LayoutParams(dp(23),dp(23)));item.addView(marker,new LinearLayout.LayoutParams(dp(54),dp(30)));TextView label=text(pages[index],11,active?WHITE:MUTED);label.setGravity(Gravity.CENTER);item.addView(label);item.setContentDescription(pages[index]);item.setFocusable(true);item.setOnClickListener(v->page(index));nav.addView(item,new LinearLayout.LayoutParams(0,-1,1));}
         if(selected==4){map();return;}
         if(chat!=null&&selected==3){chatPage();return;}
         if(selected>=1&&selected<=3){LinearLayout tools=column();tools.setPadding(dp(16),dp(4),dp(16),dp(4));
@@ -155,7 +195,7 @@ public final class MainActivity extends Activity {
     private String radio(RadioProfile p){return service==null?"":service.sessions.get(p).address;}
     private boolean ready(RadioProfile p,String address){return service!=null&&service.sessions.get(p).verified&&radio(p).equals(address);}
     private void refreshContent(){
-        if(dualStatus!=null&&service!=null){android.text.SpannableStringBuilder summary=new android.text.SpannableStringBuilder();for(RadioProfile p:RadioProfile.values()){if(summary.length()>0)summary.append("    ·    ");int begin=summary.length();RadioService.Session session=service.sessions.get(p);summary.append(p==RadioProfile.MESHTASTIC?"MT ":"MC ").append(session.verified?"ready":session.desired?session.phase.toLowerCase(Locale.ROOT):"offline");summary.setSpan(new android.text.style.ForegroundColorSpan(p==RadioProfile.MESHTASTIC?ORANGE:MapPanel.MC),begin,summary.length(),0);}dualStatus.setText(summary);}
+        if(dualStatus!=null&&service!=null){android.text.SpannableStringBuilder summary=new android.text.SpannableStringBuilder();for(RadioProfile p:RadioProfile.values()){if(summary.length()>0)summary.append("    ·    ");int begin=summary.length();RadioService.Session session=service.sessions.get(p);summary.append(p==RadioProfile.MESHTASTIC?"MT ":"MC ").append(session.verified?"ready":session.desired?session.phase.toLowerCase(Locale.ROOT):"offline");summary.setSpan(new android.text.style.ForegroundColorSpan(p==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC),begin,summary.length(),0);}dualStatus.setText(summary);}
         if(mapPanel!=null)mapPanel.update();
         if(results==null)return;if(selected==0&&results.getChildCount()>0&&!rendering&&homeFingerprint().equals(homeFingerprint))return;homeFingerprint=homeFingerprint();if(selected==5&&results.getChildCount()>0&&!rendering){String fingerprint=settingsFingerprint();if(fingerprint.equals(settingsFingerprint))return;}settingsFingerprint=settingsFingerprint();int y=scroll==null?0:scroll.getScrollY();boolean bottom=scroll!=null&&(results.getHeight()-scroll.getHeight()-y<dp(80));results.removeAllViews();
         if(service!=null&&!service.history.error.isEmpty())results.addView(text(service.history.error,14,RED));
@@ -272,7 +312,7 @@ public final class MainActivity extends Activity {
         LinearLayout tile=column();
         tile.setPadding(dp(13),dp(13),dp(13),dp(13));
         tile.setMinimumHeight(dp(featured?128:118));
-        GradientDrawable background=surface(featured?(accent==ORANGE?0xff28201c:0xff19282b):PANEL);
+        GradientDrawable background=surface(PANEL);
         background.setStroke(dp(1),featured?accent:PANEL2);
         tile.setBackground(new android.graphics.drawable.RippleDrawable(
             android.content.res.ColorStateList.valueOf(0x33ffffff),background,null));
@@ -329,7 +369,7 @@ public final class MainActivity extends Activity {
             totalUnread+=snapshot(profile).unread();
         }
         LinearLayout summary=card(results);
-        summary.setBackground(surface(0xff232126));
+        summary.setBackground(surface(PANEL2));
         TextView title=text("Dual mesh dashboard",20,WHITE);
         title.setTypeface(null,Typeface.BOLD);
         summary.addView(title);
@@ -356,7 +396,7 @@ public final class MainActivity extends Activity {
                 session.address.isEmpty()?"Choose a device":"Saved device";
             if(session!=null&&session.desired&&!ready)device+=" · "+session.phase;
             dashboardTile(radios,profile.title.toUpperCase(Locale.ROOT),state,device,
-                profile==RadioProfile.MESHTASTIC?ORANGE:MapPanel.MC,
+                profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
                 ()->openSettings("radio",profile),true);
         }
         section(results,"NODES");
@@ -469,10 +509,11 @@ public final class MainActivity extends Activity {
     private void settings(){
         if(settingsSection.isEmpty()){
             section(results,"RADIOS");LinearLayout radios=group(results);for(RadioProfile p:RadioProfile.values())menuRow(radios,"radio",p.title,ready(p,radio(p))?"Connected · manage this radio":"Connection and saved device",()->openSettings("radio",p),p==RadioProfile.MESHTASTIC?ORANGE:MapPanel.MC);menuRow(radios,"settings","Connections","Automatic reconnect and Bluetooth",()->openSettings("connections",null),ORANGE);
-            section(results,"APPLICATION");LinearLayout app=group(results);menuRow(app,"bell","Notifications & messages","Message previews and quick replies",()->openSettings("messages",null),ORANGE);menuRow(app,"map","Map & location","Map layers, offline areas, GPS and tracks",()->openSettings("location",null),ORANGE);menuRow(app,"backup","Data & backup","Export and import private history",()->openSettings("data",null),ORANGE);
+            section(results,"APPLICATION");LinearLayout app=group(results);menuRow(app,"settings","Appearance & colors","System, Color, Gradient or Photo background",()->openSettings("appearance",null),ORANGE);menuRow(app,"bell","Notifications & messages","Message previews and quick replies",()->openSettings("messages",null),ORANGE);menuRow(app,"map","Map & location","Map layers, offline areas, GPS and tracks",()->openSettings("location",null),ORANGE);menuRow(app,"backup","Data & backup","Export and import private history",()->openSettings("data",null),ORANGE);
             section(results,"INFORMATION");LinearLayout info=group(results);menuRow(info,"info","About MeshCrossway","Version 0.6.0 · licenses and map attribution",()->openSettings("about",null),ORANGE);return;
         }
         if(settingsSection.equals("radio")){radioPage();return;}
+        if(settingsSection.equals("appearance")){appearancePage();return;}
         if(settingsSection.equals("connections")){section(results,"CONNECTIONS");LinearLayout c=group(results);toggleRow(c,"Automatic reconnection","Reconnect each saved radio independently",service!=null&&service.autoReconnect,on->{if(service!=null)service.setAutoReconnect(on);});menuRow(c,"radio","Connect saved radios","Start both saved connections",()->withPermission(()->{service.connectSaved();rebuildContent();}),ORANGE);menuRow(c,"settings","Android Bluetooth settings","System pairing and paired devices",()->startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)),ORANGE);menuRow(c,"radio","Disconnect both radios","Stops radio connections; track recording is separate",()->new AlertDialog.Builder(this).setTitle("Disconnect both radios?").setPositiveButton("Disconnect",(d,w)->{if(service!=null)startService(new Intent(this,RadioService.class).setAction("STOP"));rebuildContent();}).setNegativeButton("Cancel",null).show(),RED);return;}
         if(settingsSection.equals("messages")){section(results,"NOTIFICATIONS");LinearLayout c=group(results);toggleRow(c,"Message previews","Show message contents in notifications",getSharedPreferences("ui",MODE_PRIVATE).getBoolean("messagePreviews",false),on->getSharedPreferences("ui",MODE_PRIVATE).edit().putBoolean("messagePreviews",on).apply());menuRow(c,"bell","Android notification settings","Sound, vibration and notification permission",()->startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,getPackageName())),ORANGE);section(results,"MESSAGES");menuRow(group(results),"chats","Quick replies","Edit the phrases available in conversations",this::editQuickReplies,ORANGE);return;}
         if(settingsSection.equals("location")){section(results,"PHONE LOCATION");LinearLayout c=group(results);toggleRow(c,"Use phone location","Show your position on the map and calculate distances",phoneEnabled(),on->{if(on)requestPhonePosition();else{getSharedPreferences("ui",MODE_PRIVATE).edit().putBoolean("gpsEnabled",false).apply();position.stop();position.location=null;}rebuildContent();});if(position.location!=null&&phoneEnabled())c.addView(text(String.format(Locale.ROOT,"  %.5f, %.5f · ±%.0f m",position.location.getLatitude(),position.location.getLongitude(),position.location.getAccuracy()),13,MUTED));section(results,"MAP & FIELD TOOLS");LinearLayout tools=group(results);menuRow(tools,"map","Map layers","Basemap, network layers and labels",()->openMapTool("layers"),ORANGE);menuRow(tools,"backup","Offline maps","Download or manage saved areas",()->openMapTool("offline"),ORANGE);menuRow(tools,"tracks","Tracks","Record, manage and export GPX",this::manageTracks,ORANGE);menuRow(tools,"gps","Points of interest","Saved local places",()->openMapTool("pois"),ORANGE);return;}
@@ -495,6 +536,154 @@ public final class MainActivity extends Activity {
             return;
         }
         section(results,"MESHCROSSWAY");LinearLayout c=group(results);menuRow(c,"info","Android 0.6.0-alpha07","Two independent networks. No automatic forwarding.",null,ORANGE);menuRow(c,"info","Software licenses","MapLibre Native and bundled software",this::showMapLicenses,ORANGE);menuRow(c,"map","Map attribution","OpenFreeMap · OpenMapTiles · OpenStreetMap",()->new AlertDialog.Builder(this).setTitle("Map attribution").setMessage("© OpenStreetMap contributors · OpenMapTiles · OpenFreeMap. Basemaps use the internet or saved areas.").setPositiveButton("OpenFreeMap",(d,w)->startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://openfreemap.org/")))).setNegativeButton("Back",null).show(),ORANGE);
+    }
+
+    private void chooseAppearanceMode(String mode){
+        if(Appearance.PHOTO.equals(mode)&&!appearance.hasPhoto){
+            chooseAppearancePhoto();return;
+        }
+        Appearance.setMode(this,mode);
+        recreate();
+    }
+    private void chooseAppearancePhoto(){
+        Intent document=new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        document.setType("image/*");
+        document.addCategory(Intent.CATEGORY_OPENABLE);
+        startActivityForResult(document,53);
+    }
+    private void appearanceOption(LinearLayout parent,String mode,String name,String subtitle){
+        boolean active=appearance.mode.equals(mode);
+        LinearLayout tile=column();
+        tile.setPadding(dp(10),dp(10),dp(10),dp(10));
+        GradientDrawable border=surface(PANEL);
+        border.setStroke(dp(active?2:1),active?ORANGE:PANEL2);
+        tile.setBackground(border);
+        android.widget.FrameLayout preview=new android.widget.FrameLayout(this);
+        preview.setBackground(Appearance.previewBackground(mode,appearance.hue,appearance.gradientType));
+        if(Appearance.PHOTO.equals(mode)&&appearance.hasPhoto){
+            android.graphics.Bitmap image=appearance.loadPhoto(this);
+            if(image!=null){
+                android.widget.ImageView picture=new android.widget.ImageView(this);
+                picture.setImageBitmap(image);
+                picture.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+                preview.addView(picture,new android.widget.FrameLayout.LayoutParams(-1,-1));
+                View veil=new View(this);
+                veil.setBackgroundColor(0x88000000);
+                preview.addView(veil,new android.widget.FrameLayout.LayoutParams(-1,-1));
+            }
+        }
+        TextView miniature=text("●  ▰  ●\n━━━━━━",16,
+            Appearance.SYSTEM.equals(mode)&&appearance.colors.light?0xfff2f4f7:0xfff2f4f7);
+        miniature.setGravity(Gravity.CENTER);
+        miniature.setTypeface(null,Typeface.BOLD);
+        preview.addView(miniature,new android.widget.FrameLayout.LayoutParams(-1,-1));
+        tile.addView(preview,new LinearLayout.LayoutParams(-1,dp(70)));
+        space(tile,10);
+        TextView label=text((active?"✓  ":"")+name,15,WHITE);
+        label.setTypeface(null,Typeface.BOLD);
+        tile.addView(label);
+        tile.addView(text(subtitle,11,MUTED));
+        tile.setFocusable(true);
+        tile.setContentDescription(name+" theme"+(active?", selected":"")+". "+subtitle);
+        tile.setOnClickListener(v->chooseAppearanceMode(mode));
+        parent.addView(tile,new LinearLayout.LayoutParams(0,-2,1));
+    }
+    private void appearanceSlider(LinearLayout parent,String label,String detail,
+                                  int initial,int maximum,
+                                  java.util.function.IntConsumer saved){
+        LinearLayout wrapper=column();
+        wrapper.setPadding(dp(14),dp(12),dp(14),dp(12));
+        TextView title=text(label,15,WHITE);
+        title.setTypeface(null,Typeface.BOLD);
+        wrapper.addView(title);
+        wrapper.addView(text(detail,12,MUTED));
+        TextView value=text(String.valueOf(initial),12,ORANGE);
+        wrapper.addView(value);
+        SeekBar slider=new SeekBar(this);
+        slider.setMax(maximum);
+        slider.setProgress(initial);
+        slider.setProgressTintList(android.content.res.ColorStateList.valueOf(ORANGE));
+        slider.setThumbTintList(android.content.res.ColorStateList.valueOf(ORANGE));
+        slider.setContentDescription(label);
+        slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+            public void onStartTrackingTouch(SeekBar seek){}
+            public void onProgressChanged(SeekBar seek,int progress,boolean fromUser){
+                value.setText(String.valueOf(progress));
+            }
+            public void onStopTrackingTouch(SeekBar seek){
+                int changed=seek.getProgress();
+                if(changed!=initial){saved.accept(changed);recreate();}
+            }
+        });
+        wrapper.addView(slider);
+        parent.addView(wrapper);
+    }
+    private void appearancePage(){
+        section(results,"DISPLAY STYLE");
+        results.addView(text("Choose how MeshCrossway looks. Your selection is saved on this phone and survives normal app updates.",13,MUTED));
+        space(results,12);
+        LinearLayout top=row();top.setGravity(Gravity.TOP);
+        appearanceOption(top,Appearance.SYSTEM,"System","Light / dark");
+        appearanceOption(top,Appearance.COLOR,"Color","Single hue");
+        results.addView(top);
+        space(results,7);
+        LinearLayout bottom=row();bottom.setGravity(Gravity.TOP);
+        appearanceOption(bottom,Appearance.GRADIENT,"Gradient","Linear / mesh");
+        appearanceOption(bottom,Appearance.PHOTO,"Photo","Dim & blur");
+        results.addView(bottom);
+        space(results,12);
+        if(Appearance.COLOR.equals(appearance.mode)||Appearance.GRADIENT.equals(appearance.mode)){
+            section(results,"COLOR");
+            LinearLayout settings=group(results);
+            appearanceSlider(settings,"Hue","Slide to choose any color (0–359°).",
+                appearance.hue,359,value->Appearance.setHue(this,value));
+            section(results,"QUICK COLORS");
+            LinearLayout colors=row();
+            for(int hue:new int[]{28,195,255,145,285,345}){
+                LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(0,dp(44),1);
+                lp.setMargins(dp(3),0,dp(3),0);
+                android.widget.FrameLayout swatch=new android.widget.FrameLayout(this);
+                GradientDrawable surface=surface(Appearance.hueColor(hue,.84f,.84f));
+                surface.setStroke(dp(appearance.hue==hue?3:1),
+                    appearance.hue==hue?WHITE:PANEL2);
+                swatch.setBackground(surface);
+                swatch.setContentDescription("Hue "+hue);
+                swatch.setFocusable(true);
+                swatch.setOnClickListener(v->{Appearance.setHue(this,hue);recreate();});
+                colors.addView(swatch,lp);
+            }
+            results.addView(colors);
+            if(Appearance.GRADIENT.equals(appearance.mode)){
+                section(results,"GRADIENT STYLE");
+                LinearLayout types=row();
+                types.addView(chip("Linear",Appearance.LINEAR.equals(appearance.gradientType),
+                    ()->{Appearance.setGradient(this,Appearance.LINEAR);recreate();}),
+                    new LinearLayout.LayoutParams(0,dp(46),1));
+                types.addView(chip("Mesh",Appearance.MESH.equals(appearance.gradientType),
+                    ()->{Appearance.setGradient(this,Appearance.MESH);recreate();}),
+                    new LinearLayout.LayoutParams(0,dp(46),1));
+                results.addView(types);
+            }
+        }else if(Appearance.PHOTO.equals(appearance.mode)){
+            section(results,"YOUR BACKGROUND");
+            LinearLayout group=group(results);
+            menuRow(group,"settings","Choose photo","Pick a picture from your phone; stored privately for future updates",
+                this::chooseAppearancePhoto,ORANGE);
+            appearanceSlider(group,"Dim","Darken the photo so message text remains readable (30–90%).",
+                appearance.dim,90,value->Appearance.setDim(this,value));
+            appearanceSlider(group,"Blur","Soften the photo behind the interface (0–24).",
+                appearance.blur,24,value->Appearance.setBlur(this,value));
+            menuRow(group,"settings","Remove background photo","Return to System appearance",
+                ()->{Appearance.setMode(this,Appearance.SYSTEM);
+                    Appearance.photoFile(this).delete();recreate();},MUTED);
+        }else{
+            section(results,"SYSTEM COLORS");
+            LinearLayout info=group(results);
+            menuRow(info,"settings",appearance.colors.light?"Light appearance":"Dark appearance",
+                "Follows the Android system appearance automatically",null,ORANGE);
+        }
+        section(results,"NETWORK IDENTITIES");
+        results.addView(text("Meshtastic stays orange and MeshCore stays blue in radio indicators and map nodes. Appearance affects the surrounding app interface, not network identity.",13,MUTED));
     }
     private void radioPage(){RadioProfile p=settingsRadio==null?RadioProfile.MESHCORE:settingsRadio;RadioService.Session session=service==null?null:service.sessions.get(p);section(results,p.title.toUpperCase(Locale.ROOT));LinearLayout info=group(results);TextView name=text(session!=null&&!session.name.isEmpty()?session.name:"No radio selected",18,WHITE);name.setTypeface(null,Typeface.BOLD);name.setPadding(dp(16),dp(14),dp(16),dp(4));info.addView(name);TextView status=text(session==null?"Controller starting":session.status,13,session!=null&&session.verified?GREEN:MUTED);status.setPadding(dp(16),dp(4),dp(16),dp(14));info.addView(status);
         if(choosing!=null){section(results,"CHOOSE RADIO");LinearLayout scan=group(results);menuRow(scan,"radio",service!=null&&service.scanning?"Stop scan":"Scan nearby radios",service==null?"Starting":service.scanStatus,()->withPermission(()->{if(service.scanning)service.stopScan();else service.scan(p);rebuildContent();}),ORANGE);if(service!=null)for(BluetoothDevice device:service.discovered(p)){String address=device.getAddress();menuRow(scan,"radio",service.deviceName(device),service.discoveryLabel(device),()->withPermission(()->{service.connect(p,address);choosing=null;rebuildContent();}),p==RadioProfile.MESHTASTIC?ORANGE:MapPanel.MC);}menuRow(scan,"settings",service!=null&&service.showOtherDevices?"Show matching radios":"Show other BLE devices","",()->{if(service!=null)service.showOtherDevices=!service.showOtherDevices;rebuildContent();},MUTED);return;}
@@ -574,6 +763,23 @@ public final class MainActivity extends Activity {
     private void quickReply(){ArrayList<String> templates=new ArrayList<>();for(String line:getSharedPreferences("ui",MODE_PRIVATE).getString("quickReplies","OK\nOn my way\nNeed assistance").split("\n")){String trimmed=line.trim();if(!trimmed.isEmpty()&&templates.size()<8)templates.add(trimmed.substring(0,Math.min(120,trimmed.length())));}ArrayList<String> choices=new ArrayList<>(templates);int locationIndex=-1;if(position.location!=null&&phoneEnabled()&&System.currentTimeMillis()-position.location.getTime()<120000){locationIndex=choices.size();choices.add("Insert phone coordinates");}int editIndex=choices.size();choices.add("Edit saved replies…");final int coordinateChoice=locationIndex;final RadioProfile network=chatProfile;final String key=draftKey();new AlertDialog.Builder(this).setTitle("Insert into "+network.title+" draft").setItems(choices.toArray(new String[0]),(d,index)->{if(index==editIndex){editQuickReplies();return;}if(chat==null||composer==null||!key.equals(draftKey()))return;String value=index==coordinateChoice?String.format(Locale.ROOT,"%.5f,%.5f",position.location.getLatitude(),position.location.getLongitude()):templates.get(index);if(composer.length()>0)value=composer.getText()+" "+value;composer.setText(value);composer.setSelection(composer.length());}).setNegativeButton("Cancel",null).show();}
     private void editQuickReplies(){EditText editor=new EditText(this);editor.setText(getSharedPreferences("ui",MODE_PRIVATE).getString("quickReplies","OK\nOn my way\nNeed assistance"));editor.setMinLines(4);editor.setTextColor(WHITE);new AlertDialog.Builder(this).setTitle("Quick replies").setMessage("One reply per line. Up to 8 replies, 120 characters each.").setView(editor).setPositiveButton("Save",(a,b)->getSharedPreferences("ui",MODE_PRIVATE).edit().putString("quickReplies",editor.getText().toString().substring(0,Math.min(2000,editor.length()))).apply()).setNegativeButton("Cancel",null).show();}
     @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(result!=RESULT_OK||data==null||data.getData()==null)return;if(request==50||request==51){handleFullBackup(request,data.getData());return;}
+        if(request==53){
+            android.net.Uri photo=data.getData();
+            Toast.makeText(this,"Applying photo background…",Toast.LENGTH_SHORT).show();
+            new Thread(()->{
+                String failure="";
+                try{Appearance.storePhoto(getApplicationContext(),photo);}
+                catch(java.io.IOException e){failure="Could not load this picture. Choose a different photo.";}
+                final String error=failure;
+                runOnUiThread(()->{
+                    if(error.isEmpty()){
+                        Appearance.setMode(this,Appearance.PHOTO);
+                        recreate();
+                    }else Toast.makeText(this,error,Toast.LENGTH_LONG).show();
+                });
+            },"meshcrossway-appearance-photo").start();
+            return;
+        }
         if(request==52){
             if(trackService==null){Toast.makeText(this,"Tracks are not ready",Toast.LENGTH_LONG).show();return;}
             try{
