@@ -10,7 +10,12 @@ final class NavIcon extends View {
     NavIcon(Context context,String name,int color){super(context);this.name=name;this.color=color;setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);}
     @Override protected void onDraw(Canvas c){super.onDraw(c);c.save();float size=Math.min(getWidth(),getHeight());c.translate((getWidth()-size)/2,(getHeight()-size)/2);c.scale(size/24,size/24);paint.setColor(color);paint.setStrokeWidth(1.7f);paint.setStrokeCap(Paint.Cap.ROUND);paint.setStrokeJoin(Paint.Join.ROUND);paint.setStyle(Paint.Style.STROKE);
         switch(name){
-            case "home":line(c,3,11,12,3);line(c,12,3,21,11);line(c,5,10,5,21);line(c,5,21,19,21);line(c,19,21,19,10);c.drawRect(10,14,14,21,paint);break;
+            case "home":{
+                // Official orange symbol, preserving the approved vector geometry and color.
+                android.graphics.drawable.Drawable brand=getContext().getDrawable(R.drawable.meshcrossway_symbol);
+                if(brand!=null){brand.setBounds(0,4,24,21);brand.draw(c);}
+                break;
+            }
             case "contacts":c.drawCircle(10,8,3.5f,paint);c.drawArc(3,13,17,24,185,170,false,paint);c.drawArc(15,5,21,12,-90,180,false,paint);c.drawArc(16,14,23,23,220,100,false,paint);break;
             case "channels":c.drawRoundRect(3,4,21,11,2,2,paint);c.drawRoundRect(3,15,21,22,2,2,paint);line(c,7,7.5f,7,7.5f);line(c,7,18.5f,7,18.5f);break;
             case "chats":c.drawRoundRect(3,3,21,18,3,3,paint);line(c,7,18,7,22);line(c,7,22,12,18);line(c,7,8,17,8);line(c,7,12,14,12);break;

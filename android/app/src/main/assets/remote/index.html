@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090c10">
 <title>MeshCrossway · Local Workspace</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
 :root{color-scheme:dark;--bg:#090c10;--panel:#181d24;--panel2:#242b34;--line:#34404b;--text:#f2f4f7;--muted:#9aa6b4;--mt:#ff8a24;--mc:#6cbde6;--good:#72d8a5}
 *{box-sizing:border-box}body{background:var(--bg);margin:0;font:15px/1.5 system-ui,Arial,sans-serif;color:var(--text)}
 header,main{max-width:1240px;margin:auto;padding:18px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line)}
-.brand{color:var(--mt);font-size:21px;font-weight:800;letter-spacing:-.04em}.brand span{color:white}
+.brand{color:var(--mt);font-size:21px;font-weight:800;letter-spacing:-.04em;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}.brand-label span{color:white}.brand-icon{width:29px;height:24px;object-fit:contain;flex:none}
 h1{font-size:22px;margin:0 0 8px}h2{font-size:17px;margin:0 0 12px}h3{font-size:15px;margin:6px 0}p{margin:8px 0;color:var(--muted)}
 button,input,select,textarea{font:inherit;color:var(--text)}button{cursor:pointer;border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:10px 14px}
 button:hover,button:focus-visible{border-color:var(--mt)}button.primary{background:var(--mt);border-color:var(--mt);color:#15100a;font-weight:750}
@@ -34,7 +35,7 @@ footer{padding:25px 18px;text-align:center;font-size:12px;color:var(--muted)}
 <script defer src="/app.js"></script>
 </head>
 <body>
-<header><div class="brand"><span>Mesh</span>Crossway <small class="muted">Local</small></div><button id="logout" hidden>Sign out</button></header>
+<header><div class="brand"><img class="brand-icon" src="/favicon.svg" width="29" height="24" alt=""><span class="brand-label"><span>Mesh</span>Crossway</span> <small class="muted">Local</small></div><button id="logout" hidden>Sign out</button></header>
 <main>
 <section id="login">
 <div class="card" style="max-width:520px;margin:35px auto">

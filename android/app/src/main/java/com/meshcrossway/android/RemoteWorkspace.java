@@ -188,6 +188,7 @@ final class RemoteWorkspace extends NanoHTTPD {
         if(get&&path.equals("/"))return asset("index.html","text/html; charset=utf-8");
         if(get&&path.equals("/app.js"))return asset("app.js","application/javascript; charset=utf-8");
         if(get&&path.equals("/remote-map.js"))return asset("remote-map.js","application/javascript; charset=utf-8");
+        if(get&&path.equals("/favicon.svg"))return asset("favicon.svg","image/svg+xml; charset=utf-8");
         if(post&&path.equals("/api/login")){
             try{
                 String entered=parse(request).optString("code","");

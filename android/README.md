@@ -108,3 +108,9 @@ The `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk` output is a de
 The installed app may be signed with a different CI debug key. If Android rejects an update due to a signing conflict, first export JSON history and required GPX tracks, then uninstall/reinstall. **Uninstalling deletes local application data.**
 
 Technical implementation and limitations: [Android remote workspace design](../docs/android-remote-workspace.md) · [Android feature references](../docs/android-feature-references.md).
+
+## Approved visual assets (next beta)
+
+The Android launcher icon uses `app/src/main/res/drawable-nodpi/meshcrossway_app_icon.png`, a copy of the approved `docs/logo/meshcrossway-app-icon.png` mark (charcoal background and orange mountain). The Home tab and notifications render the **official symbol geometry** as Android vector drawables. The optional local HTTPS workspace serves a matching `/favicon.svg` and shows the symbol in its header. Theme selection and separate Meshtastic/MeshCore identities remain unchanged.
+
+This source change is **not included in the already-published Android 0.2.5 APK**. A subsequent version must be built, signed with the existing permanent key and tested before release. Do not replace or re-sign the 0.2.5 release artifact.
