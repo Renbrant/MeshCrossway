@@ -14,6 +14,24 @@ The private TLS key is generated in the app and stored at rest only as Android K
 2. **Messages and contacts.** Browser status for both BLE radios, per-network node/channel/conversation summaries, separately filtered conversation history, remote sending and read markers. Existing `RadioService.send` and `HistoryStore` handle message validation, persistence and delivery semantics; there is no second GATT client. The web response only promises radio submission, not recipient delivery.
 3. **Maps and tracks.** List MapLibre offline areas, download a named bounding rectangle to phone storage, resume/pause/delete, and display map source quotas. Tracks have SQLite schema v2 (additive `folder_id` plus `folders` table). The browser can create/rename/delete virtual folders, move saved tracks, set colors/visibility, preview up to 5,000 points, and export GPX to the computer. Deleting a virtual folder moves its tracks to Unfiled, not disk deletion.
 
+## Browser usability changes in Android 0.2.2
+
+**Messages now has three distinct tabs**, independently for Meshtastic and MeshCore:
+
+- **Chats:** private/direct conversations, sorted by unread and recent activity. Select an entry to read, reply, and mark it as read. No existing chats? The empty state leads to Nodes.
+- **Channels:** enabled and disabled radio channels are listed even without prior messages; enabled channels open an empty conversation ready to send. MeshCore group conversations not represented by a configured channel slot are also listed.
+- **Nodes:** all synchronized nodes, with their messageability state and last-heard time. Selecting a messageable node can start a private chat even if no messages exist. It uses the native per-radio Target and send queue; no cross-network routing.
+
+**Offline Maps now uses a visual selection:** pan/zoom a live map, click **Draw area**, drag a rectangle, choose **Offline detail (max zoom)** and a name, then click **Download area to phone**. The browser computes the rectangle automatically, previews estimated tiles, and disables downloads above the phone's 2,400-tile limit. The native server revalidates all coordinates and limits before creating a MapLibre offline region.
+
+Saved regions appear as cyan outlines on the map. **Show on map** zooms to the saved area, and the existing pause/resume/delete actions remain available. **Browser location** requires explicit permission on the computer; it never automatically transmits the phone's GPS.
+
+The interactive background uses *only the OpenStreetMap raster tiles currently displayed in the browser*. Those raster tiles are **not** downloaded for offline use: the actual region download continues exclusively through Android's **OpenFreeMap / MapLibre** source, within its provider quotas. The computer needs internet for the map preview and the phone needs internet to download new offline regions; existing downloaded regions remain on the phone. The map visibly credits OpenStreetMap contributors, uses the browser's normal tile cache, and sends the browser origin as Referer for provider compliance. No message content, radio identity, or login PIN is included in tile URLs.
+
+References:
+- [OpenStreetMap raster tile policy](https://operations.osmfoundation.org/policies/tiles/) (interactive browsing is permitted; bulk/offline downloading from OSM's standard tile server is not)
+- [OpenFreeMap quick start and offline limits](https://openfreemap.org/quick_start/)
+
 ## Data model and concurrency
 
 - Remote lifecycle belongs to the existing BLE foreground `RadioService`, and Remote Access has an explicit stop action in the phone. No implicit server startup at boot or automatic cloud synchronization.
@@ -24,7 +42,7 @@ The private TLS key is generated in the app and stored at rest only as Android K
 
 ## Limitations and test matrix
 
-- The map download UI currently takes **numeric latitude/longitude bounds and maximum zoom**, not a full draggable basemap; previously downloaded area bounds can be loaded into the form. Full PC map selection is a follow-up usability improvement.
+- The remote map download UI now uses a draggable live preview and rectangle selection. Preview tiles come from the browser's online OSM raster provider; offline region downloads use the phone's OpenFreeMap MapLibre SDK. A blank preview when the PC is offline does not mean the phone's saved map data was deleted.
 - Only conversations associated with a synchronized channel/contact can be addressed; sending is still blocked when the selected radio is disconnected or the native protocol rejects it.
 - All track metadata changes are asynchronous; refresh the list after a write.
 - Physical tests: phone S25, both Heltec V3 radios connected, computer on same Wi-Fi, cert fingerprint match, login failure lockout, logout/stop invalidation, send+receive on both networks, Wi-Fi network change, screen-off/Doze, offline map creation/cancel/delete, folder migration from a 0.1.1 app database, GPX export and reinstallation.

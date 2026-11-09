@@ -154,6 +154,29 @@ public final class SmokeInstrumentation extends Instrumentation {
                     return conn;
                 }catch(Exception e){throw new RuntimeException(e);}
             };
+            javax.net.ssl.HttpsURLConnection homepage=connect.apply("/");
+            check(homepage.getResponseCode()==200,"Remote Home did not load");
+            ByteArrayOutputStream html=new ByteArrayOutputStream();
+            try(InputStream in=homepage.getInputStream()){
+                byte[] buffer=new byte[1024];int n;
+                while((n=in.read(buffer))!=-1)html.write(buffer,0,n);
+            }
+            String page=html.toString("UTF-8");
+            check(page.contains("data-message-view="+(char)34+"chats"+(char)34) &&
+                  page.contains("data-message-view="+(char)34+"channels"+(char)34) &&
+                  page.contains("data-message-view="+(char)34+"nodes"+(char)34),
+                "Remote Home is missing separate Chats, Channels and Nodes");
+            check(page.contains("id="+(char)34+"map-viewport"+(char)34) &&
+                  page.contains("id="+(char)34+"map-draw"+(char)34),
+                "Remote Home is missing visual offline map selection");
+            check(homepage.getHeaderField("Content-Security-Policy").contains("tile.openstreetmap.org"),
+                "Map preview tile host is not restricted by CSP");
+            check(homepage.getHeaderField("Referrer-Policy").contains("strict-origin"),
+                "Interactive OSM map does not send provider-required Referrer");
+            homepage.disconnect();
+            javax.net.ssl.HttpsURLConnection mapSource=connect.apply("/remote-map.js");
+            check(mapSource.getResponseCode()==200,"Bundled map selector JS is inaccessible");
+            mapSource.disconnect();
             javax.net.ssl.HttpsURLConnection denied=connect.apply("/api/state");
             check(denied.getResponseCode()==401,"API allowed unauthenticated data");
             denied.disconnect();
@@ -180,6 +203,14 @@ public final class SmokeInstrumentation extends Instrumentation {
             String data=response.toString("UTF-8");
             check(data.contains("Meshtastic")&&data.contains("MeshCore"),
                 "HTTPS dashboard failed to keep both radios separate");
+            org.json.JSONObject parsed=new org.json.JSONObject(data);
+            org.json.JSONArray radioStates=parsed.getJSONArray("radios");
+            check(radioStates.length()==2,"Both network state entries are required");
+            for(int i=0;i<radioStates.length();i++){
+                org.json.JSONObject item=radioStates.getJSONObject(i);
+                check(item.has("contacts")&&item.has("channels")&&item.has("conversations"),
+                    "Remote state must expose nodes, channels and chats for both meshes");
+            }
             authenticated.disconnect();
             javax.net.ssl.HttpsURLConnection csrf=connect.apply("/api/logout");
             csrf.setRequestMethod("POST");

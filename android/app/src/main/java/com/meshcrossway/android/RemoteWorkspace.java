@@ -118,9 +118,11 @@ final class RemoteWorkspace extends NanoHTTPD {
         response.addHeader("Cache-Control","no-store");
         response.addHeader("X-Content-Type-Options","nosniff");
         response.addHeader("X-Frame-Options","DENY");
-        response.addHeader("Referrer-Policy","no-referrer");
+        // Map preview requests need a browser Referer for the OpenStreetMap tile policy.
+        // Only the HTTPS origin (never messages, paths, or PINs) is sent.
+        response.addHeader("Referrer-Policy","strict-origin-when-cross-origin");
         response.addHeader("Content-Security-Policy",
-            "default-src 'none'; connect-src 'self'; img-src 'self' data:; "+
+            "default-src 'none'; connect-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; "+
             "script-src 'self'; style-src 'self' 'unsafe-inline'; base-uri 'none'; "+
             "frame-ancestors 'none'; form-action 'self'");
         return response;
@@ -185,6 +187,7 @@ final class RemoteWorkspace extends NanoHTTPD {
         boolean get=request.getMethod()==Method.GET,post=request.getMethod()==Method.POST;
         if(get&&path.equals("/"))return asset("index.html","text/html; charset=utf-8");
         if(get&&path.equals("/app.js"))return asset("app.js","application/javascript; charset=utf-8");
+        if(get&&path.equals("/remote-map.js"))return asset("remote-map.js","application/javascript; charset=utf-8");
         if(post&&path.equals("/api/login")){
             try{
                 String entered=parse(request).optString("code","");
@@ -251,12 +254,21 @@ final class RemoteWorkspace extends NanoHTTPD {
             int nodes=0;
             for(Node node:data.nodes){
                 if(nodes++>=500)break;
-                contacts.put(obj("id",node.id,"name",node.name.isEmpty()?node.id:node.name,
-                    "heard",node.heard,"battery",node.battery,"position",node.position,
+                contacts.put(obj("id",node.id,"topic",Target.node(node).topic,
+                    "name",node.name.isEmpty()?node.id:node.name,
+                    "messageable",!node.unmessagable,"heard",node.heard,"battery",node.battery,"position",node.position,
                     "lat",node.position?node.lat:JSONObject.NULL,"lon",node.position?node.lon:JSONObject.NULL));
             }
-            for(Channel channel:data.channels)if(channel.enabled)
-                channels.put(obj("topic",channel.topic(),"name",channel.name,"slot",channel.slot));
+            HashMap<String,Conversation> conversationsByTopic=new HashMap<>();
+            for(Conversation conversation:data.conversations())
+                conversationsByTopic.put(conversation.target.topic,conversation);
+            for(Channel channel:data.channels){
+                Conversation seen=conversationsByTopic.get(channel.topic());
+                channels.put(obj("topic",channel.topic(),"name",channel.name,"slot",channel.slot,
+                    "enabled",channel.enabled,"unread",seen==null?0:seen.unread,
+                    "preview",seen==null?"":seen.last.body,
+                    "time",seen==null?0:seen.last.timestamp));
+            }
             int count=0;
             for(Conversation conversation:data.conversations()){
                 if(count++>=200)break;
@@ -270,7 +282,7 @@ final class RemoteWorkspace extends NanoHTTPD {
                 "device",session.name,"nodes",data.nodes.size(),"unread",data.unread(),
                 "contacts",contacts,"channels",channels,"conversations",conversations));
         }
-        return obj("version","0.2.0","radios",radios,"trackManagerReady",owner.remoteTracks!=null);
+        return obj("version","0.2.2","radios",radios,"trackManagerReady",owner.remoteTracks!=null);
     }
     private static Target target(Snapshot data,String topic){
         if(topic==null||topic.length()>256)return null;

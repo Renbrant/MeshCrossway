@@ -1,10 +1,10 @@
 name: Android alpha APK
 on:
   pull_request:
-    paths: ['android/**', 'scripts/test_android_probe.sh', 'scripts/test_android_device.sh', '.github/workflows/android-apk.yml']
+    paths: ['android/**', 'scripts/test_android_probe.sh', 'scripts/test_android_device.sh', 'scripts/test_android_remote_web.cjs', '.github/workflows/android-apk.yml']
   push:
     branches: [main]
-    paths: ['android/**', 'scripts/test_android_probe.sh', 'scripts/test_android_device.sh', '.github/workflows/android-apk.yml']
+    paths: ['android/**', 'scripts/test_android_probe.sh', 'scripts/test_android_device.sh', 'scripts/test_android_remote_web.cjs', '.github/workflows/android-apk.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -24,6 +24,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Protocol wire fixtures
         run: bash scripts/test_android_probe.sh
+      - name: Browser chats and map selector unit tests
+        run: node scripts/test_android_remote_web.cjs
       - name: Build and lint
         working-directory: android
         run: ./gradlew --no-daemon assembleDebug lintDebug
