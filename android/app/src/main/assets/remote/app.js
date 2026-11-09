@@ -187,37 +187,138 @@ async function sendMessage(event){
  }catch(e){notice(e.message,true);}
  finally{$("send-message").disabled=!app.topic;}
 }
+function ensureMap(){
+ if(app.map)return app.map;
+ if(!window.MeshCrosswayMap){
+  notice("Map viewer files were not loaded. Refresh this page.",true);return null;
+ }
+ app.map=new MeshCrosswayMap.Selector($("map-viewport"),{
+  onSelect:updateMapSelection,
+  onView:view=>{
+   $("map-view-label").textContent="Preview zoom "+view.zoom+
+       " · wheel or +/- to zoom";
+  },
+  onMode:mode=>{
+   $("map-pan").setAttribute("aria-pressed",String(mode==="pan"));
+   $("map-draw").setAttribute("aria-pressed",String(mode==="draw"));
+  },
+  onError:message=>notice(message,true)
+ });
+ app.map.setAreas(app.mapAreas);
+ updateMapSelection();
+ return app.map;
+}
+function mapPreviewLocation(){
+ const viewer=ensureMap();
+ if(!viewer)return;
+ if(!navigator.geolocation){
+  notice("Browser location is unavailable. Move the map manually instead.",true);
+  return;
+ }
+ navigator.geolocation.getCurrentPosition(
+  position=>{
+   viewer.center(position.coords.latitude,position.coords.longitude,12);
+   notice("Map moved to your browser's position. Click Draw area to select a region.");
+  },
+  ()=>notice("Location permission was declined or unavailable. Move the map manually.",true),
+  {enableHighAccuracy:false,timeout:10000,maximumAge:30000}
+ );
+}
+function updateMapSelection(){
+ const map=app.map;
+ const selection=map?.selection;
+ const maximum=Number($("download-zoom").value);
+ $("download-zoom-label").textContent=String(maximum);
+ const info=$("map-selection-info");
+ const quota=$("map-quota");
+ if(!selection){
+  info.textContent="No area selected — click Draw area, then drag a rectangle on the map.";
+  quota.textContent="You can download up to "+app.mapLimit+
+      " tiles (and 45 MB) to the phone for each region.";
+  $("download-area").disabled=true;
+  return;
+ }
+ const tiles=MeshCrosswayMap.tileEstimate(selection,maximum);
+ const valid=Number.isFinite(tiles)&&tiles>0&&tiles<=app.mapLimit;
+ const northKm=Math.round((selection.north-selection.south)*111);
+ const eastKm=Math.round((selection.east-selection.west)*111*
+    Math.cos((selection.north+selection.south)/2*Math.PI/180));
+ info.textContent="Selected area: approximately "+Math.max(1,eastKm)+
+   " × "+Math.max(1,northKm)+" km · "+(valid?"Ready to download":"Too large for this detail");
+ quota.textContent=Number.isFinite(tiles)?
+  tiles.toLocaleString()+" estimated tiles at offline zoom "+maximum+
+   " · limit "+app.mapLimit+" tiles / 45 MB":
+  "Selection is too large. Draw a smaller rectangle.";
+ $("download-area").disabled=!valid;
+ if(!valid)quota.style.color="#ff9292";
+ else quota.style.color="";
+}
 async function actionMap(data){
- try{const result=await api("/api/maps/action","POST",data);notice("Map request accepted"+(result.estimatedTiles?" · "+result.estimatedTiles+" estimated tiles":""));await renderMaps();}
- catch(e){notice(e.message,true);}
+ try{
+  const result=await api("/api/maps/action","POST",data);
+  notice("Phone accepted the map request"+(result.estimatedTiles?
+   " · estimated tiles: "+result.estimatedTiles:""));
+  await renderMaps();
+ }catch(e){notice(e.message,true);}
 }
 async function renderMaps(){
  try{
-  const data=await api("/api/maps"),holder=$("area-list");clear(holder);
+  const data=await api("/api/maps");
+  const holder=$("area-list");clear(holder);
+  app.mapLimit=Number(data.maxTiles)||2400;
+  app.mapAreas=data.areas||[];
+  const viewer=ensureMap();
+  if(viewer)viewer.setAreas(app.mapAreas);
   if(data.error)notice(data.error,true);
-  if(!data.areas.length)holder.append(element("p","No saved offline areas"));
-  for(const a of data.areas){
+  if(!app.mapAreas.length)holder.append(element("p","No saved areas on the phone yet."));
+  for(const area of app.mapAreas){
    const row=element("div",undefined,"item");
-   row.append(element("strong",a.name),element("p",a.status+" · "+a.tiles+" tiles · "+(a.bytes/1000000).toFixed(2)+" MB · zoom "+a.zoom));
-   row.append(element("p","N "+a.north+" · S "+a.south+" · W "+a.west+" · E "+a.east,"muted"));
-   if(a.active)row.append(btn("Pause",()=>actionMap({action:"pause"})));
-   else if(!a.complete)row.append(btn("Resume",()=>actionMap({action:"resume",id:a.id})));
-   row.append(btn("Use bounds",()=>{
-    const f=$("area-form");
-    for(const key of ["north","south","east","west"])f.elements[key].value=a[key];
-    f.elements.name.value=a.name+" copy";f.elements.zoom.value=a.zoom;
+   row.append(element("strong",area.name));
+   row.append(element("div",area.status+" · "+area.tiles+" tiles · "+
+      (area.bytes/1000000).toFixed(2)+" MB · zoom up to "+area.zoom,"muted"));
+   const actions=element("div",undefined,"actions");
+   if(area.active)actions.append(btn("Pause",()=>actionMap({action:"pause"})));
+   else if(!area.complete)actions.append(btn("Resume",()=>actionMap({action:"resume",id:area.id})));
+   const valid=MeshCrosswayMap.validArea(area);
+   if(valid)actions.append(btn("Show on map",()=>{
+    const map=ensureMap();
+    if(!map)return;
+    map.focusBounds(area);
+    $("area-form").elements.name.value=area.name+" copy";
+    $("download-zoom").value=String(Math.min(15,Math.max(1,area.zoom||12)));
+    updateMapSelection();
+    $("map-viewport").scrollIntoView({behavior:"smooth",block:"center"});
    }));
-   row.append(btn("Delete",()=>{if(confirm("Delete offline area "+a.name+"?"))actionMap({action:"delete",id:a.id});}));
+   actions.append(btn("Delete",()=>{
+    if(confirm('Delete offline region "'+area.name+'" from the phone?'))
+     actionMap({action:"delete",id:area.id});
+   }));
+   row.append(actions);
    holder.append(row);
   }
+  updateMapSelection();
  }catch(e){notice(e.message,true);}
 }
 async function areaSubmit(event){
- event.preventDefault();const f=event.currentTarget;
- const payload={action:"create",name:f.elements.name.value,style:f.elements.style.value};
- for(const key of ["north","south","east","west","zoom"])payload[key]=Number(f.elements[key].value);
- if(payload.north<=payload.south||payload.west>=payload.east){notice("Invalid bounds",true);return;}
- await actionMap(payload);
+ event.preventDefault();
+ const viewer=ensureMap(),selection=viewer?.selection;
+ const form=event.currentTarget;
+ if(!selection||!MeshCrosswayMap.validArea(selection)){
+  notice("Draw an area on the map before downloading.",true);return;
+ }
+ const zoom=Number($("download-zoom").value);
+ const estimate=MeshCrosswayMap.tileEstimate(selection,zoom);
+ if(!Number.isFinite(estimate)||estimate<1||estimate>app.mapLimit){
+  notice("This area exceeds the tile limit. Draw a smaller rectangle or lower the offline zoom.",true);
+  return;
+ }
+ const name=form.elements.name.value.trim();
+ if(!name||name.length>80){notice("Choose an area name (up to 80 characters).",true);return;}
+ await actionMap({
+  action:"create",name,zoom,style:form.elements.style.value,
+  north:selection.north,south:selection.south,
+  east:selection.east,west:selection.west
+ });
 }
 async function trackAction(data){
  try{await api("/api/tracks/action","POST",data);notice("Change saved to phone");await renderTracks();}
@@ -315,6 +416,17 @@ $("mark-read").addEventListener("click",async()=>{
 });
 $("refresh-maps").addEventListener("click",renderMaps);
 $("area-form").addEventListener("submit",areaSubmit);
+$("map-pan").addEventListener("click",()=>ensureMap()?.setMode("pan"));
+$("map-draw").addEventListener("click",()=>ensureMap()?.setMode("draw"));
+$("map-clear").addEventListener("click",()=>ensureMap()?.clearSelection());
+$("map-zoom-in").addEventListener("click",()=>{
+ const m=ensureMap();if(m)m.setZoom(m.zoom+1);
+});
+$("map-zoom-out").addEventListener("click",()=>{
+ const m=ensureMap();if(m)m.setZoom(m.zoom-1);
+});
+$("map-my-location").addEventListener("click",mapPreviewLocation);
+$("download-zoom").addEventListener("input",updateMapSelection);
 $("folder-form").addEventListener("submit",async e=>{
  e.preventDefault();const name=$("folder-name").value.trim();
  if(name){await trackAction({action:"folderCreate",name});$("folder-name").value="";}
