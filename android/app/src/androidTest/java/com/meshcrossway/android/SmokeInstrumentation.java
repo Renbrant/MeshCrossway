@@ -416,8 +416,10 @@ public final class SmokeInstrumentation extends Instrumentation {
             try{openAppearance.invoke(activity,"appearance",null);}
             catch(Exception e){throw new RuntimeException(e);}
             View view=activity.getWindow().getDecorView();
-            check(find(view,"System")!=null&&find(view,"Color")!=null&&
-                find(view,"Gradient")!=null&&find(view,"Photo")!=null,
+            check((find(view,"System")!=null||find(view,"✓  System")!=null)&&
+                (find(view,"Color")!=null||find(view,"✓  Color")!=null)&&
+                (find(view,"Gradient")!=null||find(view,"✓  Gradient")!=null)&&
+                (find(view,"Photo")!=null||find(view,"✓  Photo")!=null),
                 "Appearance settings must expose all four selectable theme choices");
         });
         screenshot(activity,"settings-appearance");
