@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Download MeshCrossway Android 0.2.1 beta for testing. Independent Meshtastic and MeshCore Bluetooth radios, messages, maps and tracks. Not version 1.0.">
-  <title>Android 0.2.1 Beta — Download MeshCrossway</title>
+  <meta name="description" content="Download MeshCrossway Android 0.2.2 beta for testing. Independent Meshtastic and MeshCore Bluetooth radios, messages, maps and tracks. Not version 1.0.">
+  <title>Android 0.2.2 Beta — Download MeshCrossway</title>
   <link rel="stylesheet" href="/MeshCrossway/assets/site.css">
 </head>
 <body>
@@ -30,15 +30,15 @@
 <main>
   <section class="pagehero"><div class="wrap">
     <div class="eyebrow">Android · Public beta for testing</div>
-    <h1>MeshCrossway 0.2.1 beta.</h1>
+    <h1>MeshCrossway 0.2.2 beta.</h1>
     <p class="lead">Two independent mesh radios, one Android interface. Try messages, contacts, maps and tracks with your Meshtastic and MeshCore radios connected together.</p>
     <div class="notice"><strong>This is a beta for testing, not version 1.0.0.</strong> The previous radio baseline is functional; Remote Access is new and still requires real phone/computer acceptance. Broader phone, radio, firmware and endurance testing continues.</div>
-    <div class="actions"><a class="button primary" href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.1/MeshCrossway-0.2.1.apk">Download Android beta APK · 0.2.1</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1">Release notes and checksums</a></div>
+    <div class="actions"><a class="button primary" href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.2/MeshCrossway-0.2.2.apk">Download Android beta APK · 0.2.2</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.2">Release notes and checksums</a></div>
     <p class="sectionintro">ARM64 · Android 8.0 or newer · Public GitHub release asset; no Actions login required.</p>
   </div></section>
   <section class="section"><div class="wrap grid3">
     <article class="card"><h3>What you need</h3><p>An ARM64 Android phone, Bluetooth and compatible radio firmware. To use both networks, choose one Meshtastic radio and one MeshCore Companion BLE radio. The dedicated touchscreen controller is not required. Heltec V3 and Samsung S25 are used in development; other combinations need testing.</p></article>
-    <article class="card"><h3>What is included</h3><p>Independent dual BLE connections, chats and channels, contacts, offline areas, tracks and GPX, POIs, JSON history backup, plus local HTTPS browser access to messages, map regions and track folders.</p></article>
+    <article class="card"><h3>What is included</h3><p>Independent dual BLE connections, chats, contacts and channels, offline areas, tracks and GPX, POIs and backup. The HTTPS computer browser now has dedicated Chats, Channels and Nodes tabs plus visual map selection by drawing a rectangle.</p></article>
     <article class="card"><h3>Offline use</h3><p>Native LoRa messaging needs no cellular service. Download the APK and required map areas while online. Confirm that your selected map area and zoom levels are available offline before a trip. Wardriving/MeshMapper uploads are not included.</p></article>
   </div></section>
   <section class="section" id="install"><div class="wrap prose">
@@ -49,7 +49,7 @@
       <li>Grant Bluetooth/nearby-device permissions and location permission for GPS, tracks and scanning where required.</li>
       <li>Close other apps using the same radios. In MeshCrossway Settings, choose your Meshtastic radio and your MeshCore radio, then let synchronization complete.</li>
       <li>Check each network status, then test sending, receiving and reconnection.</li>
-      <li>Optional: activate Remote Access from the phone Home card while connected to private Wi-Fi. Choose a 4–8 digit PIN on the phone (a six-digit suggestion is provided), then in the browser verify the certificate fingerprint under the phone's certificate details and enter the same PIN. Stop Remote Access when finished; do not forward its port to the public internet.</li>
+      <li>Optional: activate Remote Access from the phone Home card over trusted private Wi-Fi. Choose a 4–8 digit PIN, verify the HTTPS certificate fingerprint shown on the phone, and enter the same PIN in the browser. Open Messages → Chats/Channels/Nodes, or Offline maps → Draw area to select a rectangle and its maximum download zoom. Stop Remote Access when finished; do not expose its port to the internet.</li>
     </ol>
     <div class="notice"><strong>Updating an earlier test build?</strong> This beta uses a CI development signing certificate. If Android reports a signing conflict, export JSON history and needed GPX tracks <strong>before uninstalling</strong>. Uninstalling deletes local app data.</div>
     <p>Messages and routing remain independent. An accepted-by-radio send status does not prove end-to-end delivery. Complete historical paths are shown only where captured; private/backlog MeshCore messages and Meshtastic text may not include the full path.</p>
@@ -57,12 +57,12 @@
   <section class="section"><div class="wrap">
     <h2>From beta to 1.0.0</h2>
     <div class="grid3">
-      <article class="card"><h3>0.2.1</h3><p>Simple user-chosen numeric PIN for the local HTTPS remote workspace, with dual-radio messaging, offline map areas and track folders. 0.2.0 and 0.1.1 remain recovery betas. Earlier alpha02–alpha07 labels were development iterations; alpha07 behavior is retained under the new 0.1.0 sequence.</p></article>
+      <article class="card"><h3>0.2.2</h3><p>Dedicated browser Chats, Channels and Nodes; an interactive map with rectangle selection and zoom for offline downloads to the phone. The short PIN remains. 0.2.1, 0.2.0 and 0.1.1 remain recovery betas. Earlier alpha02–alpha07 labels were development iterations; alpha07 behavior is retained under the new 0.1.0 sequence.</p></article>
       <article class="card"><h3>0.2.x → 0.3.0</h3><p>Corrections and small improvements increment the last number. Substantial features or workflow changes increment the middle number and reset the last number to zero.</p></article>
       <article class="card"><h3>1.0.0</h3><p>Reserved for the first production release after core scope and stability acceptance. It has not been released. Controller firmware keeps its own independent version sequence.</p></article>
     </div>
     <p class="sectionintro">The APK passed build/lint/protocol checks and Android API 29/35 device smoke tests. The functional predecessor was accepted in real-device use; automated tests do not establish compatibility with every phone or radio.</p>
-    <div class="actions"><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/issues">Report a beta issue</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/android-apk.md">Detailed Android guide</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/actions/runs/42648549926">Validation run</a></div>
+    <div class="actions"><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/issues">Report a beta issue</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/android-apk.md">Detailed Android guide</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/actions/runs/42667980890">Validation run</a></div>
     <p class="sectionintro">Include app version, phone/Android version, radio models/firmware and steps to reproduce. Redact keys, personal messages and precise locations.</p>
   </div></section>
 </main>
