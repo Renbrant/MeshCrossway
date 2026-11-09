@@ -1,5 +1,7 @@
 # MeshCrossway Android — 0.2.2 beta
 
+> **Starting fresh:** If 0.2.2 was already uninstalled, there is no old app data left to migrate. **No ADB or ZIP is required.** Make the first installation the permanently signed Android 0.2.3 release (not yet published; private signing-key setup is pending). Future official APKs with the same signer can simply be installed **over the existing app**, preserving messages, favorites, radios, settings, tracks and offline maps. Never uninstall to update. ADB is optional only for people who still have an old debug-signed installation and want its data back.
+
 > **Update safety:** Android 0.2.3 source code is merged and automated tests passed, but its permanent-key APK release is still blocked pending private signing-key setup. Do **not uninstall** your existing 0.2.2 build before exporting history and GPX or taking the optional full ADB snapshot. Once 0.2.3 is permanently signed, all future official updates with the same signing certificate will install over it and retain app-private settings, favorites, tracks and offline maps. [Migration instructions](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md) · [Signing setup issue #195](https://github.com/Renbrant/MeshCrossway/issues/195).
 
 
