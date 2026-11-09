@@ -115,6 +115,10 @@ public final class MainActivity extends Activity {
             Math.round(appearance.dim*2.55f),0,0,0));
         parent.addView(darken,new android.widget.FrameLayout.LayoutParams(-1,-1));
     }
+    private String installedVersion(){
+        try{return getPackageManager().getPackageInfo(getPackageName(),0).versionName;}
+        catch(android.content.pm.PackageManager.NameNotFoundException e){return "beta";}
+    }
     private int dp(float n){return Math.round(n*getResources().getDisplayMetrics().density);}
     private LinearLayout column(){LinearLayout l=new LinearLayout(this);l.setOrientation(LinearLayout.VERTICAL);return l;}
     private LinearLayout row(){LinearLayout l=new LinearLayout(this);l.setGravity(Gravity.CENTER_VERTICAL);return l;}
@@ -510,7 +514,7 @@ public final class MainActivity extends Activity {
         if(settingsSection.isEmpty()){
             section(results,"RADIOS");LinearLayout radios=group(results);for(RadioProfile p:RadioProfile.values())menuRow(radios,"radio",p.title,ready(p,radio(p))?"Connected · manage this radio":"Connection and saved device",()->openSettings("radio",p),p==RadioProfile.MESHTASTIC?ORANGE:MapPanel.MC);menuRow(radios,"settings","Connections","Automatic reconnect and Bluetooth",()->openSettings("connections",null),ORANGE);
             section(results,"APPLICATION");LinearLayout app=group(results);menuRow(app,"settings","Appearance & colors","System, Color, Gradient or Photo background",()->openSettings("appearance",null),ORANGE);menuRow(app,"bell","Notifications & messages","Message previews and quick replies",()->openSettings("messages",null),ORANGE);menuRow(app,"map","Map & location","Map layers, offline areas, GPS and tracks",()->openSettings("location",null),ORANGE);menuRow(app,"backup","Data & backup","Export and import private history",()->openSettings("data",null),ORANGE);
-            section(results,"INFORMATION");LinearLayout info=group(results);menuRow(info,"info","About MeshCrossway","Version 0.6.0 · licenses and map attribution",()->openSettings("about",null),ORANGE);return;
+            section(results,"INFORMATION");LinearLayout info=group(results);menuRow(info,"info","About MeshCrossway","Version "+installedVersion()+" · licenses and map attribution",()->openSettings("about",null),ORANGE);return;
         }
         if(settingsSection.equals("radio")){radioPage();return;}
         if(settingsSection.equals("appearance")){appearancePage();return;}
@@ -535,7 +539,7 @@ public final class MainActivity extends Activity {
             results.addView(text("Normal signed updates keep all app data. Uninstalling erases the private app database; use Export complete backup BEFORE uninstalling a differently signed APK.",13,MUTED));
             return;
         }
-        section(results,"MESHCROSSWAY");LinearLayout c=group(results);menuRow(c,"info","Android 0.6.0-alpha07","Two independent networks. No automatic forwarding.",null,ORANGE);menuRow(c,"info","Software licenses","MapLibre Native and bundled software",this::showMapLicenses,ORANGE);menuRow(c,"map","Map attribution","OpenFreeMap · OpenMapTiles · OpenStreetMap",()->new AlertDialog.Builder(this).setTitle("Map attribution").setMessage("© OpenStreetMap contributors · OpenMapTiles · OpenFreeMap. Basemaps use the internet or saved areas.").setPositiveButton("OpenFreeMap",(d,w)->startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://openfreemap.org/")))).setNegativeButton("Back",null).show(),ORANGE);
+        section(results,"MESHCROSSWAY");LinearLayout c=group(results);menuRow(c,"info","Android "+installedVersion(),"Two independent networks. No automatic forwarding.",null,ORANGE);menuRow(c,"info","Software licenses","MapLibre Native and bundled software",this::showMapLicenses,ORANGE);menuRow(c,"map","Map attribution","OpenFreeMap · OpenMapTiles · OpenStreetMap",()->new AlertDialog.Builder(this).setTitle("Map attribution").setMessage("© OpenStreetMap contributors · OpenMapTiles · OpenFreeMap. Basemaps use the internet or saved areas.").setPositiveButton("OpenFreeMap",(d,w)->startActivity(new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://openfreemap.org/")))).setNegativeButton("Back",null).show(),ORANGE);
     }
 
     private void chooseAppearanceMode(String mode){
