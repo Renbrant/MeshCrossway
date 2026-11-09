@@ -72,7 +72,7 @@ footer{padding:25px 18px;text-align:center;font-size:12px;color:var(--muted)}
 <form id="area-form"><label>Name<input name="name" maxlength="80" required placeholder="Mountain trip"></label>
 <div class="grid3"><label>North<input name="north" type="number" step="any" min="-90" max="90" required></label><label>South<input name="south" type="number" step="any" min="-90" max="90" required></label><label>West<input name="west" type="number" step="any" min="-180" max="180" required></label></div>
 <div class="grid3"><label>East<input name="east" type="number" step="any" min="-180" max="180" required></label>
-<label>Maximum zoom<input name="zoom" type="number" min="0" max="17" value="12" required></label>
+<label>Maximum zoom<input name="zoom" type="number" min="1" max="15" value="12" required></label>
 <label>Style<select name="style"><option value="dark">Dark</option><option value="light">Light</option></select></label></div>
 <p class="hint">Enter bounds for the area you want; existing regions show their coordinates below. Map download requires internet on the phone.</p>
 <button class="primary" type="submit">Download to phone</button></form>
