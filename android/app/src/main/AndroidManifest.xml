@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Remote workspace is an opt-in, phone-hosted local HTTPS server. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <application android:theme="@style/AppTheme" android:label="MeshCrossway" android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules" tools:targetApi="s" android:supportsRtl="true" android:icon="@drawable/ic_launcher">
         <activity android:name="com.meshcrossway.android.MainActivity" android:exported="true">
