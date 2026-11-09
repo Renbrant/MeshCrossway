@@ -46,6 +46,7 @@ final class RemoteWorkspace extends NanoHTTPD {
         return "alias="+tlsAliasCalls+" last="+tlsLastAlias+
             " cert="+tlsCertCalls+" key="+tlsKeyCalls;
     }
+    SSLContext tlsContext; // Package-local for isolated Android TLS smoke tests.
     private int failures;
     private long lockedUntil;
 
@@ -155,6 +156,7 @@ final class RemoteWorkspace extends NanoHTTPD {
         };
         SSLContext tls=SSLContext.getInstance("TLS");
         tls.init(new KeyManager[]{serverKeys},null,RANDOM);
+        tlsContext=tls;
         // TLS 1.2 supports RSA PKCS#1 signatures on Android Keystore keys across API 26+.
         // TLS 1.3 would require RSA-PSS permission and provider support.
         makeSecure(tls.getServerSocketFactory(),new String[]{"TLSv1.2"});
