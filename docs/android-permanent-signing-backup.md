@@ -32,7 +32,7 @@ To get the signer fingerprint (enter the password when requested):
 
     keytool -list -v -keystore MeshCrossway-release.p12 -alias meshcrossway-release
 
-Publish by running Actions > Android permanent-key release > Run workflow, from the main branch, and entering the version (0.2.3). The workflow refuses publication unless the five secrets exist, the version matches the Gradle app, and the signed APK's SHA-256 signer certificate matches the pinned fingerprint. A release cannot overwrite an existing version tag.
+Publish by running Actions > Android permanent-key release > Run workflow, selecting the **baseline/android-0.1.0** branch (this is the Android app source branch; `main` hosts the site), and entering the version (0.2.3). The workflow refuses publication unless the five secrets exist, the version matches the Gradle app, and the signed APK's SHA-256 signer certificate matches the pinned fingerprint. A release cannot overwrite an existing version tag.
 
 **Never publish a CI debug APK as a public release again.** Keep the .p12 for every future Android version; losing it breaks compatibility.
 
@@ -42,13 +42,45 @@ The original debug signing key is no longer available through the published APK.
 
 **Before uninstalling the existing version**, preserve its data outside the private app folder. Existing Android 0.2.2 can export Settings > Data & backup > Export history JSON, plus individual GPX tracks. The history JSON includes both mesh histories, favorites and local points; it does not include the complete track database or all interface preferences.
 
-For a more complete one-time recovery, the repository includes an optional extraction script that can read the old app's full private databases *while it is installed and still debuggable*. With Python 3.9+, Android Platform Tools, USB debugging enabled and the phone connected:
+## Easiest ADB backup on Windows (Galaxy S25 and other Android devices)
 
-    python scripts/migrate_android_debug_install.py --output MeshCrossway-complete-migration.zip
+**You can do this while version 0.2.2 is still installed. Do not uninstall it.** This is a one-time backup of the *installed app*, not a new APK installation.
 
-The script uses adb run-as locally, force-stops the installed debug app for a consistent snapshot, exports the history/track databases and radios/ui/map preferences, and writes a ZIP that can be imported into 0.2.3. The script never uploads anything. If run-as is blocked or the installed APK is not debuggable, this approach cannot read the data; do not uninstall until you have appropriate backups.
+1. On the Windows PC, install [official Android Platform Tools](https://developer.android.com/tools/releases/platform-tools) (the `adb.exe` utility) and [Python 3](https://www.python.org/downloads/windows/). Add ADB to PATH, or put the official `platform-tools` directory directly inside your local MeshCrossway project folder.
+2. On the phone, enable **Developer options** (Settings → About phone → Software information → tap Build number seven times) and then **USB debugging** in Developer options. Connect the phone to the PC by USB, unlock it, and approve the computer's debugging authorization.
+3. Download/clone this repository's **Android source branch** `baseline/android-0.1.0`. In Windows Explorer double-click `scripts/MeshCrossway-Backup-Windows.cmd`. The batch launcher detects Python and ADB; no command-line typing or Android root access is necessary.
+4. The utility first verifies the device connection and access to the *debuggable* MeshCrossway package `com.meshcrossway.mobile`. Only then does it temporarily **force-stop** the application to snapshot its SQLite databases and preferences. It **never** uninstalls, wipes, installs or sends data to any server. Your radios may disconnect until the next time you open the app.
+5. A timestamped file, such as `MeshCrossway-migration-20261109-190000-UTC.zip`, is written in **`%USERPROFILE%\MeshCrossway-Backups`**. The script checks SQLite integrity, counts records, validates ZIP CRCs, manifests, settings and backup schemas, and prints the ZIP's SHA-256. It never prints private message content or locations.
+6. **Verify and keep a second copy** of this ZIP outside the app and preferably on another local drive. You can verify a saved file again by opening Command Prompt in the repository and running:
 
-**Verify the ZIP before uninstalling**: it must open and contain manifest.json, settings.json, history.json and tracks.json. Save it in a secure location outside the app. After installing the permanently signed 0.2.3 APK, select Settings > Data & backup > Restore complete backup. It merges records without deleting existing history or tracks. Bluetooth/location permissions from the Android operating system must be granted again.
+       scripts\MeshCrossway-Backup-Windows.cmd verify "C:\Users\YourUser\MeshCrossway-Backups\YOUR-BACKUP.zip"
+
+   Or independently using:
+
+       python scripts/migrate_android_debug_install.py --verify-only "C:\path\backup.zip"
+
+7. Once a **permanently signed** Android 0.2.3 release is actually published, you can install it and use **Settings → Data & backup → Restore complete backup** to import the ZIP. **Do not uninstall the installed app until the backup is saved, inspected and your migration path is confirmed.** The old/new signature mismatch still makes this a one-time migration.
+
+The script is fully offline and does not require internet after Python and Platform Tools have been installed. It never uploads contacts or location. If ADB reports `run-as: Package is not debuggable`, the installed APK is not an accessible debug build; no script can bypass Android security safely. Use the old app's **Export history JSON** and individual **Export GPX** functions instead, and keep the old installation until sufficient backups exist.
+
+The ZIP is **unencrypted**. It includes private chats, GPS tracks and device preferences, and should never be attached to a public GitHub issue or uploaded to a public service. The tool does not back up downloaded MapLibre tiles, Android OS permission grants, hardware Bluetooth pairings or the Android Keystore. Subsequent same-signature updates preserve the app's private tiles, but a full uninstall requires downloading offline regions again.
+
+**Limits of verification:** passing ZIP/SQLite checks does not guarantee that every record will import. The final acceptance check is to restore it and compare message, favorites and track counts. The script itself has no automatic uninstall/restore step by design.
+
+## Future updates via ADB (without uninstalling)
+
+Once Android 0.2.3 has been installed with the **permanent signing key**, downloading later official APKs and updating by ADB is easy:
+
+1. On Windows, connect the phone using the same authorized USB debugging connection.
+2. Download the next official **signed** MeshCrossway APK (0.2.4 or later).
+3. Drag the APK onto `scripts/MeshCrossway-Update-Windows.cmd`, or open Command Prompt and run:
+
+       scripts\\MeshCrossway-Update-Windows.cmd "C:\\path\\MeshCrossway-0.2.4.apk"
+
+4. The launcher runs only `adb install -r`, which requests an in-place replacement. **No `adb uninstall`, `pm clear` or reset is used.** If the APK has a different signing certificate or incompatible package ID, Android rejects the update and the old installation/data remain intact. Never uninstall to get around that error.
+5. Reopen the app to confirm both radios, favorites, downloaded offline regions and tracks are present.
+
+This update helper **does not bypass Android's certificate verification**. It cannot convert an already installed 0.2.2 debug build to a newly signed 0.2.3 build in place. For that one-time transition, first use the complete ADB backup described above and the new app's Restore complete backup feature.
 
 ## Normal upgrades after the permanent-key release
 
