@@ -26,7 +26,7 @@ function renderHome(){
   const card=element("section",undefined,"card");
   card.style.borderTop="3px solid "+(radio.network==="mt"?"#ff8a24":"#6cbde6");
   card.append(element("h2",radio.name),element("strong",radio.status+" · "+(radio.device||"Device not chosen"),"metric"));
-  card.append(element("p",radio.nodes+" contacts · "+radio.unread+" unread · "+radio.channels.length+" channels"));
+  card.append(element("p",radio.nodes+" contacts · "+radio.unread+" unread · "+radio.channels.filter(c=>c.enabled).length+" channels"));
   const shortcuts=element("div",undefined,"actions");
   shortcuts.append(btn("Chats",()=>{app.network=radio.network;app.messageView="chats";app.topic="";showTab("messages");}));
   shortcuts.append(btn("Channels",()=>{app.network=radio.network;app.messageView="channels";app.topic="";showTab("messages");}));
