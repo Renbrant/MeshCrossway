@@ -1,12 +1,12 @@
-# MeshCrossway Android — 0.2.4 beta
+# MeshCrossway Android — 0.2.5 beta
 
-> **Version 0.2.4 is published with the same permanent release signing certificate as 0.2.3.** Starting from a clean installation? Install the APK directly; **no ADB, ZIP or migration is necessary.** Future official APKs with the same certificate can install over this version, retaining locally stored messages, settings, favorites, GPS tracks, and offline maps. **Do not uninstall or clear app data to update.**
+> **Version 0.2.5 is published with the same permanent release signing certificate as 0.2.3/0.2.4.** Starting from a clean installation? Install the APK directly; **no ADB, ZIP or migration is necessary.** Future official APKs with the same certificate can install over this version, retaining locally stored messages, settings, favorites, GPS tracks, and offline maps. **Do not uninstall or clear app data to update.**
 
 > Only people who still have data on older debug-signed 0.2.2-or-earlier builds need an optional one-time migration. See the [migration guide](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md). This release is still a beta.
 
 > **Public beta for testing. Not version 1.0.0 and not a production release.**
 
-[Download MeshCrossway-0.2.4.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.4/MeshCrossway-0.2.4.apk) · [Release notes and SHA256SUMS.txt](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.4) · [Android download page](https://renbrant.github.io/MeshCrossway/android/)
+[Download MeshCrossway-0.2.5.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.5/MeshCrossway-0.2.5.apk) · [Release notes and SHA256SUMS.txt](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.5) · [Android download page](https://renbrant.github.io/MeshCrossway/android/)
 
 ## Requirements
 
@@ -26,18 +26,26 @@ Heltec V3 and a Samsung S25 are used in development. Other phone, board and firm
 4. In Settings, choose each radio and let synchronization complete. Confirm both network status indicators independently.
 5. If connection fails, include the Connection details output in a bug report after removing private information.
 
-**Permanent signing started with 0.2.3 and is retained in 0.2.4.** Its signature SHA-256 is pinned and checked in the GitHub release workflow. All future releases must reuse that certificate. Old debug-signed builds cannot be replaced in place with 0.2.3; if you still have data in an old build, back it up before the one-time migration. Never uninstall to force a future update.
+**Permanent signing started with 0.2.3 and is retained in 0.2.5.** Its signature SHA-256 is pinned and checked in the GitHub release workflow. All future releases must reuse that certificate. Old debug-signed builds cannot be replaced in place with 0.2.3; if you still have data in an old build, back it up before the one-time migration. Never uninstall to force a future update.
 
-SHA-256: verify the downloaded `MeshCrossway-0.2.4.apk` against the release's `SHA256SUMS.txt` asset. The `SIGNING-CERT-SHA256.txt` asset records the permanent APK signing certificate fingerprint.
+SHA-256: verify the downloaded `MeshCrossway-0.2.5.apk` against the release's `SHA256SUMS.txt` asset. The `SIGNING-CERT-SHA256.txt` asset records the permanent APK signing certificate fingerprint.
 ## Included in this beta
 
-**New in 0.2.4:** Settings → Appearance & colors now offers System, Color, Gradient (Linear/Mesh), and Photo with Dim/Blur. Selections are saved on the phone across normal updates. **From 0.2.3:** permanent release APK signing, complete history/preferences/tracks ZIP backup and restore, and legacy GPX import. **From 0.2.2:** Messages now has independent **Chats, Channels and Nodes** lists for both radios. Channels appear even without a message history, and selecting a messageable node starts a direct chat. Offline Maps has a **visual map with pan/zoom and Draw area rectangle**, maximum offline zoom, estimated tile limits and saved-region overlays. The 0.2.1 short numeric PIN remains unchanged. The 0.2.0 local HTTPS workspace, independent Meshtastic/MeshCore browser messaging, offline regions and track folders remain. The paired Home cards from 0.1.1 are retained. This does not bridge or relay mesh traffic.
+**New in 0.2.5:** Home opens with side-by-side Meshtastic and MeshCore radio cards, Bluetooth RSSI bars/dBm for each and a tighter Nodes/Chats/Channels grid without duplicate headings. **From 0.2.4:** Settings → Appearance & colors offers System, Color, Gradient (Linear/Mesh), and Photo with Dim/Blur. Selections are saved on the phone across normal updates. **From 0.2.3:** permanent release APK signing, complete history/preferences/tracks ZIP backup and restore, and legacy GPX import. **From 0.2.2:** Messages now has independent **Chats, Channels and Nodes** lists for both radios. Channels appear even without a message history, and selecting a messageable node starts a direct chat. Offline Maps has a **visual map with pan/zoom and Draw area rectangle**, maximum offline zoom, estimated tile limits and saved-region overlays. The 0.2.1 short numeric PIN remains unchanged. The 0.2.0 local HTTPS workspace, independent Meshtastic/MeshCore browser messaging, offline regions and track folders remain. The paired Home cards from 0.1.1 are retained. This does not bridge or relay mesh traffic.
 
 **Previous debug-signed beta:** [Android 0.2.2](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.2). **Other older betas:** [Android 0.2.1](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1), [Android 0.2.0](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.0), [Android 0.1.1](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.1) and [0.1.0](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.0) remain available.
 
 Independent dual BLE connections; chats, channels and contacts; a map with right-side icons and nonmodal lower panels; optional node grouping in Layers; tracks, GPX, POIs and offline map areas; persistent message history and JSON import/export. Each network keeps its own messages, identities and routing. There is no bridging.
 
 The app uses the phone's location. Track recording does not automatically broadcast your location to either mesh. Offline map availability depends on the successfully downloaded area, source and zoom levels; test the area without internet before a trip.
+
+## Compact Home and radio BLE signal (0.2.5)
+
+Home now begins with **two radio cards**, one for Meshtastic and one for MeshCore, in their permanent orange/cyan identities. The redundant `MT ready · MC ready` strip, global `Dual mesh dashboard` summary and repeated section headings were removed. Nodes, Chats and Channels remain side-by-side with tighter spacing. **Remote Access** remains available further down, along with GPS and Tracks.
+
+Each radio card measures **Bluetooth RSSI** from the phone's actual connected device (around every 20 seconds during idle GATT periods). Bars and dBm describe only the Bluetooth connection between the phone and its radio, **not LoRa signal strength or network range**. When unavailable, the card says BLE signal unavailable. After disconnection, it may show a muted last-known reading associated with that same radio; old measurements are not treated as live.
+
+**Install over 0.2.4** with the same signing key to retain all chats, saved radios, favorites, tracks, themes and maps. Do **not** uninstall to update.
 
 ## Appearance & colors (0.2.4)
 
@@ -50,7 +58,7 @@ Under **Settings → Appearance & colors**, choose one of four themes inspired b
 
 Theme preferences live in existing private Android storage and **survive installing the next version over 0.2.4**. Photo mode stores a private re-encoded image copy (without original EXIF metadata) and does not upload it. Meshtastic remains orange and MeshCore remains blue wherever these colors denote network identity. The computer browser workspace currently retains its own styling. A complete ZIP backup includes theme preferences, but not the photo image itself; after uninstalling, reselect that photo.
 
-**Update in place:** If you already have 0.2.3, download the 0.2.4 APK and tap **Update**, not Uninstall. Do not clear app data. The verified permanent certificate and package ID are unchanged.
+**Update in place:** If you already have 0.2.4, download the 0.2.5 APK and tap **Update**, not Uninstall. Do not clear app data. The verified permanent certificate and package ID are unchanged.
 
 ## Remote Access from a computer
 
@@ -109,17 +117,18 @@ Private messages, old backlog, direct-routing and unsupported/truncated MeshCore
 | 0.2.2 | Separate web Chats, Channels, Nodes and visual offline map selection; debug-signed |
 | 0.2.3 | First permanent-signed beta; full ZIP backup/restore and GPX import |
 | 0.2.4 | System, Color, Gradient and Photo appearance personalization |
-| 0.2.5, 0.2.6, etc. | Fixes and small improvements |
+| 0.2.5 | Compact Home, real per-radio BLE RSSI indicators and dense card layout |
+| 0.2.6, 0.2.7, etc. | Fixes and small improvements |
 | 0.3.0, 0.4.0, etc. | Future substantial changes; patch resets to zero |
 | 1.0.0 | First production release after core scope and stability acceptance |
 
-All 0.x versions remain in development. The earlier alpha02–alpha07 public-looking numbers were development iteration labels, not releases in the new sequence. Android versionCode remains strictly increasing (0.1.0 uses 8, 0.1.1 uses 9, 0.2.0 uses 10, 0.2.1 uses 11, 0.2.2 uses 12, 0.2.3 uses 13, 0.2.4 uses 14). Controller firmware keeps its independent numbering and recovery images.
+All 0.x versions remain in development. The earlier alpha02–alpha07 public-looking numbers were development iteration labels, not releases in the new sequence. Android versionCode remains strictly increasing (0.1.0 uses 8, 0.1.1 uses 9, 0.2.0 uses 10, 0.2.1 uses 11, 0.2.2 uses 12, 0.2.3 uses 13, 0.2.4 uses 14, 0.2.5 uses 15). Controller firmware keeps its independent numbering and recovery images.
 
 ## Help test
 
 Check initial connection and reconnection to both radios, sending/receiving, unread state, map grouping, offline areas, tracks and backup/import on your setup. [Report a bug](https://github.com/Renbrant/MeshCrossway/issues) with app version, phone/Android version, each radio model/firmware, steps, expected result and actual result. Redact keys, personal messages and precise locations.
 
-Wardriving/MeshMapper upload is a future possibility and is **not included** in 0.2.4.
+Wardriving/MeshMapper upload is a future possibility and is **not included** in 0.2.5.
 
 ## Development references
 
