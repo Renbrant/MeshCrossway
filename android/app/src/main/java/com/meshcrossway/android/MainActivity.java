@@ -220,13 +220,36 @@ public final class MainActivity extends Activity {
     }
     private void showRemoteCredentials(){
         if(service==null||service.remoteWorkspace==null)return;
-        String message="Address: "+service.remoteUrl()+"\n\nAccess PIN:\n"+
-            service.remoteCode()+"\n\nTLS certificate SHA-256 fingerprint:\n"+
-            service.remoteFingerprint()+"\n\nType this PIN into your computer browser. "+
-            "Verify the browser certificate fingerprint against the one shown here. "+
-            "Use only trusted local Wi-Fi. Changing the PIN signs out existing sessions.";
+        LinearLayout details=column();
+        details.setPadding(dp(22),dp(8),dp(22),dp(4));
+        details.addView(text("Open this address on your computer:",13,MUTED));
+        space(details,4);
+        TextView url=text(service.remoteUrl(),16,WHITE);
+        url.setTextIsSelectable(true);
+        details.addView(url);
+        space(details,15);
+        details.addView(text("ACCESS PIN",12,MUTED));
+        space(details,3);
+        TextView displayedPin=text(service.remoteCode(),30,ORANGE);
+        displayedPin.setTypeface(null,Typeface.BOLD);
+        displayedPin.setTextIsSelectable(true);
+        details.addView(displayedPin);
+        space(details,9);
+        details.addView(text("Enter this same PIN in the browser. Only use on trusted local Wi-Fi.",13,MUTED));
+        space(details,13);
+        TextView fingerprintLink=text("View HTTPS certificate fingerprint",13,WHITE);
+        fingerprintLink.setPadding(dp(8),dp(10),dp(8),dp(10));
+        fingerprintLink.setBackground(surface(PANEL));
+        fingerprintLink.setOnClickListener(v->{
+            if(service==null||service.remoteWorkspace==null)return;
+            new AlertDialog.Builder(this).setTitle("HTTPS certificate fingerprint")
+                .setMessage("Confirm that the certificate fingerprint shown by your browser matches this value:\n\n"+
+                    service.remoteFingerprint())
+                .setPositiveButton("Back",null).show();
+        });
+        details.addView(fingerprintLink);
         new AlertDialog.Builder(this).setTitle("Remote Access · Active")
-            .setMessage(message)
+            .setView(details)
             .setNeutralButton("Copy address",(dialog,which)->{
                 ((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE))
                     .setPrimaryClip(ClipData.newPlainText("MeshCrossway remote URL",service.remoteUrl()));
