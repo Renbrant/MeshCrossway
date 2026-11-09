@@ -111,6 +111,32 @@ public final class SmokeInstrumentation extends Instrumentation {
             public void checkServerTrusted(java.security.cert.X509Certificate[] chain,String type){}
         };
         ssl.init(null,new javax.net.ssl.TrustManager[]{permissiveTestManager},new java.security.SecureRandom());
+        // Isolate Android TLS crypto from the NanoHTTPD request parser. Capture
+        // the server-side exception, which is otherwise hidden behind a client EOF.
+        java.util.concurrent.atomic.AtomicReference<Throwable> serverError=new java.util.concurrent.atomic.AtomicReference<>();
+        javax.net.ssl.SSLServerSocket tlsListener=(javax.net.ssl.SSLServerSocket)
+            workspace.tlsContext.getServerSocketFactory().createServerSocket(0,1,
+                java.net.InetAddress.getByName("127.0.0.1"));
+        tlsListener.setEnabledProtocols(new String[]{"TLSv1.2"});
+        Thread tlsServer=new Thread(()->{
+            try(javax.net.ssl.SSLSocket accepted=(javax.net.ssl.SSLSocket)tlsListener.accept()){
+                accepted.startHandshake();
+            }catch(Throwable error){serverError.set(error);}
+        },"TLS smoke server");
+        tlsServer.start();
+        Throwable clientError=null;
+        try(javax.net.ssl.SSLSocket client=(javax.net.ssl.SSLSocket)
+            ssl.getSocketFactory().createSocket("127.0.0.1",tlsListener.getLocalPort())){
+            client.setEnabledProtocols(new String[]{"TLSv1.2"});
+            client.setSoTimeout(6000);
+            client.startHandshake();
+        }catch(Throwable error){clientError=error;}
+        tlsServer.join(8000);
+        tlsListener.close();
+        if(clientError!=null||serverError.get()!=null)
+            throw new AssertionError("Isolated TLS failed: server="+serverError.get()+
+                " client="+clientError+"; "+workspace.tlsDiagnostics(),clientError);
+
         try{
             String base="https://127.0.0.1:8080";
             java.util.function.Function<String,javax.net.ssl.HttpsURLConnection> connect=path->{
