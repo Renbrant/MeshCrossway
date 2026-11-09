@@ -194,7 +194,7 @@ public final class SmokeInstrumentation extends Instrumentation {
             invalidated.disconnect();
             boolean rejected=false;
             try{workspace.changePin("ABC");}catch(IllegalArgumentException invalid){rejected=true;}
-            check(rejected&&workspace.accessPin().equals("012345"),"Invalid changed PIN replaced active PIN");
+            check(rejected&&workspace.accessPin().equals("0123"),"Invalid changed PIN replaced active PIN");
             javax.net.ssl.HttpsURLConnection newLogin=connect.apply("/api/login");
             newLogin.setRequestMethod("POST");newLogin.setDoOutput(true);
             newLogin.setRequestProperty("Content-Type","application/json");
