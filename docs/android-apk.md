@@ -1,7 +1,9 @@
 # MeshCrossway Android — 0.2.2 beta
 
-> **Update safety:** Android 0.2.3 source code is merged and automated tests passed, but its permanent-key APK release is still blocked pending private signing-key setup. Do **not uninstall** your existing 0.2.2 build before exporting history and GPX or taking the optional full ADB snapshot. Once 0.2.3 is permanently signed, all future official updates with the same signing certificate will install over it and retain app-private settings, favorites, tracks and offline maps. [Migration instructions](android-permanent-signing-backup.md) · [Signing setup issue #195](https://github.com/Renbrant/MeshCrossway/issues/195).
+> **Update safety:** Android 0.2.3 source code is merged and automated tests passed, but its permanent-key APK release is still blocked pending private signing-key setup. Do **not uninstall** your existing 0.2.2 build before exporting history and GPX or taking the optional full ADB snapshot. Once 0.2.3 is permanently signed, all future official updates with the same signing certificate will install over it and retain app-private settings, favorites, tracks and offline maps. [Migration instructions](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md) · [Signing setup issue #195](https://github.com/Renbrant/MeshCrossway/issues/195).
 
+
+> **Use ADB on Windows:** [Download the Android source ZIP](https://github.com/Renbrant/MeshCrossway/archive/refs/heads/baseline/android-0.1.0.zip), unzip it, connect the phone with USB debugging authorized, then run `scripts/MeshCrossway-Backup-Windows.cmd`. It saves a verified full backup ZIP under `%USERPROFILE%\\MeshCrossway-Backups`. Do not uninstall 0.2.2 until a usable backup exists. After the first permanent-key release, `scripts/MeshCrossway-Update-Windows.cmd` can install compatible signed APKs using `adb install -r` without deleting data.
 
 > **Public beta for testing. Not version 1.0.0 and not a production release.**
 
