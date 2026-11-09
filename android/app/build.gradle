@@ -7,8 +7,8 @@ android {
         applicationId 'com.meshcrossway.mobile'
         minSdk 26
         targetSdk 35
-        versionCode 9
-        versionName '0.1.1'
+        versionCode 10
+        versionName '0.2.0'
         testInstrumentationRunner 'com.meshcrossway.android.SmokeInstrumentation'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
@@ -21,4 +21,5 @@ dependencies {
     implementation 'org.maplibre.gl:android-sdk:11.13.5'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'com.squareup.okio:okio-jvm:3.6.0'
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
 }
