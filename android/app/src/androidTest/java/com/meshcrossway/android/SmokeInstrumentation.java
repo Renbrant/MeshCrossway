@@ -98,7 +98,13 @@ public final class SmokeInstrumentation extends Instrumentation {
         waitUntil(()->{try{return serviceField.get(activity)!=null;}catch(Exception e){return false;}},
             "RadioService did not bind for HTTPS test");
         RadioService service=(RadioService)serviceField.get(activity);
-        RemoteWorkspace workspace=new RemoteWorkspace(service,"127.0.0.1");
+        check(RemoteWorkspace.validPin("482731"),"Six-digit PIN rejected");
+        check(RemoteWorkspace.validPin("0123"),"Short user PIN rejected");
+        check(!RemoteWorkspace.validPin("123")&&!RemoteWorkspace.validPin("123456789")
+            &&!RemoteWorkspace.validPin("12a4")&&!RemoteWorkspace.validPin(""),"Invalid PIN accepted");
+        check(RemoteWorkspace.newShortPin().matches("[0-9]{6}"),"Generated PIN must be six numeric digits");
+        RemoteWorkspace workspace=new RemoteWorkspace(service,"127.0.0.1","482731");
+        check(workspace.accessPin().equals("482731"),"Chosen PIN not applied");
         workspace.start(3000,false);
         javax.net.ssl.SSLContext ssl=javax.net.ssl.SSLContext.getInstance("TLS");
         // TEST ONLY: trust the locally generated test certificate; production browser must
@@ -180,6 +186,24 @@ public final class SmokeInstrumentation extends Instrumentation {
             csrf.setRequestProperty("Cookie",cookie.split(";",2)[0]);
             check(csrf.getResponseCode()==403,"Mutating HTTP endpoint accepted request without CSRF header");
             csrf.disconnect();
+            workspace.changePin("012345");
+            check(workspace.accessPin().equals("012345"),"Changed PIN not applied");
+            javax.net.ssl.HttpsURLConnection invalidated=connect.apply("/api/state");
+            invalidated.setRequestProperty("Cookie",cookie.split(";",2)[0]);
+            check(invalidated.getResponseCode()==401,"Changing PIN did not revoke prior browser sessions");
+            invalidated.disconnect();
+            boolean rejected=false;
+            try{workspace.changePin("ABC");}catch(IllegalArgumentException invalid){rejected=true;}
+            check(rejected&&workspace.accessPin().equals("012345"),"Invalid changed PIN replaced active PIN");
+            javax.net.ssl.HttpsURLConnection newLogin=connect.apply("/api/login");
+            newLogin.setRequestMethod("POST");newLogin.setDoOutput(true);
+            newLogin.setRequestProperty("Content-Type","application/json");
+            byte[] newPayload=new org.json.JSONObject().put("code","012345").toString()
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            newLogin.setFixedLengthStreamingMode(newPayload.length);
+            try(OutputStream out=newLogin.getOutputStream()){out.write(newPayload);}
+            check(newLogin.getResponseCode()==200,"Changed PIN cannot log in");
+            newLogin.disconnect();
         }catch(Throwable failure){
             throw new AssertionError("HTTPS diagnostics ("+workspace.tlsDiagnostics()+")",failure);
         }finally{workspace.stop();}
