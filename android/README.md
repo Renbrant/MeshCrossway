@@ -20,6 +20,31 @@ The browser workspace includes an independent Meshtastic/MeshCore dashboard, Cha
 
 Remote Access is **off by default** and binds only to the local Wi-Fi IP. It has no internet relay, no open port forwarding and no unattended remote login. Stop it from the phone when finished. The PIN is not stored between server activations: a fresh six-digit suggestion is generated every time. Use **Change PIN** at any time to immediately log out browser sessions and require the new PIN. The TLS private key is encrypted at rest by an AES-GCM key held in Android Keystore.
 
+## Recommended from a clean installation: install once, then update in place
+
+If you have **already uninstalled** the previous debug-signed 0.2.2 and are
+starting fresh, **do not run the ADB migration or ZIP restore process.** There
+is nothing left in the old app to migrate. Wait for the first
+**permanently signed** 0.2.3 APK before creating new messages and tracks.
+
+After that, normal Android updates signed with the **same certificate**, with
+the same package ID and increasing versionCode, preserve local SQLite histories,
+favorite flags, selected Meshtastic/MeshCore radios, settings, track databases
+and all existing MapLibre offline regions **automatically**. The user simply
+opens the official new APK and chooses **Update** over the existing install.
+Do not choose Uninstall, Clear storage or Clear data.
+
+The one-time private release-signing key setup is a **maintainer task**, not a
+requirement for app users to install ADB or Python. The current release
+workflow blocks publication if the permanent key is missing or different.
+
+Optional advanced export/restore and ADB recovery tools remain available for
+older devices that **still have an incompatible debug APK installed**, or for
+manual migration to another phone. They are NOT the normal update procedure.
+An uninstall deliberately destroys the app-private data; no app can silently
+read those erased files later. Android Auto Backup is currently disabled for
+private messages and location histories, and is not needed for normal updates.
+
 ## New in 0.2.3 — data durability and portable recovery
 
 Public Android APKs will use **one permanent release signing identity**, so future updates can be installed over the existing app without uninstalling or erasing private data. The release workflow refuses to publish an APK unless its certificate matches the pinned long-lived signer fingerprint; the maintainer must configure the private signing-key GitHub secrets once.
