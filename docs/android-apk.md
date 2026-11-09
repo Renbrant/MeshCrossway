@@ -8,7 +8,7 @@ Android is the priority for a broadly accessible MeshCrossway controller. The ES
 
 On a Samsung Galaxy S25, the first APK (`0.1.0-alpha01`) was installed and displayed **Protocol verified** for two different Heltec V3 radios simultaneously: Meshtastic PhoneAPI configuration and MeshCore Companion identity. This is user-reported hardware evidence of initial simultaneous connection/protocol identification, initial evidence only. The user subsequently tested alpha02 on the same S25 with both radios Ready, 203 Meshtastic nodes and 350 MeshCore contacts/6 channels. Both radios accepted outgoing text; a MeshCore weather bot replied to an app request. Initial connection required repeated attempts. Long-duration background reliability and other phone models remain unverified.
 
-## Current functional reference: 0.3.1-alpha04
+## Earlier functional reference: 0.3.1-alpha04
 
 Accepted by the project maintainer on November 8, 2026 as the Android functional reference for subsequent changes. Preserve this tested APK as a recovery reference; this acceptance does not establish production stability.
 
@@ -91,7 +91,7 @@ cd android
 
 The dependency-free JVM fixtures test bootstrapping, channel/DM encoding, Meshtastic PKI, ACK ordering, malformed frames, byte limits, replay IDs, network isolation and unread aggregation. Device instrumentation exercises the real SQLite schema (duplicates, network/radio separation, monotonic delivery state, read markers, reopening and draft persistence), navigation and draft preservation during Activity recreation. Neither replaces physical-radio acceptance.
 
-The **Android alpha APK** GitHub Actions workflow builds/lints, runs JVM fixtures, uploads a named APK plus SHA-256 checksum, and runs the device/storage smoke test on Android API 29 and 35 emulators. Download the latest successful run's `MeshCrossway-Android-0.4.0-alpha05` artifact under **Actions → Artifacts**, extract its ZIP and install the APK inside.
+The **Android alpha APK** GitHub Actions workflow builds/lints, runs JVM fixtures, uploads a named APK plus SHA-256 checksum, and runs the device/storage smoke test on Android API 29 and 35 emulators. Download the latest successful run's `MeshCrossway-Android-0.5.0-alpha06` artifact under **Actions → Artifacts**, extract its ZIP and install the APK inside.
 
 Outputs: `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk` for phones and `app-x86_64-debug.apk` for emulators. CI runs API 29/35 SQLite, backup migration/import, navigation, native dual-map fixture and offline-region lifecycle smoke tests. Fixture maps do not require a public tile service. Successful automated checks do not replace physical-radio testing.
 
@@ -227,3 +227,15 @@ points and map rendering are checked in instrumentation. Real-phone usability
 and simultaneous physical BLE sessions still need maintainer acceptance of this
 new interface. The JSON backup and separate GPX export remain under Settings →
 Data & backup; export before uninstalling an incompatible signed CI build.
+
+
+### Alpha06 validation and APK
+
+- Tested source: `94aa838136cea562824c33f50c006601119dc710`.
+- [Final Android validation](https://github.com/Renbrant/MeshCrossway/actions/runs/42553954547): protocol/field fixtures, build/lint and API 29/35 instrumentation all passed.
+- Menu tests cover each settings category, return to the index, retained contact search across tabs, and return from nested settings to a chat draft after Activity recreation.
+- Existing history/backup, track/service, offline-area and rendered dual-network marker tests also passed. Emulator screenshots of Home, radio settings, app settings, chat and map were visually inspected.
+- [Download APK ZIP](https://github.com/Renbrant/MeshCrossway/actions/runs/42553954547/artifacts/13645719395): `MeshCrossway-0.5.0-alpha06.apk`, version code 6, `com.meshcrossway.mobile`.
+- APK SHA-256: `60157f96be8cf28de0fd2ea79aeec12e426e298a383aebc65c37a29d83e30b0e`.
+
+This is a new CI debug signature. Export JSON history and required GPX tracks before replacing an incompatible installation. Alpha05 stays the immediate maintainer-reported functional recovery reference. Physical acceptance of the new menu layout on the S25 is still pending.
