@@ -64,12 +64,23 @@ public final class RadioService extends Service {
     String remoteCode(){return remoteWorkspace==null?"":remoteWorkspace.code;}
     String remoteFingerprint(){return remoteWorkspace==null?"":remoteWorkspace.fingerprint;}
     String remoteError="";
+    private final Runnable remoteNetworkWatch=new Runnable(){
+        @Override public void run(){
+            if(remoteWorkspace==null)return;
+            String current=RemoteWorkspace.wifiAddress(RadioService.this);
+            if(!remoteWorkspace.ip.equals(current)){
+                stopRemote();remoteError="Wi-Fi network changed • activate Remote Access again";changed();
+            }else handler.postDelayed(this,10000);
+        }
+    };
     boolean startRemote(){
         if(remoteWorkspace!=null)return true;
         try{
             remoteWorkspace=RemoteWorkspace.start(this);
             remoteTrackBound=bindService(new Intent(this,TrackService.class),remoteTrackConnection,BIND_AUTO_CREATE);
             remoteError="";
+            handler.removeCallbacks(remoteNetworkWatch);
+            handler.postDelayed(remoteNetworkWatch,10000);
             changed();return true;
         }catch(Exception e){
             remoteError="Local HTTPS server unavailable • check Wi-Fi, port 8080 and certificate setup";
@@ -77,7 +88,8 @@ public final class RadioService extends Service {
         }
     }
     void stopRemote(){
-        if(remoteWorkspace!=null){remoteWorkspace.stop();remoteWorkspace=null;}
+        handler.removeCallbacks(remoteNetworkWatch);
+        if(remoteWorkspace!=null){remoteWorkspace.stop();remoteWorkspace=null;MapEngine.pauseDownloads();}
         if(remoteTrackBound){unbindService(remoteTrackConnection);remoteTrackBound=false;}
         remoteTracks=null;remoteError="";changed();
     }
