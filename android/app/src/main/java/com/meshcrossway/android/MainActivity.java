@@ -102,6 +102,8 @@ public final class MainActivity extends Activity {
             }
         }
         key.append(':').append(phoneEnabled());
+        key.append(':').append(service==null?"no-service":service.remoteUrl());
+        if(service!=null)key.append(':').append(service.remoteError);
         if(position.location!=null){
             key.append(':').append(Math.round(position.location.getLatitude()*10000))
                 .append(':').append(Math.round(position.location.getLongitude()*10000))
@@ -159,6 +161,37 @@ public final class MainActivity extends Activity {
         if(chat!=null&&selected==3){messages();ScrollView target=scroll;LinearLayout contents=results;if(target!=null)target.post(()->target.scrollTo(0,bottom?contents.getHeight():y));return;}
         if(selected==0)home();else if(selected==5)settings();else lists();
         ScrollView target=scroll;if(target!=null)target.post(()->target.scrollTo(0,y));
+    }
+    private void remotePanel(){
+        if(service==null){
+            Toast.makeText(this,"Radio service is starting",Toast.LENGTH_SHORT).show();return;
+        }
+        if(service.remoteWorkspace==null){
+            new AlertDialog.Builder(this).setTitle("Remote Access · HTTPS")
+                .setMessage("Host a private workspace on the same Wi-Fi network. A computer must confirm this phone's certificate fingerprint and enter the temporary access code shown on the phone. No internet, relay or port forwarding is required. Keep the access code private.")
+                .setPositiveButton("Enable",(dialog,which)->{
+                    if(service.allowed())startForegroundService(new Intent(this,RadioService.class));
+                    if(service.startRemote())showRemoteCredentials();
+                    else Toast.makeText(this,service.remoteError,Toast.LENGTH_LONG).show();
+                    rebuildContent();
+                }).setNegativeButton("Cancel",null).show();
+        }else showRemoteCredentials();
+    }
+    private void showRemoteCredentials(){
+        if(service==null||service.remoteWorkspace==null)return;
+        String message="Address: "+service.remoteUrl()+"\n\nOne-time session code:\n"+
+            service.remoteCode()+"\n\nTLS certificate SHA-256 fingerprint:\n"+
+            service.remoteFingerprint()+"\n\nVerify the fingerprint displayed by your computer before entering the code. "+
+            "The browser will warn about the local self-signed certificate. "+
+            "Use only trusted devices on a private LAN. Stop access when finished.";
+        new AlertDialog.Builder(this).setTitle("Remote Access · Active")
+            .setMessage(message)
+            .setNeutralButton("Copy address",(dialog,which)->{
+                ((android.content.ClipboardManager)getSystemService(CLIPBOARD_SERVICE))
+                    .setPrimaryClip(ClipData.newPlainText("MeshCrossway remote URL",service.remoteUrl()));
+            })
+            .setNegativeButton("Stop server",(dialog,which)->{service.stopRemote();rebuildContent();})
+            .setPositiveButton("Done",null).show();
     }
     // Home reads the same independent per-radio snapshots as Contacts, Chats and Channels.
     private LinearLayout dashboardRow(){
@@ -236,6 +269,16 @@ public final class MainActivity extends Activity {
         summary.addView(title);
         space(summary,5);
         summary.addView(text(connected+" of 2 radios ready  ·  "+totalUnread+" unread across both networks",13,MUTED));
+        section(results,"REMOTE WORKSPACE");
+        LinearLayout remote=group(results);
+        String remoteUrl=service==null?"":service.remoteUrl();
+        String remoteDetail=remoteUrl.isEmpty()?
+            "Off · tap to enable private HTTPS access on Wi-Fi":
+            remoteUrl+" · tap for access code";
+        menuRow(remote,"settings","Remote Access",remoteDetail,
+            this::remotePanel,remoteUrl.isEmpty()?MUTED:GREEN);
+        if(service!=null&&!service.remoteError.isEmpty())
+            remote.addView(text(service.remoteError,12,RED));
         section(results,"RADIO CONNECTIONS");
         LinearLayout radios=dashboardRow();
         for(RadioProfile profile:RadioProfile.values()){
