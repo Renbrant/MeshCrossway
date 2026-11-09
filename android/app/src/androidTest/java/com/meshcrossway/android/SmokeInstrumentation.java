@@ -186,8 +186,8 @@ public final class SmokeInstrumentation extends Instrumentation {
             csrf.setRequestProperty("Cookie",cookie.split(";",2)[0]);
             check(csrf.getResponseCode()==403,"Mutating HTTP endpoint accepted request without CSRF header");
             csrf.disconnect();
-            workspace.changePin("012345");
-            check(workspace.accessPin().equals("012345"),"Changed PIN not applied");
+            workspace.changePin("0123");
+            check(workspace.accessPin().equals("0123"),"Changed PIN not applied");
             javax.net.ssl.HttpsURLConnection invalidated=connect.apply("/api/state");
             invalidated.setRequestProperty("Cookie",cookie.split(";",2)[0]);
             check(invalidated.getResponseCode()==401,"Changing PIN did not revoke prior browser sessions");
@@ -198,7 +198,7 @@ public final class SmokeInstrumentation extends Instrumentation {
             javax.net.ssl.HttpsURLConnection newLogin=connect.apply("/api/login");
             newLogin.setRequestMethod("POST");newLogin.setDoOutput(true);
             newLogin.setRequestProperty("Content-Type","application/json");
-            byte[] newPayload=new org.json.JSONObject().put("code","012345").toString()
+            byte[] newPayload=new org.json.JSONObject().put("code","0123").toString()
                 .getBytes(java.nio.charset.StandardCharsets.UTF_8);
             newLogin.setFixedLengthStreamingMode(newPayload.length);
             try(OutputStream out=newLogin.getOutputStream()){out.write(newPayload);}
