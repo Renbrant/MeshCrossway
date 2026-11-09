@@ -91,6 +91,71 @@ public final class SmokeInstrumentation extends Instrumentation {
     private void receptionDetails(MainActivity activity)throws Exception{
         java.lang.reflect.Field field=MainActivity.class.getDeclaredField("service");field.setAccessible(true);RadioService service=(RadioService)field.get(activity);Message incoming=message("route-fixture","Route fixture");incoming.sender="Route test";incoming.rx.kind="flood";incoming.rx.observed=true;incoming.rx.width=2;incoming.rx.path="1234abcd";incoming.rx.hops=2;incoming.rx.snr=-3;incoming.rx.rssi=-90;onUi(()->service.history.message(RadioProfile.MESHCORE,"map-mc",incoming));waitUntil(()->service.data(RadioProfile.MESHCORE).messages.stream().anyMatch(m->m.uid.equals("route-fixture")),"Received route fixture not stored");Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);onUi(()->{try{open.invoke(activity,RadioProfile.MESHCORE,"map-mc",incoming.target());}catch(Exception e){throw new RuntimeException(e);}});click(activity,"Route fixture");android.view.accessibility.AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();check(root!=null&&!root.findAccessibilityNodeInfosByText("Message details").isEmpty(),"Tapping received text did not open details");screenshot(activity,"message-route");shell("input keyevent 4");waitForIdleSync();
     }
+    /** Loopback integration: proves Android Keystore HTTPS, auth and independent radio state. */
+    private void remoteSecurity(MainActivity activity)throws Exception{
+        java.lang.reflect.Field serviceField=MainActivity.class.getDeclaredField("service");
+        serviceField.setAccessible(true);
+        waitUntil(()->{try{return serviceField.get(activity)!=null;}catch(Exception e){return false;}},
+            "RadioService did not bind for HTTPS test");
+        RadioService service=(RadioService)serviceField.get(activity);
+        RemoteWorkspace workspace=new RemoteWorkspace(service,"127.0.0.1");
+        workspace.start(3000,false);
+        javax.net.ssl.SSLContext ssl=javax.net.ssl.SSLContext.getInstance("TLS");
+        // TEST ONLY: trust the locally generated test certificate; production browser must
+        // verify the SHA-256 fingerprint displayed by the phone.
+        javax.net.ssl.X509TrustManager permissiveTestManager=new javax.net.ssl.X509TrustManager(){
+            public java.security.cert.X509Certificate[] getAcceptedIssuers(){
+                return new java.security.cert.X509Certificate[0];
+            }
+            public void checkClientTrusted(java.security.cert.X509Certificate[] chain,String type){}
+            public void checkServerTrusted(java.security.cert.X509Certificate[] chain,String type){}
+        };
+        ssl.init(null,new javax.net.ssl.TrustManager[]{permissiveTestManager},new java.security.SecureRandom());
+        try{
+            String base="https://127.0.0.1:8080";
+            java.util.function.Function<String,javax.net.ssl.HttpsURLConnection> connect=path->{
+                try{
+                    javax.net.ssl.HttpsURLConnection conn=(javax.net.ssl.HttpsURLConnection)new java.net.URL(base+path).openConnection();
+                    conn.setSSLSocketFactory(ssl.getSocketFactory());
+                    conn.setHostnameVerifier((host,session)->host.equals("127.0.0.1"));
+                    conn.setConnectTimeout(4000);conn.setReadTimeout(4000);
+                    return conn;
+                }catch(Exception e){throw new RuntimeException(e);}
+            };
+            javax.net.ssl.HttpsURLConnection denied=connect.apply("/api/state");
+            check(denied.getResponseCode()==401,"API allowed unauthenticated data");
+            denied.disconnect();
+            javax.net.ssl.HttpsURLConnection login=connect.apply("/api/login");
+            login.setRequestMethod("POST");login.setDoOutput(true);
+            login.setRequestProperty("Content-Type","application/json");
+            byte[] payload=new org.json.JSONObject().put("code",workspace.code).toString()
+                .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            login.setFixedLengthStreamingMode(payload.length);
+            try(OutputStream out=login.getOutputStream()){out.write(payload);}
+            check(login.getResponseCode()==200,"Local HTTPS login failed");
+            String cookie=login.getHeaderField("Set-Cookie");
+            check(cookie!=null&&cookie.contains("HttpOnly")&&cookie.contains("SameSite=Strict"),
+                "Login cookie is not protected");
+            login.disconnect();
+            javax.net.ssl.HttpsURLConnection authenticated=connect.apply("/api/state");
+            authenticated.setRequestProperty("Cookie",cookie.split(";",2)[0]);
+            check(authenticated.getResponseCode()==200,"Authorized HTTPS state denied");
+            ByteArrayOutputStream response=new ByteArrayOutputStream();
+            try(InputStream in=authenticated.getInputStream()){
+                byte[] buffer=new byte[512];int n;
+                while((n=in.read(buffer))!=-1)response.write(buffer,0,n);
+            }
+            String data=response.toString("UTF-8");
+            check(data.contains("Meshtastic")&&data.contains("MeshCore"),
+                "HTTPS dashboard failed to keep both radios separate");
+            authenticated.disconnect();
+            javax.net.ssl.HttpsURLConnection csrf=connect.apply("/api/logout");
+            csrf.setRequestMethod("POST");
+            csrf.setRequestProperty("Cookie",cookie.split(";",2)[0]);
+            check(csrf.getResponseCode()==403,"Mutating HTTP endpoint accepted request without CSRF header");
+            csrf.disconnect();
+        }finally{workspace.stop();}
+    }
     private void activity()throws Exception{
         MainActivity.mapStyleOverride="asset://map-test-style.json";Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();
         onUi(()->{
@@ -101,7 +166,7 @@ public final class SmokeInstrumentation extends Instrumentation {
             check(find(screen,"MT · CHATS")!=null,"Meshtastic chat card is missing");
             check(find(screen,"MC · CHATS")!=null,"MeshCore chat card is missing");
         });
-        screenshot(activity,"home");
+        screenshot(activity,"home");remoteSecurity(activity);
         for(String page:new String[]{"Contacts","Chats","Channels","Map","Settings","Home"})click(activity,page);menus(activity);recording(activity);maps(activity);mapPanels(activity);click(activity,"Home");receptionDetails(activity);
         Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);onUi(()->{try{open.invoke(activity,RadioProfile.MESHTASTIC,"offline-test",new Target("c:0:test","Test channel","","test",0,true));EditText entry=composer(activity.getWindow().getDecorView());check(entry!=null,"Composer missing");entry.setText("Draft survives rotation 👋");}catch(Exception e){throw new RuntimeException(e);}});
         waitForIdleSync();screenshot(activity,"chat-draft");Method settings=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);settings.setAccessible(true);onUi(()->{try{settings.invoke(activity,"data",null);}catch(Exception e){throw new RuntimeException(e);}});screenshot(activity,"settings-data");
