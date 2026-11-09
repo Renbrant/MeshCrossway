@@ -32,7 +32,7 @@ Rules:
 | UI | LVGL 8, responsive touchscreen, track/POI and node overlays |
 | Connectivity | Concurrent BLE links to Meshtastic and MeshCore radios, plus optional Wi-Fi AP/STA and HTTPS |
 | GNSS | GPS position, tracks, POIs, map centering, and moving markers |
-| Firmware reference | v0.9.32 is an experimental raster-map candidate; v0.9.28 is identified as recommended stable in the firmware README at the time this document was created |
+| Firmware reference | v0.10.5 is the user-selected stable firmware; v0.9.32 is the previous stable recovery image |
 
 **Memory math (not measured runtime usage):**
 

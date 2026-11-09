@@ -175,13 +175,13 @@ build_version() {
 # Deliver the current stable, previous stable, legacy recovery and any newer candidate.
 # Do not rebuild or publish the pre-stable (v0.3 / v0.4 / v0.5) archive.
 # Update these pins whenever a newer hardware build is accepted.
-STABLE_VERSION="v0.9.32"
-STABLE_REF="c83f21adc5a3b35486ed7bd70fa6e5260cc13cce"
-STABLE_SHA256="87abaeb2b6bb9e954e752f9e610cd1150e3ebe7c8d11fe0c2652b98aa06daf2c"
-PREVIOUS_STABLE_VERSION="v0.9.28"
-PREVIOUS_STABLE_REF="37a8caca1ce57e2795be78e7a40012890a6b7147"
-RECOVERY_VERSION="v0.9.25"
-RECOVERY_REF="65f4214b15fe9486a7f07e7471380114bcbf8826"
+STABLE_VERSION="v0.10.5"
+STABLE_REF="4afece0daa608dc2675f1d84eb383bf13931c0ff"
+STABLE_SHA256="04ff93cba20f09d53a338a15d8557b40474bb38089a78512cb9e8ae099dc8f10"
+PREVIOUS_STABLE_VERSION="v0.9.32"
+PREVIOUS_STABLE_REF="c83f21adc5a3b35486ed7bd70fa6e5260cc13cce"
+RECOVERY_VERSION="v0.9.28"
+RECOVERY_REF="37a8caca1ce57e2795be78e7a40012890a6b7147"
 LEGACY_VERSION="v0.9.16"
 LEGACY_REF="d821b78979b3c2b9d716757f0cff02dbf89e776f"
 

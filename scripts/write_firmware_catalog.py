@@ -25,7 +25,7 @@ if version_key(stable)>version_key(latest):
 
 # Only include releases with explicit release approval.
 approved={
-    "v0.9.32":("Selected stable by explicit device acceptance on 2026-11-07. User reports the raster map, pinch zoom and 1.25x map magnification are functioning very well and remain extremely stable. Exact firmware bytes are checksum-pinned.", "Recommended stable / hardware-tested"),
+    "v0.10.5":("Selected stable by explicit user acceptance on 2026-11-09 after device use. Exact compiled firmware bytes are retained and checksum-pinned.", "Recommended stable / hardware-tested"),
     "v0.9.28":("Selected stable by explicit acceptance on 2026-11-05. Exact published image retained: dual radios, street/night maps, orientation lock, node age colors and configurable local retention.", "Recommended stable / hardware-tested"),
     "v0.9.25":("Hardware-tested and selected stable on 2026-11-05. Exact tested binary retained: software-AES map downloads, optional grouping, per-network styles, zoom dismissal and local night view.", "Recommended stable / hardware-tested"),
     "v0.9.16":("Hardware-tested v0.9.16; retain exact published binary.", "Recommended stable / hardware-tested"),
@@ -56,7 +56,7 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if not folder.is_dir():
         continue
     version=folder.name
-    if (version_key(version)<version_key(stable) and version not in ("v0.9.16","v0.9.25","v0.9.28")) or version_key(version)>version_key(latest) or version in blocked:
+    if (version_key(version)<version_key(stable) and version not in ("v0.9.16","v0.9.25","v0.9.28","v0.9.32")) or version_key(version)>version_key(latest) or version in blocked:
         continue
     manifest=folder/"manifest.json"
     info_file=folder/"build-info.json"
@@ -77,18 +77,18 @@ for folder in sorted((root/"versions").iterdir(),key=lambda x:version_key(x.name
     if version==stable:
         summary,label=approved[version]
         status="hardware-tested"
-    elif version in ("v0.9.16","v0.9.25","v0.9.28"):
+    elif version in ("v0.9.16","v0.9.25","v0.9.28","v0.9.32"):
         summary="Previous hardware-tested stable; exact image retained for recovery."
-        label=("Previous stable / recovery" if version in ("v0.9.25","v0.9.28") else "Legacy stable / recovery")
+        label=("Previous stable / recovery" if version in ("v0.9.25","v0.9.28","v0.9.32") else "Legacy stable / recovery")
         status="hardware-tested"
     elif version=="v0.9.30":
         summary="EXPERIMENTAL: improves node details and map controls. Last-heard age uses hours/minutes/seconds, node details hide map actions, Map Options shows its active context, and zoom/center controls sit on the map. v0.9.32 remains the recommended stable image; physical validation is pending."
         label="Map details and on-map controls / EXPERIMENTAL"
         status="experimental"
     elif version=="v0.10.5":
-        summary="EXPERIMENTAL: map download button with touch area selection, detail zoom, predefined OSM Bright source, saved-area map previews and resumable SD cleanup preserving shared tiles. Hardware validation pending; v0.9.32 remains stable."
-        label="Offline area selection / EXPERIMENTAL"
-        status="experimental"
+        summary="STABLE: offline raster map packs and area downloads, pinch zoom and parent-tile overzoom, filtered node fit, saved-area previews and resumable SD cleanup preserving shared tiles. User-selected stable after device use; exact image checksum-pinned."
+        label="Offline maps and area selection / STABLE"
+        status="hardware-tested"
     elif version=="v0.10.4":
         summary="EXPERIMENTAL: replaces the map FIT text with five node dots and removes the redundant N/GNSS shortcut from the map. Includes all v0.10.3 offline map features and v0.9.33 controls. v0.9.32 remains stable."
         label="Map fit icon cleanup / EXPERIMENTAL"

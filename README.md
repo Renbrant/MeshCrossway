@@ -13,7 +13,7 @@
 | Edition | Current reference | What you need | Get started |
 |---|---|---|---|
 | **Android app** | **0.1.1 beta** — dual-network Home dashboard | ARM64 Android phone (Android 8.0+) and two compatible BLE radios | [Download APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.1.1/MeshCrossway-0.1.1.apk) · [Install and test](docs/android-apk.md) |
-| **Touchscreen controller** | **Firmware v0.9.32** — accepted stable controller baseline within an experimental project | Supported Waveshare ESP32-S3 touchscreen, GNSS/storage and two compatible BLE radios | [Web Flasher](https://renbrant.github.io/MeshCrossway/flasher/) · [Firmware guide](firmware/display-prototype/README.md) |
+| **Touchscreen controller** | **Firmware v0.10.5** — accepted stable controller release within an experimental project | Supported Waveshare ESP32-S3 touchscreen, GNSS/storage and two compatible BLE radios | [Web Flasher](https://renbrant.github.io/MeshCrossway/flasher/) · [Firmware guide](firmware/display-prototype/README.md) |
 
 The Android app connects directly to the radios; it does not require the Waveshare controller. The controller remains an active, separate development track. Its local Wi-Fi browser companion belongs to the controller edition.
 

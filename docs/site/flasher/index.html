@@ -20,7 +20,7 @@
 <main id="flasher-app"><section class="pagehero"><div class="wrap prose">
 <div class="eyebrow" style="color:#ff993c">USB firmware installer</div>
 <h1>MeshCrossway Web Flasher.</h1>
-<p class="sectionintro">The recommended stable version, retained recovery images and any newer supported development build are listed. The tested firmware is always selected by default; experimental builds require explicit confirmation.</p>
+<p class="sectionintro">The recommended stable version, retained recovery images and any newer supported development build are listed. The selected stable firmware is always selected by default; experimental builds require explicit confirmation.</p>
 <div class="flashbox">
 <span class="status" id="build-status">CHECKING VERSION ARCHIVE</span>
 <h2>Display / Host — Waveshare ESP32-S3-Touch-LCD-3.5</h2>
@@ -42,7 +42,7 @@
 <h2>Recovery: touchscreen freezes or display reboots</h2>
 <div class="steps">
 <div class="step">Connect the Waveshare Rev2.0 display to your computer with a USB data cable. Leave the computer on its normal Wi-Fi network.</div>
-<div class="step">Select <b>v0.9.32 — recommended stable</b>. The exact v0.9.28 image remains available as previous stable recovery; v0.9.25 and v0.9.16 are retained as earlier recovery images.</div>
+<div class="step">Select <b>v0.10.5 — recommended stable</b>. The exact v0.9.32 and v0.9.28 images remain available as previous stable recovery; v0.9.16 is retained as legacy recovery.</div>
 <div class="step">If the USB serial port is unavailable because the new firmware keeps restarting, enter ESP32-S3 download mode using the board's <b>BOOT</b> and <b>RESET</b> controls, then retry connecting.</div>
 <div class="step">Always leave the <b>Erase device</b> checkbox <b>unchecked</b> for normal updates. An erase resets NVS and deletes saved Wi-Fi and BLE bonds. From v0.5.8, the split image writes bootloader, partition table and application without targeting NVS. Older merged installers can overwrite settings even without Erase. An SD Wi-Fi backup is plaintext and should be created before erasing. For a clean downgrade, you can choose <b>Erase device</b> in the installer. This will also erase saved Wi-Fi credentials and other settings.</div>
 </div>

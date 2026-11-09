@@ -5,15 +5,19 @@ import hashlib
 import shutil
 import subprocess
 import tempfile
+import tarfile
 import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = "v0.9.32"
-REF = "c83f21adc5a3b35486ed7bd70fa6e5260cc13cce"
-SHA = "87abaeb2b6bb9e954e752f9e610cd1150e3ebe7c8d11fe0c2652b98aa06daf2c"
+VERSION = "v0.10.5"
+REF = "4afece0daa608dc2675f1d84eb383bf13931c0ff"
+SHA = "04ff93cba20f09d53a338a15d8557b40474bb38089a78512cb9e8ae099dc8f10"
 APPROVED = {
-    VERSION: (REF, SHA, 13551122742, "6278a40dfcedca12c421265e8d6cd27141fa3cbf6d80610e50d6b3a10cb1c35c"),
+    VERSION: (REF, SHA, 13680863905, "8dcc2cbed7b8e94c324055cc127ca6ef1fe56d1697a3d17f0ee791b568a79f05"),
+    "v0.9.32": ("c83f21adc5a3b35486ed7bd70fa6e5260cc13cce",
+                "87abaeb2b6bb9e954e752f9e610cd1150e3ebe7c8d11fe0c2652b98aa06daf2c",
+                13551122742, "6278a40dfcedca12c421265e8d6cd27141fa3cbf6d80610e50d6b3a10cb1c35c"),
     "v0.9.28": ("37a8caca1ce57e2795be78e7a40012890a6b7147",
                 "a36970339c00cc327515eac2648c5421e1b9aab460484919a6ed8f57cc040c61",
                 13471144384, "1e6d628a0cb3c3a3508818349c05b03a3f4726d8ce1a032cba8cdc5fe350c58a"),
@@ -56,8 +60,21 @@ def restore(destination, version=VERSION):
             if hashlib.sha256(archive.read_bytes()).hexdigest() != archive_sha:
                 raise ValueError("Reviewed firmware archive digest mismatch")
             with zipfile.ZipFile(archive) as z:
-                for name in NAMES:
-                    (staged / name).write_bytes(z.read(f"versions/{version}/{name}"))
+                if "artifact.tar" in z.namelist():
+                    with z.open("artifact.tar") as nested:
+                        with tarfile.open(fileobj=nested, mode="r:*") as pages:
+                            members=pages.getmembers()
+                            for name in NAMES:
+                                member=next((m for m in members if m.name.endswith(f"flasher/firmware/versions/{version}/{name}")),None)
+                                if member is None:
+                                    raise ValueError(f"Missing {name} in reviewed Pages artifact")
+                                source=pages.extractfile(member)
+                                if source is None:
+                                    raise ValueError(f"Unreadable {name} in reviewed Pages artifact")
+                                (staged / name).write_bytes(source.read())
+                else:
+                    for name in NAMES:
+                        (staged / name).write_bytes(z.read(f"versions/{version}/{name}"))
             verify(staged, version)
         destination.mkdir(parents=True, exist_ok=True)
         for name in NAMES:

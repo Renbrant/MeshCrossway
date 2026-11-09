@@ -1,6 +1,6 @@
-# v0.10.5 — offline raster maps (test candidate)
+# v0.10.5 — offline raster maps (stable release)
 
-Implements the programming scope of #174, #175, #164 and #163 on top of merged v0.9.33 (`8879a3b`). v0.9.32 remains the hardware-tested stable/recovery image. This is a **test candidate**, pending physical validation with both BLE radios, Wi-Fi, GNSS and active track recording. Version numbers 0.10.0–0.10.2 were used by earlier experiments and are not reused.
+Implements the programming scope of #174, #175, #164 and #163 on top of merged v0.9.33 (`8879a3b`). The user selected v0.10.5 as stable after device use on 2026-11-09. The exact compiled image is checksum-pinned; the release promotion changes metadata and distribution, not firmware bytes. Version numbers 0.10.0–0.10.2 were used by earlier experiments and are not reused. See the [stable acceptance and recovery record](stable-v0105.md).
 
 ## Research and implementation decisions
 
@@ -49,4 +49,4 @@ SD operations and TLS remain potentially slow; this is cooperative scheduling, n
 
 `python3 scripts/test_ble_pairing_ui.py --lvgl PATH_TO_LVGL_8_4` exercises the production compositor and screens with real LVGL and PNG: exact synthetic overzoom pixels, disabling overzoom, online precedence, real pack PNG/metadata/gzip, corrupt stream rejection, reboot/torn-checkpoint recovery, Wi-Fi loss, SD full, resume, completion, real shared-file preservation, last-owner cleanup and deletion recovery. It also covers pinch anchoring with no request per sample, date-line node fit, network filtering, real pointer rectangle selection, zoom changes, saved-area fit, narrow layouts, page cleanup, source/area forms, schema-6 migration and the earlier UI/radio/navigation regressions.
 
-Physical acceptance still requires both BLE sessions connected, GNSS updates and recording, interactive Wi-Fi, repeated gesture/source changes, SD removal/full/write failures, restart during transfer, small/large permitted areas and comparison against v0.9.32. Keep #163/#164/#174/#175 open until these acceptance results are recorded.
+Broader validation remains useful for SD failure/restart cases and different radio combinations. The user's stability acceptance covers the device use reported so far; it does not establish indefinite runtime or compatibility across every radio/display combination. Issues #163/#164/#174/#175 remain open for follow-up.

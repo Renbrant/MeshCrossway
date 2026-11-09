@@ -18,7 +18,7 @@ The Android app uses the phone directly with the two radios; the controller, its
 ## Controller firmware versions and release records
 
 - [Current firmware development and operating guide](../firmware/display-prototype/README.md)
-- [Current stable v0.9.32 acceptance and recovery](stable-v0932.md)
+- [Current stable v0.10.5 acceptance and recovery](stable-v0105.md)
 - [Previous stable v0.9.28 acceptance and recovery](stable-v0928.md)
 - [Previous stable v0.9.25](stable-v0925.md)
 - [Historical stable v0.8.26](stable-v0826.md)
@@ -31,7 +31,7 @@ The Android app uses the phone directly with the two radios; the controller, its
 
 ## What works in the controller
 
-| Capability | Available in controller v0.9.32 baseline |
+| Capability | Available in controller v0.10.5 baseline |
 |---|---|
 | **Two independent radios** | Simultaneous Meshtastic and MeshCore BLE sessions, native messages, channels, separate identities, pairing and reconnection. No bridging between networks. |
 | **Touchscreen and local browser** | Home dashboard, network filters, conversations and radio settings. The browser companion runs on the device's local Wi-Fi network and includes messages, settings and track tools. |
@@ -119,7 +119,7 @@ This snapshot is informational and may become outdated; use the live GitHub Issu
 
 | Topic | Reference |
 |---|---|
-| v0.9.32 recommended controller baseline | [Acceptance and recovery](stable-v0932.md) |
+| v0.10.5 recommended controller baseline | [Acceptance and recovery](stable-v0105.md) |
 | v0.9.28 previous stable | [Acceptance, binary pin and recovery](stable-v0928.md) |
 | Current user features and test procedure | [Firmware guide](../firmware/display-prototype/README.md) · [Age colors and retention](node-age-v0928.md) |
 | Rotation, lock and manual correction | [Orientation notes](rotation-reference-v0927.md) |
