@@ -31,7 +31,7 @@ public final class MainActivity extends Activity {
     private boolean backupBusy;
     private String settingsSection="";private RadioProfile settingsRadio;private final ArrayDeque<Screen> backStack=new ArrayDeque<>();private final HashMap<String,Integer> scrollPositions=new HashMap<>();private String renderedRoute="";private LinearLayout header;private boolean rendering;private String settingsFingerprint="",homeFingerprint="";private final HashMap<Integer,String> pageQueries=new HashMap<>();
     private static final class Screen{int selected,filter,y;String query,section,radio;RadioProfile profile;Target chat;RadioProfile chatProfile;}
-    private TextView dualStatus;MapPanel mapPanel;static String mapStyleOverride;private org.maplibre.android.geometry.LatLng mapFocus;PhonePosition position;
+    private TextView dualStatus;private View statusSeparator;MapPanel mapPanel;static String mapStyleOverride;private org.maplibre.android.geometry.LatLng mapFocus;PhonePosition position;
 
     private final DateFormat timestampFormat=DateFormat.getDateTimeInstance(DateFormat.SHORT,DateFormat.SHORT);private String query="",chatRadio="";private RadioProfile choosing,chatProfile;private Target chat;private boolean bound,visible,sending,applyingDraft;private int composerRevision;private Runnable pending;
     private final HashMap<String,String> drafts=new HashMap<>();
@@ -63,7 +63,9 @@ public final class MainActivity extends Activity {
             else view.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());return insets;
         });setContentView(appearanceHost);root.requestApplyInsets();
         header=row();header.setPadding(dp(12),dp(4),dp(8),dp(4));root.addView(header,new LinearLayout.LayoutParams(-1,dp(52)));
-        View line=new View(this);line.setBackgroundColor(PANEL2);root.addView(line,new LinearLayout.LayoutParams(-1,dp(1)));dualStatus=text("MT offline · MC offline",11,MUTED);dualStatus.setPadding(dp(16),dp(5),dp(16),dp(5));dualStatus.setContentDescription("Radio connections");dualStatus.setOnClickListener(v->openSettings("connections",null));root.addView(dualStatus);
+        statusSeparator=new View(this);statusSeparator.setBackgroundColor(PANEL2);
+        root.addView(statusSeparator,new LinearLayout.LayoutParams(-1,dp(1)));
+        dualStatus=text("MT offline · MC offline",11,MUTED);dualStatus.setPadding(dp(16),dp(5),dp(16),dp(5));dualStatus.setContentDescription("Radio connections");dualStatus.setOnClickListener(v->openSettings("connections",null));root.addView(dualStatus);
         body=column();root.addView(body,new LinearLayout.LayoutParams(-1,0,1));nav=row();nav.setBackgroundColor(PANEL);root.addView(nav,new LinearLayout.LayoutParams(-1,dp(64)));
         if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,this::handleBack);
         if(state==null)readConversationIntent(getIntent());buildPage();bound=bindService(new Intent(this,RadioService.class),connection,BIND_AUTO_CREATE);tracksBound=bindService(new Intent(this,TrackService.class),trackConnection,BIND_AUTO_CREATE);
@@ -145,7 +147,8 @@ public final class MainActivity extends Activity {
                 RadioService.Session session=service.sessions.get(p);
                 key.append(':').append(session.verified).append(':').append(session.desired)
                     .append(':').append(session.phase).append(':').append(session.name)
-                    .append(':').append(session.address);
+                    .append(':').append(session.address).append(':')
+                    .append(session.rssiDbm).append(':').append(session.rssiCurrentLink);
             }
         }
         key.append(':').append(phoneEnabled());
@@ -184,6 +187,9 @@ public final class MainActivity extends Activity {
     private void buildPage(){
         if(scroll!=null&&!renderedRoute.isEmpty())scrollPositions.put(renderedRoute,scroll.getScrollY());renderedRoute=route();
         if(mapPanel!=null){mapPanel.destroy();mapPanel=null;}body.removeAllViews();nav.removeAllViews();composer=null;search=null;results=null;scroll=null;chatStatus=null;sendButton=null;
+        // Home's radio cards replace the redundant global status strip.
+        statusSeparator.setVisibility(selected==0?View.GONE:View.VISIBLE);
+        dualStatus.setVisibility(selected==0?View.GONE:View.VISIBLE);
         toolbar();int[] destinations={0,3,1,4,5};String[] icons={"home","chats","contacts","map","settings"};for(int i=0;i<destinations.length;i++){final int index=destinations[i];boolean active=selected==index||(index==3&&selected==2);LinearLayout item=column();item.setGravity(Gravity.CENTER);LinearLayout marker=row();marker.setGravity(Gravity.CENTER);if(active)marker.setBackground(surface(appearance.colors.navActive));marker.addView(new NavIcon(this,icons[i],active?ORANGE:MUTED),new LinearLayout.LayoutParams(dp(23),dp(23)));item.addView(marker,new LinearLayout.LayoutParams(dp(54),dp(30)));TextView label=text(pages[index],11,active?WHITE:MUTED);label.setGravity(Gravity.CENTER);item.addView(label);item.setContentDescription(pages[index]);item.setFocusable(true);item.setOnClickListener(v->page(index));nav.addView(item,new LinearLayout.LayoutParams(0,-1,1));}
         if(selected==4){map();return;}
         if(chat!=null&&selected==3){chatPage();return;}
@@ -193,7 +199,7 @@ public final class MainActivity extends Activity {
             search=new EditText(this);search.setTextColor(WHITE);search.setHintTextColor(MUTED);search.setTextSize(14);search.setHint("Search "+pages[selected].toLowerCase(Locale.ROOT));search.setSingleLine(true);search.setText(query);search.setPadding(dp(12),0,dp(12),0);search.setBackground(surface(PANEL));search.addTextChangedListener(watcher(()->{query=search.getText().toString();listLimit=100;refreshContent();}));tools.addView(search,new LinearLayout.LayoutParams(-1,dp(44)));
             if(selected==1){LinearLayout options=row();options.addView(chip(favoritesOnly?"Favorites ✓":"Favorites",favoritesOnly,()->{favoritesOnly=!favoritesOnly;buildPage();}),new LinearLayout.LayoutParams(0,dp(44),1));options.addView(chip("Sort: "+new String[]{"Recent","Name","Distance"}[nodeOrder],false,this::sortMenu),new LinearLayout.LayoutParams(0,dp(44),1));options.addView(chip(new String[]{"All types","Clients","Repeaters","Rooms"}[nodeType],nodeType!=0,this::typeMenu),new LinearLayout.LayoutParams(0,dp(44),1));tools.addView(options);}
             if(selected==3){LinearLayout options=row();options.addView(chip("Unread",unreadOnly,()->{unreadOnly=!unreadOnly;buildPage();}),new LinearLayout.LayoutParams(0,dp(40),1));options.addView(chip("Pinned",pinnedOnly,()->{pinnedOnly=!pinnedOnly;buildPage();}),new LinearLayout.LayoutParams(0,dp(40),1));tools.addView(options);}body.addView(tools);}
-        scroll=new ScrollView(this);results=column();results.setPadding(dp(16),dp(16),dp(16),dp(20));scroll.addView(results);body.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));refreshContent();int restore=scrollPositions.getOrDefault(renderedRoute,0);ScrollView target=scroll;target.post(()->target.scrollTo(0,restore));
+        scroll=new ScrollView(this);results=column();results.setPadding(dp(selected==0?10:16),dp(selected==0?8:16),dp(selected==0?10:16),dp(20));scroll.addView(results);body.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));refreshContent();int restore=scrollPositions.getOrDefault(renderedRoute,0);ScrollView target=scroll;target.post(()->target.scrollTo(0,restore));
     }
     private boolean included(RadioProfile p){return filter==0||filter==p.ordinal()+1;}
     private boolean matches(String value){return value.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT));}
@@ -310,14 +316,14 @@ public final class MainActivity extends Activity {
         LinearLayout row=row();
         row.setGravity(Gravity.TOP);
         LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-1,-2);
-        params.bottomMargin=dp(8);
+        params.bottomMargin=dp(5);
         results.addView(row,params);
         return row;
     }
-    private void dashboardTile(LinearLayout parent,String heading,String value,String detail,int accent,Runnable action,boolean featured){
+    private LinearLayout dashboardTile(LinearLayout parent,String heading,String value,String detail,int accent,Runnable action,boolean featured){
         LinearLayout tile=column();
-        tile.setPadding(dp(13),dp(13),dp(13),dp(13));
-        tile.setMinimumHeight(dp(featured?128:118));
+        tile.setPadding(dp(12),dp(11),dp(12),dp(11));
+        tile.setMinimumHeight(dp(featured?110:94));
         GradientDrawable background=surface(PANEL);
         background.setStroke(dp(1),featured?accent:PANEL2);
         tile.setBackground(new android.graphics.drawable.RippleDrawable(
@@ -329,13 +335,13 @@ public final class MainActivity extends Activity {
         headingRow.addView(label,new LinearLayout.LayoutParams(0,-2,1));
         headingRow.addView(new NavIcon(this,"arrow",MUTED),new LinearLayout.LayoutParams(dp(14),dp(14)));
         tile.addView(headingRow);
-        space(tile,10);
+        space(tile,featured?8:6);
         TextView main=text(value,featured?20:21,WHITE);
         main.setTypeface(null,Typeface.BOLD);
         main.setMaxLines(2);
         main.setEllipsize(android.text.TextUtils.TruncateAt.END);
         tile.addView(main);
-        space(tile,6);
+        space(tile,4);
         TextView subtitle=text(detail,12,MUTED);
         subtitle.setMaxLines(2);
         subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -344,9 +350,41 @@ public final class MainActivity extends Activity {
         tile.setFocusable(true);
         tile.setOnClickListener(v->action.run());
         LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,-2,1);
-        params.leftMargin=dp(4);
-        params.rightMargin=dp(4);
+        params.leftMargin=dp(2);
+        params.rightMargin=dp(2);
         parent.addView(tile,params);
+        return tile;
+    }
+    /** Four BLE bars reflect measured phone-to-radio RSSI, never a LoRa signal report. */
+    private void signalIndicator(LinearLayout tile,RadioService.Session session,int accent){
+        final int rssi=session==null?BleSignal.UNKNOWN:session.rssiDbm;
+        final boolean current=session!=null&&session.verified&&session.rssiCurrentLink;
+        final int bars=BleSignal.bars(rssi);
+        LinearLayout indicator=row();
+        indicator.setGravity(Gravity.BOTTOM|Gravity.START);
+        indicator.setPadding(0,dp(9),0,0);
+        for(int index=0;index<4;index++){
+            View bar=new View(this);
+            int color=!BleSignal.valid(rssi)?MUTED:!current?MUTED:
+                index<bars?accent:PANEL2;
+            GradientDrawable shape=new GradientDrawable();
+            shape.setColor(color);
+            shape.setCornerRadius(dp(2));
+            bar.setBackground(shape);
+            LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(
+                dp(4),dp(5+index*4));
+            params.rightMargin=dp(3);
+            indicator.addView(bar,params);
+        }
+        TextView reading=text(BleSignal.label(rssi,current),11,MUTED);
+        reading.setMaxLines(1);
+        reading.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams textParams=new LinearLayout.LayoutParams(0,dp(19),1);
+        textParams.leftMargin=dp(5);
+        indicator.addView(reading,textParams);
+        indicator.setContentDescription("Bluetooth signal. "+
+            BleSignal.label(rssi,current)+". "+bars+" of four bars.");
+        tile.addView(indicator);
     }
     private void openDashboardNetwork(RadioProfile profile,int destination){
         filter=profile.ordinal()+1;
@@ -369,19 +407,48 @@ public final class MainActivity extends Activity {
         return sender+": "+(body.isEmpty()?"Message":body);
     }
     private void home(){
-        int connected=0,totalUnread=0;
+        // First screen content: the two radios. No duplicate ready line,
+        // global summary card, or section headings between card rows.
+        LinearLayout radios=dashboardRow();
         for(RadioProfile profile:RadioProfile.values()){
-            if(service!=null&&service.sessions.get(profile).verified)connected++;
-            totalUnread+=snapshot(profile).unread();
+            RadioService.Session session=service==null?null:service.sessions.get(profile);
+            boolean ready=session!=null&&session.verified;
+            String state=ready?"Ready":session!=null&&session.desired?"Connecting":"Offline";
+            String device=session==null?"Connect a radio":session.name!=null&&!session.name.isEmpty()?session.name:
+                session.address.isEmpty()?"Choose a device":"Saved device";
+            if(session!=null&&session.desired&&!ready)device+=" · "+session.phase;
+            int accent=profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC;
+            LinearLayout tile=dashboardTile(radios,profile.title.toUpperCase(Locale.ROOT),state,device,
+                accent,()->openSettings("radio",profile),true);
+            signalIndicator(tile,session,accent);
         }
-        LinearLayout summary=card(results);
-        summary.setBackground(surface(PANEL2));
-        TextView title=text("Dual mesh dashboard",20,WHITE);
-        title.setTypeface(null,Typeface.BOLD);
-        summary.addView(title);
-        space(summary,5);
-        summary.addView(text(connected+" of 2 radios ready  ·  "+totalUnread+" unread across both networks",13,MUTED));
-        section(results,"REMOTE WORKSPACE");
+        LinearLayout nodes=dashboardRow();
+        for(RadioProfile profile:RadioProfile.values()){
+            Snapshot data=snapshot(profile);
+            int recent=recentlyHeard(data);
+            dashboardTile(nodes,profile==RadioProfile.MESHTASTIC?"MT · NODES":"MC · NODES",
+                String.valueOf(data.nodes.size()),recent+" heard in the last hour",
+                profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
+                ()->openDashboardNetwork(profile,1),false);
+        }
+        LinearLayout chats=dashboardRow();
+        for(RadioProfile profile:RadioProfile.values()){
+            Snapshot data=snapshot(profile);
+            dashboardTile(chats,profile==RadioProfile.MESHTASTIC?"MT · CHATS":"MC · CHATS",
+                data.unread()+" unread",latestPreview(data),
+                profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
+                ()->openDashboardNetwork(profile,3),false);
+        }
+        LinearLayout channels=dashboardRow();
+        for(RadioProfile profile:RadioProfile.values()){
+            int configured=0;
+            for(Channel channel:snapshot(profile).channels)if(channel.enabled)configured++;
+            dashboardTile(channels,profile==RadioProfile.MESHTASTIC?"MT · CHANNELS":"MC · CHANNELS",
+                String.valueOf(configured),"Configured channels",
+                profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
+                ()->openDashboardNetwork(profile,2),false);
+        }
+        // Remote Access remains directly available without occupying the top of Home.
         LinearLayout remote=group(results);
         String remoteUrl=service==null?"":service.remoteUrl();
         String wifi=RemoteWorkspace.wifiName(this);
@@ -392,49 +459,6 @@ public final class MainActivity extends Activity {
             this::remotePanel,remoteUrl.isEmpty()?MUTED:GREEN);
         if(service!=null&&!service.remoteError.isEmpty())
             remote.addView(text(service.remoteError,12,RED));
-        section(results,"RADIO CONNECTIONS");
-        LinearLayout radios=dashboardRow();
-        for(RadioProfile profile:RadioProfile.values()){
-            RadioService.Session session=service==null?null:service.sessions.get(profile);
-            boolean ready=session!=null&&session.verified;
-            String state=ready?"Ready":session!=null&&session.desired?"Connecting":"Offline";
-            String device=session==null?"Connect a radio":session.name!=null&&!session.name.isEmpty()?session.name:
-                session.address.isEmpty()?"Choose a device":"Saved device";
-            if(session!=null&&session.desired&&!ready)device+=" · "+session.phase;
-            dashboardTile(radios,profile.title.toUpperCase(Locale.ROOT),state,device,
-                profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
-                ()->openSettings("radio",profile),true);
-        }
-        section(results,"NODES");
-        LinearLayout nodes=dashboardRow();
-        for(RadioProfile profile:RadioProfile.values()){
-            Snapshot data=snapshot(profile);
-            int recent=recentlyHeard(data);
-            dashboardTile(nodes,profile==RadioProfile.MESHTASTIC?"MT · NODES":"MC · NODES",
-                String.valueOf(data.nodes.size()),recent+" heard in the last hour",
-                profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
-                ()->openDashboardNetwork(profile,1),false);
-        }
-        section(results,"CHATS");
-        LinearLayout chats=dashboardRow();
-        for(RadioProfile profile:RadioProfile.values()){
-            Snapshot data=snapshot(profile);
-            dashboardTile(chats,profile==RadioProfile.MESHTASTIC?"MT · CHATS":"MC · CHATS",
-                data.unread()+" unread",latestPreview(data),
-                profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
-                ()->openDashboardNetwork(profile,3),false);
-        }
-        section(results,"CHANNELS");
-        LinearLayout channels=dashboardRow();
-        for(RadioProfile profile:RadioProfile.values()){
-            int configured=0;
-            for(Channel channel:snapshot(profile).channels)if(channel.enabled)configured++;
-            dashboardTile(channels,profile==RadioProfile.MESHTASTIC?"MT · CHANNELS":"MC · CHANNELS",
-                String.valueOf(configured),"Configured channels",
-                profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
-                ()->openDashboardNetwork(profile,2),false);
-        }
-        section(results,"FIELD TOOLS");
         LinearLayout tools=dashboardRow();
         android.location.Location fix=position.location;
         boolean gpsOn=phoneEnabled();
