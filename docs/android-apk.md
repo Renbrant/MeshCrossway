@@ -302,3 +302,22 @@ Primary wire references:
 The supplied MeshMapper screenshot informed the right-side controls and live
 lower-panel workflow; no source, icons or assets were copied. Physical acceptance
 must confirm live RX logs on the radio firmware and the new touch workflow.
+
+### Alpha07 validation and APK
+
+Built source: `76e30a019e6cdeadf8915e4d5f9c62d4188b6e7d`.
+[CI run 42558188171](https://github.com/Renbrant/MeshCrossway/actions/runs/42558188171)
+passed the APK/lint/JVM job and device smoke tests on API 29 and API 35.
+Smoke coverage includes schema migration/backup compatibility, message metadata,
+late route enrichment, ungrouped native markers, live map panels, offline selection,
+track recovery and existing settings/chat flows. Emulator captures were visually inspected.
+
+[Download the alpha07 APK artifact](https://github.com/Renbrant/MeshCrossway/actions/runs/42558188171/artifacts/13648073860)
+(the GitHub artifact is a ZIP containing the APK and checksums).
+
+APK SHA-256: `c2ad8690ad1d3b8e8db20b1df9efd299eed0d2ce2c8a2abe31053f965168a848`.
+
+This is a new CI debug signature. Export JSON history and required GPX tracks
+before uninstalling an incompatible existing installation. Alpha06 remains the
+maintainer-accepted recovery reference. Alpha07 physical dual-radio acceptance
+and live route capture on the maintainer's firmware remain pending.
