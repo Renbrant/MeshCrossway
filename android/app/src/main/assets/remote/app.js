@@ -1,6 +1,6 @@
 "use strict";
 const $=id=>document.getElementById(id);
-const app={data:null,network:"mt",topic:"",tab:"dashboard",tracks:null,selectedTrack:"",busy:false};
+const app={data:null,network:"mt",topic:"",messageView:"chats",tab:"dashboard",tracks:null,selectedTrack:"",busy:false,map:null,mapAreas:[],mapLimit:2400};
 function element(tag,label,cls){const e=document.createElement(tag);if(label!==undefined)e.textContent=String(label);if(cls)e.className=cls;return e;}
 function clear(e){e.replaceChildren();}
 function btn(label,fn){const b=element("button",label);b.type="button";b.addEventListener("click",fn);return b;}
@@ -19,7 +19,7 @@ function showLogin(){$("login").hidden=false;$("app").hidden=true;$("logout").hi
 function showApp(){$("login").hidden=true;$("app").hidden=false;$("logout").hidden=false;}
 function network(){return app.data?.radios?.find(r=>r.network===app.network);}
 function time(value){return value?new Date(value*1000).toLocaleString():"Unknown";}
-async function reload(){app.data=await api("/api/state");showApp();renderHome();if(app.tab==="messages")renderConversations();}
+async function reload(){app.data=await api("/api/state");showApp();renderHome();if(app.tab==="messages")renderMessageDirectory();}
 function renderHome(){
  const holder=$("radio-cards");clear(holder);
  for(const radio of app.data?.radios||[]){
@@ -27,7 +27,11 @@ function renderHome(){
   card.style.borderTop="3px solid "+(radio.network==="mt"?"#ff8a24":"#6cbde6");
   card.append(element("h2",radio.name),element("strong",radio.status+" · "+(radio.device||"Device not chosen"),"metric"));
   card.append(element("p",radio.nodes+" contacts · "+radio.unread+" unread · "+radio.channels.length+" channels"));
-  card.append(btn("Open conversations",()=>{app.network=radio.network;showTab("messages");}));
+  const shortcuts=element("div",undefined,"actions");
+  shortcuts.append(btn("Chats",()=>{app.network=radio.network;app.messageView="chats";app.topic="";showTab("messages");}));
+  shortcuts.append(btn("Channels",()=>{app.network=radio.network;app.messageView="channels";app.topic="";showTab("messages");}));
+  shortcuts.append(btn("Nodes",()=>{app.network=radio.network;app.messageView="nodes";app.topic="";showTab("messages");}));
+  card.append(shortcuts);
   holder.append(card);
  }
 }
@@ -35,49 +39,142 @@ function showTab(tab){
  app.tab=tab;
  document.querySelectorAll("[data-panel]").forEach(e=>e.hidden=e.id!==tab);
  document.querySelectorAll("[data-tab]").forEach(e=>e.setAttribute("aria-selected",String(e.dataset.tab===tab)));
- if(tab==="messages")renderConversations();
+ if(tab==="messages")renderMessageDirectory();
  if(tab==="maps")renderMaps();
  if(tab==="tracks")renderTracks();
 }
-function renderConversations(){
- const radio=network(),list=$("conversations"),contacts=$("contacts");
- clear(list);clear(contacts);if(!radio)return;
+function resetSelected(){
+ app.topic="";
+ $("conversation-title").textContent="Select a chat, channel or node";
+ $("selected-context").textContent="Select an entry from the left to read or send messages.";
+ clear($("message-list"));
+ $("send-message").disabled=true;
+ $("mark-read").disabled=true;
+}
+function switchNetwork(value){
+ if(app.network===value)return;
+ app.network=value;
+ resetSelected();
+ renderMessageDirectory();
+}
+function changeMessageView(view){
+ if(!["chats","channels","nodes"].includes(view))return;
+ app.messageView=view;
+ renderMessageDirectory();
+}
+function renderMessageDirectory(){
+ const radio=network(),holder=$("message-directory");
+ clear(holder);
  $("switch-mt").style.borderColor=app.network==="mt"?"#ff8a24":"#34404b";
  $("switch-mc").style.borderColor=app.network==="mc"?"#6cbde6":"#34404b";
+ document.querySelectorAll("[data-message-view]").forEach(b=>{
+  b.setAttribute("aria-selected",String(b.dataset.messageView===app.messageView));
+ });
+ $("view-heading").textContent={chats:"Chats",channels:"Channels",nodes:"Nodes"}[app.messageView];
+ if(!radio){
+  holder.append(element("p","No radio data yet."));return;
+ }
+ const conversations=radio.conversations||[],channels=radio.channels||[],contacts=radio.contacts||[];
  const query=$("conversation-search").value.trim().toLowerCase();
- for(const conversation of radio.conversations.filter(v=>(v.title+" "+v.preview).toLowerCase().includes(query))){
-  const row=element("div",undefined,"item");
-  row.append(element("strong",conversation.title+(conversation.unread?" · "+conversation.unread+" unread":"")));
-  row.append(element("div",conversation.preview||"No messages","muted"));
-  row.append(element("div",time(conversation.time),"muted"));
-  row.append(btn("Open",()=>selectConversation(conversation.topic,conversation.title)));
-  list.append(row);
+ const byTopic=new Map(conversations.map(c=>[c.topic,c]));
+ let entries=[];
+ if(app.messageView==="chats"){
+  entries=conversations.filter(c=>!c.group).map(c=>({
+   topic:c.topic,title:c.title,preview:c.preview,unread:c.unread,
+   time:c.time,context:"Private chat",enabled:true
+  }));
+ }else if(app.messageView==="channels"){
+  const found=new Set();
+  for(const channel of channels){
+   const conversation=byTopic.get(channel.topic);
+   entries.push({
+    topic:channel.topic,title:channel.name||"Channel "+channel.slot,
+    preview:conversation?.preview||channel.preview||"",
+    unread:conversation?.unread||channel.unread||0,
+    time:conversation?.time||channel.time||0,
+    context:"Channel "+channel.slot+(channel.enabled?"":" · disabled"),
+    enabled:channel.enabled
+   });
+   found.add(channel.topic);
+  }
+  // MeshCore group conversations may not appear in the configured channel slots.
+  for(const c of conversations.filter(c=>c.group&&!found.has(c.topic))){
+   entries.push({topic:c.topic,title:c.title,preview:c.preview,unread:c.unread,
+                 time:c.time,context:"Group conversation",enabled:true});
+  }
+ }else{
+  entries=contacts.map(c=>{
+   const conversation=byTopic.get(c.topic);
+   return {topic:c.topic,title:c.name||c.id,
+           preview:conversation?.preview||("Last heard: "+time(c.heard)),
+           unread:conversation?.unread||0,time:conversation?.time||c.heard,
+           context:"Direct message · "+c.id,enabled:c.messageable!==false};
+  });
  }
- for(const contact of radio.contacts.slice(0,200)){
-  const row=element("div",undefined,"item");
-  row.append(element("strong",contact.name),element("div","Heard "+time(contact.heard),"muted"));
-  row.append(btn("Open chat",()=>{
-   const match=radio.conversations.find(v=>v.title===contact.name);
-   if(match)selectConversation(match.topic,match.title);
-   else notice("Start this direct conversation on the Android app first",true);
-  }));contacts.append(row);
+ if(app.messageView!=="nodes")entries.sort((a,b)=>(b.unread>0)-(a.unread>0)||b.time-a.time||a.title.localeCompare(b.title));
+ else entries.sort((a,b)=>b.time-a.time||a.title.localeCompare(b.title));
+ const filtered=entries.filter(e=>
+  (e.title+" "+e.preview+" "+e.context).toLowerCase().includes(query));
+ $("view-count").textContent=filtered.length+" "+app.messageView+
+     " · "+(radio.ready?"Radio connected":radio.status);
+ if(!filtered.length){
+  const emptyState=element("div",undefined,"item");
+  const label=app.messageView==="chats"?
+    "No private chats yet. Open Nodes to start a direct conversation.":
+    app.messageView==="channels"?
+    "No configured channels or group messages are available from this radio yet.":
+    "No nodes received. Connect your radio and let it synchronize.";
+  emptyState.append(element("p",query?"No matches. Clear the search to see all entries.":label));
+  if(app.messageView==="chats"&&!query)
+   emptyState.append(btn("Open Nodes",()=>changeMessageView("nodes")));
+  holder.append(emptyState);return;
  }
+ for(const entry of filtered){
+  const row=element("button",undefined,"item"+(entry.topic===app.topic?" selected":""));
+  row.type="button";row.style.width="100%";row.style.textAlign="left";
+  row.disabled=!entry.enabled;
+  row.append(element("strong",entry.title+(entry.unread?" · "+entry.unread+" unread":"")));
+  row.append(element("div",entry.context,"muted"));
+  row.append(element("div",entry.preview||"No messages yet","muted"));
+  if(entry.time)row.append(element("div",time(entry.time),"muted"));
+  row.addEventListener("click",()=>selectConversation(entry.topic,entry.title,entry.context));
+  holder.append(row);
+ }
+ // Refresh never discards a selected conversation or disables its composer.
+ if(app.topic)$("send-message").disabled=!radio.ready;
 }
-async function selectConversation(topic,title){
- app.topic=topic;$("conversation-title").textContent=title;
- $("send-message").disabled=false;$("mark-read").disabled=false;
- await renderMessages();
+async function selectConversation(topic,title,context){
+ if(!topic)return;
+ const changed=app.topic!==topic;
+ app.topic=topic;
+ $("conversation-title").textContent=title;
+ $("selected-context").textContent=(app.network==="mt"?"Meshtastic":"MeshCore")+" · "+context;
+ $("send-message").disabled=!network()?.ready;
+ $("mark-read").disabled=false;
+ if(changed)$("message-text").value="";
+ renderMessageDirectory();
+ try{await renderMessages();}
+ catch(e){notice(e.message,true);}
 }
 async function renderMessages(){
  if(!app.topic)return;
- const data=await api("/api/messages?network="+encodeURIComponent(app.network)+"&topic="+encodeURIComponent(app.topic));
- const target=$("message-list");clear(target);
- for(const message of data.messages){
+ const chosenTopic=app.topic,chosenNetwork=app.network;
+ const response=await api("/api/messages?network="+encodeURIComponent(chosenNetwork)+
+                          "&topic="+encodeURIComponent(chosenTopic));
+ // Ignore responses from a previously selected network or conversation.
+ if(app.topic!==chosenTopic||app.network!==chosenNetwork)return;
+ const list=$("message-list");clear(list);
+ if(!response.messages.length){
+  list.append(element("p","There are no messages in this conversation yet.","muted"));
+  return;
+ }
+ for(const message of response.messages){
   const row=element("div",undefined,"message"+(message.outgoing?" outgoing":""));
   row.append(element("div",(message.sender||"Unknown")+" · "+time(message.time)+" · "+message.state,"meta"));
-  row.append(element("div",message.body));target.append(row);
+  row.append(element("div",message.body));
+  list.append(row);
  }
- target.scrollTop=target.scrollHeight;
+ list.scrollTop=list.scrollHeight;
 }
 async function sendMessage(event){
  event.preventDefault();if(!app.topic)return;
@@ -205,10 +302,12 @@ $("login-form").addEventListener("submit",async e=>{
 });
 $("logout").addEventListener("click",async()=>{try{await api("/api/logout","POST");}catch{}showLogin();});
 document.querySelectorAll("[data-tab]").forEach(button=>button.addEventListener("click",()=>showTab(button.dataset.tab)));
-$("switch-mt").addEventListener("click",()=>{app.network="mt";app.topic="";renderConversations();});
-$("switch-mc").addEventListener("click",()=>{app.network="mc";app.topic="";renderConversations();});
+$("switch-mt").addEventListener("click",()=>switchNetwork("mt"));
+$("switch-mc").addEventListener("click",()=>switchNetwork("mc"));
+document.querySelectorAll("[data-message-view]").forEach(b=>
+ b.addEventListener("click",()=>changeMessageView(b.dataset.messageView)));
 $("refresh-messages").addEventListener("click",pulse);
-$("conversation-search").addEventListener("input",renderConversations);
+$("conversation-search").addEventListener("input",renderMessageDirectory);
 $("compose-form").addEventListener("submit",sendMessage);
 $("mark-read").addEventListener("click",async()=>{
  try{await api("/api/read","POST",{network:app.network,topic:app.topic});await reload();notice("Conversation marked read");}
