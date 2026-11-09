@@ -105,7 +105,9 @@ final class RemoteWorkspace extends NanoHTTPD {
         managers.init(keyStore,null);
         SSLContext tls=SSLContext.getInstance("TLS");
         tls.init(managers.getKeyManagers(),null,RANDOM);
-        makeSecure(tls.getServerSocketFactory(),null);
+        // TLS 1.2 supports RSA PKCS#1 signatures on Android Keystore keys across API 26+.
+        // TLS 1.3 would require RSA-PSS permission and provider support.
+        makeSecure(tls.getServerSocketFactory(),new String[]{"TLSv1.2"});
     }
     String url(){return "https://"+ip+":"+PORT+"/";}
     private <T> T onMain(Callable<T> action)throws Exception{
