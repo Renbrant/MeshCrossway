@@ -24,7 +24,7 @@ Heltec V3 and a Samsung S25 are used in development. Other phone, board and firm
 
 **Development signatures:** this APK is signed with a CI debug certificate. Some earlier builds have a different certificate. If Android refuses the update due to a signature conflict, export JSON history and required GPX tracks first, then uninstall and install. Uninstalling deletes local app data. The public version reset does not itself erase history.
 
-SHA-256 (`MeshCrossway-0.2.1.apk`): download the `SHA256SUMS.txt` asset from the 0.2.1 release to verify the APK.
+SHA-256 (`MeshCrossway-0.2.1.apk`): `a3f01b8bd63b515bbd13f5eaae6f791a1278554a74661254e98c36467394f978` (also available in the release's `SHA256SUMS.txt` asset).
 ## Included in this beta
 
 **New in 0.2.1:** simple numeric Remote Access PIN (4–8 digits), selectable on the phone with a suggested random 6-digit code; existing browser sessions are revoked when it changes. The 0.2.0 local HTTPS workspace, independent Meshtastic/MeshCore browser messaging, offline regions and track folders remain. The paired Home cards from 0.1.1 are retained. This does not bridge or relay mesh traffic.
