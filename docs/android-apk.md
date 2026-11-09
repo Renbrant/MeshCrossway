@@ -1,5 +1,8 @@
 # MeshCrossway Android — 0.2.2 beta
 
+> **Update safety:** Android 0.2.3 source code is merged and automated tests passed, but its permanent-key APK release is still blocked pending private signing-key setup. Do **not uninstall** your existing 0.2.2 build before exporting history and GPX or taking the optional full ADB snapshot. Once 0.2.3 is permanently signed, all future official updates with the same signing certificate will install over it and retain app-private settings, favorites, tracks and offline maps. [Migration instructions](android-permanent-signing-backup.md) · [Signing setup issue #195](https://github.com/Renbrant/MeshCrossway/issues/195).
+
+
 > **Public beta for testing. Not version 1.0.0 and not a production release.**
 
 [Download MeshCrossway-0.2.2.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.2/MeshCrossway-0.2.2.apk) · [Release notes and SHA256SUMS.txt](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.2) · [Android download page](https://renbrant.github.io/MeshCrossway/android/)
