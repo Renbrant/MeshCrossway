@@ -254,9 +254,8 @@ it remains the recovery reference for this increment.
 - Layers → Group nearby nodes is persistent and changes only the local GeoJSON
   source; it does not reload the basemap or reset the camera. Individual markers
   remain available at low zoom when grouping is off.
-- Offline download selection uses the exposed map above the panel. Pan/zoom and
-  use Update selection from map before downloading; the outline previews the
-  selected bounds. Existing size/tile/request limits remain unchanged.
+- Offline download selection uses the exposed map above the panel. Pan/zoom updates the selection automatically when the camera stops; the outline
+  previews the selected bounds. Existing size/tile/request limits remain unchanged.
 - Received messages show hops and available SNR/RSSI; tap the message or Details
   to inspect reception metadata and the available path. No new traceroute or
   mesh traffic is sent automatically.
