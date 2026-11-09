@@ -1,15 +1,12 @@
-# MeshCrossway Android — 0.2.2 beta
+# MeshCrossway Android — 0.2.3 beta
 
-> **Starting fresh:** If 0.2.2 was already uninstalled, there is no old app data left to migrate. **No ADB or ZIP is required.** Make the first installation the permanently signed Android 0.2.3 release (not yet published; private signing-key setup is pending). Future official APKs with the same signer can simply be installed **over the existing app**, preserving messages, favorites, radios, settings, tracks and offline maps. Never uninstall to update. ADB is optional only for people who still have an old debug-signed installation and want its data back.
+> **Version 0.2.3 is now published with permanent release signing.** Starting from a clean installation? Install the APK directly; **no ADB, ZIP or migration is necessary.** Future official APKs with the same certificate can install over this version, retaining locally stored messages, settings, favorites, GPS tracks, and offline maps. **Do not uninstall or clear app data to update.**
 
-> **Update safety:** Android 0.2.3 source code is merged and automated tests passed, but its permanent-key APK release is still blocked pending private signing-key setup. Do **not uninstall** your existing 0.2.2 build before exporting history and GPX or taking the optional full ADB snapshot. Once 0.2.3 is permanently signed, all future official updates with the same signing certificate will install over it and retain app-private settings, favorites, tracks and offline maps. [Migration instructions](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md) · [Signing setup issue #195](https://github.com/Renbrant/MeshCrossway/issues/195).
-
-
-> **Use ADB on Windows:** [Download the Android source ZIP](https://github.com/Renbrant/MeshCrossway/archive/refs/heads/baseline/android-0.1.0.zip), unzip it, connect the phone with USB debugging authorized, then run `scripts/MeshCrossway-Backup-Windows.cmd`. It saves a verified full backup ZIP under `%USERPROFILE%\\MeshCrossway-Backups`. Do not uninstall 0.2.2 until a usable backup exists. After the first permanent-key release, `scripts/MeshCrossway-Update-Windows.cmd` can install compatible signed APKs using `adb install -r` without deleting data.
+> Only people who still have data on older debug-signed 0.2.2-or-earlier builds need an optional one-time migration. See the [migration guide](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md). This release is still a beta.
 
 > **Public beta for testing. Not version 1.0.0 and not a production release.**
 
-[Download MeshCrossway-0.2.2.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.2/MeshCrossway-0.2.2.apk) · [Release notes and SHA256SUMS.txt](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.2) · [Android download page](https://renbrant.github.io/MeshCrossway/android/)
+[Download MeshCrossway-0.2.3.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.3/MeshCrossway-0.2.3.apk) · [Release notes and SHA256SUMS.txt](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.3) · [Android download page](https://renbrant.github.io/MeshCrossway/android/)
 
 ## Requirements
 
@@ -29,14 +26,14 @@ Heltec V3 and a Samsung S25 are used in development. Other phone, board and firm
 4. In Settings, choose each radio and let synchronization complete. Confirm both network status indicators independently.
 5. If connection fails, include the Connection details output in a bug report after removing private information.
 
-**Development signatures:** this APK is signed with a CI debug certificate. Some earlier builds have a different certificate. If Android refuses the update due to a signature conflict, export JSON history and required GPX tracks first, then uninstall and install. Uninstalling deletes local app data. The public version reset does not itself erase history.
+**Permanent signing starts with 0.2.3.** Its signature SHA-256 is pinned and checked in the GitHub release workflow. All future releases must reuse that certificate. Old debug-signed builds cannot be replaced in place with 0.2.3; if you still have data in an old build, back it up before the one-time migration. Never uninstall to force a future update.
 
-SHA-256 (`MeshCrossway-0.2.2.apk`): `0ce51bd68d0f899753a156c2bd17aeee8f32389b2d919c4dd72833404fffd505` (verified against the exact successful CI artifact; also included in the release's `SHA256SUMS.txt`).
+SHA-256: verify the downloaded `MeshCrossway-0.2.3.apk` against the release's `SHA256SUMS.txt` asset. The `SIGNING-CERT-SHA256.txt` asset records the permanent APK signing certificate fingerprint.
 ## Included in this beta
 
-**New in 0.2.2:** Messages now has independent **Chats, Channels and Nodes** lists for both radios. Channels appear even without a message history, and selecting a messageable node starts a direct chat. Offline Maps has a **visual map with pan/zoom and Draw area rectangle**, maximum offline zoom, estimated tile limits and saved-region overlays. The 0.2.1 short numeric PIN remains unchanged. The 0.2.0 local HTTPS workspace, independent Meshtastic/MeshCore browser messaging, offline regions and track folders remain. The paired Home cards from 0.1.1 are retained. This does not bridge or relay mesh traffic.
+**New in 0.2.3:** permanent release APK signing, complete on-device history/preferences/tracks ZIP backup and restore, and GPX import from earlier builds. **From 0.2.2:** Messages now has independent **Chats, Channels and Nodes** lists for both radios. Channels appear even without a message history, and selecting a messageable node starts a direct chat. Offline Maps has a **visual map with pan/zoom and Draw area rectangle**, maximum offline zoom, estimated tile limits and saved-region overlays. The 0.2.1 short numeric PIN remains unchanged. The 0.2.0 local HTTPS workspace, independent Meshtastic/MeshCore browser messaging, offline regions and track folders remain. The paired Home cards from 0.1.1 are retained. This does not bridge or relay mesh traffic.
 
-**Recovery:** [Android 0.2.1](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1), [Android 0.2.0](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.0), [Android 0.1.1](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.1) and [0.1.0](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.0) remain available.
+**Previous debug-signed beta:** [Android 0.2.2](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.2). **Other older betas:** [Android 0.2.1](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1), [Android 0.2.0](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.0), [Android 0.1.1](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.1) and [0.1.0](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.0) remain available.
 
 Independent dual BLE connections; chats, channels and contacts; a map with right-side icons and nonmodal lower panels; optional node grouping in Layers; tracks, GPX, POIs and offline map areas; persistent message history and JSON import/export. Each network keeps its own messages, identities and routing. There is no bridging.
 
@@ -96,18 +93,19 @@ Private messages, old backlog, direct-routing and unsupported/truncated MeshCore
 | 0.1.1 | Paired dual-network dashboard cards; recovery beta |
 | 0.2.0 | HTTPS Remote Access, maps and track folders; recovery beta |
 | 0.2.1 | Short numeric Remote Access PIN; recovery beta |
-| 0.2.2 | Separate web Chats, Channels, Nodes and visual offline map selection |
-| 0.2.3, 0.2.4, etc. | Fixes and small improvements |
+| 0.2.2 | Separate web Chats, Channels, Nodes and visual offline map selection; debug-signed |
+| 0.2.3 | First permanent-signed beta; full ZIP backup/restore and GPX import |
+| 0.2.4, 0.2.5, etc. | Fixes and small improvements |
 | 0.3.0, 0.4.0, etc. | Future substantial changes; patch resets to zero |
 | 1.0.0 | First production release after core scope and stability acceptance |
 
-All 0.x versions remain in development. The earlier alpha02–alpha07 public-looking numbers were development iteration labels, not releases in the new sequence. Android versionCode remains strictly increasing (0.1.0 uses 8, 0.1.1 uses 9, 0.2.0 uses 10, 0.2.1 uses 11, 0.2.2 uses 12). Controller firmware keeps its independent numbering and recovery images.
+All 0.x versions remain in development. The earlier alpha02–alpha07 public-looking numbers were development iteration labels, not releases in the new sequence. Android versionCode remains strictly increasing (0.1.0 uses 8, 0.1.1 uses 9, 0.2.0 uses 10, 0.2.1 uses 11, 0.2.2 uses 12, 0.2.3 uses 13). Controller firmware keeps its independent numbering and recovery images.
 
 ## Help test
 
 Check initial connection and reconnection to both radios, sending/receiving, unread state, map grouping, offline areas, tracks and backup/import on your setup. [Report a bug](https://github.com/Renbrant/MeshCrossway/issues) with app version, phone/Android version, each radio model/firmware, steps, expected result and actual result. Redact keys, personal messages and precise locations.
 
-Wardriving/MeshMapper upload is a future possibility and is **not included** in 0.2.2.
+Wardriving/MeshMapper upload is a future possibility and is **not included** in 0.2.3.
 
 ## Development references
 
