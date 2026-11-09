@@ -46,7 +46,7 @@ final class RemoteWorkspace extends NanoHTTPD {
             if(manager==null||manager.getConnectionInfo()==null)return "Wi-Fi";
             String ssid=manager.getConnectionInfo().getSSID();
             if(ssid==null||ssid.isEmpty()||ssid.contains("unknown ssid"))return "Wi-Fi";
-            return ssid.replace("\\\"","");
+            return ssid.replace(String.valueOf((char)34),"");
         }catch(SecurityException e){return "Wi-Fi";}
     }
     static String wifiAddress(Context context){
