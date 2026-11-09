@@ -1,8 +1,8 @@
 # MeshCrossway Android
 
-**Active source branch: `main`.** `baseline/android-0.1.0` is retained only as a historical development baseline. The published, permanently signed Android 0.2.5 APK remains unchanged; newer source changes (branding and the long-press message menu) require a future explicitly built and tested release. The `main` source directory is authoritative for future development.
+**Active source branch: `main`.** `baseline/android-0.1.0` is retained only as a historical development baseline. The published, permanently signed Android 0.2.5 APK remains available. Source for 0.2.6 incorporates branding and long-press message actions; publication is gated by unit tests, API 29/35 device smoke tests, lint, and permanent-signature verification. The `main` source directory is authoritative for future development.
 
-**Development: 0.2.5 beta (versionCode 15), using the permanent signing identity established by 0.2.3** · [Install the Android APK](../docs/android-apk.md) · [Previous 0.2.1 recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
+**Development: 0.2.6 beta (versionCode 16), using the permanent signing identity established by 0.2.3** · [Install the Android APK](../docs/android-apk.md) · [Previous 0.2.1 recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
 
 Native ARM64 Android 8.0+ app for **two independent, simultaneous BLE radio sessions**: one Meshtastic and one MeshCore Companion. The application does **not** bridge, route or relay messages across networks. Its primary UI includes chats, channels, contacts, offline MapLibre areas, local phone GPS tracks/GPX and saved message history.
 
