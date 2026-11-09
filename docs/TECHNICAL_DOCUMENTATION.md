@@ -4,10 +4,22 @@ This is the entry point for engineering documentation, historical firmware relea
 
 > **Documented does not mean implemented.** Check each document's date, version, acceptance status, and linked issue/PR before treating it as a released capability.
 
-## Firmware versions and release records
+## Android beta and version strategy
+
+**Android 0.1.0 is a public beta for testing, not version 1.0.0.** It preserves the accepted alpha07 functionality. Small changes use 0.1.1, 0.1.2, etc.; substantial changes use 0.2.0. The first production release is reserved for 1.0.0 after core scope and stability acceptance. Controller firmware versions remain independent.
+
+- [Android beta installation, capabilities, limits and validation](android-apk.md)
+- [Download the 0.1.0 beta APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.1.0/MeshCrossway-0.1.0.apk) · [Release notes and checksums](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.0)
+- [Android source and build guide](https://github.com/Renbrant/MeshCrossway/tree/baseline/android-0.1.0/android)
+- [Preserved Android development history](android-development-history.md)
+
+The Android app uses the phone directly with the two radios; the controller, its SD storage, external GNSS and local browser companion described below belong to the dedicated hardware track.
+
+## Controller firmware versions and release records
 
 - [Current firmware development and operating guide](../firmware/display-prototype/README.md)
-- [Stable v0.9.28 acceptance and recovery](stable-v0928.md)
+- [Current stable v0.9.32 acceptance and recovery](stable-v0932.md)
+- [Previous stable v0.9.28 acceptance and recovery](stable-v0928.md)
 - [Previous stable v0.9.25](stable-v0925.md)
 - [Historical stable v0.8.26](stable-v0826.md)
 - [Historical stable v0.8.17](stable-v0817.md)
@@ -17,9 +29,9 @@ This is the entry point for engineering documentation, historical firmware relea
 
 ## Features and implementation details
 
-## What works today
+## What works in the controller
 
-| Capability | Available in v0.9.28 stable |
+| Capability | Available in controller v0.9.32 baseline |
 |---|---|
 | **Two independent radios** | Simultaneous Meshtastic and MeshCore BLE sessions, native messages, channels, separate identities, pairing and reconnection. No bridging between networks. |
 | **Touchscreen and local browser** | Home dashboard, network filters, conversations and radio settings. The browser companion runs on the device's local Wi-Fi network and includes messages, settings and track tools. |
@@ -33,7 +45,7 @@ This is the entry point for engineering documentation, historical firmware relea
 | **Diagnostics and storage recovery** | Console memory logs, internal RAM/PSRAM/DMA snapshots, allocation and touch diagnostics, bounded SD work and recovery archives. Cleanup reduces stale records; fixed table capacity remains allocated. |
 | **Live position sharing** | Not implemented; remains future work. |
 
-Start with the [current firmware guide](firmware/display-prototype/README.md). Recent operating details: [node age and retention](docs/node-age-v0928.md), [orientation correction](docs/rotation-reference-v0927.md) and [map controls](docs/stable-v0925.md). Existing photos and screenshots retain their original version labels; they are historical evidence, not new v0.9.28 captures. Tested configurations do not establish compatibility with every radio board or firmware version.
+Start with the [current firmware guide](../firmware/display-prototype/README.md). Recent operating details: [node age and retention](node-age-v0928.md), [orientation correction](rotation-reference-v0927.md) and [map controls](stable-v0925.md). Existing photos and screenshots retain their original version labels; they are historical evidence, not new v0.9.32 captures. Tested configurations do not establish compatibility with every radio board or firmware version.
 
 ## Remote interface and track backup
 
@@ -61,10 +73,10 @@ The two BLE links use separate protocol adapters: Meshtastic protobuf PhoneAPI o
 
 **Hardware still being validated:** exact battery and charger choices, battery protection and monitoring, GNSS antenna and power integration, antenna separation, RF coexistence, endurance and final enclosure fit. The optional mechanical dock is not required for BLE operation. The previous integrated Rev A UART/PCB design is archived and is not the current assembly baseline.
 
-- [Approved modular architecture and validation plan](docs/modular-architecture.md)
-- [Hardware source list](docs/hardware-sources.md)
-- [Archived Rev A wiring](docs/hardware-wiring.md)
-- [Archived Rev A PCB layout](docs/pcb-layout-rev-a.md)
+- [Approved modular architecture and validation plan](modular-architecture.md)
+- [Hardware source list](hardware-sources.md)
+- [Archived Rev A wiring](hardware-wiring.md)
+- [Archived Rev A PCB layout](pcb-layout-rev-a.md)
 
 
 
@@ -107,34 +119,35 @@ This snapshot is informational and may become outdated; use the live GitHub Issu
 
 | Topic | Reference |
 |---|---|
-| v0.9.28 recommended stable | [Acceptance, binary pin and recovery](docs/stable-v0928.md) |
-| Current user features and test procedure | [Firmware guide](firmware/display-prototype/README.md) · [Age colors and retention](docs/node-age-v0928.md) |
-| Rotation, lock and manual correction | [Orientation notes](docs/rotation-reference-v0927.md) |
-| v0.9.25 previous stable recovery | [Previous stable record](docs/stable-v0925.md) |
-| v0.8.26 historical stable image | [Stable release record](docs/stable-v0826.md) |
-| v0.8.17 historical stable image | [Historical release record](docs/stable-v0817.md) |
-| v0.8.18 node map and activity ordering | [Feature notes](docs/node-map-and-recent-activity-v0818.md) |
-| v0.8.20 Home GPS card spacing | [Feature notes](docs/home-gps-layout-v0820.md) |
-| v0.8.20 Configurable map node markers and compact toggles | [Map and display notes](docs/map-node-marker-settings-v0820.md) |
-| v0.8.21 Adjustable map node marker size and quick access | [Feature notes](docs/map-node-size-v0821.md) |
-| v0.8.22 Configurable map node colors | [Feature notes](docs/map-node-color-v0822.md) |
-| v0.8.23 Separate node icon and color settings by network | [Feature notes](docs/map-node-style-v0823.md) |
-| v0.8.24 Meshtastic and MeshCore settings navigation redesign | [Candidate notes](docs/settings-navigation-v0824.md) |
-| v0.8.25 map fallback centering when local GPS has no current fix | [Candidate notes](docs/map-node-centering-v0825.md) |
-| v0.8.26 remote MeshCore chat sender names | [Stable release record](docs/stable-v0826.md) |
-| v0.9.1 compact settings pages with back navigation on device and remote | [Candidate notes](docs/settings-navigation-v091.md) |
-| Simultaneous BLE radios and per-network settings | [Dual-radio implementation notes](docs/dual-radio-settings-v0816.md) |
-| Device and browser operation screenshots | [Field evidence](docs/field-evidence-v0816.md) |
-| Modular Core and Radio Pod design | [Modular architecture](docs/modular-architecture.md) |
-| Native firmware and protocol boundary | [Radio firmware strategy](docs/radio-firmware-strategy.md) |
-| Maps and map-rendering investigation | [Maps/GPS notes](docs/maps-gps-v081.md) · [Map rendering latency](docs/map-render-latency-v087.md) |
-| Track organization, route preview and GPX backup | [Field evidence](docs/field-evidence-v0816.md) · [Maps/GPS notes](docs/maps-gps-v081.md) |
-| Meshtastic and MeshCore comparison | [Protocol comparison](docs/meshtastic-vs-meshcore.md) |
-| Community maps and regional coverage | [Maps and regional check](docs/mesh-maps-and-regional-check.md) |
-| Future integrations | [Integration registry](docs/future-integrations/README.md) |
-| Archived interface concepts | [UI prototype gallery](docs/ui-prototype/README.md) |
+| v0.9.32 recommended controller baseline | [Acceptance and recovery](stable-v0932.md) |
+| v0.9.28 previous stable | [Acceptance, binary pin and recovery](stable-v0928.md) |
+| Current user features and test procedure | [Firmware guide](../firmware/display-prototype/README.md) · [Age colors and retention](node-age-v0928.md) |
+| Rotation, lock and manual correction | [Orientation notes](rotation-reference-v0927.md) |
+| v0.9.25 previous stable recovery | [Previous stable record](stable-v0925.md) |
+| v0.8.26 historical stable image | [Stable release record](stable-v0826.md) |
+| v0.8.17 historical stable image | [Historical release record](stable-v0817.md) |
+| v0.8.18 node map and activity ordering | [Feature notes](node-map-and-recent-activity-v0818.md) |
+| v0.8.20 Home GPS card spacing | [Feature notes](home-gps-layout-v0820.md) |
+| v0.8.20 Configurable map node markers and compact toggles | [Map and display notes](map-node-marker-settings-v0820.md) |
+| v0.8.21 Adjustable map node marker size and quick access | [Feature notes](map-node-size-v0821.md) |
+| v0.8.22 Configurable map node colors | [Feature notes](map-node-color-v0822.md) |
+| v0.8.23 Separate node icon and color settings by network | [Feature notes](map-node-style-v0823.md) |
+| v0.8.24 Meshtastic and MeshCore settings navigation redesign | [Candidate notes](settings-navigation-v0824.md) |
+| v0.8.25 map fallback centering when local GPS has no current fix | [Candidate notes](map-node-centering-v0825.md) |
+| v0.8.26 remote MeshCore chat sender names | [Stable release record](stable-v0826.md) |
+| v0.9.1 compact settings pages with back navigation on device and remote | [Candidate notes](settings-navigation-v091.md) |
+| Simultaneous BLE radios and per-network settings | [Dual-radio implementation notes](dual-radio-settings-v0816.md) |
+| Device and browser operation screenshots | [Field evidence](field-evidence-v0816.md) |
+| Modular Core and Radio Pod design | [Modular architecture](modular-architecture.md) |
+| Native firmware and protocol boundary | [Radio firmware strategy](radio-firmware-strategy.md) |
+| Maps and map-rendering investigation | [Maps/GPS notes](maps-gps-v081.md) · [Map rendering latency](map-render-latency-v087.md) |
+| Track organization, route preview and GPX backup | [Field evidence](field-evidence-v0816.md) · [Maps/GPS notes](maps-gps-v081.md) |
+| Meshtastic and MeshCore comparison | [Protocol comparison](meshtastic-vs-meshcore.md) |
+| Community maps and regional coverage | [Maps and regional check](mesh-maps-and-regional-check.md) |
+| Future integrations | [Integration registry](future-integrations/README.md) |
+| Archived interface concepts | [UI prototype gallery](ui-prototype/README.md) |
 
-The **LilyGO T-Deck Plus** is an optional future central-console candidate, not the current hardware baseline. Any replacement would still need to support two independent BLE radio connections and the same separation between Meshtastic and MeshCore. See the [T-Deck Plus feasibility plan](docs/alternative-central-lilygo-tdeck-plus.md).
+The **LilyGO T-Deck Plus** is an optional future central-console candidate, not the current hardware baseline. Any replacement would still need to support two independent BLE radio connections and the same separation between Meshtastic and MeshCore. See the [T-Deck Plus feasibility plan](alternative-central-lilygo-tdeck-plus.md).
 
 
 

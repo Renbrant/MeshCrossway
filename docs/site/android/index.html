@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Download MeshCrossway Android 0.1.0 beta for testing. Independent Meshtastic and MeshCore Bluetooth radios, messages, maps and tracks. Not version 1.0.">
+  <title>Android 0.1.0 Beta — Download MeshCrossway</title>
+  <link rel="stylesheet" href="/MeshCrossway/assets/site.css">
+</head>
+<body>
+  <nav class="nav">
+    <div class="wrap navin">
+      <a class="brand" href="/MeshCrossway/" aria-label="MeshCrossway home">
+        <img src="/MeshCrossway/assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44">
+      </a>
+      <div class="links">
+        <a href="/MeshCrossway/about/">About</a>
+        <a href="/MeshCrossway/hardware/">Hardware</a>
+        <a href="/MeshCrossway/software/">Software</a><a href="/MeshCrossway/android/" aria-current="page">Android beta</a>
+        <a href="/MeshCrossway/roadmap/">Roadmap</a>
+        <a href="/MeshCrossway/project-status/">Project Status</a>
+        <a href="/MeshCrossway/faq/">FAQ</a>
+        
+      </div>
+      <a class="cta" href="/MeshCrossway/flasher/">Web Flasher</a>
+    </div>
+  </nav>
+
+
+<main>
+  <section class="pagehero"><div class="wrap">
+    <div class="eyebrow">Android · Public beta for testing</div>
+    <h1>MeshCrossway 0.1.0 beta.</h1>
+    <p class="lead">Two independent mesh radios, one Android interface. Try messages, contacts, maps and tracks with your Meshtastic and MeshCore radios connected together.</p>
+    <div class="notice"><strong>This is a beta for testing, not version 1.0.0.</strong> The functional baseline has been accepted in development use. Broader phone, radio, firmware and endurance testing continues.</div>
+    <div class="actions"><a class="button primary" href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.1.0/MeshCrossway-0.1.0.apk">Download Android beta APK · 0.1.0</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.0">Release notes and checksums</a></div>
+    <p class="sectionintro">ARM64 · Android 8.0 or newer · Approximately 8.5 MB · Public GitHub release asset; no Actions login required.</p>
+  </div></section>
+  <section class="section"><div class="wrap grid3">
+    <article class="card"><h3>What you need</h3><p>An ARM64 Android phone, Bluetooth and compatible radio firmware. To use both networks, choose one Meshtastic radio and one MeshCore Companion BLE radio. The dedicated touchscreen controller is not required. Heltec V3 and Samsung S25 are used in development; other combinations need testing.</p></article>
+    <article class="card"><h3>What is included</h3><p>Independent dual BLE connections, chats and channels, contacts, map side controls and lower panels, grouping on/off, tracks and GPX, POIs, offline areas, JSON history backup and available message reception details.</p></article>
+    <article class="card"><h3>Offline use</h3><p>Native LoRa messaging needs no cellular service. Download the APK and required map areas while online. Confirm that your selected map area and zoom levels are available offline before a trip. Wardriving/MeshMapper uploads are not included.</p></article>
+  </div></section>
+  <section class="section" id="install"><div class="wrap prose">
+    <h2>Install and connect</h2>
+    <ol>
+      <li>Download the APK using the button above and open it on your phone.</li>
+      <li>Allow installation from your browser or file manager when Android prompts.</li>
+      <li>Grant Bluetooth/nearby-device permissions and location permission for GPS, tracks and scanning where required.</li>
+      <li>Close other apps using the same radios. In MeshCrossway Settings, choose your Meshtastic radio and your MeshCore radio, then let synchronization complete.</li>
+      <li>Check each network status, then test sending, receiving and reconnection.</li>
+    </ol>
+    <div class="notice"><strong>Updating an earlier test build?</strong> This beta uses a CI development signing certificate. If Android reports a signing conflict, export JSON history and needed GPX tracks <strong>before uninstalling</strong>. Uninstalling deletes local app data.</div>
+    <p>Messages and routing remain independent. An accepted-by-radio send status does not prove end-to-end delivery. Complete historical paths are shown only where captured; private/backlog MeshCore messages and Meshtastic text may not include the full path.</p>
+  </div></section>
+  <section class="section"><div class="wrap">
+    <h2>From beta to 1.0.0</h2>
+    <div class="grid3">
+      <article class="card"><h3>0.1.0</h3><p>The current accepted functional beta baseline. Earlier alpha02–alpha07 labels were development iterations; alpha07 behavior is retained under the new 0.1.0 sequence.</p></article>
+      <article class="card"><h3>0.1.1 → 0.2.0</h3><p>Corrections and small improvements increment the last number. Substantial features or workflow changes increment the middle number and reset the last number to zero.</p></article>
+      <article class="card"><h3>1.0.0</h3><p>Reserved for the first production release after core scope and stability acceptance. It has not been released. Controller firmware keeps its own independent version sequence.</p></article>
+    </div>
+    <p class="sectionintro">The APK passed build/lint/protocol checks and Android API 29/35 device smoke tests. The functional predecessor was accepted in real-device use; automated tests do not establish compatibility with every phone or radio.</p>
+    <div class="actions"><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/issues">Report a beta issue</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/android-apk.md">Detailed Android guide</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/actions/runs/42560950710">Validation run</a></div>
+    <p class="sectionintro">Include app version, phone/Android version, radio models/firmware and steps to reproduce. Redact keys, personal messages and precise locations.</p>
+  </div></section>
+</main>
+  <footer>
+    <div class="wrap">MeshCrossway is an independent open-source project. Meshtastic, MeshCore and referenced hardware brands remain the property of their respective projects and owners.</div>
+  </footer>
+
+</body>
+</html>

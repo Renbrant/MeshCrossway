@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="MeshCrossway is an offline-first touchscreen communicator for independent Meshtastic and MeshCore networks. See the current development and hardware status.">
-  <title>MeshCrossway — Project and Development Status</title>
+  <meta name="description" content="Use Meshtastic and MeshCore independently from one interface. Download the Android 0.1.0 beta APK for testing, or explore the dedicated touchscreen controller.">
+  <title>MeshCrossway — Android Beta and Dual-Mesh Controller</title>
   <link rel="stylesheet" href="/MeshCrossway/assets/site.css">
   <style>
     .evidence-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:28px}
@@ -23,7 +23,7 @@
       <div class="links">
         <a href="/MeshCrossway/about/">About</a>
         <a href="/MeshCrossway/hardware/">Hardware</a>
-        <a href="/MeshCrossway/software/">Software</a>
+        <a href="/MeshCrossway/software/">Software</a><a href="/MeshCrossway/android/">Android beta</a>
         <a href="/MeshCrossway/roadmap/">Roadmap</a>
         <a href="/MeshCrossway/project-status/">Project Status</a>
         <a href="/MeshCrossway/faq/">FAQ</a>
@@ -36,16 +36,34 @@
   <main>
     <section class="hero">
       <div class="wrap">
-        <div class="eyebrow">Open-source · Offline-first · In active development</div>
-        <h1>Two independent mesh networks.<br><span>One field communicator.</span></h1>
-        <p class="lead">MeshCrossway is a portable touchscreen that lets you use Meshtastic and MeshCore from one place. It connects to a separate radio for each network, so messages stay on their own network. The project began as an idea for one custom circuit board, but testing led to a more flexible design made from separate devices.</p>
+        <div class="eyebrow">Open-source · Android beta · Independent dual radios</div>
+        <h1>Two independent mesh networks.<br><span>One interface.</span></h1>
+        <p class="lead">Use Meshtastic and MeshCore together from your Android phone or a dedicated touchscreen controller. Connect a separate Bluetooth radio for each network; messages stay on their own network. The Android app is now available as a public beta for testing.</p>
         <div class="actions">
-          <a class="button secondary" href="/MeshCrossway/flasher/">Install stable v0.9.32</a>
+          <a class="button primary" href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.1.0/MeshCrossway-0.1.0.apk">Download Android 0.1.0 beta APK</a>
+          <a class="button secondary" href="/MeshCrossway/android/">Beta install guide</a>
+          <a class="button secondary" href="/MeshCrossway/flasher/">Controller Web Flasher</a>
           <a class="button secondary" href="https://github.com/Renbrant/MeshCrossway">View source on GitHub</a>
         </div>
+        <p class="sectionintro"><strong>Beta for testing — not version 1.0.0.</strong> Android 8.0+ on ARM64. Use two compatible BLE radios for both networks. Broader phone and radio compatibility is still being tested.</p>
         <div class="heroimg">
           <img src="/MeshCrossway/media/meshcrossway-modular-hero.jpg" alt="MeshCrossway modular Core and independent Meshtastic and MeshCore radio devices">
         </div>
+      </div>
+    </section>
+
+    <section class="section" id="android-beta">
+      <div class="wrap">
+        <div class="eyebrow">Android 0.1.0 · Public beta</div>
+        <h2>Try MeshCrossway with the phone you carry.</h2>
+        <p class="sectionintro">Connect directly to one Meshtastic radio and one MeshCore radio. No Waveshare controller is needed. Both networks keep their native protocols, identities and routing.</p>
+        <div class="grid3">
+          <article class="card"><h3>Messages and contacts</h3><p>One inbox with network filters, conversations, channels, unread counts and available message reception details.</p></article>
+          <article class="card"><h3>Maps and field tools</h3><p>Right-side map icons, lower control panels, optional node grouping, track recording, POIs, GPX export and offline map areas.</p></article>
+          <article class="card"><h3>A beta you can help test</h3><p>0.1.0 is the accepted functional baseline. Smaller updates use 0.1.1, 0.1.2 and so on; larger changes use 0.2.0. Version 1.0.0 has not been released.</p></article>
+        </div>
+        <div class="actions"><a class="button primary" href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.1.0/MeshCrossway-0.1.0.apk">Download beta APK · 0.1.0</a><a class="button secondary" href="/MeshCrossway/android/">Requirements and installation</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.1.0">Release notes and checksums</a></div>
+        <p class="sectionintro">Public download, no GitHub Actions login required. If replacing an earlier development build causes a signing conflict, export your history and GPX tracks before uninstalling. Uninstalling deletes app data.</p>
       </div>
     </section>
 
@@ -80,13 +98,13 @@
     <section class="section">
       <div class="wrap">
         <div class="eyebrow">Product architecture</div>
-        <h2>Three devices. Two separate networks.</h2>
-        <p class="sectionintro">Think of the Core as the screen and controls, and the two Radio Pods as separate radios. Bluetooth connects the screen to each radio. One runs Meshtastic and the other MeshCore; their messages and networks stay completely separate.</p>
+        <h2>Your interface. Two separate radios.</h2>
+        <p class="sectionintro">Choose an Android phone or the dedicated touchscreen Core as your screen and controls. Bluetooth connects it to each radio. One runs Meshtastic and the other MeshCore; their messages and networks stay completely separate.</p>
         <div class="network">
           <article class="card">
             <div class="num">CORE</div>
-            <h3>The touchscreen Core</h3>
-            <p>This is the part you hold and use. It shows messages, maps and location, and connects to the radios over Bluetooth.</p>
+            <h3>Phone or touchscreen Core</h3>
+            <p>The Android beta uses your phone for messages, maps and location. The separate Waveshare controller track provides a dedicated touchscreen and local browser companion.</p>
           </article>
           <div class="plus" aria-hidden="true">+</div>
           <div>
@@ -103,8 +121,8 @@
 
     <section class="section">
       <div class="wrap">
-        <div class="eyebrow">Running functionality</div>
-        <h2>Device and browser workflows</h2>
+        <div class="eyebrow">Dedicated controller · firmware track</div>
+        <h2>Controller and local browser workflows</h2>
         <div class="grid3">
           <article class="card"><div class="num">01 · COMMUNICATION</div><h3>Two independent radio networks</h3><p>Connect Meshtastic and MeshCore at the same time over separate Bluetooth links. Messages, channels, identities and radio settings remain on their own network; MeshCrossway does not bridge them.</p></article>
           <article class="card"><div class="num">02 · MAPS & GNSS</div><h3>Street, night and cached maps</h3><p>View local GNSS position, clock and node locations on street or topographic maps. Use local street night colors and cached microSD tiles offline; uncached areas need Wi-Fi.</p></article>
