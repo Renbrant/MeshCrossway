@@ -1,4 +1,5 @@
 name = "meshcrossway-cloud"
+account_id = "f8eec5828a10724ba0cd7a386e3d78c1"
 main = "src/index.ts"
 compatibility_date = "2026-11-09"
 
