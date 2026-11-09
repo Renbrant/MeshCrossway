@@ -278,6 +278,35 @@ public final class SmokeInstrumentation extends Instrumentation {
             throw new AssertionError("HTTPS diagnostics ("+workspace.tlsDiagnostics()+")",failure);
         }finally{workspace.stop();}
     }
+    private void completeBackup(MainActivity activity)throws Exception{
+        java.lang.reflect.Field radioField=MainActivity.class.getDeclaredField("service");
+        java.lang.reflect.Field trackField=MainActivity.class.getDeclaredField("trackService");
+        radioField.setAccessible(true);trackField.setAccessible(true);
+        waitUntil(()->{
+            try{return radioField.get(activity)!=null&&trackField.get(activity)!=null;}
+            catch(Exception e){return false;}
+        },"Backup stores did not bind");
+        RadioService radios=(RadioService)radioField.get(activity);
+        TrackService tracks=(TrackService)trackField.get(activity);
+        File zip=new File(getTargetContext().getCacheDir(),"migration-instrumentation.zip");
+        if(zip.exists())zip.delete();
+        java.util.concurrent.atomic.AtomicReference<String> error=new java.util.concurrent.atomic.AtomicReference<>("");
+        CountDownLatch exported=new CountDownLatch(1);
+        FullBackup.export(getTargetContext(),radios.history,tracks.store,android.net.Uri.fromFile(zip),
+            result->{error.set(result);exported.countDown();});
+        check(exported.await(40,TimeUnit.SECONDS),"Complete backup export timed out");
+        check(error.get().isEmpty()&&zip.length()>300,"Complete backup ZIP could not be saved: "+error.get());
+        try(java.util.zip.ZipFile archive=new java.util.zip.ZipFile(zip)){
+            for(String name:new String[]{"manifest.json","history.json","tracks.json","settings.json"})
+                check(archive.getEntry(name)!=null,"Complete backup missing "+name);
+        }
+        CountDownLatch imported=new CountDownLatch(1);
+        FullBackup.restore(getTargetContext(),radios.history,tracks.store,android.net.Uri.fromFile(zip),
+            result->{error.set(result);imported.countDown();});
+        check(imported.await(40,TimeUnit.SECONDS),"Complete backup restore timed out");
+        check(error.get().isEmpty(),"Complete backup restore failed: "+error.get());
+        zip.delete();
+    }
     private void activity()throws Exception{
         MainActivity.mapStyleOverride="asset://map-test-style.json";Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();
         onUi(()->{
@@ -288,7 +317,7 @@ public final class SmokeInstrumentation extends Instrumentation {
             check(find(screen,"MT · CHATS")!=null,"Meshtastic chat card is missing");
             check(find(screen,"MC · CHATS")!=null,"MeshCore chat card is missing");
         });
-        screenshot(activity,"home");remoteSecurity(activity);
+        screenshot(activity,"home");remoteSecurity(activity);completeBackup(activity);
         for(String page:new String[]{"Contacts","Chats","Channels","Map","Settings","Home"})click(activity,page);menus(activity);recording(activity);maps(activity);mapPanels(activity);click(activity,"Home");receptionDetails(activity);
         Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);onUi(()->{try{open.invoke(activity,RadioProfile.MESHTASTIC,"offline-test",new Target("c:0:test","Test channel","","test",0,true));EditText entry=composer(activity.getWindow().getDecorView());check(entry!=null,"Composer missing");entry.setText("Draft survives rotation 👋");}catch(Exception e){throw new RuntimeException(e);}});
         waitForIdleSync();screenshot(activity,"chat-draft");Method settings=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);settings.setAccessible(true);onUi(()->{try{settings.invoke(activity,"data",null);}catch(Exception e){throw new RuntimeException(e);}});screenshot(activity,"settings-data");
