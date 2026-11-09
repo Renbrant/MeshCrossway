@@ -116,6 +116,7 @@
    return unproject(center.x+point.x-w/2,center.y+point.y-h/2,this.zoom);
   }
   down(e){
+   if(e.target.closest&&e.target.closest("a"))return;
    if(e.button!==0&&e.pointerType!=="touch")return;
    e.preventDefault();
    const point=this.pointer(e);
