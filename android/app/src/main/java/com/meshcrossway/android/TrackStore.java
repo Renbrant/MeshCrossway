@@ -182,12 +182,12 @@ final class TrackStore extends SQLiteOpenHelper {
         if(table.equals("folders")){
             checkArchiveId(values.getAsString("id"));
             String name=values.getAsString("name");
-            if(name==null||name.isBlank()||name.length()>80)throw new IOException("Invalid folder name");
+            if(name==null||name.trim().isEmpty()||name.length()>80)throw new IOException("Invalid folder name");
         }else if(table.equals("tracks")){
             checkArchiveId(values.getAsString("id"));
             String name=values.getAsString("name");
             String folder=values.getAsString("folder_id");
-            if(name==null||name.isBlank()||name.length()>80||
+            if(name==null||name.trim().isEmpty()||name.length()>80||
                folder==null||(!folder.isEmpty()&&!validArchiveId(folder)))
                 throw new IOException("Invalid track name/folder");
             String state=values.getAsString("state");
