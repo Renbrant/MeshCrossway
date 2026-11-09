@@ -154,6 +154,8 @@ public final class SmokeInstrumentation extends Instrumentation {
             csrf.setRequestProperty("Cookie",cookie.split(";",2)[0]);
             check(csrf.getResponseCode()==403,"Mutating HTTP endpoint accepted request without CSRF header");
             csrf.disconnect();
+        }catch(Throwable failure){
+            throw new AssertionError("HTTPS diagnostics ("+workspace.tlsDiagnostics()+")",failure);
         }finally{workspace.stop();}
     }
     private void activity()throws Exception{
