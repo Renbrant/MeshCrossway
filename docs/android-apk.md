@@ -321,3 +321,16 @@ This is a new CI debug signature. Export JSON history and required GPX tracks
 before uninstalling an incompatible existing installation. Alpha06 remains the
 maintainer-accepted recovery reference. Alpha07 physical dual-radio acceptance
 and live route capture on the maintainer's firmware remain pending.
+
+## Android 0.x version policy and 0.1.0 baseline
+
+The maintainer reported normal operation of alpha07 and approved it as the functional Android 0.1.0 baseline. This resets the public Android version sequence; earlier 0.2.0–0.6.0 alpha labels were development builds, not releases in this sequence. Controller firmware versions are independent.
+
+- 0.1.0: accepted functional baseline, with the same app behavior as 0.6.0-alpha07.
+- 0.1.1, 0.1.2, 0.1.3: fixes and small improvements.
+- 0.2.0 and subsequent minor versions: substantial features or workflow changes.
+- 1.0.0: first production release after the agreed core scope and stability are validated.
+
+Use three numeric components consistently. Reset the patch number to zero on a minor increment. A 0.x release remains in development even when accepted as a recovery baseline. Keep Android versionCode strictly increasing across all builds, including this public version reset (0.1.0 uses versionCode 8). Never reset the package ID, history schema or stored data merely to change the display version.
+
+The originally tested APK is preserved as MeshCrossway-0.6.0-alpha07.apk, SHA-256 c2ad8690ad1d3b8e8db20b1df9efd299eed0d2ce2c8a2abe31053f965168a848, built from 76e30a019e6cdeadf8915e4d5f9c62d4188b6e7d. Renumbering the source does not rename that APK's embedded version. Its automated validation and download are recorded above. A newly built 0.1.0 APK changes only version metadata and artifact naming; no wardriving integration is included.

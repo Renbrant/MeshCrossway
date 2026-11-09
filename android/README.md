@@ -13,3 +13,7 @@ Alpha04 remains the hardware-tested recovery reference. Alpha05 uses the same pa
 ```
 
 Alpha06 reorganizes navigation into five primary tabs and grouped settings with per-radio pages, consistent Back navigation, compact rows and a full-width map. Alpha05 remains the latest user-reported functional recovery reference.
+
+## Functional baseline
+
+Android 0.1.0 is the maintainer-accepted alpha07 functionality, renumbered without feature changes. Small updates use 0.1.1, 0.1.2, etc.; substantial increments use 0.2.0, 0.3.0, etc.; production readiness is marked by 1.0.0. Android versionCode always increases. See [version policy](../docs/android-apk.md#android-0x-version-policy-and-010-baseline).
