@@ -1,6 +1,6 @@
 # MeshCrossway Android
 
-**Android 0.3.5 beta (versionCode 25), using the permanent signing identity established by 0.2.3** · [Download Android APK 0.3.5](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.5) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
+**Android 0.3.6 beta (versionCode 26), using the permanent signing identity established by 0.2.3** · [Download Android APK 0.3.6](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.6) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
 
 Native ARM64 Android 8.0+ app for **two independent, simultaneous BLE radio sessions**: one Meshtastic and one MeshCore Companion. The application does **not** bridge, route or relay messages across networks. Its primary UI includes chats, channels, contacts, offline MapLibre areas, local phone GPS tracks/GPX and saved message history.
 
@@ -126,3 +126,7 @@ Meshtastic settings now show save progress in place through submission, a possib
 ### Preset confirmation and Home (0.3.5)
 
 Home displays the synchronized Meshtastic preset beneath Ready, or Manual LoRa for manual mode. Preset save verification accepts the firmware normalization of coding rate 0 to 5 while still rejecting incorrect presets and missing custom overrides. Firmware source reference: [AdminModule LoRa validation](https://github.com/meshtastic/firmware/blob/d9c9916e73952caa1740d4becc367374c5e28e44/src/modules/AdminModule.cpp#L1025) and [preset coding-rate resolution](https://github.com/meshtastic/firmware/blob/d9c9916e73952caa1740d4becc367374c5e28e44/src/mesh/RadioInterface.cpp#L1352).
+
+### Compact Home and recent nodes (0.3.6)
+
+The Meshtastic preset is inline beside Ready. The radio cards omit Bluetooth device names, keeping connection state and signal strength. Both node cards show activity within 15 minutes. While Home is visible the recent counts are reevaluated every 30 seconds, including when no packets arrive. Recent activity is not proof that a node is reachable now; the large number remains the total saved nodes.
