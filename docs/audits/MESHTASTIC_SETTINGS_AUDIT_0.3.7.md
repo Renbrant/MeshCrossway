@@ -1,5 +1,7 @@
 # Meshtastic settings audit — Android 0.3.7
 
+> Follow-up: findings M01–M08 are addressed in [Android 0.3.8](MESHTASTIC_REMEDIATION_0.3.8.md). This document retains the original 0.3.7 audit results.
+
 Date: 2026-11-10. Result: **partial conformance; corrections required before claiming parity with the official app**.
 
 ## Scope and pinned references
