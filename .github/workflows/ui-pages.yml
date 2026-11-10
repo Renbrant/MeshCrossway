@@ -99,6 +99,20 @@ jobs:
           cp docs/images/meshcrossway_mountain_connectivity_concept.png _site/media/
           cp docs/images/meshcrossway-modular-hero.jpg _site/media/
           cp docs/images/architecture/modular-ble-topology.svg _site/media/
+      - name: Configure account portal
+        env:
+          CLERK_PUBLISHABLE_KEY: ${{ vars.CLERK_PUBLISHABLE_KEY }}
+          CLOUD_API_BASE_URL: https://meshcrossway-cloud.meshcrossway.workers.dev
+        run: |
+          python3 - <<'PY'
+          import json, os
+          config = {
+              "clerkPublishableKey": os.environ.get("CLERK_PUBLISHABLE_KEY", ""),
+              "cloudApiBaseUrl": os.environ["CLOUD_API_BASE_URL"],
+          }
+          with open("_site/account/config.js", "w", encoding="utf-8") as file:
+              file.write("window.MESHCROSSWAY_CONFIG = " + json.dumps(config) + ";\n")
+          PY
       - name: Validate firmware archive scripts
         run: |
           set -euo pipefail

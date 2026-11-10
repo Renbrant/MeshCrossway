@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Sign in to MeshCrossway to review your synchronized messages, favorites and GPX tracks.">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Account & Cloud Data — MeshCrossway</title>
+  <link rel="stylesheet" href="../assets/site.css">
+  <link rel="stylesheet" href="account.css">
+  <link rel="icon" type="image/png" href="../assets/meshcrossway-favicon.png">
+  <link rel="apple-touch-icon" href="../assets/meshcrossway-app-touch-icon.png">
+</head>
+<body>
+  <nav class="nav">
+    <div class="wrap navin">
+      <a class="brand" href="../" aria-label="MeshCrossway home"><img src="../assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44"></a>
+      <details class="site-menu"><summary>Explore</summary><div class="site-menu-panel">
+        <a href="../account/">Account &amp; cloud data</a><a href="../android/">Android app</a><a href="../esp32/">ESP32 project</a><a href="../faq/">FAQ</a><a href="https://github.com/Renbrant/MeshCrossway">GitHub repository</a>
+      </div></details>
+      <a class="cta" href="../">Home</a>
+    </div>
+  </nav>
+
+  <main class="wrap account-main">
+    <header class="account-heading">
+      <div><div class="eyebrow">MeshCrossway account</div><h1>Cloud data</h1><p>Review the conversations and favorites saved from your app, and manage your synchronized GPX tracks.</p></div>
+      <div id="user-button" class="user-button" hidden></div>
+    </header>
+
+    <section id="auth-panel" class="panel auth-panel" aria-live="polite">
+      <div class="eyebrow">Sign in securely</div><h2>Your account, across devices</h2>
+      <p>Use the same account you connected in the MeshCrossway Android app.</p>
+      <div id="sign-in"></div>
+      <p id="auth-status" class="status-text" role="status">Loading sign-in…</p>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="account-toolbar">
+        <div><div class="eyebrow">Signed in as</div><strong id="account-email"></strong></div>
+        <button id="refresh-button" class="button secondary" type="button">Refresh data</button>
+      </div>
+      <div class="notice privacy-notice"><strong>Cloud storage notice</strong><br>Messages and GPX files are protected in transit and stored with your account. They are not end-to-end encrypted. Track files contain location history; download or delete cloud copies when you no longer need them.</div>
+
+      <div class="data-grid">
+        <section class="panel data-panel">
+          <div class="section-title"><div><div class="eyebrow">Conversation history</div><h2>Messages</h2></div><span id="message-count" class="count-pill">0</span></div>
+          <p class="muted">Ordinary messages are retained for seven days. Messages in favorite conversations are retained until you remove that favorite.</p>
+          <div id="messages" class="message-list"><p class="muted">Loading messages…</p></div>
+        </section>
+
+        <section class="panel data-panel">
+          <div class="section-title"><div><div class="eyebrow">Saved conversations</div><h2>Favorites</h2></div><span id="favorite-count" class="count-pill">0</span></div>
+          <p class="muted">Unfavoriting a conversation stops its messages from receiving permanent retention.</p>
+          <div id="favorites" class="favorite-list"><p class="muted">Loading favorites…</p></div>
+        </section>
+      </div>
+
+      <section class="panel data-panel tracks-panel">
+        <div class="section-title"><div><div class="eyebrow">GPX cloud copies</div><h2>Tracks</h2><p class="muted">Download, rename or delete tracks saved in your account. Upload a GPX from this browser to make it available to your app.</p></div><label class="button primary upload-button">Upload GPX<input id="track-upload" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml"></label></div>
+        <div class="quota"><div class="quota-top"><strong id="quota-label">0 of 5 tracks · 0 B of 25 MiB</strong><span id="quota-file-limit">Maximum 5 MiB per track</span></div><div class="quota-track"><div id="quota-fill"></div></div></div>
+        <div id="tracks" class="track-list"><p class="muted">Loading tracks…</p></div>
+      </section>
+      <p id="dashboard-status" class="status-text" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <footer><div class="wrap">MeshCrossway cloud sync is optional. This account page can only access data associated with the account currently signed in.</div></footer>
+  <script src="config.js"></script>
+  <script src="account.js" defer></script>
+</body>
+</html>
