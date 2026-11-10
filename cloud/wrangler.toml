@@ -14,9 +14,9 @@ bucket_name = "meshcrossway-user-data"
 
 [vars]
 # Set this to the exact Clerk issuer shown for the production instance.
-CLERK_ISSUER = "SET_CLERK_ISSUER"
+CLERK_ISSUER = "https://humorous-boxer-8586.clerk.accounts.dev"
 # Optional allow-list for the future account website; native Android requests omit Origin.
-WEB_ORIGIN = "https://SET_ACCOUNT_DOMAIN"
+WEB_ORIGIN = "https://meshcrossway.renbrant.com"
 
 [triggers]
 crons = ["17 3 * * *"]

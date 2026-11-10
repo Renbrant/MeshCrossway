@@ -14,9 +14,16 @@ interface CloudMessage {
   messageId: string;
   sentAt: number;
   sender: string;
+  title?: string;
   body: string;
   outgoing: boolean;
   read: boolean;
+  peer?: string;
+  identity?: string;
+  slot?: number;
+  group?: boolean;
+  state?: string;
+  rxMeta?: string;
 }
 
 const SEVEN_DAYS = 7 * 24 * 60 * 60;
@@ -127,14 +134,14 @@ async function handleMessages(request: Request, env: Env, userId: string): Promi
     let cursor: MessageCursor;
     try { cursor = decodeCursor(url.searchParams.get("cursor")); } catch { return error("INVALID_CURSOR", 400); }
     cursor.time = Math.min(cursor.time, Math.floor(Date.now() / 1000));
-    const { results } = await env.DB.prepare(`SELECT m.network,m.conversation_id,m.message_id,m.sent_at,m.sender,m.body,m.outgoing,m.is_read,c.favorite
+    const { results } = await env.DB.prepare(`SELECT m.network,m.conversation_id,m.message_id,m.sent_at,m.sender,m.title,m.body,m.outgoing,m.is_read,m.peer,m.identity_hash,m.slot,m.is_group,m.state,m.rx_meta,c.favorite
       FROM messages m LEFT JOIN conversations c ON c.user_id=m.user_id AND c.network=m.network AND c.conversation_id=m.conversation_id
       WHERE m.user_id=? AND ((m.sent_at>=? AND (m.sent_at,m.network,m.conversation_id,m.message_id)>(?,?,?,?)) OR
         (c.favorite=1 AND (m.sent_at,m.network,m.conversation_id,m.message_id)>(?,?,?,?)))
-      ORDER BY m.sent_at ASC,m.network ASC,m.conversation_id ASC,m.message_id ASC LIMIT 1001`)
+      ORDER BY m.sent_at ASC,m.network ASC,m.conversation_id ASC,m.message_id ASC LIMIT 41`)
       .bind(userId, cutoff, cursor.time, cursor.network, cursor.conversationId, cursor.messageId, cursor.time, cursor.network, cursor.conversationId, cursor.messageId).all();
-    const hasMore = results.length > 1000;
-    const page = hasMore ? results.slice(0, 1000) : results;
+    const hasMore = results.length > 40;
+    const page = hasMore ? results.slice(0, 40) : results;
     const last = page[page.length - 1] as {sent_at:number;network:Network;conversation_id:string;message_id:string} | undefined;
     const nextCursor = hasMore && last ? encodeCursor({ time: last.sent_at, network: last.network, conversationId: last.conversation_id, messageId: last.message_id }) : null;
     return json({ cutoff, messages: page, nextCursor });
@@ -147,13 +154,22 @@ async function handleMessages(request: Request, env: Env, userId: string): Promi
   for (const message of payload.messages as CloudMessage[]) {
     if (!validNetwork(message.network) || !validId(message.conversationId) || !validId(message.messageId) ||
       !Number.isSafeInteger(message.sentAt) || message.sentAt > now + 300 || typeof message.sender !== "string" || message.sender.length > 160 ||
-      typeof message.body !== "string" || message.body.length > MAX_MESSAGE_BODY || typeof message.outgoing !== "boolean" || typeof message.read !== "boolean") return error("INVALID_MESSAGE", 400);
+      typeof message.body !== "string" || message.body.length > MAX_MESSAGE_BODY || typeof message.outgoing !== "boolean" || typeof message.read !== "boolean" ||
+      (message.title !== undefined && (typeof message.title !== "string" || message.title.length > 160)) ||
+      (message.peer !== undefined && (typeof message.peer !== "string" || message.peer.length > 160)) ||
+      (message.identity !== undefined && (typeof message.identity !== "string" || message.identity.length > 160)) ||
+      (message.slot !== undefined && (!Number.isSafeInteger(message.slot) || message.slot < 0 || message.slot > 255)) ||
+      (message.group !== undefined && typeof message.group !== "boolean") ||
+      (message.state !== undefined && (typeof message.state !== "string" || !["queued", "submitted", "radio accepted", "rejected", "uncertain", "delivered", "received"].includes(message.state))) ||
+      (message.rxMeta !== undefined && (typeof message.rxMeta !== "string" || message.rxMeta.length > 2048))) return error("INVALID_MESSAGE", 400);
     const bodyBytes = new TextEncoder().encode(message.body).byteLength;
     if (bodyBytes > MAX_MESSAGE_BODY * 4) return error("MESSAGE_TOO_LARGE", 413);
-    statements.push(env.DB.prepare(`INSERT INTO messages(user_id,network,conversation_id,message_id,sent_at,sender,body,outgoing,is_read)
-      SELECT ?,?,?,?,?,?,?,?,? WHERE ? >= ? OR EXISTS(SELECT 1 FROM conversations WHERE user_id=? AND network=? AND conversation_id=? AND favorite=1)
-      ON CONFLICT(user_id,network,conversation_id,message_id) DO UPDATE SET sender=excluded.sender,body=excluded.body,outgoing=excluded.outgoing,is_read=excluded.is_read`)
-      .bind(userId, message.network, message.conversationId, message.messageId, message.sentAt, message.sender, message.body, message.outgoing ? 1 : 0, message.read ? 1 : 0,
+    statements.push(env.DB.prepare(`INSERT INTO messages(user_id,network,conversation_id,message_id,sent_at,sender,title,body,outgoing,is_read,peer,identity_hash,slot,is_group,state,rx_meta)
+      SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? WHERE ? >= ? OR EXISTS(SELECT 1 FROM conversations WHERE user_id=? AND network=? AND conversation_id=? AND favorite=1)
+      ON CONFLICT(user_id,network,conversation_id,message_id) DO UPDATE SET sender=excluded.sender,title=excluded.title,body=excluded.body,outgoing=excluded.outgoing,is_read=MAX(messages.is_read,excluded.is_read),peer=excluded.peer,identity_hash=excluded.identity_hash,slot=excluded.slot,is_group=excluded.is_group,state=excluded.state,rx_meta=excluded.rx_meta
+      WHERE messages.sender IS NOT excluded.sender OR messages.title IS NOT excluded.title OR messages.body IS NOT excluded.body OR messages.outgoing IS NOT excluded.outgoing OR messages.is_read<excluded.is_read OR messages.peer IS NOT excluded.peer OR messages.identity_hash IS NOT excluded.identity_hash OR messages.slot IS NOT excluded.slot OR messages.is_group IS NOT excluded.is_group OR messages.state IS NOT excluded.state OR messages.rx_meta IS NOT excluded.rx_meta`)
+      .bind(userId, message.network, message.conversationId, message.messageId, message.sentAt, message.sender, message.title || "", message.body, message.outgoing ? 1 : 0, message.read ? 1 : 0,
+        message.peer || "", message.identity || "", message.slot || 0, message.group ? 1 : 0, message.state || (message.outgoing ? "radio accepted" : "received"), message.rxMeta || "{}",
         cutoff, message.sentAt, userId, message.network, message.conversationId));
   }
   // Old non-favorite messages are pruned; favorites retain their complete conversation.
@@ -166,24 +182,29 @@ async function handleMessages(request: Request, env: Env, userId: string): Promi
 
 async function handleFavorites(request: Request, env: Env, userId: string): Promise<Response> {
   if (request.method === "GET") {
-    const { results } = await env.DB.prepare("SELECT network,conversation_id,updated_at FROM conversations WHERE user_id=? AND favorite=1 ORDER BY updated_at DESC").bind(userId).all();
+    // Keep false rows as tombstones so an unfavorite action propagates to the user's other devices.
+    const { results } = await env.DB.prepare("SELECT network,conversation_id,favorite,updated_at FROM conversations WHERE user_id=? ORDER BY updated_at DESC").bind(userId).all();
     return json({ favorites: results });
   }
   if (request.method !== "PUT") return error("METHOD_NOT_ALLOWED", 405);
   const value = await readJson(request, 8192);
-  if (!value || !validNetwork(value.network) || !validId(value.conversationId) || typeof value.favorite !== "boolean") return error("INVALID_FAVORITE", 400);
   const now = Math.floor(Date.now() / 1000);
+  if (!value || !validNetwork(value.network) || !validId(value.conversationId) || typeof value.favorite !== "boolean" ||
+    (value.updatedAt !== undefined && (!Number.isSafeInteger(value.updatedAt) || value.updatedAt < 0 || value.updatedAt > now + 300))) return error("INVALID_FAVORITE", 400);
+  const updatedAt = value.updatedAt === undefined ? now : value.updatedAt;
   if (value.favorite) {
     await env.DB.prepare(`INSERT INTO conversations(user_id,network,conversation_id,favorite,updated_at) VALUES(?,?,?,1,?)
-      ON CONFLICT(user_id,network,conversation_id) DO UPDATE SET favorite=1,updated_at=excluded.updated_at`)
-      .bind(userId, value.network, value.conversationId, now).run();
+      ON CONFLICT(user_id,network,conversation_id) DO UPDATE SET favorite=1,updated_at=excluded.updated_at WHERE excluded.updated_at>=conversations.updated_at`)
+      .bind(userId, value.network, value.conversationId, updatedAt).run();
   } else {
     await env.DB.batch([
-      env.DB.prepare("UPDATE conversations SET favorite=0,updated_at=? WHERE user_id=? AND network=? AND conversation_id=?").bind(now, userId, value.network, value.conversationId),
-      env.DB.prepare("DELETE FROM messages WHERE user_id=? AND network=? AND conversation_id=? AND sent_at<?").bind(userId, value.network, value.conversationId, now - SEVEN_DAYS)
+      env.DB.prepare(`INSERT INTO conversations(user_id,network,conversation_id,favorite,updated_at) VALUES(?,?,?,0,?)
+        ON CONFLICT(user_id,network,conversation_id) DO UPDATE SET favorite=0,updated_at=excluded.updated_at WHERE excluded.updated_at>=conversations.updated_at`).bind(userId, value.network, value.conversationId, updatedAt),
+      env.DB.prepare("DELETE FROM messages WHERE user_id=? AND network=? AND conversation_id=? AND sent_at<? AND ? >= COALESCE((SELECT updated_at FROM conversations WHERE user_id=? AND network=? AND conversation_id=?),0)")
+        .bind(userId, value.network, value.conversationId, now - SEVEN_DAYS, updatedAt, userId, value.network, value.conversationId)
     ]);
   }
-  return json({ saved: true, permanent: value.favorite });
+  return json({ saved: true, favorite: value.favorite, updatedAt });
 }
 
 async function handleTracks(request: Request, env: Env, userId: string, trackId: string | null): Promise<Response> {
