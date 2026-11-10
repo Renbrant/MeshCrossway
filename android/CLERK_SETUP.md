@@ -2,7 +2,7 @@
 
 The Android client now has the first Clerk integration slice: native SDK initialization, a small account shortcut in the app header, Clerk's hosted sign-in/sign-up page, session restoration, and sign-out. Sign-in methods are controlled in the Clerk dashboard, so Google and Apple can be offered without embedding provider secrets in the APK.
 
-**Cloud sync is available for development testing.** The Android source includes an opt-in, user-triggered sync flow for recent messages and favorite chats. The development Worker is deployed at `https://meshcrossway-cloud.meshcrossway.workers.dev`. Tracks are not yet synchronized. No upload occurs before the user signs in and enables sync.
+**Cloud sync is available for development testing.** The Android client supports opt-in, user-triggered synchronization of recent messages and favorite chats. A separate **Sync GPS tracks** option uploads and downloads saved GPX routes, capped at five files of 5 MiB each. GPS track sync is off by default because routes reveal location history. The development Worker is deployed at `https://meshcrossway-cloud.meshcrossway.workers.dev`. No upload occurs before the user signs in, enables cloud sync, and separately enables track sync.
 
 ## Clerk dashboard
 
@@ -41,7 +41,7 @@ Without `clerkPublishableKey`, the app builds with account sign-in disabled. Clo
 - The app uses Clerk's hosted Account Portal. The provider buttons shown there depend on the dashboard configuration.
 - Sign-in does not opt a person into cloud storage. The user must enable sync and tap **Sync now**; this first client slice uploads recent messages and favorite-chat history only. It does not upload Bluetooth radio identifiers, location, contacts, or radio settings.
 - The Worker is deployed with the Clerk development issuer. Keep testing limited to development accounts until the Clerk production instance and OAuth providers are configured and the Worker is redeployed with the production issuer. Override the Worker URL with `cloudApiBaseUrl` locally or `CLOUD_API_BASE_URL` in GitHub Actions only when using another environment.
-- The Worker applies the free retention limits: ordinary messages are kept for seven days; favorite chats are retained until unfavorited. Its R2 API enforces up to five GPX tracks at 5 MiB each, but Android track synchronization is not yet connected.
+- The Worker applies the free retention limits: ordinary messages are kept for seven days; favorite chats are retained until unfavorited. Its R2 API enforces up to five GPX tracks at 5 MiB each. GPX track data is not end-to-end encrypted. Disabling track sync stops future transfers but does not delete cloud copies; deleting a track locally also does not delete the cloud copy.
 - Google native sign-in requires the Google/Clerk redirect and certificate setup. Apple sign-in requires the Apple provider connection to be configured in Clerk.
 
 ## References

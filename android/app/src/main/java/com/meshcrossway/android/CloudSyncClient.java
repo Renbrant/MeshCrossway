@@ -5,17 +5,20 @@ import android.content.SharedPreferences;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.concurrent.*;
 import org.json.*;
 import static com.meshcrossway.android.MeshData.*;
 
-/** User-triggered first version of cloud sync: recent messages and favorite chats. */
+/** User-triggered cloud sync for recent messages, favorites, and opted-in GPX tracks. */
 final class CloudSyncClient {
     interface Callback { void complete(String message, boolean success); }
+    private static final int MAX_TRACKS=5,MAX_TRACK_BYTES=5*1024*1024;
+    private static final class TrackSyncResult {int synced,quotaSkipped,sizeSkipped;}
     private static final ExecutorService executor=Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"mesh-cloud-sync");t.setDaemon(true);return t;});
     static boolean configured(){return BuildConfig.CLOUD_API_BASE_URL.trim().startsWith("https://");}
 
-    static void sync(Context context,RadioService service,Callback callback){
+    static void sync(Context context,RadioService service,TrackService trackService,Callback callback){
         if(!configured()){callback.complete("Cloud API is not configured in this build",false);return;}
         if(service==null||service.history==null){callback.complete("Local history is not ready",false);return;}
         ClerkBridge.sessionToken(token->{if(token==null||token.isEmpty()){callback.complete("Sign in again to synchronize",false);return;}executor.execute(()->{
@@ -39,9 +42,100 @@ final class CloudSyncClient {
                         cursor=page.isNull("nextCursor")?null:page.optString("nextCursor",null);
                     }while(cursor!=null&&!cursor.isEmpty());
                 }
-                callback.complete("Messages and favorites synchronized",true);
+                String message="Messages and favorites synchronized";
+                if(context.getSharedPreferences("cloud_sync",Context.MODE_PRIVATE).getBoolean("tracks_enabled",false)){
+                    requireEnabled(context);
+                    if(trackService==null||trackService.store==null)throw new IOException("Track storage is not ready");
+                    TrackSyncResult tracks=syncTracks(context,trackService.store,token);
+                    message+=" · "+tracks.synced+" GPX tracks synced";
+                    if(tracks.quotaSkipped>0)message+=" · "+tracks.quotaSkipped+" waiting for cloud space";
+                    if(tracks.sizeSkipped>0)message+=" · "+tracks.sizeSkipped+" over 5 MiB skipped";
+                }
+                callback.complete(message,true);
             }catch(Exception e){callback.complete(safeMessage(e),false);}
         });});
+    }
+
+    private static TrackSyncResult syncTracks(Context context,TrackStore store,String token)throws Exception{
+        List<TrackStore.Track> local=await(store::cloudTracks);
+        Map<String,TrackStore.Track> localByCloud=new HashMap<>();
+        for(TrackStore.Track track:local){
+            String cloudId=track.cloudId.isEmpty()?track.id:track.cloudId;
+            localByCloud.put(cloudId,track);
+        }
+        JSONObject listing=new JSONObject(request("GET","/v1/tracks",token,null,null));
+        JSONArray remoteRows=listing.optJSONArray("tracks");if(remoteRows==null)remoteRows=new JSONArray();
+        Map<String,JSONObject> remoteById=new LinkedHashMap<>();
+        for(int i=0;i<remoteRows.length();i++){JSONObject row=remoteRows.optJSONObject(i);if(row!=null){String id=row.optString("track_id","");if(!id.isEmpty())remoteById.put(id,row);}}
+        int remoteCount=remoteById.size();TrackSyncResult result=new TrackSyncResult();
+        for(TrackStore.Track track:local){
+            requireTracksEnabled(context);
+            String cloudId=track.cloudId.isEmpty()?track.id:track.cloudId;
+            JSONObject remote=remoteById.get(cloudId);
+            if(remote==null){
+                if(!track.state.equals("saved"))continue;
+                if(remoteCount>=MAX_TRACKS){result.quotaSkipped++;continue;}
+                byte[] gpx=exportTrack(store,track.id);
+                if(gpx.length==0||gpx.length>MAX_TRACK_BYTES){result.sizeSkipped++;continue;}
+                uploadTrack(cloudId,track.name,gpx,token);
+                awaitDone(done->store.markCloudTrack(track.id,cloudId,System.currentTimeMillis(),done));
+                localByCloud.put(cloudId,track);remoteCount++;result.synced++;
+            }else if(track.state.equals("saved")){
+                long remoteTime=remote.optLong("updated_at",0)*1000L;
+                if(track.modifiedAt>remoteTime+999){
+                    byte[] gpx=exportTrack(store,track.id);
+                    if(gpx.length==0||gpx.length>MAX_TRACK_BYTES){result.sizeSkipped++;continue;}
+                    uploadTrack(cloudId,track.name,gpx,token);
+                    awaitDone(done->store.markCloudTrack(track.id,cloudId,System.currentTimeMillis(),done));result.synced++;
+                }else if(remoteTime>track.modifiedAt+999){
+                    byte[] gpx=downloadTrack(cloudId,token);
+                    String name=remote.optString("name","Track");
+                    importCloudTrack(store,cloudId,name,remote.optLong("updated_at",0),gpx);
+                    result.synced++;
+                }else result.synced++;
+            }
+        }
+        requireEnabled(context);
+        requireTracksEnabled(context);
+        local=await(store::cloudTracks);localByCloud.clear();
+        for(TrackStore.Track track:local)localByCloud.put(track.cloudId.isEmpty()?track.id:track.cloudId,track);
+        JSONObject latest=new JSONObject(request("GET","/v1/tracks",token,null,null));
+        JSONArray latestRows=latest.optJSONArray("tracks");
+        if(latestRows!=null)for(int i=0;i<latestRows.length();i++){
+            requireEnabled(context);
+            requireTracksEnabled(context);
+            JSONObject row=latestRows.optJSONObject(i);if(row==null)continue;
+            String cloudId=row.optString("track_id","");if(cloudId.isEmpty())continue;
+            TrackStore.Track track=localByCloud.get(cloudId);
+            if(track==null){
+                byte[] gpx=downloadTrack(cloudId,token);
+                importCloudTrack(store,cloudId,row.optString("name","Track"),row.optLong("updated_at",0),gpx);
+                result.synced++;
+            }else if(track.state.equals("saved"))awaitDone(done->store.markCloudTrack(track.id,cloudId,row.optLong("updated_at",0)*1000L,done));
+        }
+        return result;
+    }
+
+    private static byte[] exportTrack(TrackStore store,String localId)throws Exception{
+        ByteArrayOutputStream output=new ByteArrayOutputStream();
+        String error=await(done->store.export(localId,output,done));
+        if(error!=null&&!error.isEmpty())throw new IOException(error);
+        return output.toByteArray();
+    }
+
+    private static void importCloudTrack(TrackStore store,String cloudId,String name,long updatedAt,byte[] gpx)throws Exception{
+        String error=await(callback->store.importCloudGpx(cloudId,name,updatedAt,new ByteArrayInputStream(gpx),callback));
+        if(error!=null&&!error.isEmpty())throw new IOException(error);
+    }
+
+    private static void uploadTrack(String id,String name,byte[] gpx,String token)throws Exception{
+        String path="/v1/tracks/"+URLEncoder.encode(id,"UTF-8")+"?name="+URLEncoder.encode(name,"UTF-8");
+        requestBytes("PUT",path,token,gpx,"application/gpx+xml; charset=utf-8",1024*1024);
+    }
+
+    private static byte[] downloadTrack(String id,String token)throws Exception{
+        String path="/v1/tracks/"+URLEncoder.encode(id,"UTF-8");
+        return requestBytes("GET",path,token,null,null,MAX_TRACK_BYTES);
     }
 
     private static void syncFavorites(Context context,HistoryStore history,RadioProfile profile,String radio,String token)throws Exception{
@@ -66,6 +160,10 @@ final class CloudSyncClient {
     private static void requireEnabled(Context context)throws IOException{
         if(!context.getSharedPreferences("cloud_sync",Context.MODE_PRIVATE).getBoolean("enabled",false))throw new IOException("Cloud sync was disabled");
     }
+    private static void requireTracksEnabled(Context context)throws IOException{
+        requireEnabled(context);
+        if(!context.getSharedPreferences("cloud_sync",Context.MODE_PRIVATE).getBoolean("tracks_enabled",false))throw new IOException("Track sync was disabled");
+    }
 
     private interface AsyncValue<T>{void get(java.util.function.Consumer<T> callback);}
     private interface AsyncAction{void run(Runnable callback);}
@@ -84,6 +182,20 @@ final class CloudSyncClient {
         if(body!=null){connection.setDoOutput(true);connection.setRequestProperty("Content-Type",contentType);byte[] bytes=body.getBytes(StandardCharsets.UTF_8);connection.setFixedLengthStreamingMode(bytes.length);try(OutputStream out=connection.getOutputStream()){out.write(bytes);}}
         int status=connection.getResponseCode();InputStream stream=status>=400?connection.getErrorStream():connection.getInputStream();String response="";if(stream!=null)try(InputStream in=stream;ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){if(out.size()+n>2*1024*1024)throw new IOException("Cloud response too large");out.write(buffer,0,n);}response=out.toString("UTF-8");}connection.disconnect();
         if(status<200||status>=300){String code="Cloud sync failed (HTTP "+status+")";try{code=new JSONObject(response).optString("error",code);}catch(Exception ignored){}throw new IOException(code);}return response;
+    }
+    private static byte[] requestBytes(String method,String path,String token,byte[] body,String contentType,int maxResponse)throws Exception{
+        URL url=new URL(BuildConfig.CLOUD_API_BASE_URL.trim().replaceAll("/+$","")+path);
+        if(!"https".equalsIgnoreCase(url.getProtocol()))throw new IOException("Cloud API must use HTTPS");
+        HttpURLConnection connection=(HttpURLConnection)url.openConnection();
+        try{
+            connection.setRequestMethod(method);connection.setConnectTimeout(15000);connection.setReadTimeout(60000);
+            connection.setRequestProperty("Authorization","Bearer "+token);connection.setRequestProperty("Accept","application/gpx+xml, application/json");
+            if(body!=null){connection.setDoOutput(true);connection.setRequestProperty("Content-Type",contentType);connection.setFixedLengthStreamingMode(body.length);try(OutputStream out=connection.getOutputStream()){out.write(body);}}
+            int status=connection.getResponseCode();InputStream stream=status>=400?connection.getErrorStream():connection.getInputStream();
+            byte[] response=new byte[0];if(stream!=null)try(InputStream in=stream;ByteArrayOutputStream out=new ByteArrayOutputStream()){byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){if(out.size()+n>maxResponse)throw new IOException("Cloud track is larger than the allowed limit");out.write(buffer,0,n);}response=out.toByteArray();}
+            if(status<200||status>=300){String code="Cloud track sync failed (HTTP "+status+")";try{code=new JSONObject(new String(response,StandardCharsets.UTF_8)).optString("error",code);}catch(Exception ignored){}throw new IOException(code);}
+            return response;
+        }finally{connection.disconnect();}
     }
     private static String safeMessage(Exception error){String message=error.getMessage();if(message==null||message.isEmpty())return "Cloud sync failed • check your connection and try again";if(message.startsWith("TRACK_")||message.equals("UNAUTHORIZED"))return message;return "Cloud sync failed • "+message;}
 }
