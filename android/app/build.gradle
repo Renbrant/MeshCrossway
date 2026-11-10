@@ -4,7 +4,7 @@ plugins {
 }
 android {
     namespace 'com.meshcrossway.android'
-    compileSdk 35
+    compileSdk 36
     buildToolsVersion '35.0.0'
     defaultConfig {
         applicationId 'com.meshcrossway.mobile'
