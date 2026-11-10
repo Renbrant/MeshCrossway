@@ -38,7 +38,7 @@ final class ProtocolClient {
     void receive(byte[] data,long now){admin.clock=now;if(profile==RadioProfile.MESHTASTIC)meshtastic(data,now);else meshcore(data,now);}
     private Node node(String id){Node old=nodes.get(id);Node n=old==null?new Node():new Node(old);n.id=id;return n;}
     private void publish(Node n){if(!nodes.containsKey(n.id)&&nodes.size()>=4096)return;nodes.put(n.id,n);listener.node(n);}
-    private void user(byte[] data,Node n){List<Wire.F> fs=Wire.fields(data);byte[] name=Wire.bytes(fs,2);if(name.length>0)n.name=Wire.utf8(name);byte[] key=Wire.bytes(fs,8);if(key.length==32)n.key=Wire.hex(key);n.unmessagable=Wire.number(fs,9,n.unmessagable?1:0)!=0;n.shortName=Wire.utf8(Wire.bytes(fs,3));n.hardwareModel=(int)Wire.number(fs,5,0);n.role=(int)Wire.number(fs,7,0);}
+    private void user(byte[] data,Node n){List<Wire.F> fs=Wire.fields(data);byte[] name=Wire.bytes(fs,2);if(name.length>0)n.name=Wire.utf8(name);byte[] key=Wire.bytes(fs,8);n.key=key.length==32?Wire.hex(key):"";n.licensed=Wire.number(fs,6,0)!=0;n.unmessagable=Wire.number(fs,9,n.unmessagable?1:0)!=0;n.shortName=Wire.utf8(Wire.bytes(fs,3));n.hardwareModel=(int)Wire.number(fs,5,0);n.role=(int)Wire.number(fs,7,0);}
     private void position(byte[] data,Node n){List<Wire.F> fs=Wire.fields(data);Wire.F lat=Wire.field(fs,1),lon=Wire.field(fs,2);if(lat!=null&&lon!=null){n.lat=(int)lat.number/1e7;n.lon=(int)lon.number/1e7;n.position=Math.abs(n.lat)<=90&&Math.abs(n.lon)<=180;}}
     private void meshtastic(byte[] data,long now){
         List<Wire.F> fs=Wire.fields(data);
@@ -103,7 +103,7 @@ final class ProtocolClient {
     String mtOwnerName(){return mtOwnerValue(2);}
     String mtOwnerValue(int field){return Wire.utf8(Wire.bytes(Wire.fields(mtOwner),field));}
     long mtOwnerNumber(int field){return Wire.number(Wire.fields(mtOwner),field,0);}
-    boolean mtHam(){return mtOwnerNumber(6)!=0;}
+    boolean mtHam(){Node own=nodes.get(Long.toString(myNum));return mtOwnerLoaded?mtOwnerNumber(6)!=0:own!=null&&own.licensed;}
     String regionName(){return MtLora.regionName(region);}
     void setMtOwnerField(int field,long value){if(field==6&&value!=0)throw Wire.bad("Use the licensed callsign setup");if(field==9&&!mtAtLeast(6,9))throw Wire.bad("Unmessageable requires firmware 2.6.9+");setMtOwner(Wire.replace(mtOwner,field,value));}
     void setMtHam(String callSign,String longName){if(!mtOwnerLoaded||!mtConfigLoaded(5)||mtHam())throw Wire.bad("Load the current identity and LoRa settings first");if(!callSign.matches("[A-Z0-9/]{3,7}"))throw Wire.bad("Enter a 3–7 character callsign");Wire.optionalText(callSign+" "+longName,mtAtLeast(8,0)?24:39);List<Wire.F> ls=Wire.fields(mtConfig(5));byte[] params=new Wire.Out().bytes(1,Wire.text(callSign,7)).scalar(2,Wire.number(ls,10,0)).fixed(3,Wire.number(ls,14,0)).bytes(4,Wire.bytes(Wire.fields(mtOwner),3)).bytes(5,Wire.optionalText(longName,24)).array();byte[] expected=new Wire.Out().scalar(6,1).array();admin.save(new MtAdmin.Edit(4,0,18,params,expected,true));}
@@ -179,10 +179,11 @@ final class ProtocolClient {
             if(region==0||!txEnabled)throw Wire.bad("Set LoRa region and enable TX using the official Meshtastic app first");
             if(!target.group&&(channels.get(0)==null||!channels.get(0).enabled))throw Wire.bad("Primary channel is disabled or not synchronized");
             if(!target.group&&Long.parseLong(target.peer)==myNum)throw Wire.bad("Choose another node");
-            if(!target.group&&pki&&(n.key.length()!=64))throw Wire.bad("Wait for this node's public key before sending a DM");
+            boolean usePki=!target.group&&pki&&!mtHam()&&!n.licensed;
+            if(usePki&&(n.key.length()!=64))throw Wire.bad("Wait for this node's public key before sending a DM");
             byte[] body=Wire.text(text,220);Wire.Out decoded=new Wire.Out().scalar(1,1).bytes(2,body);if(target.replyId!=0)decoded.fixed(7,target.replyId);if(target.reaction){if(target.replyId==0)throw Wire.bad("Select a message to react to");decoded.fixed(8,1);}m.rx.packetId=id;m.rx.source=myNum;m.rx.replyId=target.replyId;m.rx.emoji=target.reaction;
             Wire.Out packet=new Wire.Out().fixed(2,target.group?0xffffffffL:Long.parseLong(target.peer)).scalar(3,target.group?target.slot:0).bytes(4,decoded.array()).fixed(6,id).scalar(9,hopLimit).scalar(10,target.group?0:1).scalar(11,target.group?64:70);
-            if(!target.group&&pki)packet.bytes(16,Wire.unhex(n.key)).scalar(17,1);
+            if(usePki)packet.bytes(16,Wire.unhex(n.key)).scalar(17,1);
             frame=new Wire.Out().bytes(1,packet.array()).array();m.uid="mt:"+myNum+":"+id;
         }else{
             if(!target.group&&(n.type!=1||target.peer.length()!=64))throw Wire.bad("Direct chat requires a client contact with a unique key");

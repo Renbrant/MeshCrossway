@@ -34,3 +34,7 @@ The audit matrix also listed broader official-app functionality absent from Mesh
 Database schema advances from 4 to 5 by adding node_meta; existing messages, flags, tracks and drafts are retained. Old JSON history backups supply an empty metadata object when the new node column is absent. Reply/reaction metadata reuses the existing rx_meta column.
 
 Protocol and enum facts were compared against official protobufs revision 4c80682b3b441a4cebab9f3e5c3097857cb5c81d and Android revision 4b557c67a731ecc0908de4db2619bae3a696e2f4. The implementation is independent code; upstream GPL implementation files are references, not copied source.
+
+## 0.3.3 follow-up before delivery
+
+Direct messages now gate PKI on both participants’ licensed state. Own-node licensing is read from the initial node synchronization even before User settings is opened. Removed public keys clear their cached value. Dedicated fixtures cover licensed senders and recipients without public keys.
