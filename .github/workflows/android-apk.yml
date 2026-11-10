@@ -12,6 +12,8 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      ORG_GRADLE_PROJECT_clerkPublishableKey: ${{ vars.CLERK_PUBLISHABLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -20,7 +22,7 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
       - name: Protocol wire fixtures
         run: bash scripts/test_android_probe.sh

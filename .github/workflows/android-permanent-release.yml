@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish, such as 0.2.3 (must match android/app/build.gradle)'
+        description: 'Version to publish, such as 0.2.7 (must match android/app/build.gradle)'
         required: true
-        default: '0.2.3'
+        default: '0.2.7'
         type: string
 permissions:
   contents: write
@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 25
     env:
       GH_TOKEN: ${{ github.token }}
+      ORG_GRADLE_PROJECT_clerkPublishableKey: ${{ vars.CLERK_PUBLISHABLE_KEY }}
       MCX_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
       MCX_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
       MCX_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
@@ -32,7 +33,7 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
       - name: Verify requested version and permanent signing credentials
         shell: bash
@@ -98,17 +99,13 @@ jobs:
             exit 1
           fi
           cat > release-notes.md <<EOF
-          ## MeshCrossway Android $REQUESTED — permanently signed beta
+          ## MeshCrossway Android $REQUESTED — Clerk account sign-in beta
 
-          **First persistent-signing release**: every future compatible APK must use the same long-lived signing certificate. Updates from this APK onward can be installed over the existing app while retaining its private SQLite databases, settings, network selections, favorites, tracks and downloaded offline maps.
+          **Install as an update:** Android 0.2.6 and this release use the same permanent signing certificate. Install this APK over 0.2.6 and choose Update. Do not uninstall the app or clear its storage; that would remove locally saved messages, favorites, settings, tracks and offline maps.
 
-          **New install / starting fresh**: Install this permanently signed 0.2.3 APK normally. No ADB, ZIP backup or migration is needed. It begins saving messages, favorites, settings, selected radios, GPS tracks and map regions in the phone's persistent local storage. Every future compatible APK signed with the same key can be installed **over** the existing app, retaining that data. Never uninstall to update.
+          **Clerk account sign-in:** the app adds account registration/sign-in using the social providers enabled in the Clerk development instance, including Google and Apple where supported by the device/configuration. This release establishes identity and sessions only. Cross-device synchronization of conversations, favorites, tracks or settings is not connected yet, and the app does not upload that content to Cloudflare.
 
-          **Only for users who still have the old 0.2.2 debug APK with data:** earlier public betas used different signing certificates. A one-time migration may be needed before the new permanent signing line. Save history JSON/GPX in the older app, or use the optional private ADB/ZIP migration tool while that version is still installed; the new export feature cannot be retroactively added to an older APK. Android system permissions do not transfer through ZIP backups.
-
-          The full ZIP backup includes both radio histories, favorites, radio preferences, settings, all track points and track folders. Offline MapLibre tiles remain on the phone across normal in-place upgrades; a full uninstall removes private offline tiles and they must be downloaded again.
-
-          Signer fingerprint: see SIGNING-CERT-SHA256.txt. Keep this certificate unchanged for every release. Existing radio independence, HTTPS local access, numeric PIN, chats, channels, tracks and visual offline maps remain available. Physical device testing is required before a final 1.0 release.
+          Existing local app data and features remain available after an in-place update. The long-lived signing certificate is verified by CI and its SHA-256 fingerprint is attached to this release. This is a public beta, not version 1.0.
           EOF
           gh release create "$TAG" "release/MeshCrossway-$REQUESTED.apk" \
              release/SHA256SUMS.txt release/SIGNING-CERT-SHA256.txt \
