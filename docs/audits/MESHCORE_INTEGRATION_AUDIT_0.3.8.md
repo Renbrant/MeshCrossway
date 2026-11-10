@@ -1,5 +1,7 @@
 # MeshCore integration audit — Android 0.3.8
 
+> Follow-up: defect groups MC-01–MC-10 are addressed in [Android 0.3.9](MESHCORE_REMEDIATION_0.3.9.md). This document preserves the original 0.3.8 audit and its evidence.
+
 Date: 2026-11-10. Result: **basic interoperability works, but the integration is partial and has ten confirmed defect groups**. Four groups are P1 and six are P2 under the priorities defined below. This is an audit of the released application, not a new APK or a remediation release.
 
 ## Scope and reference versions

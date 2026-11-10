@@ -1,12 +1,12 @@
-# MeshCrossway Android — 0.3.8 beta
+# MeshCrossway Android — 0.3.9 beta
 
-> **Version 0.3.8 is published with the same permanent release signing certificate as 0.2.3/0.2.4.** Starting from a clean installation? Install the APK directly; **no ADB, ZIP or migration is necessary.** Future official APKs with the same certificate can install over this version, retaining locally stored messages, settings, favorites, GPS tracks, and offline maps. **Do not uninstall or clear app data to update.**
+> **Version 0.3.9 is published with the same permanent release signing certificate as 0.2.3/0.2.4.** Starting from a clean installation? Install the APK directly; **no ADB, ZIP or migration is necessary.** Future official APKs with the same certificate can install over this version, retaining locally stored messages, settings, favorites, GPS tracks, and offline maps. **Do not uninstall or clear app data to update.**
 
 > Only people who still have data on older debug-signed 0.2.2-or-earlier builds need an optional one-time migration. See the [migration guide](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md). This release is still a beta.
 
 > **Public beta for testing. Not version 1.0.0 and not a production release.**
 
-[Download MeshCrossway-0.3.8.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.8/MeshCrossway-0.3.8.apk) · [Release notes and SHA256SUMS.txt](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.8) · [Android download page](https://renbrant.github.io/MeshCrossway/android/)
+[Download MeshCrossway-0.3.9.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.9/MeshCrossway-0.3.9.apk) · [Release notes and SHA256SUMS.txt](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.9) · [Android download page](https://renbrant.github.io/MeshCrossway/android/)
 
 ## Requirements
 
@@ -26,9 +26,13 @@ Heltec V3 and a Samsung S25 are used in development. Other phone, board and firm
 4. In Settings, choose each radio and let synchronization complete. Confirm both network status indicators independently.
 5. If connection fails, include the Connection details output in a bug report after removing private information.
 
-**Permanent signing started with 0.2.3 and is retained in 0.3.8.** Its signature SHA-256 is pinned and checked in the GitHub release workflow. All future releases must reuse that certificate. Old debug-signed builds cannot be replaced in place with 0.2.3; if you still have data in an old build, back it up before the one-time migration. Never uninstall to force a future update.
+**Permanent signing started with 0.2.3 and is retained in 0.3.9.** Its signature SHA-256 is pinned and checked in the GitHub release workflow. All future releases must reuse that certificate. Old debug-signed builds cannot be replaced in place with 0.2.3; if you still have data in an old build, back it up before the one-time migration. Never uninstall to force a future update.
 
-SHA-256: verify the downloaded `MeshCrossway-0.3.8.apk` against the release's `SHA256SUMS.txt` asset. The `SIGNING-CERT-SHA256.txt` asset records the permanent APK signing certificate fingerprint.
+SHA-256: verify the downloaded `MeshCrossway-0.3.9.apk` against the release's `SHA256SUMS.txt` asset. The `SIGNING-CERT-SHA256.txt` asset records the permanent APK signing certificate fingerprint.
+## MeshCore integration corrections in 0.3.9
+
+Addresses all ten defect groups from the 0.3.8 audit: verified settings, repeat-mode preservation, contact approval and deletion, UTF-8 names, signed TX power, firmware capability gates, contact activity, late ACKs, integer extra-ACK preservation and uninterrupted backlog draining. See the [correction and validation matrix](audits/MESHCORE_REMEDIATION_0.3.9.md). Physical-radio testing remains necessary; advanced official-app feature gaps remain separate.
+
 ## Meshtastic settings corrections in 0.3.8
 
 Corrects all eight finding groups from the 0.3.7 settings audit: preset coding rates, full effective LoRa readback, firmware gates, regional slots/power, false-default flags, modem capabilities, licensed identity and independent module availability. Existing regression checks plus 206 new conformance checks pass. See the [correction and validation matrix](audits/MESHTASTIC_REMEDIATION_0.3.8.md). Hardware/RF testing remains necessary; this does not claim every official-app editor is implemented.
@@ -62,7 +66,7 @@ Under **Settings → Appearance & colors**, choose one of four themes inspired b
 
 Theme preferences live in existing private Android storage and **survive installing the next version over 0.2.4**. Photo mode stores a private re-encoded image copy (without original EXIF metadata) and does not upload it. Meshtastic remains orange and MeshCore remains blue wherever these colors denote network identity. The computer browser workspace currently retains its own styling. A complete ZIP backup includes theme preferences, but not the photo image itself; after uninstalling, reselect that photo.
 
-**Update in place:** If you already have 0.2.3 or newer, download the 0.3.8 APK and tap **Update**, not Uninstall. Do not clear app data. The verified permanent certificate and package ID are unchanged.
+**Update in place:** If you already have 0.2.3 or newer, download the 0.3.9 APK and tap **Update**, not Uninstall. Do not clear app data. The verified permanent certificate and package ID are unchanged.
 
 ## Remote Access from a computer
 
@@ -126,7 +130,7 @@ Private messages, old backlog, direct-routing and unsupported/truncated MeshCore
 | 0.3.0, 0.4.0, etc. | Future substantial changes; patch resets to zero |
 | 1.0.0 | First production release after core scope and stability acceptance |
 
-Android 0.3.8 uses versionCode 28. All 0.x versions remain in development. The earlier alpha02–alpha07 public-looking numbers were development iteration labels, not releases in the new sequence. Android versionCode remains strictly increasing (0.1.0 uses 8, 0.1.1 uses 9, 0.2.0 uses 10, 0.2.1 uses 11, 0.2.2 uses 12, 0.2.3 uses 13, 0.2.4 uses 14, 0.2.5 uses 15). Controller firmware keeps its independent numbering and recovery images.
+Android 0.3.9 uses versionCode 29. All 0.x versions remain in development. The earlier alpha02–alpha07 public-looking numbers were development iteration labels, not releases in the new sequence. Android versionCode remains strictly increasing (0.1.0 uses 8, 0.1.1 uses 9, 0.2.0 uses 10, 0.2.1 uses 11, 0.2.2 uses 12, 0.2.3 uses 13, 0.2.4 uses 14, 0.2.5 uses 15). Controller firmware keeps its independent numbering and recovery images.
 
 ## Help test
 
