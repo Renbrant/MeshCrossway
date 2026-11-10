@@ -30,7 +30,7 @@ public final class RadioService extends Service {
         private BluetoothGattCharacteristic tx, rx, notice;
         private final ArrayDeque<Op> queue=new ArrayDeque<>();
         private Op active;
-        ProtocolClient client;
+        ProtocolClient client;MtAdmin.Edit pendingMtEdit;String pendingMtAddress="";
         boolean desired, transportReady, persisting;
         int retries, mtu=23;
         String phase="Idle",pendingAddress;boolean forcePair;long phaseAt;
@@ -236,6 +236,7 @@ public final class RadioService extends Service {
             public void message(MeshData.Message m){history.message(profile,radio,m,muted->{if(!muted&&!m.outgoing&&!uiVisible&&s.address.equals(radio)&&System.currentTimeMillis()/1000-m.timestamp<120)alerts.show(profile,radio,m);});}
             public void delivery(String uid,String state){history.delivery(profile,radio,uid,state);}
         });
+        if(profile==RadioProfile.MESHTASTIC&&s.pendingMtEdit!=null&&s.pendingMtAddress.equals(address))s.client.admin.restore(s.pendingMtEdit);else{s.pendingMtEdit=null;s.pendingMtAddress="";}
         try{
             BluetoothDevice device=adapter.getRemoteDevice(address);s.name=deviceName(device);
             if((s.profile==RadioProfile.MESHTASTIC||s.forcePair)&&device.getBondState()!=BluetoothDevice.BOND_BONDED){
@@ -281,7 +282,7 @@ public final class RadioService extends Service {
     void configureMeshtastic(String radio,java.util.function.Consumer<ProtocolClient> action){
         Session s=sessions.get(RadioProfile.MESHTASTIC);
         if(s==null||!s.address.equals(radio)||!s.connected||!s.verified||s.client==null){if(listener!=null)listener.run();return;}
-        try{action.accept(s.client);advance(s);changed();}catch(IllegalArgumentException e){phase(s,"Settings",e.getMessage());}
+        try{action.accept(s.client);advance(s);changed();}catch(IllegalArgumentException e){s.client.admin.error=e.getMessage();s.client.admin.revision++;phase(s,"Settings",e.getMessage());changed();}
     }
     private void advance(Session s){
         if(!running||!s.transportReady||s.gatt==null||s.client==null||s.persisting||s.rssiPending||s.active!=null||!s.queue.isEmpty()||now()<s.nextWriteAt)return;
@@ -299,7 +300,7 @@ public final class RadioService extends Service {
         if(s.retry!=null)handler.removeCallbacks(s.retry);s.retry=null;
         if(s.rssiPoll!=null)handler.removeCallbacks(s.rssiPoll);
         s.rssiPoll=null;s.rssiPending=false;s.rssiCurrentLink=false;
-        if(s.client!=null)history.uncertain(s.profile,s.address);s.client=null;s.transportReady=false;s.persisting=false;
+        if(s.client!=null){history.uncertain(s.profile,s.address);if(s.profile==RadioProfile.MESHTASTIC){s.pendingMtEdit=s.client.admin.edit!=null&&s.client.admin.edit.writeId!=0?s.client.admin.edit:null;s.pendingMtAddress=s.address;}}s.client=null;s.transportReady=false;s.persisting=false;
         cancelTimeout(s);if(s.probeTimeout!=null)handler.removeCallbacks(s.probeTimeout);if(s.poll!=null)handler.removeCallbacks(s.poll);
         BluetoothGatt old=s.gatt;s.gatt=null;s.queue.clear();s.active=null;s.connected=s.verified=s.readPending=false;
         s.tx=s.rx=s.notice=null;phase(s,"Disconnected",reason);

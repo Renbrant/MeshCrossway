@@ -7,10 +7,11 @@ import javax.crypto.spec.SecretKeySpec;
 
 /** Receive-only metadata. A hop count is never substituted for an observed route. */
 final class RxInfo {
+    long packetId,source,replyId;boolean emoji;
     int hops=-1,rssi=Integer.MIN_VALUE,width=1,relay=-1;double snr=Double.NaN;
     String kind="",path="";boolean observed,mqtt;
-    RxInfo(){}RxInfo(RxInfo x){hops=x.hops;rssi=x.rssi;width=x.width;relay=x.relay;snr=x.snr;kind=x.kind;path=x.path;observed=x.observed;mqtt=x.mqtt;}
-    static RxInfo merge(RxInfo old,RxInfo next){if(next.observed&&!old.observed)return new RxInfo(next);RxInfo result=new RxInfo(old);if(result.hops<0&&next.hops>=0)result.hops=next.hops;if(result.kind.isEmpty())result.kind=next.kind;if(!Double.isFinite(result.snr))result.snr=next.snr;if(result.rssi==Integer.MIN_VALUE)result.rssi=next.rssi;if(result.relay<0)result.relay=next.relay;result.mqtt|=next.mqtt;return result;}
+    RxInfo(){}RxInfo(RxInfo x){packetId=x.packetId;source=x.source;replyId=x.replyId;emoji=x.emoji;hops=x.hops;rssi=x.rssi;width=x.width;relay=x.relay;snr=x.snr;kind=x.kind;path=x.path;observed=x.observed;mqtt=x.mqtt;}
+    static RxInfo merge(RxInfo old,RxInfo next){if(next.observed&&!old.observed){RxInfo preferred=new RxInfo(next);if(preferred.packetId==0){preferred.packetId=old.packetId;preferred.source=old.source;preferred.replyId=old.replyId;preferred.emoji=old.emoji;}return preferred;}RxInfo result=new RxInfo(old);if(result.hops<0&&next.hops>=0)result.hops=next.hops;if(result.kind.isEmpty())result.kind=next.kind;if(!Double.isFinite(result.snr))result.snr=next.snr;if(result.rssi==Integer.MIN_VALUE)result.rssi=next.rssi;if(result.relay<0)result.relay=next.relay;result.mqtt|=next.mqtt;return result;}
     static RxInfo meshcore(int encoded){RxInfo r=new RxInfo();if(encoded==255){r.kind="direct";return r;}int width=(encoded>>>6)+1,count=encoded&63;if(width>3||width*count>64)return r;r.kind="flood";r.width=width;r.hops=count;return r;}
     String summary(){String result=hops>=0?hops+" hop"+(hops==1?"":"s"):kind.equals("direct")?"Direct routing · hops unavailable":"Hops unavailable";if(Double.isFinite(snr))result+=String.format(Locale.ROOT," · SNR %.2f dB",snr);if(rssi!=Integer.MIN_VALUE)result+=" · RSSI "+rssi+" dBm";if(mqtt)result+=" · MQTT";return result;}
     static final class Observation {RxInfo info;long time,at;int type;String body;}

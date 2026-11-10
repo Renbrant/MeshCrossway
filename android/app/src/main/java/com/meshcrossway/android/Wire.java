@@ -50,4 +50,9 @@ final class Wire {
     }
     static byte[] replace(byte[] message,int tag,long value){Out out=new Out();boolean found=false;for(F f:fields(message)){if(f.tag==tag){if(!found)out.scalar(tag,value);found=true;}else out.add(f);}if(!found)out.scalar(tag,value);return out.array();}
     static byte[] replaceBytes(byte[] message,int tag,byte[] value){Out out=new Out();boolean found=false;for(F f:fields(message)){if(f.tag==tag){if(!found)out.bytes(tag,value);found=true;}else out.add(f);}if(!found)out.bytes(tag,value);return out.array();}
+    static boolean containsFields(byte[] actual,byte[] expected){List<F> a=fields(actual);for(F e:fields(expected)){F f=field(a,e.tag);if(f!=null&&f.wire!=e.wire)return false;if(e.wire==2){if(!Arrays.equals(e.bytes,f==null?EMPTY:f.bytes))return false;}else if(e.number!=(f==null?0:f.number))return false;}return true;}
+    static byte[] changes(byte[] before,byte[] after){List<F> old=fields(before);Out out=new Out();for(F f:fields(after)){F a=field(old,f.tag);if(a==null||a.wire!=f.wire||a.number!=f.number||!Arrays.equals(a.bytes,f.bytes))out.add(f);}return out.array();}
+    static byte[] floatField(byte[] message,int tag,float value){if(!Float.isFinite(value))throw bad("Enter a finite value");Out out=new Out();for(F f:fields(message))if(f.tag!=tag)out.add(f);return append(out.array(),new Out().fixed(tag,Float.floatToIntBits(value)).array());}
+    static byte[] append(byte[] a,byte[] b){byte[] result=Arrays.copyOf(a,a.length+b.length);System.arraycopy(b,0,result,a.length,b.length);return result;}
+    static byte[] optionalText(String value,int max){if(value.indexOf('\0')>=0||value.getBytes(StandardCharsets.UTF_8).length>max)throw bad("Use at most "+max+" UTF-8 bytes");return value.getBytes(StandardCharsets.UTF_8);}
 }
