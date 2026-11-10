@@ -1,29 +1,62 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Download the MeshCrossway Android 0.3.7 beta. Use Meshtastic and MeshCore from one phone with separate Bluetooth radios.">
-<title>MeshCrossway for Android — Download the public beta</title><link rel="stylesheet" href="./assets/site.css"><link rel="icon" type="image/png" href="./assets/meshcrossway-favicon.png">
-<link rel="apple-touch-icon" href="./assets/meshcrossway-app-touch-icon.png">
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Meshtastic and MeshCore, together on your Android phone. Connect two independent Bluetooth radios to keep chats, contacts and maps in one place. Try the MeshCrossway beta.">
+<title>MeshCrossway — Two radios. Two networks. One app.</title>
+<link rel="stylesheet" href="./assets/site.css"><link rel="stylesheet" href="./assets/landing.css">
+<link rel="icon" type="image/png" href="./assets/meshcrossway-favicon.png"><link rel="apple-touch-icon" href="./assets/meshcrossway-app-touch-icon.png">
+<script src="./assets/landing.js" defer></script>
 </head>
-<body><nav class="nav"><div class="wrap navin"><a class="brand" href="./" aria-label="MeshCrossway home"><img src="./assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44"></a><details class="site-menu"><summary>Explore</summary><div class="site-menu-panel"><a href="./android/">Android app</a><a href="./esp32/">ESP32 project</a><a href="./faq/">FAQ</a><a href="https://github.com/Renbrant/MeshCrossway">GitHub repository</a></div></details><a class="cta" href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.7/MeshCrossway-0.3.7.apk">Get Android APK</a></div></nav><main>
-<section class="hero"><div class="wrap"><div class="eyebrow">MeshCrossway for Android · Public beta</div>
-<h1>Two mesh networks.<br><span>One Android app.</span></h1>
-<p class="lead">Use Meshtastic and MeshCore side by side from the phone you carry. Connect to each network through its own Bluetooth radio; messages and network identities stay separate.</p>
-<div class="actions"><a class="button primary" href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.7/MeshCrossway-0.3.7.apk">Download Android 0.3.7 beta APK</a><a class="button secondary" href="./android/">Installation and requirements</a><a class="button secondary" href="./account/">Account &amp; cloud data</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.7">Release notes</a></div>
-<p class="sectionintro"><strong>New in 0.3.7:</strong> the account button now has its own toolbar space, keeping Settings and other controls accessible. Includes the compact Home, inline Meshtastic preset and 15-minute node activity on both networks.</p>
-<p class="sectionintro"><strong>Beta for testing — not version 1.0.0.</strong> Android 8.0+ on ARM64. Install over your existing permanently signed app to retain local data.</p></div></section>
-<section class="section"><div class="wrap"><div class="eyebrow">Made for the field</div><h2>Keep both networks in view.</h2>
-<p class="sectionintro">MeshCrossway puts the tools for two independent mesh radios into one Android interface.</p>
-<div class="grid3">
-<article class="card"><div class="num">01 · MESSAGING</div><h3>Chats, channels and nodes</h3><p>Read and send messages on Meshtastic and MeshCore, with each conversation clearly tied to its own network.</p></article>
-<article class="card"><div class="num">02 · MAPS</div><h3>Maps and field tools</h3><p>See network nodes, record tracks, save points of interest, export GPX files and manage downloaded offline map areas.</p></article>
-<article class="card"><div class="num">03 · BLUETOOTH</div><h3>Measured radio-link signal</h3><p>See Bluetooth signal strength between your phone and each radio. This is the BLE connection signal, not the LoRa network signal.</p></article>
-</div></div></section>
-<section class="section"><div class="wrap prose"><div class="eyebrow">Get started</div><h2>Install the beta in a few steps.</h2>
-<ol><li>Download the APK on an ARM64 Android phone running Android 8.0 or newer.</li><li>Open the file and allow your browser or file manager to install apps when Android asks.</li><li>In MeshCrossway, connect one compatible Meshtastic radio and one compatible MeshCore radio over Bluetooth.</li></ol>
-<p><strong>Updating:</strong> Install 0.3.7 over 0.3.6 or another permanently signed release (0.2.3 and later) to preserve app data. Builds 0.2.2 and earlier used temporary signing certificates; read the <a href="https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md">one-time migration guide</a> before switching from those builds. Do not uninstall to update.</p>
-<p><a href="./android/">See requirements, known limits and the full install guide →</a></p></div></section>
-<section class="section"><div class="wrap prose"><div class="eyebrow">A beta you can help improve</div><h2>Test it with your radios.</h2>
-<p>Compatibility with more Android phones, radio models and firmware versions is still being evaluated. The Bluetooth signal indicator measures the phone-to-radio link, not LoRa reception. Android Remote Access is optional, off by default and intended for a private local network.</p>
-<p>Report reproducible problems on <a href="https://github.com/Renbrant/MeshCrossway/issues">GitHub Issues</a> and include your phone, radio models and firmware versions.</p>
-<p class="sectionintro">The embedded touchscreen controller remains a secondary project; its hardware, firmware, roadmap and Web Flasher are grouped in the <a href="./esp32/">ESP32 project area</a>.</p></div></section>
-</main><footer><div class="wrap">MeshCrossway is experimental and is not certified for safety-critical use. Do not rely on it as the only communication system in an emergency.</div></footer></body></html>
+<body class="landing">
+<a class="skip" href="#main">Skip to content</a>
+<header class="nav"><nav class="wrap navin" aria-label="Main navigation">
+<a class="brand" href="./" aria-label="MeshCrossway home"><img src="./assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44"></a>
+<details class="site-menu"><summary>Explore</summary><div class="site-menu-panel"><a href="#how-it-works">How it works</a><a href="#screens">App tour</a><a href="#on-the-road">On the road</a><a href="./android/">Get started</a><a href="./account/">My account</a><a href="https://github.com/Renbrant/MeshCrossway">Technical details on GitHub</a></div></details>
+<a class="cta" href="#download">Get the app</a>
+</nav></header>
+<main id="main">
+<section class="hero"><div class="wrap hero-layout">
+<div class="hero-copy"><div class="eyebrow">Meshtastic + MeshCore · Android</div>
+<h1>Two networks.<br>More possibilities.<br><span>One app.</span></h1>
+<p class="lead">Keep up with both mesh communities from the phone you already carry. Messages, contacts and a shared map, together in MeshCrossway.</p>
+<p class="radio-requirement"><strong>Your phone + two independent radios.</strong> Connect one Meshtastic radio and one MeshCore radio by Bluetooth. Each radio stays on its own network.</p>
+<div class="actions"><a class="button primary" href="#download">Try the Android beta <span aria-hidden="true">→</span></a><a class="text-link" href="#how-it-works">See how it works <span aria-hidden="true">↓</span></a></div>
+<p class="small muted">Free, open-source Android app · Public beta for testing</p></div>
+<figure class="hero-phone"><a href="./media/android-2026-11/home.webp" class="image-zoom" aria-label="Enlarge the MeshCrossway Home screenshot"><img src="./media/android-2026-11/home.webp" alt="MeshCrossway Home showing Meshtastic and MeshCore connected side by side, with chats, contacts, GPS and tracks" width="709" height="1536" fetchpriority="high"></a><figcaption>Both radios connected. Everything in view.</figcaption></figure>
+</div></section>
+<div class="wrap benefit-strip"><span>Two independent Bluetooth connections</span><span>Messages over radio, without cellular service</span><span>One map for both networks</span></div>
+<section class="section" id="how-it-works"><div class="wrap">
+<div class="section-heading"><div class="eyebrow">A simple setup</div><h2>Your phone brings<br>the experience together.</h2><p class="sectionintro">The app is your control center. The radios carry your messages.</p></div>
+<div class="setup-layout"><div class="setup-radios"><article class="radio-unit mt"><span class="setup-label">Radio 01</span><h3>Meshtastic</h3><p>One compatible radio running Meshtastic.</p><span class="wireless">Bluetooth → your phone</span></article><article class="radio-unit mc"><span class="setup-label">Radio 02</span><h3>MeshCore</h3><p>One compatible radio running MeshCore Companion BLE firmware.</p><span class="wireless">Bluetooth → your phone</span></article></div>
+<div class="setup-phone"><img src="./assets/meshcrossway-favicon.png" width="48" height="48" alt=""><h3>MeshCrossway on Android</h3><p>Connect both radios in the app, then choose the conversation or map you want to explore.</p><p class="muted">You provide the phone and radios. Choose compatible models that suit your setup; a dedicated touchscreen controller is not required.</p></div></div>
+<p class="setup-note"><strong>Two networks, each with its own conversations.</strong> MeshCrossway lets you use them side by side. It does not forward messages between Meshtastic and MeshCore.</p>
+</div></section>
+<section class="section screen-section" id="screens"><div class="wrap">
+<div class="section-heading"><div class="eyebrow">Take a look inside</div><h2>Less switching.<br>More exploring.</h2><p class="sectionintro">Real screens from the app, with both networks connected. Select any image for a closer look.</p></div>
+<div class="screen-grid">
+<figure><a class="image-zoom" href="./media/android-2026-11/chats.webp"><img src="./media/android-2026-11/chats.webp" alt="Chats from both networks in one list, with Meshtastic and MeshCore filters" width="709" height="1536" loading="lazy"></a><figcaption><h3>Keep conversations together.</h3><p>Find your chats and channels in one place. Filter by network whenever you need to focus.</p></figcaption></figure>
+<figure><a class="image-zoom" href="./media/android-2026-11/contacts.webp"><img src="./media/android-2026-11/contacts.webp" alt="Contacts list showing favorites and recently heard devices from both mesh networks" width="709" height="1536" loading="lazy"></a><figcaption><h3>Find your people.</h3><p>Keep favorites close and see which devices have been heard recently on each network.</p></figcaption></figure>
+<figure><a class="image-zoom" href="./media/android-2026-11/map.webp"><img src="./media/android-2026-11/map.webp" alt="Unified Colorado map with orange Meshtastic and blue MeshCore markers" width="709" height="1536" loading="lazy"></a><figcaption><h3>See the bigger picture.</h3><p>Explore both networks on one map. Record your route, save places and download map areas before you head out.</p></figcaption></figure>
+<figure><a class="image-zoom" href="./media/android-2026-11/settings.webp"><img src="./media/android-2026-11/settings.webp" alt="Settings for both radios, app colors, notifications, maps and backup" width="709" height="1536" loading="lazy"></a><figcaption><h3>Make it yours.</h3><p>Choose your colors, manage each radio and keep a backup of your data.</p></figcaption></figure>
+</div><p class="small muted">Screenshots from beta 0.3.6. Appearance and features may change as the app develops. Map markers show stored positions, not guaranteed live availability.</p>
+</div></section>
+<section class="section" id="on-the-road"><div class="wrap">
+<div class="road-heading"><div><div class="eyebrow">One setup, many ways to carry it</div><h2>Ready for your<br>next outing.</h2></div><p class="sectionintro">Carry your radios in a pack, use them at home or build a setup for your vehicle. Bluetooth gives you flexibility in where you place them, within connection range.</p></div>
+<div class="mount-gallery"><figure><a class="image-zoom" href="./media/android-2026-11/car-mount-open.webp"><img src="./media/android-2026-11/car-mount-open.webp" alt="Custom car-roof mount opened to reveal two separate radios in blue and green cases, each with its own antenna" width="1440" height="1080" loading="lazy"></a><figcaption>Inside: two independent radios, each with its own antenna.</figcaption></figure><figure><a class="image-zoom" href="./media/android-2026-11/car-mount-closed.webp"><img src="./media/android-2026-11/car-mount-closed.webp" alt="Closed custom car-roof enclosure with two antennas" width="1440" height="1080" loading="lazy"></a><figcaption>Closed: a compact enclosure designed for the car roof.</figcaption></figure></div>
+<div class="mount-caption"><h3>A real example from the project.</h3><p>This custom 3D-printed mount was made by MeshCrossway’s creator to hold both radios on a car roof while using the app from the phone. It is an example of a personal setup, not a required accessory or a product included with the app.</p></div>
+</div></section>
+<section class="section" id="download"><div class="wrap download-layout"><div><div class="eyebrow">Start with the radios you choose</div><h2>Bring both networks<br>along for the ride.</h2><p class="sectionintro">Try MeshCrossway with an Android phone and two compatible Bluetooth radios: one for Meshtastic, one for MeshCore.</p><a class="button primary" href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.7/MeshCrossway-0.3.7.apk">Download Android beta · 0.3.7</a><p class="small muted">Android 8.0 or newer · ARM64 phone · Free APK download</p><p class="beta-note"><strong>A working beta, still evolving.</strong> Version 1.0 has not been released. Compatibility with more phones and radios is still being tested.</p></div>
+<ol class="start-steps"><li><h3>Install the app.</h3><p>Download the APK on your phone, open it and allow installation when Android asks.</p></li><li><h3>Connect your two radios.</h3><p>Open Settings in MeshCrossway. Connect your Meshtastic radio and your MeshCore radio over Bluetooth.</p></li><li><h3>Explore both networks.</h3><p>Open your chats, browse contacts or bring both networks into view on the map.</p></li></ol>
+</div><div class="wrap download-links"><a href="./android/">Installation help →</a><a href="./account/">My account →</a><a href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.7">What’s new →</a></div></section>
+<section class="section"><div class="wrap faq consumer-faq"><div class="eyebrow">Good to know</div><h2>A few common questions.</h2>
+<details><summary>Can I use only my phone?</summary><p>You need external radios to communicate with the mesh networks. To use Meshtastic and MeshCore together, connect two independent compatible Bluetooth radios — one for each network. The phone runs the app; each radio handles its network.</p></details>
+<details><summary>Do I need mobile service or internet?</summary><p>Radio messages do not need cellular service or internet. You do need internet to download the app and map areas. Download maps before going offline. Message delivery depends on your radio setup, terrain and available mesh coverage.</p></details>
+<details><summary>Do I have to buy a specific radio or the car mount?</summary><p>No specific brand or car mount is required. Each radio must support its network’s compatible Bluetooth connection. Heltec V3 radios are used in development; other models and firmware combinations need testing. <a href="https://github.com/Renbrant/MeshCrossway/blob/main/docs/android-apk.md">See the compatibility and setup guide on GitHub →</a></p></details>
+<details><summary>Can someone on Meshtastic talk to someone on MeshCore?</summary><p>Messages stay on the network you send them through. MeshCrossway brings both networks into one app, but does not bridge or relay messages between them.</p></details>
+<details><summary>Where are the technical details?</summary><p>Source code, radio requirements, development notes and the separate ESP32 controller project are documented on <a href="https://github.com/Renbrant/MeshCrossway">GitHub</a>. You can also <a href="https://github.com/Renbrant/MeshCrossway/issues">report a problem or suggest an improvement</a>.</p></details>
+</div></section>
+</main>
+<footer><div class="wrap footer-top"><img src="./assets/meshcrossway-logo.svg" width="220" height="30" alt="MeshCrossway"><div><a href="https://github.com/Renbrant/MeshCrossway">GitHub &amp; technical documentation</a><a href="https://github.com/Renbrant/MeshCrossway/issues">Feedback</a><a href="./account/">My account</a></div></div><div class="wrap footer-note">An independent open-source project. Meshtastic and MeshCore belong to their respective projects. MeshCrossway is experimental and should not be your only means of communication in an emergency.</div></footer>
+<dialog class="image-dialog" aria-label="Expanded photo"><button type="button" class="close-image" aria-label="Close expanded photo">Close ×</button><img alt=""><p></p></dialog>
+</body></html>
