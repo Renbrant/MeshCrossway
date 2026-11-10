@@ -17,6 +17,7 @@ final class NavIcon extends View {
                 break;
             }
             case "contacts":c.drawCircle(10,8,3.5f,paint);c.drawArc(3,13,17,24,185,170,false,paint);c.drawArc(15,5,21,12,-90,180,false,paint);c.drawArc(16,14,23,23,220,100,false,paint);break;
+            case "account":c.drawCircle(12,8,4,paint);c.drawArc(4,13,20,23,180,180,false,paint);break;
             case "channels":c.drawRoundRect(3,4,21,11,2,2,paint);c.drawRoundRect(3,15,21,22,2,2,paint);line(c,7,7.5f,7,7.5f);line(c,7,18.5f,7,18.5f);break;
             case "chats":c.drawRoundRect(3,3,21,18,3,3,paint);line(c,7,18,7,22);line(c,7,22,12,18);line(c,7,8,17,8);line(c,7,12,14,12);break;
             case "map":line(c,3,5,9,3);line(c,9,3,15,6);line(c,15,6,21,4);line(c,21,4,21,20);line(c,21,20,15,22);line(c,15,22,9,19);line(c,9,19,3,21);line(c,3,21,3,5);line(c,9,3,9,19);line(c,15,6,15,22);break;

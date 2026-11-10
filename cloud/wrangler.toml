@@ -1,0 +1,22 @@
+name = "meshcrossway-cloud"
+main = "src/index.ts"
+compatibility_date = "2026-11-09"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "meshcrossway-cloud"
+database_id = "f5658870-2187-4b57-83c6-b60fada1837b"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "TRACKS"
+bucket_name = "meshcrossway-user-data"
+
+[vars]
+# Set this to the exact Clerk issuer shown for the production instance.
+CLERK_ISSUER = "SET_CLERK_ISSUER"
+# Optional allow-list for the future account website; native Android requests omit Origin.
+WEB_ORIGIN = "https://SET_ACCOUNT_DOMAIN"
+
+[triggers]
+crons = ["17 3 * * *"]

@@ -4,6 +4,8 @@
 
 Native ARM64 Android 8.0+ app for **two independent, simultaneous BLE radio sessions**: one Meshtastic and one MeshCore Companion. The application does **not** bridge, route or relay messages across networks. Its primary UI includes chats, channels, contacts, offline MapLibre areas, local phone GPS tracks/GPX and saved message history.
 
+**Clerk account sign-in is in development:** the source now includes hosted sign-in/sign-up and local session management, but cloud synchronization is not connected to the APK yet. The current public 0.2.5 APK does not include this change. See [Clerk setup](CLERK_SETUP.md).
+
 ## New in 0.2.2 — Browser chats, channels, and visual offline maps
 
 On the remote browser's **Messages** screen, select Meshtastic or MeshCore, then switch between three lists: **Chats** (private message history), **Channels** (configured channels even with no messages plus saved group conversations), and **Nodes** (start a direct message to a contact). Clicking a channel or node opens its conversation, with read/send actions where supported.

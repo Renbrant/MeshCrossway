@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 25
     env:
       GH_TOKEN: ${{ github.token }}
+      ORG_GRADLE_PROJECT_clerkPublishableKey: ${{ vars.CLERK_PUBLISHABLE_KEY }}
       MCX_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
       MCX_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
       MCX_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}

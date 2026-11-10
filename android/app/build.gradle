@@ -1,4 +1,7 @@
-plugins { id 'com.android.application' }
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
 android {
     namespace 'com.meshcrossway.android'
     compileSdk 35
@@ -9,12 +12,15 @@ android {
         targetSdk 35
         versionCode 15
         versionName '0.2.5'
+        buildConfigField 'String', 'CLERK_PUBLISHABLE_KEY', '"' + (providers.gradleProperty('clerkPublishableKey').getOrElse('')) + '"'
         testInstrumentationRunner 'com.meshcrossway.android.SmokeInstrumentation'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    kotlinOptions { jvmTarget = '17' }
     splits { abi { enable true; reset(); include 'arm64-v8a', 'x86_64'; universalApk false } }
     packaging { jniLibs { useLegacyPackaging true } }
     lint { abortOnError true }
+    buildFeatures { buildConfig true }
     // All published releases MUST use the same long-lived signing certificate.
     // Keystore and passwords are injected by CI secrets; never commit them.
     signingConfigs {
@@ -40,6 +46,7 @@ android {
 }
 
 dependencies {
+    implementation 'com.clerk:clerk-android-api:1.4.1'
     implementation 'org.maplibre.gl:android-sdk:11.13.5'
     implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'com.squareup.okio:okio-jvm:3.6.0'
