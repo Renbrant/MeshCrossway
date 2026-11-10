@@ -1,0 +1,29 @@
+PASS BOOTSTRAP | device/self/contacts/channels bootstrap succeeds
+PASS NUS-UUID | official Nordic UART service UUID
+PASS MTU-BUDGET | 176-byte ATT MTU leaves 173-byte writes
+FAIL SIGNED-TX-POWER | firmware TX -5 dBm decoded as 251
+FAIL RADIO-PRESERVE-REPEAT | boot advertises repeat enabled; radio save sends repeat=0
+FAIL NO-OPTIMISTIC-SETTINGS | before a write/ACK/readback, localName=Changed
+FAIL SETTING-ERROR-RECOVERY | a normal settings ERR throws=true; RadioService.received closes GATT on this exception
+FAIL REJECTED-SETTING-CACHE | a radio with maximum 20 rejects 22 dBm, but displayed TX power remains 22
+FAIL RADIO-FINITE-VALIDATION | nonfinite radio input must fail before queueing an invalid command
+FAIL LOCATION-FINITE-VALIDATION | NaN coordinates must not become an optimistic zero/zero position
+PASS NAME-31 | 31-byte name is accepted
+FAIL NAME-32-REJECT | firmware stores at most 31 bytes
+FAIL NAME-UTF8-REJECT | 32-byte UTF-8 name must be rejected before firmware truncates a code point
+PASS TRUNCATED-NAME-STRICT-DECODE | firmware byte truncation can make the next identity response fail strict UTF-8 decoding
+FAIL CONTACT-DELETED | deleted key remains eligible as a synchronized contact=true
+FAIL DISCOVERY-NOT-APPROVAL | manual discovery was promoted to active contact=true
+FAIL CONTACT-FULL-REFRESH | a fresh empty radio contact list leaves local count=1
+FAIL CONTACT-LAST-HEARD | lastmod=1794337200, advert timestamp=1700000000, displayed heard=1700000000
+FAIL DM-UPDATES-ACTIVITY | receiving a fresh DM does not advance the contact activity timestamp
+FAIL PRESERVE-MULTI-ACK-COUNT | unrelated privacy edit changes firmware extra ACK count 3 to 1
+FAIL LATE-ACK-RECONCILIATION | valid matching ACK after the estimate is forgotten; events=submitted, radio accepted, uncertain
+FAIL OLD-PROTOCOL-STATS-GATE | protocol v3 queues v8+ stats opcode=56
+FAIL OLD-PROTOCOL-SCOPE-GATE | protocol v3 queues newer scope opcode=64
+PASS RADIO-STATS-OFFSETS | signed RSSI/SNR, noise and airtime match the official frame
+PASS DEFAULT-SCOPE-READ | scope name offset is correct
+FAIL BINARY-BACKLOG-DRAIN | consumed channel-data frame does not immediately request the next queued message
+PASS GROUP-TEXT-WIRE | plain channel send offsets match firmware
+PASS AMBIGUOUS-DM-REJECT | a 6-byte key-prefix collision cannot select an arbitrary outgoing recipient
+SUMMARY checks=28 failures=19
