@@ -161,7 +161,7 @@
     const target = document.getElementById("messages");
     document.getElementById("message-count").textContent = String(messages.length);
     if (!messages.length) {
-      target.innerHTML = '<div class="empty-state">No synchronized messages were found in the current retention window.</div>';
+      target.innerHTML = '<div class="empty-state">No synchronized messages were found in the current retention window. In the Android app, open Account &amp; Sync, tap Sync Now, then refresh this page.</div>';
       return;
     }
     target.innerHTML = messages.slice().reverse().map((row) => {
