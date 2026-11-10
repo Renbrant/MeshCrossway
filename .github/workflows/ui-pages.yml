@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 2266)
-Total output lines: 179
-
 name: Build firmware and deploy MeshCrossway website
 
 on:
@@ -111,7 +108,25 @@ jobs:
           import json, os
           key = os.environ.get("CLERK_PUBLISHABLE_KEY", "")
           if not key:
-              print("Using the pub…266 tokens truncated….cpp', 'tests/home_cards_test.cpp', 'tests/navigation_store_test.cpp', 'tests/navigation_folders_test.cpp', 'tests/remote_radio_test.cpp', 'tests/navigation_runtime_test.cpp', 'scripts/test_meshtastic.py', 'tests/meshtastic_protocol_test.cpp', 'tests/meshtastic_runtime_test.cpp', 'scripts/check_chat_memory.py', 'scripts/test_conversations_history.py', 'tests/conversations_history_test.cpp', 'tests/sd_history_worker_test.cpp', 'tests/meshcore_transport_test.cpp', 'tests/test_chat_presentation.cpp', 'tests/remote_chat_test.cpp', 'scripts/test_remote_chat.py', 'scripts/test_remote_folders.cjs', 'scripts/test_navigation_http.py', 'tests/navigation_http_json_test.cpp', 'scripts/check_http_stack.py', 'scripts/check_ble_resume_stack.py', 'scripts/test_ble_resume.py', 'scripts/test_ble_dual.py', 'tests/ble_dual_stub.h', 'tests/ble_dual_test.cpp', 'scripts/test_radio_settings.py', 'tests/radio_settings_test.cpp', 'tests/remote_settings_test.cpp', 'scripts/test_remote_settings.cjs', 'scripts/test_runtime_diagnostics.py', 'scripts/test_memory_log.py', 'scripts/report_memory_config.py', 'firmware/display-prototype/**', 'scripts/build_firmware_versions.sh', 'scripts/write_firmware_version.py', 'scripts/check_ble_sdkconfig.py', 'scripts/test_ble_pairing_ui.py', 'scripts/test_meshcore.py', 'tests/meshcore_protocol_test.cpp') }}-idf532-bsp-d9ff7837-v2
+              print("Keeping the bundled public account configuration")
+              raise SystemExit(0)
+          config = {
+              "clerkPublishableKey": key,
+              "cloudApiBaseUrl": os.environ["CLOUD_API_BASE_URL"],
+          }
+          with open("_site/account/config.js", "w", encoding="utf-8") as file:
+              file.write("window.MESHCROSSWAY_CONFIG = " + json.dumps(config) + ";\n")
+          PY
+      - name: Validate firmware archive scripts
+        run: |
+          set -euo pipefail
+          bash -n scripts/build_firmware_versions.sh
+          python3 -m py_compile scripts/write_firmware_version.py scripts/write_firmware_catalog.py scripts/verify_firmware_version.py
+      - name: Restore cached current firmware image
+        uses: actions/cache@v4
+        with:
+          path: _site/flasher/firmware/versions
+          key: meshcrossway-current-${{ hashFiles('tests/test_emoji_lvgl.cpp', 'scripts/test_map_navigation.py', 'tests/map_navigation_test.cpp', 'tests/map_projection_test.cpp', 'tests/gnss_runtime_test.cpp', 'tests/home_status_test.cpp', 'tests/home_cards_test.cpp', 'tests/navigation_store_test.cpp', 'tests/navigation_folders_test.cpp', 'tests/remote_radio_test.cpp', 'tests/navigation_runtime_test.cpp', 'scripts/test_meshtastic.py', 'tests/meshtastic_protocol_test.cpp', 'tests/meshtastic_runtime_test.cpp', 'scripts/check_chat_memory.py', 'scripts/test_conversations_history.py', 'tests/conversations_history_test.cpp', 'tests/sd_history_worker_test.cpp', 'tests/meshcore_transport_test.cpp', 'tests/test_chat_presentation.cpp', 'tests/remote_chat_test.cpp', 'scripts/test_remote_chat.py', 'scripts/test_remote_folders.cjs', 'scripts/test_navigation_http.py', 'tests/navigation_http_json_test.cpp', 'scripts/check_http_stack.py', 'scripts/check_ble_resume_stack.py', 'scripts/test_ble_resume.py', 'scripts/test_ble_dual.py', 'tests/ble_dual_stub.h', 'tests/ble_dual_test.cpp', 'scripts/test_radio_settings.py', 'tests/radio_settings_test.cpp', 'tests/remote_settings_test.cpp', 'scripts/test_remote_settings.cjs', 'scripts/test_runtime_diagnostics.py', 'scripts/test_memory_log.py', 'scripts/report_memory_config.py', 'firmware/display-prototype/**', 'scripts/build_firmware_versions.sh', 'scripts/write_firmware_version.py', 'scripts/check_ble_sdkconfig.py', 'scripts/test_ble_pairing_ui.py', 'scripts/test_meshcore.py', 'tests/meshcore_protocol_test.cpp') }}-idf532-bsp-d9ff7837-v2
       - name: Reuse published verified firmware for docs-only changes
         if: steps.scope.outputs.docs_only == 'true'
         run: python3 scripts/restore_published_firmware.py
