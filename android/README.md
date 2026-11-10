@@ -1,6 +1,6 @@
 # MeshCrossway Android
 
-**Next development build: 0.2.9 beta (versionCode 19), using the permanent signing identity established by 0.2.3** · [Current Android APK 0.2.8](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.8) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
+**Android 0.3.4 beta (versionCode 24), using the permanent signing identity established by 0.2.3** · [Download Android APK 0.3.4](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.4) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
 
 Native ARM64 Android 8.0+ app for **two independent, simultaneous BLE radio sessions**: one Meshtastic and one MeshCore Companion. The application does **not** bridge, route or relay messages across networks. Its primary UI includes chats, channels, contacts, offline MapLibre areas, local phone GPS tracks/GPX and saved message history.
 
@@ -118,3 +118,7 @@ Technical implementation and limitations: [Android remote workspace design](../d
 The Android launcher icon uses `app/src/main/res/drawable-nodpi/meshcrossway_app_icon.png`, a copy of the approved `docs/logo/meshcrossway-app-icon.png` mark (charcoal background and orange mountain). The Home tab and notifications render the **official symbol geometry** as Android vector drawables. The optional local HTTPS workspace serves a matching `/favicon.svg` and shows the symbol in its header. Theme selection and separate Meshtastic/MeshCore identities remain unchanged.
 
 This source change is **not included in the already-published Android 0.2.5 APK**. A subsequent version must be built, signed with the existing permanent key and tested before release. Do not replace or re-sign the 0.2.5 release artifact.
+
+### Radio settings save progress (0.3.4)
+
+Meshtastic settings now show save progress in place through submission, a possible radio restart, reconnection and verification. The page updates automatically. A mismatched readback restores the current radio values and unlocks controls. An unanswered verification offers a retry without automatically sending the change again. Install over 0.3.3 using **Update**, without uninstalling or clearing app data. Physical radio validation is still required.

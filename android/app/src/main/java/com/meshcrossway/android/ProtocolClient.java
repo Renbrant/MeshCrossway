@@ -96,7 +96,7 @@ final class ProtocolClient {
     void setMtStatus(String value){setMtModule(13,Wire.replaceBytes(mtModule(13),1,Wire.optionalText(value,80)));}
     String mtStatus(){return Wire.utf8(Wire.bytes(Wire.fields(mtModule(13)),1));}
     void setMtOwner(byte[] owner){if(!mtOwnerLoaded)throw Wire.bad("Wait for the radio identity to load");mtSave(4,0,32,mtOwner,owner,false);}
-    void setMtConfig(int type,byte[] config){if(!mtConfigLoaded(type))throw Wire.bad("Read this configuration before saving");if(type==5)MtLora.validate(config,this);mtSave(6,type,34,mtConfig(type),config,type==1||type==3||type==6||type==7);}
+    void setMtConfig(int type,byte[] config){if(!mtConfigLoaded(type))throw Wire.bad("Read this configuration before saving");if(type==5)MtLora.validate(config,this);mtSave(6,type,34,mtConfig(type),config,type==1||type==3||type==5||type==6||type==7);}
     void setMtConfigField(int type,int field,long value){if(type==7&&field==9&&!mtHasSignatures)throw Wire.bad("This firmware does not support packet signatures");if(type==0&&field==1&&(value==3||value==4||value<0||value>12||value==12&&!mtAtLeast(7,0)))throw Wire.bad("Unsupported device role");byte[] body=Wire.replace(mtConfig(type),field,value);setMtConfig(type,body);}
     void setMtOwnerName(boolean shortName,String value){setMtOwner(Wire.replaceBytes(mtOwner,shortName?3:2,Wire.text(value,shortName?4:mtAtLeast(8,0)?24:39)));}
     boolean mtOwnerIsEmpty(){return !mtOwnerLoaded;}
