@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish, such as 0.2.7 (must match android/app/build.gradle)'
+        description: 'Version to publish, such as 0.2.8 (must match android/app/build.gradle)'
         required: true
-        default: '0.2.7'
+        default: '0.2.8'
         type: string
 permissions:
   contents: write
@@ -100,11 +100,11 @@ jobs:
             exit 1
           fi
           cat > release-notes.md <<EOF
-          ## MeshCrossway Android $REQUESTED — Clerk account sign-in beta
+          ## MeshCrossway Android $REQUESTED — Clerk account and cloud sync beta
 
           **Install as an update:** Android 0.2.6 and this release use the same permanent signing certificate. Install this APK over 0.2.6 and choose Update. Do not uninstall the app or clear its storage; that would remove locally saved messages, favorites, settings, tracks and offline maps.
 
-          **Clerk account sign-in:** the app adds account registration/sign-in using the social providers enabled in the Clerk development instance, including Google and Apple where supported by the device/configuration. This release establishes identity and sessions only. Cross-device synchronization of conversations, favorites, tracks or settings is not connected yet, and the app does not upload that content to Cloudflare.
+          **Clerk and cloud sync:** sign in with the providers enabled in the Clerk development instance. Cloud storage is opt-in and synchronization is user-triggered. This beta syncs recent conversations and favorite-chat history through the development Cloudflare Worker. Ordinary messages are retained for seven days; favorites persist until removed. Tracks, settings, contacts and locations are not synchronized. This is not end-to-end encrypted, so use development/test data only.
 
           Existing local app data and features remain available after an in-place update. The long-lived signing certificate is verified by CI and its SHA-256 fingerprint is attached to this release. This is a public beta, not version 1.0.
           EOF
