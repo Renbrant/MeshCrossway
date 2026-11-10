@@ -413,6 +413,40 @@ public final class SmokeInstrumentation extends Instrumentation {
             !BleSignal.recent(System.currentTimeMillis()-25L*60*60*1000,
                 System.currentTimeMillis()),"Old RSSI should not be treated as current");
     }
+    private Switch settingsSwitch(View root,String title){
+        if(root instanceof Switch&&title.contentEquals(root.getContentDescription()))return (Switch)root;
+        if(root instanceof ViewGroup){ViewGroup group=(ViewGroup)root;for(int i=0;i<group.getChildCount();i++){Switch found=settingsSwitch(group.getChildAt(i),title);if(found!=null)return found;}}
+        return null;
+    }
+    /** Render the real settings views with default and excluded-module fixtures. */
+    private void meshtasticSettingsViews()throws Exception{
+        MainActivity activity=(MainActivity)startActivitySync(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        waitForIdleSync();
+        try{onUi(()->{try{
+            java.lang.reflect.Field resultsField=MainActivity.class.getDeclaredField("results");resultsField.setAccessible(true);
+            LinearLayout panel=new LinearLayout(activity);panel.setOrientation(LinearLayout.VERTICAL);resultsField.set(activity,panel);
+            Method device=MainActivity.class.getDeclaredMethod("mtDeviceSettings",ProtocolClient.class);device.setAccessible(true);
+            Method security=MainActivity.class.getDeclaredMethod("mtSecuritySettings",ProtocolClient.class);security.setAccessible(true);
+            Method modules=MainActivity.class.getDeclaredMethod("mtModuleSettings",ProtocolClient.class);modules.setAccessible(true);
+            ProtocolClient c=new ProtocolClient(RadioProfile.MESHTASTIC,42,new ProtocolClient.Listener(){
+                public void node(Node n){}public void channel(Channel channel){}public void message(Message message){}public void delivery(String uid,String state){}
+            });
+            c.firmware="2.8.1";c.mtConfigs.put(1,Wire.EMPTY);c.mtConfigs.put(7,Wire.EMPTY);c.mtConfigs.put(8,Wire.EMPTY);
+            device.invoke(activity,c);check(find(panel,"Enabled: false")!=null,"Default Bluetooth must render disabled");
+            panel.removeAllViews();security.invoke(activity,c);Switch serial=settingsSwitch(panel,"Serial Console");
+            check(serial!=null&&!serial.isChecked(),"Default serial switch must render disabled");
+            c.mtModules.put(1,Wire.EMPTY);c.mtModules.put(14,Wire.EMPTY);c.mtExcludedModules=1;
+            panel.removeAllViews();modules.invoke(activity,c);check(find(panel,"Status Message")!=null&&find(panel,"Not set")!=null,"Excluded MQTT must not hide the loaded status editor");
+            View status=find(panel,"Status Message");check(((View)status.getParent().getParent()).isClickable(),"Loaded supported status must be editable");
+            c.mtExcludedModules=1L<<13;panel.removeAllViews();modules.invoke(activity,c);
+            check(settingsSwitch(panel,"MQTT Enabled")!=null,"Excluded status must not hide MQTT");
+            status=find(panel,"Status Message");check(!((View)status.getParent().getParent()).isClickable(),"Excluded status must not expose an action");
+            c.mtExcludedModules=0;c.firmware="2.7.19";panel.removeAllViews();modules.invoke(activity,c);
+            check(find(panel,"Requires firmware 2.7.20 or newer")!=null,"Old firmware status availability must be explained");
+            status=find(panel,"Status Message");check(!((View)status.getParent().getParent()).isClickable(),"Old firmware status must not expose an action");
+            System.out.println("Meshtastic settings views: default booleans and independent module controls passed");
+        }catch(Exception e){throw new RuntimeException(e);}});}finally{onUi(activity::finish);waitForIdleSync();}
+    }
     private void activity()throws Exception{
         MainActivity.mapStyleOverride="asset://map-test-style.json";Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();
         onUi(()->{
@@ -452,5 +486,5 @@ public final class SmokeInstrumentation extends Instrumentation {
         waitForIdleSync();screenshot(activity,"chat-draft");Method settings=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);settings.setAccessible(true);onUi(()->{try{settings.invoke(activity,"data",null);}catch(Exception e){throw new RuntimeException(e);}});screenshot(activity,"settings-data");
         ActivityMonitor monitor=addMonitor(MainActivity.class.getName(),null,false);onUi(activity::recreate);MainActivity recreated=(MainActivity)waitForMonitorWithTimeout(monitor,10000);check(recreated!=null,"Activity recreation timed out");waitForIdleSync();onUi(recreated::onBackPressed);waitForIdleSync();java.util.concurrent.atomic.AtomicReference<String> restored=new java.util.concurrent.atomic.AtomicReference<>("");long deadline=android.os.SystemClock.elapsedRealtime()+10000;do{onUi(()->{EditText entry=composer(recreated.getWindow().getDecorView());restored.set(entry==null?"<no composer>":entry.getText().toString());});if(restored.get().equals("Draft survives rotation 👋"))break;Thread.sleep(50);}while(android.os.SystemClock.elapsedRealtime()<deadline);screenshot(recreated,"chat-restored");check(restored.get().equals("Draft survives rotation 👋"),"Rotation lost composer draft: "+restored.get());onUi(recreated::finish);removeMonitor(monitor);
     }
-    @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();backups();if(!mtOnly){tracks();appearance();bleSignal();activity();}sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
+    @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();backups();meshtasticSettingsViews();if(!mtOnly){tracks();appearance();bleSignal();activity();}sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
 }

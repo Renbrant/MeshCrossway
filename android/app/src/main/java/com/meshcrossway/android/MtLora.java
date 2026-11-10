@@ -13,28 +13,109 @@ final class MtLora {
     static List<Integer> packed(byte[] bytes){List<Integer> out=new ArrayList<>();int pos=0;while(pos<bytes.length){long n=0;int shift=0;boolean done=false;while(pos<bytes.length&&shift<64){int b=bytes[pos++]&255;n|=(long)(b&127)<<shift;if((b&128)==0){done=true;break;}shift+=7;}if(!done)throw Wire.bad("Invalid packed enum");out.add((int)n);}return out;}
     static byte[] constraint(ProtocolClient c,int region){List<byte[]> groups=new ArrayList<>();List<Wire.F> fs=Wire.fields(c.mtRegionMap);for(Wire.F f:fs)if(f.tag==1)groups.add(f.bytes);for(Wire.F f:fs)if(f.tag==2){List<Wire.F> r=Wire.fields(f.bytes);if(Wire.number(r,1,0)==region){int index=(int)Wire.number(r,2,0);if(index>=0&&index<groups.size())return groups.get(index);}}return null;}
     static Set<Integer> allowed(ProtocolClient c,int region){byte[] group=constraint(c,region);Set<Integer> out=new LinkedHashSet<>();if(group!=null)for(Wire.F f:Wire.fields(group))if(f.tag==1){if(f.wire==2)out.addAll(packed(f.bytes));else out.add((int)f.number);}return out;}
-    static boolean selectable(ProtocolClient c,int region,int preset){boolean known=false;for(Option option:PRESETS)if(option.value==preset)known=true;if(!known)return false;if(!c.mtAtLeast(8,0)&&preset>=10)return false;if(region==13&&(preset==8||preset==9||preset==16)&&allowed(c,region).isEmpty())return false;double span=span(region);if(Double.isFinite(span)&&presetBandwidth(preset,region)>span*1000+.001)return false;if(!c.mtAtLeast(7,0)&&preset==9)return false;if(c.mtAtLeast(6,5)&&preset==2)return false;Set<Integer> allowed=allowed(c,region);if(!allowed.isEmpty()&&!allowed.contains(preset))return false;byte[] group=constraint(c,region);if(group!=null&&Wire.number(Wire.fields(group),3,0)!=0&&!c.mtHam())return false;
+    static boolean selectable(ProtocolClient c,int region,int preset){boolean known=false;for(Option option:PRESETS)if(option.value==preset)known=true;if(!known||regionInfo(region)==null)return false;if(!c.mtAtLeast(8,0)&&preset>=10)return false;if(region==13&&(preset==8||preset==9||preset==16)&&allowed(c,region).isEmpty())return false;double span=span(region);if(Double.isFinite(span)&&presetBandwidth(preset,region)>span*1000+.001)return false;if(!c.mtAtLeast(7,17)&&preset==9)return false;if(c.mtAtLeast(6,5)&&preset==2)return false;Set<Integer> allowed=allowed(c,region);if(!allowed.isEmpty()&&!allowed.contains(preset))return false;byte[] group=constraint(c,region);if(group!=null&&Wire.number(Wire.fields(group),3,0)!=0&&!c.mtHam())return false;
         if(preset==10||preset==11)return regionName(region).equals("EU 866");if(preset==12||preset==13)return regionName(region).equals("EU N 868")||regionName(region).contains("70CM")||regionName(region).contains("125CM");if(preset==14||preset==15)return regionName(region).contains(" 2M")&&c.mtHam();return true;}
     static List<Option> presets(ProtocolClient c,int region){List<Option> result=new ArrayList<>();for(Option p:PRESETS)if(selectable(c,region,p.value))result.add(p);return result;}
-    static List<Option> regions(ProtocolClient c){List<Option> result=new ArrayList<>();for(Option p:REGIONS)if(p.value<=26||c.mtAtLeast(8,0)||p.value==c.region)result.add(p);return result;}
+    static List<Option> regions(ProtocolClient c){List<Option> result=new ArrayList<>();for(Option p:REGIONS)if((regionInfo(p.value)!=null&&(p.value<=26||c.mtAtLeast(8,0)))||p.value==c.region)result.add(p);return result;}
     static byte[] regionChange(ProtocolClient c,byte[] draft,int region){byte[] result=Wire.replace(draft,7,region);int current=(int)Wire.number(Wire.fields(draft),2,0);if(!selectable(c,region,current)){List<Option> options=presets(c,region);if(options.isEmpty())throw Wire.bad("No supported presets for this region; enable licensed mode if required");byte[] group=constraint(c,region);int preferred=group==null?options.get(0).value:(int)Wire.number(Wire.fields(group),2,options.get(0).value);if(!selectable(c,region,preferred))preferred=options.get(0).value;result=Wire.replace(result,2,preferred);}return result;}
-    // Frequency spans and regional power ceilings are firmware table facts, not user-supplied URLs.
-    static double span(int region){switch(region){case 1:return 26.0;case 2:return 1.0;case 3:return 0.25;case 4:return 40.0;case 5:return 3.0;case 6:return 13.0;case 22:return 1.74;case 9:return 0.5;case 7:return 3.0;case 8:return 5.0;case 10:return 2.0;case 11:return 4.0;case 12:return 5.0;case 14:return 1.7;case 15:return 0.6;case 16:return 2.0;case 17:return 5.0;case 18:return 8.0;case 19:return 1.7;case 20:return 1.4;case 21:return 3.0;case 23:return 1.7;case 24:return 5.0;case 25:return 3.0;case 26:return 5.5;case 13:return 83.5;case 0:return 26.0;default:return Double.NaN;}}
-    static int powerLimit(int region){switch(region){case 1:return 30;case 2:return 10;case 3:return 27;case 4:return 19;case 5:return 13;case 6:return 30;case 22:return 14;case 9:return 20;case 7:return 23;case 8:return 27;case 10:return 30;case 11:return 36;case 12:return 27;case 14:return 10;case 15:return 14;case 16:return 20;case 17:return 27;case 18:return 20;case 19:return 10;case 20:return 14;case 21:return 24;case 23:return 10;case 24:return 30;case 25:return 30;case 26:return 30;case 13:return 10;case 0:return 30;default:return 36;}}
+    /** Region facts: official Android 2.8.4 ChannelOption and firmware d9c9916 RadioInterface.
+     * Frequencies/spacing/padding are MHz. No generic fallback for reserved region IDs. */
+    static final class Region {
+        final int id,power;final double start,end,spacing,padding;final boolean licensed;
+        Region(int id,double start,double end,int power,double spacing,double padding,boolean licensed){
+            this.id=id;this.start=start;this.end=end;this.power=power;this.spacing=spacing;this.padding=padding;this.licensed=licensed;
+        }
+    }
+    static final Region[] REGION_INFO={
+        new Region(0,902,928,30,0,0,false),new Region(1,902,928,30,0,0,false),
+        new Region(2,433,434,10,0,0,false),new Region(3,869.4,869.65,27,0,0,false),
+        new Region(4,470,510,19,0,0,false),new Region(5,920.5,923.5,13,0,0,false),
+        new Region(6,915,928,30,0,0,false),new Region(7,920,923,23,0,0,false),
+        new Region(8,920,925,27,0,0,false),new Region(9,868.7,869.2,20,0,0,false),
+        new Region(10,865,867,30,0,0,false),new Region(11,864,868,36,0,0,false),
+        new Region(12,920,925,27,0,0,false),new Region(13,2400,2483.5,10,0,0,false),
+        new Region(14,433,434.7,10,0,0,false),new Region(15,868,868.6,14,0,0,false),
+        new Region(16,433,435,20,0,0,false),new Region(17,919,924,27,0,0,false),
+        new Region(18,917,925,20,0,0,false),new Region(19,433,434.7,10,0,0,false),
+        new Region(20,868,869.4,14,0,0,false),new Region(21,915,918,24,0,0,false),
+        new Region(22,433.05,434.79,14,0,0,false),new Region(23,433.075,434.775,10,0,0,false),
+        new Region(24,863,868,30,0,0,false),new Region(25,865,868,30,0,0,false),
+        new Region(26,902,907.5,30,0,0,false),
+        new Region(27,144,146,30,0,.0022,true),new Region(28,144,148,30,0,.0022,true),
+        new Region(29,865.6,867.6,27,.4,.0375,false),new Region(32,869.4,869.65,27,0,.0104,false),
+        new Region(33,144,148,30,0,.0022,true),new Region(34,430,440,30,0,.01875,true),
+        new Region(35,420,450,30,0,.01875,true),new Region(36,430,450,30,0,.01875,true),
+        new Region(37,220,225,30,0,.01875,true)
+    };
+    static Region regionInfo(int id){for(Region r:REGION_INFO)if(r.id==id)return r;return null;}
+    static double span(int region){Region r=regionInfo(region);return r==null?Double.NaN:r.end-r.start;}
+    static int powerLimit(int region){Region r=regionInfo(region);if(r==null)throw Wire.bad("This region has no supported frequency profile");return r.power;}
+    static int slotCount(int region,double bandwidthKhz){
+        Region r=regionInfo(region);if(r==null)throw Wire.bad("This region has no supported frequency profile");
+        if(region==0)return 0;
+        double slotWidth=bandwidthKhz/1000+r.spacing+2*r.padding;
+        if(!Double.isFinite(slotWidth)||slotWidth<=0||slotWidth>r.end-r.start+.000001)throw Wire.bad("Bandwidth and regional spacing exceed this frequency band");
+        // Official app and firmware round instead of truncating the frequency-slot count.
+        return Math.max(1,(int)Math.round((r.end-r.start+r.spacing)/slotWidth));
+    }
     static double presetBandwidth(int preset,int region){double bw=preset==1||preset==7||preset==10||preset==11?125:preset==2||preset==12||preset==13?62.5:preset==14||preset==15?15.625:preset==8||preset==9||preset==16?500:250;return region==13?bw*3.25:bw;}
     static double manualBandwidth(long code,int region){if(region==13){if(code==200)return 203.125;if(code==400)return 406.25;if(code==800)return 812.5;throw Wire.bad("Choose 2.4 GHz bandwidth code 200, 400 or 800");}switch((int)code){case 7:return 7.8125;case 10:return 10.416667;case 15:return 15.625;case 20:return 20.833333;case 31:return 31.25;case 41:return 41.666667;case 62:return 62.5;case 125:return 125;case 250:return 250;case 500:return 500;default:throw Wire.bad("Choose a supported bandwidth code: 7, 10, 15, 20, 31, 41, 62, 125, 250 or 500");}}
-    static int presetCodingRate(int preset){return preset==1||preset==2||preset==7?8:5;}
+    static int presetCodingRate(int preset){switch(preset){case 1:case 2:case 7:case 9:return 8;case 12:case 13:case 15:return 6;default:return 5;}}
     // Firmware AdminModule clamps coding_rate=0 to 5. In preset mode a stored
     // rate below the preset's rate still uses the preset's rate on air.
     static int codingSelection(int preset,int stored){return stored==0||stored>=5&&stored<=presetCodingRate(preset)?0:stored;}
     static String currentPreset(ProtocolClient c){if(!c.mtConfigLoaded(5))return "Reading preset…";List<Wire.F> fs=Wire.fields(c.mtConfig(5));return Wire.number(fs,1,0)!=0?presetName((int)Wire.number(fs,2,0)):"Manual LoRa";}
     static boolean codingMatches(byte[] actual,byte[] desired){List<Wire.F> a=Wire.fields(actual),d=Wire.fields(desired);int preset=(int)Wire.number(d,2,0);return Wire.number(d,1,0)!=0&&Wire.number(a,1,0)!=0&&Wire.number(a,2,0)==preset&&codingSelection(preset,(int)Wire.number(a,5,0))==codingSelection(preset,(int)Wire.number(d,5,0));}
+    static final int SF_UNKNOWN=0,SF_RF95=1,SF_MODERN=2;
+    static int sfCapability(int hardware){
+        // Only unambiguous modem models. TBEAM and other multi-modem variants remain unknown.
+        switch(hardware){
+            case 1:case 2:case 3:case 5:case 8:case 10:case 11:case 15:case 76:return SF_RF95;
+            case 7:case 9:case 43:case 44:case 48:case 49:case 50:case 69:case 71:case 94:case 110:case 132:return SF_MODERN;
+            default:return SF_UNKNOWN;
+        }
+    }
+    static String manualSfHint(int hardware){
+        if(sfCapability(hardware)==SF_RF95)return "This RF95 modem supports SF7–SF12.";
+        if(sfCapability(hardware)==SF_MODERN)return "This modem family supports SF5–SF12; the radio verifies the saved values.";
+        return "The radio does not report its modem variant. SF5/SF6 support will be checked by reading the saved values back.";
+    }
+    /** Compare effective LoRa state, including fields omitted because their proto3 value is zero. */
+    static String readbackDifference(byte[] actual,byte[] desired){
+        List<Wire.F> a=Wire.fields(actual),d=Wire.fields(desired);
+        boolean preset=Wire.number(d,1,0)!=0;
+        Set<Integer> tags=new LinkedHashSet<>(Arrays.asList(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,103,104,105,106));
+        for(Wire.F f:d)tags.add(f.tag); // Preserve and verify unknown fields already held by this radio.
+        for(int tag:tags){
+            if(preset&&(tag==3||tag==4))continue; // Inactive manual parameters may be normalized by firmware.
+            if(!preset&&tag==2)continue;
+            if(tag==5&&preset&&codingMatches(actual,desired))continue;
+            if(tag==10&&Wire.number(d,tag,0)==0){long power=Wire.number(a,tag,0);if(power>=0&&power<=36)continue;}
+            if(tag==103){if(ignoreList(a).equals(ignoreList(d)))continue;}
+            else if(equalField(a,d,tag))continue;
+            if(tag==2)return "Preset differs (requested "+presetName((int)Wire.number(d,2,0))+"; radio "+presetName((int)Wire.number(a,2,0))+")";
+            return loraFieldName(tag)+" differs from the requested settings";
+        }
+        return "";
+    }
+    private static boolean equalField(List<Wire.F> a,List<Wire.F> d,int tag){
+        List<String> av=new ArrayList<>(),dv=new ArrayList<>();
+        for(Wire.F f:a)if(f.tag==tag)av.add(fieldValue(f));
+        for(Wire.F f:d)if(f.tag==tag)dv.add(fieldValue(f));
+        // Omitted scalar/bytes defaults equal explicitly encoded zero/empty defaults.
+        av.removeIf(v->v.equals("0")||v.equals("bytes:"));dv.removeIf(v->v.equals("0")||v.equals("bytes:"));
+        return av.equals(dv);
+    }
+    private static String fieldValue(Wire.F f){return f.wire==2?"bytes:"+Wire.hex(f.bytes):f.number==0?"0":f.wire+":"+f.number;}
+    private static List<Integer> ignoreList(List<Wire.F> fs){List<Integer> values=new ArrayList<>();for(Wire.F f:fs)if(f.tag==103){if(f.wire==2)values.addAll(packed(f.bytes));else values.add((int)f.number);}Collections.sort(values);return values;}
+    private static String loraFieldName(int tag){switch(tag){case 1:return "Preset/manual mode";case 3:return "Bandwidth";case 4:return "Spreading factor";case 5:return "Coding rate";case 7:return "Region";case 8:return "Hop limit";case 9:return "Transmit enable";case 10:return "Transmit power";case 11:return "Frequency slot";case 14:return "Frequency override";default:return "LoRa field "+tag;}}
     static void validate(byte[] config,ProtocolClient c){List<Wire.F> fs=Wire.fields(config);int region=(int)Wire.number(fs,7,0),preset=(int)Wire.number(fs,2,0),cr=(int)Wire.number(fs,5,0);boolean usePreset=Wire.number(fs,1,0)!=0;
-        if(regionName(region).startsWith("Unknown")||region<0||region>26&&!c.mtAtLeast(8,0)&&region!=c.region)throw Wire.bad("Unsupported region for this firmware");
+        if(regionInfo(region)==null||region>26&&!c.mtAtLeast(8,0)&&region!=c.region)throw Wire.bad("Unsupported region for this firmware");
+        if(regionInfo(region).licensed&&!c.mtHam())throw Wire.bad("This region requires licensed amateur radio mode");
         long hop=Wire.number(fs,8,0),slot=Wire.number(fs,11,0),power=Wire.number(fs,10,0);if(hop<0||hop>7||slot<0||slot>65535||power<0||power>36)throw Wire.bad("Invalid hop limit, frequency slot or power");
-        if(power>powerLimit(region)&&!c.mtHam())throw Wire.bad("Power exceeds the selected region ceiling; use 0 for automatic");double bw=usePreset?presetBandwidth(preset,region):manualBandwidth(Wire.number(fs,3,0),region);double width=span(region)*1000;if(bw>0&&Double.isFinite(width)){long slots=(long)Math.floor((width+.001)/bw);if(slots<1||slot>slots)throw Wire.bad("Frequency slot exceeds this region/bandwidth (0 = automatic)");}
+        if(power>powerLimit(region)&&!c.mtHam())throw Wire.bad("Power exceeds the selected region ceiling; use 0 for automatic");double bw=usePreset?presetBandwidth(preset,region):manualBandwidth(Wire.number(fs,3,0),region);int slots=slotCount(region,bw);if(slot>slots)throw Wire.bad("Frequency slot exceeds this region/bandwidth (0 = automatic; maximum "+slots+")");
         if(usePreset){if(!selectable(c,region,preset))throw Wire.bad("Preset is unsupported for this firmware/region");if(cr!=0&&(cr<5||cr>8||cr>presetCodingRate(preset)&&!c.mtAtLeast(7,18)))throw Wire.bad("Use coding rate 0 or 5–8; custom overrides require firmware 2.7.18+");}
-        else {long sf=Wire.number(fs,4,0),bandwidth=Wire.number(fs,3,0);if(sf<5||sf>12||cr<5||cr>8||bandwidth<1||bandwidth>500&&region!=13)throw Wire.bad("Set manual bandwidth, SF 5–12 and coding rate 5–8");if(region==13&&bandwidth!=200&&bandwidth!=400&&bandwidth!=800)throw Wire.bad("2.4 GHz bandwidth must be 200, 400 or 800");if((c.mtHardware==0||c.hardware.contains("V1")||c.hardware.contains("V2")||c.hardware.contains("TBEAM"))&&sf<7)throw Wire.bad("This or an unknown radio requires SF 7–12");}
+        else {long sf=Wire.number(fs,4,0),bandwidth=Wire.number(fs,3,0);if(sf<5||sf>12||cr<5||cr>8||bandwidth<1||bandwidth>500&&region!=13)throw Wire.bad("Set manual bandwidth, SF 5–12 and coding rate 5–8");if(region==13&&bandwidth!=200&&bandwidth!=400&&bandwidth!=800)throw Wire.bad("2.4 GHz bandwidth must be 200, 400 or 800");if((sfCapability(c.mtHardware)==SF_RF95)&&sf<7)throw Wire.bad("This or an unknown radio requires SF 7–12");}
         float freq=Float.intBitsToFloat((int)Wire.number(fs,14,0));if(!Float.isFinite(freq)||freq<0||freq>2500)throw Wire.bad("Invalid frequency override");
     }
 }
