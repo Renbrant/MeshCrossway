@@ -278,6 +278,11 @@ public final class RadioService extends Service {
         try{action.accept(s.client);advance(s);changed();}
         catch(IllegalArgumentException e){phase(s,"Settings",e.getMessage());}
     }
+    void configureMeshtastic(String radio,java.util.function.Consumer<ProtocolClient> action){
+        Session s=sessions.get(RadioProfile.MESHTASTIC);
+        if(s==null||!s.address.equals(radio)||!s.connected||!s.verified||s.client==null){if(listener!=null)listener.run();return;}
+        try{action.accept(s.client);advance(s);changed();}catch(IllegalArgumentException e){phase(s,"Settings",e.getMessage());}
+    }
     private void advance(Session s){
         if(!running||!s.transportReady||s.gatt==null||s.client==null||s.persisting||s.rssiPending||s.active!=null||!s.queue.isEmpty()||now()<s.nextWriteAt)return;
         try{ProtocolClient.Command command=s.client.next(now());if(command!=null)enqueue(s,2,command.data);}

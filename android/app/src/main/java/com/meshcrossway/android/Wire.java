@@ -45,6 +45,9 @@ final class Wire {
         Out scalar(int tag,long n){v((long)tag<<3);v(n);return this;}
         Out fixed(int tag,long n){v(((long)tag<<3)|5);for(int i=0;i<4;i++)out.write((int)(n>>>(8*i)));return this;}
         Out bytes(int tag,byte[] bytes){v(((long)tag<<3)|2);v(bytes.length);out.write(bytes,0,bytes.length);return this;}
+        Out add(F f){if(f.wire==0)return scalar(f.tag,f.number);if(f.wire==2)return bytes(f.tag,f.bytes);if(f.wire==5)return fixed(f.tag,f.number);if(f.wire==1){v(((long)f.tag<<3)|1);out.write(f.bytes,0,f.bytes.length);return this;}throw bad("Unsupported protobuf field");}
         byte[] array(){return out.toByteArray();}
     }
+    static byte[] replace(byte[] message,int tag,long value){Out out=new Out();boolean found=false;for(F f:fields(message)){if(f.tag==tag){if(!found)out.scalar(tag,value);found=true;}else out.add(f);}if(!found)out.scalar(tag,value);return out.array();}
+    static byte[] replaceBytes(byte[] message,int tag,byte[] value){Out out=new Out();boolean found=false;for(F f:fields(message)){if(f.tag==tag){if(!found)out.bytes(tag,value);found=true;}else out.add(f);}if(!found)out.bytes(tag,value);return out.array();}
 }
