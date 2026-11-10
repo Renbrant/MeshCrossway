@@ -11,7 +11,7 @@ import android.widget.TextView
 import android.widget.Toast
 
 class ClerkAccountActivity : Activity() {
-    private val background = Color.rgb(9, 12, 16)
+    private val pageBackground = Color.rgb(9, 12, 16)
     private val panel = Color.rgb(24, 29, 36)
     private val orange = Color.rgb(255, 138, 36)
     private val white = Color.rgb(242, 244, 247)
@@ -19,8 +19,8 @@ class ClerkAccountActivity : Activity() {
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
-        window.statusBarColor = background
-        window.navigationBarColor = background
+        window.statusBarColor = pageBackground
+        window.navigationBarColor = pageBackground
         render()
     }
 
@@ -30,7 +30,7 @@ class ClerkAccountActivity : Activity() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(20), dp(18), dp(20), dp(24))
-            setBackgroundColor(background)
+            setBackgroundColor(pageBackground)
         }
         val header = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
         val title = text("Account & sync", 22, white).apply { setTypeface(null, android.graphics.Typeface.BOLD) }
@@ -97,7 +97,7 @@ class ClerkAccountActivity : Activity() {
 
     private fun text(value: String, size: Int, color: Int) = TextView(this).apply {
         text = value
-        textSize = size
+        textSize = size.toFloat()
         setTextColor(color)
     }
 }

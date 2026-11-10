@@ -49,7 +49,7 @@ class MeshCrosswayApplication : Application() {
             )
             setOnClickListener { activity.startActivity(android.content.Intent(activity, ClerkAccountActivity::class.java)) }
         }
-        button.addView(NavIcon(activity, "account", 0xffff8a24), FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER))
+        button.addView(NavIcon(activity, "account", 0xFFFF8A24.toInt()), FrameLayout.LayoutParams(dp(24), dp(24), Gravity.CENTER))
         val params = FrameLayout.LayoutParams(dp(44), dp(44), Gravity.TOP or Gravity.END).apply {
             val statusBarId = activity.resources.getIdentifier("status_bar_height", "dimen", "android")
             val topInset = if (statusBarId > 0) activity.resources.getDimensionPixelSize(statusBarId) else 0

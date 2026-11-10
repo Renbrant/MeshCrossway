@@ -2,7 +2,8 @@ package com.meshcrossway.android
 
 import com.clerk.api.Clerk
 import com.clerk.api.auth.HostedAuthMode
-import com.clerk.api.network.serialization.ClerkResult
+import com.clerk.api.network.serialization.onFailure
+import com.clerk.api.network.serialization.onSuccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,7 +26,9 @@ object ClerkBridge {
     fun signIn(callback: ResultCallback) {
         scope.launch {
             val result = Clerk.auth.startHostedAuth(mode = HostedAuthMode.SIGN_IN)
-            callback.onComplete(result is ClerkResult.Success<*>)
+            var success = false
+            result.onSuccess { success = true }
+            callback.onComplete(success)
         }
     }
 
@@ -40,7 +43,9 @@ object ClerkBridge {
     @JvmStatic
     fun sessionToken(callback: TokenCallback) {
         scope.launch {
-            callback.onToken(try { Clerk.auth.getToken() } catch (_: Exception) { null })
+            Clerk.auth.getToken()
+                .onSuccess { callback.onToken(it) }
+                .onFailure { callback.onToken(null) }
         }
     }
 }
