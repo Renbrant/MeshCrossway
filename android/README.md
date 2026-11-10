@@ -1,6 +1,6 @@
 # MeshCrossway Android
 
-**Android 0.3.4 beta (versionCode 24), using the permanent signing identity established by 0.2.3** · [Download Android APK 0.3.4](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.4) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
+**Android 0.3.5 beta (versionCode 25), using the permanent signing identity established by 0.2.3** · [Download Android APK 0.3.5](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.5) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
 
 Native ARM64 Android 8.0+ app for **two independent, simultaneous BLE radio sessions**: one Meshtastic and one MeshCore Companion. The application does **not** bridge, route or relay messages across networks. Its primary UI includes chats, channels, contacts, offline MapLibre areas, local phone GPS tracks/GPX and saved message history.
 
@@ -122,3 +122,7 @@ This source change is **not included in the already-published Android 0.2.5 APK*
 ### Radio settings save progress (0.3.4)
 
 Meshtastic settings now show save progress in place through submission, a possible radio restart, reconnection and verification. The page updates automatically. A mismatched readback restores the current radio values and unlocks controls. An unanswered verification offers a retry without automatically sending the change again. Install over 0.3.3 using **Update**, without uninstalling or clearing app data. Physical radio validation is still required.
+
+### Preset confirmation and Home (0.3.5)
+
+Home displays the synchronized Meshtastic preset beneath Ready, or Manual LoRa for manual mode. Preset save verification accepts the firmware normalization of coding rate 0 to 5 while still rejecting incorrect presets and missing custom overrides. Firmware source reference: [AdminModule LoRa validation](https://github.com/meshtastic/firmware/blob/d9c9916e73952caa1740d4becc367374c5e28e44/src/modules/AdminModule.cpp#L1025) and [preset coding-rate resolution](https://github.com/meshtastic/firmware/blob/d9c9916e73952caa1740d4becc367374c5e28e44/src/mesh/RadioInterface.cpp#L1352).
