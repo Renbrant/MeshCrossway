@@ -37,6 +37,21 @@ public final class MtSettingsTest {
         ProtocolClient timeouts=fresh();timeouts.requestMtConfig(0);take(timeouts);timeouts.admin.tick(time+30001);int pending=timeouts.commands.size();timeouts.requestMtConfig(0);check(timeouts.commands.size()==pending&&!timeouts.admin.error.isEmpty(),"failed read does not loop from page refresh");timeouts.admin.retryReads();timeouts.requestMtConfig(0);check(!timeouts.commands.isEmpty(),"explicit refresh retries read");
         ProtocolClient licensed=fresh();licensed.mtOwnerLoaded=true;licensed.mtOwner=new Wire.Out().scalar(6,1).array();Message licensedDm=licensed.send(Target.node(licensed.nodes.get("200")),"licensed sender",801,time++);ProtocolClient.Command licensedCommand=licensed.next(time++);List<Wire.F> licensedPacket=Wire.fields(Wire.bytes(Wire.fields(licensedCommand.data),1));check(Wire.field(licensedPacket,16)==null&&Wire.field(licensedPacket,17)==null,"licensed sender does not request PKI encryption");licensed.written(time++);licensed.next(time++);licensed.mtOwner=new Wire.Out().scalar(6,0).array();licensed.nodes.get("200").licensed=true;licensed.nodes.get("200").key="";licensed.send(Target.node(licensed.nodes.get("200")),"licensed recipient",802,time++);licensedCommand=licensed.next(time++);licensedPacket=Wire.fields(Wire.bytes(Wire.fields(licensedCommand.data),1));check(Wire.field(licensedPacket,17)==null,"licensed recipient does not require a PKI key");
         ProtocolClient syncedLicense=fresh();syncedLicense.receive(wrap(4,new Wire.Out().scalar(1,100).bytes(2,new Wire.Out().scalar(6,1).array()).array()),time++);check(!syncedLicense.mtOwnerLoaded&&syncedLicense.mtHam(),"initial synchronization supplies own licensed state before User settings");
+        ProtocolClient noAck=fresh();noAck.requestMtConfig(0);request=take(noAck);response(noAck,request,6,wrap(1,Wire.EMPTY));
+        noAck.setMtConfigField(0,1,1);write=take(noAck);time=noAck.admin.clock+2001;
+        readback=take(noAck);response(noAck,readback,6,wrap(1,new Wire.Out().scalar(1,1).array()));
+        check(noAck.admin.edit==null&&noAck.admin.status.startsWith("Saved"),"save automatically verified without routing ACK");
+        ProtocolClient mismatch=fresh();mismatch.requestMtConfig(0);request=take(mismatch);response(mismatch,request,6,wrap(1,Wire.EMPTY));
+        mismatch.setMtConfigField(0,1,1);write=take(mismatch);ack(mismatch,write,0);readback=take(mismatch);
+        response(mismatch,readback,6,wrap(1,Wire.EMPTY));check(mismatch.admin.edit==null&&!mismatch.admin.error.isEmpty(),"mismatch unlocks controls and keeps clear failure");
+        check(mismatch.mtConfig(0).length==0,"mismatch keeps actual radio values");mismatch.setMtConfigField(0,1,2);check(mismatch.admin.edit!=null,"next edit requires no manual discard after mismatch");
+        ProtocolClient stale=fresh();stale.requestMtConfig(0);request=take(stale);response(stale,request,6,wrap(1,Wire.EMPTY));
+        stale.requestMtConfig(0);long oldRead=take(stale);stale.setMtConfigField(0,1,1);write=take(stale);
+        response(stale,oldRead,6,wrap(1,Wire.EMPTY));check(stale.admin.edit!=null,"pre-write read cannot reject pending save");ack(stale,write,0);readback=take(stale);
+        response(stale,readback,6,wrap(1,new Wire.Out().scalar(1,1).array()));check(stale.admin.edit==null&&stale.admin.error.isEmpty(),"new correlated read confirms pending save");
+        ProtocolClient lost=fresh();lost.requestMtConfig(0);request=take(lost);response(lost,request,6,wrap(1,Wire.EMPTY));lost.setMtConfigField(0,1,1);write=take(lost);ack(lost,write,0);take(lost);
+        time+=30001;lost.admin.tick(time);check(lost.admin.edit!=null&&lost.admin.edit.deadline==Long.MAX_VALUE,"missing readback stops progress with recoverable state");lost.admin.verify();readback=take(lost);
+        response(lost,readback,6,wrap(1,new Wire.Out().scalar(1,1).array()));check(lost.admin.edit==null&&lost.admin.error.isEmpty(),"checking again clears failed read guard and confirms without repeating SET");
         System.out.println("Meshtastic regressions: enums, empty defaults, correlated admin GET/ACK/readback, expiry, reboot recovery, modules, channels, limits and replies passed");
     }
 }

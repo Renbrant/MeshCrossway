@@ -286,7 +286,7 @@ public final class RadioService extends Service {
     }
     private void advance(Session s){
         if(!running||!s.transportReady||s.gatt==null||s.client==null||s.persisting||s.rssiPending||s.active!=null||!s.queue.isEmpty()||now()<s.nextWriteAt)return;
-        try{ProtocolClient.Command command=s.client.next(now());if(command!=null)enqueue(s,2,command.data);}
+        try{long revision=s.client.admin.revision;ProtocolClient.Command command=s.client.next(now());if(s.client.admin.revision!=revision)changed();if(command!=null)enqueue(s,2,command.data);}
         catch(IllegalArgumentException e){close(s,e.getMessage());}
     }
     private void arm(Session s,String reason){arm(s,reason,30000);}
