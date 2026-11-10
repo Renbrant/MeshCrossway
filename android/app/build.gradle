@@ -10,8 +10,8 @@ android {
         applicationId 'com.meshcrossway.mobile'
         minSdk 26
         targetSdk 35
-        versionCode 15
-        versionName '0.2.5'
+        versionCode 17
+        versionName '0.2.7'
         buildConfigField 'String', 'CLERK_PUBLISHABLE_KEY', '"' + (providers.gradleProperty('clerkPublishableKey').getOrElse('')) + '"'
         testInstrumentationRunner 'com.meshcrossway.android.SmokeInstrumentation'
     }
