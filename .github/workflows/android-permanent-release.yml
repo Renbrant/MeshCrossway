@@ -1,11 +1,22 @@
 name: Android permanent-key release
 on:
+  push:
+    branches: [baseline/android-0.1.0]
+    paths:
+      - '.github/workflows/android-permanent-release.yml'
+      - 'android/app/build.gradle'
+      - 'android/app/src/main/java/com/meshcrossway/android/MainActivity.java'
+      - 'android/app/src/main/java/com/meshcrossway/android/ProtocolClient.java'
+      - 'android/app/src/main/java/com/meshcrossway/android/RadioService.java'
+      - 'android/app/src/main/java/com/meshcrossway/android/Wire.java'
+      - 'android/app/src/main/java/com/meshcrossway/android/MeshCorePresets.java'
+      - 'scripts/**'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish, such as 0.2.9 (must match android/app/build.gradle)'
+        description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.2.9'
+        default: '0.3.0'
         type: string
 permissions:
   contents: write
@@ -39,7 +50,7 @@ jobs:
       - name: Verify requested version and permanent signing credentials
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version }}
+          REQUESTED: ${{ inputs.version || '0.3.0' }}
         run: |
           set -euo pipefail
           [[ "$REQUESTED" =~ ^0\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version"; exit 1; }
@@ -61,13 +72,14 @@ jobs:
         run: |
           bash scripts/test_android_probe.sh
           node scripts/test_android_remote_web.cjs
+          python3 scripts/test_android_migration.py
       - name: Build permanent-key signed release and lint
         working-directory: android
-        run: ./gradlew --no-daemon assembleRelease lintRelease
+        run: ./gradlew --no-daemon testDebugUnitTest assembleRelease lintRelease
       - name: Verify APK signature identity and version before publishing
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version }}
+          REQUESTED: ${{ inputs.version || '0.3.0' }}
         run: |
           set -euo pipefail
           APK=android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
@@ -87,7 +99,7 @@ jobs:
       - name: Publish only if no version tag or release exists
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version }}
+          REQUESTED: ${{ inputs.version || '0.3.0' }}
         run: |
           set -euo pipefail
           TAG="android-v$REQUESTED"
@@ -100,18 +112,18 @@ jobs:
             exit 1
           fi
           cat > release-notes.md <<EOF
-          ## MeshCrossway Android $REQUESTED — Clerk account and cloud sync beta
+          ## MeshCrossway Android $REQUESTED — MeshCore settings beta
 
-          **Install as an update:** Android 0.2.8 and this release use the same permanent signing certificate. Install this APK over 0.2.8 and choose Update. Do not uninstall the app or clear its storage; that would remove locally saved messages, favorites, settings, tracks and offline maps.
+          **Install as an update:** install this APK over Android 0.2.9 and choose Update. The permanent signing certificate is unchanged. Do not uninstall the app or clear its storage; that would remove locally saved messages, favorites, settings, tracks and offline maps.
 
-          **Clerk and cloud sync:** sign in with the providers enabled in the Clerk development instance. Cloud storage is opt-in and synchronization is user-triggered. This beta syncs recent conversations and favorite-chat history through the development Cloudflare Worker. Ordinary messages are retained for seven days; favorites persist until removed. Optional GPS track sync uploads saved GPX routes, up to five tracks and 5 MiB per track. Route data reveals location history. This is not end-to-end encrypted, so use development/test data only.
+          **MeshCore device settings:** configure the node name, radio parameters and official community presets, TX power, coordinates, default flood scope, path hash size, contact/privacy settings, radio statistics and device telemetry. Sync the radio clock, refresh contacts or reboot the radio from its settings page.
 
           Existing local app data and features remain available after an in-place update. The long-lived signing certificate is verified by CI and its SHA-256 fingerprint is attached to this release. This is a public beta, not version 1.0.
           EOF
           gh release create "$TAG" "release/MeshCrossway-$REQUESTED.apk" \
              release/SHA256SUMS.txt release/SIGNING-CERT-SHA256.txt \
              --target "$GITHUB_SHA" \
-             --title "Android $REQUESTED — GPX cloud sync beta" \
+             --title "Android $REQUESTED — MeshCore settings beta" \
              --notes-file release-notes.md --prerelease --latest=false
       - name: Remove ephemeral keystore
         if: always()

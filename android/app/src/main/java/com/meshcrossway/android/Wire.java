@@ -34,6 +34,7 @@ final class Wire {
     static byte[] text(String value,int max){byte[] bytes=value.getBytes(StandardCharsets.UTF_8);if(value.trim().isEmpty()||value.indexOf('\0')>=0||bytes.length>max)throw bad("Text must contain 1–"+max+" UTF-8 bytes");utf8(bytes);return bytes;}
     static IllegalArgumentException bad(String message){return new IllegalArgumentException(message);}
     static long u32(byte[] data,int pos){if(pos<0||pos+4>data.length)throw bad("Truncated integer");return (data[pos]&255L)|((data[pos+1]&255L)<<8)|((data[pos+2]&255L)<<16)|((data[pos+3]&255L)<<24);}
+    static int u16(byte[] data,int pos){if(pos<0||pos+2>data.length)throw bad("Truncated integer");return (data[pos]&255)|((data[pos+1]&255)<<8);}
     static void put32(byte[] data,int pos,long value){for(int i=0;i<4;i++)data[pos+i]=(byte)(value>>>(i*8));}
     static String hex(byte[] bytes){char[] digits="0123456789abcdef".toCharArray(),result=new char[bytes.length*2];for(int i=0;i<bytes.length;i++){result[i*2]=digits[(bytes[i]&255)>>>4];result[i*2+1]=digits[bytes[i]&15];}return new String(result);}
     static byte[] unhex(String hex){if(hex.length()%2!=0)throw bad("Invalid public key");byte[] result=new byte[hex.length()/2];for(int i=0;i<result.length;i++){int a=Character.digit(hex.charAt(i*2),16),b=Character.digit(hex.charAt(i*2+1),16);if(a<0||b<0)throw bad("Invalid public key");result[i]=(byte)(a*16+b);}return result;}

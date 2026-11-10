@@ -270,6 +270,14 @@ public final class RadioService extends Service {
             s.persisting=false;history.draft(profile,radio,target.topic,"");result.accept("");advance(s);
         },()->{client.cancel(message.uid);if(s.client==client)s.persisting=false;result.accept("Could not save message • transmission cancelled; draft kept");});
     }
+    void configureMeshCore(String radio,java.util.function.Consumer<ProtocolClient> action){
+        Session s=sessions.get(RadioProfile.MESHCORE);
+        if(s==null||!s.address.equals(radio)||!s.connected||!s.verified||s.client==null){
+            if(listener!=null)listener.run();return;
+        }
+        try{action.accept(s.client);advance(s);changed();}
+        catch(IllegalArgumentException e){phase(s,"Settings",e.getMessage());}
+    }
     private void advance(Session s){
         if(!running||!s.transportReady||s.gatt==null||s.client==null||s.persisting||s.rssiPending||s.active!=null||!s.queue.isEmpty()||now()<s.nextWriteAt)return;
         try{ProtocolClient.Command command=s.client.next(now());if(command!=null)enqueue(s,2,command.data);}
