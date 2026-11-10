@@ -52,6 +52,20 @@ public final class MtSettingsTest {
         ProtocolClient lost=fresh();lost.requestMtConfig(0);request=take(lost);response(lost,request,6,wrap(1,Wire.EMPTY));lost.setMtConfigField(0,1,1);write=take(lost);ack(lost,write,0);take(lost);
         time+=30001;lost.admin.tick(time);check(lost.admin.edit!=null&&lost.admin.edit.deadline==Long.MAX_VALUE,"missing readback stops progress with recoverable state");lost.admin.verify();readback=take(lost);
         response(lost,readback,6,wrap(1,new Wire.Out().scalar(1,1).array()));check(lost.admin.edit==null&&lost.admin.error.isEmpty(),"checking again clears failed read guard and confirms without repeating SET");
+        ProtocolClient normalized=fresh();check(MtLora.currentPreset(normalized).equals("Manual LoRa"),"Home uses synchronized mode, not assumed LONG FAST");
+        normalized.requestMtConfig(5);request=take(normalized);byte[] initial=new Wire.Out().scalar(1,1).scalar(2,4).scalar(5,5).scalar(7,1).scalar(9,1).array();response(normalized,request,6,wrap(6,initial));
+        byte[] desired=Wire.replace(Wire.replace(initial,2,0),5,0);normalized.setMtConfig(5,desired);write=take(normalized);ack(normalized,write,0);readback=take(normalized);
+        response(normalized,readback,6,wrap(6,Wire.replace(desired,5,5)));check(normalized.admin.edit==null&&normalized.admin.error.isEmpty()&&normalized.admin.status.contains("LONG FAST"),"firmware zero-to-five normalization confirms preset and names it");
+        check(MtLora.currentPreset(normalized).equals("LONG FAST"),"Home preset comes from confirmed readback");MtLora.validate(normalized.mtConfig(5),normalized);
+        byte[] slow=Wire.replace(desired,2,1);check(MtLora.codingMatches(Wire.replace(slow,5,5),slow),"slow preset stored CR5 still uses preset CR8");
+        check(!MtLora.codingMatches(Wire.replace(desired,2,4),desired),"a different preset is never equivalent");
+        check(!MtLora.codingMatches(Wire.replace(desired,1,0),desired),"manual mode is never equivalent to preset mode");
+        byte[] override=Wire.replace(desired,5,6);check(!MtLora.codingMatches(Wire.replace(override,5,5),override),"custom CR override cannot silently fall back to default");
+        check(!MtLora.codingMatches(Wire.replace(desired,5,9),desired),"invalid coding rate cannot confirm default");
+        check(MtLora.codingSelection(0,5)==0&&MtLora.codingSelection(0,6)==6&&MtLora.codingSelection(1,5)==0,"coding selector recognizes stored preset defaults");
+        normalized.setMtConfig(5,Wire.replace(normalized.mtConfig(5),8,4));write=take(normalized);ack(normalized,write,0);readback=take(normalized);response(normalized,readback,6,wrap(6,normalized.mtConfig(5)));check(!normalized.admin.error.isEmpty(),"unapplied non-coding setting is still rejected");
+        normalized.setMtConfig(5,Wire.replace(normalized.mtConfig(5),2,4));write=take(normalized);ack(normalized,write,0);readback=take(normalized);response(normalized,readback,6,wrap(6,normalized.mtConfig(5)));check(!normalized.admin.error.isEmpty(),"a requested preset that did not change remains unconfirmed");
+        ProtocolClient unknown=new ProtocolClient(RadioProfile.MESHTASTIC,42,new ProtocolClientTest.Events());check(MtLora.currentPreset(unknown).equals("Reading preset…"),"unread preset is never invented");
         System.out.println("Meshtastic regressions: enums, empty defaults, correlated admin GET/ACK/readback, expiry, reboot recovery, modules, channels, limits and replies passed");
     }
 }
