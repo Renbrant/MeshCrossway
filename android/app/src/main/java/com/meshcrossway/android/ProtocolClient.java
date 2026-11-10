@@ -52,7 +52,7 @@ final class ProtocolClient {
             else if(f.tag==2){if(!ready){if(earlyPackets.size()>=256)throw Wire.bad("Too many packets during synchronization");earlyPackets.add(f.bytes);}else mtPacket(f.bytes,now);}
             else if(f.tag==11){List<Wire.F> qs=Wire.fields(f.bytes);Sent s=sent.get(Wire.number(qs,4,0));if(s!=null){long code=Wire.number(qs,1,0);listener.delivery(s.uid,code==0?"radio accepted":"rejected");if(code!=0)sent.values().remove(s);}}
         }
-        probe.meshtastic(data);if(probe.complete){boolean wasReady=ready;ready=true;description="Ready • live messages";if(!wasReady&&!mtAdminRequested){mtAdminRequested=true;requestMtSessionKey();}while(!earlyPackets.isEmpty())mtPacket(earlyPackets.remove(),now);}
+        probe.meshtastic(data);if(probe.complete){ready=true;description="Ready • live messages";while(!earlyPackets.isEmpty())mtPacket(earlyPackets.remove(),now);}
     }
     private void mtPacket(byte[] bytes,long now){
         List<Wire.F> ps=Wire.fields(bytes);long from=Wire.number(ps,1,0),to=Wire.number(ps,2,0),id=Wire.number(ps,6,0),time=Wire.number(ps,7,0);int slot=(int)Wire.number(ps,3,0);

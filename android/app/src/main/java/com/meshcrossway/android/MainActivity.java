@@ -843,7 +843,7 @@ public final class MainActivity extends Activity {
     private ProtocolClient mtClient(){RadioService.Session s=service==null?null:service.sessions.get(RadioProfile.MESHTASTIC);return s==null?null:s.client;}
     private void mtCommand(java.util.function.Consumer<ProtocolClient> action){RadioService.Session s=service==null?null:service.sessions.get(RadioProfile.MESHTASTIC);if(s==null||!s.verified){Toast.makeText(this,"Connect and synchronize the Meshtastic radio first",Toast.LENGTH_LONG).show();return;}service.configureMeshtastic(s.address,action);scheduleRefresh();}
     private void meshtasticSettingsRows(RadioService.Session session){
-        ProtocolClient c=mtClient();boolean online=session!=null&&session.verified;
+        ProtocolClient c=mtClient();boolean online=session!=null&&session.verified;if(c!=null&&c.ready&&!c.mtAdminRequested){c.mtAdminRequested=true;mtCommand(ProtocolClient::requestMtSessionKey);}
         section(results,"CONFIGURATION");LinearLayout conf=group(results);
         menuRow(conf,"info","User",c!=null&&!c.mtOwnerIsEmpty()?c.mtOwnerName():"Node identity and status message",()->openSettings("mt_user",RadioProfile.MESHTASTIC),RADIO_MT);
         menuRow(conf,"radio","LoRa",c==null?"Region, preset and radio behavior":c.regionName()+" · hop limit "+c.hopLimit,()->openSettings("mt_lora",RadioProfile.MESHTASTIC),RADIO_MT);
