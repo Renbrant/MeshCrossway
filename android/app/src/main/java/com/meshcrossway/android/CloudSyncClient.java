@@ -35,7 +35,7 @@ final class CloudSyncClient {
                         String path="/v1/messages"+(cursor==null?"":"?cursor="+URLEncoder.encode(cursor,"UTF-8"));
                         JSONObject page=new JSONObject(request("GET",path,token,null,null));
                         JSONArray remote=page.optJSONArray("messages");
-                        if(remote!=null&&remote.length()>0)await(done->service.history.mergeCloudMessages(profile,radio,remote,done));
+                        if(remote!=null&&remote.length()>0)awaitDone(done->service.history.mergeCloudMessages(profile,radio,remote,done));
                         cursor=page.isNull("nextCursor")?null:page.optString("nextCursor",null);
                     }while(cursor!=null&&!cursor.isEmpty());
                 }
@@ -60,7 +60,7 @@ final class CloudSyncClient {
         }
         requireEnabled(context);
         JSONObject latest=new JSONObject(request("GET","/v1/favorites",token,null,null));JSONArray all=latest.optJSONArray("favorites");
-        if(all!=null&&all.length()>0)await(done->history.mergeCloudFavorites(profile,radio,all,done));
+        if(all!=null&&all.length()>0)awaitDone(done->history.mergeCloudFavorites(profile,radio,all,done));
     }
 
     private static void requireEnabled(Context context)throws IOException{
@@ -68,10 +68,15 @@ final class CloudSyncClient {
     }
 
     private interface AsyncValue<T>{void get(java.util.function.Consumer<T> callback);}
+    private interface AsyncAction{void run(Runnable callback);}
     private static <T>T await(AsyncValue<T> operation)throws Exception{
         CountDownLatch latch=new CountDownLatch(1);java.util.concurrent.atomic.AtomicReference<T> value=new java.util.concurrent.atomic.AtomicReference<>();
         operation.get(result->{value.set(result);latch.countDown();});
         if(!latch.await(60,TimeUnit.SECONDS))throw new IOException("Local sync timed out");return value.get();
+    }
+    private static void awaitDone(AsyncAction operation)throws Exception{
+        CountDownLatch latch=new CountDownLatch(1);operation.run(latch::countDown);
+        if(!latch.await(60,TimeUnit.SECONDS))throw new IOException("Local sync timed out");
     }
     private static String request(String method,String path,String token,String body,String contentType)throws Exception{
         URL url=new URL(BuildConfig.CLOUD_API_BASE_URL.trim().replaceAll("/+$","")+path);if(!"https".equalsIgnoreCase(url.getProtocol()))throw new IOException("Cloud API must use HTTPS");HttpURLConnection connection=(HttpURLConnection)url.openConnection();
@@ -82,3 +87,4 @@ final class CloudSyncClient {
     }
     private static String safeMessage(Exception error){String message=error.getMessage();if(message==null||message.isEmpty())return "Cloud sync failed • check your connection and try again";if(message.startsWith("TRACK_")||message.equals("UNAUTHORIZED"))return message;return "Cloud sync failed • "+message;}
 }
+
