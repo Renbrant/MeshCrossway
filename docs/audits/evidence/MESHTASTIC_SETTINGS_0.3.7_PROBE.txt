@@ -1,0 +1,19 @@
+PASS CR-0 | preset=0, expected CR=5, actual=5
+FAIL CR-9 | preset=9, expected CR=8, actual=5
+FAIL CR-12 | preset=12, expected CR=6, actual=5
+FAIL CR-13 | preset=13, expected CR=6, actual=5
+FAIL CR-15 | preset=15, expected CR=6, actual=5
+FAIL FW-LONG-TURBO | LONG_TURBO must be hidden before firmware 2.7.17; selectable=true
+PASS FW-LONG-TURBO-ARRIVED | LONG_TURBO available at 2.7.17
+PASS FW-MEDIUM-TURBO | MEDIUM_TURBO remains hidden before 2.8.0
+PASS EU866-SLOT4 | EU_866 LITE_FAST slot 4 is valid
+FAIL EU866-SLOT5 | EU_866 LITE_FAST has 4 slots including spacing/padding; slot 5 must be rejected
+FAIL SF6-SX1262-TBEAM-S3 | A supported SX1262 TBEAM S3 CORE configuration must not be rejected solely because its hardware name contains TBEAM
+PASS READBACK-DEFAULT-NORMALIZED | default CR 0 read back as 5 confirms LONG_FAST
+PASS READBACK-WRONG-PRESET | changed preset mismatch remains rejected
+FAIL READBACK-UNCHANGED-PRESET-DRIFT | hop change must not imply the whole LoRa draft was confirmed when preset drifted
+FAIL READBACK-LONG-TURBO-CR8 | preset-default CR 0 and LONG_TURBO's stored CR8 are semantically equivalent
+FAIL UI-BLUETOOTH-DEFAULT | UI expression gives true for omitted enabled=false; setter sees false
+FAIL UI-SERIAL-DEFAULT | UI expression gives serial_enabled=true for omitted false
+FAIL HAM-COMPOSED-NAME-LIMIT | 2.8.x composed CALLSIGN//name is 25 bytes (24 limit); setter accepted=true
+SUMMARY checks=18 failures=12
