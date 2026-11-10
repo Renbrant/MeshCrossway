@@ -23,6 +23,8 @@ class ClerkAccountActivity : Activity() {
     private val muted = Color.rgb(154, 166, 180)
     private var radioService: RadioService? = null
     private var bound = false
+    private var trackService: TrackService? = null
+    private var trackBound = false
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
             radioService = (binder as RadioService.LocalBinder).service()
@@ -30,17 +32,26 @@ class ClerkAccountActivity : Activity() {
         }
         override fun onServiceDisconnected(name: ComponentName) { radioService = null }
     }
+    private val trackServiceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+            trackService = (binder as TrackService.LocalBinder).service()
+            render()
+        }
+        override fun onServiceDisconnected(name: ComponentName) { trackService = null }
+    }
 
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         window.statusBarColor = pageBackground
         window.navigationBarColor = pageBackground
         bound = bindService(Intent(this, RadioService::class.java), serviceConnection, BIND_AUTO_CREATE)
+        trackBound = bindService(Intent(this, TrackService::class.java), trackServiceConnection, BIND_AUTO_CREATE)
         render()
     }
 
     override fun onDestroy() {
         if (bound) unbindService(serviceConnection)
+        if (trackBound) unbindService(trackServiceConnection)
         super.onDestroy()
     }
 
@@ -105,22 +116,35 @@ class ClerkAccountActivity : Activity() {
         root.addView(text("Cloud content is sent over HTTPS and stored in your Cloudflare account under your Clerk identity. It is not end-to-end encrypted. Turning sync off stops future syncs but does not delete data already stored in the cloud.", 13, muted).apply {
             setPadding(dp(4), dp(10), dp(4), 0)
         })
-        root.addView(text("Free track storage is planned as up to five GPX tracks, 5 MiB each. Track sync will be added in a later step.", 13, muted).apply {
-            setPadding(dp(4), dp(12), dp(4), 0)
+        val tracksEnabled = syncPrefs.getBoolean("tracks_enabled", false)
+        if (enabled) root.addView(Switch(this).apply {
+            text = "Sync GPS tracks"
+            textSize = 15f
+            setTextColor(white)
+            isChecked = tracksEnabled
+            isEnabled = ClerkBridge.isSignedIn()
+            setOnCheckedChangeListener { _, checked ->
+                syncPrefs.edit().putBoolean("tracks_enabled", checked).apply()
+                render()
+            }
         })
+        if (enabled) root.addView(cardText(if (tracksEnabled)
+            "GPS track sync is on. Sync now uploads saved routes as GPX and downloads them to this device. Up to five tracks are stored in the cloud, maximum 5 MiB each. Active or paused recordings are not uploaded. Routes reveal location history; cloud copies are not end-to-end encrypted. Turning this off stops future track syncs but does not delete cloud copies. Deleting a track only on this phone also leaves its cloud copy, which may download again later."
+        else
+            "GPS tracks contain route and location data. Enable this separately to sync saved GPX tracks. The cloud limit is five tracks, up to 5 MiB each. Cloud copies are not end-to-end encrypted."))
         if (enabled && !ClerkBridge.isSignedIn()) root.addView(text("Sign in to enable synchronization on this device.", 13, muted).apply { setPadding(dp(4), dp(10), dp(4), 0) })
         if (!CloudSyncClient.configured()) {
             root.addView(cardText("The cloud API is not configured in this build yet. No data will be uploaded until the Worker is deployed and its URL is added to the Android build."))
         } else if (enabled && ClerkBridge.isSignedIn()) {
             root.addView(actionButton("Sync now") {
-                CloudSyncClient.sync(this, radioService) { message, success ->
+                CloudSyncClient.sync(this, radioService, trackService) { message, success ->
                     runOnUiThread {
                         Toast.makeText(this, message, if (success) Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show()
                         render()
                     }
                 }
-            }.apply { isEnabled = radioService != null })
-            if (radioService == null) root.addView(text("Preparing local history…", 13, muted).apply { setPadding(dp(4), dp(8), dp(4), 0) })
+            }.apply { isEnabled = radioService != null && (!tracksEnabled || trackService != null) })
+            if (radioService == null || (tracksEnabled && trackService == null)) root.addView(text("Preparing local sync storage…", 13, muted).apply { setPadding(dp(4), dp(8), dp(4), 0) })
         }
         setContentView(root)
     }

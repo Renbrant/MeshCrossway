@@ -1,10 +1,10 @@
 # MeshCrossway Android
 
-**Development: 0.2.8 beta (versionCode 18), using the permanent signing identity established by 0.2.3** · [Install the Android APK](../docs/android-apk.md) · [Previous 0.2.1 recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
+**Next development build: 0.2.9 beta (versionCode 19), using the permanent signing identity established by 0.2.3** · [Current Android APK 0.2.8](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.8) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
 
 Native ARM64 Android 8.0+ app for **two independent, simultaneous BLE radio sessions**: one Meshtastic and one MeshCore Companion. The application does **not** bridge, route or relay messages across networks. Its primary UI includes chats, channels, contacts, offline MapLibre areas, local phone GPS tracks/GPX and saved message history.
 
-**Clerk and cloud sync beta:** hosted sign-in/sign-up and opt-in, manual synchronization of recent conversations and favorites are available with the development Worker. Ordinary messages retain seven days; favorites persist until removed. Tracks, settings, contacts and locations are not synchronized. This development service is for testing, not production use. See [Clerk setup](CLERK_SETUP.md).
+**Clerk and cloud sync beta:** hosted sign-in/sign-up and opt-in, manual synchronization of recent conversations and favorites are available with the development Worker. Ordinary messages retain seven days; favorites persist until removed. Optional GPS track sync transfers saved GPX routes when separately enabled, up to five tracks and 5 MiB per track. GPS tracks reveal location history and cloud copies are not end-to-end encrypted. Deleting a local track does not delete its cloud copy. Settings, contacts and live location are not synchronized. This development service is for testing, not production use. See [Clerk setup](CLERK_SETUP.md).
 
 ## New in 0.2.2 — Browser chats, channels, and visual offline maps
 
@@ -105,7 +105,9 @@ The `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk` output is a de
 - **0.2.3**: first permanent release signing and complete backup/restore; one-time recovery from old debug-signed APKs.
 - **0.2.4**: System, Color, Gradient (Linear/Mesh) and Photo appearance options, with persistent customization.
 - **0.2.5**: compact Home, two leading connection cards, true per-radio BLE RSSI bars, no duplicate section headings.
-- **0.2.3+**: subsequent small fixes; **0.3.0** or later for larger feature releases; **1.0.0** remains a future production milestone.
+- **0.2.8**: Clerk sign-in and opt-in cloud sync for recent messages and favorite chats.
+- **0.2.9**: optional, user-triggered GPX track synchronization with a five-track / 5 MiB-per-track cloud quota.
+- **0.3.0** or later for larger feature releases; **1.0.0** remains a future production milestone.
 
 The installed app may be signed with a different CI debug key. If Android rejects an update due to a signing conflict, first export JSON history and required GPX tracks, then uninstall/reinstall. **Uninstalling deletes local application data.**
 

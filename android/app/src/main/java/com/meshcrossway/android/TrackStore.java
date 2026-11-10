@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 /** Tracks have their own local database and worker, independent of both BLE stacks. */
 final class TrackStore extends SQLiteOpenHelper {
     static final class Track {
-        String id,name,state,folderId="";int color,count;boolean visible;long created;double distance;
+        String id,name,state,folderId="",cloudId="";int color,count;boolean visible;long created,modifiedAt;double distance;
         final List<FieldTools.Fix> points=new ArrayList<>();
         String summary(){return state+" · "+count+" points · "+String.format(Locale.ROOT,"%.2f km",distance/1000);}
     }
@@ -23,33 +23,38 @@ final class TrackStore extends SQLiteOpenHelper {
     private final HandlerThread thread=new HandlerThread("mesh-tracks");private final Handler worker,main=new Handler(Looper.getMainLooper());private boolean closed;
     private String active="";private int segment;private FieldTools.Fix previous;
     TrackStore(Context c){this(c,"meshcrossway-tracks.db");}
-    TrackStore(Context c,String name){super(c,name,null,2);thread.start();worker=new Handler(thread.getLooper());work(db->{db.execSQL("UPDATE tracks SET state='paused' WHERE state='recording'");});}
+    TrackStore(Context c,String name){super(c,name,null,3);thread.start();worker=new Handler(thread.getLooper());work(db->{db.execSQL("UPDATE tracks SET state='paused',modified_at=? WHERE state='recording'",new Object[]{System.currentTimeMillis()});});}
     @Override public void onConfigure(SQLiteDatabase db){db.enableWriteAheadLogging();}
-    @Override public void onCreate(SQLiteDatabase db){db.execSQL("CREATE TABLE tracks(id TEXT PRIMARY KEY,name TEXT,state TEXT,color INTEGER,visible INTEGER,created INTEGER,distance REAL DEFAULT 0,count INTEGER DEFAULT 0,folder_id TEXT NOT NULL DEFAULT '')");db.execSQL("CREATE TABLE folders(id TEXT PRIMARY KEY,name TEXT NOT NULL)");db.execSQL("CREATE TABLE fixes(track TEXT,seq INTEGER,segment INTEGER,lat REAL,lon REAL,accuracy REAL,altitude REAL,time INTEGER,PRIMARY KEY(track,seq))");}
+    @Override public void onCreate(SQLiteDatabase db){db.execSQL("CREATE TABLE tracks(id TEXT PRIMARY KEY,name TEXT,state TEXT,color INTEGER,visible INTEGER,created INTEGER,distance REAL DEFAULT 0,count INTEGER DEFAULT 0,folder_id TEXT NOT NULL DEFAULT '',cloud_id TEXT NOT NULL DEFAULT '',modified_at INTEGER NOT NULL DEFAULT 0)");db.execSQL("CREATE TABLE folders(id TEXT PRIMARY KEY,name TEXT NOT NULL)");db.execSQL("CREATE TABLE fixes(track TEXT,seq INTEGER,segment INTEGER,lat REAL,lon REAL,accuracy REAL,altitude REAL,time INTEGER,PRIMARY KEY(track,seq))");}
     @Override public void onUpgrade(SQLiteDatabase db,int old,int next){
         if(old<2){
             db.execSQL("ALTER TABLE tracks ADD COLUMN folder_id TEXT NOT NULL DEFAULT ''");
             db.execSQL("CREATE TABLE IF NOT EXISTS folders(id TEXT PRIMARY KEY,name TEXT NOT NULL)");
         }
+        if(old<3){
+            db.execSQL("ALTER TABLE tracks ADD COLUMN cloud_id TEXT NOT NULL DEFAULT ''");
+            db.execSQL("ALTER TABLE tracks ADD COLUMN modified_at INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("UPDATE tracks SET modified_at=created WHERE modified_at=0");
+        }
     }
     private interface Work{void run(SQLiteDatabase db)throws Exception;}
     private void work(Work work){if(closed)return;worker.post(()->{try{work.run(getWritableDatabase());publish();}catch(Exception e){main.post(()->{error="Track storage failed • stop recording and export saved tracks";if(listener!=null)listener.run();});}});}
-    private void publish(){ArrayList<Track> result=new ArrayList<>();SQLiteDatabase db=getReadableDatabase();try(Cursor c=db.rawQuery("SELECT * FROM tracks ORDER BY created DESC LIMIT 100",null)){while(c.moveToNext()){Track t=new Track();t.id=c.getString(0);t.name=c.getString(1);t.state=c.getString(2);t.color=c.getInt(3);t.visible=c.getInt(4)==1;t.created=c.getLong(5);t.distance=c.getDouble(6);t.count=c.getInt(7);t.folderId=c.getString(8);if(t.visible)t.points.addAll(preview(db,t.id,t.count));result.add(t);}}
+    private void publish(){ArrayList<Track> result=new ArrayList<>();SQLiteDatabase db=getReadableDatabase();try(Cursor c=db.rawQuery("SELECT * FROM tracks ORDER BY created DESC LIMIT 100",null)){while(c.moveToNext()){Track t=new Track();t.id=c.getString(0);t.name=c.getString(1);t.state=c.getString(2);t.color=c.getInt(3);t.visible=c.getInt(4)==1;t.created=c.getLong(5);t.distance=c.getDouble(6);t.count=c.getInt(7);t.folderId=c.getString(8);t.cloudId=c.getString(9);t.modifiedAt=c.getLong(10);if(t.visible)t.points.addAll(preview(db,t.id,t.count));result.add(t);}}
         ArrayList<Folder> directories=new ArrayList<>();
         try(Cursor c=db.rawQuery("SELECT id,name FROM folders ORDER BY name COLLATE NOCASE",null)){
             while(c.moveToNext())directories.add(new Folder(c.getString(0),c.getString(1)));
         }
         main.post(()->{if(closed)return;tracks.clear();tracks.addAll(result);folders.clear();folders.addAll(directories);error="";if(listener!=null)listener.run();});}
     Track current(){for(Track t:tracks)if(!t.state.equals("saved"))return t;return null;}
-    void start(String name,Consumer<Boolean> done){work(db->{try(Cursor c=db.rawQuery("SELECT count(*) FROM tracks",null)){c.moveToFirst();if(c.getInt(0)>=100){main.post(()->done.accept(false));return;}}db.execSQL("UPDATE tracks SET state='saved' WHERE state!='saved'");active=UUID.randomUUID().toString();segment=0;previous=null;ContentValues v=new ContentValues();v.put("id",active);v.put("name",name.trim().isEmpty()?"Track":name.trim().substring(0,Math.min(name.trim().length(),80)));v.put("state","recording");v.put("color",COLORS[0]);v.put("visible",1);v.put("created",System.currentTimeMillis());db.insertOrThrow("tracks",null,v);main.post(()->done.accept(true));});}
-    void resume(String id,Consumer<Boolean> done){work(db->{try(Cursor c=db.rawQuery("SELECT state FROM tracks WHERE id=?",new String[]{id})){if(!c.moveToFirst()||!c.getString(0).equals("paused")){main.post(()->done.accept(false));return;}}db.execSQL("UPDATE tracks SET state='paused' WHERE state='recording'");active=id;previous=null;try(Cursor c=db.rawQuery("SELECT coalesce(max(segment),-1)+1 FROM fixes WHERE track=?",new String[]{id})){c.moveToFirst();segment=c.getInt(0);}db.execSQL("UPDATE tracks SET state='recording' WHERE id=?",new Object[]{id});main.post(()->done.accept(true));});}
-    void pause(boolean finish){work(db->{db.execSQL("UPDATE tracks SET state=? WHERE state!='saved'",new Object[]{finish?"saved":"paused"});active="";previous=null;});}
+    void start(String name,Consumer<Boolean> done){work(db->{try(Cursor c=db.rawQuery("SELECT count(*) FROM tracks",null)){c.moveToFirst();if(c.getInt(0)>=100){main.post(()->done.accept(false));return;}}db.execSQL("UPDATE tracks SET state='saved' WHERE state!='saved'");active=UUID.randomUUID().toString();segment=0;previous=null;long now=System.currentTimeMillis();ContentValues v=new ContentValues();v.put("id",active);v.put("name",name.trim().isEmpty()?"Track":name.trim().substring(0,Math.min(name.trim().length(),80)));v.put("state","recording");v.put("color",COLORS[0]);v.put("visible",1);v.put("created",now);v.put("modified_at",now);db.insertOrThrow("tracks",null,v);main.post(()->done.accept(true));});}
+    void resume(String id,Consumer<Boolean> done){work(db->{try(Cursor c=db.rawQuery("SELECT state FROM tracks WHERE id=?",new String[]{id})){if(!c.moveToFirst()||!c.getString(0).equals("paused")){main.post(()->done.accept(false));return;}}db.execSQL("UPDATE tracks SET state='paused' WHERE state='recording'");active=id;previous=null;try(Cursor c=db.rawQuery("SELECT coalesce(max(segment),-1)+1 FROM fixes WHERE track=?",new String[]{id})){c.moveToFirst();segment=c.getInt(0);}db.execSQL("UPDATE tracks SET state='recording',modified_at=? WHERE id=?",new Object[]{System.currentTimeMillis(),id});main.post(()->done.accept(true));});}
+    void pause(boolean finish){work(db->{db.execSQL("UPDATE tracks SET state=?,modified_at=? WHERE state!='saved'",new Object[]{finish?"saved":"paused",System.currentTimeMillis()});active="";previous=null;});}
     void add(FieldTools.Fix raw,long now){work(db->{if(active.isEmpty())return;int seg=segment;if(previous!=null&&raw.time-previous.time>120000)seg++;
         FieldTools.Fix fix=new FieldTools.Fix(raw.lat,raw.lon,raw.accuracy,raw.altitude,raw.time,seg);if(!FieldTools.accept(previous,fix,now))return;
         int count;try(Cursor c=db.rawQuery("SELECT count FROM tracks WHERE id=?",new String[]{active})){if(!c.moveToFirst())return;count=c.getInt(0);}if(count>=100000){db.execSQL("UPDATE tracks SET state='paused' WHERE id=?",new Object[]{active});active="";main.post(()->{error="Track point limit reached • finish this track";if(listener!=null)listener.run();});return;}
         double distance=previous!=null&&previous.segment==seg?GeoMath.distance(previous.lat,previous.lon,fix.lat,fix.lon):0;ContentValues v=new ContentValues();v.put("track",active);v.put("seq",count);v.put("segment",seg);v.put("lat",fix.lat);v.put("lon",fix.lon);v.put("accuracy",fix.accuracy);if(Double.isFinite(fix.altitude))v.put("altitude",fix.altitude);v.put("time",fix.time);
-        db.beginTransaction();try{db.insertOrThrow("fixes",null,v);db.execSQL("UPDATE tracks SET count=count+1,distance=distance+? WHERE id=?",new Object[]{distance,active});db.setTransactionSuccessful();}finally{db.endTransaction();}previous=fix;segment=seg;});}
-    void metadata(String id,String name,int color,boolean visible){work(db->{ContentValues v=new ContentValues();v.put("name",name.trim().isEmpty()?"Track":name.trim().substring(0,Math.min(80,name.trim().length())));v.put("color",color);v.put("visible",visible?1:0);db.update("tracks",v,"id=?",new String[]{id});});}
+        db.beginTransaction();try{db.insertOrThrow("fixes",null,v);db.execSQL("UPDATE tracks SET count=count+1,distance=distance+?,modified_at=? WHERE id=?",new Object[]{distance,System.currentTimeMillis(),active});db.setTransactionSuccessful();}finally{db.endTransaction();}previous=fix;segment=seg;});}
+    void metadata(String id,String name,int color,boolean visible){work(db->{String normalized=name.trim().isEmpty()?"Track":name.trim().substring(0,Math.min(80,name.trim().length()));ContentValues v=new ContentValues();v.put("name",normalized);v.put("color",color);v.put("visible",visible?1:0);try(Cursor c=db.rawQuery("SELECT name FROM tracks WHERE id=?",new String[]{id})){if(c.moveToFirst()&&!normalized.equals(c.getString(0)))v.put("modified_at",System.currentTimeMillis());}db.update("tracks",v,"id=?",new String[]{id});});}
     void delete(String id){work(db->{try(Cursor c=db.rawQuery("SELECT state FROM tracks WHERE id=?",new String[]{id})){if(!c.moveToFirst()||!c.getString(0).equals("saved"))return;}db.beginTransaction();try{db.delete("fixes","track=?",new String[]{id});db.delete("tracks","id=?",new String[]{id});db.setTransactionSuccessful();}finally{db.endTransaction();}});}
     void createFolder(String name){work(db->{
         try(Cursor c=db.rawQuery("SELECT count(*) FROM folders",null)){
@@ -92,11 +97,37 @@ final class TrackStore extends SQLiteOpenHelper {
     static List<FieldTools.Fix> points(SQLiteDatabase db,String id,int limit){ArrayList<FieldTools.Fix> points=new ArrayList<>();try(Cursor c=db.rawQuery("SELECT lat,lon,accuracy,altitude,time,segment FROM fixes WHERE track=? ORDER BY seq LIMIT ?",new String[]{id,Integer.toString(limit)})){while(c.moveToNext())points.add(new FieldTools.Fix(c.getDouble(0),c.getDouble(1),c.getDouble(2),c.isNull(3)?Double.NaN:c.getDouble(3),c.getLong(4),c.getInt(5)));}return points;}
     void locate(String id,Consumer<FieldTools.Fix> done){work(db->{ContentValues v=new ContentValues();v.put("visible",1);db.update("tracks",v,"id=?",new String[]{id});List<FieldTools.Fix> fixes=points(db,id,1);FieldTools.Fix first=fixes.isEmpty()?null:fixes.get(0);main.post(()->done.accept(first));});}
     void export(String id,OutputStream stream,Consumer<String> done){if(closed)return;worker.post(()->{try(Writer out=new OutputStreamWriter(stream,StandardCharsets.UTF_8)){SQLiteDatabase db=getReadableDatabase();String name;try(Cursor c=db.rawQuery("SELECT name FROM tracks WHERE id=?",new String[]{id})){if(!c.moveToFirst())throw new IOException();name=c.getString(0);}FieldTools.gpx(out,name,points(db,id,100000));main.post(()->done.accept(""));}catch(Exception e){main.post(()->done.accept("Track export failed"));}});}
+    void cloudTracks(Consumer<List<Track>> done){
+        if(closed){main.post(()->done.accept(Collections.emptyList()));return;}
+        worker.post(()->{
+            ArrayList<Track> result=new ArrayList<>();
+            try(Cursor c=getReadableDatabase().rawQuery("SELECT id,name,state,cloud_id,modified_at FROM tracks ORDER BY modified_at DESC,created DESC",null)){
+                while(c.moveToNext()){Track t=new Track();t.id=c.getString(0);t.name=c.getString(1);t.state=c.getString(2);t.cloudId=c.getString(3);t.modifiedAt=c.getLong(4);result.add(t);}
+            }
+            main.post(()->done.accept(result));
+        });
+    }
+    void markCloudTrack(String id,String cloudId,long modifiedAt,Runnable done){
+        if(closed){if(done!=null)main.post(done);return;}
+        worker.post(()->{
+            ContentValues v=new ContentValues();v.put("cloud_id",cloudId);v.put("modified_at",modifiedAt);
+            getWritableDatabase().update("tracks",v,"id=?",new String[]{id});
+            if(done!=null)main.post(done);
+        });
+    }
     // Full-device migration backup. Structured JSON streams every recorded
     // point, unlike GPX preview/export, and includes virtual folder metadata.
     private static final String[] ARCHIVE_TABLES={"folders","tracks","fixes"};
     /** Import GPX files exported from older, incompatibly signed APKs. */
-    void importGpx(InputStream stream,Consumer<String> done){
+    void importGpx(InputStream stream,Consumer<String> done){importGpx(stream,"","",0,done);}
+    void importCloudGpx(String cloudId,String remoteName,long updatedAt,InputStream stream,Consumer<String> done){
+        if(cloudId==null||!validArchiveId(cloudId)||remoteName==null||remoteName.trim().isEmpty()||remoteName.length()>120||updatedAt<=0){
+            try{stream.close();}catch(Exception ignored){}
+            main.post(()->done.accept("Cloud track metadata is invalid"));return;
+        }
+        importGpx(stream,cloudId,remoteName,updatedAt,done);
+    }
+    private void importGpx(InputStream stream,String cloudId,String remoteName,long remoteUpdatedAt,Consumer<String> done){
         if(closed){main.post(()->done.accept("Track database unavailable"));return;}
         worker.post(()->{
             String status="";
@@ -158,11 +189,21 @@ final class TrackStore extends SQLiteOpenHelper {
                     }
                 }
                 if(points.isEmpty())throw new IOException("GPX file has no track points");
+                if(!remoteName.isEmpty())name=remoteName.substring(0,Math.min(80,remoteName.length()));
                 SQLiteDatabase db=getWritableDatabase();
-                try(Cursor c=db.rawQuery("SELECT count(*) FROM tracks",null)){
+                String id=null;int color=COLORS[0],visible=1;String folder="";long created=System.currentTimeMillis();
+                if(!cloudId.isEmpty())try(Cursor c=db.rawQuery("SELECT id,state,color,visible,folder_id FROM tracks WHERE cloud_id=? OR id=? ORDER BY CASE WHEN cloud_id=? THEN 0 ELSE 1 END LIMIT 1",new String[]{cloudId,cloudId,cloudId})){
+                    if(c.moveToFirst()){
+                        if(!c.getString(1).equals("saved"))throw new IOException("Finish the local track before downloading its cloud copy");
+                        id=c.getString(0);color=c.getInt(2);visible=c.getInt(3);folder=c.getString(4);
+                    }
+                }
+                boolean replace=id!=null;
+                if(replace)try(Cursor c=db.rawQuery("SELECT created FROM tracks WHERE id=?",new String[]{id})){if(c.moveToFirst())created=c.getLong(0);}
+                if(!replace)try(Cursor c=db.rawQuery("SELECT count(*) FROM tracks",null)){
                     c.moveToFirst();if(c.getInt(0)>=100)throw new IOException("Track storage is full");
                 }
-                String id=UUID.randomUUID().toString();
+                if(id==null)id=UUID.randomUUID().toString();
                 double distance=0;
                 FieldTools.Fix previous=null;
                 for(FieldTools.Fix point:points){
@@ -172,12 +213,14 @@ final class TrackStore extends SQLiteOpenHelper {
                 }
                 db.beginTransaction();
                 try{
+                    if(replace)db.delete("fixes","track=?",new String[]{id});
                     ContentValues row=new ContentValues();
                     row.put("id",id);row.put("name",name);row.put("state","saved");
-                    row.put("color",COLORS[0]);row.put("visible",1);
-                    row.put("created",System.currentTimeMillis());row.put("distance",distance);
-                    row.put("count",points.size());row.put("folder_id","");
-                    db.insertOrThrow("tracks",null,row);
+                    row.put("color",color);row.put("visible",visible);
+                    row.put("created",created);
+                    row.put("distance",distance);row.put("count",points.size());row.put("folder_id",folder);
+                    row.put("cloud_id",cloudId);row.put("modified_at",remoteUpdatedAt>0?remoteUpdatedAt*1000L:System.currentTimeMillis());
+                    if(replace)db.update("tracks",row,"id=?",new String[]{id});else db.insertOrThrow("tracks",null,row);
                     for(int seq=0;seq<points.size();seq++){
                         FieldTools.Fix point=points.get(seq);
                         ContentValues value=new ContentValues();
@@ -248,7 +291,7 @@ final class TrackStore extends SQLiteOpenHelper {
     private static final Set<String> VALID_FOLDER_COLS=new HashSet<>(
         Arrays.asList("id","name"));
     private static final Set<String> VALID_TRACK_COLS=new HashSet<>(
-        Arrays.asList("id","name","state","color","visible","created","distance","count","folder_id"));
+        Arrays.asList("id","name","state","color","visible","created","distance","count","folder_id","cloud_id","modified_at"));
     private static final Set<String> VALID_FIX_COLS=new HashSet<>(
         Arrays.asList("track","seq","segment","lat","lon","accuracy","altitude","time"));
     private static ContentValues archiveRow(android.util.JsonReader reader,String table)throws IOException{
@@ -270,7 +313,7 @@ final class TrackStore extends SQLiteOpenHelper {
                 }else if(field.equals("color")||field.equals("visible")||field.equals("count")||
                          field.equals("segment")||field.equals("seq")){
                     values.put(field,reader.nextInt());
-                }else if(field.equals("created")||field.equals("time")){
+                }else if(field.equals("created")||field.equals("modified_at")||field.equals("time")){
                     values.put(field,reader.nextLong());
                 }else{
                     String value=reader.nextString();
@@ -280,7 +323,13 @@ final class TrackStore extends SQLiteOpenHelper {
             }catch(NumberFormatException invalid){throw new IOException("Invalid numeric field",invalid);}
         }
         reader.endObject();
-        if(values.size()!=columns.size())throw new IOException("Incomplete track backup row");
+        if(table.equals("tracks")){
+            Set<String> legacy=new HashSet<>(Arrays.asList("id","name","state","color","visible","created","distance","count","folder_id"));
+            Set<String> supplied=new HashSet<>(values.keySet());
+            if(!supplied.equals(VALID_TRACK_COLS)&&!supplied.equals(legacy))throw new IOException("Incomplete track backup row");
+            if(!values.containsKey("cloud_id"))values.put("cloud_id","");
+            if(!values.containsKey("modified_at"))values.put("modified_at",values.getAsLong("created"));
+        }else if(values.size()!=columns.size())throw new IOException("Incomplete track backup row");
         if(table.equals("folders")){
             checkArchiveId(values.getAsString("id"));
             String name=values.getAsString("name");
@@ -297,6 +346,9 @@ final class TrackStore extends SQLiteOpenHelper {
                 throw new IOException("Invalid track status");
             if(values.getAsInteger("count")<0||values.getAsInteger("count")>100000||
                values.getAsDouble("distance")<0)throw new IOException("Invalid track metrics");
+            String cloudId=values.getAsString("cloud_id");
+            if(cloudId==null||(!cloudId.isEmpty()&&!validArchiveId(cloudId))||values.getAsLong("modified_at")<0)
+                throw new IOException("Invalid cloud track metadata");
             // Never automatically restart a location recording after migration.
             if(state.equals("recording"))values.put("state","paused");
         }else{

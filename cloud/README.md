@@ -1,13 +1,13 @@
 # MeshCrossway Cloud — first storage limits
 
-This directory contains the Cloudflare Worker + D1 + R2 backend for optional account sync. The Worker is deployed at `https://meshcrossway-cloud.meshcrossway.workers.dev` with the Clerk development issuer. Android source contains an opt-in, manually triggered client flow for recent messages and favorite chats. Android track sync is not connected yet.
+This directory contains the Cloudflare Worker + D1 + R2 backend for optional account sync. The Worker is deployed at `https://meshcrossway-cloud.meshcrossway.workers.dev` with the Clerk development issuer. Android source contains an opt-in, manually triggered client flow for recent messages and favorite chats, plus separately opted-in saved GPX track sync.
 
 ## Initial free-account limits
 
 - Ordinary conversation messages: retain the latest **7 days** on the server.
 - Favorite conversations: keep all their messages until the user unfavorites or deletes the account.
 - Tracks: at most **5 tracks**, **5 MiB per GPX**, and **25 MiB total** per account.
-- Oversize tracks stay complete on the phone and are not accepted by this cloud endpoint. A future client can offer a simplified/resampled copy for cloud storage while preserving the original local track.
+- Oversize tracks stay complete on the phone and are skipped by cloud sync; the original local track remains unchanged.
 - Meshtastic and MeshCore values stay in separate records. The Worker does not connect to either radio and cannot relay between the networks.
 
 The 5 MiB / five-track cap is a deliberately small starting proposal. It can be revised before deploying or exposing the feature to users. Quotas are checked by the server and also protected by SQLite triggers; a modified APK cannot increase the limit.
@@ -42,4 +42,4 @@ Messages use Unix timestamps in seconds, matching the Android app's current loca
 
 The API accepts message text in plaintext after the app has decrypted/decoded the radio payload. This first backend slice does not yet provide client-side end-to-end encryption. The app must disclose cloud storage clearly and require the user to enable it before upload. Authentication, per-user authorization, HTTPS, bounded input and account-scoped object keys are included, but production deployment should wait until account deletion, data export, recovery and client-side encryption decisions are completed.
 
-The Android sync button is manual in this first slice. It uploads message history for the last seven days plus favorite-chat history, merges messages and favorite changes from the account, and requires the user to sign in and explicitly enable sync. It is not end-to-end encrypted; the app discloses that before sync is enabled. Track sync, deletion/export controls in the account site, billing, and end-to-end encryption remain future work. Do not make the feature public until deployment and multi-device behavior have been validated.
+The Android sync button is manual. It uploads recent message history and favorites, and transfers saved GPX files only when the user separately enables GPS track sync. Local track edits use last-write-wins timestamps; cloud copies are not deleted when sync is disabled or a local track is removed. The feature is not end-to-end encrypted; use development/test data only. Validate multi-device behavior before broader public use.
