@@ -31,7 +31,7 @@ Then build from `android/`:
 ./gradlew :app:assembleDebug
 ```
 
-Without the property, the app builds with account sign-in disabled and the local-first app continues to work. A publishable key is public by design, but using a local Gradle property keeps environment-specific keys out of commits. For GitHub's permanent-release workflow, add a repository Actions variable named `CLERK_PUBLISHABLE_KEY`. Production Google OAuth must also include the permanent Android release signing certificate fingerprint; the debug key fingerprint is separate.
+Without the property, the app builds with account sign-in disabled and the local-first app continues to work. A publishable key is public by design, but using a local Gradle property keeps environment-specific keys out of commits. For GitHub Actions APK builds, add a repository variable named `CLERK_PUBLISHABLE_KEY`; both the alpha APK workflow and permanent-release workflow read it. Production Google OAuth must also include the permanent Android release signing certificate fingerprint; the debug key fingerprint is separate.
 
 ## Current boundaries
 
