@@ -35,6 +35,7 @@ public final class MainActivity extends Activity {
 
     private final DateFormat timestampFormat=DateFormat.getDateTimeInstance(DateFormat.SHORT,DateFormat.SHORT);private String query="",chatRadio="";private RadioProfile choosing,chatProfile;private Target chat;private boolean bound,visible,sending,applyingDraft;private int composerRevision;private Runnable pending;
     private final HashMap<String,String> drafts=new HashMap<>();
+    private final Runnable homeClock=new Runnable(){public void run(){if(!visible)return;if(selected==0)scheduleRefresh();handler.postDelayed(this,30000);}};
     private final Runnable refresh=()->{refreshQueued=false;refreshContent();},saveDraftTask=this::saveDraft;
     private final ServiceConnection connection=new ServiceConnection(){
         @Override public void onServiceConnected(ComponentName name,IBinder binder){service=((RadioService.LocalBinder)binder).service();if(visible){service.uiVisible=true;service.listener=MainActivity.this::scheduleRefresh;if(service.allowed()&&service.shouldResume())startForegroundService(new Intent(MainActivity.this,RadioService.class));}loadDraft();refreshContent();}
@@ -70,8 +71,8 @@ public final class MainActivity extends Activity {
         if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,this::handleBack);
         if(state==null)readConversationIntent(getIntent());buildPage();bound=bindService(new Intent(this,RadioService.class),connection,BIND_AUTO_CREATE);tracksBound=bindService(new Intent(this,TrackService.class),trackConnection,BIND_AUTO_CREATE);
     }
-    @Override protected void onStart(){super.onStart();visible=true;if(trackService!=null)trackService.listener=this::scheduleRefresh;if(service!=null){service.uiVisible=true;service.listener=this::scheduleRefresh;}if(mapPanel!=null)mapPanel.onStart();refreshContent();}
-    @Override protected void onStop(){saveDraft();visible=false;if(trackService!=null)trackService.listener=null;if(service!=null){service.uiVisible=false;service.listener=null;}if(mapPanel!=null)mapPanel.onStop();handler.removeCallbacks(refresh);refreshQueued=false;if(service==null||service.remoteWorkspace==null)MapEngine.pauseDownloads();super.onStop();}
+    @Override protected void onStart(){super.onStart();visible=true;handler.removeCallbacks(homeClock);handler.postDelayed(homeClock,30000);if(trackService!=null)trackService.listener=this::scheduleRefresh;if(service!=null){service.uiVisible=true;service.listener=this::scheduleRefresh;}if(mapPanel!=null)mapPanel.onStart();refreshContent();}
+    @Override protected void onStop(){saveDraft();visible=false;handler.removeCallbacks(homeClock);if(trackService!=null)trackService.listener=null;if(service!=null){service.uiVisible=false;service.listener=null;}if(mapPanel!=null)mapPanel.onStop();handler.removeCallbacks(refresh);refreshQueued=false;if(service==null||service.remoteWorkspace==null)MapEngine.pauseDownloads();super.onStop();}
     @Override protected void onDestroy(){if(mapPanel!=null){mapPanel.destroy();mapPanel=null;}position.stop();handler.removeCallbacksAndMessages(null);if(service!=null)service.listener=null;if(bound)unbindService(connection);if(trackService!=null)trackService.listener=null;if(tracksBound)unbindService(trackConnection);super.onDestroy();}
     @Override protected void onResume(){super.onResume();resumed=true;if(phoneEnabled())position.start();if(mapPanel!=null)mapPanel.onResume();}
     @Override protected void onPause(){resumed=false;position.stop();if(mapPanel!=null)mapPanel.onPause();super.onPause();}
@@ -142,7 +143,7 @@ public final class MainActivity extends Activity {
             long latest=0,heard=0;
             for(Message message:data.messages)latest=Math.max(latest,message.timestamp);
             for(Node node:data.nodes)heard=Math.max(heard,node.heard);
-            key.append(':').append(latest).append(':').append(heard);
+            key.append(':').append(latest).append(':').append(heard).append(':').append(UiFeed.recentlyHeard(data.nodes,System.currentTimeMillis()/1000));
             if(service!=null){
                 RadioService.Session session=service.sessions.get(p);
                 key.append(':').append(session.verified).append(':').append(session.desired)
@@ -324,7 +325,7 @@ public final class MainActivity extends Activity {
     private LinearLayout dashboardTile(LinearLayout parent,String heading,String value,String detail,int accent,Runnable action,boolean featured){
         LinearLayout tile=column();
         tile.setPadding(dp(12),dp(11),dp(12),dp(11));
-        tile.setMinimumHeight(dp(featured?110:94));
+        tile.setMinimumHeight(dp(featured?96:94));
         GradientDrawable background=surface(PANEL);
         background.setStroke(dp(1),featured?accent:PANEL2);
         tile.setBackground(new android.graphics.drawable.RippleDrawable(
@@ -342,11 +343,13 @@ public final class MainActivity extends Activity {
         main.setMaxLines(2);
         main.setEllipsize(android.text.TextUtils.TruncateAt.END);
         tile.addView(main);
-        space(tile,4);
-        TextView subtitle=text(detail,12,MUTED);
-        subtitle.setMaxLines(2);
-        subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        tile.addView(subtitle);
+        if(!detail.isEmpty()){
+            space(tile,4);
+            TextView subtitle=text(detail,12,MUTED);
+            subtitle.setMaxLines(2);
+            subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            tile.addView(subtitle);
+        }
         tile.setContentDescription(heading+". "+value+". "+detail);
         tile.setFocusable(true);
         tile.setOnClickListener(v->action.run());
@@ -391,12 +394,6 @@ public final class MainActivity extends Activity {
         filter=profile.ordinal()+1;
         page(destination);
     }
-    private int recentlyHeard(Snapshot data){
-        int total=0;
-        long cutoff=System.currentTimeMillis()/1000-3600;
-        for(Node node:data.nodes)if(node.heard>=cutoff&&node.heard>0)total++;
-        return total;
-    }
     private String latestPreview(Snapshot data){
         Message last=null;
         for(Message message:data.messages)
@@ -415,21 +412,26 @@ public final class MainActivity extends Activity {
             RadioService.Session session=service==null?null:service.sessions.get(profile);
             boolean ready=session!=null&&session.verified;
             String state=ready?"Ready":session!=null&&session.desired?"Connecting":"Offline";
-            String device=session==null?"Connect a radio":session.name!=null&&!session.name.isEmpty()?session.name:
-                session.address.isEmpty()?"Choose a device":"Saved device";
-            if(session!=null&&session.desired&&!ready)device+=" · "+session.phase;
             int accent=profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC;
-            LinearLayout tile=dashboardTile(radios,profile.title.toUpperCase(Locale.ROOT),state,device,
+            String detail=ready?"":session!=null&&session.desired?session.phase:"Tap to connect";
+            LinearLayout tile=dashboardTile(radios,profile.title.toUpperCase(Locale.ROOT),state,detail,
                 accent,()->openSettings("radio",profile),true);
-            if(ready&&profile==RadioProfile.MESHTASTIC&&session.client!=null){String preset=MtLora.currentPreset(session.client);TextView label=text(preset,13,accent);label.setTypeface(null,Typeface.BOLD);label.setMaxLines(2);tile.addView(label,3);tile.setContentDescription(profile.title+". "+state+". "+preset+". "+device);}
+            if(ready&&profile==RadioProfile.MESHTASTIC&&session.client!=null){
+                String preset=MtLora.currentPreset(session.client);
+                TextView status=(TextView)tile.getChildAt(2);tile.removeViewAt(2);status.setMaxLines(1);
+                LinearLayout stateRow=row();stateRow.addView(status,new LinearLayout.LayoutParams(-2,-2));
+                TextView label=text(preset,12,accent);label.setTypeface(null,Typeface.BOLD);label.setMaxLines(1);label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                LinearLayout.LayoutParams size=new LinearLayout.LayoutParams(0,-2,1);size.leftMargin=dp(6);stateRow.addView(label,size);tile.addView(stateRow,2);
+                tile.setContentDescription(profile.title+". "+state+". "+preset);
+            }
             signalIndicator(tile,session,accent);
         }
         LinearLayout nodes=dashboardRow();
         for(RadioProfile profile:RadioProfile.values()){
             Snapshot data=snapshot(profile);
-            int recent=recentlyHeard(data);
+            int recent=UiFeed.recentlyHeard(data.nodes,System.currentTimeMillis()/1000);
             dashboardTile(nodes,profile==RadioProfile.MESHTASTIC?"MT · NODES":"MC · NODES",
-                String.valueOf(data.nodes.size()),recent+" heard in the last hour",
+                String.valueOf(data.nodes.size()),recent+" heard in the last 15 min",
                 profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
                 ()->openDashboardNetwork(profile,1),false);
         }
