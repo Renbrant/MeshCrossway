@@ -8,10 +8,18 @@ import static com.meshcrossway.android.MeshData.*;
 final class ProtocolClient {
     interface Listener {void node(Node n);void channel(Channel c);void message(Message m);void delivery(String uid,String state);}
     static final class Command {
-        final byte[] data;final int response;final String uid;boolean written,replied;long deadline;
+        final byte[] data;final int response;final String uid;boolean written,replied;long deadline;McAdmin.Edit mcEdit;boolean mcVerification;
         Command(byte[] data,int response,String uid){this.data=data;this.response=response;this.uid=uid;}
     }
-    private static final class Sent {String uid,peer;long deadline,ack;Sent(String u,String p,long d){uid=u;peer=p;deadline=d;}}
+    static final class Sent {String uid,peer;long deadline,ack,retainUntil;boolean ackKnown;Sent(String u,String p,long d){uid=u;peer=p;deadline=d;}}
+    final McAdmin mcAdmin;
+    final LinkedHashMap<String,Node> mcDiscoveries=new LinkedHashMap<>();
+    final LinkedHashMap<Long,Sent> mcLateSent=new LinkedHashMap<>();
+    final Set<String> mcSyncKeys=new HashSet<>(),mcSyncDeleted=new HashSet<>(),mcFailedReads=new HashSet<>(),mcDeferredContacts=new LinkedHashSet<>();
+    final Map<String,Long> mcLiveContacts=new HashMap<>();
+    boolean mcScopeLoaded,mcRepeat,mcRepeatKnown,hasTxPower,mcNameNeedsRepair,mcBacklogDrained,mcFullContacts;int mcExtraAcks,mcManualFlags,mcMaxContacts;long mcRevision;
+    byte[] mcSelf=Wire.EMPTY;
+    String mcStatus="",mcError="";
     final RadioProfile profile;final Listener listener;final ProtocolProbe probe;
     final LinkedHashMap<String,Node> nodes=new LinkedHashMap<>();final TreeMap<Integer,Channel> channels=new TreeMap<>();
     final ArrayDeque<Command> commands=new ArrayDeque<>();final LinkedHashMap<Long,Sent> sent=new LinkedHashMap<>();
@@ -23,18 +31,26 @@ final class ProtocolClient {
     private final LinkedHashMap<String,Message> receivedChannels=new LinkedHashMap<>();
     Command active;boolean ready;String description="Synchronizing…",localName="",firmware="",hardware="",build="",publicKey="",defaultFloodScope="";long myNum,lastPoll,lastStamp,lastWrite,uptimeSecs;int hopLimit=3,region,channelCount,nextChannel,contactsExpected,contactsSeen,payloadLimit=173,firmwareCode=-1,maxTxPower=-1,txPower=-1,pathHashMode=-1,batteryMv=-1,usedKb=-1,totalKb=-1,noiseFloor=-999,lastRssi=-999,lastSnrQuarter=0;long txAirSecs,rxAirSecs;double latitude,longitude,frequencyMhz,bandwidthKhz;int spreadingFactor,codingRate,telemetryModes,advertLocationPolicy;boolean txEnabled,pki,waiting,contactsStarted,manualAddContacts,multiAcks,hasLocation,hasRadioStats,hasBattery;
     ProtocolClient(RadioProfile profile,long nonce,Listener listener){this.profile=profile;this.listener=listener;probe=new ProtocolProbe(nonce);admin=new MtAdmin(new MtAdmin.Host(){public void enqueue(byte[] value,long id,boolean response){queue(mtAdminPacket(value,id,response),-1,"");}public void apply(int kind,int index,byte[] body){applyMtAdmin(kind,index,body);}});
+        mcAdmin=new McAdmin(new McAdmin.Host(){
+            public void enqueue(byte[] data,int response,McAdmin.Edit edit,boolean verification){queue(data,response,"");Command command=commands.peekLast();command.mcEdit=edit;command.mcVerification=verification;}
+            public void cancel(McAdmin.Edit edit){commands.removeIf(command->command.mcEdit==edit);}
+            public void refresh(){if(ready){requestMcSelf();requestMcDevice();}}
+        });
         queue(profile==RadioProfile.MESHTASTIC?probe.meshtasticRequest():ProtocolProbe.meshcoreQuery(),profile==RadioProfile.MESHTASTIC?-1:13,"");}
     void cancel(String uid){commands.removeIf(c->c.uid.equals(uid));removeSent(uid);}
     void queue(byte[] data,int response,String uid){if(commands.size()>=32)throw Wire.bad("Radio command queue is full");commands.add(new Command(data,response,uid));}
     Command next(long now){
-        if(profile==RadioProfile.MESHTASTIC){admin.tick(now);if(ready)admin.ready();}
-        for(Iterator<Map.Entry<Long,Sent>> it=sent.entrySet().iterator();it.hasNext();){Sent s=it.next().getValue();if(now>=s.deadline){listener.delivery(s.uid,"uncertain");it.remove();}}
-        if(active!=null){if(now>=active.deadline)throw Wire.bad("Radio command timed out • delivery may be unknown");if(active.written && active.replied)active=null;else return null;}
+        if(profile==RadioProfile.MESHTASTIC){admin.tick(now);if(ready)admin.ready();}else{mcAdmin.tick(now);if(ready)mcAdmin.ready();mcLateSent.entrySet().removeIf(e->now>=e.getValue().retainUntil);}
+        for(Iterator<Map.Entry<Long,Sent>> it=sent.entrySet().iterator();it.hasNext();){Map.Entry<Long,Sent> entry=it.next();Sent pending=entry.getValue();if(now>=pending.deadline){listener.delivery(pending.uid,"uncertain");if(profile==RadioProfile.MESHCORE&&pending.ackKnown){pending.retainUntil=now+600000;long savedKey=entry.getKey();while(mcLateSent.containsKey(savedKey))savedKey++;mcLateSent.put(savedKey,pending);trim(mcLateSent,128);}it.remove();}}
+
+        if(active!=null){if(now>=active.deadline){if(profile==RadioProfile.MESHCORE&&active.mcEdit!=null)mcAdmin.timeout(active.mcEdit);throw Wire.bad("Radio command timed out • reconnect to restore response ordering");}if(active.written&&active.replied)active=null;else return null;}
+
+        if(profile==RadioProfile.MESHCORE&&ready&&!mcDeferredContacts.isEmpty()&&commands.size()<8){String id=mcDeferredContacts.iterator().next();mcDeferredContacts.remove(id);requestMcContact(id);}
         if(profile==RadioProfile.MESHCORE&&ready&&commands.isEmpty()&&(waiting||now-lastPoll>=20000)){waiting=false;lastPoll=now;queue(new byte[]{10},10,"");}
         if(profile==RadioProfile.MESHTASTIC&&ready&&commands.isEmpty()&&now-lastWrite>=30000)queue(new Wire.Out().bytes(7,Wire.EMPTY).array(),-1,"");
         if(commands.isEmpty())return null;active=commands.remove();active.deadline=now+30000;return active;
     }
-    void written(long now){lastWrite=now;admin.clock=now;if(profile==RadioProfile.MESHTASTIC&&active!=null){byte[] packet=Wire.bytes(Wire.fields(active.data),1);if(packet.length>0)admin.written(Wire.number(Wire.fields(packet),6,0));}if(active==null)throw Wire.bad("Unexpected write completion");if(!active.uid.isEmpty()&&!active.replied)listener.delivery(active.uid,"submitted");active.written=true;if(active.response<0)active.replied=true;}
+    void written(long now){lastWrite=now;admin.clock=now;if(profile==RadioProfile.MESHTASTIC&&active!=null){byte[] packet=Wire.bytes(Wire.fields(active.data),1);if(packet.length>0)admin.written(Wire.number(Wire.fields(packet),6,0));}if(active==null)throw Wire.bad("Unexpected write completion");if(profile==RadioProfile.MESHCORE&&active.mcEdit!=null)mcAdmin.written(active.mcEdit);if(!active.uid.isEmpty()&&!active.replied)listener.delivery(active.uid,"submitted");active.written=true;if(active.response<0)active.replied=true;}
     void receive(byte[] data,long now){admin.clock=now;if(profile==RadioProfile.MESHTASTIC)meshtastic(data,now);else meshcore(data,now);}
     private Node node(String id){Node old=nodes.get(id);Node n=old==null?new Node():new Node(old);n.id=id;return n;}
     private void publish(Node n){if(!nodes.containsKey(n.id)&&nodes.size()>=4096)return;nodes.put(n.id,n);listener.node(n);}
@@ -111,37 +127,120 @@ final class ProtocolClient {
     void setMtConfigFloat(int type,int field,double value){if(!Double.isFinite(value)||value<0||value>2500)throw Wire.bad("Enter a finite frequency between 0 and 2500 MHz");setMtConfig(type,Wire.floatField(mtConfig(type),field,(float)value));}
     void setMtChannelName(int slot,String name){byte[] channel=mtChannels.get(slot);if(channel==null)throw Wire.bad("Read the channel first");byte[] settings=Wire.bytes(Wire.fields(channel),2);byte[] renamed=Wire.replaceBytes(settings,3,Wire.optionalText(name,11));byte[] body=Wire.replaceBytes(channel,2,renamed);mtSave(2,slot,33,channel,body,false);}
     String nodeName(String id){Node n=nodes.get(id);if(n!=null&&!n.name.isEmpty())return n.name;return profile==RadioProfile.MESHTASTIC?String.format(Locale.ROOT,"!%08x",Long.parseLong(id)):id.substring(0,Math.min(12,id.length()));}
-    private void mcContact(byte[] data){if(data.length<148)throw Wire.bad("Truncated MeshCore contact");String id=Wire.hex(Arrays.copyOfRange(data,1,33));Node n=node(id);n.key=id;n.type=data[33]&255;n.name=Wire.fixedText(data,100,32);n.heard=Wire.u32(data,132);n.lat=(int)Wire.u32(data,136)/1e6;n.lon=(int)Wire.u32(data,140)/1e6;n.position=(n.lat!=0||n.lon!=0)&&Math.abs(n.lat)<=90&&Math.abs(n.lon)<=180;publish(n);}
-    private void nextMcChannel(){if(nextChannel<channelCount){description="Synchronizing channel "+(nextChannel+1)+" / "+channelCount;queue(new byte[]{31,(byte)nextChannel++},18,"");}else{ready=true;waiting=true;description="Ready • live messages";}}
+    static final int MC_DISCOVERED=1,MC_APPROVED=2,MC_RETIRED=3;
+    private void mcContact(byte[] data,boolean approved){
+        if(data.length<148)throw Wire.bad("Truncated MeshCore contact");String id=Wire.hex(Arrays.copyOfRange(data,1,33));
+        Node n=nodes.containsKey(id)?new Node(nodes.get(id)):mcDiscoveries.containsKey(id)?new Node(mcDiscoveries.get(id)):node(id);
+        n.key=id;n.type=data[33]&255;n.name=mcName(data,100,32);n.mcAdvert=Wire.u32(data,132);n.mcModified=Wire.u32(data,144);
+        n.mcRaw=Wire.hex(Arrays.copyOf(data,148));n.lat=(int)Wire.u32(data,136)/1e6;n.lon=(int)Wire.u32(data,140)/1e6;
+        n.position=(n.lat!=0||n.lon!=0)&&Math.abs(n.lat)<=90&&Math.abs(n.lon)<=180;
+        Long live=mcLiveContacts.remove(id);if(live!=null)n.mcReceived=Math.max(n.mcReceived,live);
+        long epoch=System.currentTimeMillis()/1000;
+        n.heard=Math.max(n.mcReceived,mcValidTime(n.mcModified,epoch)?n.mcModified:0);
+        if(approved){n.mcState=MC_APPROVED;mcDiscoveries.remove(id);if(!contactsStarted||!mcSyncDeleted.contains(id))publish(n);}
+        else{n.mcState=MC_DISCOVERED;mcDiscoveries.put(id,n);trim(mcDiscoveries,4096);listener.node(n);}
+        mcRevision++;
+    }
+    private static boolean mcValidTime(long value,long epoch){return value>=1577836800L&&value<=epoch+300;}
+    private static String mcName(byte[] data,int offset,int length){
+        int end=offset;while(end<offset+length&&data[end]!=0)end++;
+        return new String(Arrays.copyOfRange(data,offset,end),StandardCharsets.UTF_8);
+    }
+    private void retireMcContact(String id){
+        Node n=nodes.remove(id);mcDeferredContacts.remove(id);mcLiveContacts.remove(id);if(contactsStarted)mcSyncDeleted.add(id);
+        if(n!=null){n=new Node(n);n.mcState=MC_RETIRED;listener.node(n);}if(mcMaxContacts>0&&nodes.size()<mcMaxContacts){mcFullContacts=false;if(mcError.startsWith("Radio contacts are full"))mcError="";}mcRevision++;
+    }
+    private void deferMcContact(String id,boolean live){
+        if(id.length()!=64)return;
+        if(live){mcLiveContacts.put(id,System.currentTimeMillis()/1000);if(mcLiveContacts.size()>4096)mcLiveContacts.clear();}
+        if(mcDeferredContacts.size()<4096)mcDeferredContacts.add(id);
+    }
+    private void nextMcChannel(){if(nextChannel<channelCount){description="Synchronizing channel "+(nextChannel+1)+" / "+channelCount;queue(new byte[]{31,(byte)nextChannel++},18,"");}else{ready=true;waiting=true;description="Ready • live messages";mcAdmin.ready();}}
+    private void applyMcDevice(byte[] data){
+        if(data.length<8||(data[1]&255)<3)throw Wire.bad("MeshCore Companion protocol v3+ required");
+        firmwareCode=data[1]&255;mcMaxContacts=(data[2]&255)*2;channelCount=data[3]&255;
+        if(data.length>=80){build=Wire.fixedText(data,8,12);hardware=Wire.fixedText(data,20,40);firmware=Wire.fixedText(data,60,20);}
+        mcRepeatKnown=data.length>80;mcRepeat=mcRepeatKnown&&data[80]!=0;pathHashMode=data.length>81?data[81]&255:-1;mcRevision++;
+    }
+    private void applyMcSelf(byte[] data){
+        if(data.length<58)throw Wire.bad("Truncated MeshCore identity");mcSelf=data.clone();txPower=data[2];hasTxPower=true;maxTxPower=data[3]&255;
+        publicKey=Wire.hex(Arrays.copyOfRange(data,4,36));latitude=(int)Wire.u32(data,36)/1e6;longitude=(int)Wire.u32(data,40)/1e6;hasLocation=latitude!=0||longitude!=0;
+        mcExtraAcks=data[44]&255;multiAcks=mcExtraAcks!=0;advertLocationPolicy=data[45]&255;telemetryModes=data[46]&255;mcManualFlags=data[47]&255;manualAddContacts=(mcManualFlags&1)!=0;
+        frequencyMhz=Wire.u32(data,48)/1000.0;bandwidthKhz=Wire.u32(data,52)/1000.0;spreadingFactor=data[56]&255;codingRate=data[57]&255;
+        localName=mcName(data,58,data.length-58);try{Wire.fixedText(data,58,data.length-58);mcNameNeedsRepair=false;}catch(IllegalArgumentException invalid){mcNameNeedsRepair=true;}
+        myNum=1;mcRevision++;
+    }
     private void meshcore(byte[] data,long now){
         if(data.length==0||data.length>176)throw Wire.bad("Invalid MeshCore frame");int code=data[0]&255;if(code==136){observeChannel(data,now);return;}
-        int command=active==null?-1:active.data[0]&255;boolean matched=active!=null&&(code==active.response||code==1||code==15||(command==4&&code==4)||(command==10&&(code==7||code==8||code==16||code==17||code==27)));
-        if(command==31&&code==18)matched=data.length>=2&&data[1]==active.data[1];
-        if((code==1||code==15)&&matched){active.replied=true;if(!active.uid.isEmpty()){listener.delivery(active.uid,"rejected");removeSent(active.uid);return;}
-            if(command==31&&data.length>=2&&data[1]==2){nextMcChannel();return;}throw Wire.bad("MeshCore rejected command "+command);}
-        if(code==13&&matched){if(data.length<8||(data[1]&255)<3)throw Wire.bad("MeshCore Companion v3+ required");firmwareCode=data[1]&255;channelCount=data[3]&255;if(data.length>=80){build=Wire.fixedText(data,8,12);hardware=Wire.fixedText(data,20,40);firmware=Wire.fixedText(data,60,20);if(data.length>81)pathHashMode=data[81]&255;}queue(ProtocolProbe.meshcoreAppStart(),5,"");}
-        else if(code==5&&matched){if(data.length<58)throw Wire.bad("Truncated MeshCore identity");txPower=data[2]&255;maxTxPower=data[3]&255;publicKey=Wire.hex(Arrays.copyOfRange(data,4,36));latitude=(int)Wire.u32(data,36)/1e6;longitude=(int)Wire.u32(data,40)/1e6;hasLocation=latitude!=0||longitude!=0;multiAcks=data[44]!=0;advertLocationPolicy=data[45]&255;telemetryModes=data[46]&255;manualAddContacts=data[47]!=0;frequencyMhz=Wire.u32(data,48)/1000.0;bandwidthKhz=Wire.u32(data,52)/1000.0;spreadingFactor=data[56]&255;codingRate=data[57]&255;localName=Wire.fixedText(data,58,data.length-58);myNum=1;queue(new byte[]{4},4,"");description="Synchronizing MeshCore contacts…";}
-        else if(code==2&&command==4){if(data.length<5)throw Wire.bad("Invalid contacts header");contactsExpected=(int)Wire.u32(data,1);if(contactsExpected<0||contactsExpected>4096)throw Wire.bad("Too many contacts");contactsSeen=0;contactsStarted=true;}
-        else if(code==3||code==138){mcContact(data);if(code==3&&command==4){contactsSeen++;description="MeshCore contacts "+contactsSeen+" / "+contactsExpected;active.deadline=now+30000;}}
-        else if(code==4&&matched){if(!contactsStarted||contactsSeen!=contactsExpected)throw Wire.bad("Incomplete contacts sync");contactsStarted=false;nextMcChannel();}
-        else if(code==18&&matched){if(data.length<50)throw Wire.bad("Truncated MeshCore channel");Channel c=new Channel();c.slot=data[1]&255;c.name=Wire.fixedText(data,2,32);byte[] secret=Arrays.copyOfRange(data,34,50);channelKeys.put(c.slot,secret);c.identity=Wire.hash(secret);c.enabled=!c.name.isEmpty();channels.put(c.slot,c);listener.channel(c);nextMcChannel();}
-        else if(code==0&&matched&&!active.uid.isEmpty()){listener.delivery(active.uid,"radio accepted");removeSent(active.uid);}
-        else if(code==6&&matched){if(data.length<10)throw Wire.bad("Truncated send acknowledgement");for(Sent s:sent.values())if(s.uid.equals(active.uid)){s.ack=Wire.u32(data,2);s.deadline=now+Math.max(5000,Math.min(600000,Wire.u32(data,6)));listener.delivery(s.uid,"radio accepted");}}
-        else if(code==12&&matched){if(data.length>=3){batteryMv=(int)Wire.u16(data,1);hasBattery=true;if(data.length>=11){usedKb=(int)Wire.u32(data,3);totalKb=(int)Wire.u32(data,7);}}active.replied=true;}
-        else if(code==24&&matched){if(data.length>=14&&data[1]==1){noiseFloor=(short)Wire.u16(data,2);lastRssi=(byte)data[4];lastSnrQuarter=(byte)data[5];txAirSecs=Wire.u32(data,6);rxAirSecs=Wire.u32(data,10);hasRadioStats=true;}else if(data.length>=11&&data[1]==0){batteryMv=(int)Wire.u16(data,2);uptimeSecs=Wire.u32(data,4);hasBattery=true;}active.replied=true;}
-        else if(code==28&&matched){defaultFloodScope=data.length>1?Wire.fixedText(data,1,Math.min(31,data.length-1)):"";active.replied=true;}
+        Command current=active;int command=current==null?-1:current.data[0]&255;
+        boolean matched=current!=null&&(code==current.response||code==1||code==15||(command==4&&code==4)||(command==10&&(code==7||code==8||code==16||code==17||code==27)));
+        if(command==31&&code==18)matched=data.length>=2&&data[1]==current.data[1];
+        if(command==56&&code==24)matched=data.length>=2&&data[1]==current.data[1];
+        if(command==30&&code==3)matched=data.length>=33&&Arrays.equals(Arrays.copyOfRange(data,1,33),Arrays.copyOfRange(current.data,1,33));
+        if((code==1||code==15)&&matched){
+            current.replied=true;
+            if(!current.uid.isEmpty()){listener.delivery(current.uid,"rejected");removeSent(current.uid);return;}
+            if(command==30&&data.length>1&&data[1]==2)retireMcContact(Wire.hex(Arrays.copyOfRange(current.data,1,33)));
+            if(current.mcEdit!=null){mcAdmin.clock=now;mcAdmin.reply(current.mcEdit,current.mcVerification,data);return;}
+            if(command==31&&data.length>=2&&data[1]==2){nextMcChannel();return;}
+            if(!ready)throw Wire.bad("MeshCore rejected bootstrap command "+command);
+            mcFailedReads.add(mcReadKey(current.data));mcError="Radio rejected command "+command+" (code "+(data.length>1?data[1]&255:code)+")";mcRevision++;return;
+        }
+        if(code==13&&matched){applyMcDevice(data);if(!ready)queue(ProtocolProbe.meshcoreAppStart(),5,"");}
+        else if(code==5&&matched){applyMcSelf(data);if(!ready){refreshContacts();description="Synchronizing MeshCore contacts…";}}
+        else if(code==2&&command==4){
+            if(data.length<5)throw Wire.bad("Invalid contacts header");contactsExpected=(int)Wire.u32(data,1);if(contactsExpected<0||contactsExpected>4096)throw Wire.bad("Too many contacts");
+            contactsSeen=0;contactsStarted=true;mcSyncKeys.clear();mcSyncDeleted.clear();
+        }
+        else if(code==3&&((command==4&&contactsStarted)||matched)){
+            mcContact(data,true);
+            if(command==4){contactsSeen++;mcSyncKeys.add(Wire.hex(Arrays.copyOfRange(data,1,33)));description="MeshCore contacts "+contactsSeen+" / "+contactsExpected;current.deadline=now+30000;}
+        }
+        else if(code==138){
+            if(data.length<148)throw Wire.bad("Truncated MeshCore discovery");String id=Wire.hex(Arrays.copyOfRange(data,1,33));
+            if(nodes.containsKey(id))deferMcContact(id,true);else{mcContact(data,false);Node n=mcDiscoveries.get(id);n.mcReceived=System.currentTimeMillis()/1000;n.heard=n.mcReceived;listener.node(n);}
+        }
+        else if(code==143&&data.length>=33)retireMcContact(Wire.hex(Arrays.copyOfRange(data,1,33)));
+        else if(code==144){mcFullContacts=true;mcError="Radio contacts are full. Review contacts before approving more devices.";mcRevision++;}
+        else if(code==4&&matched){
+            if(!contactsStarted||contactsSeen!=contactsExpected)throw Wire.bad("Incomplete contacts sync");contactsStarted=false;
+            for(String id:new ArrayList<>(nodes.keySet()))if(!mcSyncKeys.contains(id))retireMcContact(id);
+            mcSyncDeleted.clear();description="Ready • live messages";
+            if(!ready)nextMcChannel();else{mcStatus="Radio contacts refreshed";mcRevision++;}
+        }
+        else if(code==18&&matched){
+            if(data.length<50)throw Wire.bad("Truncated MeshCore channel");Channel channel=new Channel();channel.slot=data[1]&255;channel.name=mcName(data,2,32);byte[] secret=Arrays.copyOfRange(data,34,50);
+            channelKeys.put(channel.slot,secret);channel.identity=Wire.hash(secret);channel.enabled=!channel.name.isEmpty();channels.put(channel.slot,channel);listener.channel(channel);nextMcChannel();
+        }
+        else if(code==0&&matched&&!current.uid.isEmpty()){listener.delivery(current.uid,"radio accepted");removeSent(current.uid);}
+        else if(code==6&&matched){
+            if(data.length<10)throw Wire.bad("Truncated send acknowledgement");for(Sent pending:sent.values())if(pending.uid.equals(current.uid)){pending.ack=Wire.u32(data,2);pending.ackKnown=true;pending.deadline=now+Math.max(5000,Math.min(600000,Wire.u32(data,6)));listener.delivery(pending.uid,"radio accepted");}
+        }
+        else if(code==12&&matched){if(data.length<3)throw Wire.bad("Truncated battery response");batteryMv=(int)Wire.u16(data,1);hasBattery=true;if(data.length>=11){usedKb=(int)Wire.u32(data,3);totalKb=(int)Wire.u32(data,7);}mcRevision++;}
+        else if(code==24&&matched){
+            if(data.length>=14&&data[1]==1){noiseFloor=(short)Wire.u16(data,2);lastRssi=data[4];lastSnrQuarter=data[5];txAirSecs=Wire.u32(data,6);rxAirSecs=Wire.u32(data,10);hasRadioStats=true;}
+            else if(data.length>=11&&data[1]==0){batteryMv=(int)Wire.u16(data,2);uptimeSecs=Wire.u32(data,4);hasBattery=true;}else throw Wire.bad("Truncated radio statistics");mcRevision++;
+        }
+        else if(code==28&&matched){if(data.length!=1&&data.length<48)throw Wire.bad("Truncated flood scope");defaultFloodScope=data.length>1?Wire.fixedText(data,1,31):"";mcScopeLoaded=true;mcRevision++;}
         else if(code==7||code==8||code==16||code==17){mcMessage(data,now);waiting=true;}
-        else if(code==130){if(data.length<9)throw Wire.bad("Truncated delivery ACK");long ack=Wire.u32(data,1);Sent found=null;int matches=0;for(Sent s:sent.values())if(s.ack!=0&&s.ack==ack){found=s;matches++;}if(matches==1){listener.delivery(found.uid,"delivered");removeSent(found.uid);}}
+        else if(code==27&&matched){mcStatus="Skipped an unsupported channel data item; continuing message synchronization";waiting=true;mcRevision++;}
+        else if(code==10&&matched)mcBacklogDrained=true;
+        else if(code==130){
+            if(data.length<9)throw Wire.bad("Truncated delivery ACK");long ack=Wire.u32(data,1);Sent found=null;int matches=0;
+            for(Sent pending:sent.values())if(pending.ackKnown&&pending.ack==ack){found=pending;matches++;}
+            for(Sent pending:mcLateSent.values())if(pending.ackKnown&&pending.ack==ack){found=pending;matches++;}
+            if(matches==1){listener.delivery(found.uid,"delivered");removeSent(found.uid);}
+        }
         else if(code==131)waiting=true;
-        else if(code==128&&ready&&data.length>=33&&commands.size()<8){byte[] request=Arrays.copyOf(data,33);request[0]=30;queue(request,3,"");}
-        if(matched)active.replied=true;
+        else if((code==128||code==129)&&data.length>=33)deferMcContact(Wire.hex(Arrays.copyOfRange(data,1,33)),code==128);
+        if(matched){current.replied=true;if(current.mcEdit!=null){mcAdmin.clock=now;mcAdmin.reply(current.mcEdit,current.mcVerification,data);}else if(ready){mcFailedReads.remove(mcReadKey(current.data));}}
     }
     private void mcMessage(byte[] data,long now){
         int code=data[0]&255;boolean group=code==8||code==17,v3=code==16||code==17;int start=v3?4:1,meta=group?3:8,typepos=start+(group?2:7);
         if(data.length<start+meta+4)throw Wire.bad("Truncated MeshCore message");int type=data[typepos]&255,offset=start+meta+4+(type==2?4:0);if(type!=0&&type!=2)return;if(offset>data.length)throw Wire.bad("Truncated signed message");
         Message m=new Message();m.rx=RxInfo.meshcore(data[start+(group?1:6)]&255);if(v3)m.rx.snr=data[1]/4.0;m.group=group;m.timestamp=Wire.u32(data,start+meta);if(m.timestamp<1577836800L)m.timestamp=System.currentTimeMillis()/1000;m.body=Wire.utf8(Arrays.copyOfRange(data,offset,data.length));if(m.body.isEmpty())return;
         if(group){m.slot=data[start]&255;Channel c=channels.get(m.slot);if(c==null||!c.enabled)return;m.topic=c.topic();m.title=c.name;m.identity=c.identity;int colon=m.body.indexOf(": ");m.sender=colon>0&&colon<40?m.body.substring(0,colon):"Channel participant";}
-        else{String prefix=Wire.hex(Arrays.copyOfRange(data,start,start+6));Node found=null;int count=0;for(Node n:nodes.values())if(n.id.startsWith(prefix)){found=n;count++;}m.peer=count==1?found.id:prefix;m.topic="d:"+prefix;m.title=count==1?nodeName(m.peer):prefix;m.sender=m.title;}
+        else{String prefix=Wire.hex(Arrays.copyOfRange(data,start,start+6));Node found=null;int count=0;for(Node n:nodes.values())if(n.id.startsWith(prefix)){found=n;count++;}m.peer=count==1?found.id:prefix;m.topic="d:"+prefix;m.title=count==1?nodeName(m.peer):prefix;m.sender=m.title;if(count==1){if(mcBacklogDrained){Node live=new Node(found);live.mcReceived=System.currentTimeMillis()/1000;live.heard=Math.max(live.heard,live.mcReceived);publish(live);}deferMcContact(found.id,false);}}
         // SNR/path metadata can change when the same radio backlog packet is replayed.
         m.uid="mc:"+Wire.hash((m.topic+"|"+Wire.u32(data,start+meta)+"|"+type+"|"+(type==2?Wire.hex(Arrays.copyOfRange(data,start+meta+4,offset)):"")+"|"+m.body).getBytes(StandardCharsets.UTF_8));if(group){String key=routeKey(m.slot,Wire.u32(data,start+meta),type,m.body);RxInfo.Observation observation=observedRoutes.get(key);if(observation!=null&&now-observation.at<=120000)m.rx=RxInfo.merge(m.rx,observation.info);receivedChannels.put(key,m);trim(receivedChannels,256);}listener.message(m);
     }
@@ -151,21 +250,82 @@ final class ProtocolClient {
         observedRoutes.entrySet().removeIf(entry->now-entry.getValue().at>120000);
         for(Map.Entry<Integer,byte[]> key:channelKeys.entrySet()){Channel channel=channels.get(key.getKey());if(channel==null||!channel.enabled)continue;RxInfo.Observation observation=RxInfo.channelLog(data,key.getValue(),now);if(observation==null)continue;String match=routeKey(key.getKey(),observation.time,observation.type,observation.body);observedRoutes.putIfAbsent(match,observation);trim(observedRoutes,256);Message message=receivedChannels.get(match);if(message!=null&&!message.rx.observed){message.rx=RxInfo.merge(message.rx,observation.info);listener.message(message);}}
     }
-    private void removeSent(String uid){sent.values().removeIf(s->s.uid.equals(uid));}
-    void setName(String value){queue(join(new byte[]{8},Wire.text(value,32)),0,"");localName=value;}
-    void setLocation(double lat,double lon){byte[] f=new byte[9];f[0]=14;put32(f,1,(int)Math.round(lat*1e6));put32(f,5,(int)Math.round(lon*1e6));queue(f,0,"");latitude=lat;longitude=lon;hasLocation=lat!=0||lon!=0;}
-    void setRadio(double freq,double bw,int sf,int cr){byte[] f=new byte[12];f[0]=11;put32(f,1,(int)Math.round(freq*1000));put32(f,5,(int)Math.round(bw*1000));f[9]=(byte)sf;f[10]=(byte)cr;f[11]=0;queue(f,0,"");frequencyMhz=freq;bandwidthKhz=bw;spreadingFactor=sf;codingRate=cr;}
-    void setTxPower(int dbm){queue(new byte[]{12,(byte)dbm},0,"");txPower=dbm;}
-    void setPathHashMode(int mode){queue(new byte[]{61,0,(byte)mode},0,"");pathHashMode=mode;}
-    void setOtherParams(boolean manual,int telemetry,int locationPolicy,boolean acks){queue(new byte[]{38,(byte)(manual?1:0),(byte)telemetry,(byte)locationPolicy,(byte)(acks?1:0)},0,"");manualAddContacts=manual;telemetryModes=telemetry;advertLocationPolicy=locationPolicy;multiAcks=acks;}
-    void setDeviceTime(long epoch){byte[] f=new byte[5];f[0]=6;put32(f,1,(int)epoch);queue(f,0,"");}
-    void refreshContacts(){queue(new byte[]{4},4,"");}
-    void requestStats(int type){queue(new byte[]{56,(byte)type},24,"");}
-    void requestBattery(){queue(new byte[]{20},12,"");}
-    void reboot(){queue(join(new byte[]{19},"reboot".getBytes(StandardCharsets.UTF_8)),-1,"");}
-    void requestDefaultFloodScope(){queue(new byte[]{64},28,"");}
-    void setDefaultFloodScope(String name,byte[] key){byte[] f=new byte[48];f[0]=63;byte[] n=Wire.text(name,30);System.arraycopy(n,0,f,1,n.length);System.arraycopy(key,0,f,32,Math.min(16,key.length));queue(f,0,"");defaultFloodScope=name;}
-    void clearDefaultFloodScope(){queue(new byte[]{63},0,"");defaultFloodScope="";}
+    private void removeSent(String uid){sent.values().removeIf(s->s.uid.equals(uid));mcLateSent.values().removeIf(s->s.uid.equals(uid));}
+    private static String mcReadKey(byte[] data){return Wire.hex(data);}
+    private boolean mcRead(byte[] data,int response){
+        if(mcFailedReads.contains(mcReadKey(data)))return false;
+        if(active!=null&&!active.replied&&Arrays.equals(active.data,data))return true;
+        for(Command command:commands)if(Arrays.equals(command.data,data))return true;
+        queue(data,response,"");return true;
+    }
+    void retryMcReads(){mcFailedReads.clear();mcError="";mcRevision++;}
+    boolean mcSupportsStats(){return firmwareCode>=8;}
+    boolean mcSupportsScope(){return firmwareCode>=11;}
+    boolean mcSupportsPath(){return firmwareCode>=10;}
+    boolean mcSupportsOther(){return firmwareCode>=5;}
+    void requestMcSelf(){mcRead(ProtocolProbe.meshcoreAppStart(),5);}
+    void requestMcDevice(){mcRead(ProtocolProbe.meshcoreQuery(),13);}
+    void requestMcContact(String id){mcRead(join(new byte[]{30},Wire.unhex(id)),3);}
+    private void mcSettingsReady(){if(profile!=RadioProfile.MESHCORE||!ready||mcSelf.length<58)throw Wire.bad("Connect and synchronize the MeshCore radio first");if(mcAdmin.edit!=null)throw Wire.bad("Wait for the pending MeshCore change to be verified");}
+    private McAdmin.Check mcSelfCheck(int offset,byte[] expected,String label){return new McAdmin.Check(ProtocolProbe.meshcoreAppStart(),5,offset,expected,label);}
+    private McAdmin.Check mcDeviceCheck(int offset,byte[] expected,String label){return new McAdmin.Check(ProtocolProbe.meshcoreQuery(),13,offset,expected,label);}
+    private void mcSave(String title,byte[][] writes,McAdmin.Check... checks){mcSettingsReady();mcError="";List<McAdmin.Check> all=new ArrayList<>(Arrays.asList(checks));all.add(mcSelfCheck(4,Wire.unhex(publicKey),"Radio identity"));mcAdmin.save(new McAdmin.Edit(title,writes,all.toArray(new McAdmin.Check[0])));}
+    void setName(String value){byte[] name=Wire.text(value,31);mcSave("node name",new byte[][]{join(new byte[]{8},name)},mcSelfCheck(58,name,"Node name"));}
+    void setLocation(double lat,double lon){
+        if(!Double.isFinite(lat)||!Double.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)throw Wire.bad("Enter finite coordinates within latitude ±90 and longitude ±180");
+        byte[] frame=new byte[9];frame[0]=14;put32(frame,1,(int)Math.round(lat*1e6));put32(frame,5,(int)Math.round(lon*1e6));
+        mcSave("location",new byte[][]{frame},mcSelfCheck(36,Arrays.copyOfRange(frame,1,9),"Location"));
+    }
+    void setRadio(double freq,double bw,int sf,int cr){setRadioAndPath(freq,bw,sf,cr,-1);}
+    void setRadioAndPath(double freq,double bw,int sf,int cr,int pathMode){
+        mcSettingsReady();
+        if(!Double.isFinite(freq)||!Double.isFinite(bw)||freq<150||freq>2500||bw<7||bw>500||sf<5||sf>12||cr<5||cr>8)throw Wire.bad("Enter finite radio values: 150–2500 MHz, BW 7–500 kHz, SF 5–12 and CR 5–8");
+        if(pathMode< -1||pathMode>2||pathMode>=0&&!mcSupportsPath())throw Wire.bad("Path hash size requires Companion protocol v10+");
+        if(firmwareCode>=9&&!mcRepeatKnown){requestMcDevice();throw Wire.bad("Read the radio repeat mode before changing radio parameters");}
+        byte[] frame=new byte[firmwareCode>=9?12:11];frame[0]=11;put32(frame,1,(int)Math.round(freq*1000));put32(frame,5,(int)Math.round(bw*1000));frame[9]=(byte)sf;frame[10]=(byte)cr;
+        List<byte[]> writes=new ArrayList<>();List<McAdmin.Check> checks=new ArrayList<>();writes.add(frame);checks.add(mcSelfCheck(48,Arrays.copyOfRange(frame,1,11),"Radio parameters"));
+        if(frame.length==12){frame[11]=(byte)(mcRepeat?1:0);checks.add(mcDeviceCheck(80,new byte[]{frame[11]},"Repeat mode"));}
+        if(pathMode>=0){writes.add(new byte[]{61,0,(byte)pathMode});checks.add(mcDeviceCheck(81,new byte[]{(byte)pathMode},"Path hash size"));}
+        mcSave("radio settings",writes.toArray(new byte[0][]),checks.toArray(new McAdmin.Check[0]));
+    }
+    void setTxPower(int dbm){if(!hasTxPower||maxTxPower<0)throw Wire.bad("Read the radio power limits first");if(dbm< -9||dbm>maxTxPower)throw Wire.bad("TX power must be between -9 and "+maxTxPower+" dBm");mcSave("TX power",new byte[][]{new byte[]{12,(byte)dbm}},mcSelfCheck(2,new byte[]{(byte)dbm},"TX power"));}
+    void setPathHashMode(int mode){if(!mcSupportsPath()||mode<0||mode>2)throw Wire.bad("Path hash size requires Companion protocol v10+ and 1–3 bytes");mcSave("path hash size",new byte[][]{new byte[]{61,0,(byte)mode}},mcDeviceCheck(81,new byte[]{(byte)mode},"Path hash size"));}
+    void setOtherParams(boolean manual,int telemetry,int locationPolicy,boolean acks){
+        if(!mcSupportsOther())throw Wire.bad("Privacy/contact parameters require Companion protocol v5+");
+        if(telemetry<0||telemetry>255||locationPolicy<0||locationPolicy>1)throw Wire.bad("Invalid privacy parameters");
+        int count=acks==multiAcks?mcExtraAcks:acks?1:0,flags=(mcManualFlags&254)|(manual?1:0);
+        byte[] frame={38,(byte)flags,(byte)telemetry,(byte)locationPolicy,(byte)count};
+        mcSave("privacy/contact settings",new byte[][]{frame},mcSelfCheck(44,new byte[]{(byte)count,(byte)locationPolicy,(byte)telemetry,(byte)flags},"Privacy/contact settings"));
+    }
+    void setDeviceTime(long epoch){
+        if(epoch<1||epoch>0xffffffffL)throw Wire.bad("Invalid radio clock value");byte[] frame=new byte[5];frame[0]=6;put32(frame,1,(int)epoch);
+        mcSave("radio clock",new byte[][]{frame},new McAdmin.Check(new byte[]{5},9,1,Arrays.copyOfRange(frame,1,5),"Radio clock",false,true));
+    }
+    void refreshContacts(){mcRead(new byte[]{4},4);}
+    boolean requestStats(int type){return mcSupportsStats()&&type>=0&&type<=1&&mcRead(new byte[]{56,(byte)type},24);}
+    void requestBattery(){mcRead(new byte[]{20},12);}
+    void reboot(){if(mcAdmin.edit!=null)throw Wire.bad("Verify the pending change before rebooting");queue(join(new byte[]{19},"reboot".getBytes(StandardCharsets.UTF_8)),-1,"");}
+    boolean requestDefaultFloodScope(){return mcSupportsScope()&&mcRead(new byte[]{64},28);}
+    void setDefaultFloodScope(String name,byte[] key){
+        if(!mcSupportsScope())throw Wire.bad("Default flood scope requires Companion protocol v11+");if(key.length!=16)throw Wire.bad("Region key must contain exactly 16 bytes");
+        byte[] frame=new byte[48];frame[0]=63;byte[] text=Wire.text(name,30);System.arraycopy(text,0,frame,1,text.length);System.arraycopy(key,0,frame,32,16);
+        mcSave("default flood region",new byte[][]{frame},new McAdmin.Check(new byte[]{64},28,1,Arrays.copyOfRange(frame,1,48),"Default flood region"));
+    }
+    void clearDefaultFloodScope(){if(!mcSupportsScope())throw Wire.bad("Default flood scope requires Companion protocol v11+");mcSave("default flood region",new byte[][]{new byte[]{63}},new McAdmin.Check(new byte[]{64},28,1,Wire.EMPTY,"Default flood region"));}
+    void approveMcContact(Node candidate){
+        mcSettingsReady();byte[] raw=Wire.unhex(candidate.mcRaw);
+        if(raw.length!=148||candidate.id.length()!=64||!candidate.id.equals(Wire.hex(Arrays.copyOfRange(raw,1,33))))throw Wire.bad("Wait for a fresh discovery before approving this contact");
+        byte[] frame=raw.clone();frame[0]=9;byte[] get=join(new byte[]{30},Wire.unhex(candidate.id));
+        mcSave("contact approval",new byte[][]{frame},new McAdmin.Check(get,3,1,Wire.unhex(candidate.id),"Approved contact"));
+    }
+    void removeMcContact(String id){
+        if(!nodes.containsKey(id))throw Wire.bad("This contact is not currently approved on the radio");byte[] key=Wire.unhex(id),get=join(new byte[]{30},key);
+        mcSave("contact removal",new byte[][]{join(new byte[]{15},key)},new McAdmin.Check(get,3,1,key,"Removed contact",true,false));
+    }
+    List<Sent> mcRetainDeliveries(long now){
+        List<Sent> retained=new ArrayList<>();for(Sent value:sent.values())if(value.ackKnown){value.retainUntil=now+600000;retained.add(value);}for(Sent value:mcLateSent.values())if(value.retainUntil>now)retained.add(value);return retained;
+    }
+    void mcRestoreDeliveries(List<Sent> retained,long now){long key=1;for(Sent value:retained)if(value.ackKnown&&value.retainUntil>now){mcLateSent.put(key++,value);}trim(mcLateSent,128);}
     private static byte[] join(byte[] a,byte[] b){byte[] out=Arrays.copyOf(a,a.length+b.length);System.arraycopy(b,0,out,a.length,b.length);return out;}
     private static void put32(byte[] f,int i,int value){f[i]=(byte)value;f[i+1]=(byte)(value>>>8);f[i+2]=(byte)(value>>>16);f[i+3]=(byte)(value>>>24);}
     Message send(Target target,String text,long id,long now){

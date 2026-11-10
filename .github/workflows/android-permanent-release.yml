@@ -14,7 +14,7 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.3.8'
+        default: '0.3.9'
         type: string
 permissions:
   contents: write
@@ -87,7 +87,7 @@ jobs:
       - name: Verify requested version and permanent signing credentials
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.8' }}
+          REQUESTED: ${{ inputs.version || '0.3.9' }}
         run: |
           set -euo pipefail
           [[ "$REQUESTED" =~ ^0\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version"; exit 1; }
@@ -116,7 +116,7 @@ jobs:
       - name: Verify APK signature identity and version before publishing
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.8' }}
+          REQUESTED: ${{ inputs.version || '0.3.9' }}
         run: |
           set -euo pipefail
           APK=android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
@@ -136,7 +136,7 @@ jobs:
       - name: Publish only if no version tag or release exists
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.8' }}
+          REQUESTED: ${{ inputs.version || '0.3.9' }}
         run: |
           set -euo pipefail
           CURRENT_HEAD=$(git ls-remote origin refs/heads/baseline/android-0.1.0 | cut -f1)
@@ -151,27 +151,31 @@ jobs:
             exit 1
           fi
           cat > release-notes.md <<EOF
-          ## MeshCrossway Android $REQUESTED — Meshtastic settings corrections
+          ## MeshCrossway Android $REQUESTED — MeshCore reliability corrections
 
-          Install this APK over your existing MeshCrossway installation and choose **Update**. The permanent signing certificate is unchanged. Your local messages, favorites, settings, tracks and offline maps are retained during an in-place update.
+          Install over your existing MeshCrossway app and choose **Update**. The permanent signing certificate is unchanged. Local messages, settings, favorites, tracks and offline maps are retained during an in-place update.
 
-          - Correct coding-rate defaults for LONG TURBO, NARROW FAST, NARROW SLOW and TINY SLOW.
-          - Verify the complete effective LoRa configuration after saving and reconnecting. Report the differing setting when readback does not match; retain documented firmware normalization of default coding rates, inactive parameters and automatic TX power.
-          - Offer LONG TURBO only on firmware 2.7.17 or newer.
-          - Validate frequency slots using regional frequency ranges, spacing and padding, including the newer EU and amateur profiles. Use explicit regional power limits and omit reserved regions without a supported band profile.
-          - Display omitted Bluetooth and serial-console flags correctly as disabled.
-          - Replace broad hardware-name restrictions on SF5/SF6 with explicit modem capabilities. Ambiguous variants are verified through radio readback.
-          - Enforce UTF-8 byte limits and verify the returned identity during licensed-mode onboarding.
-          - Load MQTT and status-message settings independently; explain unavailable modules and expose editing only after the supported module has loaded.
+          - Verify MeshCore settings using fresh radio readback. A normal radio error keeps the connection alive and shows the failure. A partially applied multi-command save refreshes the actual values.
+          - Preserve Companion repeat mode when editing radio parameters, and verify preset radio/path changes as one transaction.
+          - Keep discoveries separate from approved radio contacts. Add explicit approval/removal actions and reconcile deleted contacts and full contact refreshes while retaining historical messages.
+          - Enforce a 31-byte UTF-8 name limit. An already truncated name remains readable so it can be repaired from the app.
+          - Decode negative TX power correctly and use the device's advertised maximum instead of a fixed 22 dBm ceiling.
+          - Gate advanced settings by Companion protocol support and coalesce repeated reads. Unsupported features no longer cause reconnect loops.
+          - Track receiver-side contact activity and live DM receipt separately from sender advert time. Initial backlog does not make every contact appear freshly heard.
+          - Reconcile matching late delivery ACKs with bounded retention, including BLE reconnection while the service is running.
+          - Preserve the integer extra-ACK count when changing unrelated privacy settings.
+          - Continue draining messages immediately after an unsupported channel-data item.
 
-          Validation includes the existing protocol regression suite, 206 additional conformance checks, Android settings-view fixtures and storage checks on Android API 29 and 35, plus APK build and lint. Physical-radio and on-air validation remain necessary. This is a public beta, not version 1.0; full official-app feature parity is not included.
+          Validation includes the existing regression suites, 206 Meshtastic conformance checks, 66 MeshCore regression checks, Android settings/contact-persistence fixtures on API 29 and 35, build, lint and permanent certificate verification. Physical-radio and RF validation remain necessary. The app is a public beta; full official-app feature parity is not included.
 
-          The signing certificate fingerprint and APK checksum are attached to this release.
+          Pending verification survives BLE reconnection without replaying SET commands. After repeated recovery failures, the app offers an explicit check or use-current-settings action. Late-ACK retention is limited to ten minutes and service lifetime; automatic retransmission is not enabled.
+
+          The APK checksum and permanent certificate fingerprint are attached to this release.
           EOF
           gh release create "$TAG" "release/MeshCrossway-$REQUESTED.apk" \
              release/SHA256SUMS.txt release/SIGNING-CERT-SHA256.txt \
              --target "$GITHUB_SHA" \
-             --title "Android $REQUESTED — Meshtastic settings corrections" \
+             --title "Android $REQUESTED — MeshCore reliability corrections" \
              --notes-file release-notes.md --prerelease --latest=false
       - name: Remove ephemeral keystore
         if: always()
