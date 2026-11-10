@@ -1,6 +1,6 @@
 # MeshCrossway Cloud — first storage limits
 
-This directory contains the first Cloudflare Worker + D1 + R2 backend slice for optional account sync. It is not deployed or connected to the Android APK yet. The phone app remains local-first; no message or location is uploaded until the native client is connected to an authenticated account-sync flow.
+This directory contains the Cloudflare Worker + D1 + R2 backend for optional account sync. The Worker is deployed at `https://meshcrossway-cloud.meshcrossway.workers.dev` with the Clerk development issuer. Android source contains an opt-in, manually triggered client flow for recent messages and favorite chats. Android track sync is not connected yet.
 
 ## Initial free-account limits
 
@@ -19,10 +19,10 @@ All `/v1/*` endpoints require a Clerk session JWT in `Authorization: Bearer <tok
 | Route | Behavior |
 |---|---|
 | `GET /health` | Public health check; no account data |
-| `GET /v1/messages?cursor=<opaque-cursor>` | Returns messages inside seven-day retention and older messages from favorite conversations; pages contain up to 1,000 rows |
+| `GET /v1/messages?cursor=<opaque-cursor>` | Returns messages inside seven-day retention and older messages from favorite conversations; pages contain up to 40 rows |
 | `POST /v1/messages` | Upserts up to 100 messages per batch; ignores expired non-favorite messages |
-| `GET /v1/favorites` | Lists favorite conversations |
-| `PUT /v1/favorites` | Body: `{ "network": "MESHTASTIC"|"MESHCORE", "conversationId": "…", "favorite": true|false }` |
+| `GET /v1/favorites` | Lists favorite state, including removal tombstones, for conflict resolution |
+| `PUT /v1/favorites` | Body: `{ "network": "MESHTASTIC"|"MESHCORE", "conversationId": "…", "favorite": true|false, "updatedAt": 0 }`; last-write-wins timestamp is optional |
 | `GET /v1/tracks` | Lists the user's tracks and current quota usage |
 | `PUT /v1/tracks/{trackId}?name=…` | Uploads one GPX as `application/gpx+xml`; enforces file, count and total caps |
 | `GET /v1/tracks/{trackId}` | Downloads one of the authenticated user's GPX files |
@@ -35,11 +35,11 @@ Messages use Unix timestamps in seconds, matching the Android app's current loca
 1. Create a Cloudflare D1 database named `meshcrossway-cloud` and an R2 bucket named `meshcrossway-user-data`.
 2. Replace `database_id` in `wrangler.toml` with the D1 ID. Set `CLERK_ISSUER` to the exact issuer for the Clerk application. Configure `CLERK_JWKS_URL` only if the issuer's standard JWKS URL is not correct.
 3. Set `WEB_ORIGIN` to the eventual account-site origin. Native Android calls omit `Origin`; browser calls from other origins are rejected.
-4. Apply `migrations/0001_initial.sql` with Wrangler, then deploy the Worker.
-5. The Android source branch has the first Clerk native sign-in slice, but the authenticated sync client is not connected yet. Do not enable uploads until the API is deployed and the app's sync client is implemented. Do not add service secrets or private credentials to this repository.
+4. Apply all outstanding migrations with Wrangler, then deploy the Worker.
+5. Android builds default to `https://meshcrossway-cloud.meshcrossway.workers.dev`. To use another environment, set Gradle property `cloudApiBaseUrl` locally or the GitHub repository variable `CLOUD_API_BASE_URL`. Do not add service secrets or private credentials to this repository.
 
 ## Privacy and current scope
 
 The API accepts message text in plaintext after the app has decrypted/decoded the radio payload. This first backend slice does not yet provide client-side end-to-end encryption. The app must disclose cloud storage clearly and require the user to enable it before upload. Authentication, per-user authorization, HTTPS, bounded input and account-scoped object keys are included, but production deployment should wait until account deletion, data export, recovery and client-side encryption decisions are completed.
 
-This slice does not include billing, account-site UI, Clerk application credentials, or Android upload/download integration. The current public APK does not contain the Clerk changes, and no network data is uploaded by it.
+The Android sync button is manual in this first slice. It uploads message history for the last seven days plus favorite-chat history, merges messages and favorite changes from the account, and requires the user to sign in and explicitly enable sync. It is not end-to-end encrypted; the app discloses that before sync is enabled. Track sync, deletion/export controls in the account site, billing, and end-to-end encryption remain future work. Do not make the feature public until deployment and multi-device behavior have been validated.

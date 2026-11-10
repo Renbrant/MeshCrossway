@@ -1,10 +1,10 @@
 # MeshCrossway Android
 
-**Development: 0.2.5 beta (versionCode 15), using the permanent signing identity established by 0.2.3** · [Install the Android APK](../docs/android-apk.md) · [Previous 0.2.1 recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
+**Development: 0.2.8 beta (versionCode 18), using the permanent signing identity established by 0.2.3** · [Install the Android APK](../docs/android-apk.md) · [Previous 0.2.1 recovery release](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.1) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
 
 Native ARM64 Android 8.0+ app for **two independent, simultaneous BLE radio sessions**: one Meshtastic and one MeshCore Companion. The application does **not** bridge, route or relay messages across networks. Its primary UI includes chats, channels, contacts, offline MapLibre areas, local phone GPS tracks/GPX and saved message history.
 
-**Clerk account sign-in is in development:** the source now includes hosted sign-in/sign-up and local session management, but cloud synchronization is not connected to the APK yet. The current public 0.2.5 APK does not include this change. See [Clerk setup](CLERK_SETUP.md).
+**Clerk and cloud sync beta:** hosted sign-in/sign-up and opt-in, manual synchronization of recent conversations and favorites are available with the development Worker. Ordinary messages retain seven days; favorites persist until removed. Tracks, settings, contacts and locations are not synchronized. This development service is for testing, not production use. See [Clerk setup](CLERK_SETUP.md).
 
 ## New in 0.2.2 — Browser chats, channels, and visual offline maps
 
