@@ -4,17 +4,17 @@
 
 **Two independent mesh networks. One Android app.** Use Meshtastic and MeshCore side by side, connecting to a separate Bluetooth radio for each network. Messages, identities and routing stay on their native networks; MeshCrossway does not bridge or relay between them.
 
-<p align="center"><a href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.5/MeshCrossway-0.2.5.apk"><strong>Download MeshCrossway Android 0.2.5 beta APK</strong></a> · <a href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.2.5">Release notes and checksums</a> · <a href="https://meshcrossway.renbrant.com/android/">Installation guide</a></p>
+<p align="center"><a href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.8/MeshCrossway-0.3.8.apk"><strong>Download MeshCrossway Android 0.3.8 beta APK</strong></a> · <a href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.8">Release notes and checksums</a> · <a href="https://meshcrossway.renbrant.com/android/">Installation guide</a></p>
 
 > **Public beta for testing — not version 1.0.0.** Requires Android 8.0+ on ARM64. Broader phone, radio and firmware compatibility is still being evaluated.
 
 ## Install and update
 
-1. Download the [public APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.2.5/MeshCrossway-0.2.5.apk) on your Android phone. No GitHub Actions login, ADB or ZIP file is needed.
+1. Download the [public APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.8/MeshCrossway-0.3.8.apk) on your Android phone. No GitHub Actions login, ADB or ZIP file is needed.
 2. Open it and allow your browser or file manager to install apps when Android asks.
 3. In MeshCrossway, connect one compatible Meshtastic radio and one compatible MeshCore radio over Bluetooth.
 
-**Updating from 0.2.4:** Install 0.2.5 over the existing app. It uses the same permanent release signing certificate, so local messages, settings, favorites, tracks and offline maps remain in place. Do not uninstall to update.
+**Updating an existing permanent-key installation (0.2.3 or newer):** Install 0.3.8 over the existing app and choose Update. It uses the same permanent release signing certificate, so local messages, settings, favorites, tracks and offline maps remain in place. Do not uninstall to update.
 
 Builds **0.2.2 and earlier** used temporary debug signing. If you still have local data on one of those builds, follow the [one-time signing migration and backup guide](https://github.com/Renbrant/MeshCrossway/blob/main/docs/android-permanent-signing-backup.md) before changing versions. Uninstalling deletes app data.
 
@@ -28,7 +28,7 @@ Builds **0.2.2 and earlier** used temporary debug signing. If you still have loc
 - Compact Home with separate radio cards and measured Bluetooth RSSI for each phone-to-radio connection.
 - Optional HTTPS browser workspace on a private local Wi-Fi network. Remote Access is off by default.
 
-The signal bars and dBm value describe the **Bluetooth link between the phone and a radio**, not LoRa reception. App data remains on the phone; cloud account synchronization is not included in this release. Basemap downloads need internet access, while native LoRa messages and previously downloaded maps can be used without cellular coverage. Do not expose Remote Access to the public internet.
+The signal bars and dBm value describe the **Bluetooth link between the phone and a radio**, not LoRa reception. Messages and tracks are stored locally. Optional account access is available from the toolbar. Basemap downloads need internet access, while native LoRa messages and previously downloaded maps can be used without cellular coverage. Do not expose Remote Access to the public internet.
 
 ## Version policy
 
@@ -39,7 +39,8 @@ Android uses its own version sequence, independent of the embedded controller fi
 | **0.1.0–0.1.1** | Preserved functional and recovery beta baselines |
 | **0.2.0–0.2.2** | Remote browser workspace, messaging views and visual offline-map selection |
 | **0.2.3–0.2.4** | Permanent signing, backup/restore and app appearance choices |
-| **0.2.5** | Compact Home and measured BLE signal indicator; current public beta |
+| **0.2.5** | Compact Home and measured BLE signal indicator |
+| **0.3.8** | Meshtastic settings validation and full readback confirmation; current public beta |
 | **0.2.6…** | Corrections and smaller improvements |
 | **0.3.0, 0.4.0…** | Larger feature or workflow changes |
 | **1.0.0** | First production release after core functionality and stability acceptance |
