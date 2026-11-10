@@ -14,7 +14,7 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.3.6'
+        default: '0.3.7'
         type: string
 permissions:
   contents: write
@@ -87,7 +87,7 @@ jobs:
       - name: Verify requested version and permanent signing credentials
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.6' }}
+          REQUESTED: ${{ inputs.version || '0.3.7' }}
         run: |
           set -euo pipefail
           [[ "$REQUESTED" =~ ^0\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version"; exit 1; }
@@ -116,7 +116,7 @@ jobs:
       - name: Verify APK signature identity and version before publishing
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.6' }}
+          REQUESTED: ${{ inputs.version || '0.3.7' }}
         run: |
           set -euo pipefail
           APK=android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
@@ -136,7 +136,7 @@ jobs:
       - name: Publish only if no version tag or release exists
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.6' }}
+          REQUESTED: ${{ inputs.version || '0.3.7' }}
         run: |
           set -euo pipefail
           CURRENT_HEAD=$(git ls-remote origin refs/heads/baseline/android-0.1.0 | cut -f1)
@@ -153,7 +153,9 @@ jobs:
           cat > release-notes.md <<EOF
           ## MeshCrossway Android $REQUESTED — Meshtastic settings beta
 
-          **Install as an update:** install this APK over Android 0.3.5 and choose Update. The permanent signing certificate is unchanged. Do not uninstall the app or clear its storage; that would remove locally saved messages, favorites, settings, tracks and offline maps.
+          **Install as an update:** install this APK over Android 0.3.6 and choose Update. The permanent signing certificate is unchanged. Do not uninstall the app or clear its storage; that would remove locally saved messages, favorites, settings, tracks and offline maps.
+
+          **Account shortcut layout:** the account button is now part of the toolbar with its own reserved space. It no longer floats over Settings or other header controls after navigation or resuming the app.
 
           **Compact Home and recent nodes:** the Meshtastic preset appears beside Ready. Radio cards omit Bluetooth device names and retain the signal indicator. Both networks count nodes heard in the last 15 minutes instead of one hour. The counter refreshes while Home is visible even without new traffic; this indicates recent activity, not guaranteed reachability.
 
@@ -165,7 +167,7 @@ jobs:
 
           **Licensed DM correction:** do not request PKI encryption when either participant is licensed, including before opening User settings; clear stale public keys when the radio removes them.
 
-          **Compatibility:** install over 0.3.1/0.3.2/0.3.3/0.3.4/0.3.5 using Update. Full official-app feature parity, remote administration/shell, firmware updates and every module editor are not included. Hardware/RF validation is still required.
+          **Compatibility:** install over 0.3.1/0.3.2/0.3.3/0.3.4/0.3.5/0.3.6 using Update. Full official-app feature parity, remote administration/shell, firmware updates and every module editor are not included. Hardware/RF validation is still required.
 
           Existing local app data and features remain available after an in-place update. The long-lived signing certificate is verified by CI and its SHA-256 fingerprint is attached to this release. This is a public beta, not version 1.0.
           EOF
