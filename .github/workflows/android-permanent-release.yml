@@ -20,7 +20,7 @@ permissions:
   contents: write
 concurrency:
   group: android-permanent-release
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   meshtastic-storage:
     runs-on: ubuntu-latest
@@ -139,6 +139,8 @@ jobs:
           REQUESTED: ${{ inputs.version || '0.3.3' }}
         run: |
           set -euo pipefail
+          CURRENT_HEAD=$(git ls-remote origin refs/heads/baseline/android-0.1.0 | cut -f1)
+          test "$CURRENT_HEAD" = "$GITHUB_SHA" || { echo "Source superseded; refusing to publish an outdated APK"; exit 1; }
           TAG="android-v$REQUESTED"
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Version already published; never overwrite an APK/certificate"
