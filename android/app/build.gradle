@@ -13,7 +13,7 @@ android {
         versionCode 17
         versionName '0.2.7'
         buildConfigField 'String', 'CLERK_PUBLISHABLE_KEY', '"' + (providers.gradleProperty('clerkPublishableKey').getOrElse('')) + '"'
-        buildConfigField 'String', 'CLOUD_API_BASE_URL', '"' + (providers.gradleProperty('cloudApiBaseUrl').getOrElse('')) + '"'
+        buildConfigField 'String', 'CLOUD_API_BASE_URL', '"' + (providers.gradleProperty('cloudApiBaseUrl').getOrElse('https://meshcrossway-cloud.meshcrossway.workers.dev')) + '"'
         testInstrumentationRunner 'com.meshcrossway.android.SmokeInstrumentation'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }

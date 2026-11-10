@@ -20,7 +20,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       ORG_GRADLE_PROJECT_clerkPublishableKey: ${{ vars.CLERK_PUBLISHABLE_KEY }}
-      ORG_GRADLE_PROJECT_cloudApiBaseUrl: ${{ vars.CLOUD_API_BASE_URL }}
+      ORG_GRADLE_PROJECT_cloudApiBaseUrl: ${{ vars.CLOUD_API_BASE_URL || 'https://meshcrossway-cloud.meshcrossway.workers.dev' }}
       MCX_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
       MCX_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
       MCX_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}

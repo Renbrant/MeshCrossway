@@ -2,7 +2,7 @@
 
 The Android client now has the first Clerk integration slice: native SDK initialization, a small account shortcut in the app header, Clerk's hosted sign-in/sign-up page, session restoration, and sign-out. Sign-in methods are controlled in the Clerk dashboard, so Google and Apple can be offered without embedding provider secrets in the APK.
 
-**Cloud sync is being brought online in stages.** The Android source now includes an opt-in, user-triggered sync flow for recent messages and favorite chats. It remains unavailable until the Cloudflare Worker is deployed, its Clerk issuer is configured, and `CLOUD_API_BASE_URL` is supplied to the build. Tracks are not yet synchronized. No upload occurs before the user signs in and enables sync.
+**Cloud sync is available for development testing.** The Android source includes an opt-in, user-triggered sync flow for recent messages and favorite chats. The development Worker is deployed at `https://meshcrossway-cloud.meshcrossway.workers.dev`. Tracks are not yet synchronized. No upload occurs before the user signs in and enables sync.
 
 ## Clerk dashboard
 
@@ -23,7 +23,8 @@ Add the publishable key to the user-level Gradle properties file, outside the re
 
 ```properties
 clerkPublishableKey=pk_test_replace_with_your_key
-cloudApiBaseUrl=https://your-worker-hostname.workers.dev
+# Optional override; defaults to the MeshCrossway development Worker URL.
+# cloudApiBaseUrl=https://your-worker-hostname.workers.dev
 ```
 
 Then build from `android/`:
@@ -32,14 +33,14 @@ Then build from `android/`:
 ./gradlew :app:assembleDebug
 ```
 
-Without `clerkPublishableKey`, the app builds with account sign-in disabled. Without `cloudApiBaseUrl`, cloud sync stays unavailable and no data is sent. A Clerk publishable key and the HTTPS Worker URL are public configuration, not secrets; keep environment-specific values in local Gradle properties or GitHub repository variables. The APK workflows read `CLERK_PUBLISHABLE_KEY` and `CLOUD_API_BASE_URL`. Production Google OAuth must also include the permanent Android release signing certificate fingerprint; the debug key fingerprint is separate.
+Without `clerkPublishableKey`, the app builds with account sign-in disabled. Cloud builds default to the development Worker URL above; `cloudApiBaseUrl` or the GitHub repository variable `CLOUD_API_BASE_URL` can override it. A Clerk publishable key and the HTTPS Worker URL are public configuration, not secrets. Production Google OAuth must also include the permanent Android release signing certificate fingerprint; the debug key fingerprint is separate.
 
 ## Current boundaries
 
 - Clerk handles identity and session lifecycle; OAuth provider secrets remain in Clerk.
 - The app uses Clerk's hosted Account Portal. The provider buttons shown there depend on the dashboard configuration.
 - Sign-in does not opt a person into cloud storage. The user must enable sync and tap **Sync now**; this first client slice uploads recent messages and favorite-chat history only. It does not upload Bluetooth radio identifiers, location, contacts, or radio settings.
-- Configure `CLERK_ISSUER` in `cloud/wrangler.toml` to match the Clerk instance, deploy the Worker, and set the HTTPS Worker URL as `cloudApiBaseUrl` (local build) or the GitHub repository variable `CLOUD_API_BASE_URL` (Actions build). Apply outstanding D1 migrations before deployment. Development issuer and API keys must not be used for a public production launch.
+- The Worker is deployed with the Clerk development issuer. Keep testing limited to development accounts until the Clerk production instance and OAuth providers are configured and the Worker is redeployed with the production issuer. Override the Worker URL with `cloudApiBaseUrl` locally or `CLOUD_API_BASE_URL` in GitHub Actions only when using another environment.
 - The Worker applies the free retention limits: ordinary messages are kept for seven days; favorite chats are retained until unfavorited. Its R2 API enforces up to five GPX tracks at 5 MiB each, but Android track synchronization is not yet connected.
 - Google native sign-in requires the Google/Clerk redirect and certificate setup. Apple sign-in requires the Apple provider connection to be configured in Clerk.
 

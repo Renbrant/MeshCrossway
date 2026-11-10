@@ -1,6 +1,6 @@
 # MeshCrossway Cloud — first storage limits
 
-This directory contains the Cloudflare Worker + D1 + R2 backend for optional account sync. Android source now contains an opt-in, manually triggered client flow for recent messages and favorite chats. The Worker still needs the development Clerk issuer, migrations, deployment, and an HTTPS API URL in the Android build before this flow can send data. Android track sync is not connected yet.
+This directory contains the Cloudflare Worker + D1 + R2 backend for optional account sync. The Worker is deployed at `https://meshcrossway-cloud.meshcrossway.workers.dev` with the Clerk development issuer. Android source contains an opt-in, manually triggered client flow for recent messages and favorite chats. Android track sync is not connected yet.
 
 ## Initial free-account limits
 
@@ -36,7 +36,7 @@ Messages use Unix timestamps in seconds, matching the Android app's current loca
 2. Replace `database_id` in `wrangler.toml` with the D1 ID. Set `CLERK_ISSUER` to the exact issuer for the Clerk application. Configure `CLERK_JWKS_URL` only if the issuer's standard JWKS URL is not correct.
 3. Set `WEB_ORIGIN` to the eventual account-site origin. Native Android calls omit `Origin`; browser calls from other origins are rejected.
 4. Apply all outstanding migrations with Wrangler, then deploy the Worker.
-5. Set Gradle property `cloudApiBaseUrl` to the Worker's HTTPS URL, or add the GitHub repository variable `CLOUD_API_BASE_URL` for APK builds. The app will keep sync unavailable when this property is blank or non-HTTPS. Do not add service secrets or private credentials to this repository.
+5. Android builds default to `https://meshcrossway-cloud.meshcrossway.workers.dev`. To use another environment, set Gradle property `cloudApiBaseUrl` locally or the GitHub repository variable `CLOUD_API_BASE_URL`. Do not add service secrets or private credentials to this repository.
 
 ## Privacy and current scope
 
