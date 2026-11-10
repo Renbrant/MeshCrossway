@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 12687)
-Total output lines: 456
-
 package com.meshcrossway.android;
 
 import android.app.*;
@@ -110,7 +107,110 @@ public final class SmokeInstrumentation extends Instrumentation {
         java.lang.reflect.Field field=MainActivity.class.getDeclaredField("service");field.setAccessible(true);waitUntil(()->{try{return field.get(activity)!=null;}catch(Exception e){throw new RuntimeException(e);}},"Service did not bind");
         onUi(()->{try{RadioService service=(RadioService)field.get(activity);Node mt=new Node();mt.id="123";mt.name="MT test";mt.position=true;mt.lat=40;mt.lon=-105;mt.heard=System.currentTimeMillis()/1000;Node mc=new Node();mc.id="0909090909090909090909090909090909090909090909090909090909090909";mc.name="MC test";mc.position=true;mc.lat=40.001;mc.lon=-105.001;mc.heard=mt.heard;service.sessions.get(RadioProfile.MESHTASTIC).address="map-mt";service.sessions.get(RadioProfile.MESHCORE).address="map-mc";service.history.select(RadioProfile.MESHTASTIC,"map-mt");service.history.select(RadioProfile.MESHCORE,"map-mc");service.history.node(RadioProfile.MESHTASTIC,"map-mt",mt);service.history.node(RadioProfile.MESHCORE,"map-mc",mc);activity.showMap(40,-105);}catch(Exception e){throw new RuntimeException(e);}});
         waitUntil(()->activity.mapPanel!=null&&activity.mapPanel.styleReady&&activity.mapPanel.markerCount==2,"Native map did not load both network sources");waitUntil(()->{MapPanel panel=activity.mapPanel;return panel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,panel.mapView.getWidth(),panel.mapView.getHeight()),"mesh-points").size()==2;},"Native renderer did not draw both network markers");screenshot(activity,"dual-map");
-        final OfflineMaps[] offline=new OfflineMaps[1];onUi(()->{offline[0]=activity.mapPanel.offline;offline[0].create("Offline te…3687 tokens truncated…;
+        final OfflineMaps[] offline=new OfflineMaps[1];onUi(()->{offline[0]=activity.mapPanel.offline;offline[0].create("Offline test","asset://map-test-style.json",org.maplibre.android.geometry.LatLngBounds.from(40.002,-104.998,39.998,-105.002),10,1);});waitUntil(()->offline[0].areas.stream().anyMatch(a->a.name.equals("Offline test")),"Offline region was not persisted");
+        onUi(()->{OfflineMaps.Area area=offline[0].areas.stream().filter(a->a.name.equals("Offline test")).findFirst().get();offline[0].pause();offline[0].start(area);offline[0].pause();offline[0].delete(area);});waitUntil(()->offline[0].areas.stream().noneMatch(a->a.name.equals("Offline test")),"Offline region deletion failed");
+    }
+    private void shell(String command)throws Exception{try(android.os.ParcelFileDescriptor descriptor=getUiAutomation().executeShellCommand(command);InputStream in=new android.os.ParcelFileDescriptor.AutoCloseInputStream(descriptor)){byte[] buffer=new byte[1024];while(in.read(buffer)!=-1){}}}
+    private void recording(MainActivity activity)throws Exception{
+        String pkg=getTargetContext().getPackageName();shell("pm grant "+pkg+" android.permission.ACCESS_COARSE_LOCATION");shell("pm grant "+pkg+" android.permission.ACCESS_FINE_LOCATION");if(android.os.Build.VERSION.SDK_INT>=33)shell("pm grant "+pkg+" android.permission.POST_NOTIFICATIONS");
+        java.lang.reflect.Field field=MainActivity.class.getDeclaredField("trackService");field.setAccessible(true);final TrackService[] service=new TrackService[1];waitUntil(()->{try{service[0]=(TrackService)field.get(activity);return service[0]!=null;}catch(Exception e){throw new RuntimeException(e);}},"Track service did not bind");
+        onUi(()->activity.startForegroundService(new Intent(activity,TrackService.class).setAction("START").putExtra("name","Screen-off fixture")));waitUntil(()->service[0].recording,"Location foreground service did not start");waitUntil(()->service[0].store.current()!=null&&service[0].store.current().state.equals("recording"),"Recording state did not persist");
+        // Stop emulator-provided fixes before injecting a deterministic path. A real provider
+        // can emit its default position first; the jump filter must reject a teleport from it.
+        onUi(()->getTargetContext().getSystemService(android.location.LocationManager.class).removeUpdates(service[0]));CountDownLatch fixture=new CountDownLatch(1);service[0].store.start("Deterministic service fixture",ok->{check(ok,"Fixture track failed");fixture.countDown();});await(fixture);
+        onUi(()->{long now=System.currentTimeMillis(),elapsed=android.os.SystemClock.elapsedRealtimeNanos();for(int i=0;i<2;i++){android.location.Location fix=new android.location.Location("gps");fix.setLatitude(40+i*0.0001);fix.setLongitude(-105);fix.setAccuracy(4);fix.setTime(now-6000+i*3000);fix.setElapsedRealtimeNanos(elapsed-6000000000L+i*3000000000L);service[0].onLocationChanged(fix);}});CountDownLatch samples=new CountDownLatch(1);service[0].store.barrier(samples::countDown);await(samples);check(service[0].store.current()!=null&&service[0].store.current().count>=2,"Service did not persist GPS samples: "+service[0].status+" / "+service[0].store.error+" / "+(service[0].store.current()==null?"no track":service[0].store.current().summary()));
+        onUi(()->activity.moveTaskToBack(true));waitForIdleSync();check(service[0].recording,"Activity backgrounding stopped recording");android.app.NotificationManager notifications=getTargetContext().getSystemService(android.app.NotificationManager.class);check(java.util.Arrays.stream(notifications.getActiveNotifications()).anyMatch(n->n.getId()==2),"Recording notification missing");
+        onUi(()->activity.startActivity(new Intent(activity,MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)));waitForIdleSync();onUi(()->service[0].pause(false));waitUntil(()->service[0].store.current()!=null&&service[0].store.current().state.equals("paused"),"Pause failed");String id=service[0].store.current().id;
+        onUi(()->activity.startForegroundService(new Intent(activity,TrackService.class).setAction("RESUME").putExtra("track",id)));waitUntil(()->service[0].recording,"Resume foreground service failed");onUi(()->service[0].pause(true));waitUntil(()->service[0].store.current()==null,"Finish did not save track");
+    }
+    private void mapPanels(MainActivity activity)throws Exception{
+        onUi(()->activity.mapPanel.openTool("layers"));waitForIdleSync();onUi(()->{View view=find(activity.getWindow().getDecorView(),"Group nearby nodes");check(view instanceof Switch,"Clustering switch missing");((Switch)view).setChecked(false);});waitUntil(()->activity.mapPanel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,activity.mapPanel.mapView.getWidth(),activity.mapPanel.mapView.getHeight()),"mesh-points").size()==2,"Ungrouped map lost individual nodes");screenshot(activity,"map-layers");
+        onUi(()->{check(activity.mapPanel.mapView.getHeight()>0,"Panel hid the map");activity.mapPanel.closePanel();activity.mapPanel.map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.zoomTo(3));activity.mapPanel.setClustering(true);});waitUntil(()->!activity.mapPanel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,activity.mapPanel.mapView.getWidth(),activity.mapPanel.mapView.getHeight()),"mesh-clusters").isEmpty(),"Clustering did not return");onUi(()->activity.mapPanel.setClustering(false));waitUntil(()->activity.mapPanel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,activity.mapPanel.mapView.getWidth(),activity.mapPanel.mapView.getHeight()),"mesh-points").size()==2,"Ungrouped mode failed at low zoom");
+        onUi(()->activity.mapPanel.openTool("offline"));screenshot(activity,"map-offline");click(activity,"Download visible area…");screenshot(activity,"map-download");onUi(()->activity.mapPanel.openTool("tracks"));screenshot(activity,"map-tracks");onUi(activity::onBackPressed);check(activity.mapPanel!=null,"Back left map instead of closing panel");
+    }
+    private View find(View root,String label){if(root instanceof TextView&&((TextView)root).getText().toString().equals(label))return root;if(root instanceof ViewGroup){ViewGroup group=(ViewGroup)root;for(int i=0;i<group.getChildCount();i++){View found=find(group.getChildAt(i),label);if(found!=null)return found;}}return null;}
+    private void click(MainActivity activity,String label){onUi(()->{View view=find(activity.getWindow().getDecorView(),label);check(view!=null,"Missing navigation: "+label);while(!view.isClickable()&&view.getParent() instanceof View)view=(View)view.getParent();check(view.performClick(),"Cannot click "+label);});waitForIdleSync();}
+    private EditText composer(View root){if(root instanceof EditText&&"Write a message…".contentEquals(((EditText)root).getHint()))return (EditText)root;if(root instanceof ViewGroup){ViewGroup g=(ViewGroup)root;for(int i=0;i<g.getChildCount();i++){EditText e=composer(g.getChildAt(i));if(e!=null)return e;}}return null;}
+    private void screenshot(MainActivity activity,String name){
+        try(android.os.ParcelFileDescriptor output=getUiAutomation().executeShellCommand("screencap -p /data/local/tmp/mcx-"+name+".png");InputStream stream=new android.os.ParcelFileDescriptor.AutoCloseInputStream(output)){byte[] buffer=new byte[1024];while(stream.read(buffer)!=-1){}}
+        catch(IOException error){throw new RuntimeException(error);}
+    }
+    private void onUi(Runnable action){java.util.concurrent.atomic.AtomicReference<Throwable> error=new java.util.concurrent.atomic.AtomicReference<>();super.runOnMainSync(()->{try{action.run();}catch(Throwable failure){error.set(failure);}});if(error.get()!=null)throw new AssertionError(error.get());}
+    private void menus(MainActivity activity)throws Exception{
+        click(activity,"Settings");for(String entry:new String[]{"Meshtastic","MeshCore","Connections","Notifications & messages","Map & location","Data & backup","About MeshCrossway"}){click(activity,entry);screenshot(activity,"settings-"+entry.split(" ")[0].toLowerCase(java.util.Locale.ROOT));onUi(activity::onBackPressed);waitForIdleSync();onUi(()->check(find(activity.getWindow().getDecorView(),"Data & backup")!=null,"Back did not return to settings index from "+entry));}
+        click(activity,"Contacts");onUi(()->{View root=activity.getWindow().getDecorView();EditText search=findSearch(root);check(search!=null,"Contact search missing");search.setText("saved search");});click(activity,"Map");click(activity,"Contacts");onUi(()->check(findSearch(activity.getWindow().getDecorView()).getText().toString().equals("saved search"),"Tab navigation discarded search"));
+        click(activity,"Home");
+    }
+    private EditText findSearch(View root){if(root instanceof EditText&&"Search contacts".contentEquals(((EditText)root).getHint()))return (EditText)root;if(root instanceof ViewGroup){ViewGroup group=(ViewGroup)root;for(int i=0;i<group.getChildCount();i++){EditText found=findSearch(group.getChildAt(i));if(found!=null)return found;}}return null;}
+    private void receptionDetails(MainActivity activity)throws Exception{
+        java.lang.reflect.Field field=MainActivity.class.getDeclaredField("service");field.setAccessible(true);RadioService service=(RadioService)field.get(activity);Message incoming=message("route-fixture","Route fixture");incoming.sender="Route test";incoming.rx.kind="flood";incoming.rx.observed=true;incoming.rx.width=2;incoming.rx.path="1234abcd";incoming.rx.hops=2;incoming.rx.snr=-3;incoming.rx.rssi=-90;onUi(()->service.history.message(RadioProfile.MESHCORE,"map-mc",incoming));waitUntil(()->service.data(RadioProfile.MESHCORE).messages.stream().anyMatch(m->m.uid.equals("route-fixture")),"Received route fixture not stored");Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);onUi(()->{try{open.invoke(activity,RadioProfile.MESHCORE,"map-mc",incoming.target());}catch(Exception e){throw new RuntimeException(e);}});click(activity,"Route fixture");android.view.accessibility.AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();check(root!=null&&!root.findAccessibilityNodeInfosByText("Message details").isEmpty(),"Tapping received text did not open details");screenshot(activity,"message-route");shell("input keyevent 4");waitForIdleSync();
+    }
+    /** Loopback integration: proves Android Keystore HTTPS, auth and independent radio state. */
+    private void remoteSecurity(MainActivity activity)throws Exception{
+        java.lang.reflect.Field serviceField=MainActivity.class.getDeclaredField("service");
+        serviceField.setAccessible(true);
+        waitUntil(()->{try{return serviceField.get(activity)!=null;}catch(Exception e){return false;}},
+            "RadioService did not bind for HTTPS test");
+        RadioService service=(RadioService)serviceField.get(activity);
+        check(RemoteWorkspace.validPin("482731"),"Six-digit PIN rejected");
+        check(RemoteWorkspace.validPin("0123"),"Short user PIN rejected");
+        check(!RemoteWorkspace.validPin("123")&&!RemoteWorkspace.validPin("123456789")
+            &&!RemoteWorkspace.validPin("12a4")&&!RemoteWorkspace.validPin(""),"Invalid PIN accepted");
+        check(RemoteWorkspace.newShortPin().matches("[0-9]{6}"),"Generated PIN must be six numeric digits");
+        RemoteWorkspace workspace=new RemoteWorkspace(service,"127.0.0.1","482731");
+        check(workspace.accessPin().equals("482731"),"Chosen PIN not applied");
+        workspace.start(3000,false);
+        javax.net.ssl.SSLContext ssl=javax.net.ssl.SSLContext.getInstance("TLS");
+        // TEST ONLY: trust the locally generated test certificate; production browser must
+        // verify the SHA-256 fingerprint displayed by the phone.
+        javax.net.ssl.X509TrustManager permissiveTestManager=new javax.net.ssl.X509TrustManager(){
+            public java.security.cert.X509Certificate[] getAcceptedIssuers(){
+                return new java.security.cert.X509Certificate[0];
+            }
+            public void checkClientTrusted(java.security.cert.X509Certificate[] chain,String type){}
+            public void checkServerTrusted(java.security.cert.X509Certificate[] chain,String type){}
+        };
+        ssl.init(null,new javax.net.ssl.TrustManager[]{permissiveTestManager},new java.security.SecureRandom());
+        // Isolate Android TLS crypto from the NanoHTTPD request parser. Capture
+        // the server-side exception, which is otherwise hidden behind a client EOF.
+        java.util.concurrent.atomic.AtomicReference<Throwable> serverError=new java.util.concurrent.atomic.AtomicReference<>();
+        javax.net.ssl.SSLServerSocket tlsListener=(javax.net.ssl.SSLServerSocket)
+            workspace.tlsContext.getServerSocketFactory().createServerSocket(0,1,
+                java.net.InetAddress.getByName("127.0.0.1"));
+        tlsListener.setEnabledProtocols(new String[]{"TLSv1.2"});
+        Thread tlsServer=new Thread(()->{
+            try(javax.net.ssl.SSLSocket accepted=(javax.net.ssl.SSLSocket)tlsListener.accept()){
+                accepted.startHandshake();
+            }catch(Throwable error){serverError.set(error);}
+        },"TLS smoke server");
+        tlsServer.start();
+        Throwable clientError=null;
+        try(javax.net.ssl.SSLSocket client=(javax.net.ssl.SSLSocket)
+            ssl.getSocketFactory().createSocket("127.0.0.1",tlsListener.getLocalPort())){
+            client.setEnabledProtocols(new String[]{"TLSv1.2"});
+            client.setSoTimeout(6000);
+            client.startHandshake();
+        }catch(Throwable error){clientError=error;}
+        tlsServer.join(8000);
+        tlsListener.close();
+        if(clientError!=null||serverError.get()!=null)
+            throw new AssertionError("Isolated TLS failed: server="+serverError.get()+
+                " client="+clientError+"; "+workspace.tlsDiagnostics(),clientError);
+
+        try{
+            String base="https://127.0.0.1:8080";
+            java.util.function.Function<String,javax.net.ssl.HttpsURLConnection> connect=path->{
+                try{
+                    javax.net.ssl.HttpsURLConnection conn=(javax.net.ssl.HttpsURLConnection)new java.net.URL(base+path).openConnection();
+                    conn.setSSLSocketFactory(ssl.getSocketFactory());
+                    conn.setHostnameVerifier((host,session)->host.equals("127.0.0.1"));
+                    conn.setConnectTimeout(4000);conn.setReadTimeout(4000);
+                    return conn;
+                }catch(Exception e){throw new RuntimeException(e);}
+            };
+            javax.net.ssl.HttpsURLConnection homepage=connect.apply("/");
+            check(homepage.getResponseCode()==200,"Remote Home did not load");
+            ByteArrayOutputStream html=new ByteArrayOutputStream();
             try(InputStream in=homepage.getInputStream()){
                 byte[] buffer=new byte[1024];int n;
                 while((n=in.read(buffer))!=-1)html.write(buffer,0,n);
@@ -353,4 +453,3 @@ public final class SmokeInstrumentation extends Instrumentation {
     }
     @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();backups();tracks();appearance();bleSignal();activity();sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
 }
-
