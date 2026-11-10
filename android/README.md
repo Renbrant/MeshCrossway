@@ -1,6 +1,6 @@
 # MeshCrossway Android
 
-**Android 0.3.6 beta (versionCode 26), using the permanent signing identity established by 0.2.3** · [Download Android APK 0.3.6](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.6) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
+**Android 0.3.7 beta (versionCode 27), using the permanent signing identity established by 0.2.3** · [Download Android APK 0.3.7](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.7) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
 
 Native ARM64 Android 8.0+ app for **two independent, simultaneous BLE radio sessions**: one Meshtastic and one MeshCore Companion. The application does **not** bridge, route or relay messages across networks. Its primary UI includes chats, channels, contacts, offline MapLibre areas, local phone GPS tracks/GPX and saved message history.
 
@@ -130,3 +130,7 @@ Home displays the synchronized Meshtastic preset beneath Ready, or Manual LoRa f
 ### Compact Home and recent nodes (0.3.6)
 
 The Meshtastic preset is inline beside Ready. The radio cards omit Bluetooth device names, keeping connection state and signal strength. Both node cards show activity within 15 minutes. While Home is visible the recent counts are reevaluated every 30 seconds, including when no packets arrive. Recent activity is not proof that a node is reachable now; the large number remains the total saved nodes.
+
+### Account toolbar placement (0.3.7)
+
+The account shortcut is part of the toolbar alongside Settings and More. Each button has reserved layout space; the Application no longer inserts a floating shortcut into the content window on resume. This prevents the account icon from covering the Settings icon or the Home logo.
