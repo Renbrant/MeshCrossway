@@ -4,9 +4,10 @@ import java.util.*;
 
 final class MeshData {
     static final class Node {
+        int mcState;long mcAdvert,mcModified,mcReceived;String mcRaw="";
         boolean statusKnown,licensed;String shortName="",status="";int hardwareModel,role;final LinkedHashMap<String,String> metrics=new LinkedHashMap<>();final ArrayList<String> metricHistory=new ArrayList<>();
         String id="",name="",key="";long heard;double lat,lon;boolean position,unmessagable;int battery=-1,type;
-        Node(){} Node(Node n){licensed=n.licensed;statusKnown=n.statusKnown;shortName=n.shortName;status=n.status;hardwareModel=n.hardwareModel;role=n.role;metrics.putAll(n.metrics);metricHistory.addAll(n.metricHistory);id=n.id;name=n.name;key=n.key;heard=n.heard;lat=n.lat;lon=n.lon;position=n.position;unmessagable=n.unmessagable;battery=n.battery;type=n.type;}
+        Node(){} Node(Node n){mcState=n.mcState;mcAdvert=n.mcAdvert;mcModified=n.mcModified;mcReceived=n.mcReceived;mcRaw=n.mcRaw;licensed=n.licensed;statusKnown=n.statusKnown;shortName=n.shortName;status=n.status;hardwareModel=n.hardwareModel;role=n.role;metrics.putAll(n.metrics);metricHistory.addAll(n.metricHistory);id=n.id;name=n.name;key=n.key;heard=n.heard;lat=n.lat;lon=n.lon;position=n.position;unmessagable=n.unmessagable;battery=n.battery;type=n.type;}
     }
     static final class Channel {
         int slot;String name="",identity="",legacyIdentity="";boolean enabled;
