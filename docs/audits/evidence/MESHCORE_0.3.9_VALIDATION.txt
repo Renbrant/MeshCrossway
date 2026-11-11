@@ -1,0 +1,34 @@
+Audited Android source: 527c496e49f67462d6e82ccc0f5b112cfa40aa6e (android-v0.3.9)
+Local re-audit commands, rerun against that exact worktree:
+  bash scripts/test_android_probe.sh
+  node scripts/test_android_remote_web.cjs
+  python3 scripts/test_android_migration.py
+
+Observed output:
+Protocol probe fixtures passed
+Protocol clients: bootstrap, text, PKI, ACK ordering, dedup, isolation, limits passed
+Field features: geometry, offline bounds, streaming budget, handshake sequencing and dual inbox passed
+Field tools: GPS quality, gaps, bearing, coordinate parsing and GPX round trip passed
+Receive metadata: encoded hops, MAC-checked routes, correlation, malformed logs and MT signal passed
+Meshtastic regressions: enums, empty defaults, correlated admin GET/ACK/readback, expiry, reboot recovery, modules, channels, limits and replies passed
+Meshtastic official-app conformance: 206 checks passed
+MeshCore audit regressions: 66 checks passed
+Remote browser UI, chats/channels/nodes, geo projection, rectangle and quota tests passed.
+ADB migration fixture passed: private rows, CRC/schema verification, duplicate and corrupt backup rejection, no overwrite.
+
+Existing release validation (statuses rechecked during this audit; NOT new emulator executions):
+https://github.com/Renbrant/MeshCrossway/actions/runs/42917644014
+  device-smoke (29): success
+  device-smoke (35): success
+  apk: success
+https://github.com/Renbrant/MeshCrossway/actions/runs/42918486090
+  meshtastic-storage (29): success
+  meshtastic-storage (35): success
+  release: success
+
+Additional audit-only probe:
+  python3 docs/audits/run_meshcore_039_probe.py
+  22 checks, 19 pass, 3 fail; intentional exit status 1.
+  Full recorded details: MESHCORE_0.3.9_PROBE.txt
+
+No physical radio, RF transmission or native-official-app UI session was performed.

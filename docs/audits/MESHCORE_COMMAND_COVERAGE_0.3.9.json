@@ -1,0 +1,365 @@
+{
+  "audit_date": "2026-11-10",
+  "meshcrossway_commit": "527c496e49f67462d6e82ccc0f5b112cfa40aa6e",
+  "official_firmware": "companion-v1.18.0",
+  "official_firmware_commit": "81dbae592ffad40b4212bc0b37e82b38da08f4bc",
+  "method": "Manual production request-path review, matched against all CMD_ definitions at the pinned released firmware. Emitted opcode counts are not correctness percentages or native-app parity scores.",
+  "defined_commands": 59,
+  "emitted_commands": 23,
+  "commands": [
+    {
+      "opcode": 1,
+      "command": "APP_START",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 2,
+      "command": "SEND_TXT_MSG",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 3,
+      "command": "SEND_CHANNEL_TXT_MSG",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 4,
+      "command": "GET_CONTACTS",
+      "emitted_by_android_039": true,
+      "note": "Full list only; no removal reconciliation (MC03)."
+    },
+    {
+      "opcode": 5,
+      "command": "GET_DEVICE_TIME",
+      "emitted_by_android_039": true,
+      "note": "New in 0.3.9"
+    },
+    {
+      "opcode": 6,
+      "command": "SET_DEVICE_TIME",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 7,
+      "command": "SEND_SELF_ADVERT",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 8,
+      "command": "SET_ADVERT_NAME",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 9,
+      "command": "ADD_UPDATE_CONTACT",
+      "emitted_by_android_039": true,
+      "note": "New in 0.3.9"
+    },
+    {
+      "opcode": 10,
+      "command": "SYNC_NEXT_MESSAGE",
+      "emitted_by_android_039": true,
+      "note": "Plain/signed text; channel data is not decoded and delays next drain (MC10)."
+    },
+    {
+      "opcode": 11,
+      "command": "SET_RADIO_PARAMS",
+      "emitted_by_android_039": true,
+      "note": "Sends repeat=0, changing an unrelated setting (MC02)."
+    },
+    {
+      "opcode": 12,
+      "command": "SET_RADIO_TX_POWER",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 13,
+      "command": "RESET_PATH",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 14,
+      "command": "SET_ADVERT_LATLON",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 15,
+      "command": "REMOVE_CONTACT",
+      "emitted_by_android_039": true,
+      "note": "New in 0.3.9"
+    },
+    {
+      "opcode": 16,
+      "command": "SHARE_CONTACT",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 17,
+      "command": "EXPORT_CONTACT",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 18,
+      "command": "IMPORT_CONTACT",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 19,
+      "command": "REBOOT",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 20,
+      "command": "GET_BATT_AND_STORAGE",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 21,
+      "command": "SET_TUNING_PARAMS",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 22,
+      "command": "DEVICE_QUERY",
+      "emitted_by_android_039": true,
+      "note": "Repeat-enabled field is not retained (MC02)."
+    },
+    {
+      "opcode": 23,
+      "command": "EXPORT_PRIVATE_KEY",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 24,
+      "command": "IMPORT_PRIVATE_KEY",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 25,
+      "command": "SEND_RAW_DATA",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 26,
+      "command": "SEND_LOGIN",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 27,
+      "command": "SEND_STATUS_REQ",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 28,
+      "command": "HAS_CONNECTION",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 29,
+      "command": "LOGOUT",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 30,
+      "command": "GET_CONTACT_BY_KEY",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 31,
+      "command": "GET_CHANNEL",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 32,
+      "command": "SET_CHANNEL",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 33,
+      "command": "SIGN_START",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 34,
+      "command": "SIGN_DATA",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 35,
+      "command": "SIGN_FINISH",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 36,
+      "command": "SEND_TRACE_PATH",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 37,
+      "command": "SET_DEVICE_PIN",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 38,
+      "command": "SET_OTHER_PARAMS",
+      "emitted_by_android_039": true,
+      "note": "multi_acks count is narrowed to boolean (MC09)."
+    },
+    {
+      "opcode": 39,
+      "command": "SEND_TELEMETRY_REQ",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 40,
+      "command": "GET_CUSTOM_VARS",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 41,
+      "command": "SET_CUSTOM_VAR",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 42,
+      "command": "GET_ADVERT_PATH",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 43,
+      "command": "GET_TUNING_PARAMS",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 50,
+      "command": "SEND_BINARY_REQ",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 51,
+      "command": "FACTORY_RESET",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 52,
+      "command": "SEND_PATH_DISCOVERY_REQ",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 54,
+      "command": "SET_FLOOD_SCOPE_KEY",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 55,
+      "command": "SEND_CONTROL_DATA",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 56,
+      "command": "GET_STATS",
+      "emitted_by_android_039": true,
+      "note": "Core and radio statistics only; no packet-statistics UI."
+    },
+    {
+      "opcode": 57,
+      "command": "SEND_ANON_REQ",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 58,
+      "command": "SET_AUTOADD_CONFIG",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 59,
+      "command": "GET_AUTOADD_CONFIG",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 60,
+      "command": "GET_ALLOWED_REPEAT_FREQ",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 61,
+      "command": "SET_PATH_HASH_MODE",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 62,
+      "command": "SEND_CHANNEL_DATA",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 63,
+      "command": "SET_DEFAULT_FLOOD_SCOPE",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 64,
+      "command": "GET_DEFAULT_FLOOD_SCOPE",
+      "emitted_by_android_039": true,
+      "note": ""
+    },
+    {
+      "opcode": 65,
+      "command": "SEND_RAW_PACKET",
+      "emitted_by_android_039": false,
+      "note": ""
+    },
+    {
+      "opcode": 66,
+      "command": "RUN_CLI_COMMAND",
+      "emitted_by_android_039": false,
+      "note": ""
+    }
+  ]
+}

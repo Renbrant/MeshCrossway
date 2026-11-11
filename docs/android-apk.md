@@ -31,7 +31,7 @@ Heltec V3 and a Samsung S25 are used in development. Other phone, board and firm
 SHA-256: verify the downloaded `MeshCrossway-0.3.9.apk` against the release's `SHA256SUMS.txt` asset. The `SIGNING-CERT-SHA256.txt` asset records the permanent APK signing certificate fingerprint.
 ## MeshCore integration corrections in 0.3.9
 
-Addresses all ten defect groups from the 0.3.8 audit: verified settings, repeat-mode preservation, contact approval and deletion, UTF-8 names, signed TX power, firmware capability gates, contact activity, late ACKs, integer extra-ACK preservation and uninterrupted backlog draining. See the [correction and validation matrix](audits/MESHCORE_REMEDIATION_0.3.9.md). Physical-radio testing remains necessary; advanced official-app feature gaps remain separate.
+Improves the ten groups from the 0.3.8 audit. The [0.3.9 re-audit](audits/MESHCORE_INTEGRATION_AUDIT_0.3.9.md) confirms eight groups within the reviewed boundaries and identifies remaining contact synchronization and pre-write-callback recovery cases. See the [correction and validation matrix](audits/MESHCORE_REMEDIATION_0.3.9.md). Physical-radio testing remains necessary; advanced official-app feature gaps remain separate.
 
 ## Meshtastic settings corrections in 0.3.8
 

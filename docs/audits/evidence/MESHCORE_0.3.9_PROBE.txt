@@ -1,0 +1,23 @@
+PASS BOOTSTRAP | published production bootstrap
+PASS NUS-MTU | safe ATT payload budget
+PASS MC01-NO-OPTIMISM | queued name does not mutate confirmed values
+PASS MC01-ACK-NOT-CONFIRMATION | ACK still requires readback
+PASS MC01-READBACK | fresh matching SELF_INFO confirms the name
+PASS MC01-LOCAL-ERR | ordinary ERR keeps ready state and old value
+PASS MC02-REPEAT | repeat enabled remains enabled in SET
+PASS MC03-NO-BLIND-APPROVAL | discovery is not blindly approved
+FAIL R01-AUTOADD-RESOLUTION | manual approval is off; new advert must resolve actual radio membership, lookup queued=false
+FAIL R02-READD-AFTER-NOTFOUND | new advert after NOT_FOUND must allow a fresh contact lookup; actual=none
+PASS MC04-NAME-BYTES | 32 UTF8 bytes are rejected before SET
+PASS MC04-LEGACY-REPAIR | truncated legacy identity remains repairable
+PASS MC05-SIGNED-POWER | negative TX power remains signed
+PASS MC05-DYNAMIC-MAX | advertised 30 dBm maximum allows 27
+PASS MC06-GATES | old protocol sends neither stats nor scope
+PASS MC07-RECEIVER-TIME | receiver lastmod replaces sender advert time
+PASS MC07-LIVE-DM | live receipt advances activity
+PASS MC08-LATE-ACK | late matching ACK reconciles delivery
+PASS MC09-RAW-COUNT | unrelated edit retains extra ACK count three
+PASS MC10-DRAIN | binary item immediately advances backlog
+FAIL R03-PRECALLBACK-RECOVERY | SET selected for GATT handoff, callback/response not received: RadioService.release retention predicate=false, opcode=12
+PASS R03-POSTCALLBACK-CONTROL | post-write-callback recovery marker is present
+SUMMARY checks=22 failures=3
