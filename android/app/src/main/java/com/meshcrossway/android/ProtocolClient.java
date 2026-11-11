@@ -45,11 +45,16 @@ final class ProtocolClient {
 
         if(active!=null){if(now>=active.deadline){if(profile==RadioProfile.MESHCORE&&active.mcEdit!=null)mcAdmin.timeout(active.mcEdit);throw Wire.bad("Radio command timed out • reconnect to restore response ordering");}if(active.written&&active.replied)active=null;else return null;}
 
-        if(profile==RadioProfile.MESHCORE&&ready&&!mcDeferredContacts.isEmpty()&&commands.size()<8){String id=mcDeferredContacts.iterator().next();mcDeferredContacts.remove(id);requestMcContact(id);}
+        if(profile==RadioProfile.MESHCORE&&ready&&(mcAdmin.edit==null||mcAdmin.edit.deadline==Long.MAX_VALUE)&&!mcDeferredContacts.isEmpty()&&commands.size()<8){String id=mcDeferredContacts.iterator().next();mcDeferredContacts.remove(id);requestMcContact(id);}
         if(profile==RadioProfile.MESHCORE&&ready&&commands.isEmpty()&&(waiting||now-lastPoll>=20000)){waiting=false;lastPoll=now;queue(new byte[]{10},10,"");}
         if(profile==RadioProfile.MESHTASTIC&&ready&&commands.isEmpty()&&now-lastWrite>=30000)queue(new Wire.Out().bytes(7,Wire.EMPTY).array(),-1,"");
         if(commands.isEmpty())return null;active=commands.remove();active.deadline=now+30000;return active;
     }
+    /** Called only after GATT accepts a write; delivery and write completion remain unconfirmed. */
+    void writeAccepted(byte[] data){
+        if(profile==RadioProfile.MESHCORE&&active!=null&&Arrays.equals(active.data,data)&&active.mcEdit!=null&&!active.mcVerification)mcAdmin.written(active.mcEdit);
+    }
+    McAdmin.Edit pendingMcSave(){return mcAdmin.edit!=null&&mcAdmin.edit.dispatched?mcAdmin.edit:null;}
     void written(long now){lastWrite=now;admin.clock=now;if(profile==RadioProfile.MESHTASTIC&&active!=null){byte[] packet=Wire.bytes(Wire.fields(active.data),1);if(packet.length>0)admin.written(Wire.number(Wire.fields(packet),6,0));}if(active==null)throw Wire.bad("Unexpected write completion");if(profile==RadioProfile.MESHCORE&&active.mcEdit!=null)mcAdmin.written(active.mcEdit);if(!active.uid.isEmpty()&&!active.replied)listener.delivery(active.uid,"submitted");active.written=true;if(active.response<0)active.replied=true;}
     void receive(byte[] data,long now){admin.clock=now;if(profile==RadioProfile.MESHTASTIC)meshtastic(data,now);else meshcore(data,now);}
     private Node node(String id){Node old=nodes.get(id);Node n=old==null?new Node():new Node(old);n.id=id;return n;}
@@ -152,6 +157,7 @@ final class ProtocolClient {
     }
     private void deferMcContact(String id,boolean live){
         if(id.length()!=64)return;
+        mcFailedReads.remove(mcReadKey(join(new byte[]{30},Wire.unhex(id))));
         if(live){mcLiveContacts.put(id,System.currentTimeMillis()/1000);if(mcLiveContacts.size()>4096)mcLiveContacts.clear();}
         if(mcDeferredContacts.size()<4096)mcDeferredContacts.add(id);
     }
@@ -180,7 +186,13 @@ final class ProtocolClient {
         if((code==1||code==15)&&matched){
             current.replied=true;
             if(!current.uid.isEmpty()){listener.delivery(current.uid,"rejected");removeSent(current.uid);return;}
-            if(command==30&&data.length>1&&data[1]==2)retireMcContact(Wire.hex(Arrays.copyOfRange(current.data,1,33)));
+            if(command==30&&data.length>1&&data[1]==2){
+                String id=Wire.hex(Arrays.copyOfRange(current.data,1,33));boolean newerAdvert=mcDeferredContacts.contains(id);retireMcContact(id);
+                mcFailedReads.remove(mcReadKey(current.data));
+                if(newerAdvert)deferMcContact(id,false);
+                if(current.mcEdit!=null){mcAdmin.clock=now;mcAdmin.reply(current.mcEdit,current.mcVerification,data);return;}
+                mcStatus=mcDiscoveries.containsKey(id)?"Discovery checked — approval required":"Contact is no longer in the radio contact list";mcRevision++;return;
+            }
             if(current.mcEdit!=null){mcAdmin.clock=now;mcAdmin.reply(current.mcEdit,current.mcVerification,data);return;}
             if(command==31&&data.length>=2&&data[1]==2){nextMcChannel();return;}
             if(!ready)throw Wire.bad("MeshCore rejected bootstrap command "+command);
@@ -194,11 +206,14 @@ final class ProtocolClient {
         }
         else if(code==3&&((command==4&&contactsStarted)||matched)){
             mcContact(data,true);
+            if(command==30){mcStatus="Radio contact synchronized";if(mcError.startsWith("Radio rejected command 30 "))mcError="";}
             if(command==4){contactsSeen++;mcSyncKeys.add(Wire.hex(Arrays.copyOfRange(data,1,33)));description="MeshCore contacts "+contactsSeen+" / "+contactsExpected;current.deadline=now+30000;}
         }
         else if(code==138){
             if(data.length<148)throw Wire.bad("Truncated MeshCore discovery");String id=Wire.hex(Arrays.copyOfRange(data,1,33));
-            if(nodes.containsKey(id))deferMcContact(id,true);else{mcContact(data,false);Node n=mcDiscoveries.get(id);n.mcReceived=System.currentTimeMillis()/1000;n.heard=n.mcReceived;listener.node(n);}
+            if(!nodes.containsKey(id)){mcContact(data,false);Node n=mcDiscoveries.get(id);n.mcReceived=System.currentTimeMillis()/1000;n.heard=n.mcReceived;listener.node(n);}
+            // NEW_ADVERT is shared by successful auto-add and unapproved discovery. Read actual membership.
+            deferMcContact(id,true);
         }
         else if(code==143&&data.length>=33)retireMcContact(Wire.hex(Arrays.copyOfRange(data,1,33)));
         else if(code==144){mcFullContacts=true;mcError="Radio contacts are full. Review contacts before approving more devices.";mcRevision++;}
@@ -316,11 +331,11 @@ final class ProtocolClient {
         mcSettingsReady();byte[] raw=Wire.unhex(candidate.mcRaw);
         if(raw.length!=148||candidate.id.length()!=64||!candidate.id.equals(Wire.hex(Arrays.copyOfRange(raw,1,33))))throw Wire.bad("Wait for a fresh discovery before approving this contact");
         byte[] frame=raw.clone();frame[0]=9;byte[] get=join(new byte[]{30},Wire.unhex(candidate.id));
-        mcSave("contact approval",new byte[][]{frame},new McAdmin.Check(get,3,1,Wire.unhex(candidate.id),"Approved contact"));
+        mcSave("contact approval",new byte[][]{frame},new McAdmin.Check(get,3,1,Wire.unhex(candidate.id),"Approved contact"));mcDeferredContacts.remove(candidate.id);
     }
     void removeMcContact(String id){
         if(!nodes.containsKey(id))throw Wire.bad("This contact is not currently approved on the radio");byte[] key=Wire.unhex(id),get=join(new byte[]{30},key);
-        mcSave("contact removal",new byte[][]{join(new byte[]{15},key)},new McAdmin.Check(get,3,1,key,"Removed contact",true,false));
+        mcSave("contact removal",new byte[][]{join(new byte[]{15},key)},new McAdmin.Check(get,3,1,key,"Removed contact",true,false));mcDeferredContacts.remove(id);
     }
     List<Sent> mcRetainDeliveries(long now){
         List<Sent> retained=new ArrayList<>();for(Sent value:sent.values())if(value.ackKnown){value.retainUntil=now+600000;retained.add(value);}for(Sent value:mcLateSent.values())if(value.retainUntil>now)retained.add(value);return retained;
