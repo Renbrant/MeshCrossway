@@ -1,5 +1,8 @@
 # MeshCore integration re-audit — Android 0.3.9
 
+> Follow-up: [Android 0.3.10](MESHCORE_REMEDIATION_0.3.10.md) implements corrections and regression coverage for R01–R03. This document preserves the 0.3.9 findings and evidence.
+
+
 Audit date: **2026-11-10 (America/Denver)**. Result: **substantial improvement, with three remaining defect cases and incomplete official-app feature coverage**. Eight original defect groups are addressed within the reviewed boundaries; MC01 and MC03 remain partially addressed. The earlier statement that all ten groups were fully corrected was too broad.
 
 This audit changes documentation and audit-only fixtures. It does not publish another APK or alter Android 0.3.9.
