@@ -129,7 +129,7 @@ public final class RadioService extends Service {
     String supportReport(){
         List<SupportReport.Session> state=new ArrayList<>();for(Session s:sessions.values()){
             SupportReport.Session item=new SupportReport.Session();item.profile=s.profile;item.phase=SupportReport.phase(s.phase);item.mtu=s.mtu;item.retries=s.retries;item.frames=s.frames;item.connected=s.connected;item.ready=s.verified;item.queued=s.queue.size()+(s.active==null?0:1);
-            if(s.client!=null){ProtocolClient c=s.client;item.protocolQueued=c.commands.size()+(c.active==null?0:1);item.firmware=c.firmware;item.protocol=s.profile==RadioProfile.MESHCORE?c.firmwareCode:-1;item.pending=s.profile==RadioProfile.MESHCORE?c.mcAdmin.edit!=null:c.admin.edit!=null;item.approved=c.nodes.size();item.discovered=c.mcDiscoveries.size();}else item.pending=s.pendingMcEdit!=null||s.pendingMtEdit!=null;state.add(item);
+            if(s.client!=null){ProtocolClient c=s.client;item.protocolQueued=c.commands.size()+(c.active==null?0:1);item.firmware=c.firmware;item.protocol=s.profile==RadioProfile.MESHCORE?c.firmwareCode:-1;item.pending=s.profile==RadioProfile.MESHCORE?c.mcAdmin.edit!=null||!c.mcUnverifiedChannels.isEmpty():c.admin.edit!=null;item.approved=c.nodes.size();item.discovered=c.mcDiscoveries.size();}else item.pending=s.pendingMcEdit!=null||s.pendingMtEdit!=null;state.add(item);
         }
         String version="unknown";try{version=getPackageManager().getPackageInfo(getPackageName(),0).versionName;}catch(PackageManager.NameNotFoundException ignored){}
         return supportLog.render(version,Build.VERSION.SDK_INT,Build.MANUFACTURER+" "+Build.MODEL,state);

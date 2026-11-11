@@ -61,8 +61,6 @@ jobs:
             cat mt-storage-result.txt
             grep -F 'OK (1 test)' mt-storage-result.txt
   release:
-    # Publication is held while the channel send/readback guard is reviewed.
-    if: ${{ false }}
     needs: meshtastic-storage
     if: github.ref == 'refs/heads/baseline/android-0.1.0'
     runs-on: ubuntu-latest
@@ -158,12 +156,13 @@ jobs:
           Install over the existing MeshCrossway app and choose **Update**. The permanent signing certificate is unchanged. Local messages, settings, favorites, tracks and offline maps remain during an in-place update.
 
           - Announce your MeshCore presence explicitly: choose nearby zero-hop or mesh-wide flood. The app distinguishes radio acceptance from reception by others and limits repeated taps. Your radio's configured advert location policy is respected.
+          - Keep sends and key sharing blocked for an edited channel until its current values are verified, including readback failure and cancellation. Other channels and direct messages remain available.
           - Create private, hashtag or Public channels; edit or remove existing slots. Each save checks fresh channel name/key readback before confirmation. Existing message history is retained, and an old conversation cannot send with a replaced key.
           - Share confirmed channel settings using the official meshcore://channel/add link format. Import by pasting a link or opening it from another app, then review and save explicitly. Region-scoped imports require a matching configured default region; importing does not silently change that region.
           - Export or share a bounded support diagnostic containing app/Android/firmware versions, connection phases, numeric GATT/protocol events and queue counts. Messages, coordinates, personal names, Bluetooth addresses, keys, credentials and raw packet bodies are excluded.
           - Filter MeshCore contacts into Discovered, Approved and Historical, with counts, clear state labels, refresh and approval/removal actions. Offline labels explicitly describe saved state.
 
-          Validation: 96 MeshCore regressions, 87 user-feature checks and 206 Meshtastic conformance checks, protocol/browser/migration suites, API 29/35 device smoke and persistence fixtures, build, lint and permanent certificate verification. Physical-radio/RF acceptance and native-app interoperability testing remain necessary; this is a beta, not a claim of complete official-app parity.
+          Validation: 96 MeshCore regressions, 106 user-feature checks and 206 Meshtastic conformance checks, protocol/browser/migration suites, API 29/35 device smoke and persistence fixtures, build, lint and permanent certificate verification. Physical-radio/RF acceptance and native-app interoperability testing remain necessary; this is a beta, not a claim of complete official-app parity.
 
           MeshCore and Meshtastic remain independent. No automatic adverts, automatic approval, message retransmission or settings SET replay are enabled. Pending save and late-ACK recovery remain limited to service lifetime and reconnection to the same selected radio.
 

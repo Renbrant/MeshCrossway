@@ -16,7 +16,7 @@ final class ProtocolClient {
     final LinkedHashMap<String,Node> mcDiscoveries=new LinkedHashMap<>();
     final LinkedHashMap<Long,Sent> mcLateSent=new LinkedHashMap<>();
     final Set<String> mcSyncKeys=new HashSet<>(),mcSyncDeleted=new HashSet<>(),mcFailedReads=new HashSet<>(),mcDeferredContacts=new LinkedHashSet<>();
-    final Set<Integer> mcDeferredChannels=new TreeSet<>();
+    final Set<Integer> mcDeferredChannels=new TreeSet<>(),mcUnverifiedChannels=new HashSet<>();
     final Map<String,Long> mcLiveContacts=new HashMap<>();
     boolean mcScopeLoaded,mcRepeat,mcRepeatKnown,hasTxPower,mcNameNeedsRepair,mcBacklogDrained,mcFullContacts;int mcExtraAcks,mcManualFlags,mcMaxContacts;long mcRevision;
     byte[] mcSelf=Wire.EMPTY;
@@ -35,7 +35,7 @@ final class ProtocolClient {
         mcAdmin=new McAdmin(new McAdmin.Host(){
             public void enqueue(byte[] data,int response,McAdmin.Edit edit,boolean verification){queue(data,response,"");Command command=commands.peekLast();command.mcEdit=edit;command.mcVerification=verification;}
             public void cancel(McAdmin.Edit edit){commands.removeIf(command->command.mcEdit==edit);}
-            public void refresh(){if(ready){requestMcSelf();requestMcDevice();}}
+            public void refresh(){if(ready){requestMcSelf();requestMcDevice();for(int slot:mcUnverifiedChannels){mcFailedReads.remove(mcReadKey(new byte[]{31,(byte)slot}));mcDeferredChannels.add(slot);}}}
         });
         queue(profile==RadioProfile.MESHTASTIC?probe.meshtasticRequest():ProtocolProbe.meshcoreQuery(),profile==RadioProfile.MESHTASTIC?-1:13,"");}
     void cancel(String uid){commands.removeIf(c->c.uid.equals(uid));removeSent(uid);}
@@ -54,10 +54,10 @@ final class ProtocolClient {
     }
     /** Called only after GATT accepts a write; delivery and write completion remain unconfirmed. */
     void writeAccepted(byte[] data){
-        if(profile==RadioProfile.MESHCORE&&active!=null&&Arrays.equals(active.data,data)&&active.mcEdit!=null&&!active.mcVerification)mcAdmin.written(active.mcEdit);
+        if(profile==RadioProfile.MESHCORE&&active!=null&&Arrays.equals(active.data,data)&&active.mcEdit!=null&&!active.mcVerification){if((data[0]&255)==32&&data.length>=2)mcUnverifiedChannels.add(data[1]&255);mcAdmin.written(active.mcEdit);}
     }
     McAdmin.Edit pendingMcSave(){return mcAdmin.edit!=null&&mcAdmin.edit.dispatched?mcAdmin.edit:null;}
-    void written(long now){lastWrite=now;admin.clock=now;if(profile==RadioProfile.MESHTASTIC&&active!=null){byte[] packet=Wire.bytes(Wire.fields(active.data),1);if(packet.length>0)admin.written(Wire.number(Wire.fields(packet),6,0));}if(active==null)throw Wire.bad("Unexpected write completion");if(profile==RadioProfile.MESHCORE&&active.mcEdit!=null)mcAdmin.written(active.mcEdit);if(!active.uid.isEmpty()&&!active.replied)listener.delivery(active.uid,"submitted");active.written=true;if(active.response<0)active.replied=true;}
+    void written(long now){lastWrite=now;admin.clock=now;if(profile==RadioProfile.MESHTASTIC&&active!=null){byte[] packet=Wire.bytes(Wire.fields(active.data),1);if(packet.length>0)admin.written(Wire.number(Wire.fields(packet),6,0));}if(active==null)throw Wire.bad("Unexpected write completion");if(profile==RadioProfile.MESHCORE)writeAccepted(active.data);if(!active.uid.isEmpty()&&!active.replied)listener.delivery(active.uid,"submitted");active.written=true;if(active.response<0)active.replied=true;}
     void receive(byte[] data,long now){admin.clock=now;if(profile==RadioProfile.MESHTASTIC)meshtastic(data,now);else meshcore(data,now);}
     private Node node(String id){Node old=nodes.get(id);Node n=old==null?new Node():new Node(old);n.id=id;return n;}
     private void publish(Node n){if(!nodes.containsKey(n.id)&&nodes.size()>=4096)return;nodes.put(n.id,n);listener.node(n);}
@@ -228,7 +228,7 @@ final class ProtocolClient {
         }
         else if(code==18&&matched){
             if(data.length<50)throw Wire.bad("Truncated MeshCore channel");Channel channel=new Channel();channel.slot=data[1]&255;channel.name=mcName(data,2,32);byte[] secret=Arrays.copyOfRange(data,34,50);
-            channelKeys.put(channel.slot,secret);channel.identity=Wire.hash(secret);channel.enabled=!channel.name.isEmpty();channels.put(channel.slot,channel);listener.channel(channel);if(!ready)nextMcChannel();else mcRevision++;
+            channelKeys.put(channel.slot,secret);mcUnverifiedChannels.remove(channel.slot);channel.identity=Wire.hash(secret);channel.enabled=!channel.name.isEmpty();channels.put(channel.slot,channel);listener.channel(channel);if(!ready)nextMcChannel();else mcRevision++;
         }
         else if(code==0&&matched&&command==7){mcAdvertPending=false;mcStatus="Radio accepted the announcement; reception by others is not confirmed";mcAdvertStatus=mcStatus;mcRevision++;}
         else if(code==0&&matched&&!current.uid.isEmpty()){listener.delivery(current.uid,"radio accepted");removeSent(current.uid);}
@@ -295,16 +295,21 @@ final class ProtocolClient {
     }
     void refreshMcChannels(){mcSettingsReady();for(int slot=0;slot<channelCount;slot++){mcFailedReads.remove(mcReadKey(new byte[]{31,(byte)slot}));mcDeferredChannels.add(slot);}mcRevision++;}
     void requestMcChannel(int slot){if(slot<0||slot>=channelCount)throw Wire.bad("Invalid channel slot");mcRead(new byte[]{31,(byte)slot},18);}
+    boolean mcChannelChanging(int slot){
+        if(mcUnverifiedChannels.contains(slot))return true;
+        if(mcAdmin.edit!=null)for(McAdmin.Check check:mcAdmin.edit.checks)if(check.response==18&&check.request.length==2&&(check.request[0]&255)==31&&(check.request[1]&255)==slot)return true;
+        return false;
+    }
     void setMcChannel(int slot,String name,byte[] secret){
-        mcSettingsReady();if(slot<0||slot>=channelCount||!channels.containsKey(slot))throw Wire.bad("Read this channel slot before editing it");
+        mcSettingsReady();if(mcChannelChanging(slot))throw Wire.bad("Refresh this channel before editing it again");if(slot<0||slot>=channelCount||!channels.containsKey(slot))throw Wire.bad("Read this channel slot before editing it");
         if(name==null)throw Wire.bad("Enter a channel name");byte[] title=name.isEmpty()?Wire.EMPTY:Wire.text(name,31);if(secret==null||secret.length!=16)throw Wire.bad("Channel key must contain 16 bytes");
         boolean zero=true;for(byte b:secret)if(b!=0)zero=false;if(name.isEmpty()!=zero)throw Wire.bad("An empty channel needs both an empty name and an all-zero key");
         if(!name.isEmpty())for(Channel other:channels.values())if(other.slot!=slot&&other.enabled&&Arrays.equals(channelKeys.get(other.slot),secret))throw Wire.bad("This channel key is already configured in slot "+other.slot);
         byte[] frame=new byte[50];frame[0]=32;frame[1]=(byte)slot;System.arraycopy(title,0,frame,2,title.length);System.arraycopy(secret,0,frame,34,16);
-        mcSave(name.isEmpty()?"channel removal":"channel settings",new byte[][]{frame},new McAdmin.Check(new byte[]{31,(byte)slot},18,1,Arrays.copyOfRange(frame,1,50),"Channel name and key"));mcDeferredChannels.remove(slot);
+        mcSave(name.isEmpty()?"channel removal":"channel settings",new byte[][]{frame},new McAdmin.Check(new byte[]{31,(byte)slot},18,1,Arrays.copyOfRange(frame,1,50),"Channel name and key"));mcUnverifiedChannels.add(slot);mcDeferredChannels.remove(slot);
     }
     String shareMcChannel(int slot){
-        mcSettingsReady();Channel channel=channels.get(slot);byte[] key=channelKeys.get(slot);if(channel==null||!channel.enabled||key==null)throw Wire.bad("Read an enabled channel before sharing it");
+        mcSettingsReady();if(mcChannelChanging(slot))throw Wire.bad("Refresh this channel before sharing it");Channel channel=channels.get(slot);byte[] key=channelKeys.get(slot);if(channel==null||!channel.enabled||key==null)throw Wire.bad("Read an enabled channel before sharing it");
         if(mcSupportsScope()&&!mcScopeLoaded){requestDefaultFloodScope();throw Wire.bad("Wait for the default region to load before sharing");}
         return new McChannelLink(channel.name,key,mcSupportsScope()?defaultFloodScope:"").link();
     }
@@ -368,6 +373,7 @@ final class ProtocolClient {
     private static void put32(byte[] f,int i,int value){f[i]=(byte)value;f[i+1]=(byte)(value>>>8);f[i+2]=(byte)(value>>>16);f[i+3]=(byte)(value>>>24);}
     Message send(Target target,String text,long id,long now){
         if(!ready)throw Wire.bad("Wait for this radio to finish synchronization");if(sent.size()>=32||commands.size()>=20)throw Wire.bad("Wait for pending transmissions");
+        if(profile==RadioProfile.MESHCORE&&target.group&&mcChannelChanging(target.slot))throw Wire.bad("Wait for this channel change to be verified or refresh its current values");
         Channel c=channels.get(target.slot);Node n=nodes.get(target.peer);
         if(target.group&&(c==null||!c.enabled||!c.identity.equals(target.identity)))throw Wire.bad("Channel changed • select it again in Groups");
         if(!target.group&&(n==null||n.unmessagable))throw Wire.bad("Select a synchronized, message-capable node");

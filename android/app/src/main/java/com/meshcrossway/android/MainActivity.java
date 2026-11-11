@@ -951,7 +951,7 @@ public final class MainActivity extends Activity {
         for(int slot=0;slot<c.channelCount;slot++){
             Channel channel=c.channels.get(slot);final int index=slot;
             if(channel==null){menuRow(group(results),"refresh","Read slot "+slot,"Load this slot before editing",()->mcCommandFor(c,client->{client.retryMcReads();client.requestMcChannel(index);}),RADIO_MC);continue;}
-            menuRow(group(results),"channels",channel.enabled?channel.name:"Empty slot "+slot,"Slot "+slot+(channel.enabled?" · tap to edit, share or remove":" · tap to configure"),()->mcChannelActions(c,index),RADIO_MC);
+            menuRow(group(results),"channels",channel.enabled?channel.name:"Empty slot "+slot,"Slot "+slot+(c.mcChannelChanging(slot)?" · needs verification; tap to refresh":channel.enabled?" · tap to edit, share or remove":" · tap to configure"),()->mcChannelActions(c,index),RADIO_MC);
         }
         results.addView(text("A hashtag channel can be joined by anyone who knows its name. Private channels use a randomly generated key. Radio changes are confirmed by reading the channel back.",13,MUTED));
     }
@@ -960,7 +960,9 @@ public final class MainActivity extends Activity {
         try{int slot=freeMcSlot(c);new AlertDialog.Builder(this).setTitle("Create MeshCore channel").setItems(new String[]{"Private channel","Hashtag channel","Public channel"},(d,i)->editMcChannel(c,slot,i,null)).setNegativeButton("Cancel",null).show();}catch(IllegalArgumentException e){Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show();}
     }
     private void mcChannelActions(ProtocolClient c,int slot){
-        Channel ch=c.channels.get(slot);if(ch==null)return;if(!ch.enabled){editMcChannel(c,slot,0,null);return;}
+        Channel ch=c.channels.get(slot);if(ch==null)return;
+        if(c.mcChannelChanging(slot)){new AlertDialog.Builder(this).setTitle("Refresh this channel").setMessage("The channel's current values have not been confirmed. Read them before sending, editing or sharing.").setNegativeButton("Cancel",null).setPositiveButton("Refresh",(d,w)->mcCommandFor(c,client->{client.retryMcReads();client.requestMcChannel(slot);})).show();return;}
+        if(!ch.enabled){editMcChannel(c,slot,0,null);return;}
         new AlertDialog.Builder(this).setTitle(ch.name).setItems(new String[]{"Open conversation","Edit channel","Share channel link","Remove channel"},(d,i)->{
             if(mcClient()!=c){Toast.makeText(this,"Radio changed; reopen this channel",Toast.LENGTH_LONG).show();return;}
             if(i==0)openChat(RadioProfile.MESHCORE,radio(RadioProfile.MESHCORE),Target.channel(ch));
