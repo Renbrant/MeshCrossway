@@ -1,5 +1,8 @@
 # MeshCore integration corrections — Android 0.3.9
 
+> Re-audit: see the [Android 0.3.9 integration re-audit](MESHCORE_INTEGRATION_AUDIT_0.3.9.md) for the current assessment, including three remaining cases.
+
+
 Addresses MC01–MC10 from the [0.3.8 audit](MESHCORE_INTEGRATION_AUDIT_0.3.8.md). The historical audit, opcode inventory and its pinned failing probe remain unchanged. This release adds a separate regression suite against the corrected production implementation.
 
 ## Correction matrix
