@@ -28,7 +28,7 @@ Names allow up to 31 UTF-8 bytes. A loaded empty slot is selected for creation. 
 
 A save sends SET_CHANNEL and reads back the actual slot/name/key, plus the radio identity. An ACK alone does not confirm the change. Unused bytes after the name's null terminator are ignored; the key is still compared exactly. A mismatched readback shows actual values with an unconfirmed result. Ordinary command errors keep the connection alive.
 
-Channel removal clears name and key on the radio. Saved messages remain on the phone. Renaming retains the channel identity; changing its key changes the current conversation identity. Old conversation targets cannot transmit with a replaced key. Duplicate active keys across slots are rejected to prevent ambiguous reception. **Refresh channels and region** reads slots sequentially with bounded queues.
+Channel removal clears name and key on the radio. Saved messages remain on the phone. Renaming retains the channel identity; changing its key changes the current conversation identity. Old conversation targets cannot transmit with a replaced key. Sending and key sharing for an edited slot are blocked until current values are confirmed. A readback error or cancellation keeps that slot protected until a fresh channel read succeeds; unrelated channels and direct messages remain usable. Duplicate active keys across slots are rejected to prevent ambiguous reception. **Refresh channels and region** reads slots sequentially with bounded queues.
 
 ## Share or import a channel
 
@@ -61,10 +61,10 @@ Excluded: message text, coordinates/tracks, user/contact/channel names, Bluetoot
 
 ## Validation and limits
 
-[Implementation PR #226](https://github.com/Renbrant/MeshCrossway/pull/226) contains source and CI evidence.
+[Implementation PR #226](https://github.com/Renbrant/MeshCrossway/pull/226) and the [channel-send guard PR #228](https://github.com/Renbrant/MeshCrossway/pull/228) contain source and CI evidence.
 
 - Existing **96 MeshCore** regression checks and **206 Meshtastic** conformance checks pass locally.
-- **87 user-feature checks** cover official channel vectors/URI round trips, malformed and duplicate parameters, name/key limits, announcements, cooldown/error handling, readback/padding/key mismatch, key replacement/removal safety, bounded refresh, recovery without SET replay, contact states and diagnostic privacy/bounds.
+- **106 user-feature checks** cover official channel vectors/URI round trips, malformed and duplicate parameters, name/key limits, announcements, cooldown/error handling, readback/padding/key mismatch, key replacement/removal safety, sends queued during edits, readback-error/cancellation guards, bounded refresh, recovery without SET replay, contact states and diagnostic privacy/bounds.
 - Existing protocol/browser/migration fixtures pass. Gradle's JUnit wrapper runs the feature tests too.
 - API 29/35 instrumentation adds channel manager/deep-link/diagnostic compatibility checks and persistence checks that channel replacement/removal retains message history. Build, lint, emulator and permanent signing checks gate the [release workflow](https://github.com/Renbrant/MeshCrossway/actions/workflows/android-permanent-release.yml).
 

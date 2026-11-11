@@ -31,7 +31,7 @@ Heltec V3 and a Samsung S25 are used in development. Other phone, board and firm
 SHA-256: verify the downloaded `MeshCrossway-0.4.0.apk` against the release's `SHA256SUMS.txt` asset. The `SIGNING-CERT-SHA256.txt` asset records the permanent APK signing certificate fingerprint.
 ## MeshCore everyday tools in 0.4.0
 
-Announce your presence nearby or across the mesh; create private, hashtag or Public channels; edit/remove channels with verified readback; share and import official MeshCore channel links; filter discovered, approved and historical contacts; and save/share a bounded support diagnostic that excludes private content. See the [user guide and validation details](android-meshcore-everyday-tools.md). The package includes 96 MeshCore regression checks, 87 new feature checks and the existing 206 Meshtastic conformance checks. Physical-radio acceptance remains necessary.
+Announce your presence nearby or across the mesh; create private, hashtag or Public channels; edit/remove channels with verified readback; share and import official MeshCore channel links; filter discovered, approved and historical contacts; and save/share a bounded support diagnostic that excludes private content. See the [user guide and validation details](android-meshcore-everyday-tools.md). The package includes 96 MeshCore regression checks, 106 new feature checks and the existing 206 Meshtastic conformance checks. Physical-radio acceptance remains necessary.
 
 ## MeshCore contact and reconnect corrections in 0.3.10
 
