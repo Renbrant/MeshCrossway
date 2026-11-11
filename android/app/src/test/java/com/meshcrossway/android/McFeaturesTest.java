@@ -15,6 +15,7 @@ public final class McFeaturesTest {
     static void links(){
         McChannelLink shared=new McChannelLink("Équipe + 1",McChannelLink.secret(McChannelLink.PUBLIC_KEY),"#front range");McChannelLink parsed=McChannelLink.parse(shared.link());
         verify(parsed.name.equals(shared.name)&&parsed.scope.equals(shared.scope)&&Arrays.equals(parsed.secret,shared.secret),"Official URI round trip preserves Unicode, plus sign, scope and key");
+        bad(()->shared.requireScope(false,true,shared.scope),"Scoped import needs supported firmware");bad(()->shared.requireScope(true,false,shared.scope),"Scoped import waits for loaded region");bad(()->shared.requireScope(true,true,"#other"),"Scoped import never silently changes regions");shared.requireScope(true,true,shared.scope);verify(true,"Matching configured scope is accepted");new McChannelLink("Unscoped",shared.secret,"").requireScope(false,false,"#other");verify(true,"Unscoped import does not change the radio default");
         verify(McChannelLink.parse("meshcore://channel/add?name=Public&secret="+McChannelLink.PUBLIC_KEY).name.equals("Public"),"Official documented Public channel link imports");
         verify(Wire.hex(McChannelLink.hashtag("#test").secret).equals("9cd8fcf22a47333b591d96a2b848b73f"),"Hashtag key matches pinned official SHA256 vector");
         McChannelLink first=McChannelLink.privateChannel("Private"),second=McChannelLink.privateChannel("Private");verify(first.secret.length==16&&!Arrays.equals(first.secret,second.secret),"Private channels receive independent random keys");

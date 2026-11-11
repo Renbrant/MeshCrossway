@@ -979,7 +979,7 @@ public final class MainActivity extends Activity {
     private void importMcChannel(){
         EditText input=new EditText(this);input.setTextColor(WHITE);input.setHint("meshcore://channel/add?…");input.setText(pendingChannelLink);input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(4096)});
         AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Import MeshCore channel").setView(input).setNegativeButton("Cancel",null).setPositiveButton("Review",null).create();
-        dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{try{McChannelLink value=McChannelLink.parse(input.getText().toString());ProtocolClient c=mcClient();if(c==null||!c.ready)throw Wire.bad("Connect and synchronize MeshCore before importing");for(Channel existing:c.channels.values())if(existing.enabled&&Arrays.equals(c.channelKeys.get(existing.slot),value.secret)){dialog.dismiss();mcChannelActions(c,existing.slot);return;}int slot=freeMcSlot(c);dialog.dismiss();editMcChannel(c,slot,4,value);}catch(IllegalArgumentException e){input.setError(e.getMessage());}}));dialog.show();
+        dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{try{McChannelLink value=McChannelLink.parse(input.getText().toString());ProtocolClient c=mcClient();if(c==null||!c.ready)throw Wire.bad("Connect and synchronize MeshCore before importing");value.requireScope(c.mcSupportsScope(),c.mcScopeLoaded,c.defaultFloodScope);for(Channel existing:c.channels.values())if(existing.enabled&&Arrays.equals(c.channelKeys.get(existing.slot),value.secret)){dialog.dismiss();mcChannelActions(c,existing.slot);return;}int slot=freeMcSlot(c);dialog.dismiss();editMcChannel(c,slot,4,value);}catch(IllegalArgumentException e){input.setError(e.getMessage());}}));dialog.show();
     }
     private void editMcChannel(ProtocolClient expected,int slot,int mode,McChannelLink imported){
         if(mcClient()!=expected||!expected.ready){Toast.makeText(this,"Radio changed; reopen channel settings",Toast.LENGTH_LONG).show();return;}
@@ -996,7 +996,7 @@ public final class MainActivity extends Activity {
         dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{try{
             String label=name.getText().toString().trim();McChannelLink value=mode==1?McChannelLink.hashtag(label):new McChannelLink(label,mode==2?McChannelLink.secret(McChannelLink.PUBLIC_KEY):McChannelLink.secret(key.getText().toString()),imported==null?"":imported.scope);
             if(mcClient()!=expected||expected.channels.get(slot)!=before)throw Wire.bad("Radio or channel changed; reopen this editor");
-            if(!value.scope.isEmpty()&&(!expected.mcSupportsScope()||!expected.mcScopeLoaded||!value.scope.equals(expected.defaultFloodScope)))throw Wire.bad("Configure the matching default region before importing this channel");
+            value.requireScope(expected.mcSupportsScope(),expected.mcScopeLoaded,expected.defaultFloodScope);
             if(mcCommandFor(expected,c->c.setMcChannel(slot,value.name,value.secret))){pendingChannelLink="";dialog.dismiss();}
         }catch(IllegalArgumentException e){name.setError(e.getMessage());}}));dialog.show();
     }

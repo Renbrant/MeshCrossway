@@ -161,7 +161,7 @@ jobs:
           - Export or share a bounded support diagnostic containing app/Android/firmware versions, connection phases, numeric GATT/protocol events and queue counts. Messages, coordinates, personal names, Bluetooth addresses, keys, credentials and raw packet bodies are excluded.
           - Filter MeshCore contacts into Discovered, Approved and Historical, with counts, clear state labels, refresh and approval/removal actions. Offline labels explicitly describe saved state.
 
-          Validation: 96 MeshCore regressions, 82 user-feature checks and 206 Meshtastic conformance checks, protocol/browser/migration suites, API 29/35 device smoke and persistence fixtures, build, lint and permanent certificate verification. Physical-radio/RF acceptance and native-app interoperability testing remain necessary; this is a beta, not a claim of complete official-app parity.
+          Validation: 96 MeshCore regressions, 87 user-feature checks and 206 Meshtastic conformance checks, protocol/browser/migration suites, API 29/35 device smoke and persistence fixtures, build, lint and permanent certificate verification. Physical-radio/RF acceptance and native-app interoperability testing remain necessary; this is a beta, not a claim of complete official-app parity.
 
           MeshCore and Meshtastic remain independent. No automatic adverts, automatic approval, message retransmission or settings SET replay are enabled. Pending save and late-ACK recovery remain limited to service lifetime and reconnection to the same selected radio.
 

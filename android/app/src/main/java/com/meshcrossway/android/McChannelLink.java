@@ -21,6 +21,7 @@ final class McChannelLink {
         if(!name.startsWith("#")||name.length()<2)throw Wire.bad("Hashtag channel names must start with # and include a topic");
         try{return new McChannelLink(name,Arrays.copyOf(MessageDigest.getInstance("SHA-256").digest(Wire.text(name,31)),16),"");}catch(NoSuchAlgorithmException e){throw new IllegalStateException(e);}
     }
+    void requireScope(boolean supported,boolean loaded,String current){if(!scope.isEmpty()&&(!supported||!loaded||!scope.equals(current)))throw Wire.bad("Configure the matching default region before importing this channel");}
     String link(){return "meshcore://channel/add?name="+encode(name)+"&secret="+Wire.hex(secret)+(scope.isEmpty()?"":"&region_scope="+encode(scope));}
     static String encode(String text){try{return URLEncoder.encode(text,"UTF-8");}catch(java.io.UnsupportedEncodingException e){throw new IllegalStateException(e);}}
     static McChannelLink parse(String text){
