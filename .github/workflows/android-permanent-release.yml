@@ -61,6 +61,8 @@ jobs:
             cat mt-storage-result.txt
             grep -F 'OK (1 test)' mt-storage-result.txt
   release:
+    # Publication is held while the channel send/readback guard is reviewed.
+    if: ${{ false }}
     needs: meshtastic-storage
     if: github.ref == 'refs/heads/baseline/android-0.1.0'
     runs-on: ubuntu-latest
