@@ -15,6 +15,7 @@ final class McAdmin {
         Check(byte[] request,int response,int offset,byte[] expected,String label,boolean missing,boolean time){this.request=request;this.response=response;this.offset=offset;this.expected=expected;this.label=label;this.missing=missing;this.time=time;}
         boolean matches(byte[] frame){
             if(missing)return false;
+            if(response==18&&offset==1&&expected.length==49){return frame.length>=50&&frame[1]==expected[0]&&Wire.fixedText(frame,2,32).equals(Wire.fixedText(expected,1,32))&&Arrays.equals(Arrays.copyOfRange(frame,34,50),Arrays.copyOfRange(expected,33,49));}
             if(time){if(frame.length<offset+4)return false;long actual=Wire.u32(frame,offset),wanted=Wire.u32(expected,0);return actual>=wanted&&actual<=wanted+60;}
             if(response==5&&offset==36&&expected.length==8){if(frame.length<44)return false;for(int i=0;i<8;i+=4)if(Math.abs((long)(int)Wire.u32(frame,offset+i)-(int)Wire.u32(expected,i))>1)return false;return true;}
             if(response==5&&offset==48&&expected.length==10){if(frame.length<58)return false;for(int i=0;i<8;i+=4)if(Math.abs(Wire.u32(frame,offset+i)-Wire.u32(expected,i))>1)return false;return frame[56]==expected[8]&&frame[57]==expected[9];}
