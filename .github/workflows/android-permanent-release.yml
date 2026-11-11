@@ -14,7 +14,7 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.3.10'
+        default: '0.4.0'
         type: string
 permissions:
   contents: write
@@ -87,7 +87,7 @@ jobs:
       - name: Verify requested version and permanent signing credentials
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.10' }}
+          REQUESTED: ${{ inputs.version || '0.4.0' }}
         run: |
           set -euo pipefail
           [[ "$REQUESTED" =~ ^0\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version"; exit 1; }
@@ -116,7 +116,7 @@ jobs:
       - name: Verify APK signature identity and version before publishing
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.10' }}
+          REQUESTED: ${{ inputs.version || '0.4.0' }}
         run: |
           set -euo pipefail
           APK=android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
@@ -136,7 +136,7 @@ jobs:
       - name: Publish only if no version tag or release exists
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.10' }}
+          REQUESTED: ${{ inputs.version || '0.4.0' }}
         run: |
           set -euo pipefail
           CURRENT_HEAD=$(git ls-remote origin refs/heads/baseline/android-0.1.0 | cut -f1)
@@ -151,24 +151,26 @@ jobs:
             exit 1
           fi
           cat > release-notes.md <<EOF
-          ## MeshCrossway Android $REQUESTED — MeshCore contact and reconnect fixes
+          ## MeshCrossway Android $REQUESTED — MeshCore everyday tools
 
-          Install over your existing MeshCrossway app and choose **Update**. The permanent signing certificate is unchanged. Local messages, settings, favorites, tracks and offline maps are retained during an in-place update.
+          Install over the existing MeshCrossway app and choose **Update**. The permanent signing certificate is unchanged. Local messages, settings, favorites, tracks and offline maps remain during an in-place update.
 
-          - Resolve actual radio membership after new contact adverts. A contact auto-added by the radio becomes available without redundant manual approval; excluded/unapproved discoveries remain pending. No automatic ADD command is sent.
-          - Treat contact NOT_FOUND as a normal lifecycle result. Fresh adverts can resolve re-added contacts without reconnecting. Repeated adverts coalesce, and a newer advert is not lost when an older lookup finishes.
-          - Preserve pending verification as soon as Bluetooth accepts a settings write, including a disconnect before the write callback/response. Reconnection checks actual values with GET commands and never replays the SET automatically.
+          - Announce your MeshCore presence explicitly: choose nearby zero-hop or mesh-wide flood. The app distinguishes radio acceptance from reception by others and limits repeated taps. Your radio's configured advert location policy is respected.
+          - Create private, hashtag or Public channels; edit or remove existing slots. Each save checks fresh channel name/key readback before confirmation. Existing message history is retained, and an old conversation cannot send with a replaced key.
+          - Share confirmed channel settings using the official meshcore://channel/add link format. Import by pasting a link or opening it from another app, then review and save explicitly. Region-scoped imports require a matching configured default region; importing does not silently change that region.
+          - Export or share a bounded support diagnostic containing app/Android/firmware versions, connection phases, numeric GATT/protocol events and queue counts. Messages, coordinates, personal names, Bluetooth addresses, keys, credentials and raw packet bodies are excluded.
+          - Filter MeshCore contacts into Discovered, Approved and Historical, with counts, clear state labels, refresh and approval/removal actions. Offline labels explicitly describe saved state.
 
-          Validation includes 96 MeshCore regression checks, 206 Meshtastic conformance checks, existing protocol/browser/migration suites, Android API 29/35 smoke and storage fixtures, build, lint and permanent certificate verification. Tests cover successful/unsuccessful membership lookup, manual approval, re-addition, interrupted writes and readback mismatch. Physical radio and RF testing remain necessary; these are bounded regression results, not a claim of full official-app parity.
+          Validation: 96 MeshCore regressions, 87 user-feature checks and 206 Meshtastic conformance checks, protocol/browser/migration suites, API 29/35 device smoke and persistence fixtures, build, lint and permanent certificate verification. Physical-radio/RF acceptance and native-app interoperability testing remain necessary; this is a beta, not a claim of complete official-app parity.
 
-          Prior 0.3.9 settings/readback, UTF-8 names, signed TX power, repeat-mode preservation and bounded late-ACK improvements are retained. Pending verification and late-ACK correlation survive BLE reconnection only while the service remains alive and the same radio is selected. Late-ACK retention remains bounded to ten minutes; no automatic message retransmission is enabled.
+          MeshCore and Meshtastic remain independent. No automatic adverts, automatic approval, message retransmission or settings SET replay are enabled. Pending save and late-ACK recovery remain limited to service lifetime and reconnection to the same selected radio.
 
-          The APK checksum and permanent certificate fingerprint are attached to this release.
+          The APK checksum and permanent certificate fingerprint are attached.
           EOF
           gh release create "$TAG" "release/MeshCrossway-$REQUESTED.apk" \
              release/SHA256SUMS.txt release/SIGNING-CERT-SHA256.txt \
              --target "$GITHUB_SHA" \
-             --title "Android $REQUESTED — MeshCore contact and reconnect fixes" \
+             --title "Android $REQUESTED — MeshCore everyday tools" \
              --notes-file release-notes.md --prerelease --latest=false
       - name: Remove ephemeral keystore
         if: always()

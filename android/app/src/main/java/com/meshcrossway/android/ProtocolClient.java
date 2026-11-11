@@ -16,10 +16,11 @@ final class ProtocolClient {
     final LinkedHashMap<String,Node> mcDiscoveries=new LinkedHashMap<>();
     final LinkedHashMap<Long,Sent> mcLateSent=new LinkedHashMap<>();
     final Set<String> mcSyncKeys=new HashSet<>(),mcSyncDeleted=new HashSet<>(),mcFailedReads=new HashSet<>(),mcDeferredContacts=new LinkedHashSet<>();
+    final Set<Integer> mcDeferredChannels=new TreeSet<>();
     final Map<String,Long> mcLiveContacts=new HashMap<>();
     boolean mcScopeLoaded,mcRepeat,mcRepeatKnown,hasTxPower,mcNameNeedsRepair,mcBacklogDrained,mcFullContacts;int mcExtraAcks,mcManualFlags,mcMaxContacts;long mcRevision;
     byte[] mcSelf=Wire.EMPTY;
-    String mcStatus="",mcError="";
+    String mcStatus="",mcError="",mcAdvertStatus="";boolean mcAdvertPending;long mcAdvertLast=-30000;
     final RadioProfile profile;final Listener listener;final ProtocolProbe probe;
     final LinkedHashMap<String,Node> nodes=new LinkedHashMap<>();final TreeMap<Integer,Channel> channels=new TreeMap<>();
     final ArrayDeque<Command> commands=new ArrayDeque<>();final LinkedHashMap<Long,Sent> sent=new LinkedHashMap<>();
@@ -46,6 +47,7 @@ final class ProtocolClient {
         if(active!=null){if(now>=active.deadline){if(profile==RadioProfile.MESHCORE&&active.mcEdit!=null)mcAdmin.timeout(active.mcEdit);throw Wire.bad("Radio command timed out • reconnect to restore response ordering");}if(active.written&&active.replied)active=null;else return null;}
 
         if(profile==RadioProfile.MESHCORE&&ready&&(mcAdmin.edit==null||mcAdmin.edit.deadline==Long.MAX_VALUE)&&!mcDeferredContacts.isEmpty()&&commands.size()<8){String id=mcDeferredContacts.iterator().next();mcDeferredContacts.remove(id);requestMcContact(id);}
+        if(profile==RadioProfile.MESHCORE&&ready&&(mcAdmin.edit==null||mcAdmin.edit.deadline==Long.MAX_VALUE)&&!mcDeferredChannels.isEmpty()&&commands.size()<8){int slot=mcDeferredChannels.iterator().next();mcDeferredChannels.remove(slot);requestMcChannel(slot);}
         if(profile==RadioProfile.MESHCORE&&ready&&commands.isEmpty()&&(waiting||now-lastPoll>=20000)){waiting=false;lastPoll=now;queue(new byte[]{10},10,"");}
         if(profile==RadioProfile.MESHTASTIC&&ready&&commands.isEmpty()&&now-lastWrite>=30000)queue(new Wire.Out().bytes(7,Wire.EMPTY).array(),-1,"");
         if(commands.isEmpty())return null;active=commands.remove();active.deadline=now+30000;return active;
@@ -186,6 +188,7 @@ final class ProtocolClient {
         if((code==1||code==15)&&matched){
             current.replied=true;
             if(!current.uid.isEmpty()){listener.delivery(current.uid,"rejected");removeSent(current.uid);return;}
+            if(current.data[0]==7){mcAdvertPending=false;mcAdvertLast=-30000;mcError="Radio rejected the announcement";mcAdvertStatus=mcError;mcRevision++;return;}
             if(command==30&&data.length>1&&data[1]==2){
                 String id=Wire.hex(Arrays.copyOfRange(current.data,1,33));boolean newerAdvert=mcDeferredContacts.contains(id);retireMcContact(id);
                 mcFailedReads.remove(mcReadKey(current.data));
@@ -194,7 +197,7 @@ final class ProtocolClient {
                 mcStatus=mcDiscoveries.containsKey(id)?"Discovery checked — approval required":"Contact is no longer in the radio contact list";mcRevision++;return;
             }
             if(current.mcEdit!=null){mcAdmin.clock=now;mcAdmin.reply(current.mcEdit,current.mcVerification,data);return;}
-            if(command==31&&data.length>=2&&data[1]==2){nextMcChannel();return;}
+            if(command==31&&data.length>=2&&data[1]==2&&!ready){nextMcChannel();return;}
             if(!ready)throw Wire.bad("MeshCore rejected bootstrap command "+command);
             mcFailedReads.add(mcReadKey(current.data));mcError="Radio rejected command "+command+" (code "+(data.length>1?data[1]&255:code)+")";mcRevision++;return;
         }
@@ -225,8 +228,9 @@ final class ProtocolClient {
         }
         else if(code==18&&matched){
             if(data.length<50)throw Wire.bad("Truncated MeshCore channel");Channel channel=new Channel();channel.slot=data[1]&255;channel.name=mcName(data,2,32);byte[] secret=Arrays.copyOfRange(data,34,50);
-            channelKeys.put(channel.slot,secret);channel.identity=Wire.hash(secret);channel.enabled=!channel.name.isEmpty();channels.put(channel.slot,channel);listener.channel(channel);nextMcChannel();
+            channelKeys.put(channel.slot,secret);channel.identity=Wire.hash(secret);channel.enabled=!channel.name.isEmpty();channels.put(channel.slot,channel);listener.channel(channel);if(!ready)nextMcChannel();else mcRevision++;
         }
+        else if(code==0&&matched&&command==7){mcAdvertPending=false;mcStatus="Radio accepted the announcement; reception by others is not confirmed";mcAdvertStatus=mcStatus;mcRevision++;}
         else if(code==0&&matched&&!current.uid.isEmpty()){listener.delivery(current.uid,"radio accepted");removeSent(current.uid);}
         else if(code==6&&matched){
             if(data.length<10)throw Wire.bad("Truncated send acknowledgement");for(Sent pending:sent.values())if(pending.uid.equals(current.uid)){pending.ack=Wire.u32(data,2);pending.ackKnown=true;pending.deadline=now+Math.max(5000,Math.min(600000,Wire.u32(data,6)));listener.delivery(pending.uid,"radio accepted");}
@@ -285,6 +289,25 @@ final class ProtocolClient {
     private McAdmin.Check mcSelfCheck(int offset,byte[] expected,String label){return new McAdmin.Check(ProtocolProbe.meshcoreAppStart(),5,offset,expected,label);}
     private McAdmin.Check mcDeviceCheck(int offset,byte[] expected,String label){return new McAdmin.Check(ProtocolProbe.meshcoreQuery(),13,offset,expected,label);}
     private void mcSave(String title,byte[][] writes,McAdmin.Check... checks){mcSettingsReady();mcError="";List<McAdmin.Check> all=new ArrayList<>(Arrays.asList(checks));all.add(mcSelfCheck(4,Wire.unhex(publicKey),"Radio identity"));mcAdmin.save(new McAdmin.Edit(title,writes,all.toArray(new McAdmin.Check[0])));}
+    void announceSelf(boolean flood){
+        mcSettingsReady();if(mcAdvertPending)throw Wire.bad("An announcement is already pending");if(mcAdmin.clock-mcAdvertLast<30000)throw Wire.bad("Wait 30 seconds before announcing again");
+        queue(new byte[]{7,(byte)(flood?1:0)},0,"");mcAdvertLast=mcAdmin.clock;mcAdvertPending=true;mcError="";mcStatus="Announcement queued — waiting for the radio";mcAdvertStatus=mcStatus;mcRevision++;
+    }
+    void refreshMcChannels(){mcSettingsReady();for(int slot=0;slot<channelCount;slot++){mcFailedReads.remove(mcReadKey(new byte[]{31,(byte)slot}));mcDeferredChannels.add(slot);}mcRevision++;}
+    void requestMcChannel(int slot){if(slot<0||slot>=channelCount)throw Wire.bad("Invalid channel slot");mcRead(new byte[]{31,(byte)slot},18);}
+    void setMcChannel(int slot,String name,byte[] secret){
+        mcSettingsReady();if(slot<0||slot>=channelCount||!channels.containsKey(slot))throw Wire.bad("Read this channel slot before editing it");
+        if(name==null)throw Wire.bad("Enter a channel name");byte[] title=name.isEmpty()?Wire.EMPTY:Wire.text(name,31);if(secret==null||secret.length!=16)throw Wire.bad("Channel key must contain 16 bytes");
+        boolean zero=true;for(byte b:secret)if(b!=0)zero=false;if(name.isEmpty()!=zero)throw Wire.bad("An empty channel needs both an empty name and an all-zero key");
+        if(!name.isEmpty())for(Channel other:channels.values())if(other.slot!=slot&&other.enabled&&Arrays.equals(channelKeys.get(other.slot),secret))throw Wire.bad("This channel key is already configured in slot "+other.slot);
+        byte[] frame=new byte[50];frame[0]=32;frame[1]=(byte)slot;System.arraycopy(title,0,frame,2,title.length);System.arraycopy(secret,0,frame,34,16);
+        mcSave(name.isEmpty()?"channel removal":"channel settings",new byte[][]{frame},new McAdmin.Check(new byte[]{31,(byte)slot},18,1,Arrays.copyOfRange(frame,1,50),"Channel name and key"));mcDeferredChannels.remove(slot);
+    }
+    String shareMcChannel(int slot){
+        mcSettingsReady();Channel channel=channels.get(slot);byte[] key=channelKeys.get(slot);if(channel==null||!channel.enabled||key==null)throw Wire.bad("Read an enabled channel before sharing it");
+        if(mcSupportsScope()&&!mcScopeLoaded){requestDefaultFloodScope();throw Wire.bad("Wait for the default region to load before sharing");}
+        return new McChannelLink(channel.name,key,mcSupportsScope()?defaultFloodScope:"").link();
+    }
     void setName(String value){byte[] name=Wire.text(value,31);mcSave("node name",new byte[][]{join(new byte[]{8},name)},mcSelfCheck(58,name,"Node name"));}
     void setLocation(double lat,double lon){
         if(!Double.isFinite(lat)||!Double.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)throw Wire.bad("Enter finite coordinates within latitude ±90 and longitude ±180");
