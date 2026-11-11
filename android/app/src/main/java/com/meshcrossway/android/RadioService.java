@@ -301,7 +301,7 @@ public final class RadioService extends Service {
         if(s.retry!=null)handler.removeCallbacks(s.retry);s.retry=null;
         if(s.rssiPoll!=null)handler.removeCallbacks(s.rssiPoll);
         s.rssiPoll=null;s.rssiPending=false;s.rssiCurrentLink=false;
-        if(s.client!=null){history.uncertain(s.profile,s.address);if(s.profile==RadioProfile.MESHTASTIC){s.pendingMtEdit=s.client.admin.edit!=null&&s.client.admin.edit.writeId!=0?s.client.admin.edit:null;s.pendingMtAddress=s.address;}else{s.pendingMcEdit=s.client.mcAdmin.edit!=null&&s.client.mcAdmin.edit.dispatched?s.client.mcAdmin.edit:null;s.pendingMcAddress=s.address;s.pendingMcDeliveries.clear();s.pendingMcDeliveries.addAll(s.client.mcRetainDeliveries(now()));}}s.client=null;s.transportReady=false;s.persisting=false;
+        if(s.client!=null){history.uncertain(s.profile,s.address);if(s.profile==RadioProfile.MESHTASTIC){s.pendingMtEdit=s.client.admin.edit!=null&&s.client.admin.edit.writeId!=0?s.client.admin.edit:null;s.pendingMtAddress=s.address;}else{s.pendingMcEdit=s.client.pendingMcSave();s.pendingMcAddress=s.address;s.pendingMcDeliveries.clear();s.pendingMcDeliveries.addAll(s.client.mcRetainDeliveries(now()));}}s.client=null;s.transportReady=false;s.persisting=false;
         cancelTimeout(s);if(s.probeTimeout!=null)handler.removeCallbacks(s.probeTimeout);if(s.poll!=null)handler.removeCallbacks(s.poll);
         BluetoothGatt old=s.gatt;s.gatt=null;s.queue.clear();s.active=null;s.connected=s.verified=s.readPending=false;
         s.tx=s.rx=s.notice=null;phase(s,"Disconnected",reason);
@@ -321,7 +321,9 @@ public final class RadioService extends Service {
             }else if(s.active.kind==2){if(s.active.data.length>s.profile.payloadLimit(s.mtu)){close(s,"Command exceeds negotiated Bluetooth frame size • not sent");return;}s.tx.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);s.tx.setValue(s.active.data);ok=s.gatt.writeCharacteristic(s.tx);}
             else ok=s.gatt.readCharacteristic(s.rx);
         }catch(SecurityException|IllegalStateException e){ok=false;}
-        if(!ok){close(s,"Bluetooth operation failed • reconnect");return;}arm(s,"Bluetooth operation timed out • reconnect");
+        if(!ok){close(s,"Bluetooth operation failed • reconnect");return;}
+        if(s.active.kind==2&&s.client!=null)s.client.writeAccepted(s.active.data);
+        arm(s,"Bluetooth operation timed out • reconnect");
     }
     private void done(Session s){cancelTimeout(s);s.active=null;pump(s);handler.postDelayed(()->advance(s),90);}
     private void read(Session s){if(s.gatt!=null && s.transportReady && !s.readPending){s.readPending=true;enqueue(s,3,null);}}

@@ -14,7 +14,7 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.3.9'
+        default: '0.3.10'
         type: string
 permissions:
   contents: write
@@ -87,7 +87,7 @@ jobs:
       - name: Verify requested version and permanent signing credentials
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.9' }}
+          REQUESTED: ${{ inputs.version || '0.3.10' }}
         run: |
           set -euo pipefail
           [[ "$REQUESTED" =~ ^0\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version"; exit 1; }
@@ -116,7 +116,7 @@ jobs:
       - name: Verify APK signature identity and version before publishing
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.9' }}
+          REQUESTED: ${{ inputs.version || '0.3.10' }}
         run: |
           set -euo pipefail
           APK=android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
@@ -136,7 +136,7 @@ jobs:
       - name: Publish only if no version tag or release exists
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.9' }}
+          REQUESTED: ${{ inputs.version || '0.3.10' }}
         run: |
           set -euo pipefail
           CURRENT_HEAD=$(git ls-remote origin refs/heads/baseline/android-0.1.0 | cut -f1)
@@ -151,31 +151,24 @@ jobs:
             exit 1
           fi
           cat > release-notes.md <<EOF
-          ## MeshCrossway Android $REQUESTED — MeshCore reliability corrections
+          ## MeshCrossway Android $REQUESTED — MeshCore contact and reconnect fixes
 
           Install over your existing MeshCrossway app and choose **Update**. The permanent signing certificate is unchanged. Local messages, settings, favorites, tracks and offline maps are retained during an in-place update.
 
-          - Verify MeshCore settings using fresh radio readback. A normal radio error keeps the connection alive and shows the failure. A partially applied multi-command save refreshes the actual values.
-          - Preserve Companion repeat mode when editing radio parameters, and verify preset radio/path changes as one transaction.
-          - Keep discoveries separate from approved radio contacts. Add explicit approval/removal actions and reconcile deleted contacts and full contact refreshes while retaining historical messages.
-          - Enforce a 31-byte UTF-8 name limit. An already truncated name remains readable so it can be repaired from the app.
-          - Decode negative TX power correctly and use the device's advertised maximum instead of a fixed 22 dBm ceiling.
-          - Gate advanced settings by Companion protocol support and coalesce repeated reads. Unsupported features no longer cause reconnect loops.
-          - Track receiver-side contact activity and live DM receipt separately from sender advert time. Initial backlog does not make every contact appear freshly heard.
-          - Reconcile matching late delivery ACKs with bounded retention, including BLE reconnection while the service is running.
-          - Preserve the integer extra-ACK count when changing unrelated privacy settings.
-          - Continue draining messages immediately after an unsupported channel-data item.
+          - Resolve actual radio membership after new contact adverts. A contact auto-added by the radio becomes available without redundant manual approval; excluded/unapproved discoveries remain pending. No automatic ADD command is sent.
+          - Treat contact NOT_FOUND as a normal lifecycle result. Fresh adverts can resolve re-added contacts without reconnecting. Repeated adverts coalesce, and a newer advert is not lost when an older lookup finishes.
+          - Preserve pending verification as soon as Bluetooth accepts a settings write, including a disconnect before the write callback/response. Reconnection checks actual values with GET commands and never replays the SET automatically.
 
-          Validation includes the existing regression suites, 206 Meshtastic conformance checks, 66 MeshCore regression checks, Android settings/contact-persistence fixtures on API 29 and 35, build, lint and permanent certificate verification. Physical-radio and RF validation remain necessary. The app is a public beta; full official-app feature parity is not included.
+          Validation includes 96 MeshCore regression checks, 206 Meshtastic conformance checks, existing protocol/browser/migration suites, Android API 29/35 smoke and storage fixtures, build, lint and permanent certificate verification. Tests cover successful/unsuccessful membership lookup, manual approval, re-addition, interrupted writes and readback mismatch. Physical radio and RF testing remain necessary; these are bounded regression results, not a claim of full official-app parity.
 
-          Pending verification survives BLE reconnection without replaying SET commands. After repeated recovery failures, the app offers an explicit check or use-current-settings action. Late-ACK retention is limited to ten minutes and service lifetime; automatic retransmission is not enabled.
+          Prior 0.3.9 settings/readback, UTF-8 names, signed TX power, repeat-mode preservation and bounded late-ACK improvements are retained. Pending verification and late-ACK correlation survive BLE reconnection only while the service remains alive and the same radio is selected. Late-ACK retention remains bounded to ten minutes; no automatic message retransmission is enabled.
 
           The APK checksum and permanent certificate fingerprint are attached to this release.
           EOF
           gh release create "$TAG" "release/MeshCrossway-$REQUESTED.apk" \
              release/SHA256SUMS.txt release/SIGNING-CERT-SHA256.txt \
              --target "$GITHUB_SHA" \
-             --title "Android $REQUESTED — MeshCore reliability corrections" \
+             --title "Android $REQUESTED — MeshCore contact and reconnect fixes" \
              --notes-file release-notes.md --prerelease --latest=false
       - name: Remove ephemeral keystore
         if: always()

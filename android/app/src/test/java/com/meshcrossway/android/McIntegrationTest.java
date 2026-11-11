@@ -32,6 +32,39 @@ public final class McIntegrationTest {
         c.next(clock++);
     }
     static void ack(ProtocolClient c){receive(c,new byte[]{0});}
+    static byte[] advert(String id){byte[] f=new byte[33];f[0]=(byte)128;System.arraycopy(Wire.unhex(id),0,f,1,32);return f;}
+    static String contactId(int key){return Wire.hex(Arrays.copyOfRange(contact(3,key),1,33));}
+    static void membershipRegressions(){
+        for(boolean manual:new boolean[]{false,true}){
+            ProtocolClient c=fresh();c.manualAddContacts=manual;receive(c,contact(138,8));String id=contactId(8);
+            check(!c.nodes.containsKey(id)&&c.mcDiscoveries.containsKey(id),"New advert alone never grants send eligibility");
+            ProtocolClient.Command lookup=take(c);check(lookup.data[0]==30&&Wire.hex(Arrays.copyOfRange(lookup.data,1,33)).equals(id),"Resolve actual membership for auto-add on and off");
+            receive(c,contact(3,8));c.next(clock++);check(c.nodes.get(id).mcState==ProtocolClient.MC_APPROVED&&!c.mcDiscoveries.containsKey(id),"Radio membership read promotes a contact, independent of local policy");
+            Message outgoing=c.send(Target.node(c.nodes.get(id)),"approved",88,clock);check(!outgoing.uid.isEmpty(),"Auto-added contact can send without redundant approval");
+        }
+        ProtocolClient c=fresh();receive(c,contact(138,8));take(c);receive(c,new byte[]{1,2});
+        check(c.ready&&c.mcError.isEmpty()&&c.mcDiscoveries.containsKey(contactId(8))&&!c.nodes.containsKey(contactId(8)),"Unapproved discovery stays available without an error or disconnect");
+        check(c.next(clock++)==null&&c.mcDeferredContacts.isEmpty(),"NOT_FOUND does not create a read retry loop");
+        check(c.commands.stream().noneMatch(q->q.data[0]==9),"Discovery resolution never sends an automatic ADD");
+        final ProtocolClient unapproved=c;rejects(()->unapproved.send(Target.node(unapproved.mcDiscoveries.get(contactId(8))),"no approval",1,clock),"Excluded or full-table discovery remains ineligible to send");
+        c=fresh();String id=contactId(7);c.requestMcContact(id);take(c);receive(c,new byte[]{1,2});c.next(clock++);
+        check(!c.nodes.containsKey(id)&&c.mcFailedReads.isEmpty(),"Contact NOT_FOUND retires membership without negative caching");
+        receive(c,advert(id));ProtocolClient.Command next=take(c);check(next.data[0]==30,"A later advert triggers lookup after NOT_FOUND");receive(c,contact(3,7));c.next(clock++);check(c.nodes.containsKey(id)&&c.mcError.isEmpty(),"Re-added contact resolves in the same connection");
+        c=fresh();c.requestMcContact(id);take(c);receive(c,advert(id));receive(c,new byte[]{1,2});next=take(c);check(next.data[0]==30,"An advert received during an older lookup is not lost on NOT_FOUND");receive(c,contact(3,7));c.next(clock++);
+        c=fresh();c.requestMcContact(id);take(c);receive(c,new byte[]{1,6});c.next(clock++);check(!c.mcFailedReads.isEmpty(),"Unexpected read errors remain bounded");receive(c,advert(id));next=take(c);check(next.data[0]==30,"Fresh activity invalidates a contact-specific read failure");receive(c,contact(3,7));c.next(clock++);check(c.mcError.isEmpty()&&c.mcFailedReads.isEmpty(),"Successful lookup clears its own stale error");
+        c=fresh();receive(c,contact(138,8));receive(c,contact(138,8));check(c.mcDeferredContacts.size()==1,"Repeated adverts coalesce to one membership check");take(c);receive(c,contact(3,8));c.next(clock++);check(c.mcDeferredContacts.isEmpty(),"Resolved repeated adverts leave no extra lookup work");
+        c=fresh();c.setName("Verified");take(c);receive(c,contact(138,8));ack(c);finish(c,self(22,30,0,"Verified"),metadata(true,1),new byte[]{28},null);check(c.mcAdmin.error.isEmpty()&&c.active!=null&&c.active.data[0]==30,"Membership resolution waits until settings verification completes");receive(c,contact(3,8));c.written(clock++);c.next(clock++);
+    }
+    static void earlyWriteRegressions(){
+        ProtocolClient c=fresh();c.setTxPower(20);check(c.pendingMcSave()==null,"Queued but unaccepted SET is not retained as sent");
+        ProtocolClient.Command selected=c.next(clock++);check(c.pendingMcSave()==null,"Selecting a SET alone is not proof of transport acceptance");
+        c.writeAccepted(new byte[]{12,19});check(c.pendingMcSave()==null,"A mismatched transport payload cannot mark a save as sent");
+        c.writeAccepted(selected.data);McAdmin.Edit uncertain=c.pendingMcSave();check(uncertain!=null&&!selected.written&&!selected.replied,"Accepted SET survives release before write callback or radio response");
+        ProtocolClient restored=fresh();restored.mcAdmin.restore(uncertain);restored.mcAdmin.ready();finish(restored,self(20,30,0,"Audit"),metadata(true,1),new byte[]{28},null);check(restored.pendingMcSave()==null&&restored.mcAdmin.error.isEmpty(),"Pre-callback recovery confirms through GET only");
+        c=fresh();c.setTxPower(20);selected=c.next(clock++);c.writeAccepted(selected.data);uncertain=c.pendingMcSave();restored=fresh();restored.mcAdmin.restore(uncertain);restored.mcAdmin.ready();finish(restored,self(22,30,0,"Audit"),metadata(true,1),new byte[]{28},null);check(restored.mcAdmin.error.contains("TX power"),"A possibly unapplied SET reports actual values without resending");
+        c=fresh();c.setTxPower(20);selected=c.next(clock++);c.writeAccepted(selected.data);c.written(clock++);ack(c);finish(c,self(20,30,0,"Audit"),metadata(true,1),new byte[]{28},null);check(c.mcAdmin.error.isEmpty(),"Acceptance and later callback remain idempotent");
+        c=fresh();c.requestMcSelf();selected=c.next(clock++);c.writeAccepted(selected.data);check(c.pendingMcSave()==null,"Ordinary reads do not create a pending settings recovery");
+    }
     public static void main(String[] args){
         checks=0;clock=100;
         ProtocolClient c=fresh();String original=c.localName;c.setName("RenBrant");check(c.localName.equals(original),"Name remains confirmed value before transmission");ProtocolClient.Command q=take(c);check(q.data[0]==8,"Name SET opcode");ack(c);check(c.mcAdmin.edit!=null,"ACK alone does not confirm a save");finish(c,self(22,30,0,"RenBrant"),metadata(true,1),new byte[]{28},null);check(c.mcAdmin.edit==null&&c.mcAdmin.error.isEmpty()&&c.localName.equals("RenBrant"),"Name is confirmed by fresh readback");
@@ -68,6 +101,7 @@ public final class McIntegrationTest {
         c=fresh();c.requestMcSelf();take(c);byte[] broken=Arrays.copyOf(self(22,30,0,"é".repeat(16)),58+31);receive(c,broken);check(c.ready&&c.mcNameNeedsRepair,"A legacy truncated UTF8 name remains connectable for repair");c.setName("Repaired");take(c);ack(c);finish(c,self(22,30,0,"Repaired"),metadata(true,1),new byte[]{28},null);check(!c.mcNameNeedsRepair&&c.localName.equals("Repaired"),"Saving a legal name clears the repair warning after verification");
         c=fresh();clock+=20001;q=take(c);check(q.data[0]==10,"Idle backlog poll");receive(c,new byte[]{27,0,0,0,0,0,0,0,0});q=take(c);check(q.data[0]==10,"Unsupported channel-data item immediately continues draining");receive(c,new byte[]{10});c.next(clock++);
         c=fresh();c.setName("Cancelled");c.mcAdmin.discard();check(c.commands.stream().noneMatch(cmd->cmd.data[0]==8)&&c.localName.equals("Audit"),"Discard before dispatch cannot send the queued SET");
+        membershipRegressions();earlyWriteRegressions();
         System.out.println("MeshCore audit regressions: "+checks+" checks passed");
     }
 }
