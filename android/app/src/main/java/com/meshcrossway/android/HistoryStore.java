@@ -76,6 +76,38 @@ final class HistoryStore extends SQLiteOpenHelper {
     void uncertain(RadioProfile p,String r){work(db->{ContentValues v=new ContentValues();v.put("state","uncertain");db.update("messages",v,"network=? AND radio=? AND outgoing=1 AND state IN ('queued','submitted','radio accepted')",new String[]{p.name(),r});});}
     void read(RadioProfile p,String r,String topic){work(db->{ContentValues v=new ContentValues();v.put("is_read",1);db.update("messages",v,"network=? AND radio=? AND topic=? AND is_read=0",new String[]{p.name(),r,topic});});}
     void draft(RadioProfile p,String r,String topic,String body){ContentValues v=scope(p,r);v.put("topic",topic);v.put("body",body);work(db->db.insertWithOnConflict("drafts",null,v,SQLiteDatabase.CONFLICT_REPLACE),false);}
+    /**
+     * On-demand RF history is derived from the existing durable message rx_meta
+     * rather than creating another store or generating new RF traffic.
+     * Scan and output are bounded; the selected protocol/radio is part of SQL scope.
+     */
+    void receptionHistory(RadioProfile network,String radio,String nodeId,
+                          java.util.function.Consumer<List<RfHistory.Sample>> callback){
+        if(closed){main.post(()->callback.accept(Collections.emptyList()));return;}
+        worker.post(()->{
+            ArrayList<RfHistory.Sample> samples=new ArrayList<>();
+            try(Cursor c=getReadableDatabase().query("messages",
+                    new String[]{"uid","peer","time","outgoing","is_group","rx_meta"},
+                    "network=? AND radio=? AND outgoing=0",
+                    new String[]{network.name(),radio},null,null,"time DESC,rowid DESC",
+                    Integer.toString(RfHistory.SCAN_LIMIT))){
+                while(c.moveToNext()&&samples.size()<RfHistory.DISPLAY_LIMIT){
+                    Message message=new Message();
+                    message.uid=s(c,"uid");message.peer=s(c,"peer");message.timestamp=l(c,"time");
+                    message.outgoing=l(c,"outgoing")==1;message.group=l(c,"is_group")==1;
+                    message.rx=decodeRx(s(c,"rx_meta"));
+                    RfHistory.Sample sample=RfHistory.from(network,nodeId,message);
+                    if(sample!=null)samples.add(sample);
+                }
+            }catch(SQLiteException ignored){
+                // Read-only tool: leave the chat and existing database flows untouched.
+            }
+            Collections.reverse(samples);
+            List<RfHistory.Sample> result=Collections.unmodifiableList(samples);
+            main.post(()->{if(!closed)callback.accept(result);});
+        });
+    }
+
     void loadDraft(RadioProfile p,String r,String topic,java.util.function.Consumer<String> callback){if(closed)return;worker.post(()->{String body="";try(Cursor c=getReadableDatabase().query("drafts",new String[]{"body"},"network=? AND radio=? AND topic=?",new String[]{p.name(),r,topic},null,null,null)){if(c.moveToFirst())body=c.getString(0);}catch(SQLiteException ignored){}String result=body;main.post(()->callback.accept(result));});}
     private void reload(){
         if(closed)return;EnumMap<RadioProfile,String> selection=new EnumMap<>(radios);
