@@ -73,6 +73,21 @@ public class OutgoingStatusTest {
                 "radio-1","radio-1",expected,message));
     }
 
+    @Test public void lateAckInvalidatesManualDraftConfirmation(){
+        Message original=outgoing("uncertain",false);
+        Message latest=outgoing("uncertain",false);
+        latest.uid=original.uid;latest.topic=original.topic;
+        latest.identity=original.identity;latest.peer=original.peer;
+        latest.body=original.body;latest.slot=original.slot;
+        assertTrue(OutgoingStatus.stillReviewable(original,latest));
+        latest.state="delivered";
+        assertFalse(OutgoingStatus.stillReviewable(original,latest));
+        latest.state="uncertain";latest.identity="new-channel";
+        assertFalse(OutgoingStatus.stillReviewable(original,latest));
+        latest.identity=original.identity;latest.peer="different-target";
+        assertFalse(OutgoingStatus.stillReviewable(original,latest));
+    }
+
     @Test public void notSentAndDeliveredMessagesCannotBePreparedAsRetries(){
         Message m=outgoing("uncertain",false);
         assertTrue(OutgoingStatus.canPrepareNewDraft(m));
