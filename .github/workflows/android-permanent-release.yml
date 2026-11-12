@@ -62,7 +62,10 @@ jobs:
             grep -F 'OK (1 test)' mt-storage-result.txt
   release:
     needs: meshtastic-storage
-    if: github.ref == 'refs/heads/baseline/android-0.1.0'
+    # Normal branch pushes validate storage but must never publish an APK.
+    # A maintainer explicitly dispatches this workflow on the Android baseline
+    # with a requested version, after real-radio acceptance.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/baseline/android-0.1.0'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
