@@ -623,7 +623,7 @@ public final class MainActivity extends Activity {
             panel.addView(text("GATT frame totals are Bluetooth events, not LoRa packet counts. "
                 +"Saved messages are not a complete RF sniffer or a channel occupancy measurement.",12,MUTED));
         }
-        section(results,"MESHC0RE REPEATER INVENTORY");
+        section(results,"MESHCORE REPEATER INVENTORY");
         Snapshot meshcore=snapshot(RadioProfile.MESHCORE);
         int total=RepeaterInventory.total(meshcore);
         results.addView(text(total+" saved repeater contacts · up to "
