@@ -14,7 +14,7 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.3.12'
+        default: '0.4.0'
         type: string
 permissions:
   contents: write
@@ -90,7 +90,7 @@ jobs:
       - name: Verify requested version and permanent signing credentials
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.12' }}
+          REQUESTED: ${{ inputs.version || '0.4.0' }}
         run: |
           set -euo pipefail
           [[ "$REQUESTED" =~ ^0\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version"; exit 1; }
@@ -119,7 +119,7 @@ jobs:
       - name: Verify APK signature identity and version before publishing
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.12' }}
+          REQUESTED: ${{ inputs.version || '0.4.0' }}
         run: |
           set -euo pipefail
           APK=android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
@@ -131,6 +131,9 @@ jobs:
           test -n "$actual" && test "$actual" = "$expected" ||
             { echo "Release signing certificate changed: refusing to publish"; exit 1; }
           "$TOOLS/aapt" dump badging "$APK" | grep -F "versionName='$REQUESTED'"
+          EXPECTED_CODE=$(sed -n 's/^[[:space:]]*versionCode[[:space:]]*\([0-9][0-9]*\).*$/\1/p' android/app/build.gradle | head -n 1)
+          test -n "$EXPECTED_CODE" && "$TOOLS/aapt" dump badging "$APK" | grep -F "versionCode='$EXPECTED_CODE'"
+          if [ "$REQUESTED" = "0.4.0" ]; then test "$EXPECTED_CODE" = 34; fi
           mkdir -p release
           cp "$APK" "release/MeshCrossway-$REQUESTED.apk"
           (cd release && sha256sum *.apk > SHA256SUMS.txt)
@@ -139,12 +142,16 @@ jobs:
       - name: Publish only if no version tag or release exists
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.12' }}
+          REQUESTED: ${{ inputs.version || '0.4.0' }}
         run: |
           set -euo pipefail
           CURRENT_HEAD=$(git ls-remote origin refs/heads/baseline/android-0.1.0 | cut -f1)
           test "$CURRENT_HEAD" = "$GITHUB_SHA" || { echo "Source superseded; refusing to publish an outdated APK"; exit 1; }
+          # Preserve the immutable historical android-v0.4.0 release, which
+          # contained an earlier numbering mistake (versionCode 31).
+          # The newly approved Android 0.4.0 has versionCode 34 and a distinct tag.
           TAG="android-v$REQUESTED"
+          if [ "$REQUESTED" = "0.4.0" ]; then TAG="android-v0.4.0-stage1"; fi
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Version already published; never overwrite an APK/certificate"
             exit 1
@@ -153,25 +160,23 @@ jobs:
             echo "Tag already exists; refusing to overwrite"
             exit 1
           fi
-          cat > release-notes.md <<EOF
-          ## MeshCrossway Android $REQUESTED — channels, links and QR Codes
+          if [ "$REQUESTED" = "0.4.0" ]; then
+            cp docs/android-release-notes-0.4.0.md release-notes.md
+            RELEASE_TITLE="Android 0.4.0 beta — reliable messaging and LoRa reception"
+          else
+            RELEASE_TITLE="Android $REQUESTED beta"
+            cat > release-notes.md <<EOF
+          ## MeshCrossway Android $REQUESTED beta
 
-          Install as an update over your existing app. The permanent certificate is unchanged and versionCode increases to 33. Do not uninstall or clear storage.
+          Two independent Meshtastic and MeshCore radios, with separate messaging and settings. This is an experimental Android release; read the full documentation and test with your own compatible hardware.
 
-          - Meshtastic: create private secondary channels, edit channel name/key and MQTT flags, leave secondary channels, and share primary/selected secondary settings using official ChannelSet links. Primary slot 0 is retained. A secondary share also contains the primary key; confirmation explains this.
-          - MeshCore: retain private/hashtag/Public creation, editing, removal, scope checks and verified readback.
-          - Both networks: share a link or QR image, scan a QR Code with the camera, read a saved QR image, paste a channel link or open supported official links in the app. Camera access is optional; image/link import remains available.
-          - Imports require review and explicit Save to radio. Meshtastic multi-channel links let you choose channels individually. Different LoRa parameters require a separate confirmed save before importing; local region, power and transmit policy are preserved. Join the shared primary first when a secondary needs its automatic frequency. Other slots are not silently replaced.
-          - Wait for radio readback before sending or sharing during Meshtastic channel/LoRa edits. Historical messages are retained; old channel-key targets cannot send after replacement.
-
-          Validation gates include protocol/channel fixtures, QR encoding/decoding unit checks, API 29/35 channel-manager and deep-link instrumentation, migration/persistence, build, lint and permanent certificate verification. Physical-radio, camera and cross-app RF testing are still required; this is a beta.
-
-          MeshCore and Meshtastic remain independent, with no cross-network forwarding. The APK checksum and certificate fingerprint are attached.
+          Upgrade over a permanently signed installation without uninstalling the app. The release uses the permanent Android signing certificate, and includes SHA-256 integrity and signing certificate information. Never remove the app just to update.
           EOF
+          fi
           gh release create "$TAG" "release/MeshCrossway-$REQUESTED.apk" \
              release/SHA256SUMS.txt release/SIGNING-CERT-SHA256.txt \
              --target "$GITHUB_SHA" \
-             --title "Android $REQUESTED — channels, links and QR Codes" \
+             --title "$RELEASE_TITLE" \
              --notes-file release-notes.md --prerelease --latest=false
       - name: Remove ephemeral keystore
         if: always()
