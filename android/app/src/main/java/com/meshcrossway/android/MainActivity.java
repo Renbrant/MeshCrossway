@@ -152,7 +152,9 @@ public final class MainActivity extends Activity {
                     .append(session.rssiDbm).append(':').append(session.rssiCurrentLink)
                     .append(':').append(session.rssiMeasuredAtMs)
                     .append(':').append(session.rssiMeasuredAtMs>0?
-                        Math.max(0,(System.currentTimeMillis()-session.rssiMeasuredAtMs)/60000):-1);
+                        Math.max(0,(System.currentTimeMillis()-session.rssiMeasuredAtMs)/60000):-1)
+                    .append(':').append(BleSignal.live(session.verified,session.rssiCurrentLink,
+                        session.rssiMeasuredAtMs,System.currentTimeMillis()));
                 if(session.client!=null)key.append(':').append(session.client.mtRevision);
             }
         }
