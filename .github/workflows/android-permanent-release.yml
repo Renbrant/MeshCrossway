@@ -14,7 +14,7 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.4.0'
+        default: '0.3.11'
         type: string
 permissions:
   contents: write
@@ -87,7 +87,7 @@ jobs:
       - name: Verify requested version and permanent signing credentials
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.4.0' }}
+          REQUESTED: ${{ inputs.version || '0.3.11' }}
         run: |
           set -euo pipefail
           [[ "$REQUESTED" =~ ^0\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version"; exit 1; }
@@ -116,7 +116,7 @@ jobs:
       - name: Verify APK signature identity and version before publishing
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.4.0' }}
+          REQUESTED: ${{ inputs.version || '0.3.11' }}
         run: |
           set -euo pipefail
           APK=android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
@@ -136,7 +136,7 @@ jobs:
       - name: Publish only if no version tag or release exists
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.4.0' }}
+          REQUESTED: ${{ inputs.version || '0.3.11' }}
         run: |
           set -euo pipefail
           CURRENT_HEAD=$(git ls-remote origin refs/heads/baseline/android-0.1.0 | cut -f1)
@@ -154,6 +154,8 @@ jobs:
           ## MeshCrossway Android $REQUESTED — MeshCore everyday tools
 
           Install over the existing MeshCrossway app and choose **Update**. The permanent signing certificate is unchanged. Local messages, settings, favorites, tracks and offline maps remain during an in-place update.
+
+          This release corrects the mistakenly published 0.4.0 number to 0.3.11, following 0.3.10. It retains all four MeshCore tools. Its versionCode is 32 (above 0.4.0 code 31), so existing installations can update without uninstalling.
 
           - Announce your MeshCore presence explicitly: choose nearby zero-hop or mesh-wide flood. The app distinguishes radio acceptance from reception by others and limits repeated taps. Your radio's configured advert location policy is respected.
           - Keep sends and key sharing blocked for an edited channel until its current values are verified, including readback failure and cancellation. Other channels and direct messages remain available.
@@ -173,6 +175,10 @@ jobs:
              --target "$GITHUB_SHA" \
              --title "Android $REQUESTED — MeshCore everyday tools" \
              --notes-file release-notes.md --prerelease --latest=false
+      - name: Mark mistaken version as superseded after successful publication
+        shell: bash
+        run: |
+          gh release edit android-v0.4.0 --title "Android 0.4.0 — superseded by 0.3.11 (numbering correction)" --notes "This version number was published in error. Use Android 0.3.11, which retains these features and has a higher internal versionCode (32) so it installs as an update over 0.4.0 (31). Do not uninstall. Download: https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.11 . Historical assets and tag are retained unchanged."
       - name: Remove ephemeral keystore
         if: always()
         shell: bash
