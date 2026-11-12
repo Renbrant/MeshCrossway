@@ -283,7 +283,7 @@ public final class RadioService extends Service {
     }
     /**
      * Network-airtime safeguard, persisted across BLE reconnections and process
-     * restarts. One 5-minute window per full repeater key, regardless of
+     * restarts. One 30-second window per full repeater key, regardless of
      * whether the user asks for status or a neighbor page.
      * A queued request consumes the allowance even if delivery is uncertain.
      */
