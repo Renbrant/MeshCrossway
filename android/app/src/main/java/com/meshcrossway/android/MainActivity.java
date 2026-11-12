@@ -715,7 +715,7 @@ public final class MainActivity extends Activity {
         menuRow(group(results),"refresh","Request remote status",
             canQuery?"One user-initiated LoRa request; may take up to 2 min":
             "Connect the same radio, finish previous request and verify firmware",
-            ()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.STATUS,0),RADIO_MC);
+            canQuery?()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.STATUS,0):null,RADIO_MC);
         section(results,"REPEATER NEIGHBORS");
         McRemoteDiagnostics.Result neighbors=client==null?null:
             client.mcRemote.find(node.id,McRemoteDiagnostics.Kind.NEIGHBORS);
@@ -743,7 +743,7 @@ public final class MainActivity extends Activity {
             }
             if(list.list.isEmpty())near.addView(text("This page returned no neighbors.",12,MUTED));
             int next=list.offset+list.list.size();
-            if(next<list.total&&next<=1024&&!list.list.isEmpty())
+            if(canQuery&&next<list.total&&next<=1024&&!list.list.isEmpty())
                 menuRow(group(results),"refresh","Request next neighbors page",
                     "Offset "+next+" · separate airtime-limited request",
                     ()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,next),RADIO_MC);
@@ -751,7 +751,7 @@ public final class MainActivity extends Activity {
         menuRow(group(results),"refresh","Request neighbors",
             canQuery?"Read at most 8 reported neighbors with abbreviated public-key prefixes":
                 "Requires a Ready, compatible MeshCore repeater connection",
-            ()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,0),RADIO_MC);
+            canQuery?()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,0):null,RADIO_MC);
         section(results,"DATA PROVENANCE");
         results.addView(text("The firmware sends a tagged response via the selected MeshCore radio. "
             +"A locally accepted command is not proof of a remote reply. "
