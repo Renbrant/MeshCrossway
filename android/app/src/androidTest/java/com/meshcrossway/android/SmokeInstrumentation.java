@@ -25,7 +25,34 @@ public final class SmokeInstrumentation extends Instrumentation {
         Message inbound=message("same-id","hello");inbound.rx.hops=6;inbound.rx.width=2;inbound.rx.kind="flood";inbound.rx.snr=1.25;inbound.rx.packetId=123;inbound.rx.source=200;inbound.rx.replyId=122;inbound.rx.emoji=true;store.message(RadioProfile.MESHTASTIC,"radio-a",inbound);store.message(RadioProfile.MESHTASTIC,"radio-a",inbound);store.message(RadioProfile.MESHCORE,"radio-a",message("same-id","other network"));store.message(RadioProfile.MESHTASTIC,"radio-b",message("same-id","other radio"));store.draft(RadioProfile.MESHTASTIC,"radio-a",inbound.topic,"draft 👋");barrier(store,1);
         SQLiteDatabase db=store.getReadableDatabase();check(HistoryStore.load(db,RadioProfile.MESHTASTIC,"radio-a").messages.size()==1,"Duplicate message inserted");check(HistoryStore.load(db,RadioProfile.MESHCORE,"radio-a").messages.get(0).body.equals("other network"),"Network isolation failed");check(HistoryStore.load(db,RadioProfile.MESHTASTIC,"radio-b").messages.get(0).body.equals("other radio"),"Radio isolation failed");
         check(HistoryStore.load(db,RadioProfile.MESHTASTIC,"radio-a").messages.get(0).rx.hops==6,"Initial receive metadata not saved");store.read(RadioProfile.MESHTASTIC,"radio-a",inbound.topic);Message enriched=message("same-id","hello");enriched.rx.hops=2;enriched.rx.width=2;enriched.rx.kind="flood";enriched.rx.path="1234abcd";enriched.rx.observed=true;enriched.rx.snr=1.25;store.message(RadioProfile.MESHTASTIC,"radio-a",enriched);store.message(RadioProfile.MESHTASTIC,"radio-a",inbound);Message out=message("out","outgoing");out.outgoing=true;out.state="queued";store.message(RadioProfile.MESHTASTIC,"radio-a",out);store.delivery(RadioProfile.MESHTASTIC,"radio-a",out.uid,"delivered");store.delivery(RadioProfile.MESHTASTIC,"radio-a",out.uid,"submitted");store.uncertain(RadioProfile.MESHTASTIC,"radio-a");barrier(store,2);
-        Snapshot snapshot=HistoryStore.load(db,RadioProfile.MESHTASTIC,"radio-a");check(snapshot.unread()==0,"Replay reset read state");check(snapshot.messages.stream().anyMatch(m->m.uid.equals("same-id")&&m.rx.hops==2&&m.rx.snr==1.25&&m.rx.observed&&m.rx.path.equals("1234abcd")),"Receive metadata lost or downgraded");check(snapshot.messages.stream().anyMatch(m->m.uid.equals("out")&&m.state.equals("delivered")),"Late write downgraded delivery");store.close();
+        Snapshot snapshot=HistoryStore.load(db,RadioProfile.MESHTASTIC,"radio-a");check(snapshot.unread()==0,"Replay reset read state");check(snapshot.messages.stream().anyMatch(m->m.uid.equals("same-id")&&m.rx.hops==2&&m.rx.snr==1.25&&m.rx.observed&&m.rx.path.equals("1234abcd")),"Receive metadata lost or downgraded");check(snapshot.messages.stream().anyMatch(m->m.uid.equals("out")&&m.state.equals("delivered")),"Late write downgraded delivery");
+        // Stage 1: RF history is persisted-message metadata scoped by network,
+        // physical radio and full native node identity; it never polls LoRa.
+        CountDownLatch mtHistory=new CountDownLatch(1);
+        store.receptionHistory(RadioProfile.MESHTASTIC,"radio-a","200",samples->{
+            check(samples.size()==1&&samples.get(0).hasSnr()&&samples.get(0).hops==2,
+                "Saved Meshtastic reception history missing or duplicated");
+            mtHistory.countDown();
+        });
+        await(mtHistory);
+        CountDownLatch wrongRadio=new CountDownLatch(1);
+        store.receptionHistory(RadioProfile.MESHTASTIC,"radio-b","200",samples->{
+            check(samples.isEmpty(),"RF history leaked across radio selection");
+            wrongRadio.countDown();
+        });
+        await(wrongRadio);
+        Message mcDirect=message("mc-rf","test");mcDirect.group=false;
+        mcDirect.peer=Wire.hex(new byte[32]);mcDirect.rx=RxInfo.meshcore(255);
+        mcDirect.rx.snr=-4.5;
+        store.message(RadioProfile.MESHCORE,"radio-a",mcDirect);
+        CountDownLatch mcHistory=new CountDownLatch(1);
+        store.receptionHistory(RadioProfile.MESHCORE,"radio-a",mcDirect.peer,samples->{
+            check(samples.size()==1&&samples.get(0).hasSnr()&&!samples.get(0).hasHops(),
+                "MeshCore direct-key RF history was not isolated");
+            mcHistory.countDown();
+        });
+        await(mcHistory);
+        store.close();
         HistoryStore reopened=new HistoryStore(context,name);Message persisted=HistoryStore.load(reopened.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-a").messages.stream().filter(m->m.uid.equals("same-id")).findFirst().get();check(persisted.rx.packetId==123&&persisted.rx.replyId==122&&persisted.rx.emoji,"Structured reply/reaction association lost after reopen");check(HistoryStore.load(reopened.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-a").messages.size()==2,"History lost after reopen");CountDownLatch draft=new CountDownLatch(1);reopened.loadDraft(RadioProfile.MESHTASTIC,"radio-a",inbound.topic,value->{check(value.equals("draft 👋"),"Draft lost");draft.countDown();});await(draft);reopened.close();
     }
     private void backups()throws Exception{
