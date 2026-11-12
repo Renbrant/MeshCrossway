@@ -42,7 +42,7 @@ public final class SmokeInstrumentation extends Instrumentation {
         });
         await(wrongRadio);
         Message mcDirect=message("mc-rf","test");mcDirect.group=false;
-        mcDirect.peer="a1".repeat(32);mcDirect.rx=RxInfo.meshcore(255);
+        mcDirect.peer=Wire.hex(new byte[32]);mcDirect.rx=RxInfo.meshcore(255);
         mcDirect.rx.snr=-4.5;
         store.message(RadioProfile.MESHCORE,"radio-a",mcDirect);
         CountDownLatch mcHistory=new CountDownLatch(1);
