@@ -12,6 +12,8 @@ public class BleSignalFreshnessTest {
         assertTrue(BleSignal.live(true,true,at,NOW));
         assertTrue(BleSignal.label(-65,true,at,NOW).startsWith("BLE -65 dBm"));
         assertTrue(BleSignal.label(-65,true,at,NOW).contains("just now"));
+        assertTrue(BleSignal.live(true,true,NOW-BleSignal.LIVE_MAX_AGE_MS,NOW));
+        assertFalse(BleSignal.live(true,true,NOW-BleSignal.LIVE_MAX_AGE_MS-1,NOW));
     }
 
     @Test public void oldSampleRemainsHistoricalEvenIfGattIsReady() {
