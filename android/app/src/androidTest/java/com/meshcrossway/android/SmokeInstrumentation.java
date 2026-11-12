@@ -208,7 +208,10 @@ public final class SmokeInstrumentation extends Instrumentation {
         CountDownLatch captured=new CountDownLatch(1);java.util.concurrent.atomic.AtomicReference<android.graphics.Bitmap> image=new java.util.concurrent.atomic.AtomicReference<>();android.graphics.PointF[] point=new android.graphics.PointF[1];
         onUi(()->{point[0]=panel.map.getProjection().toScreenLocation(new org.maplibre.android.geometry.LatLng(lat,lon));panel.map.snapshot(bitmap->{image.set(bitmap);captured.countDown();});});await(captured);
         android.graphics.Bitmap bitmap=image.get();check(bitmap!=null,"Map snapshot missing");
-        java.io.File directory=new java.io.File(getTargetContext().getFilesDir(),"map-tests");directory.mkdirs();try(java.io.FileOutputStream out=new java.io.FileOutputStream(new java.io.File(directory,name+".png"))){bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}
+        // Gradle uninstalls the debug app after the test. Export through the shell
+        // while instrumentation is alive so the CI collector can still read the PNG.
+        ByteArrayOutputStream png=new ByteArrayOutputStream();bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,png);
+        shell("echo "+android.util.Base64.encodeToString(png.toByteArray(),android.util.Base64.NO_WRAP)+" | base64 -d > /data/local/tmp/mcx-native-"+name+".png");
         int blue=0;for(int y=Math.max(0,(int)point[0].y-45);y<Math.min(bitmap.getHeight(),(int)point[0].y+45);y++)for(int x=Math.max(0,(int)point[0].x-45);x<Math.min(bitmap.getWidth(),(int)point[0].x+45);x++){int color=bitmap.getPixel(x,y);if(android.graphics.Color.blue(color)>200&&android.graphics.Color.red(color)<130&&android.graphics.Color.green(color)>120&&android.graphics.Color.green(color)<190)blue++;}
         check(blue>15,"Phone marker has no visible blue pixels at its projected location: "+name+" ("+point[0]+", blue="+blue+")");
     }
