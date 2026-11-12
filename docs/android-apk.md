@@ -1,12 +1,16 @@
-# MeshCrossway Android — 0.3.11 beta
+# MeshCrossway Android — 0.3.12 beta
 
-> **Version 0.3.11 is published with the same permanent release signing certificate as 0.2.3/0.2.4.** Starting from a clean installation? Install the APK directly; **no ADB, ZIP or migration is necessary.** Future official APKs with the same certificate can install over this version, retaining locally stored messages, settings, favorites, GPS tracks, and offline maps. **Do not uninstall or clear app data to update.**
+> **Version 0.3.12 is published with the same permanent release signing certificate as 0.2.3/0.2.4.** Starting from a clean installation? Install the APK directly; **no ADB, ZIP or migration is necessary.** Future official APKs with the same certificate can install over this version, retaining locally stored messages, settings, favorites, GPS tracks, and offline maps. **Do not uninstall or clear app data to update.**
 
 > Only people who still have data on older debug-signed 0.2.2-or-earlier builds need an optional one-time migration. See the [migration guide](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md). This release is still a beta.
 
 > **Public beta for testing. Not version 1.0.0 and not a production release.**
 
-[Download MeshCrossway-0.3.11.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.11/MeshCrossway-0.3.11.apk) · [Release notes and SHA256SUMS.txt](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.11) · [Android download page](https://renbrant.github.io/MeshCrossway/android/)
+[Download MeshCrossway-0.3.12.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.12/MeshCrossway-0.3.12.apk) · [Release notes and SHA256SUMS.txt](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.12) · [Android download page](https://renbrant.github.io/MeshCrossway/android/)
+
+## Channels, links and QR Codes in 0.3.12
+
+Create, edit, leave, share and join Meshtastic and MeshCore channels through each radio's channel manager. Share an official link or QR image; scan with the camera or read a saved QR image. Imports require review and verified radio readback. See the [channel management guide](android-channel-management.md) for primary/secondary behavior, LoRa compatibility and limits. VersionCode is 33, above 0.3.11 (32) and the mistakenly numbered 0.4.0 (31).
 
 ## Requirements
 
@@ -26,9 +30,9 @@ Heltec V3 and a Samsung S25 are used in development. Other phone, board and firm
 4. In Settings, choose each radio and let synchronization complete. Confirm both network status indicators independently.
 5. If connection fails, include the Connection details output in a bug report after removing private information.
 
-**Permanent signing started with 0.2.3 and is retained in 0.3.11.** Its signature SHA-256 is pinned and checked in the GitHub release workflow. All future releases must reuse that certificate. Old debug-signed builds cannot be replaced in place with 0.2.3; if you still have data in an old build, back it up before the one-time migration. Never uninstall to force a future update.
+**Permanent signing started with 0.2.3 and is retained in 0.3.12.** Its signature SHA-256 is pinned and checked in the GitHub release workflow. All future releases must reuse that certificate. Old debug-signed builds cannot be replaced in place with 0.2.3; if you still have data in an old build, back it up before the one-time migration. Never uninstall to force a future update.
 
-SHA-256: verify the downloaded `MeshCrossway-0.3.11.apk` against the release's `SHA256SUMS.txt` asset. The `SIGNING-CERT-SHA256.txt` asset records the permanent APK signing certificate fingerprint.
+SHA-256: verify the downloaded `MeshCrossway-0.3.12.apk` against the release's `SHA256SUMS.txt` asset. The `SIGNING-CERT-SHA256.txt` asset records the permanent APK signing certificate fingerprint.
 ## MeshCore everyday tools in 0.3.11
 
 Announce your presence nearby or across the mesh; create private, hashtag or Public channels; edit/remove channels with verified readback; share and import official MeshCore channel links; filter discovered, approved and historical contacts; and save/share a bounded support diagnostic that excludes private content. See the [user guide and validation details](android-meshcore-everyday-tools.md). The package includes 96 MeshCore regression checks, 106 new feature checks and the existing 206 Meshtastic conformance checks. Physical-radio acceptance remains necessary.
@@ -74,7 +78,7 @@ Under **Settings → Appearance & colors**, choose one of four themes inspired b
 
 Theme preferences live in existing private Android storage and **survive installing the next version over 0.2.4**. Photo mode stores a private re-encoded image copy (without original EXIF metadata) and does not upload it. Meshtastic remains orange and MeshCore remains blue wherever these colors denote network identity. The computer browser workspace currently retains its own styling. A complete ZIP backup includes theme preferences, but not the photo image itself; after uninstalling, reselect that photo.
 
-**Update in place:** If you already have 0.2.3 or newer, download the 0.3.11 APK and tap **Update**, not Uninstall. Do not clear app data. The verified permanent certificate and package ID are unchanged.
+**Update in place:** If you already have 0.2.3 or newer, download the 0.3.12 APK and tap **Update**, not Uninstall. Do not clear app data. The verified permanent certificate and package ID are unchanged.
 
 ## Remote Access from a computer
 
@@ -138,7 +142,7 @@ Private messages, old backlog, direct-routing and unsupported/truncated MeshCore
 | 0.3.9 → 0.3.10 → 0.3.11 → 0.3.12, etc. | Continue sequential beta revisions; minor changes require an explicit decision |
 | 1.0.0 | First production release after core scope and stability acceptance |
 
-Android 0.3.11 uses versionCode 32. The mistakenly numbered 0.4.0 used code 31; 0.3.11 installs over it as a normal update. See [release history](android-version-history.md). All 0.x versions remain in development. The earlier alpha02–alpha07 public-looking numbers were development iteration labels, not releases in the new sequence. Android versionCode remains strictly increasing (0.1.0 uses 8, 0.1.1 uses 9, 0.2.0 uses 10, 0.2.1 uses 11, 0.2.2 uses 12, 0.2.3 uses 13, 0.2.4 uses 14, 0.2.5 uses 15). Controller firmware keeps its independent numbering and recovery images.
+Android 0.3.12 uses versionCode 33; 0.3.11 used 32. The mistakenly numbered 0.4.0 used code 31; 0.3.11 installs over it as a normal update. See [release history](android-version-history.md). All 0.x versions remain in development. The earlier alpha02–alpha07 public-looking numbers were development iteration labels, not releases in the new sequence. Android versionCode remains strictly increasing (0.1.0 uses 8, 0.1.1 uses 9, 0.2.0 uses 10, 0.2.1 uses 11, 0.2.2 uses 12, 0.2.3 uses 13, 0.2.4 uses 14, 0.2.5 uses 15). Controller firmware keeps its independent numbering and recovery images.
 
 ## Help test
 
