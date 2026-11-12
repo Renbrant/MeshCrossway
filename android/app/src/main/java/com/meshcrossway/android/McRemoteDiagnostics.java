@@ -27,8 +27,14 @@ final class McRemoteDiagnostics {
         final double lastSnr;
         final long received,sent,txAirtime,rxAirtime,uptime,sentFlood,sentDirect,recvFlood,recvDirect,directDup,floodDup,errors;
         final boolean errorsKnown;
+        final int extensionBytes;
         Status(byte[] d){
-            if(d.length!=52&&d.length!=56)throw Wire.bad("Unsupported remote repeater status length");
+            // MeshCore's maintained clients decode the fixed fields by offset
+            // and tolerate later firmware extensions. Reject truncated frames,
+            // but do not reject a 60-byte response merely for extending 56.
+            if(d.length<52||d.length>170)
+                throw Wire.bad("Truncated or oversized repeater status");
+            extensionBytes=d.length-Math.min(d.length,56);
             batteryMv=Wire.u16(d,0);
             queue=Wire.u16(d,2);
             noiseFloor=(short)Wire.u16(d,4);
@@ -40,7 +46,7 @@ final class McRemoteDiagnostics {
             fullEvents=Wire.u16(d,40);
             lastSnr=((short)Wire.u16(d,42))/4.0;
             directDup=Wire.u16(d,44);floodDup=Wire.u16(d,46);
-            rxAirtime=Wire.u32(d,48);errorsKnown=d.length==56;
+            rxAirtime=Wire.u32(d,48);errorsKnown=d.length>=56;
             errors=errorsKnown?Wire.u32(d,52):-1;
         }
     }
@@ -54,10 +60,10 @@ final class McRemoteDiagnostics {
         }
     }
     static final class Neighbors {
-        final int total,offset;
+        final int total,offset,extensionBytes;
         final List<Neighbor> list;
-        Neighbors(int total,int offset,List<Neighbor> list){
-            this.total=total;this.offset=offset;
+        Neighbors(int total,int offset,List<Neighbor> list,int extensionBytes){
+            this.total=total;this.offset=offset;this.extensionBytes=extensionBytes;
             this.list=Collections.unmodifiableList(new ArrayList<>(list));
         }
     }
@@ -216,10 +222,10 @@ final class McRemoteDiagnostics {
             int payloadBytes=frame.length-6;
             if(pending.kind==Kind.STATUS)
                 fail("Unexpected status reply: "+payloadBytes+
-                    " data bytes (expected 52 or 56). Verify remote repeater firmware and access.");
+                    " data bytes (requires at least 52; optional extensions are supported). Verify remote repeater firmware and access.");
             else
                 fail("Unexpected neighbors reply: "+payloadBytes+
-                    " data bytes (expected 4 + 11 per reported neighbor, max 8). Verify repeater firmware.");
+                    " data bytes (invalid count or truncated records; max 8 records per page). Verify repeater firmware.");
         }
         return true;
     }
@@ -227,8 +233,16 @@ final class McRemoteDiagnostics {
     static Neighbors parseNeighbors(byte[] frame,int offset){
         if(frame.length<4)throw Wire.bad("Truncated neighbors header");
         int total=Wire.u16(frame,0),count=Wire.u16(frame,2);
+        // The official meshcore.js and meshcore_py decoders consume the
+        // advertised number of records rather than demanding exact length.
+        // Allow at most a small bounded suffix for firmware extensions, never
+        // accept an empty page with a large unrelated response attached.
+        int expected=4+count*(PREFIX_BYTES+5);
+        int suffix=frame.length-expected;
         if(total>4096||count>NEIGHBOR_PAGE||count>total
-           ||frame.length!=4+count*(PREFIX_BYTES+5))
+           ||(count>0&&offset+count>total)
+           ||suffix<0||suffix>4
+           ||(count==0&&suffix!=0))
             throw Wire.bad("Invalid neighbors response");
         ArrayList<Neighbor> list=new ArrayList<>();
         for(int i=0;i<count;i++){
@@ -237,6 +251,6 @@ final class McRemoteDiagnostics {
                 Wire.u32(frame,at+PREFIX_BYTES),
                 frame[at+PREFIX_BYTES+4]/4.0));
         }
-        return new Neighbors(total,offset,list);
+        return new Neighbors(total,offset,list,suffix);
     }
 }
