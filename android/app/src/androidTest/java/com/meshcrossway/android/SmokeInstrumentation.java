@@ -208,10 +208,15 @@ public final class SmokeInstrumentation extends Instrumentation {
         CountDownLatch captured=new CountDownLatch(1);java.util.concurrent.atomic.AtomicReference<android.graphics.Bitmap> image=new java.util.concurrent.atomic.AtomicReference<>();android.graphics.PointF[] point=new android.graphics.PointF[1];
         onUi(()->{point[0]=panel.map.getProjection().toScreenLocation(new org.maplibre.android.geometry.LatLng(lat,lon));panel.map.snapshot(bitmap->{image.set(bitmap);captured.countDown();});});await(captured);
         android.graphics.Bitmap bitmap=image.get();check(bitmap!=null,"Map snapshot missing");
-        // Gradle uninstalls the debug app after the test. Export through the shell
-        // while instrumentation is alive so the CI collector can still read the PNG.
-        ByteArrayOutputStream png=new ByteArrayOutputStream();bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,png);
-        shell("echo "+android.util.Base64.encodeToString(png.toByteArray(),android.util.Base64.NO_WRAP)+" | base64 -d > /data/local/tmp/mcx-native-"+name+".png");
+        // Export before Gradle uninstalls the debug app; UiAutomation executes
+        // argv directly, so use a simple cp rather than shell pipes/redirection.
+        java.io.File imageFile=new java.io.File(getTargetContext().getExternalFilesDir(null),name+".png");
+        try(FileOutputStream out=new FileOutputStream(imageFile)){bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}
+        String exported="/data/local/tmp/mcx-native-"+name+".png";shell("cp "+imageFile.getAbsolutePath()+" "+exported);
+        try(android.os.ParcelFileDescriptor fd=getUiAutomation().executeShellCommand("cat "+exported);InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(fd)){
+            byte[] signature=new byte[8];int read=0,n;while(read<8&&(n=input.read(signature,read,8-read))>0)read+=n;
+            check(read==8&&signature[0]==(byte)137&&signature[1]==80&&signature[2]==78&&signature[3]==71,"Exported map snapshot is not a PNG: "+name);
+        }
         int blue=0;for(int y=Math.max(0,(int)point[0].y-45);y<Math.min(bitmap.getHeight(),(int)point[0].y+45);y++)for(int x=Math.max(0,(int)point[0].x-45);x<Math.min(bitmap.getWidth(),(int)point[0].x+45);x++){int color=bitmap.getPixel(x,y);if(android.graphics.Color.blue(color)>200&&android.graphics.Color.red(color)<130&&android.graphics.Color.green(color)>120&&android.graphics.Color.green(color)<190)blue++;}
         check(blue>15,"Phone marker has no visible blue pixels at its projected location: "+name+" ("+point[0]+", blue="+blue+")");
     }
