@@ -281,13 +281,57 @@ public final class RadioService extends Service {
             s.persisting=false;history.draft(profile,radio,target.topic,"");result.accept("");advance(s);
         },()->{client.cancel(message.uid);if(s.client==client)s.persisting=false;result.accept("Could not save message • transmission cancelled; draft kept");});
     }
+    /**
+     * Network-airtime safeguard, persisted across BLE reconnections and process
+     * restarts. One 5-minute window per full repeater key, regardless of
+     * whether the user asks for status or a neighbor page.
+     * A queued request consumes the allowance even if delivery is uncertain.
+     */
+    long remoteRepeaterCooldownMs(String fullKey){
+        if(fullKey==null||!fullKey.matches("(?i)[0-9a-f]{64}"))return 0;
+        long last=getSharedPreferences("mc_remote_query_limits",MODE_PRIVATE)
+            .getLong(fullKey.toLowerCase(java.util.Locale.ROOT),0L);
+        return McRemoteDiagnostics.remainingFromWallClock(last,System.currentTimeMillis());
+    }
+    void requestRemoteRepeater(String radio,ProtocolClient expected,
+                               McRemoteDiagnostics.Kind kind,String fullKey,int offset){
+        configureMeshCore(radio,client->{
+            if(client!=expected)throw Wire.bad("Selected MeshCore radio changed; reopen repeater");
+            long remain=remoteRepeaterCooldownMs(fullKey);
+            if(remain>0)throw Wire.bad(McRemoteDiagnostics.remainingLabel(remain));
+            client.requestMcRepeater(kind,fullKey,offset,now());
+            // Saved only after the request was accepted into the local queue.
+            getSharedPreferences("mc_remote_query_limits",MODE_PRIVATE).edit()
+                .putLong(fullKey.toLowerCase(java.util.Locale.ROOT),System.currentTimeMillis()).apply();
+        });
+    }
     void configureMeshCore(String radio,java.util.function.Consumer<ProtocolClient> action){
         Session s=sessions.get(RadioProfile.MESHCORE);
         if(s==null||!s.address.equals(radio)||!s.connected||!s.verified||s.client==null){
             if(listener!=null)listener.run();return;
         }
-        try{s.client.mcAdmin.clock=now();action.accept(s.client);advance(s);changed();}
+        try{
+            final ProtocolClient client=s.client;
+            final McRemoteDiagnostics.Result prior=client.mcRemote.pending;
+            client.mcAdmin.clock=now();
+            action.accept(client);
+            McRemoteDiagnostics.Result request=client.mcRemote.pending;
+            if(request!=null&&request!=prior){
+                // Two bounded UI-only deadline checks. Neither queries the radio.
+                // The Companion request may be queued, locally accepted, or remote
+                // pending; a timeout must never trigger automatic retransmission.
+                handler.postDelayed(()->expireRemote(s,client,request),32_000);
+                handler.postDelayed(()->expireRemote(s,client,request),124_000);
+            }
+            advance(s);changed();
+        }
         catch(IllegalArgumentException e){phase(s,"Settings",e.getMessage());}
+    }
+    private void expireRemote(Session s,ProtocolClient client,McRemoteDiagnostics.Result request){
+        if(s.client!=client||client.mcRemote.pending!=request)return;
+        long prior=client.mcRemote.revision;
+        client.checkRemoteDeadline(now());
+        if(prior!=client.mcRemote.revision)changed();
     }
     void configureMeshtastic(String radio,java.util.function.Consumer<ProtocolClient> action){
         Session s=sessions.get(RadioProfile.MESHTASTIC);
