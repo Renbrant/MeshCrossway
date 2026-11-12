@@ -14,7 +14,7 @@ import static com.meshcrossway.android.MeshData.*;
 final class McRemoteDiagnostics {
     enum Kind { STATUS, NEIGHBORS }
     static final int CMD_BINARY=50, RESP_SENT=6, PUSH_BINARY=0x8c;
-    static final long COOLDOWN_MS=60_000L, MAX_WAIT_MS=120_000L;
+    static final long COOLDOWN_MS=5*60_000L, MAX_WAIT_MS=120_000L;
     private static final int MAX_RECORDS=24, NEIGHBOR_PAGE=8, PREFIX_BYTES=6;
     private final SecureRandom random=new SecureRandom();
     private final LinkedHashMap<String,Result> entries=new LinkedHashMap<>();
@@ -68,6 +68,12 @@ final class McRemoteDiagnostics {
         final int offset;
         String state="Queued for local radio",error="";
         long tag=-1,deadline,completedAt;
+        Boolean usedFlood; // Reported by RESP_CODE_SENT byte 1, not a prediction.
+        String radioRoute(){
+            if(usedFlood==null)return "Radio transmission mode not yet reported";
+            return usedFlood?"Local radio used flood routing; multiple mesh relays may transmit":
+                "Local radio reported a known path; relays may still transmit";
+        }
         Status stats;
         Neighbors neighbors;
         Result(String fullKey,Kind kind,int offset,long now){
@@ -93,6 +99,25 @@ final class McRemoteDiagnostics {
         return entries.get(fullKey.toLowerCase(Locale.ROOT)+"|"+kind);
     }
 
+    /** Remaining time for this exact repeater, shared by status and neighbor pages. */
+    long remainingCooldownMs(String key,long now){
+        if(key==null)return 0;
+        Long last=lastRequested.get(key.toLowerCase(Locale.ROOT));
+        if(last==null)return 0;
+        long elapsed=now-last;
+        if(elapsed<0)return COOLDOWN_MS; // monotonic clock discontinuity
+        return Math.max(0,COOLDOWN_MS-elapsed);
+    }
+    static long remainingFromWallClock(long last,long now){
+        if(last<=0)return 0;
+        if(now<last)return COOLDOWN_MS;
+        return Math.max(0,COOLDOWN_MS-(now-last));
+    }
+    static String remainingLabel(long remainingMs){
+        return "Wait "+Math.max(1,(remainingMs+59_999L)/60_000L)
+            +" minute(s) before querying this repeater again";
+    }
+
     /**
      * Request frames use the current firmware's CMD_SEND_BINARY_REQ (50).
      * req_status payload = 0x01; req_neighbours payload =
@@ -104,10 +129,9 @@ final class McRemoteDiagnostics {
         if(pending!=null&&pending.inFlight())throw Wire.bad("Wait for the current remote repeater request");
         if(offset<0||offset>1024||(kind==Kind.STATUS&&offset!=0))
             throw Wire.bad("Invalid repeater request page");
-        String key=repeater.id.toLowerCase(Locale.ROOT),rateKey=key+"|"+kind;
-        Long last=lastRequested.get(rateKey);
-        if(last!=null&&now>=last&&now-last<COOLDOWN_MS)
-            throw Wire.bad("Wait "+Math.max(1,(COOLDOWN_MS-(now-last))/1000)+" seconds before requesting again");
+        String key=repeater.id.toLowerCase(Locale.ROOT);
+        long remaining=remainingCooldownMs(key,now);
+        if(remaining>0)throw Wire.bad(remainingLabel(remaining));
         byte[] suffix;
         if(kind==Kind.STATUS)suffix=new byte[]{1};
         else{
@@ -127,7 +151,8 @@ final class McRemoteDiagnostics {
         Result entry=new Result(key,kind,offset,now);
         String entryKey=key+"|"+kind;
         entries.remove(entryKey);entries.put(entryKey,entry);
-        lastRequested.put(rateKey,now);
+        // One shared per-repeater limit: status, first neighbors page, and every next page.
+        lastRequested.put(key,now);
         while(entries.size()>MAX_RECORDS)entries.remove(entries.keySet().iterator().next());
         while(lastRequested.size()>MAX_RECORDS*2)lastRequested.remove(lastRequested.keySet().iterator().next());
         pending=entry;revision++;
@@ -142,6 +167,7 @@ final class McRemoteDiagnostics {
         long tag=Wire.u32(frame,2);
         if(tag==0){fail("Invalid radio request identifier");return;}
         pending.tag=tag;
+        pending.usedFlood=(frame[1]&1)!=0;
         // Radio estimated_timeout is approximate; allow time for a multi-hop route
         // but never run a background retry or indefinite pending request.
         pending.deadline=now+Math.min(MAX_WAIT_MS,Math.max(30000L,Wire.u32(frame,6)*2L));
