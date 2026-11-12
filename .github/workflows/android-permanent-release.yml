@@ -14,7 +14,7 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.3.11'
+        default: '0.3.12'
         type: string
 permissions:
   contents: write
@@ -87,7 +87,7 @@ jobs:
       - name: Verify requested version and permanent signing credentials
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.11' }}
+          REQUESTED: ${{ inputs.version || '0.3.12' }}
         run: |
           set -euo pipefail
           [[ "$REQUESTED" =~ ^0\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version"; exit 1; }
@@ -116,7 +116,7 @@ jobs:
       - name: Verify APK signature identity and version before publishing
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.11' }}
+          REQUESTED: ${{ inputs.version || '0.3.12' }}
         run: |
           set -euo pipefail
           APK=android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
@@ -136,7 +136,7 @@ jobs:
       - name: Publish only if no version tag or release exists
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.3.11' }}
+          REQUESTED: ${{ inputs.version || '0.3.12' }}
         run: |
           set -euo pipefail
           CURRENT_HEAD=$(git ls-remote origin refs/heads/baseline/android-0.1.0 | cut -f1)
@@ -151,34 +151,25 @@ jobs:
             exit 1
           fi
           cat > release-notes.md <<EOF
-          ## MeshCrossway Android $REQUESTED — MeshCore everyday tools
+          ## MeshCrossway Android $REQUESTED — channels, links and QR Codes
 
-          Install over the existing MeshCrossway app and choose **Update**. The permanent signing certificate is unchanged. Local messages, settings, favorites, tracks and offline maps remain during an in-place update.
+          Install as an update over your existing app. The permanent certificate is unchanged and versionCode increases to 33. Do not uninstall or clear storage.
 
-          This release corrects the mistakenly published 0.4.0 number to 0.3.11, following 0.3.10. It retains all four MeshCore tools. Its versionCode is 32 (above 0.4.0 code 31), so existing installations can update without uninstalling.
+          - Meshtastic: create private secondary channels, edit channel name/key and MQTT flags, leave secondary channels, and share primary/selected secondary settings using official ChannelSet links. Primary slot 0 is retained. A secondary share also contains the primary key; confirmation explains this.
+          - MeshCore: retain private/hashtag/Public creation, editing, removal, scope checks and verified readback.
+          - Both networks: share a link or QR image, scan a QR Code with the camera, read a saved QR image, paste a channel link or open supported official links in the app. Camera access is optional; image/link import remains available.
+          - Imports require review and explicit Save to radio. Meshtastic multi-channel links let you choose channels individually. Different LoRa parameters require a separate confirmed save before importing; local region, power and transmit policy are preserved. Join the shared primary first when a secondary needs its automatic frequency. Other slots are not silently replaced.
+          - Wait for radio readback before sending or sharing during Meshtastic channel/LoRa edits. Historical messages are retained; old channel-key targets cannot send after replacement.
 
-          - Announce your MeshCore presence explicitly: choose nearby zero-hop or mesh-wide flood. The app distinguishes radio acceptance from reception by others and limits repeated taps. Your radio's configured advert location policy is respected.
-          - Keep sends and key sharing blocked for an edited channel until its current values are verified, including readback failure and cancellation. Other channels and direct messages remain available.
-          - Create private, hashtag or Public channels; edit or remove existing slots. Each save checks fresh channel name/key readback before confirmation. Existing message history is retained, and an old conversation cannot send with a replaced key.
-          - Share confirmed channel settings using the official meshcore://channel/add link format. Import by pasting a link or opening it from another app, then review and save explicitly. Region-scoped imports require a matching configured default region; importing does not silently change that region.
-          - Export or share a bounded support diagnostic containing app/Android/firmware versions, connection phases, numeric GATT/protocol events and queue counts. Messages, coordinates, personal names, Bluetooth addresses, keys, credentials and raw packet bodies are excluded.
-          - Filter MeshCore contacts into Discovered, Approved and Historical, with counts, clear state labels, refresh and approval/removal actions. Offline labels explicitly describe saved state.
+          Validation gates include protocol/channel fixtures, QR encoding/decoding unit checks, API 29/35 channel-manager and deep-link instrumentation, migration/persistence, build, lint and permanent certificate verification. Physical-radio, camera and cross-app RF testing are still required; this is a beta.
 
-          Validation: 96 MeshCore regressions, 106 user-feature checks and 206 Meshtastic conformance checks, protocol/browser/migration suites, API 29/35 device smoke and persistence fixtures, build, lint and permanent certificate verification. Physical-radio/RF acceptance and native-app interoperability testing remain necessary; this is a beta, not a claim of complete official-app parity.
-
-          MeshCore and Meshtastic remain independent. No automatic adverts, automatic approval, message retransmission or settings SET replay are enabled. Pending save and late-ACK recovery remain limited to service lifetime and reconnection to the same selected radio.
-
-          The APK checksum and permanent certificate fingerprint are attached.
+          MeshCore and Meshtastic remain independent, with no cross-network forwarding. The APK checksum and certificate fingerprint are attached.
           EOF
           gh release create "$TAG" "release/MeshCrossway-$REQUESTED.apk" \
              release/SHA256SUMS.txt release/SIGNING-CERT-SHA256.txt \
              --target "$GITHUB_SHA" \
-             --title "Android $REQUESTED — MeshCore everyday tools" \
+             --title "Android $REQUESTED — channels, links and QR Codes" \
              --notes-file release-notes.md --prerelease --latest=false
-      - name: Mark mistaken version as superseded after successful publication
-        shell: bash
-        run: |
-          gh release edit android-v0.4.0 --title "Android 0.4.0 — superseded by 0.3.11 (numbering correction)" --notes "This version number was published in error. Use Android 0.3.11, which retains these features and has a higher internal versionCode (32) so it installs as an update over 0.4.0 (31). Do not uninstall. Download: https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.11 . Historical assets and tag are retained unchanged."
       - name: Remove ephemeral keystore
         if: always()
         shell: bash

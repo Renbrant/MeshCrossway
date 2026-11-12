@@ -10,8 +10,8 @@ android {
         applicationId 'com.meshcrossway.mobile'
         minSdk 26
         targetSdk 35
-        versionCode 32
-        versionName '0.3.11'
+        versionCode 33
+        versionName '0.3.12'
         buildConfigField 'String', 'CLERK_PUBLISHABLE_KEY', '"' + (providers.gradleProperty('clerkPublishableKey').getOrElse('')) + '"'
         buildConfigField 'String', 'CLOUD_API_BASE_URL', '"' + (providers.gradleProperty('cloudApiBaseUrl').getOrElse('https://meshcrossway-cloud.meshcrossway.workers.dev')) + '"'
         testInstrumentationRunner 'com.meshcrossway.android.SmokeInstrumentation'
@@ -50,6 +50,7 @@ android {
 }
 
 dependencies {
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     implementation 'com.clerk:clerk-android-api:1.4.1'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
     implementation 'org.maplibre.gl:android-sdk:11.13.5'

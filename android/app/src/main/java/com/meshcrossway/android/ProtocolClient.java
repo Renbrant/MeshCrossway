@@ -133,6 +133,18 @@ final class ProtocolClient {
     void setMtHam(String callSign,String longName){if(!mtOwnerLoaded||!mtConfigLoaded(5)||mtHam())throw Wire.bad("Load the current identity and LoRa settings first");if(!callSign.matches("[A-Z0-9/]{3,7}"))throw Wire.bad("Enter a 3–7 character callsign");if(!mtAtLeast(8,0)&&!longName.trim().isEmpty())throw Wire.bad("An optional licensed description requires firmware 2.8.0 or newer; use only the callsign on this radio");String composed=longName.trim().isEmpty()?callSign:callSign+"//"+longName;Wire.optionalText(composed,mtAtLeast(8,0)?24:39);List<Wire.F> ls=Wire.fields(mtConfig(5));byte[] params=new Wire.Out().bytes(1,Wire.text(callSign,7)).scalar(2,Wire.number(ls,10,0)).fixed(3,Wire.number(ls,14,0)).bytes(4,Wire.bytes(Wire.fields(mtOwner),3)).bytes(5,Wire.optionalText(longName,14)).array();byte[] expected=new Wire.Out().bytes(2,composed.getBytes(StandardCharsets.UTF_8)).bytes(3,Wire.bytes(Wire.fields(mtOwner),3)).scalar(6,1).array();admin.save(new MtAdmin.Edit(4,0,18,params,expected,true));}
     void setMtConfigFloat(int type,int field,double value){if(!Double.isFinite(value)||value<0||value>2500)throw Wire.bad("Enter a finite frequency between 0 and 2500 MHz");setMtConfig(type,Wire.floatField(mtConfig(type),field,(float)value));}
     void setMtChannelName(int slot,String name){byte[] channel=mtChannels.get(slot);if(channel==null)throw Wire.bad("Read the channel first");byte[] settings=Wire.bytes(Wire.fields(channel),2);byte[] renamed=Wire.replaceBytes(settings,3,Wire.optionalText(name,11));byte[] body=Wire.replaceBytes(channel,2,renamed);mtSave(2,slot,33,channel,body,false);}
+    void setMtChannel(int slot,byte[] settings,int role){
+        byte[] before=mtChannels.get(slot);if(before==null||slot<0||slot>=8)throw Wire.bad("Read this channel slot before saving");
+        if(role<0||role>2||slot==0&&role!=1||slot!=0&&role==1)throw Wire.bad("Keep slot 0 as primary and other slots secondary or disabled");
+        MtChannelLink.validate(settings);if(mtHam()&&Wire.bytes(Wire.fields(settings),2).length>0)throw Wire.bad("Licensed mode does not allow encrypted channels");
+        byte[] after=Wire.replaceBytes(Wire.replace(Wire.replace(before,1,slot),3,role),2,settings);
+        mtSave(2,slot,33,before,after,false);
+    }
+    String shareMtChannel(int slot){
+        if(!ready||admin.edit!=null||!mtRefreshingChannels.isEmpty()||!mtConfigLoaded(5))throw Wire.bad("Wait for channel and LoRa verification before sharing");
+        List<byte[]> shared=new ArrayList<>();for(int i:new int[]{0,slot}){if(i==0&&!shared.isEmpty()||i==slot&&slot==0&&!shared.isEmpty())continue;byte[] ch=mtChannels.get(i);if(ch==null||Wire.number(Wire.fields(ch),3,0)==0)throw Wire.bad("Read an enabled primary and selected channel before sharing");shared.add(Wire.bytes(Wire.fields(ch),2));}
+        return new MtChannelLink(shared,mtConfig(5)).link();
+    }
     String nodeName(String id){Node n=nodes.get(id);if(n!=null&&!n.name.isEmpty())return n.name;return profile==RadioProfile.MESHTASTIC?String.format(Locale.ROOT,"!%08x",Long.parseLong(id)):id.substring(0,Math.min(12,id.length()));}
     static final int MC_DISCOVERED=1,MC_APPROVED=2,MC_RETIRED=3;
     private void mcContact(byte[] data,boolean approved){
@@ -380,6 +392,7 @@ final class ProtocolClient {
         Message m=new Message();m.topic=target.topic;m.title=target.title;m.peer=target.peer;m.identity=target.identity;m.slot=target.slot;m.group=target.group;m.body=text;m.outgoing=m.read=true;m.timestamp=System.currentTimeMillis()/1000;m.sender="You";m.state="queued";
         byte[] frame;int response=-1;
         if(profile==RadioProfile.MESHTASTIC){
+            if(admin.edit!=null&&(admin.edit.kind==2||admin.edit.kind==6&&admin.edit.index==5))throw Wire.bad("Wait for channel or LoRa verification before sending");
             if(!mtRefreshingChannels.isEmpty())throw Wire.bad("Wait for the radio channels to synchronize after licensed setup");
             if(region==0||!txEnabled)throw Wire.bad("Set LoRa region and enable TX using the official Meshtastic app first");
             if(!target.group&&(channels.get(0)==null||!channels.get(0).enabled))throw Wire.bad("Primary channel is disabled or not synchronized");
