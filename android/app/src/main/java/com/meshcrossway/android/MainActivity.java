@@ -29,7 +29,7 @@ public final class MainActivity extends Activity {
     private int selected,filter,listLimit=100,chatLimit=100,nodeOrder;private boolean favoritesOnly,unreadOnly,pinnedOnly,resumed,refreshQueued;
     private TrackService trackService;private boolean tracksBound;private Intent pendingTrack;private String exportingTrack="";private int nodeType;
     private boolean backupBusy;private int mcContactFilter;private LinearLayout mcContactTabs;private String pendingMtChannelLink="";private String pendingChannelLink="",pendingDiagnostic="";
-    private byte[] mtLoraDraft,mtLoraBase;private boolean mtLoraSaving;private String mtDraftRadio="";private String settingsSection="";private RadioProfile settingsRadio;private final ArrayDeque<Screen> backStack=new ArrayDeque<>();private final HashMap<String,Integer> scrollPositions=new HashMap<>();private String renderedRoute="";private LinearLayout header;private boolean rendering;private String settingsFingerprint="",homeFingerprint="";private final HashMap<Integer,String> pageQueries=new HashMap<>();
+    private byte[] mtLoraDraft,mtLoraBase;private boolean mtLoraSaving;private String mtDraftRadio="";private String settingsSection="";private String repeaterDossierKey="",repeaterDossierRadio="";private RadioProfile settingsRadio;private final ArrayDeque<Screen> backStack=new ArrayDeque<>();private final HashMap<String,Integer> scrollPositions=new HashMap<>();private String renderedRoute="";private LinearLayout header;private boolean rendering;private String settingsFingerprint="",homeFingerprint="";private final HashMap<Integer,String> pageQueries=new HashMap<>();
     private static final class Screen{int selected,filter,y;String query,section,radio;RadioProfile profile;Target chat;RadioProfile chatProfile;}
     private TextView dualStatus;private View statusSeparator;MapPanel mapPanel;static String mapStyleOverride;private org.maplibre.android.geometry.LatLng mapFocus;PhonePosition position;
 
@@ -48,7 +48,7 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle state){
         Appearance chosenAppearance=Appearance.load(this);
         if(chosenAppearance.colors.light)setTheme(R.style.AppThemeLight);
-        super.onCreate(state);appearance=chosenAppearance;applyAppearancePalette();position=new PhonePosition(this);position.listener=()->{if(mapPanel!=null)mapPanel.update();if(selected==0||(selected==1&&nodeOrder==2))scheduleRefresh();};if(state!=null){ArrayList<Bundle> history=state.getParcelableArrayList("navigation");if(history!=null)for(Bundle entry:history)backStack.addLast(decodeScreen(entry));exportingTrack=state.getString("exportingTrack","");nodeOrder=state.getInt("nodeOrder");nodeType=state.getInt("nodeType");mcContactFilter=state.getInt("mcContactFilter");pendingChannelLink=state.getString("pendingChannelLink","");pendingMtChannelLink=state.getString("pendingMtChannelLink","");pendingDiagnostic=state.getString("pendingDiagnostic","");settingsSection=state.getString("settingsSection","");if(state.containsKey("settingsRadio"))settingsRadio=RadioProfile.valueOf(state.getString("settingsRadio"));selected=state.getInt("page");filter=state.getInt("filter");query=state.getString("query","");if(state.containsKey("topic")){chatProfile=RadioProfile.valueOf(state.getString("profile"));chatRadio=state.getString("radio","");chat=new Target(state.getString("topic"),state.getString("title"),state.getString("peer"),state.getString("identity"),state.getInt("slot"),state.getBoolean("group")).reply(state.getLong("replyId",0),false);drafts.put(draftKey(),state.getString("draft",""));}}
+        super.onCreate(state);appearance=chosenAppearance;applyAppearancePalette();position=new PhonePosition(this);position.listener=()->{if(mapPanel!=null)mapPanel.update();if(selected==0||(selected==1&&nodeOrder==2))scheduleRefresh();};if(state!=null){ArrayList<Bundle> history=state.getParcelableArrayList("navigation");if(history!=null)for(Bundle entry:history)backStack.addLast(decodeScreen(entry));exportingTrack=state.getString("exportingTrack","");nodeOrder=state.getInt("nodeOrder");nodeType=state.getInt("nodeType");mcContactFilter=state.getInt("mcContactFilter");pendingChannelLink=state.getString("pendingChannelLink","");pendingMtChannelLink=state.getString("pendingMtChannelLink","");pendingDiagnostic=state.getString("pendingDiagnostic","");settingsSection=state.getString("settingsSection","");repeaterDossierKey=state.getString("repeaterDossierKey","");repeaterDossierRadio=state.getString("repeaterDossierRadio","");if(state.containsKey("settingsRadio"))settingsRadio=RadioProfile.valueOf(state.getString("settingsRadio"));selected=state.getInt("page");filter=state.getInt("filter");query=state.getString("query","");if(state.containsKey("topic")){chatProfile=RadioProfile.valueOf(state.getString("profile"));chatRadio=state.getString("radio","");chat=new Target(state.getString("topic"),state.getString("title"),state.getString("peer"),state.getString("identity"),state.getInt("slot"),state.getBoolean("group")).reply(state.getLong("replyId",0),false);drafts.put(draftKey(),state.getString("draft",""));}}
         getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(PANEL);
         int systemUiFlags=getWindow().getDecorView().getSystemUiVisibility();
         if(appearance.colors.light)systemUiFlags|=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
@@ -79,7 +79,7 @@ public final class MainActivity extends Activity {
     @Override public void onLowMemory(){if(mapPanel!=null)mapPanel.mapView.onLowMemory();super.onLowMemory();}
     @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);saveDraft();setIntent(intent);if(captureChannelIntent(intent)||readConversationIntent(intent))buildPage();}
     private boolean readConversationIntent(Intent intent){try{String network=intent.getStringExtra("network"),radio=intent.getStringExtra("radio"),topic=intent.getStringExtra("topic"),title=intent.getStringExtra("title"),peer=intent.getStringExtra("peer"),identity=intent.getStringExtra("identity");if(network==null||radio==null||topic==null||title==null||peer==null||identity==null||radio.length()>64||topic.length()>512||title.length()>256||peer.length()>128||identity.length()>128)return false;chatProfile=RadioProfile.valueOf(network);chatRadio=radio;chat=new Target(topic,title,peer,identity,intent.getIntExtra("slot",0),intent.getBooleanExtra("group",false));selected=3;return true;}catch(IllegalArgumentException e){return false;}}
-    @Override protected void onSaveInstanceState(Bundle out){saveDraft();ArrayList<Bundle> navigation=new ArrayList<>();for(Screen screen:backStack)navigation.add(encodeScreen(screen));out.putParcelableArrayList("navigation",navigation);out.putString("settingsSection",settingsSection);if(settingsRadio!=null)out.putString("settingsRadio",settingsRadio.name());out.putString("exportingTrack",exportingTrack);out.putInt("nodeOrder",nodeOrder);out.putInt("nodeType",nodeType);out.putInt("mcContactFilter",mcContactFilter);out.putString("pendingChannelLink",pendingChannelLink);out.putString("pendingMtChannelLink",pendingMtChannelLink);out.putString("pendingDiagnostic",pendingDiagnostic);out.putInt("page",selected);out.putInt("filter",filter);out.putString("query",query);if(chat!=null){out.putString("profile",chatProfile.name());out.putString("radio",chatRadio);out.putString("topic",chat.topic);out.putString("title",chat.title);out.putString("peer",chat.peer);out.putString("identity",chat.identity);out.putInt("slot",chat.slot);out.putBoolean("group",chat.group);out.putLong("replyId",chat.replyId);out.putString("draft",drafts.getOrDefault(draftKey(),""));}super.onSaveInstanceState(out);}
+    @Override protected void onSaveInstanceState(Bundle out){saveDraft();ArrayList<Bundle> navigation=new ArrayList<>();for(Screen screen:backStack)navigation.add(encodeScreen(screen));out.putParcelableArrayList("navigation",navigation);out.putString("settingsSection",settingsSection);out.putString("repeaterDossierKey",repeaterDossierKey);out.putString("repeaterDossierRadio",repeaterDossierRadio);if(settingsRadio!=null)out.putString("settingsRadio",settingsRadio.name());out.putString("exportingTrack",exportingTrack);out.putInt("nodeOrder",nodeOrder);out.putInt("nodeType",nodeType);out.putInt("mcContactFilter",mcContactFilter);out.putString("pendingChannelLink",pendingChannelLink);out.putString("pendingMtChannelLink",pendingMtChannelLink);out.putString("pendingDiagnostic",pendingDiagnostic);out.putInt("page",selected);out.putInt("filter",filter);out.putString("query",query);if(chat!=null){out.putString("profile",chatProfile.name());out.putString("radio",chatRadio);out.putString("topic",chat.topic);out.putString("title",chat.title);out.putString("peer",chat.peer);out.putString("identity",chat.identity);out.putInt("slot",chat.slot);out.putBoolean("group",chat.group);out.putLong("replyId",chat.replyId);out.putString("draft",drafts.getOrDefault(draftKey(),""));}super.onSaveInstanceState(out);}
     @Override public void onBackPressed(){handleBack();}
     private void handleBack(){
         if(mapPanel!=null&&mapPanel.closePanel())return;
@@ -91,7 +91,7 @@ public final class MainActivity extends Activity {
     private void openSettings(String section,RadioProfile radio){saveDraft();remember();selected=5;chat=null;settingsSection=section;settingsRadio=radio;choosing=null;buildPage();}
     private Bundle encodeScreen(Screen screen){Bundle b=new Bundle();b.putInt("selected",screen.selected);b.putInt("filter",screen.filter);b.putInt("y",screen.y);b.putString("query",screen.query);b.putString("section",screen.section);b.putString("radio",screen.radio);if(screen.profile!=null)b.putString("profile",screen.profile.name());if(screen.chatProfile!=null)b.putString("chatProfile",screen.chatProfile.name());if(screen.chat!=null){Target t=screen.chat;b.putString("topic",t.topic);b.putString("title",t.title);b.putString("peer",t.peer);b.putString("identity",t.identity);b.putInt("slot",t.slot);b.putBoolean("group",t.group);b.putLong("replyId",t.replyId);}return b;}
     private Screen decodeScreen(Bundle b){Screen screen=new Screen();screen.selected=b.getInt("selected");screen.filter=b.getInt("filter");screen.y=b.getInt("y");screen.query=b.getString("query","");screen.section=b.getString("section","");screen.radio=b.getString("radio","");if(b.containsKey("profile"))screen.profile=RadioProfile.valueOf(b.getString("profile"));if(b.containsKey("chatProfile"))screen.chatProfile=RadioProfile.valueOf(b.getString("chatProfile"));if(b.containsKey("topic"))screen.chat=new Target(b.getString("topic"),b.getString("title"),b.getString("peer"),b.getString("identity"),b.getInt("slot"),b.getBoolean("group")).reply(b.getLong("replyId",0),false);return screen;}
-    private String route(){return selected+":"+settingsSection+":"+settingsRadio+":"+(chat==null?"":chatRadio+chat.topic);}
+    private String route(){return selected+":"+settingsSection+":"+settingsRadio+":"+repeaterDossierKey+":"+(chat==null?"":chatRadio+chat.topic);}
     private void applyAppearancePalette(){
         Appearance.Palette color=appearance.colors;
         BG=color.bg;PANEL=color.panel;PANEL2=color.panel2;
@@ -652,23 +652,138 @@ public final class MainActivity extends Activity {
 
     private void showRepeaterDossier(Node node){
         if(!RepeaterInventory.isRepeater(node))return;
-        long nowSeconds=System.currentTimeMillis()/1000;
-        StringBuilder summary=new StringBuilder();
-        summary.append("MeshCore repeater · saved contact\n\n");
-        summary.append("Public identity: ").append(node.id).append("\n\n");
-        summary.append("Radio membership: ").append(McContacts.label(node,mcClient())).append("\n");
-        summary.append("Local activity: ").append(RepeaterInventory.activity(node,nowSeconds)).append("\n");
-        summary.append("Last saved update: ").append(node.heard>0?when(node.heard):"Unknown").append("\n");
-        if(node.position)summary.append("Saved position available (not necessarily current).\n");
-        summary.append("\nRemote status: Not queried\nRemote neighbors: Not queried\n");
-        summary.append("Uptime, power, noise floor and repeater metrics: unavailable until "
-            +"a supported on-demand status request is implemented and validated.\n\n");
-        summary.append("Opening this screen sends no radio commands and does not prove the repeater is reachable.");
-        AlertDialog.Builder dialog=new AlertDialog.Builder(this)
-            .setTitle(nodeName(RadioProfile.MESHCORE,node))
-            .setMessage(summary.toString()).setPositiveButton("Back",null);
-        if(node.position)dialog.setNeutralButton("Show on map",(d,w)->showMap(node.lat,node.lon));
-        dialog.show();
+        repeaterDossierKey=node.id;
+        repeaterDossierRadio=radio(RadioProfile.MESHCORE);
+        openSettings("mc_repeater_dossier",RadioProfile.MESHCORE);
+    }
+
+    /** Remote values always come from the current Companion request session. */
+    private void repeaterDossierPage(){
+        Node saved=null;
+        for(Node entry:snapshot(RadioProfile.MESHCORE).nodes)
+            if(entry.id.equalsIgnoreCase(repeaterDossierKey)){saved=entry;break;}
+        if(saved==null||!RepeaterInventory.isRepeater(saved)){
+            section(results,"REPEATER");
+            results.addView(text("The selected repeater is not in this radio's saved contacts.",14,MUTED));
+            return;
+        }
+        final Node node=saved;
+        final String source=repeaterDossierRadio;
+        RadioService.Session session=service==null?null:service.sessions.get(RadioProfile.MESHCORE);
+        ProtocolClient client=session!=null&&source.equals(session.address)&&session.verified
+            ?session.client:null;
+        long epoch=System.currentTimeMillis()/1000;
+        long elapsed=SystemClock.elapsedRealtime();
+        section(results,"MESHCORE REPEATER");
+        LinearLayout identity=card(results);
+        identity.addView(text(nodeName(RadioProfile.MESHCORE,node),18,RADIO_MC));
+        space(identity,6);
+        identity.addView(text("Full public key: "+node.id,12,MUTED));
+        identity.addView(text(McContacts.label(node,client),12,MUTED));
+        identity.addView(text(RepeaterInventory.activity(node,epoch),12,MUTED));
+        identity.addView(text("Last saved update: "+(node.heard>0?when(node.heard):"Unknown"),12,MUTED));
+        identity.addView(text(client!=null?"Source: current MeshCore BLE session":
+                "Offline / different radio · cached contact only",12,MUTED));
+        if(node.position)menuRow(group(results),"map","Show saved position","May be old; not a live GPS fix",
+            ()->showMap(node.lat,node.lon),RADIO_MC);
+        section(results,"REMOTE STATUS");
+        McRemoteDiagnostics.Result status=client==null?null:
+            client.mcRemote.find(node.id,McRemoteDiagnostics.Kind.STATUS);
+        LinearLayout stats=card(results);
+        stats.addView(text(status==null?"Not queried on this connection":
+            status.freshness(elapsed),14,status!=null&&status.stats!=null?GREEN:MUTED));
+        if(status!=null&&!status.error.isEmpty())stats.addView(text(status.error,12,RED));
+        if(status!=null&&status.stats!=null){
+            McRemoteDiagnostics.Status s=status.stats;
+            stats.addView(text("Remote repeater · reported values:",13,WHITE));
+            stats.addView(text("Uptime: "+s.uptime+" sec · Battery: "+s.batteryMv+" mV",13,WHITE));
+            stats.addView(text("TX queue: "+s.queue+" · Noise floor: "+s.noiseFloor+" dBm",13,WHITE));
+            stats.addView(text("Last RF: RSSI "+s.lastRssi+" dBm · SNR "
+                +String.format(Locale.ROOT,"%.2f",s.lastSnr)+" dB",13,WHITE));
+            stats.addView(text("Packets: RX "+s.received+" / TX "+s.sent,13,WHITE));
+            stats.addView(text("Direct: RX "+s.recvDirect+" / TX "+s.sentDirect
+                +" · flood: RX "+s.recvFlood+" / TX "+s.sentFlood,12,MUTED));
+            stats.addView(text("Airtime (reported units): TX "+s.txAirtime
+                +" · RX "+s.rxAirtime,12,MUTED));
+            stats.addView(text("Duplicate indications: direct "+s.directDup
+                +" · flood "+s.floodDup+" · queue-full "+s.fullEvents,12,MUTED));
+            if(s.errorsKnown)stats.addView(text("Receive errors: "+s.errors,12,MUTED));
+        }
+        boolean canQuery=client!=null&&client.ready&&client.firmwareCode>=10
+            &&client.nodes.containsKey(node.id)&&client.nodes.get(node.id).type==2
+            &&client.mcRemote.pending==null;
+        menuRow(group(results),"refresh","Request remote status",
+            canQuery?"One user-initiated LoRa request; may take up to 2 min":
+            "Connect the same radio, finish previous request and verify firmware",
+            ()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.STATUS,0),RADIO_MC);
+        section(results,"REPEATER NEIGHBORS");
+        McRemoteDiagnostics.Result neighbors=client==null?null:
+            client.mcRemote.find(node.id,McRemoteDiagnostics.Kind.NEIGHBORS);
+        LinearLayout near=card(results);
+        near.addView(text(neighbors==null?"Not queried on this connection":
+            neighbors.freshness(elapsed),14,neighbors!=null&&neighbors.neighbors!=null?GREEN:MUTED));
+        if(neighbors!=null&&!neighbors.error.isEmpty())
+            near.addView(text(neighbors.error,12,RED));
+        if(neighbors!=null&&neighbors.neighbors!=null){
+            McRemoteDiagnostics.Neighbors list=neighbors.neighbors;
+            near.addView(text("Reported neighbor count: "+list.total
+                +" · showing page from offset "+list.offset,13,WHITE));
+            for(McRemoteDiagnostics.Neighbor entry:list.list){
+                String label="Unresolved prefix";
+                int matches=0;
+                for(Node known:snapshot(RadioProfile.MESHCORE).nodes)
+                    if(known.id.startsWith(entry.prefix)){
+                        matches++;
+                        if(matches==1)label=nodeName(RadioProfile.MESHCORE,known);
+                    }
+                if(matches>1)label="Ambiguous · "+matches+" contacts";
+                near.addView(text(label+" ["+entry.prefix+"]",13,WHITE));
+                near.addView(text("Last reported "+entry.secondsAgo+" s ago · SNR "
+                    +String.format(Locale.ROOT,"%.2f",entry.snr)+" dB",12,MUTED));
+            }
+            if(list.list.isEmpty())near.addView(text("This page returned no neighbors.",12,MUTED));
+            int next=list.offset+list.list.size();
+            if(next<list.total&&next<=1024&&!list.list.isEmpty())
+                menuRow(group(results),"refresh","Request next neighbors page",
+                    "Offset "+next+" · separate airtime-limited request",
+                    ()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,next),RADIO_MC);
+        }
+        menuRow(group(results),"refresh","Request neighbors",
+            canQuery?"Read at most 8 reported neighbors with abbreviated public-key prefixes":
+                "Requires a Ready, compatible MeshCore repeater connection",
+            ()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,0),RADIO_MC);
+        section(results,"DATA PROVENANCE");
+        results.addView(text("The firmware sends a tagged response via the selected MeshCore radio. "
+            +"A locally accepted command is not proof of a remote reply. "
+            +"Names matched to short prefixes can be ambiguous. "
+            +"All values are historical once captured; opening the page does not transmit. "
+            +"This does not administer, reboot or modify the repeater.",13,MUTED));
+    }
+
+    private void confirmRepeaterQuery(Node node,String source,
+                                      McRemoteDiagnostics.Kind kind,int offset){
+        ProtocolClient expected=mcClient();
+        if(!source.equals(radio(RadioProfile.MESHCORE))||expected==null
+                ||!expected.ready||!expected.nodes.containsKey(node.id)){
+            Toast.makeText(this,"Original MeshCore radio or repeater is no longer available",
+                Toast.LENGTH_LONG).show();return;
+        }
+        new AlertDialog.Builder(this)
+            .setTitle(kind==McRemoteDiagnostics.Kind.STATUS?
+                "Request repeater status?":"Request repeater neighbors?")
+            .setMessage("This sends one LoRa request to the selected repeater. "
+                +"It uses network airtime; the radio may accept it even if the remote node never replies. "
+                +"There is no automatic retry, and response times can be long.")
+            .setNegativeButton("Cancel",null)
+            .setPositiveButton("Request",(d,w)->{
+                if(!source.equals(radio(RadioProfile.MESHCORE))||mcClient()!=expected){
+                    Toast.makeText(this,"Radio changed; reopen the repeater",Toast.LENGTH_LONG).show();
+                    return;
+                }
+                mcCommandFor(expected,client->client.requestMcRepeater(
+                    kind,node.id,offset,SystemClock.elapsedRealtime()));
+                scheduleRefresh();
+            }).show();
     }
 
     private void mtNodeMetrics(Node saved){ProtocolClient c=mtClient();Node live=c==null?null:c.nodes.get(saved.id);Node n=live==null?saved:live;StringBuilder content=new StringBuilder("Latest reported values\n");for(Map.Entry<String,String> entry:n.metrics.entrySet())content.append("\n").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");if(n.metrics.isEmpty())content.append("No telemetry received yet.\n");content.append("\nRecent samples\n");for(int i=n.metricHistory.size()-1;i>=0;i--)content.append(n.metricHistory.get(i)).append("\n\n");TextView data=text(content.toString(),13,WHITE);data.setPadding(dp(18),dp(12),dp(18),dp(12));ScrollView scroll=new ScrollView(this);scroll.addView(data);new AlertDialog.Builder(this).setTitle(nodeName(RadioProfile.MESHTASTIC,n)).setView(scroll).setPositiveButton("Request telemetry",(d,w)->mtCommand(client->client.requestMtMetrics(n.id,false))).setNeutralButton("Traceroute",(d,w)->mtConfirm("Request a new traceroute",false,()->mtCommand(client->client.requestMtMetrics(n.id,true)))).setNegativeButton("Back",null).show();}
@@ -874,6 +989,7 @@ public final class MainActivity extends Activity {
         }
         if(settingsSection.equals("radio")){radioPage();return;}
         if(settingsSection.equals("network_diagnostics")){advancedNetworkDiagnostics();return;}
+        if(settingsSection.equals("mc_repeater_dossier")){repeaterDossierPage();return;}
         if(settingsSection.startsWith("mc_")){meshCoreSettingsDetail();return;}
         if(settingsSection.startsWith("mt_")){meshtasticSettingsDetail();return;}
         if(settingsSection.equals("appearance")){appearancePage();return;}
