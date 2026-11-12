@@ -720,11 +720,13 @@ public final class MainActivity extends Activity {
             stats.addView(text("Packets: RX "+s.received+" / TX "+s.sent,13,WHITE));
             stats.addView(text("Direct: RX "+s.recvDirect+" / TX "+s.sentDirect
                 +" · flood: RX "+s.recvFlood+" / TX "+s.sentFlood,12,MUTED));
-            stats.addView(text("Airtime (reported units): TX "+s.txAirtime
+            stats.addView(text("Airtime (s): TX "+s.txAirtime
                 +" · RX "+s.rxAirtime,12,MUTED));
             stats.addView(text("Duplicate indications: direct "+s.directDup
-                +" · flood "+s.floodDup+" · queue-full "+s.fullEvents,12,MUTED));
+                +" · flood "+s.floodDup+" · error flags "+s.fullEvents,12,MUTED));
             if(s.errorsKnown)stats.addView(text("Receive errors: "+s.errors,12,MUTED));
+            if(s.extensionBytes>0)stats.addView(text("Firmware extension: "+
+                s.extensionBytes+" additional byte(s) safely ignored",12,MUTED));
             stats.addView(text(status.radioRoute(),12,MUTED));
         }
         long cooldown=service==null?0:service.remoteRepeaterCooldownMs(node.id);
@@ -755,6 +757,8 @@ public final class MainActivity extends Activity {
             McRemoteDiagnostics.Neighbors list=neighbors.neighbors;
             near.addView(text("Reported neighbor count: "+list.total
                 +" · showing page from offset "+list.offset,13,WHITE));
+            if(list.extensionBytes>0)near.addView(text("Firmware extension: "+
+                list.extensionBytes+" trailing byte(s) safely ignored",12,MUTED));
             for(McRemoteDiagnostics.Neighbor entry:list.list){
                 String label="Unresolved prefix";
                 int matches=0;
@@ -806,14 +810,10 @@ public final class MainActivity extends Activity {
         new AlertDialog.Builder(this)
             .setTitle(kind==McRemoteDiagnostics.Kind.STATUS?
                 "Request repeater status?":"Request repeater neighbors?")
-            .setMessage("RADIO AIRTIME WARNING\n\n"
-                +"This request may be sent using FLOOD routing. If the repeater's path is "
-                +"unknown, multiple mesh repeaters may retransmit it; the reply can also "
-                +"use multiple hops. A single request may therefore cause several LoRa transmissions.\n\n"
-                +"Only one manual request is allowed every 30 seconds per repeater, "
-                +"shared across status, neighbor lists and additional pages, even after reconnecting. "
-                +"The radio accepting a command does not guarantee a remote reply. "
-                +"There is no automatic retry.")
+            .setMessage("This sends one manual LoRa request. FLOOD routing may cause "
+                +"several relay transmissions in the mesh.\n\n"
+                +"Limit: one request per repeater every 30 seconds, shared by status "
+                +"and neighbor pages. No automatic retries. A reply is not guaranteed.")
             .setNegativeButton("Cancel",null)
             .setPositiveButton("Request",(d,w)->{
                 if(!source.equals(radio(RadioProfile.MESHCORE))||mcClient()!=expected){
