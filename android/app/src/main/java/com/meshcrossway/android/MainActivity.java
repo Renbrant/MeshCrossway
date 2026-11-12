@@ -693,6 +693,8 @@ public final class MainActivity extends Activity {
         stats.addView(text(status==null?"Not queried on this connection":
             status.freshness(elapsed),14,status!=null&&status.stats!=null?GREEN:MUTED));
         if(status!=null&&!status.error.isEmpty())stats.addView(text(status.error,12,RED));
+        if(status!=null&&status.usedFlood!=null&&status.stats==null)
+            stats.addView(text(status.radioRoute(),12,MUTED));
         if(status!=null&&status.stats!=null){
             McRemoteDiagnostics.Status s=status.stats;
             stats.addView(text("Remote repeater · reported values:",13,WHITE));
@@ -708,13 +710,21 @@ public final class MainActivity extends Activity {
             stats.addView(text("Duplicate indications: direct "+s.directDup
                 +" · flood "+s.floodDup+" · queue-full "+s.fullEvents,12,MUTED));
             if(s.errorsKnown)stats.addView(text("Receive errors: "+s.errors,12,MUTED));
+            stats.addView(text(status.radioRoute(),12,MUTED));
         }
+        long cooldown=service==null?0:service.remoteRepeaterCooldownMs(node.id);
+        long sessionCooldown=client==null?0:
+            client.mcRemote.remainingCooldownMs(node.id,elapsed);
+        cooldown=Math.max(cooldown,sessionCooldown);
         boolean canQuery=client!=null&&client.ready&&client.firmwareCode>=10
             &&client.nodes.containsKey(node.id)&&client.nodes.get(node.id).type==2
-            &&client.mcRemote.pending==null;
+            &&client.mcRemote.pending==null&&cooldown==0;
+        String unavailableReason=cooldown>0
+            ?McRemoteDiagnostics.remainingLabel(cooldown)
+            :"Connect the same radio, finish previous request and verify firmware";
         menuRow(group(results),"refresh","Request remote status",
-            canQuery?"One user-initiated LoRa request; may take up to 2 min":
-            "Connect the same radio, finish previous request and verify firmware",
+            canQuery?"Manual LoRa request · flood routing possible · 5 min shared limit":
+            unavailableReason,
             canQuery?()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.STATUS,0):null,RADIO_MC);
         section(results,"REPEATER NEIGHBORS");
         McRemoteDiagnostics.Result neighbors=client==null?null:
@@ -724,6 +734,8 @@ public final class MainActivity extends Activity {
             neighbors.freshness(elapsed),14,neighbors!=null&&neighbors.neighbors!=null?GREEN:MUTED));
         if(neighbors!=null&&!neighbors.error.isEmpty())
             near.addView(text(neighbors.error,12,RED));
+        if(neighbors!=null&&neighbors.usedFlood!=null)
+            near.addView(text(neighbors.radioRoute(),12,MUTED));
         if(neighbors!=null&&neighbors.neighbors!=null){
             McRemoteDiagnostics.Neighbors list=neighbors.neighbors;
             near.addView(text("Reported neighbor count: "+list.total
@@ -743,14 +755,14 @@ public final class MainActivity extends Activity {
             }
             if(list.list.isEmpty())near.addView(text("This page returned no neighbors.",12,MUTED));
             int next=list.offset+list.list.size();
-            if(canQuery&&next<list.total&&next<=1024&&!list.list.isEmpty())
+            if(next<list.total&&next<=1024&&!list.list.isEmpty())
                 menuRow(group(results),"refresh","Request next neighbors page",
-                    "Offset "+next+" · separate airtime-limited request",
-                    ()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,next),RADIO_MC);
+                    canQuery?"Offset "+next+" · separate request after 5-minute limit":unavailableReason,
+                    canQuery?()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,next):null,RADIO_MC);
         }
         menuRow(group(results),"refresh","Request neighbors",
-            canQuery?"Read at most 8 reported neighbors with abbreviated public-key prefixes":
-                "Requires a Ready, compatible MeshCore repeater connection",
+            canQuery?"Up to 8 neighbors · flood possible · 5 min shared limit":
+                unavailableReason,
             canQuery?()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,0):null,RADIO_MC);
         section(results,"DATA PROVENANCE");
         results.addView(text("The firmware sends a tagged response via the selected MeshCore radio. "
@@ -768,20 +780,33 @@ public final class MainActivity extends Activity {
             Toast.makeText(this,"Original MeshCore radio or repeater is no longer available",
                 Toast.LENGTH_LONG).show();return;
         }
+        long remaining=service==null?0:service.remoteRepeaterCooldownMs(node.id);
+        remaining=Math.max(remaining,expected.mcRemote.remainingCooldownMs(
+            node.id,SystemClock.elapsedRealtime()));
+        if(remaining>0){
+            Toast.makeText(this,McRemoteDiagnostics.remainingLabel(remaining),
+                Toast.LENGTH_LONG).show();
+            return;
+        }
         new AlertDialog.Builder(this)
             .setTitle(kind==McRemoteDiagnostics.Kind.STATUS?
                 "Request repeater status?":"Request repeater neighbors?")
-            .setMessage("This sends one LoRa request to the selected repeater. "
-                +"It uses network airtime; the radio may accept it even if the remote node never replies. "
-                +"There is no automatic retry, and response times can be long.")
+            .setMessage("RADIO AIRTIME WARNING\\n\\n"
+                +"This request may be sent using FLOOD routing. If the repeater's path is "
+                +"unknown, multiple mesh repeaters may retransmit it; the reply can also "
+                +"use multiple hops. A single request may therefore cause several LoRa transmissions.\\n\\n"
+                +"Only one manual request is allowed every 5 minutes per repeater, "
+                +"shared across status, neighbor lists and additional pages, even after reconnecting. "
+                +"The radio accepting a command does not guarantee a remote reply. "
+                +"There is no automatic retry.")
             .setNegativeButton("Cancel",null)
             .setPositiveButton("Request",(d,w)->{
                 if(!source.equals(radio(RadioProfile.MESHCORE))||mcClient()!=expected){
                     Toast.makeText(this,"Radio changed; reopen the repeater",Toast.LENGTH_LONG).show();
                     return;
                 }
-                mcCommandFor(expected,client->client.requestMcRepeater(
-                    kind,node.id,offset,SystemClock.elapsedRealtime()));
+                if(service!=null)service.requestRemoteRepeater(source,expected,
+                    kind,node.id,offset);
                 scheduleRefresh();
             }).show();
     }
