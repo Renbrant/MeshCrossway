@@ -1,12 +1,20 @@
-# MeshCrossway Android — 0.3.12 beta
+# MeshCrossway Android — 0.4.1 experimental field beta
 
-> **Version 0.3.12 is published with the same permanent release signing certificate as 0.2.3/0.2.4.** Starting from a clean installation? Install the APK directly; **no ADB, ZIP or migration is necessary.** Future official APKs with the same certificate can install over this version, retaining locally stored messages, settings, favorites, GPS tracks, and offline maps. **Do not uninstall or clear app data to update.**
+> **Current signed beta: 0.4.1 (versionCode 35).** This experimental build includes Stage 2 passive dual-radio diagnostics, a MeshCore repeater inventory, and explicitly confirmed on-demand remote repeater status and neighbor queries. Remote repeater interoperability still requires physical MeshCore repeater testing. This is **not** a production or safety-critical release.
 
-> Only people who still have data on older debug-signed 0.2.2-or-earlier builds need an optional one-time migration. See the [migration guide](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md). This release is still a beta.
+[Download signed MeshCrossway-0.4.1.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.1/MeshCrossway-0.4.1.apk) · [0.4.1 release notes, SHA-256 checksum and signing certificate](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.1) · [Android installation page](https://meshcrossway.renbrant.com/android/)
 
-> **Public beta for testing. Not version 1.0.0 and not a production release.**
+**Two separate Bluetooth radios are required** to use Meshtastic and MeshCore at the same time, one for each network. They do **not** relay, forward or bridge messages between networks.
 
-[Download MeshCrossway-0.3.12.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.12/MeshCrossway-0.3.12.apk) · [Release notes and SHA256SUMS.txt](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.12) · [Android download page](https://renbrant.github.io/MeshCrossway/android/)
+**Installing/updating:** Android 8.0+, ARM64. Back up your locally stored messages, maps and tracks, then install the 0.4.1 APK **over** an existing permanently signed 0.4.0/0.3.x installation; choose **Update**. Do not uninstall or clear data. Release signing is checked against the same permanent certificate as 0.4.0. Older debug-signed 0.2.2-or-earlier installations require a [one-time migration and backup](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md).
+
+**Traffic-safety caution:** querying a repeater is a manually confirmed LoRa transmission that may use flood routing and more than one relay. **One status/neighbor query every five minutes per repeater**, including next neighbor pages and BLE reconnects. No automatic retry or background polling. The radio accepting a command does not prove a remote repeater replied.
+
+**Previous beta:** [Signed 0.4.0 Stage 1](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.0-stage1) remains available as an immutable reference. **You generally cannot downgrade from 0.4.1 (versionCode 35) to 0.4.0 (34) as a normal in-place Android update.** Securely export important information before upgrading.
+
+## Previous releases (historical details)
+
+The sections below describe earlier development betas and their behavior **at the time**. Use the 0.4.1 link above for the current experimental field beta.
 
 ## Channels, links and QR Codes in 0.3.12
 
