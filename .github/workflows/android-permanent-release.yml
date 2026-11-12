@@ -14,7 +14,7 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.4.7'
+        default: '0.4.8'
         type: string
 permissions:
   contents: write
@@ -175,6 +175,9 @@ jobs:
           elif [ "$REQUESTED" = "0.4.5" ]; then
             cp docs/android-release-notes-0.4.5.md release-notes.md
             RELEASE_TITLE="Android 0.4.5 beta — editable repeater settings cards"
+          elif [ "$REQUESTED" = "0.4.8" ]; then
+            cp docs/android-release-notes-0.4.8.md release-notes.md
+            RELEASE_TITLE="Android 0.4.8 beta — GPS following and travel arrow"
           elif [ "$REQUESTED" = "0.4.7" ]; then
             cp docs/android-release-notes-0.4.7.md release-notes.md
             RELEASE_TITLE="Android 0.4.7 beta — follow GPS and travel direction"

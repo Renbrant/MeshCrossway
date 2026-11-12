@@ -205,11 +205,14 @@ public final class SmokeInstrumentation extends Instrumentation {
         onUi(()->activity.mapPanel.openTool("offline"));screenshot(activity,"map-offline");click(activity,"Download visible area…");screenshot(activity,"map-download");onUi(()->activity.mapPanel.openTool("tracks"));screenshot(activity,"map-tracks");onUi(activity::onBackPressed);check(activity.mapPanel!=null,"Back left map instead of closing panel");
     }
     private void mapMarkerImage(MapPanel panel,String name,double lat,double lon)throws Exception{
-        CountDownLatch captured=new CountDownLatch(1);java.util.concurrent.atomic.AtomicReference<android.graphics.Bitmap> image=new java.util.concurrent.atomic.AtomicReference<>();android.graphics.PointF[] point=new android.graphics.PointF[1];
-        onUi(()->{point[0]=panel.map.getProjection().toScreenLocation(new org.maplibre.android.geometry.LatLng(lat,lon));panel.map.snapshot(bitmap->{image.set(bitmap);captured.countDown();});});await(captured);
-        android.graphics.Bitmap bitmap=image.get();check(bitmap!=null,"Map snapshot missing");
-        // Export before Gradle uninstalls the debug app; UiAutomation executes
-        // argv directly, so use a simple cp rather than shell pipes/redirection.
+        long deadline=android.os.SystemClock.elapsedRealtime()+8000;android.graphics.Bitmap bitmap=null;int blue=0;
+        do{
+            CountDownLatch captured=new CountDownLatch(1);java.util.concurrent.atomic.AtomicReference<android.graphics.Bitmap> image=new java.util.concurrent.atomic.AtomicReference<>();android.graphics.PointF[] point=new android.graphics.PointF[1];
+            onUi(()->{point[0]=panel.map.getProjection().toScreenLocation(new org.maplibre.android.geometry.LatLng(lat,lon));panel.map.snapshot(frame->{image.set(frame);captured.countDown();});});await(captured);
+            bitmap=image.get();check(bitmap!=null,"Map snapshot missing");blue=0;
+            for(int y=Math.max(0,(int)point[0].y-45);y<Math.min(bitmap.getHeight(),(int)point[0].y+45);y++)for(int x=Math.max(0,(int)point[0].x-45);x<Math.min(bitmap.getWidth(),(int)point[0].x+45);x++){int color=bitmap.getPixel(x,y);if(android.graphics.Color.blue(color)>240&&android.graphics.Color.red(color)>50&&android.graphics.Color.red(color)<115&&android.graphics.Color.green(color)>130&&android.graphics.Color.green(color)<180)blue++;}
+            if(blue>15)break;Thread.sleep(100);
+        }while(android.os.SystemClock.elapsedRealtime()<deadline);
         java.io.File imageFile=new java.io.File(getTargetContext().getExternalFilesDir(null),name+".png");
         try(FileOutputStream out=new FileOutputStream(imageFile)){bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}
         String exported="/data/local/tmp/mcx-native-"+name+".png";shell("cp "+imageFile.getAbsolutePath()+" "+exported);
@@ -217,8 +220,7 @@ public final class SmokeInstrumentation extends Instrumentation {
             byte[] signature=new byte[8];int read=0,n;while(read<8&&(n=input.read(signature,read,8-read))>0)read+=n;
             check(read==8&&signature[0]==(byte)137&&signature[1]==80&&signature[2]==78&&signature[3]==71,"Exported map snapshot is not a PNG: "+name);
         }
-        int blue=0;for(int y=Math.max(0,(int)point[0].y-45);y<Math.min(bitmap.getHeight(),(int)point[0].y+45);y++)for(int x=Math.max(0,(int)point[0].x-45);x<Math.min(bitmap.getWidth(),(int)point[0].x+45);x++){int color=bitmap.getPixel(x,y);if(android.graphics.Color.blue(color)>200&&android.graphics.Color.red(color)<130&&android.graphics.Color.green(color)>120&&android.graphics.Color.green(color)<190)blue++;}
-        check(blue>15,"Phone marker has no visible blue pixels at its projected location: "+name+" ("+point[0]+", blue="+blue+")");
+        check(blue>15,"Phone marker has no visible phone-blue pixels: "+name+" (blue="+blue+")");
     }
     private android.location.Location movingFix(double lat,double lon,float speed,float bearing,long age){
         android.location.Location fix=new android.location.Location("gps");fix.setLatitude(lat);fix.setLongitude(lon);fix.setAccuracy(3);fix.setSpeed(speed);fix.setSpeedAccuracyMetersPerSecond(.2f);fix.setBearing(bearing);fix.setBearingAccuracyDegrees(5);fix.setTime(System.currentTimeMillis()-age);fix.setElapsedRealtimeNanos(android.os.SystemClock.elapsedRealtimeNanos()-age*1000000);return fix;

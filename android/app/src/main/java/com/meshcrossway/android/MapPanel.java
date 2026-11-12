@@ -120,7 +120,7 @@ final class MapPanel {
             motion.update(fix,now);Feature marker=Feature.fromGeometry(Point.fromLngLat(fix.lon,fix.lat));marker.addBooleanProperty("moving",motion.moving);marker.addNumberProperty("bearing",motion.bearing);location.add(marker);
             long age=Math.max(0,(now-elapsed)/1000);gps="GPS ±"+Math.round(phone.getAccuracy())+"m"+(age>15?" · "+age+"s old":"");
             if(followPhone&&now-elapsed>=0&&now-elapsed<=PhoneMotion.FRESH_MS&&(initialPhoneZoom||fix.lat!=cameraPhoneLat||fix.lon!=cameraPhoneLon)){
-                CameraPosition current=map.getCameraPosition();CameraPosition next=new CameraPosition.Builder(current).target(new LatLng(fix.lat,fix.lon)).zoom(initialPhoneZoom?15:current.zoom).build();
+                CameraPosition current=map.getCameraPosition();CameraPosition next=new CameraPosition.Builder(current).target(new LatLng(fix.lat,fix.lon)).zoom(initialPhoneZoom?15:current.zoom).padding(0,0,appliedRight,appliedBottom).build();
                 map.easeCamera(CameraUpdateFactory.newCameraPosition(next),700);cameraPhoneLat=fix.lat;cameraPhoneLon=fix.lon;initialPhoneZoom=false;
             }
         }else{motion.reset();if(followPhone)gps="Waiting for phone GPS";}
