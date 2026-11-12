@@ -181,7 +181,7 @@ public class McRemoteDiagnosticsTest {
         McRemoteDiagnostics.Result result=remote.find(n.id);
         assertEquals("Error",result.state);
         assertTrue(result.error.contains("48 data bytes"));
-        assertTrue(result.error.contains("expected 52 or 56"));
+        assertTrue(result.error.contains("requires at least 52"));
         assertFalse(result.error.contains("fefefe")); // no raw packet or public key
         assertNull(result.stats);
         assertNull(remote.pending);
@@ -198,6 +198,85 @@ public class McRemoteDiagnosticsTest {
         assertTrue(remote.receive(response(35,notAList),NOW+60));
         assertTrue(remote.find(n.id).error.contains("7 data bytes"));
         assertNull(remote.find(n.id).neighbors);
+    }
+
+    @Test public void upstreamCompatibleStatusAcceptsRealSixtyByteExtendedReply(){
+        // MeshCore official open Python/JS clients parse known fields by offset
+        // and ignore optional tail data. The 0.4.2 field report had 60 data bytes.
+        byte[] payload=new byte[60];
+        payload[0]=(byte)0xE4;payload[1]=0x0c; // 3300 mV
+        Wire.put32(payload,8,24);
+        Wire.put32(payload,12,100);
+        Wire.put32(payload,20,3600);
+        Wire.put32(payload,48,90);
+        Wire.put32(payload,52,8); // known receive-error extension
+        payload[56]=(byte)0xf1;payload[57]=(byte)0xe2;
+        payload[58]=(byte)0xd3;payload[59]=(byte)0xc4; // unknown, never interpreted
+        McRemoteDiagnostics.Status stats=new McRemoteDiagnostics.Status(payload);
+        assertEquals(3300,stats.batteryMv);
+        assertEquals(24L,stats.received);
+        assertEquals(100L,stats.sent);
+        assertEquals(3600L,stats.uptime);
+        assertTrue(stats.errorsKnown);
+        assertEquals(8L,stats.errors);
+        assertEquals(4,stats.extensionBytes);
+
+        McRemoteDiagnostics remote=new McRemoteDiagnostics();
+        Node repeater=repeater(key('a'));
+        remote.request(McRemoteDiagnostics.Kind.STATUS,repeater,0,NOW);
+        remote.sentToRadio(ack(555),NOW+1);
+        assertTrue(remote.receive(response(555,payload),NOW+3));
+        assertNotNull(remote.find(repeater.id).stats);
+        assertEquals(4,remote.find(repeater.id).stats.extensionBytes);
+        assertTrue(remote.find(repeater.id).state.startsWith("Received"));
+
+        // Minimum known fields are still mandatory, and huge payloads rejected.
+        for(int len:new int[]{0,4,48,51,171}){
+            try{new McRemoteDiagnostics.Status(new byte[len]);fail("accepted invalid "+len);}
+            catch(IllegalArgumentException expected){}
+        }
+        assertFalse(new McRemoteDiagnostics.Status(new byte[52]).errorsKnown);
+        assertTrue(new McRemoteDiagnostics.Status(new byte[56]).errorsKnown);
+    }
+
+    @Test public void upstreamCountedNeighborsAcceptSixtyByteFinalPageWithOneExtraByte(){
+        // 13 reported total, first page 8, final page 5 => 4+5*11=59 bytes.
+        byte[] payload=new byte[60];
+        payload[0]=13;payload[2]=5;
+        for(int i=0;i<5;i++){
+            int at=4+i*11;
+            for(int j=0;j<6;j++)payload[at+j]=(byte)(i*6+j+1);
+            Wire.put32(payload,at+6,1000+i);
+            payload[at+10]=(byte)(-4*i);
+        }
+        payload[59]=(byte)0xA5; // observed extra byte, not an extra entry
+        McRemoteDiagnostics.Neighbors neighbors=McRemoteDiagnostics.parseNeighbors(payload,8);
+        assertEquals(13,neighbors.total);
+        assertEquals(8,neighbors.offset);
+        assertEquals(5,neighbors.list.size());
+        assertEquals(1,neighbors.extensionBytes);
+        assertEquals(1004,neighbors.list.get(4).secondsAgo);
+        assertEquals(-4.0,neighbors.list.get(4).snr,0.001);
+
+        McRemoteDiagnostics remote=new McRemoteDiagnostics();
+        Node repeater=repeater(key('b'));
+        remote.request(McRemoteDiagnostics.Kind.NEIGHBORS,repeater,8,NOW);
+        remote.sentToRadio(ack(556),NOW+1);
+        assertTrue(remote.receive(response(556,payload),NOW+3));
+        assertNotNull(remote.find(repeater.id).neighbors);
+        assertEquals(5,remote.find(repeater.id).neighbors.list.size());
+
+        // A 60-byte status reply cannot masquerade as an empty neighbors list.
+        byte[] masquerade=new byte[60];masquerade[0]=(byte)0xe4;
+        masquerade[1]=0x0c; // 3300 mV, not a neighbor header
+        try{McRemoteDiagnostics.parseNeighbors(masquerade,8);fail("accepted unrelated reply");}
+        catch(IllegalArgumentException expected){}
+        payload[2]=9; // more than requested 8
+        try{McRemoteDiagnostics.parseNeighbors(payload,8);fail("accepted overlong page");}
+        catch(IllegalArgumentException expected){}
+        payload[2]=5;payload[0]=10; // offset 8 plus 5 > 10 reported total
+        try{McRemoteDiagnostics.parseNeighbors(payload,8);fail("accepted overrun");}
+        catch(IllegalArgumentException expected){}
     }
 
     @Test public void timeoutDoesNotSendAgainAndNewSessionCannotAcceptOldResponse(){
