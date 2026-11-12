@@ -602,6 +602,12 @@ public final class SmokeInstrumentation extends Instrumentation {
             screenshot(activity,"repeater-power-editor");
             java.util.List<android.view.accessibility.AccessibilityNodeInfo> cancel=root.findAccessibilityNodeInfosByText("Cancel");check(!cancel.isEmpty(),"Power editor Cancel missing");cancel.get(0).performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK);waitForIdleSync();
             check(fixture.commands.isEmpty(),"Opening/cancelling an editor must not write to the radio");
+            onUi(()->{try{
+                fixture.mcRepeaterAdmin.label="ver";fixture.mcRepeaterAdmin.reply="MeshCore console response";
+                java.lang.reflect.Field show=MainActivity.class.getDeclaredField("repeaterConsoleResult");show.setAccessible(true);show.setBoolean(activity,true);
+                Method refresh=MainActivity.class.getDeclaredMethod("rebuildContent");refresh.setAccessible(true);refresh.invoke(activity);
+                check(find(activity.getWindow().getDecorView(),"MeshCore console response")!=null,"Advanced console response is hidden");
+            }catch(Exception e){throw new RuntimeException(e);}});
         }finally{onUi(()->{fixture.clearRepeaterAdministration();session.client=previous;session.address=address;session.verified=verified;session.connected=connected;service.history.snapshots.put(RadioProfile.MESHCORE,previousSnapshot);activity.finish();});waitForIdleSync();waitUntil(activity::isDestroyed,"Repeater fixture activity did not finish");}
     }
     private void activity()throws Exception{

@@ -363,6 +363,10 @@ final class ProtocolClient {
         if(!mcRepeaterSettings.visible||!mcRepeaterSettings.key.equals(key))throw Wire.bad("Reopen this repeater's settings");
         McRepeaterSettings.Operation op=mcRepeaterSettings.edit(field,value,now);
         administerRepeater(key,op.command,false,now);
+        // These commands are constructed from the public field whitelist. A public
+        // repeater name such as "Monkey" must not be mistaken for a key operation.
+        mcRepeaterAdmin.sensitive=false;
+        mcRepeaterAdmin.label=op.command;
         mcRepeaterSettings.dispatched(op);
     }
 
