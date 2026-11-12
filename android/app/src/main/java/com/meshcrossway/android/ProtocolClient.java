@@ -41,8 +41,19 @@ final class ProtocolClient {
         queue(profile==RadioProfile.MESHTASTIC?probe.meshtasticRequest():ProtocolProbe.meshcoreQuery(),profile==RadioProfile.MESHTASTIC?-1:13,"");}
     void cancel(String uid){commands.removeIf(c->c.uid.equals(uid));removeSent(uid);}
     void queue(byte[] data,int response,String uid){if(commands.size()>=32)throw Wire.bad("Radio command queue is full");commands.add(new Command(data,response,uid));}
+    /** Expire only the current session's read-only request, never queue a resend. */
+    void checkRemoteDeadline(long now){
+        if(profile!=RadioProfile.MESHCORE)return;
+        long version=mcRemote.revision;
+        mcRemote.tick(now);
+        if(mcRemote.revision!=version){
+            commands.removeIf(command->command.data.length>0
+                &&(command.data[0]&255)==McRemoteDiagnostics.CMD_BINARY);
+            mcRevision++;
+        }
+    }
     Command next(long now){
-        if(profile==RadioProfile.MESHCORE){long version=mcRemote.revision;mcRemote.tick(now);if(mcRemote.revision!=version)mcRevision++;}
+        if(profile==RadioProfile.MESHCORE)checkRemoteDeadline(now);
         if(profile==RadioProfile.MESHTASTIC){admin.tick(now);if(ready)admin.ready();}else{mcAdmin.tick(now);if(ready)mcAdmin.ready();mcLateSent.entrySet().removeIf(e->now>=e.getValue().retainUntil);}
         for(Iterator<Map.Entry<Long,Sent>> it=sent.entrySet().iterator();it.hasNext();){Map.Entry<Long,Sent> entry=it.next();Sent pending=entry.getValue();if(now>=pending.deadline){listener.delivery(pending.uid,"uncertain");if(profile==RadioProfile.MESHCORE&&pending.ackKnown){pending.retainUntil=now+600000;long savedKey=entry.getKey();while(mcLateSent.containsKey(savedKey))savedKey++;mcLateSent.put(savedKey,pending);trim(mcLateSent,128);}it.remove();}}
 
