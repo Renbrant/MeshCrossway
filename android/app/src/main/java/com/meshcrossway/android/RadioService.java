@@ -286,8 +286,28 @@ public final class RadioService extends Service {
         if(s==null||!s.address.equals(radio)||!s.connected||!s.verified||s.client==null){
             if(listener!=null)listener.run();return;
         }
-        try{s.client.mcAdmin.clock=now();action.accept(s.client);advance(s);changed();}
+        try{
+            final ProtocolClient client=s.client;
+            final McRemoteDiagnostics.Result prior=client.mcRemote.pending;
+            client.mcAdmin.clock=now();
+            action.accept(client);
+            McRemoteDiagnostics.Result request=client.mcRemote.pending;
+            if(request!=null&&request!=prior){
+                // Two bounded UI-only deadline checks. Neither queries the radio.
+                // The Companion request may be queued, locally accepted, or remote
+                // pending; a timeout must never trigger automatic retransmission.
+                handler.postDelayed(()->expireRemote(s,client,request),32_000);
+                handler.postDelayed(()->expireRemote(s,client,request),124_000);
+            }
+            advance(s);changed();
+        }
         catch(IllegalArgumentException e){phase(s,"Settings",e.getMessage());}
+    }
+    private void expireRemote(Session s,ProtocolClient client,McRemoteDiagnostics.Result request){
+        if(s.client!=client||client.mcRemote.pending!=request)return;
+        long prior=client.mcRemote.revision;
+        client.checkRemoteDeadline(now());
+        if(prior!=client.mcRemote.revision)changed();
     }
     void configureMeshtastic(String radio,java.util.function.Consumer<ProtocolClient> action){
         Session s=sessions.get(RadioProfile.MESHTASTIC);
