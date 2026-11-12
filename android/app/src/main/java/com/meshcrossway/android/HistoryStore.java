@@ -72,7 +72,7 @@ final class HistoryStore extends SQLiteOpenHelper {
     void delivery(RadioProfile p,String r,String uid,String state){work(db->{
         // Late BLE callbacks cannot downgrade an acknowledged or accepted packet.
         String extra=state.equals("submitted")?" AND state='queued'":state.equals("radio accepted")?" AND state IN ('queued','submitted','uncertain')":state.equals("uncertain")?" AND state IN ('queued','submitted','radio accepted')":" AND state!='delivered'";
-        ContentValues v=new ContentValues();v.put("state",state);db.update("messages",v,"network=? AND radio=? AND uid=?"+extra,new String[]{p.name(),r,uid});});}
+        ContentValues v=new ContentValues();v.put("state",state);db.update("messages",v,"network=? AND radio=? AND uid=? AND outgoing=1"+extra,new String[]{p.name(),r,uid});});}
     void uncertain(RadioProfile p,String r){work(db->{ContentValues v=new ContentValues();v.put("state","uncertain");db.update("messages",v,"network=? AND radio=? AND outgoing=1 AND state IN ('queued','submitted','radio accepted')",new String[]{p.name(),r});});}
     void read(RadioProfile p,String r,String topic){work(db->{ContentValues v=new ContentValues();v.put("is_read",1);db.update("messages",v,"network=? AND radio=? AND topic=? AND is_read=0",new String[]{p.name(),r,topic});});}
     void draft(RadioProfile p,String r,String topic,String body){ContentValues v=scope(p,r);v.put("topic",topic);v.put("body",body);work(db->db.insertWithOnConflict("drafts",null,v,SQLiteDatabase.CONFLICT_REPLACE),false);}
