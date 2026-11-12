@@ -742,6 +742,14 @@ public final class MainActivity extends Activity {
                 .setNegativeButton("Cancel",null).show();
     }
 
+    /** Recheck the latest saved state: a late ACK may arrive while the dialog is open. */
+    private boolean outgoingStillReviewable(RadioProfile network,String sourceRadio,Message saved){
+        if(service==null||!sourceRadio.equals(radio(network)))return false;
+        for(Message latest:snapshot(network).messages)
+            if(OutgoingStatus.stillReviewable(saved,latest))return true;
+        return false;
+    }
+
     /**
      * Never replay a previous radio frame. User consent only copies the text
      * into the same protocol/radio/channel composer. Send remains a second tap.
@@ -760,7 +768,10 @@ public final class MainActivity extends Activity {
                 .setNegativeButton("Cancel",null)
                 .setPositiveButton("Copy into composer",(dialog,which)->{
                     if(!OutgoingStatus.sameComposer(chatProfile,network,chatRadio,sourceRadio,chat,message)
-                            ||composer==null)return;
+                            ||composer==null||!outgoingStillReviewable(network,sourceRadio,message)){
+                        Toast.makeText(this,"Message or radio status changed; review it again",Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     chat=chat.reply(0,false);
                     composer.setText(message.body);
                     composer.setSelection(composer.length());
