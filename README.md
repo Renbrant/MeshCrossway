@@ -4,19 +4,19 @@
 
 **Two independent mesh networks. One Android app.** Use Meshtastic and MeshCore side by side, connecting to a separate Bluetooth radio for each network. Messages, identities and routing stay on their native networks; MeshCrossway does not bridge or relay between them.
 
-<p align="center"><a href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.2/MeshCrossway-0.4.2.apk"><strong>Download MeshCrossway Android 0.4.2 field beta APK</strong></a> · <a href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.2">Release notes and checksums</a> · <a href="https://meshcrossway.renbrant.com/android/">Installation guide</a></p>
+<p align="center"><a href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.3/MeshCrossway-0.4.3.apk"><strong>Download MeshCrossway Android 0.4.3 field beta APK</strong></a> · <a href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.3">Release notes and checksums</a> · <a href="https://meshcrossway.renbrant.com/android/">Installation guide</a></p>
 
 > **Public beta for testing — not version 1.0.0.** Requires Android 8.0+ on ARM64. Broader phone, radio and firmware compatibility is still being evaluated.
 
 ## Install and update
 
-1. Download the [public APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.2/MeshCrossway-0.4.2.apk) on your Android phone. No GitHub Actions login, ADB or ZIP file is needed.
+1. Download the [public APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.3/MeshCrossway-0.4.3.apk) on your Android phone. No GitHub Actions login, ADB or ZIP file is needed.
 2. Open it and allow your browser or file manager to install apps when Android asks.
 3. In MeshCrossway, connect one compatible Meshtastic radio and one compatible MeshCore radio over Bluetooth.
 
-**Updating an existing permanent-key installation (0.2.3 or newer):** Back up important local data, install 0.4.2 over the existing app and choose Update. It uses the same permanent release signing certificate, so local messages, settings, favorites, tracks and offline maps remain in place. Do not uninstall to update.
+**Updating an existing permanent-key installation (0.2.3 or newer):** Back up important local data, install 0.4.3 over the existing app and choose Update. It uses the same permanent release signing certificate, so local messages, settings, favorites, tracks and offline maps remain in place. Do not uninstall to update.
 
-**0.4.2 is an experimental field beta:** remote MeshCore status/neighbor queries require authorized real-repeater testing. Manual requests may use flood relay traffic and share a **30-second limit per repeater**, including neighbor pages and reconnects. Unexpected status replies now report their byte length for diagnosis, without exposing raw packets or inventing status values. There is no automatic polling, retry or cross-network bridging. The signed [0.4.0 beta remains available](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.0-stage1), but Android normally does not allow a direct downgrade from versionCode 36 to 35 or 34. See [0.4.2 release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.2).
+**0.4.2 is an experimental field beta:** remote MeshCore status/neighbor queries require authorized real-repeater testing. Manual requests may use flood relay traffic and share a **30-second limit per repeater**, including neighbor pages and reconnects. Unexpected status replies now report their byte length for diagnosis, without exposing raw packets or inventing status values. There is no automatic polling, retry or cross-network bridging. The signed [0.4.0 beta remains available](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.0-stage1), but Android normally does not allow a direct downgrade from versionCode 36 to 35 or 34. See [0.4.3 release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.3).
 
 Builds **0.2.2 and earlier** used temporary debug signing. If you still have local data on one of those builds, follow the [one-time signing migration and backup guide](https://github.com/Renbrant/MeshCrossway/blob/main/docs/android-permanent-signing-backup.md) before changing versions. Uninstalling deletes app data.
 
