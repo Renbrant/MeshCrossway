@@ -110,34 +110,34 @@ public class McRemoteDiagnosticsTest {
         catch(IllegalArgumentException expected){}
     }
 
-    @Test public void everyStatusAndNeighborPageSharesFiveMinuteRepeaterCooldown(){
+    @Test public void everyStatusAndNeighborPageSharesThirtySecondRepeaterCooldown(){
         McRemoteDiagnostics remote=new McRemoteDiagnostics();
         Node repeater=repeater(key('a'));
-        assertEquals(300_000L,McRemoteDiagnostics.COOLDOWN_MS);
+        assertEquals(30_000L,McRemoteDiagnostics.COOLDOWN_MS);
         remote.request(McRemoteDiagnostics.Kind.STATUS,repeater,0,NOW);
         remote.sentToRadio(ack(441),NOW+10);
         assertTrue(remote.receive(response(441,new byte[52]),NOW+20));
-        assertEquals(300_000L,remote.remainingCooldownMs(repeater.id,NOW));
-        assertEquals(1L,remote.remainingCooldownMs(repeater.id,NOW+299_999));
+        assertEquals(30_000L,remote.remainingCooldownMs(repeater.id,NOW));
+        assertEquals(1L,remote.remainingCooldownMs(repeater.id,NOW+29_999));
         try{
-            remote.request(McRemoteDiagnostics.Kind.NEIGHBORS,repeater,0,NOW+299_999);
+            remote.request(McRemoteDiagnostics.Kind.NEIGHBORS,repeater,0,NOW+29_999);
             fail("Neighbor request bypassed status cooldown");
         }catch(IllegalArgumentException expected){}
-        byte[] firstPage=remote.request(McRemoteDiagnostics.Kind.NEIGHBORS,repeater,0,NOW+300_000);
+        byte[] firstPage=remote.request(McRemoteDiagnostics.Kind.NEIGHBORS,repeater,0,NOW+30_000);
         assertEquals(44,firstPage.length);
-        remote.sentToRadio(ack(442),NOW+300_010);
-        assertTrue(remote.receive(response(442,new byte[4]),NOW+300_020));
+        remote.sentToRadio(ack(442),NOW+30_010);
+        assertTrue(remote.receive(response(442,new byte[4]),NOW+30_020));
         try{
-            remote.request(McRemoteDiagnostics.Kind.NEIGHBORS,repeater,8,NOW+400_000);
+            remote.request(McRemoteDiagnostics.Kind.NEIGHBORS,repeater,8,NOW+40_000);
             fail("Next neighbor page bypassed shared cooldown");
         }catch(IllegalArgumentException expected){}
         try{
-            remote.request(McRemoteDiagnostics.Kind.STATUS,repeater,0,NOW+400_000);
+            remote.request(McRemoteDiagnostics.Kind.STATUS,repeater,0,NOW+40_000);
             fail("Status bypassed neighbor-page cooldown");
         }catch(IllegalArgumentException expected){}
-        assertEquals(0L,remote.remainingCooldownMs(repeater.id,NOW+600_000));
+        assertEquals(0L,remote.remainingCooldownMs(repeater.id,NOW+60_000));
         assertEquals(44,remote.request(McRemoteDiagnostics.Kind.NEIGHBORS,
-            repeater,8,NOW+600_000).length);
+            repeater,8,NOW+60_000).length);
     }
 
     @Test public void floodFlagIsFromLocalRadioAcknowledgementOnly(){
@@ -158,14 +158,46 @@ public class McRemoteDiagnosticsTest {
         assertEquals(Boolean.FALSE,second.find(repeater.id).usedFlood);
     }
 
-    @Test public void wallClockCooldownSurvivesReconnectAndAppRestart(){
+    @Test public void thirtySecondWallClockCooldownSurvivesReconnectAndAppRestart(){
         long now=1_800_000_000_000L;
         assertEquals(0,McRemoteDiagnostics.remainingFromWallClock(0,now));
-        assertEquals(300_000L,McRemoteDiagnostics.remainingFromWallClock(now,now));
-        assertEquals(1L,McRemoteDiagnostics.remainingFromWallClock(now,now+299_999));
-        assertEquals(0L,McRemoteDiagnostics.remainingFromWallClock(now,now+300_000));
-        assertEquals(300_000L,McRemoteDiagnostics.remainingFromWallClock(now,now-1000));
-        assertTrue(McRemoteDiagnostics.remainingLabel(1).contains("1 minute"));
+        assertEquals(30_000L,McRemoteDiagnostics.remainingFromWallClock(now,now));
+        assertEquals(1L,McRemoteDiagnostics.remainingFromWallClock(now,now+29_999));
+        assertEquals(0L,McRemoteDiagnostics.remainingFromWallClock(now,now+30_000));
+        assertEquals(30_000L,McRemoteDiagnostics.remainingFromWallClock(now,now-1000));
+        assertTrue(McRemoteDiagnostics.remainingLabel(1).contains("1 second"));
+        assertTrue(McRemoteDiagnostics.remainingLabel(30_000).contains("30 seconds"));
+        assertTrue(McRemoteDiagnostics.remainingLabel(1_234).contains("2 seconds"));
+    }
+
+    @Test public void unsupportedRemoteStatusShowsOnlySafeLengthNotRawPayload(){
+        McRemoteDiagnostics remote=new McRemoteDiagnostics();
+        Node n=repeater(key('c'));
+        remote.request(McRemoteDiagnostics.Kind.STATUS,n,0,NOW);
+        remote.sentToRadio(ack(0x55aaL),NOW+10);
+        byte[] unusual=new byte[48];
+        Arrays.fill(unusual,(byte)0xfe);
+        assertTrue(remote.receive(response(0x55aaL,unusual),NOW+50));
+        McRemoteDiagnostics.Result result=remote.find(n.id);
+        assertEquals("Error",result.state);
+        assertTrue(result.error.contains("48 data bytes"));
+        assertTrue(result.error.contains("expected 52 or 56"));
+        assertFalse(result.error.contains("fefefe")); // no raw packet or public key
+        assertNull(result.stats);
+        assertNull(remote.pending);
+        assertEquals(29_950,remote.remainingCooldownMs(n.id,NOW+50));
+    }
+
+    @Test public void unexpectedNeighborsDataIsNotMisrepresentedAsValid(){
+        McRemoteDiagnostics remote=new McRemoteDiagnostics();
+        Node n=repeater(key('e'));
+        remote.request(McRemoteDiagnostics.Kind.NEIGHBORS,n,0,NOW);
+        remote.sentToRadio(ack(35),NOW+20);
+        byte[] notAList=new byte[7];
+        Arrays.fill(notAList,(byte)0x7f);
+        assertTrue(remote.receive(response(35,notAList),NOW+60));
+        assertTrue(remote.find(n.id).error.contains("7 data bytes"));
+        assertNull(remote.find(n.id).neighbors);
     }
 
     @Test public void timeoutDoesNotSendAgainAndNewSessionCannotAcceptOldResponse(){
