@@ -720,10 +720,10 @@ public final class MainActivity extends Activity {
             stats.addView(text("Packets: RX "+s.received+" / TX "+s.sent,13,WHITE));
             stats.addView(text("Direct: RX "+s.recvDirect+" / TX "+s.sentDirect
                 +" · flood: RX "+s.recvFlood+" / TX "+s.sentFlood,12,MUTED));
-            stats.addView(text("Airtime (reported units): TX "+s.txAirtime
+            stats.addView(text("Airtime (s): TX "+s.txAirtime
                 +" · RX "+s.rxAirtime,12,MUTED));
             stats.addView(text("Duplicate indications: direct "+s.directDup
-                +" · flood "+s.floodDup+" · queue-full "+s.fullEvents,12,MUTED));
+                +" · flood "+s.floodDup+" · error flags "+s.fullEvents,12,MUTED));
             if(s.errorsKnown)stats.addView(text("Receive errors: "+s.errors,12,MUTED));
             if(s.extensionBytes>0)stats.addView(text("Firmware extension: "+
                 s.extensionBytes+" additional byte(s) safely ignored",12,MUTED));
