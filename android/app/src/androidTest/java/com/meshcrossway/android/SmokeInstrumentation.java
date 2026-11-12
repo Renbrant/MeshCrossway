@@ -55,6 +55,53 @@ public final class SmokeInstrumentation extends Instrumentation {
         store.close();
         HistoryStore reopened=new HistoryStore(context,name);Message persisted=HistoryStore.load(reopened.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-a").messages.stream().filter(m->m.uid.equals("same-id")).findFirst().get();check(persisted.rx.packetId==123&&persisted.rx.replyId==122&&persisted.rx.emoji,"Structured reply/reaction association lost after reopen");check(HistoryStore.load(reopened.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-a").messages.size()==2,"History lost after reopen");CountDownLatch draft=new CountDownLatch(1);reopened.loadDraft(RadioProfile.MESHTASTIC,"radio-a",inbound.topic,value->{check(value.equals("draft 👋"),"Draft lost");draft.countDown();});await(draft);reopened.close();
     }
+    /** Stage 1: persisted send states are radio-scoped and never blindly replayed. */
+    private void outboxRecovery()throws Exception{
+        Context context=getTargetContext();String name="outbox-stage1.db";
+        context.deleteDatabase(name);HistoryStore store=new HistoryStore(context,name);
+
+        Message mtPending=message("mt-pending","hello");mtPending.outgoing=true;mtPending.state="queued";
+        Message mtLate=message("mt-late","hello");mtLate.outgoing=true;mtLate.state="submitted";
+        Message incoming=message("received","hello");incoming.state="received";
+        Message mcOther=message("mc-other","MC only");mcOther.outgoing=true;mcOther.state="queued";
+        Message mtOther=message("mt-other","Other radio");mtOther.outgoing=true;mtOther.state="queued";
+        store.message(RadioProfile.MESHTASTIC,"radio-a",mtPending);
+        store.message(RadioProfile.MESHTASTIC,"radio-a",mtLate);
+        store.message(RadioProfile.MESHTASTIC,"radio-a",incoming);
+        store.message(RadioProfile.MESHCORE,"radio-a",mcOther);
+        store.message(RadioProfile.MESHTASTIC,"radio-b",mtOther);
+        store.uncertain(RadioProfile.MESHTASTIC,"radio-a");
+        // ACK received after a timeout/reconnect may upgrade unknown to delivered.
+        store.delivery(RadioProfile.MESHTASTIC,"radio-a","mt-late","delivered");
+        // A delayed local write callback must never downgrade the remote ACK.
+        store.delivery(RadioProfile.MESHTASTIC,"radio-a","mt-late","submitted");
+        store.delivery(RadioProfile.MESHTASTIC,"radio-a","mt-late","uncertain");
+        // A delivery callback must never rewrite an inbound message.
+        store.delivery(RadioProfile.MESHTASTIC,"radio-a","received","delivered");
+        barrier(store,400);
+        Snapshot mt=HistoryStore.load(store.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-a");
+        check(mt.messages.stream().anyMatch(m->m.uid.equals("mt-pending")&&m.state.equals("uncertain")),
+            "An interrupted pending send must become unknown, not replayed");
+        check(mt.messages.stream().anyMatch(m->m.uid.equals("mt-late")&&m.state.equals("delivered")),
+            "Late ACK was overwritten by submitted/uncertain");
+        check(mt.messages.stream().anyMatch(m->m.uid.equals("received")&&m.state.equals("received")),
+            "Inbound message was modified by an outgoing delivery callback");
+        check(HistoryStore.load(store.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-b")
+                .messages.get(0).state.equals("queued"),"Another radio's outbox was modified");
+        check(HistoryStore.load(store.getReadableDatabase(),RadioProfile.MESHCORE,"radio-a")
+                .messages.stream().anyMatch(m->m.uid.equals("mc-other")&&m.state.equals("queued")),
+            "MeshCore outgoing messages were changed by a Meshtastic timeout");
+        store.close();
+
+        HistoryStore reopened=new HistoryStore(context,name);
+        Snapshot restored=HistoryStore.load(reopened.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-a");
+        check(restored.messages.stream().anyMatch(m->m.uid.equals("mt-pending")&&m.state.equals("uncertain")),
+            "Unknown delivery was lost after process/database reopen");
+        check(restored.messages.stream().anyMatch(m->m.uid.equals("mt-late")&&m.state.equals("delivered")),
+            "Confirmed delivery was lost after process/database reopen");
+        reopened.close();
+    }
+
     private void backups()throws Exception{
         Context context=getTargetContext();String sourceName="backup-source.db",targetName="backup-target.db",rejectedName="backup-rejected.db";context.deleteDatabase(sourceName);context.deleteDatabase(targetName);context.deleteDatabase(rejectedName);
         HistoryStore source=new HistoryStore(context,sourceName);Node node=new Node();node.id="123";node.name="Saved node";node.shortName="SN";node.licensed=true;node.status="Active";node.statusKnown=true;node.hardwareModel=43;node.metrics.put("Environment","temperature: 22.5");node.metricHistory.add("1700000000 · Environment: temperature: 22.5");node.position=true;node.lat=40;node.lon=-105;source.node(RadioProfile.MESHTASTIC,"radio-one",node);source.message(RadioProfile.MESHTASTIC,"radio-one",message("backup-message","Private test message"));source.flag(RadioProfile.MESHTASTIC,"radio-one","node","123","favorite",true);source.poi("Test POI",40,-105);source.draft(RadioProfile.MESHTASTIC,"radio-one","c:0:hash","Draft survives backup");barrier(source,10);
@@ -557,5 +604,5 @@ public final class SmokeInstrumentation extends Instrumentation {
         waitForIdleSync();screenshot(activity,"chat-draft");Method settings=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);settings.setAccessible(true);onUi(()->{try{settings.invoke(activity,"data",null);}catch(Exception e){throw new RuntimeException(e);}});screenshot(activity,"settings-data");
         ActivityMonitor monitor=addMonitor(MainActivity.class.getName(),null,false);onUi(activity::recreate);MainActivity recreated=(MainActivity)waitForMonitorWithTimeout(monitor,10000);check(recreated!=null,"Activity recreation timed out");waitForIdleSync();onUi(recreated::onBackPressed);waitForIdleSync();java.util.concurrent.atomic.AtomicReference<String> restored=new java.util.concurrent.atomic.AtomicReference<>("");long deadline=android.os.SystemClock.elapsedRealtime()+10000;do{onUi(()->{EditText entry=composer(recreated.getWindow().getDecorView());restored.set(entry==null?"<no composer>":entry.getText().toString());});if(restored.get().equals("Draft survives rotation 👋"))break;Thread.sleep(50);}while(android.os.SystemClock.elapsedRealtime()<deadline);screenshot(recreated,"chat-restored");check(restored.get().equals("Draft survives rotation 👋"),"Rotation lost composer draft: "+restored.get());onUi(recreated::finish);removeMonitor(monitor);
     }
-    @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();backups();meshcoreContactPersistence();meshtasticSettingsViews();meshcoreSettingsViews();meshcoreUserFeatureViews();if(!mtOnly){tracks();appearance();bleSignal();activity();}sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
+    @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();outboxRecovery();backups();meshcoreContactPersistence();meshtasticSettingsViews();meshcoreSettingsViews();meshcoreUserFeatureViews();if(!mtOnly){tracks();appearance();bleSignal();activity();}sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
 }
