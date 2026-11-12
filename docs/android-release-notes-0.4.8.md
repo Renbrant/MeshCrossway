@@ -8,7 +8,8 @@ after opening or closing map panels.
 The position dot becomes a blue arrow when fresh GPS data establishes movement and
 a reliable direction of travel. It returns to a dot when stopped or when course is
 uncertain or stale. Small GPS drift is ignored; phone orientation does not steer
-the arrow.
+the arrow. The arrow is drawn as vector geometry, avoiding an invisible custom-icon
+rendering problem found during native-image testing.
 
 Includes the 0.4.7 map changes and a stricter visual regression: native snapshots
 must show the phone marker's own blue, rather than a nearby MeshCore node. Snapshot

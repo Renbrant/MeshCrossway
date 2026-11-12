@@ -24,7 +24,7 @@ final class MapPanel {
     interface Host {List<Located> nodes();List<Poi> pois();Location phone();boolean gpsEnabled();void gps();void node(Located node);void poi(String name,double lat,double lon);void deletePoi(String id);List<TrackStore.Track> tracks();void manageTracks();void navigate(String name,double lat,double lon);void startTrack(String name);void pauseTrack(boolean finish);void resumeTrack(String id);void updateTrack(TrackStore.Track track,String name,int color,boolean visible);void deleteTrack(TrackStore.Track track);void exportTrack(TrackStore.Track track);}
     private final Activity activity;private final Host host;private final SharedPreferences preferences;private final Appearance.Palette palette;final MapView mapView;final LinearLayout root;final OfflineMaps offline;
     MapLibreMap map;boolean styleReady;int markerCount;private int network;private boolean favorites,recent,labels=true,started,resumed,destroyed,fallback,autoFit,followPhone,initialPhoneZoom;private boolean clustered;
-    final PhoneMotion motion=new PhoneMotion();private double cameraPhoneLat=Double.NaN,cameraPhoneLon=Double.NaN;
+    final PhoneMotion motion=new PhoneMotion();private PhoneMotion.Fix markerFix;private double cameraPhoneLat=Double.NaN,cameraPhoneLon=Double.NaN;
     private final Runnable locationTick=new Runnable(){public void run(){if(!resumed||destroyed)return;if(styleReady&&map!=null&&map.getStyle()!=null)updatePhone(map.getStyle());root.postDelayed(this,1000);}};
     private String nodeStatus="";private final TextView status,downloadStatus;private final String override;private LatLng focus;private List<Located> shown=new ArrayList<>();
     private static final String BLANK="{\"version\":8,\"sources\":{},\"layers\":[{\"id\":\"background\",\"type\":\"background\",\"paint\":{\"background-color\":\"#111820\"}}]}";
@@ -42,7 +42,7 @@ final class MapPanel {
         mapView.getMapAsync(ready->{if(destroyed)return;map=ready;resizePanel();map.getUiSettings().setAttributionEnabled(false);map.getUiSettings().setLogoEnabled(false);map.setPrefetchZoomDelta(0);map.setMaxZoomPreference(19);map.setMinZoomPreference(1);
             double lat=Double.parseDouble(preferences.getString("lat","0")),lon=Double.parseDouble(preferences.getString("lon","0")),zoom=Double.parseDouble(preferences.getString("zoom","2"));autoFit=!preferences.contains("lat")&&focus==null;
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(focus!=null?focus:new LatLng(lat,lon),focus!=null?14:zoom));
-            map.addOnCameraMoveStartedListener(reason->{if(reason==MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE){autoFit=false;stopFollowing();}});map.addOnCameraIdleListener(()->{if(selectionUpdater!=null)selectionUpdater.run();});map.addOnMapClickListener(this::tap);map.addOnMapLongClickListener(point->{newPoi(point);return true;});loadStyle();
+            map.addOnCameraMoveStartedListener(reason->{if(reason==MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE){autoFit=false;stopFollowing();}});map.addOnCameraIdleListener(()->{if(selectionUpdater!=null)selectionUpdater.run();});map.addOnCameraMoveListener(()->{if(!destroyed&&styleReady&&map.getStyle()!=null)updateArrow(map.getStyle());});map.addOnMapClickListener(this::tap);map.addOnMapLongClickListener(point->{newPoi(point);return true;});loadStyle();
         });
     }
     private int appliedRight=-1,appliedBottom=-1;private FrameLayout viewport;private ScrollView railScroll,panelScroll;private LinearLayout rail,panel,panelBody;private TextView panelTitle,liveTrack,liveGps;private String panelType="",trackSignature="",poiSignature="";private final Map<Long,Button> downloadRows=new HashMap<>();private TextView areaStatus;private OfflineMaps.Area currentArea;private boolean panelCollapsed;private final Map<String,View> railButtons=new HashMap<>();
@@ -82,8 +82,10 @@ final class MapPanel {
         style.addSource(new GeoJsonSource("local-tracks",FeatureCollection.fromFeatures(new ArrayList<>())));style.addLayer(new LineLayer("track-lines","local-tracks").withProperties(lineColor(get("color")),lineWidth(3f)));
         style.addSource(new GeoJsonSource("phone",FeatureCollection.fromFeatures(new ArrayList<>())));
         style.addLayer(new CircleLayer("phone-point","phone").withFilter(eq(get("moving"),false)).withProperties(circleColor(0xff589dff),circleRadius(7f),circleStrokeColor(0xffffffff),circleStrokeWidth(3f)));
-        style.addImage("phone-heading-arrow",phoneArrow());
-        style.addLayer(new SymbolLayer("phone-arrow","phone").withFilter(eq(get("moving"),true)).withProperties(iconImage("phone-heading-arrow"),iconRotate(get("bearing")),iconRotationAlignment(Property.ICON_ROTATION_ALIGNMENT_MAP),iconPitchAlignment(Property.ICON_PITCH_ALIGNMENT_VIEWPORT),iconAllowOverlap(true),iconIgnorePlacement(true)));
+        style.addSource(new GeoJsonSource("phone-course",FeatureCollection.fromFeatures(new ArrayList<>())));
+        style.addLayer(new FillLayer("phone-arrow","phone-course").withProperties(fillColor(0xff589dff),fillOpacity(1f)));
+        style.addLayer(new LineLayer("phone-arrow-outline","phone-course").withProperties(lineColor(0xffffffff),lineWidth(2.5f),lineJoin(Property.LINE_JOIN_ROUND)));
+
         styleReady=true;update();if(pendingTool!=null){String tool=pendingTool;pendingTool=null;openTool(tool);}
     }
     private void nodeLayers(Style style){
@@ -102,11 +104,19 @@ final class MapPanel {
     void stopFollowing(){followPhone=false;initialPhoneZoom=false;updateFollowButton();status.setText(status.getText().toString().replace(" · following",""));}
     boolean followingPhone(){return followPhone;}
     private void updateFollowButton(){View button=railButtons.get("Center GPS");if(button==null)return;button.setSelected(followPhone);button.setAlpha(followPhone?1f:.8f);button.setContentDescription(followPhone?"Following GPS · drag map to pause":"Center GPS");android.graphics.drawable.GradientDrawable background=(android.graphics.drawable.GradientDrawable)button.getBackground();background.setStroke(followPhone?dp(2):0,palette.accent);}
-    private android.graphics.Bitmap phoneArrow(){
-        int size=dp(36);android.graphics.Bitmap image=android.graphics.Bitmap.createBitmap(size,size,android.graphics.Bitmap.Config.ARGB_8888);image.setDensity(activity.getResources().getDisplayMetrics().densityDpi);
-        android.graphics.Canvas canvas=new android.graphics.Canvas(image);canvas.scale(size/36f,size/36f);
-        android.graphics.Path arrow=new android.graphics.Path();arrow.moveTo(18,3);arrow.lineTo(30,31);arrow.lineTo(18,25);arrow.lineTo(6,31);arrow.close();
-        android.graphics.Paint paint=new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);paint.setColor(0xff589dff);canvas.drawPath(arrow,paint);paint.setStyle(android.graphics.Paint.Style.STROKE);paint.setStrokeJoin(android.graphics.Paint.Join.ROUND);paint.setStrokeWidth(2.5f);paint.setColor(0xffffffff);canvas.drawPath(arrow,paint);return image;
+    /** A vector arrow avoids sprite-atlas failures and stays the same size during zoom. */
+    private void updateArrow(Style style){
+        GeoJsonSource source=style.getSourceAs("phone-course");if(source==null)return;ArrayList<Feature> arrows=new ArrayList<>();
+        if(markerFix!=null&&motion.moving){
+            org.maplibre.android.maps.Projection projection=map.getProjection();android.graphics.PointF center=projection.toScreenLocation(new LatLng(markerFix.lat,markerFix.lon));
+            double angle=Math.toRadians(motion.bearing-map.getCameraPosition().bearing),cos=Math.cos(angle),sin=Math.sin(angle),scale=activity.getResources().getDisplayMetrics().density;
+            ArrayList<Point> ring=new ArrayList<>();for(double[] vertex:new double[][]{{0,-15},{12,13},{0,7},{-12,13},{0,-15}}){
+                double x=(vertex[0]*cos-vertex[1]*sin)*scale,y=(vertex[0]*sin+vertex[1]*cos)*scale;
+                LatLng position=projection.fromScreenLocation(new android.graphics.PointF((float)(center.x+x),(float)(center.y+y)));double lon=position.getLongitude();while(lon-markerFix.lon>180)lon-=360;while(lon-markerFix.lon< -180)lon+=360;ring.add(Point.fromLngLat(lon,position.getLatitude()));
+            }
+            arrows.add(Feature.fromGeometry(Polygon.fromLngLats(Collections.singletonList(ring))));
+        }
+        source.setGeoJson(FeatureCollection.fromFeatures(arrows));
     }
     private String updatePhone(Style style){
         Location phone=host.gpsEnabled()?host.phone():null;ArrayList<Feature> location=new ArrayList<>();String gps="phone GPS off";
@@ -124,7 +134,7 @@ final class MapPanel {
                 map.easeCamera(CameraUpdateFactory.newCameraPosition(next),700);cameraPhoneLat=fix.lat;cameraPhoneLon=fix.lon;initialPhoneZoom=false;
             }
         }else{motion.reset();if(followPhone)gps="Waiting for phone GPS";}
-        ((GeoJsonSource)style.getSource("phone")).setGeoJson(FeatureCollection.fromFeatures(location));
+        markerFix=fix;((GeoJsonSource)style.getSource("phone")).setGeoJson(FeatureCollection.fromFeatures(location));updateArrow(style);
         if(followPhone)gps+=" · following";
         status.setText(nodeStatus+gps);return gps;
     }
