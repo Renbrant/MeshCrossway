@@ -31,9 +31,9 @@ jobs:
         run: node scripts/test_android_remote_web.cjs
       - name: Complete backup migration fixture tests
         run: python3 scripts/test_android_migration.py
-      - name: Build and lint
+      - name: Unit tests, build and lint
         working-directory: android
-        run: ./gradlew --no-daemon assembleDebug lintDebug
+        run: ./gradlew --no-daemon testDebugUnitTest assembleDebug lintDebug
       - name: Package test APK
         run: |
           mkdir -p android-artifact
