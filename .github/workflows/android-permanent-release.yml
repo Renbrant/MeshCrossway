@@ -14,7 +14,7 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.4.4'
+        default: '0.4.5'
         type: string
 permissions:
   contents: write
@@ -172,6 +172,9 @@ jobs:
           elif [ "$REQUESTED" = "0.4.3" ]; then
             cp docs/android-release-notes-0.4.3.md release-notes.md
             RELEASE_TITLE="Android 0.4.3 beta — MeshCore repeater protocol compatibility"
+          elif [ "$REQUESTED" = "0.4.5" ]; then
+            cp docs/android-release-notes-0.4.5.md release-notes.md
+            RELEASE_TITLE="Android 0.4.5 beta — editable repeater settings cards"
           else
             RELEASE_TITLE="Android $REQUESTED beta"
             cat > release-notes.md <<EOF

@@ -181,7 +181,8 @@ public final class SmokeInstrumentation extends Instrumentation {
     private void maps(MainActivity activity)throws Exception{
         java.lang.reflect.Field field=MainActivity.class.getDeclaredField("service");field.setAccessible(true);waitUntil(()->{try{return field.get(activity)!=null;}catch(Exception e){throw new RuntimeException(e);}},"Service did not bind");
         onUi(()->{try{RadioService service=(RadioService)field.get(activity);Node mt=new Node();mt.id="123";mt.name="MT test";mt.position=true;mt.lat=40;mt.lon=-105;mt.heard=System.currentTimeMillis()/1000;Node mc=new Node();mc.id="0909090909090909090909090909090909090909090909090909090909090909";mc.name="MC test";mc.position=true;mc.lat=40.001;mc.lon=-105.001;mc.heard=mt.heard;service.sessions.get(RadioProfile.MESHTASTIC).address="map-mt";service.sessions.get(RadioProfile.MESHCORE).address="map-mc";service.history.select(RadioProfile.MESHTASTIC,"map-mt");service.history.select(RadioProfile.MESHCORE,"map-mc");service.history.node(RadioProfile.MESHTASTIC,"map-mt",mt);service.history.node(RadioProfile.MESHCORE,"map-mc",mc);activity.showMap(40,-105);}catch(Exception e){throw new RuntimeException(e);}});
-        waitUntil(()->activity.mapPanel!=null&&activity.mapPanel.styleReady&&activity.mapPanel.markerCount==2,"Native map did not load both network sources");waitUntil(()->{MapPanel panel=activity.mapPanel;return panel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,panel.mapView.getWidth(),panel.mapView.getHeight()),"mesh-points").size()==2;},"Native renderer did not draw both network markers");screenshot(activity,"dual-map");
+        try{waitUntil(()->activity.mapPanel!=null&&activity.mapPanel.styleReady&&activity.mapPanel.markerCount==2,"Native map did not load both network sources");}
+        catch(AssertionError error){onUi(()->{try{RadioService service=(RadioService)field.get(activity);android.util.Log.e("MeshCrosswayTest","Map fixture: panel="+(activity.mapPanel!=null)+" style="+(activity.mapPanel!=null&&activity.mapPanel.styleReady)+" markers="+(activity.mapPanel==null?-1:activity.mapPanel.markerCount)+" MT="+service.data(RadioProfile.MESHTASTIC).nodes.size()+" MC="+service.data(RadioProfile.MESHCORE).nodes.size()+" listener="+(service.listener!=null));}catch(Exception failure){throw new RuntimeException(failure);}});screenshot(activity,"map-failure");throw error;}waitUntil(()->{MapPanel panel=activity.mapPanel;return panel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,panel.mapView.getWidth(),panel.mapView.getHeight()),"mesh-points").size()==2;},"Native renderer did not draw both network markers");screenshot(activity,"dual-map");
         final OfflineMaps[] offline=new OfflineMaps[1];onUi(()->{offline[0]=activity.mapPanel.offline;offline[0].create("Offline test","asset://map-test-style.json",org.maplibre.android.geometry.LatLngBounds.from(40.002,-104.998,39.998,-105.002),10,1);});waitUntil(()->offline[0].areas.stream().anyMatch(a->a.name.equals("Offline test")),"Offline region was not persisted");
         onUi(()->{OfflineMaps.Area area=offline[0].areas.stream().filter(a->a.name.equals("Offline test")).findFirst().get();offline[0].pause();offline[0].start(area);offline[0].pause();offline[0].delete(area);});waitUntil(()->offline[0].areas.stream().noneMatch(a->a.name.equals("Offline test")),"Offline region deletion failed");
     }
@@ -565,6 +566,44 @@ public final class SmokeInstrumentation extends Instrumentation {
 
         }catch(Exception e){throw new RuntimeException(e);}});}finally{onUi(activity::finish);waitForIdleSync();}
     }
+    private void repeaterSettingsViews()throws Exception{
+        MainActivity activity=(MainActivity)startActivitySync(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));waitForIdleSync();
+        java.lang.reflect.Field serviceField=MainActivity.class.getDeclaredField("service");serviceField.setAccessible(true);
+        waitUntil(()->{try{return serviceField.get(activity)!=null;}catch(Exception e){return false;}},"Service not bound for repeater view");
+        RadioService service=(RadioService)serviceField.get(activity);RadioService.Session session=service.sessions.get(RadioProfile.MESHCORE);
+        ProtocolClient previous=session.client;String address=session.address;boolean verified=session.verified,connected=session.connected;
+        Snapshot previousSnapshot=service.data(RadioProfile.MESHCORE);
+        ProtocolClient fixture=new ProtocolClient(RadioProfile.MESHCORE,75,new ProtocolClient.Listener(){public void node(Node n){}public void channel(Channel ch){}public void message(Message m){}public void delivery(String uid,String state){}});
+        Node node=new Node();node.id="abababababababababababababababababababababababababababababababab";node.name="Repeater test";node.type=2;node.mcState=ProtocolClient.MC_APPROVED;
+        try{
+            onUi(()->{try{
+                session.address="repeater-fixture";session.client=fixture;session.verified=true;session.connected=true;
+                fixture.commands.clear();fixture.ready=true;fixture.mcBacklogDrained=true;fixture.firmwareCode=14;fixture.nodes.put(node.id,node);
+                fixture.mcRepeaterAdmin.key=node.id;fixture.mcRepeaterAdmin.admin=true;fixture.mcRepeaterAdmin.expires=android.os.SystemClock.elapsedRealtime()+600000;
+                service.history.snapshots.put(RadioProfile.MESHCORE,new Snapshot(java.util.Collections.singletonList(node),new java.util.ArrayList<>(),new java.util.ArrayList<>()));
+                Method open=MainActivity.class.getDeclaredMethod("showRepeaterDossier",Node.class);open.setAccessible(true);open.invoke(activity,node);
+                McRepeaterSettings settings=fixture.mcRepeaterSettings;
+                for(McRepeaterSettings.Field field:McRepeaterSettings.Field.values()){
+                    String raw=field==McRepeaterSettings.Field.NAME?"Repeater test":field==McRepeaterSettings.Field.RADIO?"910.525,62.5,7,5":field==McRepeaterSettings.Field.LAT?"12.345670":field==McRepeaterSettings.Field.LON?"-45.6789":field.toggle()?"on":field==McRepeaterSettings.Field.TX?"22":"10";
+                    McRepeaterSettings.Value value=settings.values.get(field);value.raw=raw;value.valid=true;value.state="";
+                }
+                settings.started=true;settings.status="Settings loaded · tap a card to edit";
+                Method refresh=MainActivity.class.getDeclaredMethod("rebuildContent");refresh.setAccessible(true);refresh.invoke(activity);
+                View screen=activity.getWindow().getDecorView();
+                for(String value:new String[]{"22 dBm","12.345670 °","-45.6789 °","Maximum flood hops","Guest read-only access"})check(find(screen,value)!=null,"Missing repeater card: "+value);
+                check(find(screen,"Read current value")==null&&find(screen,"Configuration")==null,"Nested configuration menus remain");
+                check(fixture.commands.isEmpty(),"Rendering populated cards must not queue writes");
+            }catch(Exception e){throw new RuntimeException(e);}});
+            waitForIdleSync();screenshot(activity,"repeater-settings");click(activity,"TX power");
+            android.view.accessibility.AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();
+            java.util.List<android.view.accessibility.AccessibilityNodeInfo> fields=root.findAccessibilityNodeInfosByText("22");
+            boolean numeric=false;for(android.view.accessibility.AccessibilityNodeInfo field:fields)if(field.isEditable())numeric=(field.getInputType()&android.text.InputType.TYPE_MASK_CLASS)==android.text.InputType.TYPE_CLASS_NUMBER;
+            check(numeric,"TX power editor must be prefilled with 22 and use a numeric keyboard");
+            screenshot(activity,"repeater-power-editor");
+            java.util.List<android.view.accessibility.AccessibilityNodeInfo> cancel=root.findAccessibilityNodeInfosByText("Cancel");check(!cancel.isEmpty(),"Power editor Cancel missing");cancel.get(0).performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK);waitForIdleSync();
+            check(fixture.commands.isEmpty(),"Opening/cancelling an editor must not write to the radio");
+        }finally{onUi(()->{fixture.clearRepeaterAdministration();session.client=previous;session.address=address;session.verified=verified;session.connected=connected;service.history.snapshots.put(RadioProfile.MESHCORE,previousSnapshot);activity.finish();});waitForIdleSync();waitUntil(activity::isDestroyed,"Repeater fixture activity did not finish");}
+    }
     private void activity()throws Exception{
         MainActivity.mapStyleOverride="asset://map-test-style.json";Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();
         onUi(()->{
@@ -604,5 +643,5 @@ public final class SmokeInstrumentation extends Instrumentation {
         waitForIdleSync();screenshot(activity,"chat-draft");Method settings=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);settings.setAccessible(true);onUi(()->{try{settings.invoke(activity,"data",null);}catch(Exception e){throw new RuntimeException(e);}});screenshot(activity,"settings-data");
         ActivityMonitor monitor=addMonitor(MainActivity.class.getName(),null,false);onUi(activity::recreate);MainActivity recreated=(MainActivity)waitForMonitorWithTimeout(monitor,10000);check(recreated!=null,"Activity recreation timed out");waitForIdleSync();onUi(recreated::onBackPressed);waitForIdleSync();java.util.concurrent.atomic.AtomicReference<String> restored=new java.util.concurrent.atomic.AtomicReference<>("");long deadline=android.os.SystemClock.elapsedRealtime()+10000;do{onUi(()->{EditText entry=composer(recreated.getWindow().getDecorView());restored.set(entry==null?"<no composer>":entry.getText().toString());});if(restored.get().equals("Draft survives rotation 👋"))break;Thread.sleep(50);}while(android.os.SystemClock.elapsedRealtime()<deadline);screenshot(recreated,"chat-restored");check(restored.get().equals("Draft survives rotation 👋"),"Rotation lost composer draft: "+restored.get());onUi(recreated::finish);removeMonitor(monitor);
     }
-    @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();outboxRecovery();backups();meshcoreContactPersistence();meshtasticSettingsViews();meshcoreSettingsViews();meshcoreUserFeatureViews();if(!mtOnly){tracks();appearance();bleSignal();activity();}sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
+    @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();outboxRecovery();backups();meshcoreContactPersistence();meshtasticSettingsViews();meshcoreSettingsViews();meshcoreUserFeatureViews();if(!mtOnly){tracks();appearance();bleSignal();activity();repeaterSettingsViews();}sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
 }
