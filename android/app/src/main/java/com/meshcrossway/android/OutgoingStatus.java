@@ -104,7 +104,7 @@ final class OutgoingStatus {
         if(awaiting>0)brief.append(awaiting).append(" awaiting confirmation");
         if(attention>0){
             if(awaiting>0)brief.append(" · ");
-            brief.append(attention).append(" failed/unknown direct");
+            brief.append(attention).append(" failed/unknown");
         }
         return brief.toString();
     }
