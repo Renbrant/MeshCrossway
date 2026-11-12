@@ -114,8 +114,9 @@ final class McRemoteDiagnostics {
         return Math.max(0,COOLDOWN_MS-(now-last));
     }
     static String remainingLabel(long remainingMs){
-        return "Wait "+Math.max(1,(remainingMs+999L)/1000L)
-            +" seconds before querying this repeater again";
+        long seconds=Math.max(1,(remainingMs+999L)/1000L);
+        return "Wait "+seconds+" second"+(seconds==1?"":"s")+
+            " before querying this repeater again";
     }
 
     /**
