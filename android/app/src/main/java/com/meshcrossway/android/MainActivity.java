@@ -791,10 +791,10 @@ public final class MainActivity extends Activity {
         new AlertDialog.Builder(this)
             .setTitle(kind==McRemoteDiagnostics.Kind.STATUS?
                 "Request repeater status?":"Request repeater neighbors?")
-            .setMessage("RADIO AIRTIME WARNING\\n\\n"
+            .setMessage("RADIO AIRTIME WARNING\n\n"
                 +"This request may be sent using FLOOD routing. If the repeater's path is "
                 +"unknown, multiple mesh repeaters may retransmit it; the reply can also "
-                +"use multiple hops. A single request may therefore cause several LoRa transmissions.\\n\\n"
+                +"use multiple hops. A single request may therefore cause several LoRa transmissions.\n\n"
                 +"Only one manual request is allowed every 5 minutes per repeater, "
                 +"shared across status, neighbor lists and additional pages, even after reconnecting. "
                 +"The radio accepting a command does not guarantee a remote reply. "
