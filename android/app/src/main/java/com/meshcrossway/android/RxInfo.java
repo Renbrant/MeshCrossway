@@ -14,6 +14,16 @@ final class RxInfo {
     static RxInfo merge(RxInfo old,RxInfo next){if(next.observed&&!old.observed){RxInfo preferred=new RxInfo(next);if(preferred.packetId==0){preferred.packetId=old.packetId;preferred.source=old.source;preferred.replyId=old.replyId;preferred.emoji=old.emoji;}return preferred;}RxInfo result=new RxInfo(old);if(result.hops<0&&next.hops>=0)result.hops=next.hops;if(result.kind.isEmpty())result.kind=next.kind;if(!Double.isFinite(result.snr))result.snr=next.snr;if(result.rssi==Integer.MIN_VALUE)result.rssi=next.rssi;if(result.relay<0)result.relay=next.relay;result.mqtt|=next.mqtt;return result;}
     static RxInfo meshcore(int encoded){RxInfo r=new RxInfo();if(encoded==255){r.kind="direct";return r;}int width=(encoded>>>6)+1,count=encoded&63;if(width>3||width*count>64)return r;r.kind="flood";r.width=width;r.hops=count;return r;}
     String summary(){String result=hops>=0?hops+" hop"+(hops==1?"":"s"):kind.equals("direct")?"Direct routing · hops unavailable":"Hops unavailable";if(Double.isFinite(snr))result+=String.format(Locale.ROOT," · SNR %.2f dB",snr);if(rssi!=Integer.MIN_VALUE)result+=" · RSSI "+rssi+" dBm";if(mqtt)result+=" · MQTT";return result;}
+    /** Provenance only: do not interpret Bluetooth RSSI as LoRa or a hop count as a full path. */
+    String provenance(){
+        if(observed&&"flood".equals(kind))return "MeshCore validated packet copy · observed flood path";
+        if("meshtastic".equals(kind))return mqtt
+                ?"Meshtastic packet fields · MQTT flag present; RF reception not guaranteed"
+                :"Meshtastic companion packet metadata · full route unavailable";
+        if("flood".equals(kind))return "MeshCore companion flood metadata · full route not observed";
+        if("direct".equals(kind))return "MeshCore companion direct routing · travelled hops unavailable";
+        return "Reception metadata unavailable";
+    }
     static final class Observation {RxInfo info;long time,at;int type;String body;}
     /** Decodes only version-1 group text, and only after validating the firmware's MAC. */
     static Observation channelLog(byte[] frame,byte[] key,long now){
