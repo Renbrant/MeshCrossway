@@ -13,6 +13,7 @@ final class ProtocolClient {
     }
     static final class Sent {String uid,peer;long deadline,ack,retainUntil;boolean ackKnown;Sent(String u,String p,long d){uid=u;peer=p;deadline=d;}}
     final McAdmin mcAdmin;
+    final McRemoteDiagnostics mcRemote=new McRemoteDiagnostics();
     final LinkedHashMap<String,Node> mcDiscoveries=new LinkedHashMap<>();
     final LinkedHashMap<Long,Sent> mcLateSent=new LinkedHashMap<>();
     final Set<String> mcSyncKeys=new HashSet<>(),mcSyncDeleted=new HashSet<>(),mcFailedReads=new HashSet<>(),mcDeferredContacts=new LinkedHashSet<>();
@@ -41,6 +42,7 @@ final class ProtocolClient {
     void cancel(String uid){commands.removeIf(c->c.uid.equals(uid));removeSent(uid);}
     void queue(byte[] data,int response,String uid){if(commands.size()>=32)throw Wire.bad("Radio command queue is full");commands.add(new Command(data,response,uid));}
     Command next(long now){
+        if(profile==RadioProfile.MESHCORE){long version=mcRemote.revision;mcRemote.tick(now);if(mcRemote.revision!=version)mcRevision++;}
         if(profile==RadioProfile.MESHTASTIC){admin.tick(now);if(ready)admin.ready();}else{mcAdmin.tick(now);if(ready)mcAdmin.ready();mcLateSent.entrySet().removeIf(e->now>=e.getValue().retainUntil);}
         for(Iterator<Map.Entry<Long,Sent>> it=sent.entrySet().iterator();it.hasNext();){Map.Entry<Long,Sent> entry=it.next();Sent pending=entry.getValue();if(now>=pending.deadline){listener.delivery(pending.uid,"uncertain");if(profile==RadioProfile.MESHCORE&&pending.ackKnown){pending.retainUntil=now+600000;long savedKey=entry.getKey();while(mcLateSent.containsKey(savedKey))savedKey++;mcLateSent.put(savedKey,pending);trim(mcLateSent,128);}it.remove();}}
 
@@ -192,6 +194,7 @@ final class ProtocolClient {
     }
     private void meshcore(byte[] data,long now){
         if(data.length==0||data.length>176)throw Wire.bad("Invalid MeshCore frame");int code=data[0]&255;if(code==136){observeChannel(data,now);return;}
+        if(code==McRemoteDiagnostics.PUSH_BINARY){long revision=mcRemote.revision;mcRemote.receive(data,now);if(mcRemote.revision!=revision)mcRevision++;return;}
         Command current=active;int command=current==null?-1:current.data[0]&255;
         boolean matched=current!=null&&(code==current.response||code==1||code==15||(command==4&&code==4)||(command==10&&(code==7||code==8||code==16||code==17||code==27)));
         if(command==31&&code==18)matched=data.length>=2&&data[1]==current.data[1];
@@ -209,6 +212,7 @@ final class ProtocolClient {
                 mcStatus=mcDiscoveries.containsKey(id)?"Discovery checked — approval required":"Contact is no longer in the radio contact list";mcRevision++;return;
             }
             if(current.mcEdit!=null){mcAdmin.clock=now;mcAdmin.reply(current.mcEdit,current.mcVerification,data);return;}
+            if(command==McRemoteDiagnostics.CMD_BINARY){mcRemote.rejected(data.length>1?data[1]&255:code);mcRevision++;return;}
             if(command==31&&data.length>=2&&data[1]==2&&!ready){nextMcChannel();return;}
             if(!ready)throw Wire.bad("MeshCore rejected bootstrap command "+command);
             mcFailedReads.add(mcReadKey(current.data));mcError="Radio rejected command "+command+" (code "+(data.length>1?data[1]&255:code)+")";mcRevision++;return;
@@ -245,7 +249,9 @@ final class ProtocolClient {
         else if(code==0&&matched&&command==7){mcAdvertPending=false;mcStatus="Radio accepted the announcement; reception by others is not confirmed";mcAdvertStatus=mcStatus;mcRevision++;}
         else if(code==0&&matched&&!current.uid.isEmpty()){listener.delivery(current.uid,"radio accepted");removeSent(current.uid);}
         else if(code==6&&matched){
-            if(data.length<10)throw Wire.bad("Truncated send acknowledgement");for(Sent pending:sent.values())if(pending.uid.equals(current.uid)){pending.ack=Wire.u32(data,2);pending.ackKnown=true;pending.deadline=now+Math.max(5000,Math.min(600000,Wire.u32(data,6)));listener.delivery(pending.uid,"radio accepted");}
+            if(data.length<10)throw Wire.bad("Truncated send acknowledgement");
+            if(command==McRemoteDiagnostics.CMD_BINARY){mcRemote.sentToRadio(data,now);mcRevision++;}
+            for(Sent pending:sent.values())if(pending.uid.equals(current.uid)){pending.ack=Wire.u32(data,2);pending.ackKnown=true;pending.deadline=now+Math.max(5000,Math.min(600000,Wire.u32(data,6)));listener.delivery(pending.uid,"radio accepted");}
         }
         else if(code==12&&matched){if(data.length<3)throw Wire.bad("Truncated battery response");batteryMv=(int)Wire.u16(data,1);hasBattery=true;if(data.length>=11){usedKb=(int)Wire.u32(data,3);totalKb=(int)Wire.u32(data,7);}mcRevision++;}
         else if(code==24&&matched){
@@ -290,6 +296,20 @@ final class ProtocolClient {
         queue(data,response,"");return true;
     }
     void retryMcReads(){mcFailedReads.clear();mcError="";mcRevision++;}
+    /** Remote read-only requests are explicit, serialized and session-scoped. */
+    void requestMcRepeater(McRemoteDiagnostics.Kind kind,String key,int offset,long now){
+        if(profile!=RadioProfile.MESHCORE||!ready||firmwareCode<10)
+            throw Wire.bad("Remote diagnostics require a Ready MeshCore Companion radio (v10+)");
+        Node node=nodes.get(key);
+        if(node==null||node.type!=2||node.mcState!=MC_APPROVED)
+            throw Wire.bad("Select an approved repeater from the current radio contacts");
+        if(mcAdmin.edit!=null||commands.size()>=8)
+            throw Wire.bad("Radio is busy; finish pending operations before querying repeaters");
+        byte[] packet=mcRemote.request(kind,node,offset,now);
+        queue(packet,McRemoteDiagnostics.RESP_SENT,"");
+        mcRevision++;
+    }
+
     boolean mcSupportsStats(){return firmwareCode>=8;}
     boolean mcSupportsScope(){return firmwareCode>=11;}
     boolean mcSupportsPath(){return firmwareCode>=10;}
