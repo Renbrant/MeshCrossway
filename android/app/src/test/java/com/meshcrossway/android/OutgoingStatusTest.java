@@ -88,6 +88,53 @@ public class OutgoingStatusTest {
         assertFalse(OutgoingStatus.stillReviewable(original,latest));
     }
 
+    @Test public void homeDoesNotTreatOldOrUnknownGroupMessagesAsCurrentAlarms(){
+        long now=1_800_000_000L;
+        Message oldUnknown=outgoing("uncertain",false);
+        oldUnknown.timestamp=now-3600;
+        Message groupUnknown=outgoing("uncertain",true);
+        groupUnknown.timestamp=now-10;
+        Message groupAccepted=outgoing("radio accepted",true);
+        groupAccepted.timestamp=now-20;
+        Message inbound=outgoing("rejected",false);
+        inbound.outgoing=false;
+        inbound.timestamp=now-30;
+        Snapshot snapshot=new Snapshot(new ArrayList<>(),new ArrayList<>(),
+                Arrays.asList(oldUnknown,groupUnknown,groupAccepted,inbound));
+        assertEquals("",OutgoingStatus.homeBrief(snapshot,now));
+        // The complete history is still available in the Outbox detail.
+        assertEquals(2,OutgoingStatus.counts(snapshot).review);
+    }
+
+    @Test public void homeIncludesOnlyRecentActionableMessages(){
+        long now=1_800_000_000L;
+        Message queued=outgoing("queued",true);queued.timestamp=now-25;
+        Message submitted=outgoing("submitted",true);submitted.timestamp=now-80;
+        Message directAccepted=outgoing("radio accepted",false);directAccepted.timestamp=now-900;
+        Message directUnknown=outgoing("uncertain",false);directUnknown.timestamp=now-100;
+        Message failedGroup=outgoing("rejected",true);failedGroup.timestamp=now-60;
+        Message received=outgoing("delivered",false);received.timestamp=now-45;
+        Message oldQueued=outgoing("queued",true);oldQueued.timestamp=now-901;
+        Snapshot snapshot=new Snapshot(new ArrayList<>(),new ArrayList<>(),
+                Arrays.asList(queued,submitted,directAccepted,directUnknown,failedGroup,received,oldQueued));
+        String label=OutgoingStatus.homeBrief(snapshot,now);
+        assertTrue(label.contains("3 awaiting confirmation"));
+        assertTrue(label.contains("2 failed/unknown"));
+        assertFalse(label.contains("4 awaiting"));
+    }
+
+    @Test public void homeIgnoresMissingFutureAndExpiredTimestamps(){
+        long now=1_800_000_000L;
+        Message future=outgoing("rejected",false);future.timestamp=now+5;
+        Message missing=outgoing("queued",false);missing.timestamp=0;
+        Message expired=outgoing("uncertain",false);expired.timestamp=now-901;
+        Snapshot snapshot=new Snapshot(new ArrayList<>(),new ArrayList<>(),
+                Arrays.asList(future,missing,expired));
+        assertEquals("",OutgoingStatus.homeBrief(snapshot,now));
+        assertEquals("",OutgoingStatus.homeBrief(Snapshot.empty(),now));
+        assertEquals("",OutgoingStatus.homeBrief(null,now));
+    }
+
     @Test public void notSentAndDeliveredMessagesCannotBePreparedAsRetries(){
         Message m=outgoing("uncertain",false);
         assertTrue(OutgoingStatus.canPrepareNewDraft(m));
