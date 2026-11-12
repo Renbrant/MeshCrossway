@@ -723,7 +723,7 @@ public final class MainActivity extends Activity {
             ?McRemoteDiagnostics.remainingLabel(cooldown)
             :"Connect the same radio, finish previous request and verify firmware";
         menuRow(group(results),"refresh","Request remote status",
-            canQuery?"Manual LoRa request · flood routing possible · 5 min shared limit":
+            canQuery?"Manual LoRa request · flood routing possible · 30 sec shared limit":
             unavailableReason,
             canQuery?()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.STATUS,0):null,RADIO_MC);
         section(results,"REPEATER NEIGHBORS");
@@ -757,11 +757,11 @@ public final class MainActivity extends Activity {
             int next=list.offset+list.list.size();
             if(next<list.total&&next<=1024&&!list.list.isEmpty())
                 menuRow(group(results),"refresh","Request next neighbors page",
-                    canQuery?"Offset "+next+" · separate request after 5-minute limit":unavailableReason,
+                    canQuery?"Offset "+next+" · separate request after 30-second limit":unavailableReason,
                     canQuery?()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,next):null,RADIO_MC);
         }
         menuRow(group(results),"refresh","Request neighbors",
-            canQuery?"Up to 8 neighbors · flood possible · 5 min shared limit":
+            canQuery?"Up to 8 neighbors · flood possible · 30 sec shared limit":
                 unavailableReason,
             canQuery?()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,0):null,RADIO_MC);
         section(results,"DATA PROVENANCE");
@@ -795,7 +795,7 @@ public final class MainActivity extends Activity {
                 +"This request may be sent using FLOOD routing. If the repeater's path is "
                 +"unknown, multiple mesh repeaters may retransmit it; the reply can also "
                 +"use multiple hops. A single request may therefore cause several LoRa transmissions.\n\n"
-                +"Only one manual request is allowed every 5 minutes per repeater, "
+                +"Only one manual request is allowed every 30 seconds per repeater, "
                 +"shared across status, neighbor lists and additional pages, even after reconnecting. "
                 +"The radio accepting a command does not guarantee a remote reply. "
                 +"There is no automatic retry.")

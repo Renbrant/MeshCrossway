@@ -14,7 +14,7 @@ import static com.meshcrossway.android.MeshData.*;
 final class McRemoteDiagnostics {
     enum Kind { STATUS, NEIGHBORS }
     static final int CMD_BINARY=50, RESP_SENT=6, PUSH_BINARY=0x8c;
-    static final long COOLDOWN_MS=5*60_000L, MAX_WAIT_MS=120_000L;
+    static final long COOLDOWN_MS=30_000L, MAX_WAIT_MS=120_000L;
     private static final int MAX_RECORDS=24, NEIGHBOR_PAGE=8, PREFIX_BYTES=6;
     private final SecureRandom random=new SecureRandom();
     private final LinkedHashMap<String,Result> entries=new LinkedHashMap<>();
@@ -114,8 +114,9 @@ final class McRemoteDiagnostics {
         return Math.max(0,COOLDOWN_MS-(now-last));
     }
     static String remainingLabel(long remainingMs){
-        return "Wait "+Math.max(1,(remainingMs+59_999L)/60_000L)
-            +" minute(s) before querying this repeater again";
+        long seconds=Math.max(1,(remainingMs+999L)/1000L);
+        return "Wait "+seconds+" second"+(seconds==1?"":"s")+
+            " before querying this repeater again";
     }
 
     /**
@@ -201,7 +202,7 @@ final class McRemoteDiagnostics {
         if(frame.length<6||(frame[0]&255)!=PUSH_BINARY||pending==null
                 ||pending.tag<=0||!"Awaiting remote repeater response".equals(pending.state)
                 ||Wire.u32(frame,2)!=pending.tag)return false;
-        if(frame[1]!=0){fail("Unsupported remote response header");return true;}
+        if(frame[1]!=0){fail("Unsupported MeshCore response header (reserved byte "+(frame[1]&255)+")");return true;}
         try{
             byte[] data=Arrays.copyOfRange(frame,6,frame.length);
             if(pending.kind==Kind.STATUS)pending.stats=new Status(data);
@@ -210,7 +211,15 @@ final class McRemoteDiagnostics {
             pending.completedAt=now;
             pending=null;revision++;
         }catch(IllegalArgumentException malformed){
-            fail("Invalid or unsupported remote response format");
+            // Only expose envelope dimensions, never raw response bytes, public keys,
+            // packet identifiers or private payloads in a support screenshot.
+            int payloadBytes=frame.length-6;
+            if(pending.kind==Kind.STATUS)
+                fail("Unexpected status reply: "+payloadBytes+
+                    " data bytes (expected 52 or 56). Verify remote repeater firmware and access.");
+            else
+                fail("Unexpected neighbors reply: "+payloadBytes+
+                    " data bytes (expected 4 + 11 per reported neighbor, max 8). Verify repeater firmware.");
         }
         return true;
     }

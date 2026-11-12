@@ -14,7 +14,7 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.4.1'
+        default: '0.4.2'
         type: string
 permissions:
   contents: write
@@ -90,7 +90,7 @@ jobs:
       - name: Verify requested version and permanent signing credentials
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.4.1' }}
+          REQUESTED: ${{ inputs.version || '0.4.2' }}
         run: |
           set -euo pipefail
           [[ "$REQUESTED" =~ ^0\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version"; exit 1; }
@@ -119,7 +119,7 @@ jobs:
       - name: Verify APK signature identity and version before publishing
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.4.1' }}
+          REQUESTED: ${{ inputs.version || '0.4.2' }}
         run: |
           set -euo pipefail
           APK=android/app/build/outputs/apk/release/app-arm64-v8a-release.apk
@@ -142,7 +142,7 @@ jobs:
       - name: Publish only if no version tag or release exists
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.4.1' }}
+          REQUESTED: ${{ inputs.version || '0.4.2' }}
         run: |
           set -euo pipefail
           CURRENT_HEAD=$(git ls-remote origin refs/heads/baseline/android-0.1.0 | cut -f1)
@@ -166,6 +166,9 @@ jobs:
           elif [ "$REQUESTED" = "0.4.1" ]; then
             cp docs/android-release-notes-0.4.1.md release-notes.md
             RELEASE_TITLE="Android 0.4.1 field beta — MeshCore repeater diagnostics"
+          elif [ "$REQUESTED" = "0.4.2" ]; then
+            cp docs/android-release-notes-0.4.2.md release-notes.md
+            RELEASE_TITLE="Android 0.4.2 field beta — MeshCore repeater response diagnostics"
           else
             RELEASE_TITLE="Android $REQUESTED beta"
             cat > release-notes.md <<EOF
