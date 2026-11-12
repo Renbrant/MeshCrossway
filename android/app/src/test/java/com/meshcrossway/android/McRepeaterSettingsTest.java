@@ -49,6 +49,19 @@ public class McRepeaterSettingsTest {
         assertTrue(equivalent(Field.LAT,"12.34567","12.345670"));assertFalse(equivalent(Field.TX,"30","22"));
         assertTrue(equivalent(Field.RADIO,"910.525,62.5,7,5","910.525000,62.500,7,5"));
     }
+    @Test public void publicNameContainingKeyStillGetsAnOkAndReadback(){
+        Node n=McRepeaterAdminTest.node();ProtocolClient c=new ProtocolClient(RadioProfile.MESHCORE,1,new ProtocolClient.Listener(){public void node(Node n){}public void channel(Channel ch){}public void message(Message m){fail("Public configuration reply leaked to chat");}public void delivery(String id,String s){}});
+        c.commands.clear();c.ready=true;c.mcBacklogDrained=true;c.firmwareCode=14;c.lastPoll=500000;c.nodes.put(n.id,n);
+        McRepeaterAdminTest.authorize(c.mcRepeaterAdmin,n);c.mcRepeaterSettings.open(n.id);c.mcRepeaterSettings.started=true;
+        Value value=c.mcRepeaterSettings.values.get(Field.NAME);value.raw="Old";value.valid=true;
+        c.saveRepeaterSetting(n.id,Field.NAME,"Monkey",500010);assertFalse(c.mcRepeaterAdmin.sensitive);
+        c.next(500011);c.written(500012);c.receive(McRepeaterAdminTest.ack(),500013);
+        byte[] body="OK".getBytes(java.nio.charset.StandardCharsets.UTF_8),reply=new byte[16+body.length];reply[0]=16;reply[11]=1;System.arraycopy(Wire.unhex(n.id.substring(0,12)),0,reply,4,6);Wire.put32(reply,12,1700000002);System.arraycopy(body,0,reply,16,body.length);
+        c.receive(reply,500014);assertEquals("OK",c.mcRepeaterAdmin.reply);assertTrue(c.mcRepeaterSettings.hasReads());
+        // Password commands through the advanced path must remain private.
+        McRepeaterAdmin privateAdmin=new McRepeaterAdmin();McRepeaterAdminTest.authorize(privateAdmin,n);
+        privateAdmin.command(n,java.util.Collections.singletonList(n),"password private",500020,1700000003,173);assertTrue(privateAdmin.sensitive);
+    }
     @Test public void protocolAutoReadsOnlyWhileAuthenticatedVisibleAndReady(){
         Node n=McRepeaterAdminTest.node();ProtocolClient c=new ProtocolClient(RadioProfile.MESHCORE,1,new ProtocolClient.Listener(){public void node(Node n){}public void channel(Channel ch){}public void message(Message m){fail("Configuration reply leaked to chat");}public void delivery(String id,String s){}});
         c.commands.clear();c.ready=true;c.mcBacklogDrained=true;c.firmwareCode=14;c.lastPoll=500000;c.nodes.put(n.id,n);c.mcRepeaterSettings.open(n.id);

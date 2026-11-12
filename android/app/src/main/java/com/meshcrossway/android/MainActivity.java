@@ -29,7 +29,7 @@ public final class MainActivity extends Activity {
     private int selected,filter,listLimit=100,chatLimit=100,nodeOrder;private boolean favoritesOnly,unreadOnly,pinnedOnly,resumed,refreshQueued;
     private TrackService trackService;private boolean tracksBound;private Intent pendingTrack;private String exportingTrack="";private int nodeType;
     private boolean backupBusy;private int mcContactFilter;private LinearLayout mcContactTabs;private String pendingMtChannelLink="";private String pendingChannelLink="",pendingDiagnostic="";
-    private byte[] mtLoraDraft,mtLoraBase;private boolean mtLoraSaving;private String mtDraftRadio="";private String settingsSection="";private boolean repeaterTechnical;private String repeaterDossierKey="",repeaterDossierRadio="";private RadioProfile settingsRadio;private final ArrayDeque<Screen> backStack=new ArrayDeque<>();private final HashMap<String,Integer> scrollPositions=new HashMap<>();private String renderedRoute="";private LinearLayout header;private boolean rendering;private String settingsFingerprint="",homeFingerprint="";private final HashMap<Integer,String> pageQueries=new HashMap<>();
+    private byte[] mtLoraDraft,mtLoraBase;private boolean mtLoraSaving;private String mtDraftRadio="";private String settingsSection="";private boolean repeaterConsoleResult,repeaterTechnical;private String repeaterDossierKey="",repeaterDossierRadio="";private RadioProfile settingsRadio;private final ArrayDeque<Screen> backStack=new ArrayDeque<>();private final HashMap<String,Integer> scrollPositions=new HashMap<>();private String renderedRoute="";private LinearLayout header;private boolean rendering;private String settingsFingerprint="",homeFingerprint="";private final HashMap<Integer,String> pageQueries=new HashMap<>();
     private static final class Screen{int selected,filter,y;String query,section,radio;RadioProfile profile;Target chat;RadioProfile chatProfile;}
     private TextView dualStatus;private View statusSeparator;MapPanel mapPanel;static String mapStyleOverride;private org.maplibre.android.geometry.LatLng mapFocus;PhonePosition position;
 
@@ -677,7 +677,7 @@ public final class MainActivity extends Activity {
     }
 
     private void showRepeaterDossier(Node node){
-        repeaterTechnical=false;
+        repeaterTechnical=false;repeaterConsoleResult=false;
         if(!RepeaterInventory.isRepeater(node))return;
         repeaterDossierKey=node.id;
         repeaterDossierRadio=radio(RadioProfile.MESHCORE);
@@ -821,6 +821,12 @@ public final class MainActivity extends Activity {
             return;
         }
         repeaterConfigurationCards(node,source,client);
+        if(repeaterConsoleResult&&node.id.equals(admin.key)){
+            section(results,"ADVANCED RESPONSE");LinearLayout console=card(results);
+            console.addView(text(admin.state,12,MUTED));
+            if(!admin.label.isEmpty())console.addView(text(admin.label,12,RADIO_MC));
+            if(!admin.reply.isEmpty())console.addView(text(admin.reply,14,WHITE));
+        }
         menuRow(group(results),"settings","Advanced options","Console, passwords, restart and sign out",
             admin.pending||client.mcRepeaterSettings.loading()?null:()->repeaterAdvanced(node,source,client),RADIO_MC);
     }
@@ -830,7 +836,7 @@ public final class MainActivity extends Activity {
         LinearLayout progress=row();
         TextView status=text(settings.loading()?"Loading settings · "+settings.loaded()+"/10":settings.status,12,MUTED);
         progress.addView(status,new LinearLayout.LayoutParams(0,-2,1));
-        Button refresh=button("Refresh",()->{try{settings.refresh();client.mcRevision++;settingsFingerprint="";scheduleRefresh();}catch(IllegalArgumentException e){Toast.makeText(this,e.getMessage(),Toast.LENGTH_SHORT).show();}});
+        Button refresh=button("Refresh",()->{try{settings.refresh();repeaterConsoleResult=false;client.mcRevision++;settingsFingerprint="";scheduleRefresh();}catch(IllegalArgumentException e){Toast.makeText(this,e.getMessage(),Toast.LENGTH_SHORT).show();}});
         refresh.setEnabled(!client.mcRepeaterAdmin.pending&&!settings.loading());progress.addView(refresh);results.addView(progress);
         repeaterSettingCard(results,node,source,client,McRepeaterSettings.Field.NAME,false);
         repeaterSettingPair(node,source,client,McRepeaterSettings.Field.TX,McRepeaterSettings.Field.REPEAT);
@@ -868,7 +874,7 @@ public final class MainActivity extends Activity {
         McRepeaterSettings settings=client.mcRepeaterSettings;
         if(!source.equals(radio(RadioProfile.MESHCORE))||mcClient()!=client||!settings.key.equals(node.id))return;
         McRepeaterSettings.Value current=settings.values.get(field);if(!current.valid)return;
-        settings.editing=true;
+        settings.editing=true;repeaterConsoleResult=false;
         LinearLayout form=column();form.setPadding(dp(20),dp(8),dp(20),dp(8));
         final java.util.function.Supplier<String> input;
         if(field.toggle()){
@@ -914,6 +920,7 @@ public final class MainActivity extends Activity {
         AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Administer "+nodeName(RadioProfile.MESHCORE,node))
             .setView(form).setMessage("Sign in over LoRa. Password is not saved. Administrator permission is required to change settings.")
             .setNegativeButton("Cancel",null).setPositiveButton("Sign in",(d,w)->{
+                repeaterConsoleResult=false;
                 if(service!=null)service.administerRepeater(source,expected,node.id,password.getText().toString(),true);
                 password.setText("");scheduleRefresh();}).create();
         dialog.setOnDismissListener(d->password.setText(""));dialog.show();
@@ -946,7 +953,13 @@ public final class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("Send to "+nodeName(RadioProfile.MESHCORE,node)+"?")
             .setMessage((secret?"Private command (hidden)":command)+"\n\nChanges affect this repeater. Radio or routing changes may interrupt remote access; some require reboot. One manual LoRa send, no automatic retry.")
             .setNegativeButton("Cancel",null).setPositiveButton("Send",(d,w)->{
-                if(service!=null)service.administerRepeater(source,expected,node.id,command,false);
+                repeaterConsoleResult=false;
+                if(service!=null){
+                    long before=expected.mcRepeaterAdmin.revision;
+                    service.administerRepeater(source,expected,node.id,command,false);
+                    repeaterConsoleResult=expected.mcRepeaterAdmin.revision!=before;
+                    if(!repeaterConsoleResult)Toast.makeText(this,expected.mcError.isEmpty()?"Radio unavailable":expected.mcError,Toast.LENGTH_LONG).show();
+                }
                 scheduleRefresh();}).show();
     }
 
