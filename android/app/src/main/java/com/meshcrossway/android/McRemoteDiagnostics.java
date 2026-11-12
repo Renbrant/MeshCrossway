@@ -239,7 +239,7 @@ final class McRemoteDiagnostics {
         // accept an empty page with a large unrelated response attached.
         int expected=4+count*(PREFIX_BYTES+5);
         int suffix=frame.length-expected;
-        if(total>4096||count>NEIGHBOR_PAGE||count>total
+        if(total>1024||count>NEIGHBOR_PAGE||count>total
            ||(count>0&&offset+count>total)
            ||suffix<0||suffix>4
            ||(count==0&&suffix!=0))
