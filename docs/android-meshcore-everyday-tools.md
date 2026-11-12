@@ -1,6 +1,6 @@
-# MeshCore everyday tools — Android 0.4.0
+# MeshCore everyday tools — Android 0.3.11
 
-MeshCrossway keeps Meshtastic and MeshCore on independent Bluetooth radios and independent networks. These additions apply to MeshCore. Install the [0.4.0 APK](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.0) as an update; the permanent signing certificate is retained.
+MeshCrossway keeps Meshtastic and MeshCore on independent Bluetooth radios and independent networks. These additions apply to MeshCore. Install the [0.3.11 APK](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.11) as an update; the permanent signing certificate is retained.
 
 ## Announce your presence
 
