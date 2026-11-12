@@ -144,6 +144,8 @@ public final class MainActivity extends Activity {
             for(Message message:data.messages)latest=Math.max(latest,message.timestamp);
             for(Node node:data.nodes)heard=Math.max(heard,node.heard);
             key.append(':').append(latest).append(':').append(heard).append(':').append(UiFeed.recentlyHeard(data.nodes,System.currentTimeMillis()/1000));
+            OutgoingStatus.Counts outgoing=OutgoingStatus.counts(data);
+            key.append(':').append(outgoing.pending).append(':').append(outgoing.review);
             if(service!=null){
                 RadioService.Session session=service.sessions.get(p);
                 key.append(':').append(session.verified).append(':').append(session.desired)
@@ -449,8 +451,9 @@ public final class MainActivity extends Activity {
         LinearLayout chats=dashboardRow();
         for(RadioProfile profile:RadioProfile.values()){
             Snapshot data=snapshot(profile);
+            String outgoing=OutgoingStatus.counts(data).brief();
             dashboardTile(chats,profile==RadioProfile.MESHTASTIC?"MT · CHATS":"MC · CHATS",
-                data.unread()+" unread",latestPreview(data),
+                data.unread()+" unread",outgoing.isEmpty()?latestPreview(data):outgoing+" · "+latestPreview(data),
                 profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
                 ()->openDashboardNetwork(profile,3),false);
         }
@@ -498,13 +501,33 @@ public final class MainActivity extends Activity {
             for(MapPanel.Located ref:nodes){if(shown++>=listLimit)continue;Node n=ref.node;LinearLayout c=card(results);c.addView(text((ref.favorite?"★ ":"")+nodeName(ref.profile,n),18,WHITE));space(c,6);c.addView(text(ref.profile.title+" · "+contactTypeName(ref.profile,n)+" · "+ago(n.heard)+distanceText(n)+(n.battery>=0?" · battery "+n.battery+"%":""),12,ref.profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC));if(ref.profile==RadioProfile.MESHCORE){c.addView(text(McContacts.label(n,mcClient()),12,McContacts.state(n,mcClient())==ProtocolClient.MC_APPROVED?GREEN:MUTED));}c.setOnClickListener(v->nodeDetails(ref.profile,n));c.setFocusable(true);}
         }else if(selected==2){if(filter!=2)menuRow(group(results),"channels","Manage Meshtastic channels","Create, join, edit, share and scan QR Codes",()->openSettings("mt_channels",RadioProfile.MESHTASTIC),RADIO_MT);if(filter!=1)menuRow(group(results),"channels","Manage MeshCore channels","Create, edit, import and share",()->openSettings("mc_channels",RadioProfile.MESHCORE),RADIO_MC);ArrayList<ChannelRow> channels=new ArrayList<>();for(RadioProfile p:RadioProfile.values())if(included(p))for(Channel channel:snapshot(p).channels)if(channel.enabled&&matches(channel.name)){ChannelRow entry=new ChannelRow(p,channel);for(Message m:snapshot(p).messages)if(m.topic.equals(channel.topic())){entry.last=Math.max(entry.last,m.timestamp);if(!m.read&&!m.outgoing)entry.unread++;}channels.add(entry);}channels.sort((a,b)->a.last==b.last?a.channel.name.compareToIgnoreCase(b.channel.name):Long.compare(b.last,a.last));
             for(ChannelRow entry:channels){if(shown++>=listLimit)continue;RadioProfile p=entry.profile;Channel channel=entry.channel;LinearLayout c=card(results);TextView name=text(channel.name+(entry.unread>0?" · "+entry.unread+" unread":""),18,entry.unread>0?ORANGE:WHITE);name.setTypeface(null,Typeface.BOLD);c.addView(name);space(c,6);c.addView(text(p.title+" · channel "+channel.slot+(entry.last>0?" · "+when(entry.last):"")+(ready(p,radio(p))?"":" · saved"),12,p==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC));c.setOnClickListener(v->openChat(p,radio(p),Target.channel(channel)));c.setFocusable(true);}
-        }else{EnumMap<RadioProfile,Snapshot> snapshots=new EnumMap<>(RadioProfile.class);EnumMap<RadioProfile,String> radios=new EnumMap<>(RadioProfile.class);for(RadioProfile p:RadioProfile.values()){snapshots.put(p,snapshot(p));radios.put(p,radio(p));}
+        }else{
+            menuRow(group(results),"chats","Outbox & delivery status",
+                "Review recent pending or uncertain sends · never auto-resend",
+                this::outboxOverview,ORANGE);
+            EnumMap<RadioProfile,Snapshot> snapshots=new EnumMap<>(RadioProfile.class);EnumMap<RadioProfile,String> radios=new EnumMap<>(RadioProfile.class);for(RadioProfile p:RadioProfile.values()){snapshots.put(p,snapshot(p));radios.put(p,radio(p));}
             for(UiFeed.Item item:UiFeed.conversations(snapshots,radios,filter,unreadOnly,pinnedOnly,query)){Conversation conversation=item.conversation;if(shown++>=listLimit)continue;LinearLayout c=card(results);c.addView(text((conversation.pinned?"★ ":"")+conversation.target.title+(conversation.unread>0?" · "+conversation.unread+" unread":"")+(conversation.muted?" · muted":""),18,conversation.unread>0?ORANGE:WHITE));space(c,6);TextView preview=text(MessageActions.displayBody(item.profile,conversation.last),14,MUTED);preview.setMaxLines(2);c.addView(preview);space(c,6);c.addView(text(item.profile.title+" · "+when(conversation.last.timestamp),12,item.profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC));c.setOnClickListener(v->openChat(item.profile,item.radio,conversation.target));c.setOnLongClickListener(v->{conversationOptions(item.profile,item.radio,conversation.target);return true;});c.setFocusable(true);}
         }
         if(shown>listLimit)addButton(results,"Show more results ("+shown+" total)",()->{listLimit+=100;refreshContent();});
         if(shown==0){LinearLayout c=card(results);c.addView(text("No matching "+pages[selected].toLowerCase(Locale.ROOT),20,ORANGE));space(c,8);c.addView(text(selected==3?"Open a channel in Groups or a client in Nodes to start a conversation.":"Connect a radio and wait for synchronization. Saved data remains available offline.",14,MUTED));}
         if(selected==3&&service!=null){results.addView(text("Showing up to "+service.history.historyLimit+" recent messages per radio.",12,MUTED));if(service.history.historyLimit<20000)addButton(results,"Load older messages",()->service.history.older());}
     }
+    /** Status is assembled from one snapshot per physical radio, never from combined send queues. */
+    private void outboxOverview(){
+        StringBuilder info=new StringBuilder();
+        for(RadioProfile profile:RadioProfile.values()){
+            OutgoingStatus.Counts c=OutgoingStatus.counts(snapshot(profile));
+            info.append(profile.title).append(" (selected radio)\n")
+                .append("Awaiting send / peer ACK: ").append(c.pending).append("\n")
+                .append("Unknown or rejected: ").append(c.review).append("\n\n");
+        }
+        info.append("Counts reflect only recently loaded saved messages. Radio acceptance is not a peer ACK; a peer ACK is not a read receipt.\n\n")
+            .append("For a message with an unknown/rejected outcome: open its original conversation, long-press the outgoing message, and choose Prepare as new draft. ")
+            .append("You must review and tap Send separately. Sending again may create a duplicate.");
+        new AlertDialog.Builder(this).setTitle("Outbox & delivery status")
+                .setMessage(info.toString()).setPositiveButton("Back",null).show();
+    }
+
     private static final class ChannelRow{final RadioProfile profile;final Channel channel;long last;int unread;ChannelRow(RadioProfile p,Channel c){profile=p;channel=c;}}
     private static int contactType(RadioProfile p,Node n){return p==RadioProfile.MESHCORE?n.type:n.unmessagable?0:1;}
     private static String contactTypeName(RadioProfile p,Node n){if(p==RadioProfile.MESHTASTIC)return "Node";switch(n.type){case 1:return "Client";case 2:return "Repeater";case 3:return "Room";case 4:return "Sensor";default:return "Other";}}
@@ -599,7 +622,7 @@ public final class MainActivity extends Activity {
             c.setOnLongClickListener(actions);author.setOnLongClickListener(actions);
             String association="";if(network==RadioProfile.MESHTASTIC&&m.rx.replyId!=0){Message original=null;int matches=0;for(Message candidate:visibleMessages)if(candidate.rx.packetId==m.rx.replyId&&!candidate.rx.emoji){original=candidate;matches++;}association=(m.rx.emoji?"Reaction to ":"Reply to ")+(matches==1?original.sender+": "+original.body.substring(0,Math.min(60,original.body.length())):"message #"+Long.toUnsignedString(m.rx.replyId))+"\n";}TextView body=text(association+MessageActions.displayBody(network,m),16,WHITE);body.setOnLongClickListener(actions);c.addView(body);
             if(!m.outgoing){Runnable details=()->messageDetails(network,sourceRadio,m);c.setOnClickListener(v->details.run());body.setOnClickListener(v->details.run());TextView reception=text(m.rx.summary()+" · Details ›",12,network==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC);reception.setPadding(0,dp(8),0,dp(4));reception.setOnClickListener(v->details.run());reception.setOnLongClickListener(actions);c.addView(reception);}
-            double[] coordinates=FieldTools.coordinates(m.body);if(coordinates!=null){TextView link=text("◇ Show coordinates on map",13,ORANGE);link.setPadding(0,dp(8),0,dp(8));link.setOnClickListener(v->showMap(coordinates[0],coordinates[1]));link.setOnLongClickListener(actions);c.addView(link);}space(c,8);TextView stamp=text(when(m.timestamp)+(m.outgoing?" • "+deliveryLabel(m.state):""),11,m.state.equals("delivered")?GREEN:m.state.equals("rejected")?RED:MUTED);stamp.setOnLongClickListener(actions);c.addView(stamp);if(!m.read&&!m.outgoing)unread=true;}
+            double[] coordinates=FieldTools.coordinates(m.body);if(coordinates!=null){TextView link=text("◇ Show coordinates on map",13,ORANGE);link.setPadding(0,dp(8),0,dp(8));link.setOnClickListener(v->showMap(coordinates[0],coordinates[1]));link.setOnLongClickListener(actions);c.addView(link);}space(c,8);TextView stamp=text(when(m.timestamp)+(m.outgoing?" • "+OutgoingStatus.label(m):""),11,m.state.equals("delivered")?GREEN:m.state.equals("rejected")?RED:OutgoingStatus.needsReview(m)?ORANGE:MUTED);stamp.setOnLongClickListener(actions);c.addView(stamp);if(!m.read&&!m.outgoing)unread=true;}
         if(shown==0)results.addView(text("No messages in this conversation yet. Your draft is saved automatically.",14,MUTED));
         if(unread&&visible&&service!=null)service.history.read(chatProfile,chatRadio,chat.topic);
     }
@@ -683,6 +706,10 @@ public final class MainActivity extends Activity {
             String address=!message.outgoing&&message.group?mention:"";
             insertMessageDraft((address.isEmpty()?"":address+" ")+"“"+compact+"”");
         });
+        if(OutgoingStatus.canPrepareNewDraft(message)){
+            choices.add("Prepare as new draft (manual)");
+            tasks.add(()->prepareOutgoingDraft(network,sourceRadio,message));
+        }
         choices.add("Copy message");
         tasks.add(()->copyMessageText("MeshCrossway message",visibleText));
 
@@ -693,7 +720,7 @@ public final class MainActivity extends Activity {
         choices.add("Message information");
         tasks.add(()->{
             if(message.outgoing)new AlertDialog.Builder(this).setTitle("Sent message")
-                    .setMessage(when(message.timestamp)+"\n"+deliveryLabel(message.state))
+                    .setMessage(when(message.timestamp)+"\n"+OutgoingStatus.label(message))
                     .setPositiveButton("Close",null).show();
             else messageDetails(network,sourceRadio,message);
         });
@@ -713,6 +740,45 @@ public final class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle(message.outgoing?"Your message":network.title+" · "+message.sender)
                 .setItems(choices.toArray(new String[0]),(dialog,index)->tasks.get(index).run())
                 .setNegativeButton("Cancel",null).show();
+    }
+
+    /** Recheck the latest saved state: a late ACK may arrive while the dialog is open. */
+    private boolean outgoingStillReviewable(RadioProfile network,String sourceRadio,Message saved){
+        if(service==null||!sourceRadio.equals(radio(network)))return false;
+        for(Message latest:snapshot(network).messages)
+            if(OutgoingStatus.stillReviewable(saved,latest))return true;
+        return false;
+    }
+
+    /**
+     * Never replay a previous radio frame. User consent only copies the text
+     * into the same protocol/radio/channel composer. Send remains a second tap.
+     */
+    private void prepareOutgoingDraft(RadioProfile network,String sourceRadio,Message message){
+        if(!OutgoingStatus.canPrepareNewDraft(message)
+                ||!OutgoingStatus.sameComposer(chatProfile,network,chatRadio,sourceRadio,chat,message)
+                ||composer==null){
+            Toast.makeText(this,"Open the original conversation on the correct radio",Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this).setTitle("Prepare a new message?")
+                .setMessage("The previous outcome is not confirmed or was rejected. A copy sent again may reach someone twice.\n\n"
+                    +"This replaces the current draft with the original text. Nothing is sent automatically. "
+                    +"Review the recipient, channel and content before tapping Send.")
+                .setNegativeButton("Cancel",null)
+                .setPositiveButton("Copy into composer",(dialog,which)->{
+                    if(!OutgoingStatus.sameComposer(chatProfile,network,chatRadio,sourceRadio,chat,message)
+                            ||composer==null||!outgoingStillReviewable(network,sourceRadio,message)){
+                        Toast.makeText(this,"Message or radio status changed; review it again",Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    chat=chat.reply(0,false);
+                    composer.setText(message.body);
+                    composer.setSelection(composer.length());
+                    saveDraft();
+                    updateComposer();
+                    composer.requestFocus();
+                }).show();
     }
 
     private void messageDetails(RadioProfile network,String sourceRadio,Message message){RxInfo rx=message.rx;LinearLayout details=column();details.setPadding(dp(20),dp(12),dp(20),dp(16));details.addView(text(network.title+" · "+message.sender,17,WHITE));details.addView(text(when(message.timestamp),12,MUTED));space(details,12);details.addView(text(rx.summary(),14,network==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC));space(details,6);details.addView(text("Source: "+rx.provenance(),12,MUTED));space(details,6);details.addView(text("Historical message metadata — not a live reachability or end-to-end link measurement.",12,MUTED));space(details,14);details.addView(text("Received path",17,WHITE));
