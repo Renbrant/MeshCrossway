@@ -1,6 +1,6 @@
 # Android release history and numbering
 
-The canonical current beta is **0.3.12**. The four MeshCore everyday tools were mistakenly published as **0.4.0** and are republished as 0.3.11 with a higher internal versionCode. Historical tags and APKs remain unchanged for traceability.
+The current beta is **Android 0.4.0**, versionCode **34**, published under GitHub tag **`android-v0.4.0-stage1`**. The older tag **`android-v0.4.0`** was a mistakenly numbered release (versionCode 31), superseded by 0.3.11. It remains unchanged for traceability; **do not use the old 0.4.0 tag to obtain the new app**.
 
 ## Recent revisions
 
@@ -16,20 +16,21 @@ The canonical current beta is **0.3.12**. The four MeshCore everyday tools were 
 | 0.3.8 | Meshtastic settings audit corrections | Historical beta |
 | 0.3.9 | MeshCore settings/readback, names, power, contact lifecycle and late ACK handling | Historical beta |
 | 0.3.10 | Contact membership resolution, NOT_FOUND recovery and verification after interrupted settings writes | Historical beta |
-| 0.4.0 | Presence announcements, channel management/sharing, support diagnostics and contact state filters | Mistaken number; superseded by 0.3.11 |
+| 0.4.0 (historical tag `android-v0.4.0`) | Presence announcements, channel management/sharing, support diagnostics and contact state filters | Mistaken number; superseded by 0.3.11 |
 | 0.3.11 | Same four tools and safeguards, with corrected numbering and versionCode 32 | Historical beta |
-| 0.3.12 | Both-network channel management, official links and QR camera/image imports; versionCode 33 | Current beta |
+| 0.3.12 | Both-network channel management, official links and QR camera/image imports; versionCode 33 | Previous beta |
+| **0.4.0** (new tag `android-v0.4.0-stage1`) | Accurate BLE RSSI age, LoRa message reception details and per-node RF history, safer outgoing status/ACK and manual retry drafts; versionCode 34 | **Current beta** |
 
 ## Numbering rule
 
-Keep the full three-component Android version: **0.3.9 → 0.3.10 → 0.3.11 → 0.3.12 → …**. The final component is an integer, not a decimal digit; reaching 9 does not require a minor-version increase. Continue the 0.3.x series for subsequent revisions. A new minor series or 1.0.0 requires an explicit release decision. ESP32 firmware has a separate version sequence.
+Keep the full three-component Android version: **0.3.9 → 0.3.10 → 0.3.11 → 0.3.12 → …**. The final component is an integer, not a decimal digit; reaching 9 does not require a minor-version increase. A deliberate major feature milestone introduced **0.4.0** after **0.3.12**; crossing a patch boundary alone never requires a minor bump. A later `1.0.0` requires separate acceptance. ESP32 firmware has a separate version sequence.
 
-Android installation ordering uses `versionCode`, not the displayed version name. 0.3.10 used 30, the mistaken 0.4.0 used 31, and corrected 0.3.11 uses 32. Version 0.3.12 uses 33. Keep the package ID and permanent signing key unchanged. Install 0.3.12 as an update; do not uninstall or clear storage.
+Android installation ordering uses `versionCode`, not the displayed version name. 0.3.10 used 30, the mistaken 0.4.0 used 31, and corrected 0.3.11 uses 32. Version 0.3.12 uses 33; the new 0.4.0 uses **34**. Keep the package ID and permanent signing key unchanged. Install the new 0.4.0 as an update over 0.3.12; do not uninstall or clear storage.
 
 ## Source and release distinction
 
 Recent Android releases are built from `baseline/android-0.1.0`. That branch name is historical, but its role is active. Website/docs are on `main`, whose Android sources currently lag the released app. Use each release tag for the exact shipped source, rather than assuming `main` matches the APK. Consolidating the source branches is separate work.
 
-Older alpha labels (including 0.4.0-alpha05) predate the public beta numbering and are not the corrected 0.3.x sequence. Do not rename historical alpha artifacts.
+Older alpha labels (including 0.4.0-alpha05) predate the public beta numbering. Historical artifacts retain their original tags; the new 0.4.0 beta's special `-stage1` tag prevents overwriting the earlier mistakenly numbered 0.4.0.
 
-[Current APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.12/MeshCrossway-0.3.12.apk) · [Release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.12) · [MeshCore tools guide](android-meshcore-everyday-tools.md)
+[Current APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.0-stage1/MeshCrossway-0.4.0.apk) · [Release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.0-stage1) · [MeshCore tools guide](android-meshcore-everyday-tools.md)
