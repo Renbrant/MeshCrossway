@@ -583,13 +583,13 @@ public final class SmokeInstrumentation extends Instrumentation {
                 Method open=MainActivity.class.getDeclaredMethod("showRepeaterDossier",Node.class);open.setAccessible(true);open.invoke(activity,node);
                 McRepeaterSettings settings=fixture.mcRepeaterSettings;
                 for(McRepeaterSettings.Field field:McRepeaterSettings.Field.values()){
-                    String raw=field==McRepeaterSettings.Field.NAME?"Repeater test":field==McRepeaterSettings.Field.RADIO?"910.525,62.5,7,5":field==McRepeaterSettings.Field.LAT?"39.753070":field==McRepeaterSettings.Field.LON?"-104.9750":field.toggle()?"on":field==McRepeaterSettings.Field.TX?"22":"10";
+                    String raw=field==McRepeaterSettings.Field.NAME?"Repeater test":field==McRepeaterSettings.Field.RADIO?"910.525,62.5,7,5":field==McRepeaterSettings.Field.LAT?"12.345670":field==McRepeaterSettings.Field.LON?"-45.6789":field.toggle()?"on":field==McRepeaterSettings.Field.TX?"22":"10";
                     McRepeaterSettings.Value value=settings.values.get(field);value.raw=raw;value.valid=true;value.state="";
                 }
                 settings.started=true;settings.status="Settings loaded · tap a card to edit";
                 Method refresh=MainActivity.class.getDeclaredMethod("rebuildContent");refresh.setAccessible(true);refresh.invoke(activity);
                 View screen=activity.getWindow().getDecorView();
-                for(String value:new String[]{"22 dBm","39.753070 °","-104.9750 °","Maximum flood hops","Guest read-only access"})check(find(screen,value)!=null,"Missing repeater card: "+value);
+                for(String value:new String[]{"22 dBm","12.345670 °","-45.6789 °","Maximum flood hops","Guest read-only access"})check(find(screen,value)!=null,"Missing repeater card: "+value);
                 check(find(screen,"Read current value")==null&&find(screen,"Configuration")==null,"Nested configuration menus remain");
                 check(fixture.commands.isEmpty(),"Rendering populated cards must not queue writes");
             }catch(Exception e){throw new RuntimeException(e);}});

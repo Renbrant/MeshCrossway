@@ -8,7 +8,7 @@ import static com.meshcrossway.android.McRepeaterSettings.*;
 
 public class McRepeaterSettingsTest {
     static final String KEY="ab".repeat(32);
-    static String response(Field f){switch(f){case NAME:return "> Repeater";case LAT:return "> 39.753070";case LON:return "> -104.9750";case RADIO:return "> 910.525,62.5,7,5";case TX:return "> 22";case REPEAT:case READ_ONLY:return "> on";case LOCAL_ADVERT:return "> 10";case FLOOD_ADVERT:return "> 24";default:return "> 3";}}
+    static String response(Field f){switch(f){case NAME:return "> Repeater";case LAT:return "> 12.345670";case LON:return "> -45.6789";case RADIO:return "> 910.525,62.5,7,5";case TX:return "> 22";case REPEAT:case READ_ONLY:return "> on";case LOCAL_ADVERT:return "> 10";case FLOOD_ADVERT:return "> 24";default:return "> 3";}}
     static void load(McRepeaterSettings s){s.open(KEY);for(int i=0;i<10;i++){Operation op=s.next(10000+i*2000);assertNotNull(op);assertFalse(op.write);s.dispatched(op);s.received(response(op.field),10001+i*2000);}}
     static void rejects(Runnable r){try{r.run();fail("Expected rejection");}catch(IllegalArgumentException expected){}}
     @Test public void enteringQueuesExactlyOnePublicReadPerFieldNotPerRender(){
@@ -46,7 +46,7 @@ public class McRepeaterSettingsTest {
     }
     @Test public void parserDoesNotFabricateValuesFromErrorsOrNonFiniteNumbers(){
         rejects(()->parse(Field.TX,"OK"));rejects(()->parse(Field.LAT,"> NaN"));rejects(()->parse(Field.RADIO,"> 910,62.5,7"));rejects(()->parse(Field.REPEAT,"> maybe"));
-        assertTrue(equivalent(Field.LAT,"39.75307","39.753070"));assertFalse(equivalent(Field.TX,"30","22"));
+        assertTrue(equivalent(Field.LAT,"12.34567","12.345670"));assertFalse(equivalent(Field.TX,"30","22"));
         assertTrue(equivalent(Field.RADIO,"910.525,62.5,7,5","910.525000,62.500,7,5"));
     }
     @Test public void protocolAutoReadsOnlyWhileAuthenticatedVisibleAndReady(){

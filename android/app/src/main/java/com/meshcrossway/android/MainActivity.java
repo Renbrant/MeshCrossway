@@ -711,12 +711,12 @@ public final class MainActivity extends Activity {
         if(repeaterTechnical)identity.addView(text("Last saved update: "+(node.heard>0?when(node.heard):"Unknown"),12,MUTED));
         if(repeaterTechnical)identity.addView(text(client!=null?"Source: current MeshCore BLE session":
                 "Offline / different radio · cached contact only",12,MUTED));
-        if(node.position)menuRow(group(results),"map","Show saved position","May be old; not a live GPS fix",
-            ()->showMap(node.lat,node.lon),RADIO_MC);
         repeaterAdministration(node,source,client);
         menuRow(group(results),"info",repeaterTechnical?"Hide diagnostics":"Diagnostics & technical details",
             "Remote status, neighbors and routing",()->{repeaterTechnical=!repeaterTechnical;settingsFingerprint="";scheduleRefresh();},RADIO_MC);
         if(!repeaterTechnical)return;
+        if(node.position)menuRow(group(results),"map","Show saved position","May be old; not a live GPS fix",
+            ()->showMap(node.lat,node.lon),RADIO_MC);
         section(results,"REMOTE STATUS");
         McRemoteDiagnostics.Result status=client==null?null:
             client.mcRemote.find(node.id,McRemoteDiagnostics.Kind.STATUS);
@@ -849,7 +849,7 @@ public final class MainActivity extends Activity {
         TextView title=text(field.title,12,MUTED);box.addView(title);
         TextView current=text(settings.display(field),field==McRepeaterSettings.Field.NAME?17:18,value.valid?WHITE:MUTED);current.setTypeface(null,Typeface.BOLD);current.setPadding(0,dp(8),0,dp(6));box.addView(current);
         String hint=value.valid?(value.state.isEmpty()?"Tap to edit":value.state):"";
-        if(!hint.isEmpty())box.addView(text(hint,11,value.state.contains("Confirmed")?GREEN:MUTED));
+        if(!hint.isEmpty())box.addView(text(hint,11,value.state.contains("Confirmed")?GREEN:value.state.contains("different")?ORANGE:MUTED));
         LinearLayout.LayoutParams size=new LinearLayout.LayoutParams(half?0:-1,-2,half?1:0);size.bottomMargin=dp(8);if(half){size.leftMargin=dp(3);size.rightMargin=dp(3);}parent.addView(box,size);
         box.setContentDescription(field.title+". "+settings.display(field)+". "+hint);
         if(value.valid&&!value.state.equals("Refreshing…")&&!value.state.equals("Reading…")&&!value.state.startsWith("Saving")&&!value.state.startsWith("Saved;")){box.setFocusable(true);box.setOnClickListener(v->editRepeaterSetting(node,source,client,field));}
