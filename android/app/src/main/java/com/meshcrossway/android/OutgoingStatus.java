@@ -61,6 +61,20 @@ final class OutgoingStatus {
                 &&selected.slot==message.slot&&selected.group==message.group;
     }
 
+    /**
+     * An ACK or a radio/contact change may arrive while the confirmation dialog
+     * is open. Never prepare a retry draft from a superseded status snapshot.
+     */
+    static boolean stillReviewable(Message selected,Message latest){
+        return canPrepareNewDraft(selected)&&canPrepareNewDraft(latest)
+                &&Objects.equals(selected.uid,latest.uid)
+                &&Objects.equals(selected.topic,latest.topic)
+                &&Objects.equals(selected.identity,latest.identity)
+                &&Objects.equals(selected.peer,latest.peer)
+                &&Objects.equals(selected.body,latest.body)
+                &&selected.group==latest.group&&selected.slot==latest.slot;
+    }
+
     static Counts counts(Snapshot snapshot){
         int pending=0,review=0;
         if(snapshot!=null)for(Message message:snapshot.messages){
