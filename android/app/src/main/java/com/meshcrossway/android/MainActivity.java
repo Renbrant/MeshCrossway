@@ -144,8 +144,8 @@ public final class MainActivity extends Activity {
             for(Message message:data.messages)latest=Math.max(latest,message.timestamp);
             for(Node node:data.nodes)heard=Math.max(heard,node.heard);
             key.append(':').append(latest).append(':').append(heard).append(':').append(UiFeed.recentlyHeard(data.nodes,System.currentTimeMillis()/1000));
-            OutgoingStatus.Counts outgoing=OutgoingStatus.counts(data);
-            key.append(':').append(outgoing.pending).append(':').append(outgoing.review);
+            // Refresh when a recent item expires, even if no new message arrives.
+            key.append(':').append(OutgoingStatus.homeBrief(data,System.currentTimeMillis()/1000));
             if(service!=null){
                 RadioService.Session session=service.sessions.get(p);
                 key.append(':').append(session.verified).append(':').append(session.desired)
@@ -451,7 +451,7 @@ public final class MainActivity extends Activity {
         LinearLayout chats=dashboardRow();
         for(RadioProfile profile:RadioProfile.values()){
             Snapshot data=snapshot(profile);
-            String outgoing=OutgoingStatus.counts(data).brief();
+            String outgoing=OutgoingStatus.homeBrief(data,System.currentTimeMillis()/1000);
             dashboardTile(chats,profile==RadioProfile.MESHTASTIC?"MT · CHATS":"MC · CHATS",
                 data.unread()+" unread",outgoing.isEmpty()?latestPreview(data):outgoing+" · "+latestPreview(data),
                 profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
@@ -521,7 +521,7 @@ public final class MainActivity extends Activity {
                 .append("Awaiting send / peer ACK: ").append(c.pending).append("\n")
                 .append("Unknown or rejected: ").append(c.review).append("\n\n");
         }
-        info.append("Counts reflect only recently loaded saved messages. Radio acceptance is not a peer ACK; a peer ACK is not a read receipt.\n\n")
+        info.append("Counts include older stored messages; these are historical outcomes, not necessarily current alerts. Unknown group delivery does not prove failure. Radio acceptance is not a peer ACK; a peer ACK is not a read receipt.\n\n")
             .append("For a message with an unknown/rejected outcome: open its original conversation, long-press the outgoing message, and choose Prepare as new draft. ")
             .append("You must review and tap Send separately. Sending again may create a duplicate.");
         new AlertDialog.Builder(this).setTitle("Outbox & delivery status")

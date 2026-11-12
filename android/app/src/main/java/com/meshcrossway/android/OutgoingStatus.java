@@ -84,6 +84,34 @@ final class OutgoingStatus {
         return new Counts(pending,review);
     }
 
+    /**
+     * Home is an at-a-glance view, not a lifetime delivery audit. Only show
+     * actionable statuses from the last 15 minutes for the selected radio.
+     * Broadcasts cannot promise receipt by every member; unknown group
+     * delivery should not look like a failed peer acknowledgement.
+     */
+    static String homeBrief(Snapshot snapshot,long nowSeconds){
+        if(snapshot==null)return "";
+        final long windowSeconds=15*60L;
+        int pendingCount=0,attentionCount=0;
+        for(Message message:snapshot.messages){
+            if(message==null||!message.outgoing||message.timestamp<=0
+                    ||message.timestamp>nowSeconds
+                    ||nowSeconds-message.timestamp>windowSeconds)continue;
+            if(pending(message))pendingCount++;
+            else if("rejected".equals(message.state)
+                    ||(!message.group&&"uncertain".equals(message.state)))attentionCount++;
+        }
+        if(pendingCount==0&&attentionCount==0)return "";
+        StringBuilder value=new StringBuilder("Recent: ");
+        if(pendingCount>0)value.append(pendingCount).append(" awaiting confirmation");
+        if(attentionCount>0){
+            if(pendingCount>0)value.append(" · ");
+            value.append(attentionCount).append(" failed/unknown");
+        }
+        return value.toString();
+    }
+
     static String label(Message message){
         if(message==null||!message.outgoing)return "";
         switch(message.state){
