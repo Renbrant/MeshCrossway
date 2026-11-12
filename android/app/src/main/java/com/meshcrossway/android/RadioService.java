@@ -305,6 +305,17 @@ public final class RadioService extends Service {
                 .putLong(fullKey.toLowerCase(java.util.Locale.ROOT),System.currentTimeMillis()).apply();
         });
     }
+    void administerRepeater(String radio,ProtocolClient expected,String key,String value,boolean login){
+        configureMeshCore(radio,client->{
+            if(client!=expected)throw Wire.bad("Radio changed; reopen the repeater");
+            long remaining=remoteRepeaterCooldownMs(key);
+            if(remaining>0)throw Wire.bad(McRemoteDiagnostics.remainingLabel(remaining));
+            client.administerRepeater(key,value,login,now());
+            client.mcError="";
+            getSharedPreferences("mc_remote_query_limits",MODE_PRIVATE).edit()
+                .putLong(key.toLowerCase(java.util.Locale.ROOT),System.currentTimeMillis()).apply();
+        });
+    }
     void configureMeshCore(String radio,java.util.function.Consumer<ProtocolClient> action){
         Session s=sessions.get(RadioProfile.MESHCORE);
         if(s==null||!s.address.equals(radio)||!s.connected||!s.verified||s.client==null){
@@ -325,7 +336,7 @@ public final class RadioService extends Service {
             }
             advance(s);changed();
         }
-        catch(IllegalArgumentException e){phase(s,"Settings",e.getMessage());}
+        catch(IllegalArgumentException e){s.client.mcError=e.getMessage();s.client.mcRevision++;phase(s,"Settings",e.getMessage());}
     }
     private void expireRemote(Session s,ProtocolClient client,McRemoteDiagnostics.Result request){
         if(s.client!=client||client.mcRemote.pending!=request)return;
@@ -354,7 +365,7 @@ public final class RadioService extends Service {
         if(s.retry!=null)handler.removeCallbacks(s.retry);s.retry=null;
         if(s.rssiPoll!=null)handler.removeCallbacks(s.rssiPoll);
         s.rssiPoll=null;s.rssiPending=false;s.rssiCurrentLink=false;
-        if(s.client!=null){history.uncertain(s.profile,s.address);if(s.profile==RadioProfile.MESHTASTIC){s.pendingMtEdit=s.client.admin.edit!=null&&s.client.admin.edit.writeId!=0?s.client.admin.edit:null;s.pendingMtAddress=s.address;}else{s.pendingMcEdit=s.client.pendingMcSave();s.pendingMcAddress=s.address;s.pendingMcDeliveries.clear();s.pendingMcDeliveries.addAll(s.client.mcRetainDeliveries(now()));}}s.client=null;s.transportReady=false;s.persisting=false;
+        if(s.client!=null){history.uncertain(s.profile,s.address);if(s.profile==RadioProfile.MESHTASTIC){s.pendingMtEdit=s.client.admin.edit!=null&&s.client.admin.edit.writeId!=0?s.client.admin.edit:null;s.pendingMtAddress=s.address;}else{s.pendingMcEdit=s.client.pendingMcSave();s.pendingMcAddress=s.address;s.pendingMcDeliveries.clear();s.pendingMcDeliveries.addAll(s.client.mcRetainDeliveries(now()));s.client.clearRepeaterAdministration();}}s.client=null;s.transportReady=false;s.persisting=false;
         cancelTimeout(s);if(s.probeTimeout!=null)handler.removeCallbacks(s.probeTimeout);if(s.poll!=null)handler.removeCallbacks(s.poll);
         BluetoothGatt old=s.gatt;s.gatt=null;s.queue.clear();s.active=null;s.connected=s.verified=s.readPending=false;
         s.tx=s.rx=s.notice=null;phase(s,"Disconnected",reason);

@@ -19,7 +19,9 @@ final class McRemoteDiagnostics {
     private final SecureRandom random=new SecureRandom();
     private final LinkedHashMap<String,Result> entries=new LinkedHashMap<>();
     private final LinkedHashMap<String,Long> lastRequested=new LinkedHashMap<>();
+    private final LinkedHashMap<String,Neighbors> neighborLists=new LinkedHashMap<>();
     Result pending;
+    Neighbors allNeighbors(String key){return neighborLists.get(key.toLowerCase(Locale.ROOT));}
     long revision;
 
     static final class Status {
@@ -212,7 +214,17 @@ final class McRemoteDiagnostics {
         try{
             byte[] data=Arrays.copyOfRange(frame,6,frame.length);
             if(pending.kind==Kind.STATUS)pending.stats=new Status(data);
-            else pending.neighbors=parseNeighbors(data,pending.offset);
+            else {
+                pending.neighbors=parseNeighbors(data,pending.offset);
+                Neighbors page=pending.neighbors,previous=allNeighbors(pending.fullKey);
+                if(page.offset==0||previous!=null&&previous.total==page.total&&previous.list.size()==page.offset){
+                    List<Neighbor> combined=new ArrayList<>();
+                    if(page.offset>0)combined.addAll(previous.list);
+                    combined.addAll(page.list);
+                    neighborLists.put(pending.fullKey,new Neighbors(page.total,0,combined,page.extensionBytes));
+                    while(neighborLists.size()>MAX_RECORDS)neighborLists.remove(neighborLists.keySet().iterator().next());
+                }else neighborLists.remove(pending.fullKey);
+            }
             pending.state="Received from repeater (tag-correlated)";
             pending.completedAt=now;
             pending=null;revision++;

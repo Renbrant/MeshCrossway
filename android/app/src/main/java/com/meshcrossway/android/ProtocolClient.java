@@ -8,12 +8,13 @@ import static com.meshcrossway.android.MeshData.*;
 final class ProtocolClient {
     interface Listener {void node(Node n);void channel(Channel c);void message(Message m);void delivery(String uid,String state);}
     static final class Command {
-        final byte[] data;final int response;final String uid;boolean written,replied;long deadline;McAdmin.Edit mcEdit;boolean mcVerification;
+        final byte[] data;final int response;final String uid;boolean written,replied;long deadline;McAdmin.Edit mcEdit;boolean mcVerification,repeaterAdmin;
         Command(byte[] data,int response,String uid){this.data=data;this.response=response;this.uid=uid;}
     }
     static final class Sent {String uid,peer;long deadline,ack,retainUntil;boolean ackKnown;Sent(String u,String p,long d){uid=u;peer=p;deadline=d;}}
     final McAdmin mcAdmin;
     final McRemoteDiagnostics mcRemote=new McRemoteDiagnostics();
+    final McRepeaterAdmin mcRepeaterAdmin=new McRepeaterAdmin();
     final LinkedHashMap<String,Node> mcDiscoveries=new LinkedHashMap<>();
     final LinkedHashMap<Long,Sent> mcLateSent=new LinkedHashMap<>();
     final Set<String> mcSyncKeys=new HashSet<>(),mcSyncDeleted=new HashSet<>(),mcFailedReads=new HashSet<>(),mcDeferredContacts=new LinkedHashSet<>();
@@ -44,6 +45,12 @@ final class ProtocolClient {
     /** Expire only the current session's read-only request, never queue a resend. */
     void checkRemoteDeadline(long now){
         if(profile!=RadioProfile.MESHCORE)return;
+        long adminVersion=mcRepeaterAdmin.revision;
+        mcRepeaterAdmin.tick(now);
+        if(adminVersion!=mcRepeaterAdmin.revision){
+            commands.removeIf(command->{if(!command.repeaterAdmin)return false;Arrays.fill(command.data,(byte)0);return true;});
+            mcRevision++;
+        }
         long version=mcRemote.revision;
         mcRemote.tick(now);
         if(mcRemote.revision!=version){
@@ -57,7 +64,7 @@ final class ProtocolClient {
         if(profile==RadioProfile.MESHTASTIC){admin.tick(now);if(ready)admin.ready();}else{mcAdmin.tick(now);if(ready)mcAdmin.ready();mcLateSent.entrySet().removeIf(e->now>=e.getValue().retainUntil);}
         for(Iterator<Map.Entry<Long,Sent>> it=sent.entrySet().iterator();it.hasNext();){Map.Entry<Long,Sent> entry=it.next();Sent pending=entry.getValue();if(now>=pending.deadline){listener.delivery(pending.uid,"uncertain");if(profile==RadioProfile.MESHCORE&&pending.ackKnown){pending.retainUntil=now+600000;long savedKey=entry.getKey();while(mcLateSent.containsKey(savedKey))savedKey++;mcLateSent.put(savedKey,pending);trim(mcLateSent,128);}it.remove();}}
 
-        if(active!=null){if(now>=active.deadline){if(profile==RadioProfile.MESHCORE&&active.mcEdit!=null)mcAdmin.timeout(active.mcEdit);throw Wire.bad("Radio command timed out • reconnect to restore response ordering");}if(active.written&&active.replied)active=null;else return null;}
+        if(active!=null){if(now>=active.deadline){if(profile==RadioProfile.MESHCORE&&active.mcEdit!=null)mcAdmin.timeout(active.mcEdit);throw Wire.bad("Radio command timed out • reconnect to restore response ordering");}if(active.written&&active.replied){if(active.repeaterAdmin)Arrays.fill(active.data,(byte)0);active=null;}else return null;}
 
         if(profile==RadioProfile.MESHCORE&&ready&&(mcAdmin.edit==null||mcAdmin.edit.deadline==Long.MAX_VALUE)&&!mcDeferredContacts.isEmpty()&&commands.size()<8){String id=mcDeferredContacts.iterator().next();mcDeferredContacts.remove(id);requestMcContact(id);}
         if(profile==RadioProfile.MESHCORE&&ready&&(mcAdmin.edit==null||mcAdmin.edit.deadline==Long.MAX_VALUE)&&!mcDeferredChannels.isEmpty()&&commands.size()<8){int slot=mcDeferredChannels.iterator().next();mcDeferredChannels.remove(slot);requestMcChannel(slot);}
@@ -205,6 +212,7 @@ final class ProtocolClient {
     }
     private void meshcore(byte[] data,long now){
         if(data.length==0||data.length>176)throw Wire.bad("Invalid MeshCore frame");int code=data[0]&255;if(code==136){observeChannel(data,now);return;}
+        if(code==0x85||code==0x86){mcRepeaterAdmin.loginResponse(data,now);mcRevision++;return;}
         if(code==McRemoteDiagnostics.PUSH_BINARY){long revision=mcRemote.revision;mcRemote.receive(data,now);if(mcRemote.revision!=revision)mcRevision++;return;}
         Command current=active;int command=current==null?-1:current.data[0]&255;
         boolean matched=current!=null&&(code==current.response||code==1||code==15||(command==4&&code==4)||(command==10&&(code==7||code==8||code==16||code==17||code==27)));
@@ -223,6 +231,7 @@ final class ProtocolClient {
                 mcStatus=mcDiscoveries.containsKey(id)?"Discovery checked — approval required":"Contact is no longer in the radio contact list";mcRevision++;return;
             }
             if(current.mcEdit!=null){mcAdmin.clock=now;mcAdmin.reply(current.mcEdit,current.mcVerification,data);return;}
+            if(current.repeaterAdmin){mcRepeaterAdmin.rejected();mcRevision++;return;}
             if(command==McRemoteDiagnostics.CMD_BINARY){mcRemote.rejected(data.length>1?data[1]&255:code);mcRevision++;return;}
             if(command==31&&data.length>=2&&data[1]==2&&!ready){nextMcChannel();return;}
             if(!ready)throw Wire.bad("MeshCore rejected bootstrap command "+command);
@@ -261,6 +270,7 @@ final class ProtocolClient {
         else if(code==0&&matched&&!current.uid.isEmpty()){listener.delivery(current.uid,"radio accepted");removeSent(current.uid);}
         else if(code==6&&matched){
             if(data.length<10)throw Wire.bad("Truncated send acknowledgement");
+            if(current.repeaterAdmin){mcRepeaterAdmin.accepted(data,now);mcRevision++;}
             if(command==McRemoteDiagnostics.CMD_BINARY){mcRemote.sentToRadio(data,now);mcRevision++;}
             for(Sent pending:sent.values())if(pending.uid.equals(current.uid)){pending.ack=Wire.u32(data,2);pending.ackKnown=true;pending.deadline=now+Math.max(5000,Math.min(600000,Wire.u32(data,6)));listener.delivery(pending.uid,"radio accepted");}
         }
@@ -285,7 +295,12 @@ final class ProtocolClient {
     }
     private void mcMessage(byte[] data,long now){
         int code=data[0]&255;boolean group=code==8||code==17,v3=code==16||code==17;int start=v3?4:1,meta=group?3:8,typepos=start+(group?2:7);
-        if(data.length<start+meta+4)throw Wire.bad("Truncated MeshCore message");int type=data[typepos]&255,offset=start+meta+4+(type==2?4:0);if(type!=0&&type!=2)return;if(offset>data.length)throw Wire.bad("Truncated signed message");
+        if(data.length<start+meta+4)throw Wire.bad("Truncated MeshCore message");int type=data[typepos]&255,offset=start+meta+4+(type==2?4:0);if(!group&&(type==0||type==1)){
+            String prefix=Wire.hex(Arrays.copyOfRange(data,start,start+6));
+            boolean repeaterReply=type==1;
+            for(Node known:nodes.values())if(RepeaterInventory.isRepeater(known)&&known.id.startsWith(prefix))repeaterReply=true;
+            if(repeaterReply){mcRepeaterAdmin.cliResponse(data,start,offset,now);mcRevision++;return;}
+        }if(type!=0&&type!=2)return;if(offset>data.length)throw Wire.bad("Truncated signed message");
         Message m=new Message();m.rx=RxInfo.meshcore(data[start+(group?1:6)]&255);if(v3)m.rx.snr=data[1]/4.0;m.group=group;m.timestamp=Wire.u32(data,start+meta);if(m.timestamp<1577836800L)m.timestamp=System.currentTimeMillis()/1000;m.body=Wire.utf8(Arrays.copyOfRange(data,offset,data.length));if(m.body.isEmpty())return;
         if(group){m.slot=data[start]&255;Channel c=channels.get(m.slot);if(c==null||!c.enabled)return;m.topic=c.topic();m.title=c.name;m.identity=c.identity;int colon=m.body.indexOf(": ");m.sender=colon>0&&colon<40?m.body.substring(0,colon):"Channel participant";}
         else{String prefix=Wire.hex(Arrays.copyOfRange(data,start,start+6));Node found=null;int count=0;for(Node n:nodes.values())if(n.id.startsWith(prefix)){found=n;count++;}m.peer=count==1?found.id:prefix;m.topic="d:"+prefix;m.title=count==1?nodeName(m.peer):prefix;m.sender=m.title;if(count==1){if(mcBacklogDrained){Node live=new Node(found);live.mcReceived=System.currentTimeMillis()/1000;live.heard=Math.max(live.heard,live.mcReceived);publish(live);}deferMcContact(found.id,false);}}
@@ -314,11 +329,28 @@ final class ProtocolClient {
         Node node=nodes.get(key);
         if(node==null||node.type!=2||node.mcState!=MC_APPROVED)
             throw Wire.bad("Select an approved repeater from the current radio contacts");
-        if(mcAdmin.edit!=null||commands.size()>=8)
+        if(mcRepeaterAdmin.pending||mcAdmin.edit!=null||commands.size()>=8)
             throw Wire.bad("Radio is busy; finish pending operations before querying repeaters");
         byte[] packet=mcRemote.request(kind,node,offset,now);
         queue(packet,McRemoteDiagnostics.RESP_SENT,"");
         mcRevision++;
+    }
+
+    void administerRepeater(String key,String value,boolean login,long now){
+        if(profile!=RadioProfile.MESHCORE||!ready||!mcBacklogDrained)
+            throw Wire.bad("Connect and finish message synchronization first");
+        if(mcRemote.pending!=null||mcAdmin.edit!=null||commands.size()>=8)
+            throw Wire.bad("Finish the pending radio operation first");
+        Node node=nodes.get(key);
+        byte[] packet=login?mcRepeaterAdmin.login(node,nodes.values(),value,now,payloadLimit):
+            mcRepeaterAdmin.command(node,nodes.values(),value,now,System.currentTimeMillis()/1000,payloadLimit);
+        queue(packet,6,"");commands.peekLast().repeaterAdmin=true;mcRevision++;
+    }
+
+    void clearRepeaterAdministration(){
+        if(active!=null&&active.repeaterAdmin)Arrays.fill(active.data,(byte)0);
+        for(Command command:commands)if(command.repeaterAdmin)Arrays.fill(command.data,(byte)0);
+        mcRepeaterAdmin.forget();
     }
 
     boolean mcSupportsStats(){return firmwareCode>=8;}

@@ -29,7 +29,7 @@ public final class MainActivity extends Activity {
     private int selected,filter,listLimit=100,chatLimit=100,nodeOrder;private boolean favoritesOnly,unreadOnly,pinnedOnly,resumed,refreshQueued;
     private TrackService trackService;private boolean tracksBound;private Intent pendingTrack;private String exportingTrack="";private int nodeType;
     private boolean backupBusy;private int mcContactFilter;private LinearLayout mcContactTabs;private String pendingMtChannelLink="";private String pendingChannelLink="",pendingDiagnostic="";
-    private byte[] mtLoraDraft,mtLoraBase;private boolean mtLoraSaving;private String mtDraftRadio="";private String settingsSection="";private String repeaterDossierKey="",repeaterDossierRadio="";private RadioProfile settingsRadio;private final ArrayDeque<Screen> backStack=new ArrayDeque<>();private final HashMap<String,Integer> scrollPositions=new HashMap<>();private String renderedRoute="";private LinearLayout header;private boolean rendering;private String settingsFingerprint="",homeFingerprint="";private final HashMap<Integer,String> pageQueries=new HashMap<>();
+    private byte[] mtLoraDraft,mtLoraBase;private boolean mtLoraSaving;private String mtDraftRadio="";private String settingsSection="";private boolean repeaterTechnical;private String repeaterDossierKey="",repeaterDossierRadio="";private RadioProfile settingsRadio;private final ArrayDeque<Screen> backStack=new ArrayDeque<>();private final HashMap<String,Integer> scrollPositions=new HashMap<>();private String renderedRoute="";private LinearLayout header;private boolean rendering;private String settingsFingerprint="",homeFingerprint="";private final HashMap<Integer,String> pageQueries=new HashMap<>();
     private static final class Screen{int selected,filter,y;String query,section,radio;RadioProfile profile;Target chat;RadioProfile chatProfile;}
     private TextView dualStatus;private View statusSeparator;MapPanel mapPanel;static String mapStyleOverride;private org.maplibre.android.geometry.LatLng mapFocus;PhonePosition position;
 
@@ -176,7 +176,7 @@ public final class MainActivity extends Activity {
         }
         return key.toString();
     }
-    private String settingsFingerprint(){StringBuilder value=new StringBuilder(settingsSection);if(service!=null&&(settingsSection.isEmpty()||settingsSection.equals("radio")||settingsSection.equals("connections")||settingsSection.startsWith("mc_")||settingsSection.startsWith("mt_"))){for(RadioService.Session session:service.sessions.values()){value.append(session.address).append(session.phase).append(session.status);if(session.client!=null){ProtocolClient c=session.client;value.append(c.mcRevision).append(c.mcAdmin.revision).append(c.mcAdmin.error).append(c.mcAdmin.status).append(c.mcError).append(c.mtRevision).append(c.admin.revision).append(c.admin.status).append(c.admin.error).append(c.localName).append(c.firmware).append(c.mtOwner.hashCode()).append(c.mtConfigs.hashCode()).append(c.mtModules.hashCode()).append(c.region).append(c.hopLimit).append(c.txEnabled).append(c.mtSessionKey.length).append(c.frequencyMhz).append(c.bandwidthKhz).append(c.spreadingFactor).append(c.codingRate).append(c.txPower).append(c.pathHashMode).append(c.hasRadioStats).append(c.noiseFloor).append(c.lastRssi).append(c.lastSnrQuarter).append(c.txAirSecs).append(c.rxAirSecs).append(c.hasBattery).append(c.batteryMv).append(c.usedKb).append(c.totalKb).append(c.uptimeSecs).append(c.defaultFloodScope).append(c.manualAddContacts).append(c.telemetryModes).append(c.advertLocationPolicy).append(c.multiAcks).append(c.hasLocation).append(c.latitude).append(c.longitude);}}if(choosing!=null)value.append(service.devices.keySet()).append(service.scanning).append(service.showOtherDevices);}
+    private String settingsFingerprint(){StringBuilder value=new StringBuilder(settingsSection);if(service!=null&&(settingsSection.isEmpty()||settingsSection.equals("radio")||settingsSection.equals("connections")||settingsSection.startsWith("mc_")||settingsSection.startsWith("mt_"))){for(RadioService.Session session:service.sessions.values()){value.append(session.address).append(session.phase).append(session.status);if(session.client!=null){ProtocolClient c=session.client;value.append(c.mcRepeaterAdmin.revision).append(c.mcRevision).append(c.mcAdmin.revision).append(c.mcAdmin.error).append(c.mcAdmin.status).append(c.mcError).append(c.mtRevision).append(c.admin.revision).append(c.admin.status).append(c.admin.error).append(c.localName).append(c.firmware).append(c.mtOwner.hashCode()).append(c.mtConfigs.hashCode()).append(c.mtModules.hashCode()).append(c.region).append(c.hopLimit).append(c.txEnabled).append(c.mtSessionKey.length).append(c.frequencyMhz).append(c.bandwidthKhz).append(c.spreadingFactor).append(c.codingRate).append(c.txPower).append(c.pathHashMode).append(c.hasRadioStats).append(c.noiseFloor).append(c.lastRssi).append(c.lastSnrQuarter).append(c.txAirSecs).append(c.rxAirSecs).append(c.hasBattery).append(c.batteryMv).append(c.usedKb).append(c.totalKb).append(c.uptimeSecs).append(c.defaultFloodScope).append(c.manualAddContacts).append(c.telemetryModes).append(c.advertLocationPolicy).append(c.multiAcks).append(c.hasLocation).append(c.latitude).append(c.longitude);}}if(choosing!=null)value.append(service.devices.keySet()).append(service.scanning).append(service.showOtherDevices);}
         // Rebuild the repeater dossier as the manual airtime limit counts down.
         // Without this, the disabled request row can remain stale after 30 seconds
         // until an unrelated radio update or navigation rebuilds Settings.
@@ -693,41 +693,42 @@ public final class MainActivity extends Activity {
         LinearLayout identity=card(results);
         identity.addView(text(nodeName(RadioProfile.MESHCORE,node),18,RADIO_MC));
         space(identity,6);
-        identity.addView(text("Full public key: "+node.id,12,MUTED));
+        if(repeaterTechnical)identity.addView(text("Full public key: "+node.id,12,MUTED));
         identity.addView(text(McContacts.label(node,client),12,MUTED));
-        identity.addView(text(RepeaterInventory.activity(node,epoch),12,MUTED));
-        identity.addView(text("Last saved update: "+(node.heard>0?when(node.heard):"Unknown"),12,MUTED));
-        identity.addView(text(client!=null?"Source: current MeshCore BLE session":
+        if(repeaterTechnical)identity.addView(text(RepeaterInventory.activity(node,epoch),12,MUTED));
+        if(repeaterTechnical)identity.addView(text("Last saved update: "+(node.heard>0?when(node.heard):"Unknown"),12,MUTED));
+        if(repeaterTechnical)identity.addView(text(client!=null?"Source: current MeshCore BLE session":
                 "Offline / different radio · cached contact only",12,MUTED));
         if(node.position)menuRow(group(results),"map","Show saved position","May be old; not a live GPS fix",
             ()->showMap(node.lat,node.lon),RADIO_MC);
+        repeaterAdministration(node,source,client);
         section(results,"REMOTE STATUS");
         McRemoteDiagnostics.Result status=client==null?null:
             client.mcRemote.find(node.id,McRemoteDiagnostics.Kind.STATUS);
         LinearLayout stats=card(results);
         stats.addView(text(status==null?"Not queried on this connection":
-            status.freshness(elapsed),14,status!=null&&status.stats!=null?GREEN:MUTED));
+            (status.stats!=null?"Status received from repeater":status.freshness(elapsed)),14,status!=null&&status.stats!=null?GREEN:MUTED));
         if(status!=null&&!status.error.isEmpty())stats.addView(text(status.error,12,RED));
         if(status!=null&&status.usedFlood!=null&&status.stats==null)
-            stats.addView(text(status.radioRoute(),12,MUTED));
+            if(repeaterTechnical)stats.addView(text(status.radioRoute(),12,MUTED));
         if(status!=null&&status.stats!=null){
             McRemoteDiagnostics.Status s=status.stats;
             stats.addView(text("Remote repeater · reported values:",13,WHITE));
-            stats.addView(text("Uptime: "+s.uptime+" sec · Battery: "+s.batteryMv+" mV",13,WHITE));
+            stats.addView(text("Uptime: "+McRepeaterAdmin.duration(s.uptime)+" · Battery: "+String.format(Locale.ROOT,"%.2f V",s.batteryMv/1000.0),13,WHITE));
             stats.addView(text("TX queue: "+s.queue+" · Noise floor: "+s.noiseFloor+" dBm",13,WHITE));
             stats.addView(text("Last RF: RSSI "+s.lastRssi+" dBm · SNR "
                 +String.format(Locale.ROOT,"%.2f",s.lastSnr)+" dB",13,WHITE));
             stats.addView(text("Packets: RX "+s.received+" / TX "+s.sent,13,WHITE));
-            stats.addView(text("Direct: RX "+s.recvDirect+" / TX "+s.sentDirect
+            if(repeaterTechnical)stats.addView(text("Direct: RX "+s.recvDirect+" / TX "+s.sentDirect
                 +" · flood: RX "+s.recvFlood+" / TX "+s.sentFlood,12,MUTED));
-            stats.addView(text("Airtime (s): TX "+s.txAirtime
+            if(repeaterTechnical)stats.addView(text("Airtime (s): TX "+s.txAirtime
                 +" · RX "+s.rxAirtime,12,MUTED));
-            stats.addView(text("Duplicate indications: direct "+s.directDup
+            if(repeaterTechnical)stats.addView(text("Duplicate indications: direct "+s.directDup
                 +" · flood "+s.floodDup+" · error flags "+s.fullEvents,12,MUTED));
-            if(s.errorsKnown)stats.addView(text("Receive errors: "+s.errors,12,MUTED));
-            if(s.extensionBytes>0)stats.addView(text("Firmware extension: "+
+            if(repeaterTechnical&&s.errorsKnown)stats.addView(text("Receive errors: "+s.errors,12,MUTED));
+            if(repeaterTechnical&&s.extensionBytes>0)stats.addView(text("Firmware extension: "+
                 s.extensionBytes+" additional byte(s) safely ignored",12,MUTED));
-            stats.addView(text(status.radioRoute(),12,MUTED));
+            if(repeaterTechnical)stats.addView(text(status.radioRoute(),12,MUTED));
         }
         long cooldown=service==null?0:service.remoteRepeaterCooldownMs(node.id);
         long sessionCooldown=client==null?0:
@@ -735,7 +736,7 @@ public final class MainActivity extends Activity {
         cooldown=Math.max(cooldown,sessionCooldown);
         boolean canQuery=client!=null&&client.ready&&client.firmwareCode>=10
             &&client.nodes.containsKey(node.id)&&client.nodes.get(node.id).type==2
-            &&client.mcRemote.pending==null&&cooldown==0;
+            &&client.mcRemote.pending==null&&!client.mcRepeaterAdmin.pending&&cooldown==0;
         String unavailableReason=cooldown>0
             ?McRemoteDiagnostics.remainingLabel(cooldown)
             :"Connect the same radio, finish previous request and verify firmware";
@@ -748,16 +749,16 @@ public final class MainActivity extends Activity {
             client.mcRemote.find(node.id,McRemoteDiagnostics.Kind.NEIGHBORS);
         LinearLayout near=card(results);
         near.addView(text(neighbors==null?"Not queried on this connection":
-            neighbors.freshness(elapsed),14,neighbors!=null&&neighbors.neighbors!=null?GREEN:MUTED));
+            (neighbors.neighbors!=null?"Neighbors received from repeater":neighbors.freshness(elapsed)),14,neighbors!=null&&neighbors.neighbors!=null?GREEN:MUTED));
         if(neighbors!=null&&!neighbors.error.isEmpty())
             near.addView(text(neighbors.error,12,RED));
-        if(neighbors!=null&&neighbors.usedFlood!=null)
+        if(repeaterTechnical&&neighbors!=null&&neighbors.usedFlood!=null)
             near.addView(text(neighbors.radioRoute(),12,MUTED));
         if(neighbors!=null&&neighbors.neighbors!=null){
-            McRemoteDiagnostics.Neighbors list=neighbors.neighbors;
-            near.addView(text("Reported neighbor count: "+list.total
-                +" · showing page from offset "+list.offset,13,WHITE));
-            if(list.extensionBytes>0)near.addView(text("Firmware extension: "+
+            McRemoteDiagnostics.Neighbors accumulated=client.mcRemote.allNeighbors(node.id);
+            McRemoteDiagnostics.Neighbors list=accumulated!=null?accumulated:neighbors.neighbors;
+            near.addView(text("Neighbors: "+list.list.size()+" of "+list.total,13,WHITE));
+            if(repeaterTechnical&&list.extensionBytes>0)near.addView(text("Firmware extension: "+
                 list.extensionBytes+" trailing byte(s) safely ignored",12,MUTED));
             for(McRemoteDiagnostics.Neighbor entry:list.list){
                 String label="Unresolved prefix";
@@ -768,8 +769,8 @@ public final class MainActivity extends Activity {
                         if(matches==1)label=nodeName(RadioProfile.MESHCORE,known);
                     }
                 if(matches>1)label="Ambiguous · "+matches+" contacts";
-                near.addView(text(label+" ["+entry.prefix+"]",13,WHITE));
-                near.addView(text("Last reported "+entry.secondsAgo+" s ago · SNR "
+                near.addView(text(label+(repeaterTechnical?" ["+entry.prefix+"]":""),13,WHITE));
+                near.addView(text("Last reported "+McRepeaterAdmin.duration(entry.secondsAgo)+" ago · SNR "
                     +String.format(Locale.ROOT,"%.2f",entry.snr)+" dB",12,MUTED));
             }
             if(list.list.isEmpty())near.addView(text("This page returned no neighbors.",12,MUTED));
@@ -783,12 +784,110 @@ public final class MainActivity extends Activity {
             canQuery?"Up to 8 neighbors · flood possible · 30 sec shared limit":
                 unavailableReason,
             canQuery?()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,0):null,RADIO_MC);
+        menuRow(group(results),"settings",repeaterTechnical?"Hide technical details":"Technical details",
+            "Protocol, routing and saved contact information",()->{repeaterTechnical=!repeaterTechnical;settingsFingerprint="";scheduleRefresh();},RADIO_MC);
+        if(!repeaterTechnical)return;
         section(results,"DATA PROVENANCE");
         results.addView(text("The firmware sends a tagged response via the selected MeshCore radio. "
             +"A locally accepted command is not proof of a remote reply. "
             +"Names matched to short prefixes can be ambiguous. "
             +"All values are historical once captured; opening the page does not transmit. "
-            +"This does not administer, reboot or modify the repeater.",13,MUTED));
+            +"Diagnostics do not modify the repeater. Administration commands require a separate login.",13,MUTED));
+    }
+
+    private void repeaterAdministration(Node node,String source,ProtocolClient client){
+        section(results,"ADMINISTRATION");
+        if(client==null){results.addView(text("Connect the same MeshCore radio to administer this repeater",13,MUTED));return;}
+        if(!client.mcError.isEmpty())results.addView(text(client.mcError,13,RED));
+        McRepeaterAdmin admin=client.mcRepeaterAdmin;
+        admin.tick(SystemClock.elapsedRealtime());
+        boolean selected=node.id.equals(admin.key);
+        LinearLayout box=card(results);
+        box.addView(text(selected?admin.state:"Sign in to configure this repeater",13,MUTED));
+        if(selected&&!admin.reply.isEmpty()){
+            box.addView(text(admin.label,12,RADIO_MC));box.addView(text(admin.reply,14,WHITE));
+        }
+        boolean busy=admin.pending||client.mcRemote.pending!=null;
+        boolean authorized=admin.authorized(node.id,SystemClock.elapsedRealtime());
+        menuRow(group(results),"settings",authorized?"Sign in again":"Administer repeater",
+            "Enter the repeater password",busy?null:()->repeaterLogin(node,source,client),RADIO_MC);
+        if(!authorized)return;
+        menuRow(group(results),"settings","Configuration","Read or change a setting",
+            busy?null:()->repeaterSettings(node,source,client),RADIO_MC);
+        menuRow(group(results),"chat","Remote console","Send one MeshCore CLI command",
+            busy?null:()->repeaterConsole(node,source,client),RADIO_MC);
+        menuRow(group(results),"settings","Change password","Administrator or guest access",
+            busy?null:()->new AlertDialog.Builder(this).setTitle("Change repeater password")
+                .setItems(new String[]{"Administrator password","Guest password"},(d,w)->repeaterPassword(node,source,client,w==1)).show(),RADIO_MC);
+        menuRow(group(results),"refresh","Restart repeater","Connection will be interrupted; a reply may not arrive",
+            busy?null:()->sendRepeaterCommand(node,source,client,"reboot",false),RADIO_MC);
+        menuRow(group(results),"settings","Close administration","Forget access on this phone",
+            busy?null:()->{admin.forget();settingsFingerprint="";scheduleRefresh();},RADIO_MC);
+    }
+    private EditText repeaterSecret(LinearLayout form,String label){
+        EditText field=mcInput(form,label,"",android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        field.setSaveEnabled(false);field.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
+        return field;
+    }
+    private void repeaterLogin(Node node,String source,ProtocolClient expected){
+        LinearLayout form=column();form.setPadding(dp(20),dp(8),dp(20),dp(8));
+        EditText password=repeaterSecret(form,"Repeater password");
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Administer "+nodeName(RadioProfile.MESHCORE,node))
+            .setView(form).setMessage("Sign in over LoRa. Password is not saved. Administrator permission is required to change settings.")
+            .setNegativeButton("Cancel",null).setPositiveButton("Sign in",(d,w)->{
+                if(service!=null)service.administerRepeater(source,expected,node.id,password.getText().toString(),true);
+                password.setText("");scheduleRefresh();}).create();
+        dialog.setOnDismissListener(d->password.setText(""));dialog.show();
+    }
+    private void repeaterSettings(Node node,String source,ProtocolClient client){
+        String[] names={"Name","Latitude","Longitude","Radio parameters","TX power (dBm)","Repeat (on/off)","Local advert interval (minutes)","Flood advert interval (hours)","Maximum flood hops","Allow read-only access (on/off)"};
+        String[] keys={"name","lat","lon","radio","tx","repeat","advert.interval","flood.advert.interval","flood.max","allow.read.only"};
+        new AlertDialog.Builder(this).setTitle("Repeater configuration").setItems(names,(d,w)->{
+            final String key=keys[w];
+            new AlertDialog.Builder(this).setTitle(names[w]).setItems(new String[]{"Read current value","Change value"},(a,b)->{
+                if(b==0){sendRepeaterCommand(node,source,client,"get "+key,false);return;}
+                LinearLayout form=column();form.setPadding(dp(20),dp(8),dp(20),dp(8));
+                EditText field=mcInput(form,key.equals("radio")?"MHz,kHz,SF,CR (e.g. 910.525,62.5,7,5)":names[w],"",android.text.InputType.TYPE_CLASS_TEXT);
+                field.setSaveEnabled(false);
+                new AlertDialog.Builder(this).setTitle("Change "+names[w]).setView(form)
+                    .setMessage("Read the current value first. Available settings and limits depend on repeater firmware.")
+                    .setNegativeButton("Cancel",null).setPositiveButton("Review",(x,y)->{
+                        try{sendRepeaterCommand(node,source,client,McRepeaterAdmin.setting(key,field.getText().toString()),false);}
+                        catch(IllegalArgumentException invalid){Toast.makeText(this,invalid.getMessage(),Toast.LENGTH_LONG).show();}
+                    }).show();
+            }).show();
+        }).setNegativeButton("Back",null).show();
+    }
+    private void repeaterConsole(Node node,String source,ProtocolClient client){
+        LinearLayout form=column();form.setPadding(dp(20),dp(8),dp(20),dp(8));
+        EditText command=repeaterSecret(form,"MeshCore command (e.g. ver, get name)");
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Remote console").setView(form)
+            .setNegativeButton("Cancel",null).setPositiveButton("Review",(d,w)->{
+                sendRepeaterCommand(node,source,client,command.getText().toString(),true);command.setText("");}).create();
+        dialog.setOnDismissListener(d->command.setText(""));dialog.show();
+    }
+    private void repeaterPassword(Node node,String source,ProtocolClient client,boolean guest){
+        LinearLayout form=column();form.setPadding(dp(20),dp(8),dp(20),dp(8));
+        EditText password=repeaterSecret(form,"New password (1–15 UTF-8 bytes)");
+        EditText again=repeaterSecret(form,"Repeat new password");
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle(guest?"Guest password":"Administrator password").setView(form)
+            .setNegativeButton("Cancel",null).setPositiveButton("Review",(d,w)->{
+                String value=password.getText().toString();
+                if(!value.equals(again.getText().toString())||value.isEmpty()||value.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>15||value.contains("\n")||value.contains("\r")||value.indexOf('\0')>=0){
+                    Toast.makeText(this,"Passwords must match and contain 1–15 UTF-8 bytes",Toast.LENGTH_LONG).show();return;}
+                sendRepeaterCommand(node,source,client,(guest?"set guest.password ":"password ")+value,true);
+            }).create();
+        dialog.setOnDismissListener(d->{password.setText("");again.setText("");});dialog.show();
+    }
+    private void sendRepeaterCommand(Node node,String source,ProtocolClient expected,String command,boolean privatePreview){
+        if(command.trim().isEmpty())return;
+        String lower=command.toLowerCase(Locale.ROOT);
+        boolean secret=privatePreview||lower.contains("password")||lower.contains("key")||lower.contains("secret");
+        new AlertDialog.Builder(this).setTitle("Send to "+nodeName(RadioProfile.MESHCORE,node)+"?")
+            .setMessage((secret?"Private command (hidden)":command)+"\n\nChanges affect this repeater. Radio or routing changes may interrupt remote access; some require reboot. One manual LoRa send, no automatic retry.")
+            .setNegativeButton("Cancel",null).setPositiveButton("Send",(d,w)->{
+                if(service!=null)service.administerRepeater(source,expected,node.id,command,false);
+                scheduleRefresh();}).show();
     }
 
     private void confirmRepeaterQuery(Node node,String source,
@@ -810,10 +909,8 @@ public final class MainActivity extends Activity {
         new AlertDialog.Builder(this)
             .setTitle(kind==McRemoteDiagnostics.Kind.STATUS?
                 "Request repeater status?":"Request repeater neighbors?")
-            .setMessage("This sends one manual LoRa request. FLOOD routing may cause "
-                +"several relay transmissions in the mesh.\n\n"
-                +"Limit: one request per repeater every 30 seconds, shared by status "
-                +"and neighbor pages. No automatic retries. A reply is not guaranteed.")
+            .setMessage("Sends one LoRa request; mesh relays may transmit. "
+                +"Requests share a 30-second limit. No automatic retry.")
             .setNegativeButton("Cancel",null)
             .setPositiveButton("Request",(d,w)->{
                 if(!source.equals(radio(RadioProfile.MESHCORE))||mcClient()!=expected){
