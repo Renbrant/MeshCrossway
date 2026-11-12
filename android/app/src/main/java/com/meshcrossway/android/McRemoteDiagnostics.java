@@ -81,7 +81,17 @@ final class McRemoteDiagnostics {
         }
     }
 
-    Result find(String fullKey){return entries.get(fullKey==null?"":fullKey.toLowerCase(Locale.ROOT));}
+    Result find(String fullKey){
+        if(fullKey==null)return null;
+        Result last=null;
+        for(Result result:entries.values())
+            if(fullKey.equalsIgnoreCase(result.fullKey))last=result;
+        return last;
+    }
+    Result find(String fullKey,Kind kind){
+        if(fullKey==null||kind==null)return null;
+        return entries.get(fullKey.toLowerCase(Locale.ROOT)+"|"+kind);
+    }
 
     /**
      * Request frames use the current firmware's CMD_SEND_BINARY_REQ (50).
@@ -115,7 +125,8 @@ final class McRemoteDiagnostics {
         System.arraycopy(Wire.unhex(key),0,raw,1,32);
         System.arraycopy(suffix,0,raw,33,suffix.length);
         Result entry=new Result(key,kind,offset,now);
-        entries.remove(key);entries.put(key,entry);
+        String entryKey=key+"|"+kind;
+        entries.remove(entryKey);entries.put(entryKey,entry);
         lastRequested.put(rateKey,now);
         while(entries.size()>MAX_RECORDS)entries.remove(entries.keySet().iterator().next());
         while(lastRequested.size()>MAX_RECORDS*2)lastRequested.remove(lastRequested.keySet().iterator().next());
