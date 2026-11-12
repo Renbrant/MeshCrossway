@@ -19,6 +19,7 @@ This change **does not retransmit historical messages** and does not add a backg
 - For **Rejected** or **Delivery unknown** messages, long-press and choose **Prepare as new draft (manual)**. The app first warns that sending again could create a duplicate; confirmation copies only the text into the composer. The user must edit/check the original radio, protocol, channel, target and hit **Send** separately.
 - A draft can only be prepared within the exact originating **network + radio + topic + channel-key identity + peer + channel slot + direct/group** context. The UI refuses to prepare it in a different chat/radio.
 - The copy operation resets stale reply/reaction targets and **never** changes the original message status. An existing draft is replaced only after explicit confirmation.
+- At the final confirmation, the app rechecks the most recent saved message state and radio selection; if a late ACK has arrived or the destination context changed while the warning was open, the copy action is refused.
 
 ## Storage and protocol boundary
 
