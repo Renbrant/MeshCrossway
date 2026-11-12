@@ -4,19 +4,19 @@
 
 **Two independent mesh networks. One Android app.** Use Meshtastic and MeshCore side by side, connecting to a separate Bluetooth radio for each network. Messages, identities and routing stay on their native networks; MeshCrossway does not bridge or relay between them.
 
-<p align="center"><a href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.2/MeshCrossway-0.4.2.apk"><strong>Download MeshCrossway Android 0.4.2 field beta APK</strong></a> · <a href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.2">Release notes and checksums</a> · <a href="https://meshcrossway.renbrant.com/android/">Installation guide</a></p>
+<p align="center"><a href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.3/MeshCrossway-0.4.3.apk"><strong>Download MeshCrossway Android 0.4.3 field beta APK</strong></a> · <a href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.3">Release notes and checksums</a> · <a href="https://meshcrossway.renbrant.com/android/">Installation guide</a></p>
 
 > **Public beta for testing — not version 1.0.0.** Requires Android 8.0+ on ARM64. Broader phone, radio and firmware compatibility is still being evaluated.
 
 ## Install and update
 
-1. Download the [public APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.2/MeshCrossway-0.4.2.apk) on your Android phone. No GitHub Actions login, ADB or ZIP file is needed.
+1. Download the [public APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.3/MeshCrossway-0.4.3.apk) on your Android phone. No GitHub Actions login, ADB or ZIP file is needed.
 2. Open it and allow your browser or file manager to install apps when Android asks.
 3. In MeshCrossway, connect one compatible Meshtastic radio and one compatible MeshCore radio over Bluetooth.
 
-**Updating an existing permanent-key installation (0.2.3 or newer):** Back up important local data, install 0.4.2 over the existing app and choose Update. It uses the same permanent release signing certificate, so local messages, settings, favorites, tracks and offline maps remain in place. Do not uninstall to update.
+**Updating an existing permanent-key installation (0.2.3 or newer):** Back up important local data, install 0.4.3 over the existing app and choose Update. It uses the same permanent release signing certificate, so local messages, settings, favorites, tracks and offline maps remain in place. Do not uninstall to update.
 
-**0.4.2 is an experimental field beta:** remote MeshCore status/neighbor queries require authorized real-repeater testing. Manual requests may use flood relay traffic and share a **30-second limit per repeater**, including neighbor pages and reconnects. Unexpected status replies now report their byte length for diagnosis, without exposing raw packets or inventing status values. There is no automatic polling, retry or cross-network bridging. The signed [0.4.0 beta remains available](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.0-stage1), but Android normally does not allow a direct downgrade from versionCode 36 to 35 or 34. See [0.4.2 release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.2).
+**0.4.3 is an experimental field beta:** remote status now parses recognized MeshCore fields from 60-byte replies and neighbor pages from validated record counts, following public official MeshCore protocol libraries. Owned-repeater acceptance remains pending. All requests stay manual with a 30-second shared limit, flood warning, no automatic retry and no cross-network bridging. The signed [0.4.0 beta remains available](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.0-stage1), but Android normally does not allow a direct downgrade from versionCode 37 to 36, 35 or 34. See [0.4.3 release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.3).
 
 Builds **0.2.2 and earlier** used temporary debug signing. If you still have local data on one of those builds, follow the [one-time signing migration and backup guide](https://github.com/Renbrant/MeshCrossway/blob/main/docs/android-permanent-signing-backup.md) before changing versions. Uninstalling deletes app data.
 
@@ -53,12 +53,13 @@ Android uses its own version sequence, independent of the embedded controller fi
 | **0.3.12** | Channel management for both networks, official links and QR camera/image import; previous beta |
 | **0.4.0** | Better Bluetooth signal freshness, LoRa reception charts and safer manual recovery; previous tested beta |
 | **0.4.1** | Experimental field beta: passive dual-network diagnostics, MeshCore repeater status and paginated neighbors with a five-minute request interval; previous beta |
-| **0.4.2** | Field diagnosis update: 30-second manual repeater interval, privacy-safe unsupported-response length, and automatic request-button countdown; current beta pending real-repeater acceptance |
+| **0.4.2** | 30-second manual repeater limit, safe response-length diagnostics and automatic cooldown countdown; previous signed beta |
+| **0.4.3** | Extensible 60-byte MeshCore status and counted neighbor-page decoding; current experimental beta, awaiting real-repeater acceptance |
 | **1.0.0** | First production release after an explicit acceptance decision |
 
 See [channel management and QR Codes](docs/android-channel-management.md).
 
-The current 0.4.2 field beta uses versionCode **36** and the permanent Android signing certificate (the previous signed 0.4.1 used versionCode 35). The old `android-v0.4.0` tag is a **historical mistakenly numbered beta** (versionCode 31), superseded by 0.3.11. The new, significant-update **Android 0.4.0** is identified by tag `android-v0.4.0-stage1` and versionCode **34**. For the previous tested beta, use the Stage 1 release, never the old tag; see the [numbering analysis and release history](docs/android-version-history.md).
+The current 0.4.3 field beta uses versionCode **37** and the permanent Android signing certificate (the previous signed 0.4.2 used versionCode 36). The old `android-v0.4.0` tag is a **historical mistakenly numbered beta** (versionCode 31), superseded by 0.3.11. The new, significant-update **Android 0.4.0** is identified by tag `android-v0.4.0-stage1` and versionCode **34**. For the previous tested beta, use the Stage 1 release, never the old tag; see the [numbering analysis and release history](docs/android-version-history.md).
 
 A functional recovery baseline is not a production guarantee. Send reproducible problems through [GitHub Issues](https://github.com/Renbrant/MeshCrossway/issues), including your phone, radio models and firmware versions.
 
