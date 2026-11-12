@@ -4,17 +4,19 @@
 
 **Two independent mesh networks. One Android app.** Use Meshtastic and MeshCore side by side, connecting to a separate Bluetooth radio for each network. Messages, identities and routing stay on their native networks; MeshCrossway does not bridge or relay between them.
 
-<p align="center"><a href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.0-stage1/MeshCrossway-0.4.0.apk"><strong>Download MeshCrossway Android 0.4.0 beta APK</strong></a> · <a href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.0-stage1">Release notes and checksums</a> · <a href="https://meshcrossway.renbrant.com/android/">Installation guide</a></p>
+<p align="center"><a href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.1/MeshCrossway-0.4.1.apk"><strong>Download MeshCrossway Android 0.4.1 field beta APK</strong></a> · <a href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.1">Release notes and checksums</a> · <a href="https://meshcrossway.renbrant.com/android/">Installation guide</a></p>
 
 > **Public beta for testing — not version 1.0.0.** Requires Android 8.0+ on ARM64. Broader phone, radio and firmware compatibility is still being evaluated.
 
 ## Install and update
 
-1. Download the [public APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.0-stage1/MeshCrossway-0.4.0.apk) on your Android phone. No GitHub Actions login, ADB or ZIP file is needed.
+1. Download the [public APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.1/MeshCrossway-0.4.1.apk) on your Android phone. No GitHub Actions login, ADB or ZIP file is needed.
 2. Open it and allow your browser or file manager to install apps when Android asks.
 3. In MeshCrossway, connect one compatible Meshtastic radio and one compatible MeshCore radio over Bluetooth.
 
-**Updating an existing permanent-key installation (0.2.3 or newer):** Install 0.4.0 over the existing app and choose Update. It uses the same permanent release signing certificate, so local messages, settings, favorites, tracks and offline maps remain in place. Do not uninstall to update.
+**Updating an existing permanent-key installation (0.2.3 or newer):** Back up important local data, install 0.4.1 over the existing app and choose Update. It uses the same permanent release signing certificate, so local messages, settings, favorites, tracks and offline maps remain in place. Do not uninstall to update.
+
+**0.4.1 is an experimental field beta:** remote MeshCore status/neighbor queries require authorized real-repeater testing. Requests are manual, may cause flood relay traffic and share a five-minute per-repeater limit; no automatic queries, retries or cross-network bridging. The signed [0.4.0 beta remains available](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.0-stage1), but Android normally does not allow a direct downgrade from versionCode 35 to 34. See [0.4.1 release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.1).
 
 Builds **0.2.2 and earlier** used temporary debug signing. If you still have local data on one of those builds, follow the [one-time signing migration and backup guide](https://github.com/Renbrant/MeshCrossway/blob/main/docs/android-permanent-signing-backup.md) before changing versions. Uninstalling deletes app data.
 
@@ -49,12 +51,13 @@ Android uses its own version sequence, independent of the embedded controller fi
 | **0.3.10** | MeshCore contact membership and reconnect verification fixes |
 | **0.3.11** | MeshCore announcements, channel management, contact filters and diagnostics; corrects the mistaken 0.4.0 number |
 | **0.3.12** | Channel management for both networks, official links and QR camera/image import; previous beta |
-| **0.4.0** | Better Bluetooth signal freshness, LoRa reception charts, message/outbox reliability and safer manual recovery; current beta |
+| **0.4.0** | Better Bluetooth signal freshness, LoRa reception charts and safer manual recovery; previous tested beta |
+| **0.4.1** | Experimental field beta: passive dual-network diagnostics, MeshCore repeater status and paginated neighbors by manual request with a five-minute per-repeater airtime guard, and recent Home outbox summary; current beta pending physical repeater acceptance |
 | **1.0.0** | First production release after an explicit acceptance decision |
 
 See [channel management and QR Codes](docs/android-channel-management.md).
 
-The old `android-v0.4.0` tag is a **historical mistakenly numbered beta** (versionCode 31), superseded by 0.3.11. The new, significant-update **Android 0.4.0** is identified by tag `android-v0.4.0-stage1` and versionCode **34**. Choose the new Stage 1 release, never the old tag; see the [numbering analysis and release history](docs/android-version-history.md).
+The published 0.4.1 beta uses versionCode **35** and the existing permanent Android signing certificate. The old `android-v0.4.0` tag is a **historical mistakenly numbered beta** (versionCode 31), superseded by 0.3.11. The new, significant-update **Android 0.4.0** is identified by tag `android-v0.4.0-stage1` and versionCode **34**. For the previous tested beta, use the Stage 1 release, never the old tag; see the [numbering analysis and release history](docs/android-version-history.md).
 
 A functional recovery baseline is not a production guarantee. Send reproducible problems through [GitHub Issues](https://github.com/Renbrant/MeshCrossway/issues), including your phone, radio models and firmware versions.
 
