@@ -4,17 +4,17 @@
 
 **Two independent mesh networks. One Android app.** Use Meshtastic and MeshCore side by side, connecting to a separate Bluetooth radio for each network. Messages, identities and routing stay on their native networks; MeshCrossway does not bridge or relay between them.
 
-<p align="center"><a href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.12/MeshCrossway-0.3.12.apk"><strong>Download MeshCrossway Android 0.3.12 beta APK</strong></a> · <a href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.3.12">Release notes and checksums</a> · <a href="https://meshcrossway.renbrant.com/android/">Installation guide</a></p>
+<p align="center"><a href="https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.0-stage1/MeshCrossway-0.4.0.apk"><strong>Download MeshCrossway Android 0.4.0 beta APK</strong></a> · <a href="https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.0-stage1">Release notes and checksums</a> · <a href="https://meshcrossway.renbrant.com/android/">Installation guide</a></p>
 
 > **Public beta for testing — not version 1.0.0.** Requires Android 8.0+ on ARM64. Broader phone, radio and firmware compatibility is still being evaluated.
 
 ## Install and update
 
-1. Download the [public APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.3.12/MeshCrossway-0.3.12.apk) on your Android phone. No GitHub Actions login, ADB or ZIP file is needed.
+1. Download the [public APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.0-stage1/MeshCrossway-0.4.0.apk) on your Android phone. No GitHub Actions login, ADB or ZIP file is needed.
 2. Open it and allow your browser or file manager to install apps when Android asks.
 3. In MeshCrossway, connect one compatible Meshtastic radio and one compatible MeshCore radio over Bluetooth.
 
-**Updating an existing permanent-key installation (0.2.3 or newer):** Install 0.3.12 over the existing app and choose Update. It uses the same permanent release signing certificate, so local messages, settings, favorites, tracks and offline maps remain in place. Do not uninstall to update.
+**Updating an existing permanent-key installation (0.2.3 or newer):** Install 0.4.0 over the existing app and choose Update. It uses the same permanent release signing certificate, so local messages, settings, favorites, tracks and offline maps remain in place. Do not uninstall to update.
 
 Builds **0.2.2 and earlier** used temporary debug signing. If you still have local data on one of those builds, follow the [one-time signing migration and backup guide](https://github.com/Renbrant/MeshCrossway/blob/main/docs/android-permanent-signing-backup.md) before changing versions. Uninstalling deletes app data.
 
@@ -28,7 +28,7 @@ Builds **0.2.2 and earlier** used temporary debug signing. If you still have loc
 - Compact Home with separate radio cards and measured Bluetooth RSSI for each phone-to-radio connection.
 - Optional HTTPS browser workspace on a private local Wi-Fi network. Remote Access is off by default.
 
-The signal bars and dBm value describe the **Bluetooth link between the phone and a radio**, not LoRa reception. Messages and tracks are stored locally. Optional account access is available from the toolbar. Basemap downloads need internet access, while native LoRa messages and previously downloaded maps can be used without cellular coverage. Do not expose Remote Access to the public internet.
+The Home signal bars and dBm value describe the **Bluetooth link between the phone and a radio**, not LoRa reception. Open a node's **Reception history** to see actual reported LoRa RSSI/SNR from saved messages when available; outgoing status now separates radio acceptance from peer acknowledgement and allows only manually confirmed retry drafts. Messages and tracks are stored locally. Optional account access is available from the toolbar. Basemap downloads need internet access, while native LoRa messages and previously downloaded maps can be used without cellular coverage. Do not expose Remote Access to the public internet.
 
 ## Version policy
 
@@ -48,13 +48,13 @@ Android uses its own version sequence, independent of the embedded controller fi
 | **0.3.9** | MeshCore settings and messaging corrections |
 | **0.3.10** | MeshCore contact membership and reconnect verification fixes |
 | **0.3.11** | MeshCore announcements, channel management, contact filters and diagnostics; corrects the mistaken 0.4.0 number |
-| **0.3.12** | Channel management for both networks, official links and QR camera/image import; current beta |
-| **0.3.13, 0.3.14, …** | Continue sequential revisions; no automatic minor-version bump |
+| **0.3.12** | Channel management for both networks, official links and QR camera/image import; previous beta |
+| **0.4.0** | Better Bluetooth signal freshness, LoRa reception charts, message/outbox reliability and safer manual recovery; current beta |
 | **1.0.0** | First production release after an explicit acceptance decision |
 
 See [channel management and QR Codes](docs/android-channel-management.md).
 
-The mistaken 0.4.0 remains available as a historical artifact. **0.3.11 replaces it and installs as a normal update**, using versionCode 32 instead of 31. See the [numbering analysis and release history](docs/android-version-history.md).
+The old `android-v0.4.0` tag is a **historical mistakenly numbered beta** (versionCode 31), superseded by 0.3.11. The new, significant-update **Android 0.4.0** is identified by tag `android-v0.4.0-stage1` and versionCode **34**. Choose the new Stage 1 release, never the old tag; see the [numbering analysis and release history](docs/android-version-history.md).
 
 A functional recovery baseline is not a production guarantee. Send reproducible problems through [GitHub Issues](https://github.com/Renbrant/MeshCrossway/issues), including your phone, radio models and firmware versions.
 
