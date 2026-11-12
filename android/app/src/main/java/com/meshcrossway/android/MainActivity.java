@@ -149,7 +149,12 @@ public final class MainActivity extends Activity {
                 key.append(':').append(session.verified).append(':').append(session.desired)
                     .append(':').append(session.phase).append(':').append(session.name)
                     .append(':').append(session.address).append(':')
-                    .append(session.rssiDbm).append(':').append(session.rssiCurrentLink);
+                    .append(session.rssiDbm).append(':').append(session.rssiCurrentLink)
+                    .append(':').append(session.rssiMeasuredAtMs)
+                    .append(':').append(session.rssiMeasuredAtMs>0?
+                        Math.max(0,(System.currentTimeMillis()-session.rssiMeasuredAtMs)/60000):-1)
+                    .append(':').append(BleSignal.live(session.verified,session.rssiCurrentLink,
+                        session.rssiMeasuredAtMs,System.currentTimeMillis()));
                 if(session.client!=null)key.append(':').append(session.client.mtRevision);
             }
         }
@@ -363,14 +368,19 @@ public final class MainActivity extends Activity {
     /** Four BLE bars reflect measured phone-to-radio RSSI, never a LoRa signal report. */
     private void signalIndicator(LinearLayout tile,RadioService.Session session,int accent){
         final int rssi=session==null?BleSignal.UNKNOWN:session.rssiDbm;
-        final boolean current=session!=null&&session.verified&&session.rssiCurrentLink;
-        final int bars=BleSignal.bars(rssi);
+        final long measuredAt=session==null?0:session.rssiMeasuredAtMs;
+        final long now=System.currentTimeMillis();
+        final boolean valid=BleSignal.valid(rssi)&&BleSignal.recent(measuredAt,now);
+        final boolean current=session!=null&&valid&&BleSignal.live(
+                session.verified,session.rssiCurrentLink,measuredAt,now);
+        final int bars=valid?BleSignal.bars(rssi):0;
+        final String readingLabel=BleSignal.label(rssi,current,measuredAt,now);
         LinearLayout indicator=row();
         indicator.setGravity(Gravity.BOTTOM|Gravity.START);
         indicator.setPadding(0,dp(9),0,0);
         for(int index=0;index<4;index++){
             View bar=new View(this);
-            int color=!BleSignal.valid(rssi)?PANEL2:
+            int color=!valid?PANEL2:
                 index<bars?(current?accent:MUTED):PANEL2;
             GradientDrawable shape=new GradientDrawable();
             shape.setColor(color);
@@ -381,14 +391,14 @@ public final class MainActivity extends Activity {
             params.rightMargin=dp(3);
             indicator.addView(bar,params);
         }
-        TextView reading=text(BleSignal.label(rssi,current),11,MUTED);
+        TextView reading=text(readingLabel,11,MUTED);
         reading.setMaxLines(1);
         reading.setEllipsize(android.text.TextUtils.TruncateAt.END);
         LinearLayout.LayoutParams textParams=new LinearLayout.LayoutParams(0,dp(19),1);
         textParams.leftMargin=dp(5);
         indicator.addView(reading,textParams);
         indicator.setContentDescription("Bluetooth signal. "+
-            BleSignal.label(rssi,current)+". "+bars+" of four bars.");
+            readingLabel+". "+bars+" of four bars. "+(current?"Current link.":"Cached or unavailable."));
         tile.addView(indicator);
     }
     private void openDashboardNetwork(RadioProfile profile,int destination){
@@ -651,7 +661,7 @@ public final class MainActivity extends Activity {
                 .setNegativeButton("Cancel",null).show();
     }
 
-    private void messageDetails(RadioProfile network,String sourceRadio,Message message){RxInfo rx=message.rx;LinearLayout details=column();details.setPadding(dp(20),dp(12),dp(20),dp(16));details.addView(text(network.title+" · "+message.sender,17,WHITE));details.addView(text(when(message.timestamp),12,MUTED));space(details,12);details.addView(text(rx.summary(),14,network==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC));space(details,14);details.addView(text("Received path",17,WHITE));
+    private void messageDetails(RadioProfile network,String sourceRadio,Message message){RxInfo rx=message.rx;LinearLayout details=column();details.setPadding(dp(20),dp(12),dp(20),dp(16));details.addView(text(network.title+" · "+message.sender,17,WHITE));details.addView(text(when(message.timestamp),12,MUTED));space(details,12);details.addView(text(rx.summary(),14,network==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC));space(details,6);details.addView(text("Source: "+rx.provenance(),12,MUTED));space(details,6);details.addView(text("Historical message metadata — not a live reachability or end-to-end link measurement.",12,MUTED));space(details,14);details.addView(text("Received path",17,WHITE));
         if(rx.observed){details.addView(text("Observed channel copy · "+rx.width+"-byte repeater hashes",12,MUTED));details.addView(text("Sender: "+message.sender,14,WHITE));for(int i=0;i<rx.path.length();i+=rx.width*2){String hash=rx.path.substring(i,i+rx.width*2);ArrayList<Node> matches=new ArrayList<>();if(radio(network).equals(sourceRadio))for(Node node:snapshot(network).nodes)if(node.id.startsWith(hash))matches.add(node);String name=matches.isEmpty()?"Unknown repeater":matches.size()==1?(matches.get(0).name.isEmpty()?"Saved contact":matches.get(0).name):"Ambiguous · "+matches.size()+" saved contacts";TextView hop=text((i/(rx.width*2)+1)+". "+name+"  ["+hash+"]",14,WHITE);hop.setPadding(0,dp(6),0,dp(6));details.addView(hop);}if(rx.path.isEmpty())details.addView(text("No repeaters in this observed flood path",14,WHITE));details.addView(text("Receiver: this radio",14,WHITE));space(details,12);details.addView(text("Names are matches to saved contacts, not unique proof of identity. This is one observed copy; repeats may take other routes.",12,MUTED));}
         else details.addView(text(network==RadioProfile.MESHCORE?"The radio reports the hop count for flood messages, but this message has no captured full path. Older backlog, direct routing and private messages may not include repeater identities.":"Meshtastic text packets do not contain a complete repeater list. A new traceroute would measure a new route, not the path this message travelled.",14,MUTED));
         if(network==RadioProfile.MESHTASTIC&&rx.relay>=0&&rx.relay<=255){String hash=String.format(Locale.ROOT,"%02x",rx.relay);ArrayList<String> names=new ArrayList<>();if(radio(network).equals(sourceRadio))for(Node node:snapshot(network).nodes)if((Long.parseLong(node.id)&255)==rx.relay)names.add(nodeName(network,node));space(details,10);details.addView(text("Reported relay suffix: "+hash+(names.size()==1?" · "+names.get(0):names.size()>1?" · ambiguous ("+names.size()+" contacts)":" · unknown contact"),13,MUTED));}if(rx.mqtt)details.addView(text("MQTT was used somewhere along this packet's route.",13,MUTED));ScrollView scroll=new ScrollView(this);scroll.addView(details);new AlertDialog.Builder(this).setTitle("Message details").setView(scroll).setPositiveButton("Back",null).show();}
