@@ -316,6 +316,13 @@ public final class RadioService extends Service {
                 .putLong(key.toLowerCase(java.util.Locale.ROOT),System.currentTimeMillis()).apply();
         });
     }
+    String saveRepeaterSetting(String radio,ProtocolClient expected,String key,McRepeaterSettings.Field field,String value){
+        Session s=sessions.get(RadioProfile.MESHCORE);
+        if(s==null||!s.address.equals(radio)||!s.connected||!s.verified||s.client!=expected)
+            return "Radio changed or disconnected; reopen the repeater";
+        try{expected.saveRepeaterSetting(key,field,value,now());expected.mcError="";advance(s);changed();return "";}
+        catch(IllegalArgumentException error){return error.getMessage();}
+    }
     void configureMeshCore(String radio,java.util.function.Consumer<ProtocolClient> action){
         Session s=sessions.get(RadioProfile.MESHCORE);
         if(s==null||!s.address.equals(radio)||!s.connected||!s.verified||s.client==null){
@@ -351,7 +358,7 @@ public final class RadioService extends Service {
     }
     private void advance(Session s){
         if(!running||!s.transportReady||s.gatt==null||s.client==null||s.persisting||s.rssiPending||s.active!=null||!s.queue.isEmpty()||now()<s.nextWriteAt)return;
-        try{long revision=s.client.admin.revision;ProtocolClient.Command command=s.client.next(now());if(s.client.admin.revision!=revision)changed();if(command!=null)enqueue(s,2,command.data);}
+        try{long revision=s.client.admin.revision,mcRevision=s.client.mcRevision;ProtocolClient.Command command=s.client.next(now());if(s.client.admin.revision!=revision||s.client.mcRevision!=mcRevision)changed();if(command!=null)enqueue(s,2,command.data);}
         catch(IllegalArgumentException e){close(s,e.getMessage());}
     }
     private void arm(Session s,String reason){arm(s,reason,30000);}

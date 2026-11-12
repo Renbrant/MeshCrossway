@@ -15,6 +15,7 @@ final class ProtocolClient {
     final McAdmin mcAdmin;
     final McRemoteDiagnostics mcRemote=new McRemoteDiagnostics();
     final McRepeaterAdmin mcRepeaterAdmin=new McRepeaterAdmin();
+    final McRepeaterSettings mcRepeaterSettings=new McRepeaterSettings();
     final LinkedHashMap<String,Node> mcDiscoveries=new LinkedHashMap<>();
     final LinkedHashMap<Long,Sent> mcLateSent=new LinkedHashMap<>();
     final Set<String> mcSyncKeys=new HashSet<>(),mcSyncDeleted=new HashSet<>(),mcFailedReads=new HashSet<>(),mcDeferredContacts=new LinkedHashSet<>();
@@ -48,6 +49,7 @@ final class ProtocolClient {
         long adminVersion=mcRepeaterAdmin.revision;
         mcRepeaterAdmin.tick(now);
         if(adminVersion!=mcRepeaterAdmin.revision){
+            if(!mcRepeaterAdmin.pending&&!mcRepeaterAdmin.admin)mcRepeaterSettings.interrupted();
             commands.removeIf(command->{if(!command.repeaterAdmin)return false;Arrays.fill(command.data,(byte)0);return true;});
             mcRevision++;
         }
@@ -68,6 +70,7 @@ final class ProtocolClient {
 
         if(profile==RadioProfile.MESHCORE&&ready&&(mcAdmin.edit==null||mcAdmin.edit.deadline==Long.MAX_VALUE)&&!mcDeferredContacts.isEmpty()&&commands.size()<8){String id=mcDeferredContacts.iterator().next();mcDeferredContacts.remove(id);requestMcContact(id);}
         if(profile==RadioProfile.MESHCORE&&ready&&(mcAdmin.edit==null||mcAdmin.edit.deadline==Long.MAX_VALUE)&&!mcDeferredChannels.isEmpty()&&commands.size()<8){int slot=mcDeferredChannels.iterator().next();mcDeferredChannels.remove(slot);requestMcChannel(slot);}
+        if(profile==RadioProfile.MESHCORE&&ready)advanceRepeaterSettings(now);
         if(profile==RadioProfile.MESHCORE&&ready&&commands.isEmpty()&&(waiting||now-lastPoll>=20000)){waiting=false;lastPoll=now;queue(new byte[]{10},10,"");}
         if(profile==RadioProfile.MESHTASTIC&&ready&&commands.isEmpty()&&now-lastWrite>=30000)queue(new Wire.Out().bytes(7,Wire.EMPTY).array(),-1,"");
         if(commands.isEmpty())return null;active=commands.remove();active.deadline=now+30000;return active;
@@ -231,7 +234,7 @@ final class ProtocolClient {
                 mcStatus=mcDiscoveries.containsKey(id)?"Discovery checked — approval required":"Contact is no longer in the radio contact list";mcRevision++;return;
             }
             if(current.mcEdit!=null){mcAdmin.clock=now;mcAdmin.reply(current.mcEdit,current.mcVerification,data);return;}
-            if(current.repeaterAdmin){mcRepeaterAdmin.rejected();mcRevision++;return;}
+            if(current.repeaterAdmin){mcRepeaterAdmin.rejected();mcRepeaterSettings.interrupted();mcRevision++;return;}
             if(command==McRemoteDiagnostics.CMD_BINARY){mcRemote.rejected(data.length>1?data[1]&255:code);mcRevision++;return;}
             if(command==31&&data.length>=2&&data[1]==2&&!ready){nextMcChannel();return;}
             if(!ready)throw Wire.bad("MeshCore rejected bootstrap command "+command);
@@ -299,7 +302,7 @@ final class ProtocolClient {
             String prefix=Wire.hex(Arrays.copyOfRange(data,start,start+6));
             boolean repeaterReply=type==1;
             for(Node known:nodes.values())if(RepeaterInventory.isRepeater(known)&&known.id.startsWith(prefix))repeaterReply=true;
-            if(repeaterReply){mcRepeaterAdmin.cliResponse(data,start,offset,now);mcRevision++;return;}
+            if(repeaterReply){if(mcRepeaterAdmin.cliResponse(data,start,offset,now))mcRepeaterSettings.received(mcRepeaterAdmin.reply,now);mcRevision++;return;}
         }if(type!=0&&type!=2)return;if(offset>data.length)throw Wire.bad("Truncated signed message");
         Message m=new Message();m.rx=RxInfo.meshcore(data[start+(group?1:6)]&255);if(v3)m.rx.snr=data[1]/4.0;m.group=group;m.timestamp=Wire.u32(data,start+meta);if(m.timestamp<1577836800L)m.timestamp=System.currentTimeMillis()/1000;m.body=Wire.utf8(Arrays.copyOfRange(data,offset,data.length));if(m.body.isEmpty())return;
         if(group){m.slot=data[start]&255;Channel c=channels.get(m.slot);if(c==null||!c.enabled)return;m.topic=c.topic();m.title=c.name;m.identity=c.identity;int colon=m.body.indexOf(": ");m.sender=colon>0&&colon<40?m.body.substring(0,colon):"Channel participant";}
@@ -342,15 +345,31 @@ final class ProtocolClient {
         if(mcRemote.pending!=null||mcAdmin.edit!=null||commands.size()>=8)
             throw Wire.bad("Finish the pending radio operation first");
         Node node=nodes.get(key);
+        if(login)mcRepeaterSettings.resetLogin(key);
         byte[] packet=login?mcRepeaterAdmin.login(node,nodes.values(),value,now,payloadLimit):
             mcRepeaterAdmin.command(node,nodes.values(),value,now,System.currentTimeMillis()/1000,payloadLimit);
         queue(packet,6,"");commands.peekLast().repeaterAdmin=true;mcRevision++;
     }
 
+    private void advanceRepeaterSettings(long now){
+        if(active!=null||!commands.isEmpty()||!mcBacklogDrained||mcAdmin.edit!=null||mcRemote.pending!=null||mcRepeaterAdmin.pending
+                ||!mcRepeaterAdmin.authorized(mcRepeaterSettings.key,now))return;
+        McRepeaterSettings.Operation op=mcRepeaterSettings.next(now);
+        if(op==null)return;
+        try{administerRepeater(op.key,op.command,false,now);mcRepeaterSettings.dispatched(op);}
+        catch(IllegalArgumentException error){mcRepeaterSettings.interrupted();mcError=error.getMessage();mcRevision++;}
+    }
+    void saveRepeaterSetting(String key,McRepeaterSettings.Field field,String value,long now){
+        if(!mcRepeaterSettings.visible||!mcRepeaterSettings.key.equals(key))throw Wire.bad("Reopen this repeater's settings");
+        McRepeaterSettings.Operation op=mcRepeaterSettings.edit(field,value,now);
+        administerRepeater(key,op.command,false,now);
+        mcRepeaterSettings.dispatched(op);
+    }
+
     void clearRepeaterAdministration(){
         if(active!=null&&active.repeaterAdmin)Arrays.fill(active.data,(byte)0);
         for(Command command:commands)if(command.repeaterAdmin)Arrays.fill(command.data,(byte)0);
-        mcRepeaterAdmin.forget();
+        mcRepeaterAdmin.forget();mcRepeaterSettings.clear();
     }
 
     boolean mcSupportsStats(){return firmwareCode>=8;}
