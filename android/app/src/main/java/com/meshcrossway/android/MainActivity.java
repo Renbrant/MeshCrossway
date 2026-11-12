@@ -451,7 +451,7 @@ public final class MainActivity extends Activity {
         LinearLayout chats=dashboardRow();
         for(RadioProfile profile:RadioProfile.values()){
             Snapshot data=snapshot(profile);
-            String outgoing=OutgoingStatus.counts(data).brief();
+            String outgoing=OutgoingStatus.homeBrief(data,System.currentTimeMillis()/1000);
             dashboardTile(chats,profile==RadioProfile.MESHTASTIC?"MT · CHATS":"MC · CHATS",
                 data.unread()+" unread",outgoing.isEmpty()?latestPreview(data):outgoing+" · "+latestPreview(data),
                 profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
@@ -521,7 +521,7 @@ public final class MainActivity extends Activity {
                 .append("Awaiting send / peer ACK: ").append(c.pending).append("\n")
                 .append("Unknown or rejected: ").append(c.review).append("\n\n");
         }
-        info.append("Counts reflect only recently loaded saved messages. Radio acceptance is not a peer ACK; a peer ACK is not a read receipt.\n\n")
+        info.append("These counts include older stored messages, which do not necessarily require action. Unknown group delivery does not mean a packet failed. Radio acceptance is not a peer ACK; a peer ACK is not a read receipt.\n\n")
             .append("For a message with an unknown/rejected outcome: open its original conversation, long-press the outgoing message, and choose Prepare as new draft. ")
             .append("You must review and tap Send separately. Sending again may create a duplicate.");
         new AlertDialog.Builder(this).setTitle("Outbox & delivery status")
