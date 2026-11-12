@@ -84,6 +84,31 @@ final class OutgoingStatus {
         return new Counts(pending,review);
     }
 
+    /** Home only: show recent actionable send states, not an alarm for all old broadcasts. */
+    static String homeBrief(Snapshot snapshot,long nowSeconds){
+        if(snapshot==null)return "";
+        final long windowSeconds=15*60L;
+        int awaiting=0,attention=0;
+        for(Message message:snapshot.messages){
+            if(message==null||!message.outgoing||message.timestamp<=0
+                    ||message.timestamp>nowSeconds+60L
+                    ||nowSeconds-message.timestamp>windowSeconds)continue;
+            if(pending(message))awaiting++;
+            else if("rejected".equals(message.state)
+                    ||(!message.group&&"uncertain".equals(message.state)))attention++;
+            // An unknown historical/broadcast outcome is not a recipient ACK
+            // failure and should not dominate the main Home card.
+        }
+        if(awaiting==0&&attention==0)return "";
+        StringBuilder brief=new StringBuilder("Recent: ");
+        if(awaiting>0)brief.append(awaiting).append(" awaiting confirmation");
+        if(attention>0){
+            if(awaiting>0)brief.append(" · ");
+            brief.append(attention).append(" failed/unknown direct");
+        }
+        return brief.toString();
+    }
+
     static String label(Message message){
         if(message==null||!message.outgoing)return "";
         switch(message.state){
