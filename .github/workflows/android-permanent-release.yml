@@ -14,7 +14,7 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.4.2'
+        default: '0.4.3'
         type: string
 permissions:
   contents: write
@@ -90,7 +90,7 @@ jobs:
       - name: Verify requested version and permanent signing credentials
         shell: bash
         env:
-          REQUESTED: ${{ inputs.version || '0.4.2' }}
+          REQUESTED: ${{ inputs.version || '0.4.3' }}
         run: |
           set -euo pipefail
           [[ "$REQUESTED" =~ ^0\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version"; exit 1; }
@@ -169,6 +169,9 @@ jobs:
           elif [ "$REQUESTED" = "0.4.2" ]; then
             cp docs/android-release-notes-0.4.2.md release-notes.md
             RELEASE_TITLE="Android 0.4.2 field beta — MeshCore repeater response diagnostics"
+          elif [ "$REQUESTED" = "0.4.3" ]; then
+            cp docs/android-release-notes-0.4.3.md release-notes.md
+            RELEASE_TITLE="Android 0.4.3 beta — MeshCore repeater protocol compatibility"
           else
             RELEASE_TITLE="Android $REQUESTED beta"
             cat > release-notes.md <<EOF
