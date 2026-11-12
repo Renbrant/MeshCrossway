@@ -513,7 +513,61 @@ public final class MainActivity extends Activity {
     private String distanceText(Node n){double meters=nodeDistance(n);return Double.isFinite(meters)?String.format(Locale.ROOT," · %.1f km · %03.0f° %s",meters/1000,FieldTools.bearing(position.location.getLatitude(),position.location.getLongitude(),n.lat,n.lon),FieldTools.direction(FieldTools.bearing(position.location.getLatitude(),position.location.getLongitude(),n.lat,n.lon))):"";}
     private String nodeName(RadioProfile p,Node n){if(!n.name.isEmpty())return n.name;return p==RadioProfile.MESHTASTIC?String.format(Locale.ROOT,"!%08x",Long.parseLong(n.id)):n.id.substring(0,Math.min(12,n.id.length()));}
     private String mcContactState(Node n){return McContacts.label(n,mcClient());}
-    private void nodeDetails(RadioProfile p,Node n){String source=radio(p);ProtocolClient mcBound=p==RadioProfile.MESHCORE?mcClient():null;boolean favorite=snapshot(p).flags("node",n.id).favorite;ArrayList<String> actions=new ArrayList<>(Arrays.asList("Node information","Message",favorite?"Remove favorite":"Add favorite"));if(p==RadioProfile.MESHCORE){ProtocolClient live=mcClient();if(live!=null&&live.nodes.containsKey(n.id))actions.add("Remove from radio contacts");else if(!n.mcRaw.isEmpty())actions.add("Approve contact on radio");}if(n.position){actions.add("Show on map");actions.add("Distance and bearing");}if(p==RadioProfile.MESHTASTIC)actions.add("Metrics & radio tools");new AlertDialog.Builder(this).setTitle(p.title+" · "+nodeName(p,n)).setItems(actions.toArray(new String[0]),(dialog,index)->{String action=actions.get(index);if(index==0)new AlertDialog.Builder(this).setTitle(nodeName(p,n)).setMessage(p.title+"\n"+n.id+(p==RadioProfile.MESHCORE?"\nLast activity/update: ":"\nLast heard: ")+when(n.heard)+distanceText(n)+(n.battery>=0?"\nBattery: "+n.battery+"%":"")+(p==RadioProfile.MESHCORE?"\nRadio contact: "+mcContactState(n):"")+(p==RadioProfile.MESHTASTIC?"\nShort name: "+n.shortName+"\nHardware: "+MtLora.hardwareName(n.hardwareModel)+"\nRole: "+n.role+"\nStatus: "+n.status:"")+(n.position?String.format(Locale.ROOT,"\nPosition: %.6f, %.6f",n.lat,n.lon):"")).setPositiveButton("Back",null).show();else if(index==1){if(n.unmessagable||(p==RadioProfile.MESHCORE&&(n.type!=1||mcClient()==null||!mcClient().nodes.containsKey(n.id))))Toast.makeText(this,"Choose an approved, synchronized client contact",Toast.LENGTH_LONG).show();else openChat(p,source,Target.node(n));}else if(index==2&&service!=null)service.history.flag(p,source,"node",n.id,"favorite",!favorite);else if(action.equals("Show on map"))showMap(n.lat,n.lon);else if(action.equals("Distance and bearing"))navigateTo(nodeName(p,n),n.lat,n.lon);else if(action.equals("Metrics & radio tools"))mtNodeMetrics(n);else if(action.equals("Approve contact on radio"))new AlertDialog.Builder(this).setTitle("Approve this contact?").setMessage("Add "+nodeName(p,n)+" to the connected MeshCore radio. The result will be checked on the radio.").setPositiveButton("Approve",(d,w)->mcCommandFor(mcBound,client->client.approveMcContact(n))).setNegativeButton("Cancel",null).show();else if(action.equals("Remove from radio contacts"))new AlertDialog.Builder(this).setTitle("Remove this radio contact?").setMessage("Saved message history stays on the phone. The contact will no longer be approved on this radio.").setPositiveButton("Remove",(d,w)->mcCommandFor(mcBound,client->client.removeMcContact(n.id))).setNegativeButton("Cancel",null).show();}).setNegativeButton("Back",null).show();}
+    private void nodeDetails(RadioProfile p,Node n){String source=radio(p);ProtocolClient mcBound=p==RadioProfile.MESHCORE?mcClient():null;boolean favorite=snapshot(p).flags("node",n.id).favorite;ArrayList<String> actions=new ArrayList<>(Arrays.asList("Node information","Message",favorite?"Remove favorite":"Add favorite"));if(p==RadioProfile.MESHCORE){ProtocolClient live=mcClient();if(live!=null&&live.nodes.containsKey(n.id))actions.add("Remove from radio contacts");else if(!n.mcRaw.isEmpty())actions.add("Approve contact on radio");}if(n.position){actions.add("Show on map");actions.add("Distance and bearing");}if(p==RadioProfile.MESHTASTIC)actions.add("Metrics & radio tools");actions.add("Reception history");new AlertDialog.Builder(this).setTitle(p.title+" · "+nodeName(p,n)).setItems(actions.toArray(new String[0]),(dialog,index)->{String action=actions.get(index);if(index==0)new AlertDialog.Builder(this).setTitle(nodeName(p,n)).setMessage(p.title+"\n"+n.id+(p==RadioProfile.MESHCORE?"\nLast activity/update: ":"\nLast heard: ")+when(n.heard)+distanceText(n)+(n.battery>=0?"\nBattery: "+n.battery+"%":"")+(p==RadioProfile.MESHCORE?"\nRadio contact: "+mcContactState(n):"")+(p==RadioProfile.MESHTASTIC?"\nShort name: "+n.shortName+"\nHardware: "+MtLora.hardwareName(n.hardwareModel)+"\nRole: "+n.role+"\nStatus: "+n.status:"")+(n.position?String.format(Locale.ROOT,"\nPosition: %.6f, %.6f",n.lat,n.lon):"")).setPositiveButton("Back",null).show();else if(index==1){if(n.unmessagable||(p==RadioProfile.MESHCORE&&(n.type!=1||mcClient()==null||!mcClient().nodes.containsKey(n.id))))Toast.makeText(this,"Choose an approved, synchronized client contact",Toast.LENGTH_LONG).show();else openChat(p,source,Target.node(n));}else if(index==2&&service!=null)service.history.flag(p,source,"node",n.id,"favorite",!favorite);else if(action.equals("Show on map"))showMap(n.lat,n.lon);else if(action.equals("Distance and bearing"))navigateTo(nodeName(p,n),n.lat,n.lon);else if(action.equals("Metrics & radio tools"))mtNodeMetrics(n);else if(action.equals("Reception history"))showReceptionHistory(p,source,n);else if(action.equals("Approve contact on radio"))new AlertDialog.Builder(this).setTitle("Approve this contact?").setMessage("Add "+nodeName(p,n)+" to the connected MeshCore radio. The result will be checked on the radio.").setPositiveButton("Approve",(d,w)->mcCommandFor(mcBound,client->client.approveMcContact(n))).setNegativeButton("Cancel",null).show();else if(action.equals("Remove from radio contacts"))new AlertDialog.Builder(this).setTitle("Remove this radio contact?").setMessage("Saved message history stays on the phone. The contact will no longer be approved on this radio.").setPositiveButton("Remove",(d,w)->mcCommandFor(mcBound,client->client.removeMcContact(n.id))).setNegativeButton("Cancel",null).show();}).setNegativeButton("Back",null).show();}
+    /** User-requested history only: no LoRa queries, BLE polls, or background charts. */
+    private void showReceptionHistory(RadioProfile network,String sourceRadio,Node node){
+        if(service==null)return;
+        final String name=nodeName(network,node);
+        service.history.receptionHistory(network,sourceRadio,node.id,samples->{
+            if(isFinishing()||isDestroyed())return;
+            LinearLayout details=column();
+            details.setPadding(dp(16),dp(12),dp(16),dp(16));
+            details.addView(text(name,17,WHITE));
+            details.addView(text(network.title+" · saved incoming messages for this radio",12,MUTED));
+            space(details,12);
+            details.addView(text("Historical packet metadata, not a live link measurement. Times are message timestamps and may be affected by a radio clock or backlog.",12,MUTED));
+            space(details,10);
+            if(samples.isEmpty()){
+                details.addView(text("No attributable RF samples in recent saved messages.",15,WHITE));
+                space(details,8);
+                details.addView(text("Only actual reported metrics are included. MeshCore group display names and ambiguous direct-contact prefixes are not proof of a sender identity.",12,MUTED));
+            }else{
+                int rssiCount=0,snrCount=0,hopsCount=0;
+                for(RfHistory.Sample s:samples){
+                    if(s.hasRssi())rssiCount++;
+                    if(s.hasSnr())snrCount++;
+                    if(s.hasHops())hopsCount++;
+                }
+                details.addView(text(samples.size()+" samples · "+rssiCount+" RSSI · "+snrCount+" SNR · "+hopsCount+" with hop count",13,WHITE));
+                space(details,14);
+                int accent=network==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC;
+                if(rssiCount>0){
+                    details.addView(text("LoRa RSSI (dBm) · older → newer",14,accent));
+                    RfHistoryChart chart=new RfHistoryChart(this,samples,false,accent);
+                    details.addView(chart,new LinearLayout.LayoutParams(-1,dp(166)));
+                }
+                if(snrCount>0){
+                    details.addView(text("Reported SNR (dB) · older → newer",14,accent));
+                    RfHistoryChart chart=new RfHistoryChart(this,samples,true,accent);
+                    details.addView(chart,new LinearLayout.LayoutParams(-1,dp(166)));
+                }
+                space(details,8);
+                details.addView(text("Recent message samples",15,WHITE));
+                for(int i=samples.size()-1;i>=Math.max(0,samples.size()-12);i--){
+                    RfHistory.Sample sample=samples.get(i);
+                    space(details,7);
+                    details.addView(text(when(sample.messageTime)+" · "+sample.metrics(),12,WHITE));
+                    details.addView(text(sample.provenance,11,MUTED));
+                }
+                space(details,10);
+                details.addView(text("Showing up to "+RfHistory.DISPLAY_LIMIT+" eligible samples from the most recent "+RfHistory.SCAN_LIMIT+" saved incoming messages. Missing metrics and unsupported sender identities remain unavailable; no synthetic measurements are generated.",12,MUTED));
+            }
+            ScrollView view=new ScrollView(this);view.addView(details);
+            new AlertDialog.Builder(this).setTitle("LoRa reception history")
+                    .setView(view).setPositiveButton("Back",null).show();
+        });
+    }
+
     private void mtNodeMetrics(Node saved){ProtocolClient c=mtClient();Node live=c==null?null:c.nodes.get(saved.id);Node n=live==null?saved:live;StringBuilder content=new StringBuilder("Latest reported values\n");for(Map.Entry<String,String> entry:n.metrics.entrySet())content.append("\n").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");if(n.metrics.isEmpty())content.append("No telemetry received yet.\n");content.append("\nRecent samples\n");for(int i=n.metricHistory.size()-1;i>=0;i--)content.append(n.metricHistory.get(i)).append("\n\n");TextView data=text(content.toString(),13,WHITE);data.setPadding(dp(18),dp(12),dp(18),dp(12));ScrollView scroll=new ScrollView(this);scroll.addView(data);new AlertDialog.Builder(this).setTitle(nodeName(RadioProfile.MESHTASTIC,n)).setView(scroll).setPositiveButton("Request telemetry",(d,w)->mtCommand(client->client.requestMtMetrics(n.id,false))).setNeutralButton("Traceroute",(d,w)->mtConfirm("Request a new traceroute",false,()->mtCommand(client->client.requestMtMetrics(n.id,true)))).setNegativeButton("Back",null).show();}
     void showMap(double lat,double lon){mapFocus=new org.maplibre.android.geometry.LatLng(lat,lon);page(4);}
     private void conversationOptions(RadioProfile p,String radio,Target target){Flags flags=snapshot(p).flags("chat",target.topic);new AlertDialog.Builder(this).setTitle(p.title+" · "+target.title).setItems(new String[]{flags.pinned?"Unpin conversation":"Pin conversation",flags.muted?"Unmute notifications":"Mute notifications"},(d,index)->{if(service!=null)service.history.flag(p,radio,"chat",target.topic,index==0?"pinned":"muted",index==0?!flags.pinned:!flags.muted);}).setNegativeButton("Close",null).show();}
