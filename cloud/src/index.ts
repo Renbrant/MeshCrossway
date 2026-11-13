@@ -170,7 +170,8 @@ async function handleMessages(request: Request, env: Env, userId: string): Promi
       WHERE messages.sender IS NOT excluded.sender OR messages.title IS NOT excluded.title OR messages.body IS NOT excluded.body OR messages.outgoing IS NOT excluded.outgoing OR messages.is_read<excluded.is_read OR messages.peer IS NOT excluded.peer OR messages.identity_hash IS NOT excluded.identity_hash OR messages.slot IS NOT excluded.slot OR messages.is_group IS NOT excluded.is_group OR messages.state IS NOT excluded.state OR messages.rx_meta IS NOT excluded.rx_meta`)
       .bind(userId, message.network, message.conversationId, message.messageId, message.sentAt, message.sender, message.title || "", message.body, message.outgoing ? 1 : 0, message.read ? 1 : 0,
         message.peer || "", message.identity || "", message.slot || 0, message.group ? 1 : 0, message.state || (message.outgoing ? "radio accepted" : "received"), message.rxMeta || "{}",
-        cutoff, message.sentAt, userId, message.network, message.conversationId));
+        // Recent messages pass this cutoff; expired ones are retained only for favorites.
+        message.sentAt, cutoff, userId, message.network, message.conversationId));
   }
   // Old non-favorite messages are pruned; favorites retain their complete conversation.
   statements.push(env.DB.prepare(`DELETE FROM messages WHERE user_id=? AND sent_at<? AND NOT EXISTS(
