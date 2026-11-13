@@ -28,13 +28,14 @@ public final class MainActivity extends Activity {
     private RadioService service;private LinearLayout root,body,nav,results;private ScrollView scroll;private EditText composer,search;private TextView count,chatStatus;private Button sendButton;
     private int selected,filter,listLimit=100,chatLimit=100,nodeOrder;private boolean favoritesOnly,unreadOnly,pinnedOnly,resumed,refreshQueued;
     private TrackService trackService;private boolean tracksBound;private Intent pendingTrack;private String exportingTrack="";private int nodeType;
-    private boolean backupBusy;
-    private String settingsSection="";private RadioProfile settingsRadio;private final ArrayDeque<Screen> backStack=new ArrayDeque<>();private final HashMap<String,Integer> scrollPositions=new HashMap<>();private String renderedRoute="";private LinearLayout header;private boolean rendering;private String settingsFingerprint="",homeFingerprint="";private final HashMap<Integer,String> pageQueries=new HashMap<>();
+    private boolean backupBusy;private int mcContactFilter;private LinearLayout mcContactTabs;private String pendingMtChannelLink="";private String pendingChannelLink="",pendingDiagnostic="";
+    private byte[] mtLoraDraft,mtLoraBase;private boolean mtLoraSaving;private String mtDraftRadio="";private String settingsSection="";private boolean repeaterConsoleResult,repeaterTechnical;private String repeaterDossierKey="",repeaterDossierRadio="";private RadioProfile settingsRadio;private final ArrayDeque<Screen> backStack=new ArrayDeque<>();private final HashMap<String,Integer> scrollPositions=new HashMap<>();private String renderedRoute="";private LinearLayout header;private boolean rendering;private String settingsFingerprint="",homeFingerprint="";private final HashMap<Integer,String> pageQueries=new HashMap<>();
     private static final class Screen{int selected,filter,y;String query,section,radio;RadioProfile profile;Target chat;RadioProfile chatProfile;}
     private TextView dualStatus;private View statusSeparator;MapPanel mapPanel;static String mapStyleOverride;private org.maplibre.android.geometry.LatLng mapFocus;PhonePosition position;
 
     private final DateFormat timestampFormat=DateFormat.getDateTimeInstance(DateFormat.SHORT,DateFormat.SHORT);private String query="",chatRadio="";private RadioProfile choosing,chatProfile;private Target chat;private boolean bound,visible,sending,applyingDraft;private int composerRevision;private Runnable pending;
     private final HashMap<String,String> drafts=new HashMap<>();
+    private final Runnable homeClock=new Runnable(){public void run(){if(!visible)return;if(selected==0)scheduleRefresh();handler.postDelayed(this,30000);}};
     private final Runnable refresh=()->{refreshQueued=false;refreshContent();},saveDraftTask=this::saveDraft;
     private final ServiceConnection connection=new ServiceConnection(){
         @Override public void onServiceConnected(ComponentName name,IBinder binder){service=((RadioService.LocalBinder)binder).service();if(visible){service.uiVisible=true;service.listener=MainActivity.this::scheduleRefresh;if(service.allowed()&&service.shouldResume())startForegroundService(new Intent(MainActivity.this,RadioService.class));}loadDraft();refreshContent();}
@@ -47,7 +48,7 @@ public final class MainActivity extends Activity {
     @Override public void onCreate(Bundle state){
         Appearance chosenAppearance=Appearance.load(this);
         if(chosenAppearance.colors.light)setTheme(R.style.AppThemeLight);
-        super.onCreate(state);appearance=chosenAppearance;applyAppearancePalette();position=new PhonePosition(this);position.listener=()->{if(mapPanel!=null)mapPanel.update();if(selected==0||(selected==1&&nodeOrder==2))scheduleRefresh();};if(state!=null){ArrayList<Bundle> history=state.getParcelableArrayList("navigation");if(history!=null)for(Bundle entry:history)backStack.addLast(decodeScreen(entry));exportingTrack=state.getString("exportingTrack","");nodeOrder=state.getInt("nodeOrder");nodeType=state.getInt("nodeType");settingsSection=state.getString("settingsSection","");if(state.containsKey("settingsRadio"))settingsRadio=RadioProfile.valueOf(state.getString("settingsRadio"));selected=state.getInt("page");filter=state.getInt("filter");query=state.getString("query","");if(state.containsKey("topic")){chatProfile=RadioProfile.valueOf(state.getString("profile"));chatRadio=state.getString("radio","");chat=new Target(state.getString("topic"),state.getString("title"),state.getString("peer"),state.getString("identity"),state.getInt("slot"),state.getBoolean("group"));drafts.put(draftKey(),state.getString("draft",""));}}
+        super.onCreate(state);appearance=chosenAppearance;applyAppearancePalette();position=new PhonePosition(this);position.listener=()->{if(mapPanel!=null)mapPanel.update();if(selected==0||(selected==1&&nodeOrder==2))scheduleRefresh();};if(state!=null){ArrayList<Bundle> history=state.getParcelableArrayList("navigation");if(history!=null)for(Bundle entry:history)backStack.addLast(decodeScreen(entry));exportingTrack=state.getString("exportingTrack","");nodeOrder=state.getInt("nodeOrder");nodeType=state.getInt("nodeType");mcContactFilter=state.getInt("mcContactFilter");pendingChannelLink=state.getString("pendingChannelLink","");pendingMtChannelLink=state.getString("pendingMtChannelLink","");pendingDiagnostic=state.getString("pendingDiagnostic","");settingsSection=state.getString("settingsSection","");repeaterDossierKey=state.getString("repeaterDossierKey","");repeaterDossierRadio=state.getString("repeaterDossierRadio","");if(state.containsKey("settingsRadio"))settingsRadio=RadioProfile.valueOf(state.getString("settingsRadio"));selected=state.getInt("page");filter=state.getInt("filter");query=state.getString("query","");if(state.containsKey("topic")){chatProfile=RadioProfile.valueOf(state.getString("profile"));chatRadio=state.getString("radio","");chat=new Target(state.getString("topic"),state.getString("title"),state.getString("peer"),state.getString("identity"),state.getInt("slot"),state.getBoolean("group")).reply(state.getLong("replyId",0),false);drafts.put(draftKey(),state.getString("draft",""));}}
         getWindow().setStatusBarColor(BG);getWindow().setNavigationBarColor(PANEL);
         int systemUiFlags=getWindow().getDecorView().getSystemUiVisibility();
         if(appearance.colors.light)systemUiFlags|=View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR|View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
@@ -68,17 +69,17 @@ public final class MainActivity extends Activity {
         dualStatus=text("MT offline · MC offline",11,MUTED);dualStatus.setPadding(dp(16),dp(5),dp(16),dp(5));dualStatus.setContentDescription("Radio connections");dualStatus.setOnClickListener(v->openSettings("connections",null));root.addView(dualStatus);
         body=column();root.addView(body,new LinearLayout.LayoutParams(-1,0,1));nav=row();nav.setBackgroundColor(PANEL);root.addView(nav,new LinearLayout.LayoutParams(-1,dp(64)));
         if(Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,this::handleBack);
-        if(state==null)readConversationIntent(getIntent());buildPage();bound=bindService(new Intent(this,RadioService.class),connection,BIND_AUTO_CREATE);tracksBound=bindService(new Intent(this,TrackService.class),trackConnection,BIND_AUTO_CREATE);
+        if(state==null&&!captureChannelIntent(getIntent()))readConversationIntent(getIntent());buildPage();bound=bindService(new Intent(this,RadioService.class),connection,BIND_AUTO_CREATE);tracksBound=bindService(new Intent(this,TrackService.class),trackConnection,BIND_AUTO_CREATE);
     }
-    @Override protected void onStart(){super.onStart();visible=true;if(trackService!=null)trackService.listener=this::scheduleRefresh;if(service!=null){service.uiVisible=true;service.listener=this::scheduleRefresh;}if(mapPanel!=null)mapPanel.onStart();refreshContent();}
-    @Override protected void onStop(){saveDraft();visible=false;if(trackService!=null)trackService.listener=null;if(service!=null){service.uiVisible=false;service.listener=null;}if(mapPanel!=null)mapPanel.onStop();handler.removeCallbacks(refresh);refreshQueued=false;if(service==null||service.remoteWorkspace==null)MapEngine.pauseDownloads();super.onStop();}
+    @Override protected void onStart(){super.onStart();visible=true;handler.removeCallbacks(homeClock);handler.postDelayed(homeClock,30000);if(trackService!=null)trackService.listener=this::scheduleRefresh;if(service!=null){service.uiVisible=true;service.listener=this::scheduleRefresh;}if(mapPanel!=null)mapPanel.onStart();refreshContent();}
+    @Override protected void onStop(){saveDraft();visible=false;updateRepeaterSettingsScope();handler.removeCallbacks(homeClock);if(trackService!=null)trackService.listener=null;if(service!=null){service.uiVisible=false;service.listener=null;}if(mapPanel!=null)mapPanel.onStop();handler.removeCallbacks(refresh);refreshQueued=false;if(service==null||service.remoteWorkspace==null)MapEngine.pauseDownloads();super.onStop();}
     @Override protected void onDestroy(){if(mapPanel!=null){mapPanel.destroy();mapPanel=null;}position.stop();handler.removeCallbacksAndMessages(null);if(service!=null)service.listener=null;if(bound)unbindService(connection);if(trackService!=null)trackService.listener=null;if(tracksBound)unbindService(trackConnection);super.onDestroy();}
     @Override protected void onResume(){super.onResume();resumed=true;if(phoneEnabled())position.start();if(mapPanel!=null)mapPanel.onResume();}
     @Override protected void onPause(){resumed=false;position.stop();if(mapPanel!=null)mapPanel.onPause();super.onPause();}
     @Override public void onLowMemory(){if(mapPanel!=null)mapPanel.mapView.onLowMemory();super.onLowMemory();}
-    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);saveDraft();setIntent(intent);if(readConversationIntent(intent))buildPage();}
+    @Override protected void onNewIntent(Intent intent){super.onNewIntent(intent);saveDraft();setIntent(intent);if(captureChannelIntent(intent)||readConversationIntent(intent))buildPage();}
     private boolean readConversationIntent(Intent intent){try{String network=intent.getStringExtra("network"),radio=intent.getStringExtra("radio"),topic=intent.getStringExtra("topic"),title=intent.getStringExtra("title"),peer=intent.getStringExtra("peer"),identity=intent.getStringExtra("identity");if(network==null||radio==null||topic==null||title==null||peer==null||identity==null||radio.length()>64||topic.length()>512||title.length()>256||peer.length()>128||identity.length()>128)return false;chatProfile=RadioProfile.valueOf(network);chatRadio=radio;chat=new Target(topic,title,peer,identity,intent.getIntExtra("slot",0),intent.getBooleanExtra("group",false));selected=3;return true;}catch(IllegalArgumentException e){return false;}}
-    @Override protected void onSaveInstanceState(Bundle out){saveDraft();ArrayList<Bundle> navigation=new ArrayList<>();for(Screen screen:backStack)navigation.add(encodeScreen(screen));out.putParcelableArrayList("navigation",navigation);out.putString("settingsSection",settingsSection);if(settingsRadio!=null)out.putString("settingsRadio",settingsRadio.name());out.putString("exportingTrack",exportingTrack);out.putInt("nodeOrder",nodeOrder);out.putInt("nodeType",nodeType);out.putInt("page",selected);out.putInt("filter",filter);out.putString("query",query);if(chat!=null){out.putString("profile",chatProfile.name());out.putString("radio",chatRadio);out.putString("topic",chat.topic);out.putString("title",chat.title);out.putString("peer",chat.peer);out.putString("identity",chat.identity);out.putInt("slot",chat.slot);out.putBoolean("group",chat.group);out.putString("draft",drafts.getOrDefault(draftKey(),""));}super.onSaveInstanceState(out);}
+    @Override protected void onSaveInstanceState(Bundle out){saveDraft();ArrayList<Bundle> navigation=new ArrayList<>();for(Screen screen:backStack)navigation.add(encodeScreen(screen));out.putParcelableArrayList("navigation",navigation);out.putString("settingsSection",settingsSection);out.putString("repeaterDossierKey",repeaterDossierKey);out.putString("repeaterDossierRadio",repeaterDossierRadio);if(settingsRadio!=null)out.putString("settingsRadio",settingsRadio.name());out.putString("exportingTrack",exportingTrack);out.putInt("nodeOrder",nodeOrder);out.putInt("nodeType",nodeType);out.putInt("mcContactFilter",mcContactFilter);out.putString("pendingChannelLink",pendingChannelLink);out.putString("pendingMtChannelLink",pendingMtChannelLink);out.putString("pendingDiagnostic",pendingDiagnostic);out.putInt("page",selected);out.putInt("filter",filter);out.putString("query",query);if(chat!=null){out.putString("profile",chatProfile.name());out.putString("radio",chatRadio);out.putString("topic",chat.topic);out.putString("title",chat.title);out.putString("peer",chat.peer);out.putString("identity",chat.identity);out.putInt("slot",chat.slot);out.putBoolean("group",chat.group);out.putLong("replyId",chat.replyId);out.putString("draft",drafts.getOrDefault(draftKey(),""));}super.onSaveInstanceState(out);}
     @Override public void onBackPressed(){handleBack();}
     private void handleBack(){
         if(mapPanel!=null&&mapPanel.closePanel())return;
@@ -88,9 +89,9 @@ public final class MainActivity extends Activity {
     }
     private void remember(){Screen screen=new Screen();screen.selected=selected;screen.filter=filter;screen.query=query;screen.section=settingsSection;screen.profile=settingsRadio;screen.chat=chat;screen.chatProfile=chatProfile;screen.radio=chatRadio;screen.y=scroll==null?0:scroll.getScrollY();backStack.push(screen);}
     private void openSettings(String section,RadioProfile radio){saveDraft();remember();selected=5;chat=null;settingsSection=section;settingsRadio=radio;choosing=null;buildPage();}
-    private Bundle encodeScreen(Screen screen){Bundle b=new Bundle();b.putInt("selected",screen.selected);b.putInt("filter",screen.filter);b.putInt("y",screen.y);b.putString("query",screen.query);b.putString("section",screen.section);b.putString("radio",screen.radio);if(screen.profile!=null)b.putString("profile",screen.profile.name());if(screen.chatProfile!=null)b.putString("chatProfile",screen.chatProfile.name());if(screen.chat!=null){Target t=screen.chat;b.putString("topic",t.topic);b.putString("title",t.title);b.putString("peer",t.peer);b.putString("identity",t.identity);b.putInt("slot",t.slot);b.putBoolean("group",t.group);}return b;}
-    private Screen decodeScreen(Bundle b){Screen screen=new Screen();screen.selected=b.getInt("selected");screen.filter=b.getInt("filter");screen.y=b.getInt("y");screen.query=b.getString("query","");screen.section=b.getString("section","");screen.radio=b.getString("radio","");if(b.containsKey("profile"))screen.profile=RadioProfile.valueOf(b.getString("profile"));if(b.containsKey("chatProfile"))screen.chatProfile=RadioProfile.valueOf(b.getString("chatProfile"));if(b.containsKey("topic"))screen.chat=new Target(b.getString("topic"),b.getString("title"),b.getString("peer"),b.getString("identity"),b.getInt("slot"),b.getBoolean("group"));return screen;}
-    private String route(){return selected+":"+settingsSection+":"+settingsRadio+":"+(chat==null?"":chatRadio+chat.topic);}
+    private Bundle encodeScreen(Screen screen){Bundle b=new Bundle();b.putInt("selected",screen.selected);b.putInt("filter",screen.filter);b.putInt("y",screen.y);b.putString("query",screen.query);b.putString("section",screen.section);b.putString("radio",screen.radio);if(screen.profile!=null)b.putString("profile",screen.profile.name());if(screen.chatProfile!=null)b.putString("chatProfile",screen.chatProfile.name());if(screen.chat!=null){Target t=screen.chat;b.putString("topic",t.topic);b.putString("title",t.title);b.putString("peer",t.peer);b.putString("identity",t.identity);b.putInt("slot",t.slot);b.putBoolean("group",t.group);b.putLong("replyId",t.replyId);}return b;}
+    private Screen decodeScreen(Bundle b){Screen screen=new Screen();screen.selected=b.getInt("selected");screen.filter=b.getInt("filter");screen.y=b.getInt("y");screen.query=b.getString("query","");screen.section=b.getString("section","");screen.radio=b.getString("radio","");if(b.containsKey("profile"))screen.profile=RadioProfile.valueOf(b.getString("profile"));if(b.containsKey("chatProfile"))screen.chatProfile=RadioProfile.valueOf(b.getString("chatProfile"));if(b.containsKey("topic"))screen.chat=new Target(b.getString("topic"),b.getString("title"),b.getString("peer"),b.getString("identity"),b.getInt("slot"),b.getBoolean("group")).reply(b.getLong("replyId",0),false);return screen;}
+    private String route(){return selected+":"+settingsSection+":"+settingsRadio+":"+repeaterDossierKey+":"+(chat==null?"":chatRadio+chat.topic);}
     private void applyAppearancePalette(){
         Appearance.Palette color=appearance.colors;
         BG=color.bg;PANEL=color.panel;PANEL2=color.panel2;
@@ -142,13 +143,21 @@ public final class MainActivity extends Activity {
             long latest=0,heard=0;
             for(Message message:data.messages)latest=Math.max(latest,message.timestamp);
             for(Node node:data.nodes)heard=Math.max(heard,node.heard);
-            key.append(':').append(latest).append(':').append(heard);
+            key.append(':').append(latest).append(':').append(heard).append(':').append(UiFeed.recentlyHeard(data.nodes,System.currentTimeMillis()/1000));
+            // Refresh when a recent item expires, even if no new message arrives.
+            key.append(':').append(OutgoingStatus.homeBrief(data,System.currentTimeMillis()/1000));
             if(service!=null){
                 RadioService.Session session=service.sessions.get(p);
                 key.append(':').append(session.verified).append(':').append(session.desired)
                     .append(':').append(session.phase).append(':').append(session.name)
                     .append(':').append(session.address).append(':')
-                    .append(session.rssiDbm).append(':').append(session.rssiCurrentLink);
+                    .append(session.rssiDbm).append(':').append(session.rssiCurrentLink)
+                    .append(':').append(session.rssiMeasuredAtMs)
+                    .append(':').append(session.rssiMeasuredAtMs>0?
+                        Math.max(0,(System.currentTimeMillis()-session.rssiMeasuredAtMs)/60000):-1)
+                    .append(':').append(BleSignal.live(session.verified,session.rssiCurrentLink,
+                        session.rssiMeasuredAtMs,System.currentTimeMillis()));
+                if(session.client!=null)key.append(':').append(session.client.mtRevision);
             }
         }
         key.append(':').append(phoneEnabled());
@@ -167,7 +176,22 @@ public final class MainActivity extends Activity {
         }
         return key.toString();
     }
-    private String settingsFingerprint(){StringBuilder value=new StringBuilder(settingsSection);if(service!=null&&(settingsSection.isEmpty()||settingsSection.equals("radio")||settingsSection.equals("connections"))){for(RadioService.Session session:service.sessions.values())value.append(session.address).append(session.phase).append(session.status);if(choosing!=null)value.append(service.devices.keySet()).append(service.scanning).append(service.showOtherDevices);}return value.toString();}
+    private String settingsFingerprint(){StringBuilder value=new StringBuilder(settingsSection);if(service!=null&&(settingsSection.isEmpty()||settingsSection.equals("radio")||settingsSection.equals("connections")||settingsSection.startsWith("mc_")||settingsSection.startsWith("mt_"))){for(RadioService.Session session:service.sessions.values()){value.append(session.address).append(session.phase).append(session.status);if(session.client!=null){ProtocolClient c=session.client;value.append(c.mcRepeaterSettings.revision).append(c.mcRepeaterAdmin.revision).append(c.mcRevision).append(c.mcAdmin.revision).append(c.mcAdmin.error).append(c.mcAdmin.status).append(c.mcError).append(c.mtRevision).append(c.admin.revision).append(c.admin.status).append(c.admin.error).append(c.localName).append(c.firmware).append(c.mtOwner.hashCode()).append(c.mtConfigs.hashCode()).append(c.mtModules.hashCode()).append(c.region).append(c.hopLimit).append(c.txEnabled).append(c.mtSessionKey.length).append(c.frequencyMhz).append(c.bandwidthKhz).append(c.spreadingFactor).append(c.codingRate).append(c.txPower).append(c.pathHashMode).append(c.hasRadioStats).append(c.noiseFloor).append(c.lastRssi).append(c.lastSnrQuarter).append(c.txAirSecs).append(c.rxAirSecs).append(c.hasBattery).append(c.batteryMv).append(c.usedKb).append(c.totalKb).append(c.uptimeSecs).append(c.defaultFloodScope).append(c.manualAddContacts).append(c.telemetryModes).append(c.advertLocationPolicy).append(c.multiAcks).append(c.hasLocation).append(c.latitude).append(c.longitude);}}if(choosing!=null)value.append(service.devices.keySet()).append(service.scanning).append(service.showOtherDevices);}
+        // Rebuild the repeater dossier as the manual airtime limit counts down.
+        // Without this, the disabled request row can remain stale after 30 seconds
+        // until an unrelated radio update or navigation rebuilds Settings.
+        if("mc_repeater_dossier".equals(settingsSection)&&service!=null
+                &&repeaterDossierKey!=null&&!repeaterDossierKey.isEmpty()){
+            long left=service.remoteRepeaterCooldownMs(repeaterDossierKey);
+            RadioService.Session mcSession=service.sessions.get(RadioProfile.MESHCORE);
+            if(mcSession!=null&&mcSession.client!=null
+                    &&repeaterDossierRadio.equals(mcSession.address)){
+                left=Math.max(left,mcSession.client.mcRemote.remainingCooldownMs(
+                    repeaterDossierKey,SystemClock.elapsedRealtime()));
+            }
+            value.append("|mcRepeaterCooldownSeconds=").append((left+999L)/1000L);
+        }
+        return value.toString();}
     private void rebuildContent(){rendering=true;refreshContent();rendering=false;}
     private Button chip(String label,boolean active,Runnable action){Button b=button(label,action);b.setTextSize(12);b.setTextColor(active?ORANGE:MUTED);b.setBackground(surface(active?appearance.colors.navActive:BG));b.setPadding(dp(5),0,dp(5),0);return b;}
     private void section(LinearLayout parent,String label){TextView view=text(label,11,MUTED);view.setTypeface(null,Typeface.BOLD);view.setLetterSpacing(.1f);view.setPadding(dp(6),dp(14),0,dp(8));parent.addView(view);}
@@ -175,18 +199,19 @@ public final class MainActivity extends Activity {
     private void menuRow(LinearLayout parent,String icon,String title,String subtitle,Runnable action,int color){if(parent.getChildCount()>0){View divider=new View(this);divider.setBackgroundColor(PANEL2);LinearLayout.LayoutParams line=new LinearLayout.LayoutParams(-1,dp(1));line.leftMargin=dp(54);line.rightMargin=dp(14);parent.addView(divider,line);}LinearLayout row=row();row.setPadding(dp(14),dp(12),dp(14),dp(12));row.setMinimumHeight(dp(64));row.addView(new NavIcon(this,icon,color),new LinearLayout.LayoutParams(dp(24),dp(24)));LinearLayout labels=column();labels.setPadding(dp(14),0,dp(8),0);TextView heading=text(title,15,WHITE);heading.setTypeface(null,Typeface.BOLD);labels.addView(heading);if(!subtitle.isEmpty()){TextView detail=text(subtitle,12,MUTED);detail.setPadding(0,dp(4),0,0);detail.setMaxLines(3);labels.addView(detail);}row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));if(action!=null){row.addView(new NavIcon(this,"arrow",MUTED),new LinearLayout.LayoutParams(dp(16),dp(16)));row.setBackground(clickSurface());row.setFocusable(true);row.setOnClickListener(v->action.run());}row.setContentDescription(title+". "+subtitle);parent.addView(row,new LinearLayout.LayoutParams(-1,-2));}
     private android.graphics.drawable.Drawable clickSurface(){return new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf((ORANGE&0x00ffffff)|0x33000000),null,new android.graphics.drawable.ColorDrawable(WHITE));}
     private void toggleRow(LinearLayout parent,String title,String subtitle,boolean checked,java.util.function.Consumer<Boolean> changed){LinearLayout row=row();row.setPadding(dp(16),dp(12),dp(12),dp(12));LinearLayout labels=column();labels.addView(text(title,15,WHITE));TextView hint=text(subtitle,12,MUTED);hint.setPadding(0,dp(4),dp(8),0);labels.addView(hint);row.addView(labels,new LinearLayout.LayoutParams(0,-2,1));Switch toggle=new Switch(this);toggle.setContentDescription(title);toggle.setChecked(checked);toggle.setMinimumHeight(dp(48));toggle.setOnCheckedChangeListener((b,on)->changed.accept(on));row.addView(toggle);row.setOnClickListener(v->toggle.setChecked(!toggle.isChecked()));parent.addView(row);}
-    private void toolbar(){header.removeAllViews();boolean back=chat!=null||(selected==5&&!settingsSection.isEmpty())||!backStack.isEmpty();if(back)header.addView(iconButton("back","Back",this::handleBack));if(selected==0&&!back){ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.meshcrossway_logo);logo.setContentDescription("MeshCrossway");logo.setScaleType(ImageView.ScaleType.FIT_START);header.addView(logo,new LinearLayout.LayoutParams(0,dp(27),1));}else{String title=chat!=null?chat.title:selected==5?settingsTitle():pages[selected];TextView label=text(title,20,WHITE);label.setTypeface(null,Typeface.BOLD);label.setMaxLines(1);label.setEllipsize(android.text.TextUtils.TruncateAt.END);header.addView(label,new LinearLayout.LayoutParams(0,-1,1));}if(chat!=null)header.addView(iconButton("settings","Settings",()->openSettings("",null)));header.addView(iconButton("more","More options",this::moreMenu));}
-    private View iconButton(String icon,String label,Runnable action){android.widget.FrameLayout target=new android.widget.FrameLayout(this);target.setContentDescription(label);target.setFocusable(true);target.setBackground(clickSurface());NavIcon image=new NavIcon(this,icon,MUTED);android.widget.FrameLayout.LayoutParams size=new android.widget.FrameLayout.LayoutParams(dp(24),dp(24),Gravity.CENTER);target.addView(image,size);target.setLayoutParams(new LinearLayout.LayoutParams(dp(44),dp(44)));target.setOnClickListener(v->action.run());return target;}
-    private String settingsTitle(){switch(settingsSection){case "appearance":return "Appearance";case "radio":return settingsRadio==null?"Radio":settingsRadio.title;case "connections":return "Connections";case "messages":return "Notifications & messages";case "location":return "Map & location";case "data":return "Data & backup";case "about":return "About";default:return "Settings";}}
-    private void moreMenu(){PopupMenu menu=new PopupMenu(this,header.getChildAt(header.getChildCount()-1));if(chat!=null){menu.getMenu().add("Conversation options").setOnMenuItemClickListener(item->{conversationOptions(chatProfile,chatRadio,chat);return true;});}else{menu.getMenu().add("Conversations").setOnMenuItemClickListener(item->{page(3);return true;});menu.getMenu().add("Channels").setOnMenuItemClickListener(item->{page(2);return true;});menu.getMenu().add("Tracks").setOnMenuItemClickListener(item->{manageTracks();return true;});}menu.getMenu().add("Radio connections").setOnMenuItemClickListener(item->{openSettings("connections",null);return true;});menu.show();}
+    private void toolbar(){header.removeAllViews();boolean back=chat!=null||(selected==5&&!settingsSection.isEmpty())||!backStack.isEmpty();if(back)header.addView(iconButton("back","Back",this::handleBack));if(selected==0&&!back){ImageView logo=new ImageView(this);logo.setImageResource(R.drawable.meshcrossway_logo);logo.setContentDescription("MeshCrossway");logo.setScaleType(ImageView.ScaleType.FIT_START);header.addView(logo,new LinearLayout.LayoutParams(0,dp(27),1));}else{String title=chat!=null?chat.title:selected==5?settingsTitle():pages[selected];TextView label=text(title,20,WHITE);label.setTypeface(null,Typeface.BOLD);label.setMaxLines(1);label.setEllipsize(android.text.TextUtils.TruncateAt.END);header.addView(label,new LinearLayout.LayoutParams(0,-1,1));}if(chat!=null)header.addView(iconButton("settings","Settings",()->openSettings("",null)));header.addView(iconButton("account","Account and sync",()->startActivity(new Intent(this,ClerkAccountActivity.class))));header.addView(iconButton("more","More options",this::moreMenu));}
+    private View iconButton(String icon,String label,Runnable action){android.widget.FrameLayout target=new android.widget.FrameLayout(this);target.setContentDescription(label);target.setFocusable(true);target.setBackground(clickSurface());NavIcon image=new NavIcon(this,icon,icon.equals("account")?ORANGE:MUTED);android.widget.FrameLayout.LayoutParams size=new android.widget.FrameLayout.LayoutParams(dp(24),dp(24),Gravity.CENTER);target.addView(image,size);target.setLayoutParams(new LinearLayout.LayoutParams(dp(44),dp(44)));target.setOnClickListener(v->action.run());return target;}
+    private String settingsTitle(){switch(settingsSection){case "mc_repeater_dossier":return "Repeater settings";case "appearance":return "Appearance";case "radio":return settingsRadio==null?"Radio":settingsRadio.title;case "connections":return "Connections";case "messages":return "Notifications & messages";case "location":return "Map & location";case "data":return "Data & backup";case "about":return "About";case "mc_channels":return "MeshCore channels";case "mc_name":return "Node Name";case "mc_radio":return "Radio Settings";case "mc_regions":return "Regions";case "mc_stats":return "Radio stats";case "mc_telemetry":return "Telemetry";case "mc_path":return "Node ID size in paths";case "mc_location":return "Location";case "mc_contacts":return "Contact Settings";case "mc_privacy":return "Privacy Settings";case "mc_device":return "Device Info";case "mt_user":return "User";case "mt_lora":return "LoRa";case "mt_channels":return "Channels";case "mt_device":return "Device configuration";case "mt_security":return "Security";case "mt_modules":return "Module configuration";case "mt_admin":return "Administration";default:return "Settings";}}
+    private void moreMenu(){PopupMenu menu=new PopupMenu(this,header.getChildAt(header.getChildCount()-1));if(chat!=null){menu.getMenu().add("Conversation options").setOnMenuItemClickListener(item->{conversationOptions(chatProfile,chatRadio,chat);return true;});}else{menu.getMenu().add("Conversations").setOnMenuItemClickListener(item->{page(3);return true;});menu.getMenu().add("Channels").setOnMenuItemClickListener(item->{page(2);return true;});menu.getMenu().add("Tracks").setOnMenuItemClickListener(item->{manageTracks();return true;});}menu.getMenu().add("Support diagnostic").setOnMenuItemClickListener(item->{supportPanel();return true;});menu.getMenu().add("Radio connections").setOnMenuItemClickListener(item->{openSettings("connections",null);return true;});menu.show();}
     private void sortMenu(){new AlertDialog.Builder(this).setTitle("Sort contacts").setSingleChoiceItems(new String[]{"Recently heard","Name","Distance"},nodeOrder,(d,index)->{nodeOrder=index;if(index==2&&position.location==null)requestPhonePosition();d.dismiss();buildPage();}).setNegativeButton("Back",null).show();}
-    private void typeMenu(){new AlertDialog.Builder(this).setTitle("Contact type").setSingleChoiceItems(new String[]{"All types","Clients","Repeaters","Rooms"},nodeType,(d,index)->{nodeType=index;d.dismiss();buildPage();}).setNegativeButton("Back",null).show();}
+    private void typeMenu(){new AlertDialog.Builder(this).setTitle("Contact type").setSingleChoiceItems(new String[]{"All types","Clients","Repeaters","Rooms","Sensors"},nodeType,(d,index)->{nodeType=index;d.dismiss();buildPage();}).setNegativeButton("Back",null).show();}
     private void openMapTool(String tool){saveDraft();remember();selected=4;chat=null;settingsSection="";settingsRadio=null;buildPage();if(mapPanel!=null)mapPanel.openTool(tool);}
     private void scheduleRefresh(){if(!refreshQueued){refreshQueued=true;handler.postDelayed(refresh,350);}}
     private void page(int index){saveDraft();if(service!=null&&choosing!=null)service.stopScan();backStack.clear();pageQueries.put(selected,query);selected=index;chat=null;choosing=null;settingsSection="";settingsRadio=null;query=pageQueries.getOrDefault(index,"");listLimit=100;buildPage();}
     private void buildPage(){
+        updateRepeaterSettingsScope();
         if(scroll!=null&&!renderedRoute.isEmpty())scrollPositions.put(renderedRoute,scroll.getScrollY());renderedRoute=route();
-        if(mapPanel!=null){mapPanel.destroy();mapPanel=null;}body.removeAllViews();nav.removeAllViews();composer=null;search=null;results=null;scroll=null;chatStatus=null;sendButton=null;
+        if(mapPanel!=null){mapPanel.destroy();mapPanel=null;}body.removeAllViews();nav.removeAllViews();composer=null;search=null;results=null;mcContactTabs=null;scroll=null;chatStatus=null;sendButton=null;
         // Home's radio cards replace the redundant global status strip.
         statusSeparator.setVisibility(selected==0?View.GONE:View.VISIBLE);
         dualStatus.setVisibility(selected==0?View.GONE:View.VISIBLE);
@@ -197,7 +222,8 @@ public final class MainActivity extends Activity {
             if(selected==2||selected==3){LinearLayout tabs=row();tabs.addView(chip("Conversations",selected==3,()->page(3)),new LinearLayout.LayoutParams(0,dp(44),1));tabs.addView(chip("Channels",selected==2,()->page(2)),new LinearLayout.LayoutParams(0,dp(44),1));tools.addView(tabs);}
             LinearLayout filters=row();String[] labels={"All networks","Meshtastic","MeshCore"};for(int i=0;i<3;i++){final int choice=i;filters.addView(chip(labels[i],i==filter,()->{filter=choice;buildPage();}),new LinearLayout.LayoutParams(0,dp(44),1));}tools.addView(filters);
             search=new EditText(this);search.setTextColor(WHITE);search.setHintTextColor(MUTED);search.setTextSize(14);search.setHint("Search "+pages[selected].toLowerCase(Locale.ROOT));search.setSingleLine(true);search.setText(query);search.setPadding(dp(12),0,dp(12),0);search.setBackground(surface(PANEL));search.addTextChangedListener(watcher(()->{query=search.getText().toString();listLimit=100;refreshContent();}));tools.addView(search,new LinearLayout.LayoutParams(-1,dp(44)));
-            if(selected==1){LinearLayout options=row();options.addView(chip(favoritesOnly?"Favorites ✓":"Favorites",favoritesOnly,()->{favoritesOnly=!favoritesOnly;buildPage();}),new LinearLayout.LayoutParams(0,dp(44),1));options.addView(chip("Sort: "+new String[]{"Recent","Name","Distance"}[nodeOrder],false,this::sortMenu),new LinearLayout.LayoutParams(0,dp(44),1));options.addView(chip(new String[]{"All types","Clients","Repeaters","Rooms"}[nodeType],nodeType!=0,this::typeMenu),new LinearLayout.LayoutParams(0,dp(44),1));tools.addView(options);}
+            if(selected==1){LinearLayout options=row();options.addView(chip(favoritesOnly?"Favorites ✓":"Favorites",favoritesOnly,()->{favoritesOnly=!favoritesOnly;buildPage();}),new LinearLayout.LayoutParams(0,dp(44),1));options.addView(chip("Sort: "+new String[]{"Recent","Name","Distance"}[nodeOrder],false,this::sortMenu),new LinearLayout.LayoutParams(0,dp(44),1));options.addView(chip(new String[]{"All types","Clients","Repeaters","Rooms","Sensors"}[nodeType],nodeType!=0,this::typeMenu),new LinearLayout.LayoutParams(0,dp(44),1));tools.addView(options);}
+            if(selected==1&&filter==2){HorizontalScrollView states=new HorizontalScrollView(this);states.setHorizontalScrollBarEnabled(false);mcContactTabs=row();states.addView(mcContactTabs);tools.addView(states);refreshMcContactTabs();}
             if(selected==3){LinearLayout options=row();options.addView(chip("Unread",unreadOnly,()->{unreadOnly=!unreadOnly;buildPage();}),new LinearLayout.LayoutParams(0,dp(40),1));options.addView(chip("Pinned",pinnedOnly,()->{pinnedOnly=!pinnedOnly;buildPage();}),new LinearLayout.LayoutParams(0,dp(40),1));tools.addView(options);}body.addView(tools);}
         scroll=new ScrollView(this);results=column();results.setPadding(dp(selected==0?10:16),dp(selected==0?8:16),dp(selected==0?10:16),dp(20));scroll.addView(results);body.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));refreshContent();int restore=scrollPositions.getOrDefault(renderedRoute,0);ScrollView target=scroll;target.post(()->target.scrollTo(0,restore));
     }
@@ -206,7 +232,17 @@ public final class MainActivity extends Activity {
     private Snapshot snapshot(RadioProfile p){return service==null?Snapshot.empty():service.data(p);}
     private String radio(RadioProfile p){return service==null?"":service.sessions.get(p).address;}
     private boolean ready(RadioProfile p,String address){return service!=null&&service.sessions.get(p).verified&&radio(p).equals(address);}
+    private void updateRepeaterSettingsScope(){
+        if(service==null)return;
+        RadioService.Session session=service.sessions.get(RadioProfile.MESHCORE);
+        if(session==null||session.client==null)return;
+        boolean shown=visible&&selected==5&&"mc_repeater_dossier".equals(settingsSection)
+            &&repeaterDossierRadio.equals(session.address)&&session.verified;
+        if(shown)session.client.mcRepeaterSettings.open(repeaterDossierKey);
+        else session.client.mcRepeaterSettings.close();
+    }
     private void refreshContent(){
+        updateRepeaterSettingsScope();
         if(dualStatus!=null&&service!=null){android.text.SpannableStringBuilder summary=new android.text.SpannableStringBuilder();for(RadioProfile p:RadioProfile.values()){if(summary.length()>0)summary.append("    ·    ");int begin=summary.length();RadioService.Session session=service.sessions.get(p);summary.append(p==RadioProfile.MESHTASTIC?"MT ":"MC ").append(session.verified?"ready":session.desired?session.phase.toLowerCase(Locale.ROOT):"offline");summary.setSpan(new android.text.style.ForegroundColorSpan(p==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC),begin,summary.length(),0);}dualStatus.setText(summary);}
         if(mapPanel!=null)mapPanel.update();
         if(results==null)return;if(selected==0&&results.getChildCount()>0&&!rendering&&homeFingerprint().equals(homeFingerprint))return;homeFingerprint=homeFingerprint();if(selected==5&&results.getChildCount()>0&&!rendering){String fingerprint=settingsFingerprint();if(fingerprint.equals(settingsFingerprint))return;}settingsFingerprint=settingsFingerprint();int y=scroll==null?0:scroll.getScrollY();boolean bottom=scroll!=null&&(results.getHeight()-scroll.getHeight()-y<dp(80));results.removeAllViews();
@@ -323,7 +359,7 @@ public final class MainActivity extends Activity {
     private LinearLayout dashboardTile(LinearLayout parent,String heading,String value,String detail,int accent,Runnable action,boolean featured){
         LinearLayout tile=column();
         tile.setPadding(dp(12),dp(11),dp(12),dp(11));
-        tile.setMinimumHeight(dp(featured?110:94));
+        tile.setMinimumHeight(dp(featured?96:94));
         GradientDrawable background=surface(PANEL);
         background.setStroke(dp(1),featured?accent:PANEL2);
         tile.setBackground(new android.graphics.drawable.RippleDrawable(
@@ -341,11 +377,13 @@ public final class MainActivity extends Activity {
         main.setMaxLines(2);
         main.setEllipsize(android.text.TextUtils.TruncateAt.END);
         tile.addView(main);
-        space(tile,4);
-        TextView subtitle=text(detail,12,MUTED);
-        subtitle.setMaxLines(2);
-        subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        tile.addView(subtitle);
+        if(!detail.isEmpty()){
+            space(tile,4);
+            TextView subtitle=text(detail,12,MUTED);
+            subtitle.setMaxLines(2);
+            subtitle.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            tile.addView(subtitle);
+        }
         tile.setContentDescription(heading+". "+value+". "+detail);
         tile.setFocusable(true);
         tile.setOnClickListener(v->action.run());
@@ -358,14 +396,19 @@ public final class MainActivity extends Activity {
     /** Four BLE bars reflect measured phone-to-radio RSSI, never a LoRa signal report. */
     private void signalIndicator(LinearLayout tile,RadioService.Session session,int accent){
         final int rssi=session==null?BleSignal.UNKNOWN:session.rssiDbm;
-        final boolean current=session!=null&&session.verified&&session.rssiCurrentLink;
-        final int bars=BleSignal.bars(rssi);
+        final long measuredAt=session==null?0:session.rssiMeasuredAtMs;
+        final long now=System.currentTimeMillis();
+        final boolean valid=BleSignal.valid(rssi)&&BleSignal.recent(measuredAt,now);
+        final boolean current=session!=null&&valid&&BleSignal.live(
+                session.verified,session.rssiCurrentLink,measuredAt,now);
+        final int bars=valid?BleSignal.bars(rssi):0;
+        final String readingLabel=BleSignal.label(rssi,current,measuredAt,now);
         LinearLayout indicator=row();
         indicator.setGravity(Gravity.BOTTOM|Gravity.START);
         indicator.setPadding(0,dp(9),0,0);
         for(int index=0;index<4;index++){
             View bar=new View(this);
-            int color=!BleSignal.valid(rssi)?PANEL2:
+            int color=!valid?PANEL2:
                 index<bars?(current?accent:MUTED):PANEL2;
             GradientDrawable shape=new GradientDrawable();
             shape.setColor(color);
@@ -376,25 +419,19 @@ public final class MainActivity extends Activity {
             params.rightMargin=dp(3);
             indicator.addView(bar,params);
         }
-        TextView reading=text(BleSignal.label(rssi,current),11,MUTED);
+        TextView reading=text(readingLabel,11,MUTED);
         reading.setMaxLines(1);
         reading.setEllipsize(android.text.TextUtils.TruncateAt.END);
         LinearLayout.LayoutParams textParams=new LinearLayout.LayoutParams(0,dp(19),1);
         textParams.leftMargin=dp(5);
         indicator.addView(reading,textParams);
         indicator.setContentDescription("Bluetooth signal. "+
-            BleSignal.label(rssi,current)+". "+bars+" of four bars.");
+            readingLabel+". "+bars+" of four bars. "+(current?"Current link.":"Cached or unavailable."));
         tile.addView(indicator);
     }
     private void openDashboardNetwork(RadioProfile profile,int destination){
         filter=profile.ordinal()+1;
         page(destination);
-    }
-    private int recentlyHeard(Snapshot data){
-        int total=0;
-        long cutoff=System.currentTimeMillis()/1000-3600;
-        for(Node node:data.nodes)if(node.heard>=cutoff&&node.heard>0)total++;
-        return total;
     }
     private String latestPreview(Snapshot data){
         Message last=null;
@@ -414,28 +451,35 @@ public final class MainActivity extends Activity {
             RadioService.Session session=service==null?null:service.sessions.get(profile);
             boolean ready=session!=null&&session.verified;
             String state=ready?"Ready":session!=null&&session.desired?"Connecting":"Offline";
-            String device=session==null?"Connect a radio":session.name!=null&&!session.name.isEmpty()?session.name:
-                session.address.isEmpty()?"Choose a device":"Saved device";
-            if(session!=null&&session.desired&&!ready)device+=" · "+session.phase;
             int accent=profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC;
-            LinearLayout tile=dashboardTile(radios,profile.title.toUpperCase(Locale.ROOT),state,device,
+            String detail=ready?"":session!=null&&session.desired?session.phase:"Tap to connect";
+            LinearLayout tile=dashboardTile(radios,profile.title.toUpperCase(Locale.ROOT),state,detail,
                 accent,()->openSettings("radio",profile),true);
+            if(ready&&profile==RadioProfile.MESHTASTIC&&session.client!=null){
+                String preset=MtLora.currentPreset(session.client);
+                TextView status=(TextView)tile.getChildAt(2);tile.removeViewAt(2);status.setMaxLines(1);
+                LinearLayout stateRow=row();stateRow.addView(status,new LinearLayout.LayoutParams(-2,-2));
+                TextView label=text(preset,12,accent);label.setTypeface(null,Typeface.BOLD);label.setMaxLines(1);label.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                LinearLayout.LayoutParams size=new LinearLayout.LayoutParams(0,-2,1);size.leftMargin=dp(6);stateRow.addView(label,size);tile.addView(stateRow,2);
+                tile.setContentDescription(profile.title+". "+state+". "+preset);
+            }
             signalIndicator(tile,session,accent);
         }
         LinearLayout nodes=dashboardRow();
         for(RadioProfile profile:RadioProfile.values()){
             Snapshot data=snapshot(profile);
-            int recent=recentlyHeard(data);
+            int recent=UiFeed.recentlyHeard(data.nodes,System.currentTimeMillis()/1000);
             dashboardTile(nodes,profile==RadioProfile.MESHTASTIC?"MT · NODES":"MC · NODES",
-                String.valueOf(data.nodes.size()),recent+" heard in the last hour",
+                String.valueOf(data.nodes.size()),recent+(profile==RadioProfile.MESHCORE?" active/updated in 15 min":" heard in the last 15 min"),
                 profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
                 ()->openDashboardNetwork(profile,1),false);
         }
         LinearLayout chats=dashboardRow();
         for(RadioProfile profile:RadioProfile.values()){
             Snapshot data=snapshot(profile);
+            String outgoing=OutgoingStatus.homeBrief(data,System.currentTimeMillis()/1000);
             dashboardTile(chats,profile==RadioProfile.MESHTASTIC?"MT · CHATS":"MC · CHATS",
-                data.unread()+" unread",latestPreview(data),
+                data.unread()+" unread",outgoing.isEmpty()?latestPreview(data):outgoing+" · "+latestPreview(data),
                 profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
                 ()->openDashboardNetwork(profile,3),false);
         }
@@ -478,31 +522,481 @@ public final class MainActivity extends Activity {
     }
     private void lists(){
         int shown=0;
-        if(selected==1){ArrayList<MapPanel.Located> nodes=mapNodes();nodes.removeIf(ref->!included(ref.profile)||!matches(nodeName(ref.profile,ref.node)+" "+ref.node.id)||(favoritesOnly&&!ref.favorite)||(nodeType!=0&&contactType(ref.profile,ref.node)!=nodeType));
-            nodes.sort((a,b)->{if(a.favorite!=b.favorite)return a.favorite?-1:1;if(nodeOrder==1)return nodeName(a.profile,a.node).compareToIgnoreCase(nodeName(b.profile,b.node));if(nodeOrder==2)return Double.compare(nodeDistance(a.node),nodeDistance(b.node));return Long.compare(b.node.heard,a.node.heard);});
-            for(MapPanel.Located ref:nodes){if(shown++>=listLimit)continue;Node n=ref.node;LinearLayout c=card(results);c.addView(text((ref.favorite?"★ ":"")+nodeName(ref.profile,n),18,WHITE));space(c,6);c.addView(text(ref.profile.title+" · "+contactTypeName(ref.profile,n)+" · "+ago(n.heard)+distanceText(n)+(n.battery>=0?" · battery "+n.battery+"%":""),12,ref.profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC));c.setOnClickListener(v->nodeDetails(ref.profile,n));c.setFocusable(true);}
-        }else if(selected==2){ArrayList<ChannelRow> channels=new ArrayList<>();for(RadioProfile p:RadioProfile.values())if(included(p))for(Channel channel:snapshot(p).channels)if(channel.enabled&&matches(channel.name)){ChannelRow entry=new ChannelRow(p,channel);for(Message m:snapshot(p).messages)if(m.topic.equals(channel.topic())){entry.last=Math.max(entry.last,m.timestamp);if(!m.read&&!m.outgoing)entry.unread++;}channels.add(entry);}channels.sort((a,b)->a.last==b.last?a.channel.name.compareToIgnoreCase(b.channel.name):Long.compare(b.last,a.last));
+        if(selected==1){refreshMcContactTabs();if(filter==2){LinearLayout actions=group(results);menuRow(actions,"radio","Announce my presence",mcClient()==null||mcClient().mcAdvertStatus.isEmpty()?"Help other MeshCore devices discover your radio":mcClient().mcAdvertStatus,this::announceMcPresence,RADIO_MC);menuRow(actions,"refresh","Refresh radio contacts","Check current contact membership",()->mcCommand(ProtocolClient::refreshContacts),RADIO_MC);}ArrayList<MapPanel.Located> nodes=mapNodes();nodes.removeIf(ref->!included(ref.profile)||!matches(nodeName(ref.profile,ref.node)+" "+ref.node.id)||(favoritesOnly&&!ref.favorite)||(nodeType!=0&&contactType(ref.profile,ref.node)!=nodeType)||(filter==2&&mcContactFilter!=0&&McContacts.state(ref.node,mcClient())!=mcContactFilter));
+            nodes.sort((a,b)->{if(filter==2){int groupA=McContacts.state(a.node,mcClient()),groupB=McContacts.state(b.node,mcClient());if(groupA!=groupB)return Integer.compare(groupA,groupB);}if(a.favorite!=b.favorite)return a.favorite?-1:1;if(nodeOrder==1)return nodeName(a.profile,a.node).compareToIgnoreCase(nodeName(b.profile,b.node));if(nodeOrder==2)return Double.compare(nodeDistance(a.node),nodeDistance(b.node));return Long.compare(b.node.heard,a.node.heard);});
+            for(MapPanel.Located ref:nodes){if(shown++>=listLimit)continue;Node n=ref.node;LinearLayout c=card(results);c.addView(text((ref.favorite?"★ ":"")+nodeName(ref.profile,n),18,WHITE));space(c,6);c.addView(text(ref.profile.title+" · "+contactTypeName(ref.profile,n)+" · "+ago(n.heard)+distanceText(n)+(n.battery>=0?" · battery "+n.battery+"%":""),12,ref.profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC));if(ref.profile==RadioProfile.MESHCORE){c.addView(text(McContacts.label(n,mcClient()),12,McContacts.state(n,mcClient())==ProtocolClient.MC_APPROVED?GREEN:MUTED));}c.setOnClickListener(v->{if(ref.profile==RadioProfile.MESHCORE&&RepeaterInventory.isRepeater(n))showRepeaterDossier(n);else nodeDetails(ref.profile,n);});c.setOnLongClickListener(v->{nodeDetails(ref.profile,n);return true;});c.setFocusable(true);}
+        }else if(selected==2){if(filter!=2)menuRow(group(results),"channels","Manage Meshtastic channels","Create, join, edit, share and scan QR Codes",()->openSettings("mt_channels",RadioProfile.MESHTASTIC),RADIO_MT);if(filter!=1)menuRow(group(results),"channels","Manage MeshCore channels","Create, edit, import and share",()->openSettings("mc_channels",RadioProfile.MESHCORE),RADIO_MC);ArrayList<ChannelRow> channels=new ArrayList<>();for(RadioProfile p:RadioProfile.values())if(included(p))for(Channel channel:snapshot(p).channels)if(channel.enabled&&matches(channel.name)){ChannelRow entry=new ChannelRow(p,channel);for(Message m:snapshot(p).messages)if(m.topic.equals(channel.topic())){entry.last=Math.max(entry.last,m.timestamp);if(!m.read&&!m.outgoing)entry.unread++;}channels.add(entry);}channels.sort((a,b)->a.last==b.last?a.channel.name.compareToIgnoreCase(b.channel.name):Long.compare(b.last,a.last));
             for(ChannelRow entry:channels){if(shown++>=listLimit)continue;RadioProfile p=entry.profile;Channel channel=entry.channel;LinearLayout c=card(results);TextView name=text(channel.name+(entry.unread>0?" · "+entry.unread+" unread":""),18,entry.unread>0?ORANGE:WHITE);name.setTypeface(null,Typeface.BOLD);c.addView(name);space(c,6);c.addView(text(p.title+" · channel "+channel.slot+(entry.last>0?" · "+when(entry.last):"")+(ready(p,radio(p))?"":" · saved"),12,p==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC));c.setOnClickListener(v->openChat(p,radio(p),Target.channel(channel)));c.setFocusable(true);}
-        }else{EnumMap<RadioProfile,Snapshot> snapshots=new EnumMap<>(RadioProfile.class);EnumMap<RadioProfile,String> radios=new EnumMap<>(RadioProfile.class);for(RadioProfile p:RadioProfile.values()){snapshots.put(p,snapshot(p));radios.put(p,radio(p));}
+        }else{
+            menuRow(group(results),"chats","Outbox & delivery status",
+                "Review recent pending or uncertain sends · never auto-resend",
+                this::outboxOverview,ORANGE);
+            EnumMap<RadioProfile,Snapshot> snapshots=new EnumMap<>(RadioProfile.class);EnumMap<RadioProfile,String> radios=new EnumMap<>(RadioProfile.class);for(RadioProfile p:RadioProfile.values()){snapshots.put(p,snapshot(p));radios.put(p,radio(p));}
             for(UiFeed.Item item:UiFeed.conversations(snapshots,radios,filter,unreadOnly,pinnedOnly,query)){Conversation conversation=item.conversation;if(shown++>=listLimit)continue;LinearLayout c=card(results);c.addView(text((conversation.pinned?"★ ":"")+conversation.target.title+(conversation.unread>0?" · "+conversation.unread+" unread":"")+(conversation.muted?" · muted":""),18,conversation.unread>0?ORANGE:WHITE));space(c,6);TextView preview=text(MessageActions.displayBody(item.profile,conversation.last),14,MUTED);preview.setMaxLines(2);c.addView(preview);space(c,6);c.addView(text(item.profile.title+" · "+when(conversation.last.timestamp),12,item.profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC));c.setOnClickListener(v->openChat(item.profile,item.radio,conversation.target));c.setOnLongClickListener(v->{conversationOptions(item.profile,item.radio,conversation.target);return true;});c.setFocusable(true);}
         }
         if(shown>listLimit)addButton(results,"Show more results ("+shown+" total)",()->{listLimit+=100;refreshContent();});
         if(shown==0){LinearLayout c=card(results);c.addView(text("No matching "+pages[selected].toLowerCase(Locale.ROOT),20,ORANGE));space(c,8);c.addView(text(selected==3?"Open a channel in Groups or a client in Nodes to start a conversation.":"Connect a radio and wait for synchronization. Saved data remains available offline.",14,MUTED));}
         if(selected==3&&service!=null){results.addView(text("Showing up to "+service.history.historyLimit+" recent messages per radio.",12,MUTED));if(service.history.historyLimit<20000)addButton(results,"Load older messages",()->service.history.older());}
     }
+    /** Status is assembled from one snapshot per physical radio, never from combined send queues. */
+    private void outboxOverview(){
+        StringBuilder info=new StringBuilder();
+        for(RadioProfile profile:RadioProfile.values()){
+            OutgoingStatus.Counts c=OutgoingStatus.counts(snapshot(profile));
+            info.append(profile.title).append(" (selected radio)\n")
+                .append("Awaiting send / peer ACK: ").append(c.pending).append("\n")
+                .append("Unknown or rejected: ").append(c.review).append("\n\n");
+        }
+        info.append("Counts include older stored messages; these are historical outcomes, not necessarily current alerts. Unknown group delivery does not prove failure. Radio acceptance is not a peer ACK; a peer ACK is not a read receipt.\n\n")
+            .append("For a message with an unknown/rejected outcome: open its original conversation, long-press the outgoing message, and choose Prepare as new draft. ")
+            .append("You must review and tap Send separately. Sending again may create a duplicate.");
+        new AlertDialog.Builder(this).setTitle("Outbox & delivery status")
+                .setMessage(info.toString()).setPositiveButton("Back",null).show();
+    }
+
     private static final class ChannelRow{final RadioProfile profile;final Channel channel;long last;int unread;ChannelRow(RadioProfile p,Channel c){profile=p;channel=c;}}
     private static int contactType(RadioProfile p,Node n){return p==RadioProfile.MESHCORE?n.type:n.unmessagable?0:1;}
-    private static String contactTypeName(RadioProfile p,Node n){if(p==RadioProfile.MESHTASTIC)return "Node";switch(n.type){case 1:return "Client";case 2:return "Repeater";case 3:return "Room";default:return "Other";}}
+    private static String contactTypeName(RadioProfile p,Node n){if(p==RadioProfile.MESHTASTIC)return "Node";switch(n.type){case 1:return "Client";case 2:return "Repeater";case 3:return "Room";case 4:return "Sensor";default:return "Other";}}
     ArrayList<MapPanel.Located> mapNodes(){ArrayList<MapPanel.Located> nodes=new ArrayList<>();for(RadioProfile p:RadioProfile.values())for(Node n:snapshot(p).nodes)nodes.add(new MapPanel.Located(p,radio(p),n,snapshot(p).flags("node",n.id).favorite));return nodes;}
     private double nodeDistance(Node n){return position.location==null||System.currentTimeMillis()-position.location.getTime()>120000||!n.position?Double.POSITIVE_INFINITY:GeoMath.distance(position.location.getLatitude(),position.location.getLongitude(),n.lat,n.lon);}
     private String distanceText(Node n){double meters=nodeDistance(n);return Double.isFinite(meters)?String.format(Locale.ROOT," · %.1f km · %03.0f° %s",meters/1000,FieldTools.bearing(position.location.getLatitude(),position.location.getLongitude(),n.lat,n.lon),FieldTools.direction(FieldTools.bearing(position.location.getLatitude(),position.location.getLongitude(),n.lat,n.lon))):"";}
     private String nodeName(RadioProfile p,Node n){if(!n.name.isEmpty())return n.name;return p==RadioProfile.MESHTASTIC?String.format(Locale.ROOT,"!%08x",Long.parseLong(n.id)):n.id.substring(0,Math.min(12,n.id.length()));}
-    private void nodeDetails(RadioProfile p,Node n){String radio=radio(p);boolean favorite=snapshot(p).flags("node",n.id).favorite;String[] actions=n.position?new String[]{"Node information","Message",favorite?"Remove favorite":"Add favorite","Show on map","Distance and bearing"}:new String[]{"Node information","Message",favorite?"Remove favorite":"Add favorite"};new AlertDialog.Builder(this).setTitle(p.title+" · "+nodeName(p,n)).setItems(actions,(dialog,action)->{
-        if(action==0)new AlertDialog.Builder(this).setTitle(nodeName(p,n)).setMessage(p.title+"\n"+n.id+"\nLast heard: "+when(n.heard)+distanceText(n)+(n.battery>=0?"\nBattery: "+n.battery+"%":"")+(n.position?String.format(Locale.ROOT,"\nPosition: %.6f, %.6f",n.lat,n.lon):"")).setPositiveButton("Close",null).show();
-        else if(action==1){if(n.unmessagable||(p==RadioProfile.MESHCORE&&n.type!=1))Toast.makeText(this,"Direct chat requires a message-capable client contact",Toast.LENGTH_LONG).show();else openChat(p,radio,Target.node(n));}
-        else if(action==2&&service!=null)service.history.flag(p,radio,"node",n.id,"favorite",!favorite);
-        else if(action==3)showMap(n.lat,n.lon);else if(action==4)navigateTo(nodeName(p,n),n.lat,n.lon);
-    }).setNegativeButton("Close",null).show();}
+    private String mcContactState(Node n){return McContacts.label(n,mcClient());}
+    private void nodeDetails(RadioProfile p,Node n){String source=radio(p);ProtocolClient mcBound=p==RadioProfile.MESHCORE?mcClient():null;boolean favorite=snapshot(p).flags("node",n.id).favorite;ArrayList<String> actions=new ArrayList<>(Arrays.asList("Node information","Message",favorite?"Remove favorite":"Add favorite"));if(p==RadioProfile.MESHCORE){ProtocolClient live=mcClient();if(live!=null&&live.nodes.containsKey(n.id))actions.add("Remove from radio contacts");else if(!n.mcRaw.isEmpty())actions.add("Approve contact on radio");}if(n.position){actions.add("Show on map");actions.add("Distance and bearing");}if(p==RadioProfile.MESHTASTIC)actions.add("Metrics & radio tools");if(p==RadioProfile.MESHCORE&&RepeaterInventory.isRepeater(n))actions.add("Repeater settings");actions.add("Reception history");new AlertDialog.Builder(this).setTitle(p.title+" · "+nodeName(p,n)).setItems(actions.toArray(new String[0]),(dialog,index)->{String action=actions.get(index);if(index==0)new AlertDialog.Builder(this).setTitle(nodeName(p,n)).setMessage(p.title+"\n"+n.id+(p==RadioProfile.MESHCORE?"\nLast activity/update: ":"\nLast heard: ")+when(n.heard)+distanceText(n)+(n.battery>=0?"\nBattery: "+n.battery+"%":"")+(p==RadioProfile.MESHCORE?"\nRadio contact: "+mcContactState(n):"")+(p==RadioProfile.MESHTASTIC?"\nShort name: "+n.shortName+"\nHardware: "+MtLora.hardwareName(n.hardwareModel)+"\nRole: "+n.role+"\nStatus: "+n.status:"")+(n.position?String.format(Locale.ROOT,"\nPosition: %.6f, %.6f",n.lat,n.lon):"")).setPositiveButton("Back",null).show();else if(index==1){if(n.unmessagable||(p==RadioProfile.MESHCORE&&(n.type!=1||mcClient()==null||!mcClient().nodes.containsKey(n.id))))Toast.makeText(this,"Choose an approved, synchronized client contact",Toast.LENGTH_LONG).show();else openChat(p,source,Target.node(n));}else if(index==2&&service!=null)service.history.flag(p,source,"node",n.id,"favorite",!favorite);else if(action.equals("Show on map"))showMap(n.lat,n.lon);else if(action.equals("Distance and bearing"))navigateTo(nodeName(p,n),n.lat,n.lon);else if(action.equals("Metrics & radio tools"))mtNodeMetrics(n);else if(action.equals("Repeater settings"))showRepeaterDossier(n);else if(action.equals("Reception history"))showReceptionHistory(p,source,n);else if(action.equals("Approve contact on radio"))new AlertDialog.Builder(this).setTitle("Approve this contact?").setMessage("Add "+nodeName(p,n)+" to the connected MeshCore radio. The result will be checked on the radio.").setPositiveButton("Approve",(d,w)->mcCommandFor(mcBound,client->client.approveMcContact(n))).setNegativeButton("Cancel",null).show();else if(action.equals("Remove from radio contacts"))new AlertDialog.Builder(this).setTitle("Remove this radio contact?").setMessage("Saved message history stays on the phone. The contact will no longer be approved on this radio.").setPositiveButton("Remove",(d,w)->mcCommandFor(mcBound,client->client.removeMcContact(n.id))).setNegativeButton("Cancel",null).show();}).setNegativeButton("Back",null).show();}
+    /** User-requested history only: no LoRa queries, BLE polls, or background charts. */
+    private void showReceptionHistory(RadioProfile network,String sourceRadio,Node node){
+        if(service==null)return;
+        final String name=nodeName(network,node);
+        service.history.receptionHistory(network,sourceRadio,node.id,samples->{
+            if(isFinishing()||isDestroyed())return;
+            LinearLayout details=column();
+            details.setPadding(dp(16),dp(12),dp(16),dp(16));
+            details.addView(text(name,17,WHITE));
+            details.addView(text(network.title+" · saved incoming messages for this radio",12,MUTED));
+            space(details,12);
+            details.addView(text("Historical packet metadata, not a live link measurement. Times are message timestamps and may be affected by a radio clock or backlog.",12,MUTED));
+            space(details,10);
+            if(samples.isEmpty()){
+                details.addView(text("No attributable RF samples in recent saved messages.",15,WHITE));
+                space(details,8);
+                details.addView(text("Only actual reported metrics are included. MeshCore group display names and ambiguous direct-contact prefixes are not proof of a sender identity.",12,MUTED));
+            }else{
+                int rssiCount=0,snrCount=0,hopsCount=0;
+                for(RfHistory.Sample s:samples){
+                    if(s.hasRssi())rssiCount++;
+                    if(s.hasSnr())snrCount++;
+                    if(s.hasHops())hopsCount++;
+                }
+                details.addView(text(samples.size()+" samples · "+rssiCount+" RSSI · "+snrCount+" SNR · "+hopsCount+" with hop count",13,WHITE));
+                space(details,14);
+                int accent=network==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC;
+                if(rssiCount>0){
+                    details.addView(text("LoRa RSSI (dBm) · older → newer",14,accent));
+                    RfHistoryChart chart=new RfHistoryChart(this,samples,false,accent);
+                    details.addView(chart,new LinearLayout.LayoutParams(-1,dp(166)));
+                }
+                if(snrCount>0){
+                    details.addView(text("Reported SNR (dB) · older → newer",14,accent));
+                    RfHistoryChart chart=new RfHistoryChart(this,samples,true,accent);
+                    details.addView(chart,new LinearLayout.LayoutParams(-1,dp(166)));
+                }
+                space(details,8);
+                details.addView(text("Recent message samples",15,WHITE));
+                for(int i=samples.size()-1;i>=Math.max(0,samples.size()-12);i--){
+                    RfHistory.Sample sample=samples.get(i);
+                    space(details,7);
+                    details.addView(text(when(sample.messageTime)+" · "+sample.metrics(),12,WHITE));
+                    details.addView(text(sample.provenance,11,MUTED));
+                }
+                space(details,10);
+                details.addView(text("Showing up to "+RfHistory.DISPLAY_LIMIT+" eligible samples from the most recent "+RfHistory.SCAN_LIMIT+" saved incoming messages. Missing metrics and unsupported sender identities remain unavailable; no synthetic measurements are generated.",12,MUTED));
+            }
+            ScrollView view=new ScrollView(this);view.addView(details);
+            new AlertDialog.Builder(this).setTitle("LoRa reception history")
+                    .setView(view).setPositiveButton("Back",null).show();
+        });
+    }
+
+    /**
+     * Stage 2 baseline: a passive diagnostic view. All metrics come from one
+     * already selected radio and saved messages; opening this page sends no RF.
+     */
+    private void advancedNetworkDiagnostics(){
+        long nowSeconds=System.currentTimeMillis()/1000;
+        section(results,"RADIO & MESSAGE OBSERVATIONS");
+        for(RadioProfile profile:RadioProfile.values()){
+            RadioService.Session session=service==null?null:service.sessions.get(profile);
+            Stage2Traffic.Counts observations=
+                Stage2Traffic.last15Minutes(snapshot(profile),nowSeconds);
+            LinearLayout panel=card(results);
+            int accent=profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC;
+            panel.addView(text(profile.title+" · "+(session!=null&&session.verified?"Ready":"Offline / saved"),17,accent));
+            space(panel,7);
+            panel.addView(text(session==null?"No active BLE session":
+                "Bluetooth: "+(session.verified?"synchronized":session.phase)
+                +" · MTU "+session.mtu+" · "+session.frames+" GATT frames received",
+                13,WHITE));
+            space(panel,6);
+            panel.addView(text("Last 15 min · saved messages: "+observations.incoming
+                +" received, "+observations.outgoing+" outgoing",13,WHITE));
+            panel.addView(text("With reported LoRa RSSI: "+observations.rxRssi
+                +" · with SNR: "+observations.rxSnr
+                +" · observed full flood paths: "+observations.observedPaths,12,MUTED));
+            if(observations.mqttFlagged>0)
+                panel.addView(text(observations.mqttFlagged
+                    +" messages carried an MQTT marker; this does not prove local RF receipt.",12,MUTED));
+            space(panel,5);
+            panel.addView(text("GATT frame totals are Bluetooth events, not LoRa packet counts. "
+                +"Saved messages are not a complete RF sniffer or a channel occupancy measurement.",12,MUTED));
+        }
+        section(results,"MESHCORE REPEATER INVENTORY");
+        Snapshot meshcore=snapshot(RadioProfile.MESHCORE);
+        int total=RepeaterInventory.total(meshcore);
+        results.addView(text(total+" saved repeater contacts · up to "
+            +RepeaterInventory.MAX_VISIBLE+" shown · no remote queries",13,MUTED));
+        List<Node> repeaters=RepeaterInventory.visible(meshcore);
+        if(repeaters.isEmpty()){
+            LinearLayout empty=card(results);
+            empty.addView(text("No verified MeshCore repeater contacts saved for the selected radio.",14,WHITE));
+        }
+        for(Node repeater:repeaters){
+            LinearLayout tile=card(results);
+            tile.addView(text(nodeName(RadioProfile.MESHCORE,repeater),16,WHITE));
+            space(tile,4);
+            tile.addView(text(McContacts.label(repeater,mcClient()),12,MUTED));
+            tile.addView(text(RepeaterInventory.activity(repeater,nowSeconds),12,MUTED));
+            tile.setOnClickListener(v->showRepeaterDossier(repeater));
+            tile.setFocusable(true);
+        }
+        section(results,"SCOPE & SAFETY");
+        results.addView(text("Repeater remote uptime, noise floor, packet counters, neighbor list "
+            +"and hop-by-hop traceroute are not queried by this screen. "
+            +"They will require explicitly initiated, firmware-supported MeshCore commands. "
+            +"No continuous scanning, no automatic RF transmissions, and no MT/MC forwarding.",
+            13,MUTED));
+    }
+
+    private void showRepeaterDossier(Node node){
+        repeaterTechnical=false;repeaterConsoleResult=false;
+        if(!RepeaterInventory.isRepeater(node))return;
+        repeaterDossierKey=node.id;
+        repeaterDossierRadio=radio(RadioProfile.MESHCORE);
+        openSettings("mc_repeater_dossier",RadioProfile.MESHCORE);
+    }
+
+    /** Remote values always come from the current Companion request session. */
+    private void repeaterDossierPage(){
+        Node saved=null;
+        for(Node entry:snapshot(RadioProfile.MESHCORE).nodes)
+            if(entry.id.equalsIgnoreCase(repeaterDossierKey)){saved=entry;break;}
+        if(saved==null||!RepeaterInventory.isRepeater(saved)){
+            section(results,"REPEATER");
+            results.addView(text("The selected repeater is not in this radio's saved contacts.",14,MUTED));
+            return;
+        }
+        final Node node=saved;
+        final String source=repeaterDossierRadio;
+        RadioService.Session session=service==null?null:service.sessions.get(RadioProfile.MESHCORE);
+        ProtocolClient client=session!=null&&source.equals(session.address)&&session.verified
+            ?session.client:null;
+        long epoch=System.currentTimeMillis()/1000;
+        long elapsed=SystemClock.elapsedRealtime();
+        section(results,"MESHCORE REPEATER");
+        LinearLayout identity=card(results);
+        identity.addView(text(nodeName(RadioProfile.MESHCORE,node),18,RADIO_MC));
+        space(identity,6);
+        if(repeaterTechnical)identity.addView(text("Full public key: "+node.id,12,MUTED));
+        identity.addView(text(McContacts.label(node,client),12,MUTED));
+        if(repeaterTechnical)identity.addView(text(RepeaterInventory.activity(node,epoch),12,MUTED));
+        if(repeaterTechnical)identity.addView(text("Last saved update: "+(node.heard>0?when(node.heard):"Unknown"),12,MUTED));
+        if(repeaterTechnical)identity.addView(text(client!=null?"Source: current MeshCore BLE session":
+                "Offline / different radio · cached contact only",12,MUTED));
+        repeaterAdministration(node,source,client);
+        menuRow(group(results),"info",repeaterTechnical?"Hide diagnostics":"Diagnostics & technical details",
+            "Remote status, neighbors and routing",()->{repeaterTechnical=!repeaterTechnical;settingsFingerprint="";scheduleRefresh();},RADIO_MC);
+        if(!repeaterTechnical)return;
+        if(node.position)menuRow(group(results),"map","Show saved position","May be old; not a live GPS fix",
+            ()->showMap(node.lat,node.lon),RADIO_MC);
+        section(results,"REMOTE STATUS");
+        McRemoteDiagnostics.Result status=client==null?null:
+            client.mcRemote.find(node.id,McRemoteDiagnostics.Kind.STATUS);
+        LinearLayout stats=card(results);
+        stats.addView(text(status==null?"Not queried on this connection":
+            (status.stats!=null?"Status received from repeater":status.freshness(elapsed)),14,status!=null&&status.stats!=null?GREEN:MUTED));
+        if(status!=null&&!status.error.isEmpty())stats.addView(text(status.error,12,RED));
+        if(status!=null&&status.usedFlood!=null&&status.stats==null)
+            if(repeaterTechnical)stats.addView(text(status.radioRoute(),12,MUTED));
+        if(status!=null&&status.stats!=null){
+            McRemoteDiagnostics.Status s=status.stats;
+            stats.addView(text("Remote repeater · reported values:",13,WHITE));
+            stats.addView(text("Uptime: "+McRepeaterAdmin.duration(s.uptime)+" · Battery: "+String.format(Locale.ROOT,"%.2f V",s.batteryMv/1000.0),13,WHITE));
+            stats.addView(text("TX queue: "+s.queue+" · Noise floor: "+s.noiseFloor+" dBm",13,WHITE));
+            stats.addView(text("Last RF: RSSI "+s.lastRssi+" dBm · SNR "
+                +String.format(Locale.ROOT,"%.2f",s.lastSnr)+" dB",13,WHITE));
+            stats.addView(text("Packets: RX "+s.received+" / TX "+s.sent,13,WHITE));
+            if(repeaterTechnical)stats.addView(text("Direct: RX "+s.recvDirect+" / TX "+s.sentDirect
+                +" · flood: RX "+s.recvFlood+" / TX "+s.sentFlood,12,MUTED));
+            if(repeaterTechnical)stats.addView(text("Airtime (s): TX "+s.txAirtime
+                +" · RX "+s.rxAirtime,12,MUTED));
+            if(repeaterTechnical)stats.addView(text("Duplicate indications: direct "+s.directDup
+                +" · flood "+s.floodDup+" · error flags "+s.fullEvents,12,MUTED));
+            if(repeaterTechnical&&s.errorsKnown)stats.addView(text("Receive errors: "+s.errors,12,MUTED));
+            if(repeaterTechnical&&s.extensionBytes>0)stats.addView(text("Firmware extension: "+
+                s.extensionBytes+" additional byte(s) safely ignored",12,MUTED));
+            if(repeaterTechnical)stats.addView(text(status.radioRoute(),12,MUTED));
+        }
+        long cooldown=service==null?0:service.remoteRepeaterCooldownMs(node.id);
+        long sessionCooldown=client==null?0:
+            client.mcRemote.remainingCooldownMs(node.id,elapsed);
+        cooldown=Math.max(cooldown,sessionCooldown);
+        boolean canQuery=client!=null&&client.ready&&client.firmwareCode>=10
+            &&client.nodes.containsKey(node.id)&&client.nodes.get(node.id).type==2
+            &&client.mcRemote.pending==null&&!client.mcRepeaterAdmin.pending&&cooldown==0;
+        String unavailableReason=cooldown>0
+            ?McRemoteDiagnostics.remainingLabel(cooldown)
+            :"Connect the same radio, finish previous request and verify firmware";
+        menuRow(group(results),"refresh","Request remote status",
+            canQuery?"Manual LoRa request · flood routing possible · 30 sec shared limit":
+            unavailableReason,
+            canQuery?()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.STATUS,0):null,RADIO_MC);
+        section(results,"REPEATER NEIGHBORS");
+        McRemoteDiagnostics.Result neighbors=client==null?null:
+            client.mcRemote.find(node.id,McRemoteDiagnostics.Kind.NEIGHBORS);
+        LinearLayout near=card(results);
+        near.addView(text(neighbors==null?"Not queried on this connection":
+            (neighbors.neighbors!=null?"Neighbors received from repeater":neighbors.freshness(elapsed)),14,neighbors!=null&&neighbors.neighbors!=null?GREEN:MUTED));
+        if(neighbors!=null&&!neighbors.error.isEmpty())
+            near.addView(text(neighbors.error,12,RED));
+        if(repeaterTechnical&&neighbors!=null&&neighbors.usedFlood!=null)
+            near.addView(text(neighbors.radioRoute(),12,MUTED));
+        if(neighbors!=null&&neighbors.neighbors!=null){
+            McRemoteDiagnostics.Neighbors accumulated=client.mcRemote.allNeighbors(node.id);
+            McRemoteDiagnostics.Neighbors list=accumulated!=null?accumulated:neighbors.neighbors;
+            near.addView(text("Neighbors: "+list.list.size()+" of "+list.total,13,WHITE));
+            if(repeaterTechnical&&list.extensionBytes>0)near.addView(text("Firmware extension: "+
+                list.extensionBytes+" trailing byte(s) safely ignored",12,MUTED));
+            for(McRemoteDiagnostics.Neighbor entry:list.list){
+                String label="Unresolved prefix";
+                int matches=0;
+                for(Node known:snapshot(RadioProfile.MESHCORE).nodes)
+                    if(known.id.startsWith(entry.prefix)){
+                        matches++;
+                        if(matches==1)label=nodeName(RadioProfile.MESHCORE,known);
+                    }
+                if(matches>1)label="Ambiguous · "+matches+" contacts";
+                near.addView(text(label+(repeaterTechnical?" ["+entry.prefix+"]":""),13,WHITE));
+                near.addView(text("Last reported "+McRepeaterAdmin.duration(entry.secondsAgo)+" ago · SNR "
+                    +String.format(Locale.ROOT,"%.2f",entry.snr)+" dB",12,MUTED));
+            }
+            if(list.list.isEmpty())near.addView(text("This page returned no neighbors.",12,MUTED));
+            int next=list.offset+list.list.size();
+            if(next<list.total&&next<=1024&&!list.list.isEmpty())
+                menuRow(group(results),"refresh","Request next neighbors page",
+                    canQuery?"Offset "+next+" · separate request after 30-second limit":unavailableReason,
+                    canQuery?()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,next):null,RADIO_MC);
+        }
+        menuRow(group(results),"refresh","Request neighbors",
+            canQuery?"Up to 8 neighbors · flood possible · 30 sec shared limit":
+                unavailableReason,
+            canQuery?()->confirmRepeaterQuery(node,source,McRemoteDiagnostics.Kind.NEIGHBORS,0):null,RADIO_MC);
+        section(results,"DATA PROVENANCE");
+        results.addView(text("The firmware sends a tagged response via the selected MeshCore radio. "
+            +"A locally accepted command is not proof of a remote reply. "
+            +"Names matched to short prefixes can be ambiguous. "
+            +"All values are historical once captured; opening the page does not transmit. "
+            +"Diagnostics do not modify the repeater. Administration commands require a separate login.",13,MUTED));
+    }
+
+    private void repeaterAdministration(Node node,String source,ProtocolClient client){
+        if(client==null){results.addView(text("Connect the same MeshCore radio to configure this repeater",13,MUTED));return;}
+        if(!client.mcError.isEmpty())results.addView(text(client.mcError,13,RED));
+        McRepeaterAdmin admin=client.mcRepeaterAdmin;
+        boolean authorized=admin.authorized(node.id,SystemClock.elapsedRealtime());
+        if(!authorized){
+            section(results,"ADMINISTRATION");
+            String status=node.id.equals(admin.key)?admin.state:"Sign in to load the repeater settings";
+            results.addView(text(status,13,MUTED));
+            menuRow(group(results),"settings","Administer repeater","Enter the repeater password",
+                admin.pending||client.mcRemote.pending!=null?null:()->repeaterLogin(node,source,client),RADIO_MC);
+            return;
+        }
+        repeaterConfigurationCards(node,source,client);
+        if(repeaterConsoleResult&&node.id.equals(admin.key)){
+            section(results,"ADVANCED RESPONSE");LinearLayout console=card(results);
+            console.addView(text(admin.state,12,MUTED));
+            if(!admin.label.isEmpty())console.addView(text(admin.label,12,RADIO_MC));
+            if(!admin.reply.isEmpty())console.addView(text(admin.reply,14,WHITE));
+        }
+        menuRow(group(results),"settings","Advanced options","Console, passwords, restart and sign out",
+            admin.pending||client.mcRepeaterSettings.loading()?null:()->repeaterAdvanced(node,source,client),RADIO_MC);
+    }
+    private void repeaterConfigurationCards(Node node,String source,ProtocolClient client){
+        McRepeaterSettings settings=client.mcRepeaterSettings;
+        section(results,"CONFIGURATION");
+        LinearLayout progress=row();
+        TextView status=text(settings.loading()?"Loading settings · "+settings.loaded()+"/10":settings.status,12,MUTED);
+        progress.addView(status,new LinearLayout.LayoutParams(0,-2,1));
+        Button refresh=button("Refresh",()->{try{settings.refresh();repeaterConsoleResult=false;client.mcRevision++;settingsFingerprint="";scheduleRefresh();}catch(IllegalArgumentException e){Toast.makeText(this,e.getMessage(),Toast.LENGTH_SHORT).show();}});
+        refresh.setEnabled(!client.mcRepeaterAdmin.pending&&!settings.loading());progress.addView(refresh);results.addView(progress);
+        repeaterSettingCard(results,node,source,client,McRepeaterSettings.Field.NAME,false);
+        repeaterSettingPair(node,source,client,McRepeaterSettings.Field.TX,McRepeaterSettings.Field.REPEAT);
+        repeaterSettingCard(results,node,source,client,McRepeaterSettings.Field.RADIO,false);
+        repeaterSettingPair(node,source,client,McRepeaterSettings.Field.LAT,McRepeaterSettings.Field.LON);
+        repeaterSettingPair(node,source,client,McRepeaterSettings.Field.LOCAL_ADVERT,McRepeaterSettings.Field.FLOOD_ADVERT);
+        repeaterSettingPair(node,source,client,McRepeaterSettings.Field.FLOOD_MAX,McRepeaterSettings.Field.READ_ONLY);
+    }
+    private void repeaterSettingPair(Node node,String source,ProtocolClient client,McRepeaterSettings.Field first,McRepeaterSettings.Field second){
+        LinearLayout pair=row();results.addView(pair,new LinearLayout.LayoutParams(-1,-2));
+        repeaterSettingCard(pair,node,source,client,first,true);repeaterSettingCard(pair,node,source,client,second,true);
+    }
+    private void repeaterSettingCard(LinearLayout parent,Node node,String source,ProtocolClient client,McRepeaterSettings.Field field,boolean half){
+        McRepeaterSettings settings=client.mcRepeaterSettings;McRepeaterSettings.Value value=settings.values.get(field);
+        LinearLayout box=column();box.setPadding(dp(14),dp(12),dp(14),dp(12));box.setMinimumHeight(dp(98));box.setBackground(surface(PANEL));
+        TextView title=text(field.title,12,MUTED);box.addView(title);
+        TextView current=text(settings.display(field),field==McRepeaterSettings.Field.NAME?17:18,value.valid?WHITE:MUTED);current.setTypeface(null,Typeface.BOLD);current.setPadding(0,dp(8),0,dp(6));box.addView(current);
+        String hint=value.valid?(value.state.isEmpty()?"Tap to edit":value.state):"";
+        if(!hint.isEmpty())box.addView(text(hint,11,value.state.contains("Confirmed")?GREEN:value.state.contains("different")?ORANGE:MUTED));
+        LinearLayout.LayoutParams size=new LinearLayout.LayoutParams(half?0:-1,-2,half?1:0);size.bottomMargin=dp(8);if(half){size.leftMargin=dp(3);size.rightMargin=dp(3);}parent.addView(box,size);
+        box.setContentDescription(field.title+". "+settings.display(field)+". "+hint);
+        if(value.valid&&!value.state.equals("Refreshing…")&&!value.state.equals("Reading…")&&!value.state.startsWith("Saving")&&!value.state.startsWith("Saved;")){box.setFocusable(true);box.setOnClickListener(v->editRepeaterSetting(node,source,client,field));}
+    }
+    private void repeaterAdvanced(Node node,String source,ProtocolClient client){
+        new AlertDialog.Builder(this).setTitle("Advanced repeater options")
+            .setItems(new String[]{"Remote console","Administrator password","Guest password","Restart repeater","Sign in again","Close administration"},(d,w)->{
+                if(w==0)repeaterConsole(node,source,client);
+                else if(w==1||w==2)repeaterPassword(node,source,client,w==2);
+                else if(w==3)sendRepeaterCommand(node,source,client,"reboot",false);
+                else if(w==4)repeaterLogin(node,source,client);
+                else{client.mcRepeaterAdmin.forget();client.mcRepeaterSettings.clear();settingsFingerprint="";scheduleRefresh();}
+            }).setNegativeButton("Back",null).show();
+    }
+    private void editRepeaterSetting(Node node,String source,ProtocolClient client,McRepeaterSettings.Field field){
+        McRepeaterSettings settings=client.mcRepeaterSettings;
+        if(!source.equals(radio(RadioProfile.MESHCORE))||mcClient()!=client||!settings.key.equals(node.id))return;
+        McRepeaterSettings.Value current=settings.values.get(field);if(!current.valid)return;
+        settings.editing=true;repeaterConsoleResult=false;
+        LinearLayout form=column();form.setPadding(dp(20),dp(8),dp(20),dp(8));
+        final java.util.function.Supplier<String> input;
+        if(field.toggle()){
+            Switch enabled=new Switch(this);enabled.setText("Enabled");enabled.setTextColor(WHITE);enabled.setChecked(current.raw.equals("on"));enabled.setSaveEnabled(false);form.addView(enabled);input=()->enabled.isChecked()?"on":"off";
+        }else if(field==McRepeaterSettings.Field.RADIO){
+            String[] p=current.raw.split(",");
+            EditText frequency=mcInput(form,"Frequency (MHz)",p[0].trim(),android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            EditText bandwidth=mcInput(form,"Bandwidth (kHz)",p[1].trim(),android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);
+            EditText sf=mcInput(form,"Spreading factor",p[2].trim(),android.text.InputType.TYPE_CLASS_NUMBER);
+            EditText cr=mcInput(form,"Coding rate (5 = 4/5)",p[3].trim(),android.text.InputType.TYPE_CLASS_NUMBER);
+            for(EditText editor:new EditText[]{frequency,bandwidth,sf,cr})editor.setSaveEnabled(false);
+            input=()->frequency.getText()+","+bandwidth.getText()+","+sf.getText()+","+cr.getText();
+        }else{
+            int type=field.decimal()?android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL|android.text.InputType.TYPE_NUMBER_FLAG_SIGNED:
+                field.integer()?android.text.InputType.TYPE_CLASS_NUMBER|(field==McRepeaterSettings.Field.TX?android.text.InputType.TYPE_NUMBER_FLAG_SIGNED:0):android.text.InputType.TYPE_CLASS_TEXT;
+            EditText value=mcInput(form,field.title+(field.unit.isEmpty()?"":" ("+field.unit+")"),current.raw,type);value.setSaveEnabled(false);value.selectAll();input=()->value.getText().toString();
+        }
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle(field.title).setView(form)
+            .setNegativeButton("Cancel",null).setPositiveButton("Save",null).create();
+        dialog.setOnDismissListener(d->{settings.editing=false;settingsFingerprint="";scheduleRefresh();});dialog.show();
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            final String value=input.get();
+            try{McRepeaterAdmin.setting(field.key,value);}catch(IllegalArgumentException error){Toast.makeText(this,error.getMessage(),Toast.LENGTH_LONG).show();return;}
+            Runnable save=()->{
+                String error=service==null?"Radio disconnected":service.saveRepeaterSetting(source,client,node.id,field,value);
+                if(error.isEmpty()){dialog.dismiss();settingsFingerprint="";scheduleRefresh();}
+                else Toast.makeText(this,error,Toast.LENGTH_LONG).show();
+            };
+            if(field.disruptive())new AlertDialog.Builder(this).setTitle("Change "+field.title.toLowerCase(Locale.ROOT)+"?")
+                .setMessage("This changes "+nodeName(RadioProfile.MESHCORE,node)+". Radio or routing changes can interrupt remote access; radio changes may require reboot.")
+                .setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->save.run()).show();
+            else save.run();
+        });
+    }
+    private EditText repeaterSecret(LinearLayout form,String label){
+        EditText field=mcInput(form,label,"",android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        field.setSaveEnabled(false);field.setImportantForAutofill(View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS);
+        return field;
+    }
+    private void repeaterLogin(Node node,String source,ProtocolClient expected){
+        LinearLayout form=column();form.setPadding(dp(20),dp(8),dp(20),dp(8));
+        EditText password=repeaterSecret(form,"Repeater password");
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Administer "+nodeName(RadioProfile.MESHCORE,node))
+            .setView(form).setMessage("Sign in over LoRa. Password is not saved. Administrator permission is required to change settings.")
+            .setNegativeButton("Cancel",null).setPositiveButton("Sign in",(d,w)->{
+                repeaterConsoleResult=false;
+                if(service!=null)service.administerRepeater(source,expected,node.id,password.getText().toString(),true);
+                password.setText("");scheduleRefresh();}).create();
+        dialog.setOnDismissListener(d->password.setText(""));dialog.show();
+    }
+    private void repeaterConsole(Node node,String source,ProtocolClient client){
+        LinearLayout form=column();form.setPadding(dp(20),dp(8),dp(20),dp(8));
+        EditText command=repeaterSecret(form,"MeshCore command (e.g. ver, get name)");
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Remote console").setView(form)
+            .setNegativeButton("Cancel",null).setPositiveButton("Review",(d,w)->{
+                sendRepeaterCommand(node,source,client,command.getText().toString(),true);command.setText("");}).create();
+        dialog.setOnDismissListener(d->command.setText(""));dialog.show();
+    }
+    private void repeaterPassword(Node node,String source,ProtocolClient client,boolean guest){
+        LinearLayout form=column();form.setPadding(dp(20),dp(8),dp(20),dp(8));
+        EditText password=repeaterSecret(form,"New password (1–15 UTF-8 bytes)");
+        EditText again=repeaterSecret(form,"Repeat new password");
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle(guest?"Guest password":"Administrator password").setView(form)
+            .setNegativeButton("Cancel",null).setPositiveButton("Review",(d,w)->{
+                String value=password.getText().toString();
+                if(!value.equals(again.getText().toString())||value.isEmpty()||value.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>15||value.contains("\n")||value.contains("\r")||value.indexOf('\0')>=0){
+                    Toast.makeText(this,"Passwords must match and contain 1–15 UTF-8 bytes",Toast.LENGTH_LONG).show();return;}
+                sendRepeaterCommand(node,source,client,(guest?"set guest.password ":"password ")+value,true);
+            }).create();
+        dialog.setOnDismissListener(d->{password.setText("");again.setText("");});dialog.show();
+    }
+    private void sendRepeaterCommand(Node node,String source,ProtocolClient expected,String command,boolean privatePreview){
+        if(command.trim().isEmpty())return;
+        String lower=command.toLowerCase(Locale.ROOT);
+        boolean secret=privatePreview||lower.contains("password")||lower.contains("key")||lower.contains("secret");
+        new AlertDialog.Builder(this).setTitle("Send to "+nodeName(RadioProfile.MESHCORE,node)+"?")
+            .setMessage((secret?"Private command (hidden)":command)+"\n\nChanges affect this repeater. Radio or routing changes may interrupt remote access; some require reboot. One manual LoRa send, no automatic retry.")
+            .setNegativeButton("Cancel",null).setPositiveButton("Send",(d,w)->{
+                repeaterConsoleResult=false;
+                if(service!=null){
+                    long before=expected.mcRepeaterAdmin.revision;
+                    service.administerRepeater(source,expected,node.id,command,false);
+                    repeaterConsoleResult=expected.mcRepeaterAdmin.revision!=before;
+                    if(!repeaterConsoleResult)Toast.makeText(this,expected.mcError.isEmpty()?"Radio unavailable":expected.mcError,Toast.LENGTH_LONG).show();
+                }
+                scheduleRefresh();}).show();
+    }
+
+    private void confirmRepeaterQuery(Node node,String source,
+                                      McRemoteDiagnostics.Kind kind,int offset){
+        ProtocolClient expected=mcClient();
+        if(!source.equals(radio(RadioProfile.MESHCORE))||expected==null
+                ||!expected.ready||!expected.nodes.containsKey(node.id)){
+            Toast.makeText(this,"Original MeshCore radio or repeater is no longer available",
+                Toast.LENGTH_LONG).show();return;
+        }
+        long remaining=service==null?0:service.remoteRepeaterCooldownMs(node.id);
+        remaining=Math.max(remaining,expected.mcRemote.remainingCooldownMs(
+            node.id,SystemClock.elapsedRealtime()));
+        if(remaining>0){
+            Toast.makeText(this,McRemoteDiagnostics.remainingLabel(remaining),
+                Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this)
+            .setTitle(kind==McRemoteDiagnostics.Kind.STATUS?
+                "Request repeater status?":"Request repeater neighbors?")
+            .setMessage("Sends one LoRa request; mesh relays may transmit. "
+                +"Requests share a 30-second limit. No automatic retry.")
+            .setNegativeButton("Cancel",null)
+            .setPositiveButton("Request",(d,w)->{
+                if(!source.equals(radio(RadioProfile.MESHCORE))||mcClient()!=expected){
+                    Toast.makeText(this,"Radio changed; reopen the repeater",Toast.LENGTH_LONG).show();
+                    return;
+                }
+                if(service!=null)service.requestRemoteRepeater(source,expected,
+                    kind,node.id,offset);
+                scheduleRefresh();
+            }).show();
+    }
+
+    private void mtNodeMetrics(Node saved){ProtocolClient c=mtClient();Node live=c==null?null:c.nodes.get(saved.id);Node n=live==null?saved:live;StringBuilder content=new StringBuilder("Latest reported values\n");for(Map.Entry<String,String> entry:n.metrics.entrySet())content.append("\n").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");if(n.metrics.isEmpty())content.append("No telemetry received yet.\n");content.append("\nRecent samples\n");for(int i=n.metricHistory.size()-1;i>=0;i--)content.append(n.metricHistory.get(i)).append("\n\n");TextView data=text(content.toString(),13,WHITE);data.setPadding(dp(18),dp(12),dp(18),dp(12));ScrollView scroll=new ScrollView(this);scroll.addView(data);new AlertDialog.Builder(this).setTitle(nodeName(RadioProfile.MESHTASTIC,n)).setView(scroll).setPositiveButton("Request telemetry",(d,w)->mtCommand(client->client.requestMtMetrics(n.id,false))).setNeutralButton("Traceroute",(d,w)->mtConfirm("Request a new traceroute",false,()->mtCommand(client->client.requestMtMetrics(n.id,true)))).setNegativeButton("Back",null).show();}
     void showMap(double lat,double lon){mapFocus=new org.maplibre.android.geometry.LatLng(lat,lon);page(4);}
     private void conversationOptions(RadioProfile p,String radio,Target target){Flags flags=snapshot(p).flags("chat",target.topic);new AlertDialog.Builder(this).setTitle(p.title+" · "+target.title).setItems(new String[]{flags.pinned?"Unpin conversation":"Pin conversation",flags.muted?"Unmute notifications":"Mute notifications"},(d,index)->{if(service!=null)service.history.flag(p,radio,"chat",target.topic,index==0?"pinned":"muted",index==0?!flags.pinned:!flags.muted);}).setNegativeButton("Close",null).show();}
     private void openChat(RadioProfile p,String radio,Target target){saveDraft();remember();selected=3;chatProfile=p;chatRadio=radio;chat=target;chatLimit=100;buildPage();}
@@ -521,8 +1015,8 @@ public final class MainActivity extends Activity {
         scroll=new ScrollView(this);results=column();results.setPadding(dp(16),dp(12),dp(16),dp(12));scroll.addView(results);body.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
         LinearLayout entry=column();entry.setPadding(dp(12),dp(6),dp(12),dp(8));entry.setBackgroundColor(PANEL);composer=new EditText(this);composer.setTextColor(WHITE);composer.setHintTextColor(MUTED);composer.setHint("Write a message…");composer.setTextSize(15);composer.setMinLines(1);composer.setMaxLines(4);composer.setInputType(android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE|android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);composer.setFilters(new InputFilter[]{new InputFilter.LengthFilter(1000)});entry.addView(composer,new LinearLayout.LayoutParams(-1,-2));LinearLayout controls=row();count=text("0 bytes",12,MUTED);controls.addView(count,new LinearLayout.LayoutParams(0,-2,1));sendButton=button("Send",this::send);controls.addView(sendButton,new LinearLayout.LayoutParams(dp(80),dp(48)));controls.addView(button("Replies",this::quickReply));entry.addView(controls);body.addView(entry);
         composer.addTextChangedListener(watcher(()->{composerRevision++;drafts.put(draftKey(),composer.getText().toString());updateComposer();if(!applyingDraft){handler.removeCallbacks(saveDraftTask);handler.postDelayed(saveDraftTask,500);}}));if(drafts.containsKey(draftKey()))applyDraft(drafts.get(draftKey()));loadDraft();refreshContent();scroll.post(()->scroll.fullScroll(View.FOCUS_DOWN));}
-    private void updateComposer(){if(composer==null)return;int size=composer.getText().toString().getBytes(StandardCharsets.UTF_8).length;count.setText(size+" UTF-8 bytes");sendButton.setEnabled(!sending&&ready(chatProfile,chatRadio)&&size>0);sendButton.setText(sending?"Saving…":"Send");}
-    private void send(){if(service==null||chat==null||sending)return;final String value=composer.getText().toString(),key=draftKey();saveDraft();sending=true;updateComposer();withPermission(()->service.send(chatProfile,chatRadio,chat,value,error->{sending=false;if(!error.isEmpty())Toast.makeText(this,error,Toast.LENGTH_LONG).show();else if(chat!=null&&key.equals(draftKey())&&composer!=null&&composer.getText().toString().equals(value)){composer.setText("");saveDraft();}else if(chat!=null&&key.equals(draftKey()))saveDraft();updateComposer();scheduleRefresh();}));}
+    private void updateComposer(){if(composer==null)return;int size=composer.getText().toString().getBytes(StandardCharsets.UTF_8).length;count.setText(size+" UTF-8 bytes"+(chat!=null&&chat.replyId!=0?" · replying #"+Long.toUnsignedString(chat.replyId):""));sendButton.setEnabled(!sending&&ready(chatProfile,chatRadio)&&size>0);sendButton.setText(sending?"Saving…":"Send");}
+    private void send(){if(service==null||chat==null||sending)return;final String value=composer.getText().toString(),key=draftKey();saveDraft();sending=true;updateComposer();withPermission(()->service.send(chatProfile,chatRadio,chat,value,error->{sending=false;if(!error.isEmpty())Toast.makeText(this,error,Toast.LENGTH_LONG).show();else if(chat!=null&&key.equals(draftKey())&&composer!=null&&composer.getText().toString().equals(value)){composer.setText("");chat=chat.reply(0,false);saveDraft();}else if(chat!=null&&key.equals(draftKey()))saveDraft();updateComposer();scheduleRefresh();}));}
     private void messages(){
         ArrayList<Message> visibleMessages=new ArrayList<>();if(radio(chatProfile).equals(chatRadio))for(Message m:snapshot(chatProfile).messages)if(m.topic.equals(chat.topic))visibleMessages.add(m);
         if(visibleMessages.size()>chatLimit)addButton(results,"Show earlier messages",()->{chatLimit+=100;refreshContent();});
@@ -531,9 +1025,9 @@ public final class MainActivity extends Activity {
             RadioProfile network=chatProfile;String sourceRadio=chatRadio;
             View.OnLongClickListener actions=v->{v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);messageActions(network,sourceRadio,m);return true;};
             c.setOnLongClickListener(actions);author.setOnLongClickListener(actions);
-            TextView body=text(MessageActions.displayBody(network,m),16,WHITE);body.setOnLongClickListener(actions);c.addView(body);
+            String association="";if(network==RadioProfile.MESHTASTIC&&m.rx.replyId!=0){Message original=null;int matches=0;for(Message candidate:visibleMessages)if(candidate.rx.packetId==m.rx.replyId&&!candidate.rx.emoji){original=candidate;matches++;}association=(m.rx.emoji?"Reaction to ":"Reply to ")+(matches==1?original.sender+": "+original.body.substring(0,Math.min(60,original.body.length())):"message #"+Long.toUnsignedString(m.rx.replyId))+"\n";}TextView body=text(association+MessageActions.displayBody(network,m),16,WHITE);body.setOnLongClickListener(actions);c.addView(body);
             if(!m.outgoing){Runnable details=()->messageDetails(network,sourceRadio,m);c.setOnClickListener(v->details.run());body.setOnClickListener(v->details.run());TextView reception=text(m.rx.summary()+" · Details ›",12,network==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC);reception.setPadding(0,dp(8),0,dp(4));reception.setOnClickListener(v->details.run());reception.setOnLongClickListener(actions);c.addView(reception);}
-            double[] coordinates=FieldTools.coordinates(m.body);if(coordinates!=null){TextView link=text("◇ Show coordinates on map",13,ORANGE);link.setPadding(0,dp(8),0,dp(8));link.setOnClickListener(v->showMap(coordinates[0],coordinates[1]));link.setOnLongClickListener(actions);c.addView(link);}space(c,8);TextView stamp=text(when(m.timestamp)+(m.outgoing?" • "+deliveryLabel(m.state):""),11,m.state.equals("delivered")?GREEN:m.state.equals("rejected")?RED:MUTED);stamp.setOnLongClickListener(actions);c.addView(stamp);if(!m.read&&!m.outgoing)unread=true;}
+            double[] coordinates=FieldTools.coordinates(m.body);if(coordinates!=null){TextView link=text("◇ Show coordinates on map",13,ORANGE);link.setPadding(0,dp(8),0,dp(8));link.setOnClickListener(v->showMap(coordinates[0],coordinates[1]));link.setOnLongClickListener(actions);c.addView(link);}space(c,8);TextView stamp=text(when(m.timestamp)+(m.outgoing?" • "+OutgoingStatus.label(m):""),11,m.state.equals("delivered")?GREEN:m.state.equals("rejected")?RED:OutgoingStatus.needsReview(m)?ORANGE:MUTED);stamp.setOnLongClickListener(actions);c.addView(stamp);if(!m.read&&!m.outgoing)unread=true;}
         if(shown==0)results.addView(text("No messages in this conversation yet. Your draft is saved automatically.",14,MUTED));
         if(unread&&visible&&service!=null)service.history.read(chatProfile,chatRadio,chat.topic);
     }
@@ -555,7 +1049,7 @@ public final class MainActivity extends Activity {
      */
     private Node messageSenderNode(RadioProfile network,String sourceRadio,Message message){
         if(message.outgoing||!sourceRadio.equals(radio(network)))return null;
-        List<Node> nodes=snapshot(network).nodes;
+        List<Node> nodes=snapshot(network).nodes;if(network==RadioProfile.MESHTASTIC&&message.rx.source>0){for(Node node:nodes)if(node.id.equals(Long.toString(message.rx.source)))return node;return null;}
         String peer=message.peer==null?"":message.peer;
         if(!peer.isEmpty()){
             for(Node node:nodes)if(node.id.equalsIgnoreCase(peer))return node;
@@ -599,6 +1093,8 @@ public final class MainActivity extends Activity {
         Node contact=messageSenderNode(network,sourceRadio,message);
         ArrayList<String> choices=new ArrayList<>();
         ArrayList<Runnable> tasks=new ArrayList<>();
+        if(network==RadioProfile.MESHTASTIC&&message.rx.packetId!=0&&!message.rx.emoji){choices.add("Reply to this message");tasks.add(()->{if(chat!=null&&chatProfile==network&&chatRadio.equals(sourceRadio)&&chat.topic.equals(message.topic)){chat=chat.reply(message.rx.packetId,false);updateComposer();composer.requestFocus();}});choices.add("React to this message");tasks.add(()->{String[] emojis={"👍","❤️","✅","❓"};new AlertDialog.Builder(this).setTitle("Reaction").setItems(emojis,(d,i)->{Target target=message.target().reply(message.rx.packetId,true);if(service!=null)service.send(network,sourceRadio,target,emojis[i],error->{if(!error.isEmpty())Toast.makeText(this,error,Toast.LENGTH_LONG).show();scheduleRefresh();});}).setNegativeButton("Cancel",null).show();});}
+        if(network==RadioProfile.MESHTASTIC&&chat!=null&&chat.replyId!=0){choices.add("Cancel reply");tasks.add(()->{chat=chat.reply(0,false);updateComposer();});}
 
         if(!message.outgoing&&message.group&&!mention.isEmpty()){
             choices.add("Reply mentioning sender");
@@ -615,6 +1111,10 @@ public final class MainActivity extends Activity {
             String address=!message.outgoing&&message.group?mention:"";
             insertMessageDraft((address.isEmpty()?"":address+" ")+"“"+compact+"”");
         });
+        if(OutgoingStatus.canPrepareNewDraft(message)){
+            choices.add("Prepare as new draft (manual)");
+            tasks.add(()->prepareOutgoingDraft(network,sourceRadio,message));
+        }
         choices.add("Copy message");
         tasks.add(()->copyMessageText("MeshCrossway message",visibleText));
 
@@ -625,7 +1125,7 @@ public final class MainActivity extends Activity {
         choices.add("Message information");
         tasks.add(()->{
             if(message.outgoing)new AlertDialog.Builder(this).setTitle("Sent message")
-                    .setMessage(when(message.timestamp)+"\n"+deliveryLabel(message.state))
+                    .setMessage(when(message.timestamp)+"\n"+OutgoingStatus.label(message))
                     .setPositiveButton("Close",null).show();
             else messageDetails(network,sourceRadio,message);
         });
@@ -647,7 +1147,46 @@ public final class MainActivity extends Activity {
                 .setNegativeButton("Cancel",null).show();
     }
 
-    private void messageDetails(RadioProfile network,String sourceRadio,Message message){RxInfo rx=message.rx;LinearLayout details=column();details.setPadding(dp(20),dp(12),dp(20),dp(16));details.addView(text(network.title+" · "+message.sender,17,WHITE));details.addView(text(when(message.timestamp),12,MUTED));space(details,12);details.addView(text(rx.summary(),14,network==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC));space(details,14);details.addView(text("Received path",17,WHITE));
+    /** Recheck the latest saved state: a late ACK may arrive while the dialog is open. */
+    private boolean outgoingStillReviewable(RadioProfile network,String sourceRadio,Message saved){
+        if(service==null||!sourceRadio.equals(radio(network)))return false;
+        for(Message latest:snapshot(network).messages)
+            if(OutgoingStatus.stillReviewable(saved,latest))return true;
+        return false;
+    }
+
+    /**
+     * Never replay a previous radio frame. User consent only copies the text
+     * into the same protocol/radio/channel composer. Send remains a second tap.
+     */
+    private void prepareOutgoingDraft(RadioProfile network,String sourceRadio,Message message){
+        if(!OutgoingStatus.canPrepareNewDraft(message)
+                ||!OutgoingStatus.sameComposer(chatProfile,network,chatRadio,sourceRadio,chat,message)
+                ||composer==null){
+            Toast.makeText(this,"Open the original conversation on the correct radio",Toast.LENGTH_LONG).show();
+            return;
+        }
+        new AlertDialog.Builder(this).setTitle("Prepare a new message?")
+                .setMessage("The previous outcome is not confirmed or was rejected. A copy sent again may reach someone twice.\n\n"
+                    +"This replaces the current draft with the original text. Nothing is sent automatically. "
+                    +"Review the recipient, channel and content before tapping Send.")
+                .setNegativeButton("Cancel",null)
+                .setPositiveButton("Copy into composer",(dialog,which)->{
+                    if(!OutgoingStatus.sameComposer(chatProfile,network,chatRadio,sourceRadio,chat,message)
+                            ||composer==null||!outgoingStillReviewable(network,sourceRadio,message)){
+                        Toast.makeText(this,"Message or radio status changed; review it again",Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    chat=chat.reply(0,false);
+                    composer.setText(message.body);
+                    composer.setSelection(composer.length());
+                    saveDraft();
+                    updateComposer();
+                    composer.requestFocus();
+                }).show();
+    }
+
+    private void messageDetails(RadioProfile network,String sourceRadio,Message message){RxInfo rx=message.rx;LinearLayout details=column();details.setPadding(dp(20),dp(12),dp(20),dp(16));details.addView(text(network.title+" · "+message.sender,17,WHITE));details.addView(text(when(message.timestamp),12,MUTED));space(details,12);details.addView(text(rx.summary(),14,network==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC));space(details,6);details.addView(text("Source: "+rx.provenance(),12,MUTED));space(details,6);details.addView(text("Historical message metadata — not a live reachability or end-to-end link measurement.",12,MUTED));space(details,14);details.addView(text("Received path",17,WHITE));
         if(rx.observed){details.addView(text("Observed channel copy · "+rx.width+"-byte repeater hashes",12,MUTED));details.addView(text("Sender: "+message.sender,14,WHITE));for(int i=0;i<rx.path.length();i+=rx.width*2){String hash=rx.path.substring(i,i+rx.width*2);ArrayList<Node> matches=new ArrayList<>();if(radio(network).equals(sourceRadio))for(Node node:snapshot(network).nodes)if(node.id.startsWith(hash))matches.add(node);String name=matches.isEmpty()?"Unknown repeater":matches.size()==1?(matches.get(0).name.isEmpty()?"Saved contact":matches.get(0).name):"Ambiguous · "+matches.size()+" saved contacts";TextView hop=text((i/(rx.width*2)+1)+". "+name+"  ["+hash+"]",14,WHITE);hop.setPadding(0,dp(6),0,dp(6));details.addView(hop);}if(rx.path.isEmpty())details.addView(text("No repeaters in this observed flood path",14,WHITE));details.addView(text("Receiver: this radio",14,WHITE));space(details,12);details.addView(text("Names are matches to saved contacts, not unique proof of identity. This is one observed copy; repeats may take other routes.",12,MUTED));}
         else details.addView(text(network==RadioProfile.MESHCORE?"The radio reports the hop count for flood messages, but this message has no captured full path. Older backlog, direct routing and private messages may not include repeater identities.":"Meshtastic text packets do not contain a complete repeater list. A new traceroute would measure a new route, not the path this message travelled.",14,MUTED));
         if(network==RadioProfile.MESHTASTIC&&rx.relay>=0&&rx.relay<=255){String hash=String.format(Locale.ROOT,"%02x",rx.relay);ArrayList<String> names=new ArrayList<>();if(radio(network).equals(sourceRadio))for(Node node:snapshot(network).nodes)if((Long.parseLong(node.id)&255)==rx.relay)names.add(nodeName(network,node));space(details,10);details.addView(text("Reported relay suffix: "+hash+(names.size()==1?" · "+names.get(0):names.size()>1?" · ambiguous ("+names.size()+" contacts)":" · unknown contact"),13,MUTED));}if(rx.mqtt)details.addView(text("MQTT was used somewhere along this packet's route.",13,MUTED));ScrollView scroll=new ScrollView(this);scroll.addView(details);new AlertDialog.Builder(this).setTitle("Message details").setView(scroll).setPositiveButton("Back",null).show();}
@@ -656,9 +1195,13 @@ public final class MainActivity extends Activity {
         if(settingsSection.isEmpty()){
             section(results,"RADIOS");LinearLayout radios=group(results);for(RadioProfile p:RadioProfile.values())menuRow(radios,"radio",p.title,ready(p,radio(p))?"Connected · manage this radio":"Connection and saved device",()->openSettings("radio",p),p==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC);menuRow(radios,"settings","Connections","Automatic reconnect and Bluetooth",()->openSettings("connections",null),ORANGE);
             section(results,"APPLICATION");LinearLayout app=group(results);menuRow(app,"settings","Appearance & colors","System, Color, Gradient or Photo background",()->openSettings("appearance",null),ORANGE);menuRow(app,"bell","Notifications & messages","Message previews and quick replies",()->openSettings("messages",null),ORANGE);menuRow(app,"map","Map & location","Map layers, offline areas, GPS and tracks",()->openSettings("location",null),ORANGE);menuRow(app,"backup","Data & backup","Export and import private history",()->openSettings("data",null),ORANGE);
-            section(results,"INFORMATION");LinearLayout info=group(results);menuRow(info,"info","About MeshCrossway","Version "+installedVersion()+" · licenses and map attribution",()->openSettings("about",null),ORANGE);return;
+            section(results,"INFORMATION");LinearLayout info=group(results);menuRow(info,"info","Advanced network diagnostics","Separate MT/MC traffic and MeshCore repeater inventory",()->openSettings("network_diagnostics",null),ORANGE);menuRow(info,"info","Support diagnostic","Export connection information without private content",this::supportPanel,ORANGE);menuRow(info,"info","About MeshCrossway","Version "+installedVersion()+" · licenses and map attribution",()->openSettings("about",null),ORANGE);return;
         }
         if(settingsSection.equals("radio")){radioPage();return;}
+        if(settingsSection.equals("network_diagnostics")){advancedNetworkDiagnostics();return;}
+        if(settingsSection.equals("mc_repeater_dossier")){repeaterDossierPage();return;}
+        if(settingsSection.startsWith("mc_")){meshCoreSettingsDetail();return;}
+        if(settingsSection.startsWith("mt_")){meshtasticSettingsDetail();return;}
         if(settingsSection.equals("appearance")){appearancePage();return;}
         if(settingsSection.equals("connections")){section(results,"CONNECTIONS");LinearLayout c=group(results);toggleRow(c,"Automatic reconnection","Reconnect each saved radio independently",service!=null&&service.autoReconnect,on->{if(service!=null)service.setAutoReconnect(on);});menuRow(c,"radio","Connect saved radios","Start both saved connections",()->withPermission(()->{service.connectSaved();rebuildContent();}),ORANGE);menuRow(c,"settings","Android Bluetooth settings","System pairing and paired devices",()->startActivity(new Intent(Settings.ACTION_BLUETOOTH_SETTINGS)),ORANGE);menuRow(c,"radio","Disconnect both radios","Stops radio connections; track recording is separate",()->new AlertDialog.Builder(this).setTitle("Disconnect both radios?").setPositiveButton("Disconnect",(d,w)->{if(service!=null)startService(new Intent(this,RadioService.class).setAction("STOP"));rebuildContent();}).setNegativeButton("Cancel",null).show(),RED);return;}
         if(settingsSection.equals("messages")){section(results,"NOTIFICATIONS");LinearLayout c=group(results);toggleRow(c,"Message previews","Show message contents in notifications",getSharedPreferences("ui",MODE_PRIVATE).getBoolean("messagePreviews",false),on->getSharedPreferences("ui",MODE_PRIVATE).edit().putBoolean("messagePreviews",on).apply());menuRow(c,"bell","Android notification settings","Sound, vibration and notification permission",()->startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,getPackageName())),ORANGE);section(results,"MESSAGES");menuRow(group(results),"chats","Quick replies","Edit the phrases available in conversations",this::editQuickReplies,ORANGE);return;}
@@ -833,9 +1376,285 @@ public final class MainActivity extends Activity {
     }
     private void radioPage(){RadioProfile p=settingsRadio==null?RadioProfile.MESHCORE:settingsRadio;RadioService.Session session=service==null?null:service.sessions.get(p);section(results,p.title.toUpperCase(Locale.ROOT));LinearLayout info=group(results);TextView name=text(session!=null&&!session.name.isEmpty()?session.name:"No radio selected",18,WHITE);name.setTypeface(null,Typeface.BOLD);name.setPadding(dp(16),dp(14),dp(16),dp(4));info.addView(name);TextView status=text(session==null?"Controller starting":session.status,13,session!=null&&session.verified?GREEN:MUTED);status.setPadding(dp(16),dp(4),dp(16),dp(14));info.addView(status);
         if(choosing!=null){section(results,"CHOOSE RADIO");LinearLayout scan=group(results);menuRow(scan,"radio",service!=null&&service.scanning?"Stop scan":"Scan nearby radios",service==null?"Starting":service.scanStatus,()->withPermission(()->{if(service.scanning)service.stopScan();else service.scan(p);rebuildContent();}),ORANGE);if(service!=null)for(BluetoothDevice device:service.discovered(p)){String address=device.getAddress();menuRow(scan,"radio",service.deviceName(device),service.discoveryLabel(device),()->withPermission(()->{service.connect(p,address);choosing=null;rebuildContent();}),p==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC);}menuRow(scan,"settings",service!=null&&service.showOtherDevices?"Show matching radios":"Show other BLE devices","",()->{if(service!=null)service.showOtherDevices=!service.showOtherDevices;rebuildContent();},MUTED);return;}
+        if(p==RadioProfile.MESHCORE)meshCoreSettingsRows(session);
+        else {meshtasticSettingsRows(session);section(results,"CONNECTION");LinearLayout mtActions=group(results);menuRow(mtActions,"radio","Choose radio","Find a different Meshtastic device",()->withPermission(()->{choosing=p;service.scan(p);buildPage();}),RADIO_MT);if(session!=null&&!session.address.isEmpty())menuRow(mtActions,"radio",session.connected?"Disconnect":"Reconnect / synchronize",session.address,()->{if(session.connected)service.disconnect(p);else withPermission(()->service.connect(p,session.address));rebuildContent();},session.connected?RED:RADIO_MT);return;}
         section(results,"CONNECTION");LinearLayout actions=group(results);menuRow(actions,"radio","Choose radio","Find a different "+p.title+" device",()->withPermission(()->{choosing=p;service.scan(p);buildPage();}),ORANGE);if(session!=null&&!session.address.isEmpty()){menuRow(actions,"radio","Reconnect / synchronize",session.address,()->withPermission(()->{service.connect(p,session.address);rebuildContent();}),ORANGE);if(session.connected||session.desired)menuRow(actions,"radio",session.connected?"Disconnect":"Cancel connection","Only this radio is affected",()->{service.disconnect(p);rebuildContent();},RED);}
         section(results,"ADVANCED");LinearLayout advanced=group(results);menuRow(advanced,"info","Connection details","Connection phases, MTU and diagnostics",()->{if(service!=null)new AlertDialog.Builder(this).setTitle(p.title).setMessage(service.diagnostics(p)).setPositiveButton("Back",null).show();},MUTED);if(session!=null&&!session.address.isEmpty())menuRow(advanced,"settings","Pair in Android","Open the system pairing process",()->withPermission(()->service.pair(p)),MUTED);
     }
+    private ProtocolClient mtClient(){RadioService.Session s=service==null?null:service.sessions.get(RadioProfile.MESHTASTIC);return s==null?null:s.client;}
+    private void mtCommand(java.util.function.Consumer<ProtocolClient> action){RadioService.Session s=service==null?null:service.sessions.get(RadioProfile.MESHTASTIC);if(s==null||!s.verified){Toast.makeText(this,"Connect and synchronize the Meshtastic radio first",Toast.LENGTH_LONG).show();return;}service.configureMeshtastic(s.address,action);scheduleRefresh();}
+    private void meshtasticSettingsRows(RadioService.Session session){
+        ProtocolClient c=mtClient();boolean online=session!=null&&session.verified;if(c!=null&&c.ready&&!c.mtAdminRequested){c.mtAdminRequested=true;mtCommand(ProtocolClient::requestMtSessionKey);}
+        section(results,"CONFIGURATION");LinearLayout conf=group(results);
+        menuRow(conf,"info","User",c!=null&&!c.mtOwnerIsEmpty()?c.mtOwnerName():"Node identity and status message",()->openSettings("mt_user",RadioProfile.MESHTASTIC),RADIO_MT);
+        menuRow(conf,"radio","LoRa",c==null?"Region, preset and radio behavior":c.regionName()+" · hop limit "+c.hopLimit,()->openSettings("mt_lora",RadioProfile.MESHTASTIC),RADIO_MT);
+        menuRow(conf,"channels","Channels",c==null?"Primary and secondary channels":c.channels.size()+" synchronized channel slots",()->openSettings("mt_channels",RadioProfile.MESHTASTIC),RADIO_MT);
+        menuRow(conf,"info","Security","Packet authenticity and key management",()->openSettings("mt_security",RadioProfile.MESHTASTIC),RADIO_MT);
+        menuRow(conf,"settings","Device configuration","Device, Position, Power, Network, Display, Bluetooth",()->openSettings("mt_device",RadioProfile.MESHTASTIC),RADIO_MT);
+        menuRow(conf,"settings","Module configuration","MQTT, telemetry, canned messages and more",()->openSettings("mt_modules",RadioProfile.MESHTASTIC),RADIO_MT);
+        menuRow(conf,"settings","Administration","Admin keys, logs and managed-device controls",()->openSettings("mt_admin",RadioProfile.MESHTASTIC),RADIO_MT);
+        section(results,"BACKUP & RESTORE");LinearLayout backup=group(results);menuRow(backup,"backup","Import configuration","Restore a Meshtastic configuration file",()->Toast.makeText(this,"Configuration import is not supported by this radio transport yet",Toast.LENGTH_LONG).show(),MUTED);menuRow(backup,"backup","Export configuration","Save a Meshtastic configuration file",()->Toast.makeText(this,"Configuration export is not supported by this radio transport yet",Toast.LENGTH_LONG).show(),MUTED);
+        if(!online)results.addView(text("Connect to the Meshtastic radio to read and change its settings.",13,MUTED));
+    }
+    private void meshtasticSettingsDetail(){ProtocolClient c=mtClient();if(c==null){RadioService.Session session=service==null?null:service.sessions.get(RadioProfile.MESHTASTIC);if(session!=null&&session.pendingMtEdit!=null&&session.pendingMtAddress.equals(session.address)){boolean reconnecting=session.desired&&session.retries<5&&service.autoReconnect;mtSaveProgress(reconnecting?"Waiting for the radio to reconnect":"Radio offline — confirmation paused",session.status+". "+(reconnecting?"This page updates automatically; settings will be checked after synchronization.":"Reconnect to check whether the change was applied."),reconnecting);menuRow(group(results),"refresh","Reconnect radio","Continue checking the previous save",()->withPermission(()->service.connect(RadioProfile.MESHTASTIC,session.address)),RADIO_MT);}else results.addView(text("Connect to the Meshtastic radio to load this configuration.",14,MUTED));return;}mtAdminStatus(c);if(c.admin.edit!=null)return;switch(settingsSection){case "mt_user":mtUserSettings(c);return;case "mt_lora":mtLoraSettings(c);return;case "mt_channels":mtChannelSettings(c);return;case "mt_device":mtDeviceSettings(c);return;case "mt_security":mtSecuritySettings(c);return;case "mt_modules":mtModuleSettings(c);return;case "mt_admin":section(results,"ADMINISTRATION");results.addView(text("Admin-key management and device logs are not yet available through MeshCrossway.",14,MUTED));return;}}
+    private void mtSaveProgress(String title,String detail,boolean busy){
+        LinearLayout info=group(results);menuRow(info,"info",title,detail,null,RADIO_MT);
+        if(busy){ProgressBar progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setIndeterminate(true);progress.setContentDescription(title);LinearLayout.LayoutParams size=new LinearLayout.LayoutParams(-1,dp(4));size.setMargins(dp(16),0,dp(16),dp(14));info.addView(progress,size);}
+    }
+    private void mtAdminStatus(ProtocolClient c){
+        boolean pending=c.admin.edit!=null;
+        boolean waiting=pending&&c.admin.edit.deadline!=Long.MAX_VALUE;
+        if(pending)mtSaveProgress(!c.ready?"Synchronizing radio":c.admin.status,!c.ready?"Waiting for synchronization before checking the change. This page updates automatically.":"Keep this page open. The radio may restart; confirmation appears here automatically.",waiting);
+        else menuRow(group(results),"info","Radio settings",!c.admin.error.isEmpty()?c.admin.error:!c.admin.status.isEmpty()?c.admin.status:"Firmware "+c.firmware,null,c.admin.error.isEmpty()?RADIO_MT:RED);
+        if(!waiting){LinearLayout actions=group(results);
+            if(pending)menuRow(actions,"settings","Use current radio settings","Stop waiting for confirmation and review the last values read",()->mtCommand(client->{client.admin.discard();mtLoraDraft=null;mtLoraSaving=false;}),RADIO_MT);
+            menuRow(actions,"refresh",pending?"Check save again":"Refresh from radio",pending?"Read the radio to check whether the change was applied":"Read current settings",()->mtCommand(client->{client.admin.retryReads();if(client.admin.edit!=null&&client.admin.edit.dispatched)client.admin.verify();else{client.requestMtSessionKey();if(settingsSection.equals("mt_user")){client.requestMtOwner();if(client.mtModuleSupported(13))client.requestMtModule(13);}else if(settingsSection.equals("mt_lora")){mtLoraDraft=null;client.requestMtConfig(5);}else if(settingsSection.equals("mt_security"))client.requestMtConfig(7);else if(settingsSection.equals("mt_modules")){client.requestMtModule(0);client.requestMtModule(13);}else if(settingsSection.equals("mt_device")){client.requestMtConfig(0);client.requestMtConfig(6);}}}),RADIO_MT);
+        }
+    }
+    private boolean mtLoaded(ProtocolClient c,boolean loaded,Runnable request){if(!loaded){request.run();results.addView(text("Reading settings from radio. Controls become available after synchronization.",14,MUTED));return false;}if(c.admin.edit!=null){results.addView(text(c.admin.status,14,MUTED));return false;}return true;}
+    private void mtUserSettings(ProtocolClient c){section(results,"USER CONFIG");if(!mtLoaded(c,!c.mtOwnerIsEmpty(),()->mtCommand(ProtocolClient::requestMtOwner)))return;LinearLayout info=group(results);menuRow(info,"info","Node ID","!"+String.format(Locale.ROOT,"%08x",c.myNum),null,RADIO_MT);menuRow(info,"info","Long Name",c.mtOwnerValue(2),()->editMtOwner(c,false),RADIO_MT);menuRow(info,"info","Short Name",c.mtOwnerValue(3),()->editMtOwner(c,true),RADIO_MT);menuRow(info,"info","Hardware model",c.hardware,null,RADIO_MT);
+        if(c.mtAtLeast(6,9))toggleRow(info,"Unmessageable","Unmonitored or infrastructure",c.mtOwnerNumber(9)!=0,on->mtConfirm("Unmessageable",false,()->mtCommand(client->client.setMtOwnerField(9,on?1:0))));
+        menuRow(info,"info","Licensed amateur radio (Ham)",c.mtHam()?"Enabled":"Disabled",()->{if(c.mtHam())mtConfirm("Disable licensed mode",false,()->mtCommand(client->client.setMtOwnerField(6,0)));else editMtHam(c);},RADIO_MT);
+        if(c.mtModuleSupported(13)){if(!c.mtModuleLoaded(13))mtCommand(client->client.requestMtModule(13));else menuRow(info,"info","Status Message",c.mtStatus().isEmpty()?"Not set":c.mtStatus(),()->editMtStatus(c),RADIO_MT);}}
+    private void mtConfirm(String title,boolean restart,Runnable save){new AlertDialog.Builder(this).setTitle(title).setMessage(restart?"Save this change? The radio may restart; MeshCrossway will verify its settings after reconnection.":"Save this change to the radio? The result will be checked by reading it back.").setPositiveButton("Save",(d,w)->save.run()).setNegativeButton("Discard",(d,w)->rebuildContent()).show();}
+    private void editMtHam(ProtocolClient c){LinearLayout form=column();form.setPadding(dp(20),dp(8),dp(20),dp(8));EditText call=mcInput(form,"Licensed callsign (3–7 characters)","",android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS);EditText name=mcInput(form,"Optional description (up to 14 UTF-8 bytes)","",android.text.InputType.TYPE_CLASS_TEXT);name.setEnabled(c.mtAtLeast(8,0));if(!c.mtAtLeast(8,0))name.setHint("Description requires firmware 2.8.0 or newer");AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Enable licensed mode").setMessage("The radio will remove channel encryption keys and restart. Enter your callsign to continue.").setView(form).setPositiveButton("Save & restart",null).setNegativeButton("Discard",null).create();dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{try{String callsign=call.getText().toString().trim().toUpperCase(Locale.ROOT),longName=name.getText().toString().trim();if(!callsign.matches("[A-Z0-9/]{3,7}"))throw Wire.bad("Enter a valid callsign");mtCommand(client->client.setMtHam(callsign,longName));dialog.dismiss();}catch(IllegalArgumentException e){call.setError(e.getMessage());}}));dialog.show();}
+    private void editMtStatus(ProtocolClient c){editMtText("Status Message",c.mtStatus(),80,true,value->mtCommand(client->client.setMtStatus(value)));}
+    private void editMtOwner(ProtocolClient c,boolean shortName){editMtText(shortName?"Short Name":"Long Name",c.mtOwnerValue(shortName?3:2),shortName?4:c.mtAtLeast(8,0)?24:39,false,value->mtCommand(client->client.setMtOwnerName(shortName,value)));}
+    private void editMtText(String title,String current,int max,boolean empty,java.util.function.Consumer<String> save){EditText input=new EditText(this);input.setSingleLine(true);input.setText(current);input.setTextColor(WHITE);AlertDialog dialog=new AlertDialog.Builder(this).setTitle(title).setView(input).setNegativeButton("Discard",null).setPositiveButton("Save",null).create();dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{try{String value=input.getText().toString().trim();if(empty)Wire.optionalText(value,max);else Wire.text(value,max);save.accept(value);dialog.dismiss();}catch(IllegalArgumentException e){input.setError(e.getMessage());}}));dialog.show();}
+    private void mtLoraSettings(ProtocolClient c){if(!mtLoaded(c,c.mtConfigLoaded(5),()->mtCommand(client->client.requestMtConfig(5))))return;String address=radio(RadioProfile.MESHTASTIC);if(!address.equals(mtDraftRadio)){mtLoraDraft=null;mtDraftRadio=address;}if(mtLoraSaving&&c.admin.edit==null){mtLoraSaving=false;mtLoraDraft=null;}if(mtLoraDraft==null){mtLoraDraft=c.mtConfig(5).clone();mtLoraBase=mtLoraDraft.clone();}List<Wire.F> fields=Wire.fields(mtLoraDraft);int region=(int)Wire.number(fields,7,0),preset=(int)Wire.number(fields,2,0);boolean use=Wire.number(fields,1,0)!=0;section(results,"OPTIONS");LinearLayout options=group(results);
+        menuRow(options,"radio","Region",MtLora.regionName(region),()->mtOption("Region",MtLora.regions(c),region,value->{try{mtLoraDraft=MtLora.regionChange(c,mtLoraDraft,value);rebuildContent();}catch(IllegalArgumentException e){Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show();}}),RADIO_MT);
+        toggleRow(options,"Use preset","Changes are staged until Save",use,on->{mtLoraDraft=Wire.replace(mtLoraDraft,1,on?1:0);mtLoraDraft=Wire.replace(mtLoraDraft,5,on?0:5);if(!on){if(Wire.number(fields,3,0)==0)mtLoraDraft=Wire.replace(mtLoraDraft,3,250);if(Wire.number(fields,4,0)==0)mtLoraDraft=Wire.replace(mtLoraDraft,4,11);}rebuildContent();});
+        if(use){menuRow(options,"radio","Preset",MtLora.presetName(preset),()->mtOption("Preset",MtLora.presets(c,region),preset,value->{mtLoraDraft=Wire.replace(Wire.replace(mtLoraDraft,2,value),5,0);rebuildContent();}),RADIO_MT);if(c.mtAtLeast(7,18)){List<MtLora.Option> rates=new ArrayList<>();rates.add(new MtLora.Option(0,"Preset default"));for(int rate=MtLora.presetCodingRate(preset)+1;rate<=8;rate++)rates.add(new MtLora.Option(rate,"4/"+rate));int cr=MtLora.codingSelection(preset,(int)Wire.number(fields,5,0));menuRow(options,"radio","Coding rate override",cr==0?"Preset default (4/"+MtLora.presetCodingRate(preset)+")":"4/"+cr,()->mtOption("Coding rate override",rates,cr,v->mtDraftNumber(5,v)),RADIO_MT);}}
+        else {options.addView(text(MtLora.manualSfHint(c.mtHardware),13,MUTED));mtDraftNumeric(options,fields,3,"Bandwidth (kHz; 2.4 GHz codes 200/400/800)",1,region==13?800:500);mtDraftNumeric(options,fields,4,"Spreading factor",5,12);mtDraftNumeric(options,fields,5,"Coding rate denominator (4/n)",5,8);}
+        section(results,"ADVANCED");LinearLayout adv=group(results);mtDraftToggle(adv,fields,104,"Ignore MQTT");mtDraftToggle(adv,fields,105,"OK to MQTT");mtDraftToggle(adv,fields,9,"Transmit enabled");mtDraftToggle(adv,fields,12,"Override duty cycle");mtDraftToggle(adv,fields,13,"RX boosted gain");mtDraftNumeric(adv,fields,8,"Hop limit",0,7);mtDraftNumeric(adv,fields,11,"Frequency slot (0 = automatic)",0,65535);mtDraftNumeric(adv,fields,10,"Transmit power (0 = region default)",0,36);menuRow(adv,"radio","Frequency override (0 = automatic)",Float.toString(Float.intBitsToFloat((int)Wire.number(fields,14,0)))+" MHz",()->editMtFloat("Frequency override (MHz)",Wire.number(fields,14,0),v->{if(!Double.isFinite(v)||v<0||v>2500)throw Wire.bad("Frequency must be finite and within 0–2500 MHz");mtLoraDraft=Wire.floatField(mtLoraDraft,14,(float)v);rebuildContent();}),RADIO_MT);
+        LinearLayout actions=row();actions.addView(button("Discard",()->{mtLoraDraft=null;rebuildContent();}),new LinearLayout.LayoutParams(0,dp(48),1));actions.addView(button("Save",()->{try{if(!Arrays.equals(mtLoraBase,c.mtConfig(5)))throw Wire.bad("Radio settings changed while editing. Discard this draft and review the current values.");MtLora.validate(mtLoraDraft,c);byte[] draft=mtLoraDraft.clone();mtConfirm("Save LoRa settings",true,()->{if(mtClient()!=c){mtLoraDraft=null;Toast.makeText(this,"Radio reconnected; review the current settings before saving",Toast.LENGTH_LONG).show();rebuildContent();return;}mtCommand(client->client.setMtConfig(5,draft));mtLoraSaving=c.admin.edit!=null;rebuildContent();});}catch(IllegalArgumentException e){Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show();}}),new LinearLayout.LayoutParams(0,dp(48),1));results.addView(actions);}
+    private void mtOption(String title,List<MtLora.Option> options,int selected,java.util.function.IntConsumer save){String[] names=new String[options.size()];int current=-1;for(int i=0;i<options.size();i++){names[i]=options.get(i).label;if(options.get(i).value==selected)current=i;}choice(title,names,current,i->save.accept(options.get(i).value));}
+    private void mtDraftNumber(int field,long value){mtLoraDraft=Wire.replace(mtLoraDraft,field,value);rebuildContent();}
+    private void mtDraftToggle(LinearLayout parent,List<Wire.F> fields,int field,String label){toggleRow(parent,label,"Changes are staged until Save",Wire.number(fields,field,0)!=0,on->mtDraftNumber(field,on?1:0));}
+    private void mtDraftNumeric(LinearLayout parent,List<Wire.F> fields,int field,String label,int min,int max){long current=Wire.number(fields,field,0);menuRow(parent,"radio",label,Long.toString(current),()->editMtNumber(label,current,min,max,v->mtDraftNumber(field,v)),RADIO_MT);}
+    private boolean mtAction(ProtocolClient expected,java.util.function.Consumer<ProtocolClient> action){RadioService.Session session=service==null?null:service.sessions.get(RadioProfile.MESHTASTIC);if(expected==null||mtClient()!=expected||!expected.ready||session==null||!session.verified){Toast.makeText(this,"Radio changed or disconnected; reopen this action",Toast.LENGTH_LONG).show();return false;}final boolean[] submitted={false};service.configureMeshtastic(session.address,client->{if(client!=expected)throw Wire.bad("Radio changed; reopen this action");action.accept(client);submitted[0]=true;});if(!submitted[0])Toast.makeText(this,expected.admin.error.isEmpty()?"Could not submit channel change":expected.admin.error,Toast.LENGTH_LONG).show();scheduleRefresh();return submitted[0];}
+    private void mtChannelSettings(ProtocolClient c){
+        section(results,"MESHTASTIC CHANNELS");LinearLayout actions=group(results);
+        menuRow(actions,"channels","Create channel","New private secondary channel",()->{try{editMtChannelFull(c,freeMtSlot(c),MtChannelLink.privateSettings("NewChannel"));}catch(IllegalArgumentException e){channelError(e);}},RADIO_MT);
+        channelImportRows(actions,RadioProfile.MESHTASTIC);menuRow(actions,"refresh","Refresh channels","Read all eight slots",()->mtAction(c,client->{client.admin.retryReads();for(int i=0;i<8;i++)client.admin.read(2,i);}),RADIO_MT);
+        for(Map.Entry<Integer,byte[]> entry:c.mtChannels.entrySet()){int slot=entry.getKey(),role=(int)Wire.number(Wire.fields(entry.getValue()),3,0);String name=MtChannelLink.name(Wire.bytes(Wire.fields(entry.getValue()),2));menuRow(group(results),"channels",role==0?"Empty slot "+slot:(role==1?"Primary · ":"Secondary · ")+name,"Slot "+slot+" · tap to manage",()->mtChannelActions(c,slot),RADIO_MT);}
+        results.addView(text("All Meshtastic channels use the radio's LoRa configuration. Changing the primary name can change an automatic frequency slot. Shared secondary-channel links also include the primary channel and its key to preserve that configuration.",13,MUTED));
+    }
+    private int freeMtSlot(ProtocolClient c){for(int i=1;i<8;i++){byte[] ch=c.mtChannels.get(i);if(ch!=null&&Wire.number(Wire.fields(ch),3,0)==0)return i;}throw Wire.bad("No synchronized empty slot. Refresh channels or remove a secondary channel first.");}
+    private void channelError(Exception e){Toast.makeText(this,e.getMessage()==null?"Could not read channel":e.getMessage(),Toast.LENGTH_LONG).show();}
+    private void mtChannelActions(ProtocolClient c,int slot){byte[] original=c.mtChannels.get(slot);if(original==null)return;int role=(int)Wire.number(Wire.fields(original),3,0);if(role==0){editMtChannelFull(c,slot,MtChannelLink.privateSettings("NewChannel"));return;}new AlertDialog.Builder(this).setTitle(MtChannelLink.name(Wire.bytes(Wire.fields(original),2))).setItems(new String[]{"Open conversation","Edit channel","Share link or QR Code",slot==0?"Primary channel cannot be removed":"Leave channel"},(d,i)->{if(mtClient()!=c||c.mtChannels.get(slot)!=original){channelError(Wire.bad("Channel changed; reopen it"));return;}if(i==0)openChat(RadioProfile.MESHTASTIC,radio(RadioProfile.MESHTASTIC),Target.channel(c.channels.get(slot)));else if(i==1)editMtChannelFull(c,slot,Wire.bytes(Wire.fields(original),2));else if(i==2)shareChannelPrompt(RadioProfile.MESHTASTIC,()->{if(mtClient()!=c||c.mtChannels.get(slot)!=original)throw Wire.bad("Channel changed; reopen it");return c.shareMtChannel(slot);});else if(slot!=0)new AlertDialog.Builder(this).setTitle("Leave this channel?").setMessage("Saved messages stay on the phone.").setNegativeButton("Cancel",null).setPositiveButton("Leave",(a,b)->{if(c.mtChannels.get(slot)!=original){channelError(Wire.bad("Channel changed; reopen it"));return;}mtAction(c,client->client.setMtChannel(slot,Wire.EMPTY,0));}).show();}).show();}
+    private void editMtChannelFull(ProtocolClient c,int slot,byte[] settings){
+        byte[] original=c.mtChannels.get(slot);if(original==null)return;LinearLayout form=column();form.setPadding(dp(18),dp(8),dp(18),dp(8));
+        EditText name=mcInput(form,"Channel name · up to 11 UTF-8 bytes",Wire.utf8(Wire.bytes(Wire.fields(settings),3)),android.text.InputType.TYPE_CLASS_TEXT);
+        EditText key=mcInput(form,"Key · hexadecimal",Wire.hex(Wire.bytes(Wire.fields(settings),2)),android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        addButton(form,"Generate private AES-256 key",()->key.setText(Wire.hex(Wire.bytes(Wire.fields(MtChannelLink.privateSettings("NewChannel")),2))));
+        addButton(form,"Use public/default key",()->key.setText("01"));addButton(form,"No encryption",()->key.setText(""));
+        CheckBox up=new CheckBox(this),down=new CheckBox(this);up.setText("MQTT uplink");down.setText("MQTT downlink");up.setTextColor(WHITE);down.setTextColor(WHITE);up.setChecked(Wire.number(Wire.fields(settings),5,0)!=0);down.setChecked(Wire.number(Wire.fields(settings),6,0)!=0);form.addView(up);form.addView(down);
+        form.addView(text((slot==0?"Editing the primary channel can change the automatic radio frequency. ":"This is a secondary channel. ")+"A public/default or empty key provides no private group. Saving is confirmed by reading back the radio.",13,MUTED));
+        ScrollView content=new ScrollView(this);content.addView(form);AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Review Meshtastic · slot "+slot).setView(content).setNegativeButton("Cancel",null).setPositiveButton("Save to radio",null).create();dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{try{if(mtClient()!=c||c.mtChannels.get(slot)!=original)throw Wire.bad("Radio or channel changed; reopen this editor");byte[] value=Wire.replaceBytes(Wire.replaceBytes(settings,3,Wire.optionalText(name.getText().toString(),11)),2,MtChannelLink.key(key.getText().toString()));value=Wire.replace(Wire.replace(value,5,up.isChecked()?1:0),6,down.isChecked()?1:0);MtChannelLink.validate(value);final byte[] next=value;if(mtAction(c,client->client.setMtChannel(slot,next,slot==0?1:2))){dialog.dismiss();}}catch(IllegalArgumentException e){name.setError(e.getMessage());}}));dialog.show();
+    }
+    private void importMtChannel(){
+        EditText input=new EditText(this);input.setTextColor(WHITE);input.setHint("https://meshtastic.org/e/#…");input.setText(pendingMtChannelLink);input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(2048)});AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Import Meshtastic link").setView(input).setNegativeButton("Cancel",null).setPositiveButton("Review",null).create();dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{try{MtChannelLink link=MtChannelLink.parse(input.getText().toString());ProtocolClient c=mtClient();if(c==null||!c.ready||c.admin.edit!=null||!c.mtConfigLoaded(5))throw Wire.bad("Connect, synchronize and verify Meshtastic first");pendingMtChannelLink=link.link();dialog.dismiss();reviewMtImport(c,link);}catch(IllegalArgumentException e){input.setError(e.getMessage());}}));dialog.show();
+    }
+    private void reviewMtImport(ProtocolClient c,MtChannelLink link){
+        if(!link.sameLora(c.mtConfig(5))){new AlertDialog.Builder(this).setTitle("Different LoRa settings").setMessage("This group uses different radio parameters. Apply the shared LoRa parameters first, then reopen Import channel link after the radio confirms them. This affects all Meshtastic channels; local region, TX power and TX policy are preserved.").setNegativeButton("Cancel",null).setPositiveButton("Apply LoRa first",(d,w)->{try{byte[] next=link.mergedLora(c.mtConfig(5));MtLora.validate(next,c);mtAction(c,client->client.setMtConfig(5,next));}catch(IllegalArgumentException e){channelError(e);}}).show();return;}
+        String[] labels=new String[link.channels.size()];for(int i=0;i<labels.length;i++)labels[i]=(i==0?"Primary · ":"Secondary · ")+MtChannelLink.name(link.channels.get(i));new AlertDialog.Builder(this).setTitle("Choose a channel to join").setItems(labels,(d,i)->{try{if(mtClient()!=c||c.admin.edit!=null)throw Wire.bad("Radio changed or has a pending save");byte[] settings=link.channels.get(i);if(i==0){new AlertDialog.Builder(this).setTitle("Replace primary channel?").setMessage("Review the shared name and key for slot 0. An automatic frequency slot follows this primary name. Other channel slots and history are retained.").setNegativeButton("Cancel",null).setPositiveButton("Review",(a,b)->editMtChannelFull(c,0,settings)).show();}else{byte[] primary=c.mtChannels.get(0);byte[] current=primary==null?Wire.EMPTY:Wire.bytes(Wire.fields(primary),2);if(Wire.number(Wire.fields(c.mtConfig(5)),11,0)==0&&Wire.number(Wire.fields(c.mtConfig(5)),14,0)==0&&!MtChannelLink.name(current).equals(MtChannelLink.name(link.channels.get(0))))throw Wire.bad("Join the shared primary first, or configure an explicit matching frequency slot, then import this secondary");for(Map.Entry<Integer,byte[]> e:c.mtChannels.entrySet())if(Wire.number(Wire.fields(e.getValue()),3,0)>0&&Arrays.equals(Wire.bytes(Wire.fields(Wire.bytes(Wire.fields(e.getValue()),2)),2),Wire.bytes(Wire.fields(settings),2))&&MtChannelLink.name(Wire.bytes(Wire.fields(e.getValue()),2)).equals(MtChannelLink.name(settings))){mtChannelActions(c,e.getKey());return;}editMtChannelFull(c,freeMtSlot(c),settings);}}catch(IllegalArgumentException e){channelError(e);}}).setNegativeButton("Cancel",null).show();
+    }
+    private void channelImportRows(LinearLayout group,RadioProfile profile){int color=profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC;menuRow(group,"channels","Import channel link","Paste and review before saving",()->{if(profile==RadioProfile.MESHTASTIC)importMtChannel();else importMcChannel();},color);menuRow(group,"channels","Scan QR Code","Read a shared channel with the camera",()->new com.google.zxing.integration.android.IntentIntegrator(this).setDesiredBarcodeFormats(com.google.zxing.integration.android.IntentIntegrator.QR_CODE).setPrompt("Scan a Meshtastic or MeshCore channel QR Code").setBeepEnabled(false).setBarcodeImageEnabled(false).initiateScan(),color);menuRow(group,"channels","Read QR Code from image","Choose a saved QR Code image",()->startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*"),55),color);}
+    private void shareChannelPrompt(RadioProfile profile,java.util.function.Supplier<String> link){new AlertDialog.Builder(this).setTitle("Share "+profile.title+" channel?").setMessage("The link and QR Code contain channel keys. Anyone receiving them can join. "+(profile==RadioProfile.MESHTASTIC?"A secondary-channel link also contains the primary channel and its key. ":"")+"Continue only with intended participants.").setNegativeButton("Cancel",null).setPositiveButton("Continue",(d,w)->{try{showChannelShare(profile,link.get());}catch(IllegalArgumentException e){channelError(e);}}).show();}
+    private void showChannelShare(RadioProfile profile,String link){
+        try{com.google.zxing.common.BitMatrix matrix=new com.google.zxing.MultiFormatWriter().encode(link,com.google.zxing.BarcodeFormat.QR_CODE,800,800);android.graphics.Bitmap bitmap=android.graphics.Bitmap.createBitmap(800,800,android.graphics.Bitmap.Config.ARGB_8888);int[] pixels=new int[640000];for(int y=0;y<800;y++)for(int x=0;x<800;x++)pixels[y*800+x]=matrix.get(x,y)?android.graphics.Color.BLACK:android.graphics.Color.WHITE;bitmap.setPixels(pixels,0,800,0,0,800,800);LinearLayout form=column();form.setPadding(dp(12),dp(12),dp(12),dp(12));ImageView qr=new ImageView(this);qr.setImageBitmap(bitmap);qr.setContentDescription(profile.title+" channel QR Code");qr.setScaleType(ImageView.ScaleType.FIT_CENTER);form.addView(qr,new LinearLayout.LayoutParams(-1,dp(300)));form.addView(text("Contains channel keys. Share only with your group.",13,MUTED));new AlertDialog.Builder(this).setTitle(profile.title+" · link and QR Code").setView(form).setNegativeButton("Close",null).setNeutralButton("Share link",(d,w)->startActivity(Intent.createChooser(new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,link),"Share channel link"))).setPositiveButton("Share QR image",(d,w)->{try{java.io.File folder=new java.io.File(getCacheDir(),"channel-qr");if(!folder.exists()&&!folder.mkdirs())throw new java.io.IOException();for(java.io.File old:folder.listFiles()==null?new java.io.File[0]:folder.listFiles())if(System.currentTimeMillis()-old.lastModified()>86400000L)old.delete();java.io.File file=new java.io.File(folder,"channel-"+UUID.randomUUID()+".png");try(java.io.FileOutputStream out=new java.io.FileOutputStream(file)){bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}android.net.Uri uri=androidx.core.content.FileProvider.getUriForFile(this,getPackageName()+".channelqr",file);Intent send=new Intent(Intent.ACTION_SEND).setType("image/png").putExtra(Intent.EXTRA_STREAM,uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);send.setClipData(ClipData.newRawUri("Channel QR",uri));startActivity(Intent.createChooser(send,"Share channel QR Code"));}catch(java.io.IOException|IllegalArgumentException e){channelError(e);}}).show();}catch(com.google.zxing.WriterException e){channelError(Wire.bad("Could not generate this QR Code"));}
+    }
+    private void receiveChannelCode(String value){try{boolean mt=value!=null&&value.trim().startsWith("https://");if(mt){pendingMtChannelLink=MtChannelLink.parse(value).link();openSettings("mt_channels",RadioProfile.MESHTASTIC);importMtChannel();}else{pendingChannelLink=McChannelLink.parse(value).link();openSettings("mc_channels",RadioProfile.MESHCORE);importMcChannel();}}catch(IllegalArgumentException e){channelError(Wire.bad("This QR Code is not a supported Meshtastic or MeshCore channel link"));}}
+    private void readChannelImage(android.net.Uri uri){new Thread(()->{String value=null;try{android.graphics.BitmapFactory.Options options=new android.graphics.BitmapFactory.Options();options.inJustDecodeBounds=true;try(java.io.InputStream in=getContentResolver().openInputStream(uri)){android.graphics.BitmapFactory.decodeStream(in,null,options);}if(options.outWidth<1||options.outHeight<1)throw new java.io.IOException();options.inJustDecodeBounds=false;options.inSampleSize=1;while(Math.max(options.outWidth,options.outHeight)/options.inSampleSize>1800)options.inSampleSize*=2;android.graphics.Bitmap bitmap;try(java.io.InputStream in=getContentResolver().openInputStream(uri)){bitmap=android.graphics.BitmapFactory.decodeStream(in,null,options);}if(bitmap==null)throw new java.io.IOException();int width=bitmap.getWidth(),height=bitmap.getHeight();int[] pixels=new int[width*height];bitmap.getPixels(pixels,0,width,0,0,width,height);bitmap.recycle();com.google.zxing.LuminanceSource source=new com.google.zxing.RGBLuminanceSource(width,height,pixels);for(int i=0;i<2&&value==null;i++){try{value=new com.google.zxing.qrcode.QRCodeReader().decode(new com.google.zxing.BinaryBitmap(new com.google.zxing.common.HybridBinarizer(i==0?source:source.invert()))).getText();}catch(com.google.zxing.ReaderException ignored){}}}catch(java.io.IOException|SecurityException|IllegalArgumentException ignored){}String decoded=value;runOnUiThread(()->{if(isFinishing()||isDestroyed())return;if(decoded==null)channelError(Wire.bad("No readable channel QR Code found in this image"));else receiveChannelCode(decoded);});},"channel-qr-import").start();}
+
+    private void mtDeviceSettings(ProtocolClient c){section(results,"DEVICE CONFIGURATION");if(!mtLoaded(c,c.mtConfigLoaded(0)&&c.mtConfigLoaded(6),()->mtCommand(client->{client.requestMtConfig(0);client.requestMtConfig(6);})))return;if(!c.mtConfigLoaded(0))mtCommand(client->client.requestMtConfig(0));if(!c.mtConfigLoaded(6))mtCommand(client->client.requestMtConfig(6));LinearLayout rows=group(results);byte[] device=c.mtConfig(0);List<Wire.F> df=Wire.fields(device);String[] roles={"Client","Client Mute","Router","Router Client (deprecated)","Repeater (deprecated)","Tracker","Sensor","TAK","Client Hidden","Lost and Found","TAK Tracker","Router Late","Client Base"};int role=(int)Wire.number(df,1,0);menuRow(rows,"settings","Device","Role: "+roles[Math.min(roles.length-1,Math.max(0,role))],()->{List<MtLora.Option> items=new ArrayList<>();for(int i=0;i<roles.length;i++)if(i!=3&&i!=4&&(i!=12||c.mtAtLeast(7,0)))items.add(new MtLora.Option(i,roles[i]));mtOption("Device role",items,role,i->mtConfirm("Change role to "+roles[i],false,()->mtCommand(client->client.setMtConfigField(0,1,i))));},RADIO_MT);menuRow(rows,"settings","Position","Location broadcast and GPS behavior",()->Toast.makeText(this,"Position controls are read from firmware settings but not editable in this release",Toast.LENGTH_LONG).show(),RADIO_MT);menuRow(rows,"settings","Power","Power saving and battery behavior",()->Toast.makeText(this,"Power controls are read from firmware settings but not editable in this release",Toast.LENGTH_LONG).show(),RADIO_MT);menuRow(rows,"settings","Network","Wi-Fi and network behavior",()->Toast.makeText(this,"Network controls are read from firmware settings but not editable in this release",Toast.LENGTH_LONG).show(),RADIO_MT);menuRow(rows,"settings","Display","Screen behavior and display preferences",()->Toast.makeText(this,"Display controls are read from firmware settings but not editable in this release",Toast.LENGTH_LONG).show(),RADIO_MT);byte[] bt=c.mtConfig(6);menuRow(rows,"settings","Bluetooth","Enabled: "+(c.mtConfigFlag(6,1)),()->toggleMtConfig(c,6,1,"Bluetooth enabled"),RADIO_MT);}
+    private void toggleMtConfig(ProtocolClient c,int type,int field,String title){boolean current=c.mtConfigFlag(type,field);new AlertDialog.Builder(this).setTitle(title).setMessage("Set this setting to "+(current?"off":"on")+"?"+(type==6&&current?" Bluetooth will disconnect and must be re-enabled on the radio or through USB to reconnect.":" The radio may restart; settings will be verified after reconnection.")).setPositiveButton("Save",(d,w)->mtCommand(client->client.setMtConfigField(type,field,current?0:1))).setNegativeButton("Cancel",null).show();}
+    private void mtSecuritySettings(ProtocolClient c){if(!mtLoaded(c,c.mtConfigLoaded(7),()->mtCommand(client->client.requestMtConfig(7))))return;if(!c.mtConfigLoaded(7))mtCommand(client->client.requestMtConfig(7));byte[] sec=c.mtConfig(7);List<Wire.F> fields=Wire.fields(sec);section(results,"PACKET AUTHENTICITY");String[] policy={"Compatible · accept unsigned","Balanced · sign, accept unsigned","Strict · require signatures"};int selected=(int)Wire.number(fields,9,0);menuRow(group(results),"settings","Protection level",(c.mtHasSignatures?policy[Math.min(2,Math.max(0,selected))]:"Unsupported by connected firmware"),c.mtHasSignatures?()->choice("Protection level",policy,selected,i->mtConfirm("Packet protection",true,()->mtCommand(client->client.setMtConfigField(7,9,i)))):null,RADIO_MT);section(results,"KEYS & LOGS");LinearLayout logs=group(results);menuRow(logs,"info","Admin keys",Long.toString(fields.stream().filter(f->f.tag==3).count())+" configured",null,RADIO_MT);toggleRow(logs,"Serial Console","Serial Console over the Stream API",c.mtConfigFlag(7,5),on->mtConfirm("Serial Console",true,()->mtCommand(client->client.setMtConfigField(7,5,on?1:0))));toggleRow(logs,"Debug Logs","Output live debug logging over serial and Bluetooth",Wire.number(fields,6,0)!=0,on->mtConfirm("Debug Logs",true,()->mtCommand(client->client.setMtConfigField(7,6,on?1:0))));menuRow(logs,"info","Managed Device",Wire.number(fields,4,0)!=0?"Enabled · configured remotely":"Disabled",null,RADIO_MT);results.addView(text("Private keys are not displayed here. Key generation, backup and restoration are not yet implemented.",13,MUTED));}
+    private void mtModuleSettings(ProtocolClient c){
+        section(results,"MODULE CONFIGURATION");
+        if(c.admin.edit!=null){results.addView(text(c.admin.status,14,MUTED));return;}
+        LinearLayout mods=group(results);
+        if(!c.mtModuleSupported(0))menuRow(mods,"info","MQTT","Excluded by this radio firmware",null,RADIO_MT);
+        else if(!c.mtModuleLoaded(0)){
+            mtCommand(client->client.requestMtModule(0));
+            menuRow(mods,"info","MQTT","Reading settings from radio…",null,RADIO_MT);
+        }else toggleRow(mods,"MQTT Enabled","Allow the radio to gateway marked channels",Wire.number(Wire.fields(c.mtModule(0)),1,0)!=0,on->mtConfirm("MQTT",true,()->mtCommand(client->client.setMtModuleField(0,1,on?1:0))));
+        if(!c.mtModuleSupported(13))menuRow(mods,"info","Status Message",c.mtAtLeast(7,20)?"Excluded by this radio firmware":"Requires firmware 2.7.20 or newer",null,RADIO_MT);
+        else if(!c.mtModuleLoaded(13)){
+            mtCommand(client->client.requestMtModule(13));
+            menuRow(mods,"info","Status Message","Reading settings from radio…",null,RADIO_MT);
+        }else menuRow(mods,"info","Status Message",c.mtStatus().isEmpty()?"Not set":c.mtStatus(),()->editMtStatus(c),RADIO_MT);
+        results.addView(text("The remaining module pages (telemetry, canned messages, store and forward, range test and others) will be exposed as their editors are added.",13,MUTED));
+    }
+    private void choice(String title,String[] options,int selected,java.util.function.IntConsumer action){new AlertDialog.Builder(this).setTitle(title).setSingleChoiceItems(options,selected,(d,i)->{action.accept(i);d.dismiss();}).setNegativeButton("Cancel",null).show();}
+    private int indexOf(int value,int[] options){for(int i=0;i<options.length;i++)if(options[i]==value)return i;return 0;}
+    private void numberChoice(String title,int min,int max,int selected,java.util.function.IntConsumer action){String[] values=new String[max-min+1];for(int i=min;i<=max;i++)values[i-min]=Integer.toString(i);choice(title,values,Math.max(0,Math.min(values.length-1,selected-min)),i->action.accept(i+min));}
+    private void editMtNumber(String title,long current,long min,long max,java.util.function.LongConsumer save){EditText field=new EditText(this);field.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_SIGNED);field.setText(Long.toString(current));field.setTextColor(WHITE);new AlertDialog.Builder(this).setTitle(title).setView(field).setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->{try{long value=Long.parseLong(field.getText().toString());if(value<min||value>max)throw new IllegalArgumentException();save.accept(value);}catch(Exception e){Toast.makeText(this,"Enter a value between "+min+" and "+max,Toast.LENGTH_LONG).show();}}).show();}
+    private void editMtFloat(String title,long bits,java.util.function.DoubleConsumer save){EditText field=new EditText(this);field.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);field.setText(String.format(Locale.ROOT,"%.3f",Float.intBitsToFloat((int)bits)));field.setTextColor(WHITE);new AlertDialog.Builder(this).setTitle(title).setView(field).setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->{try{save.accept(Double.parseDouble(field.getText().toString()));}catch(Exception e){Toast.makeText(this,"Enter a valid frequency",Toast.LENGTH_SHORT).show();}}).show();}
+    private ProtocolClient mcClient(){RadioService.Session s=service==null?null:service.sessions.get(RadioProfile.MESHCORE);return s==null?null:s.client;}
+    private boolean mcCommandFor(ProtocolClient expected,java.util.function.Consumer<ProtocolClient> action){
+        RadioService.Session session=service==null?null:service.sessions.get(RadioProfile.MESHCORE);
+        if(expected==null||mcClient()!=expected||session==null||!session.verified){Toast.makeText(this,"Radio changed or disconnected; reopen this action",Toast.LENGTH_LONG).show();return false;}
+        final boolean[] submitted={false};service.configureMeshCore(session.address,client->{action.accept(client);submitted[0]=true;});
+        if(!submitted[0])Toast.makeText(this,session.status,Toast.LENGTH_LONG).show();scheduleRefresh();return submitted[0];
+    }
+    private void announceMcPresence(){
+        ProtocolClient expected=mcClient();if(expected==null||!expected.ready){Toast.makeText(this,"Connect and synchronize MeshCore first",Toast.LENGTH_LONG).show();return;}
+        String detail="Send your radio name"+(expected.advertLocationPolicy!=0&&expected.hasLocation?" and its configured location":"")+" so other MeshCore devices can discover you. Choose nearby only or a mesh-wide announcement.";
+        new AlertDialog.Builder(this).setTitle("Announce my presence").setMessage(detail).setNegativeButton("Cancel",null).setNeutralButton("Nearby",(d,w)->mcCommandFor(expected,c->c.announceSelf(false))).setPositiveButton("Across the mesh",(d,w)->mcCommandFor(expected,c->c.announceSelf(true))).show();
+    }
+    private void refreshMcContactTabs(){
+        if(mcContactTabs==null)return;mcContactTabs.removeAllViews();int[] counts=new int[4];ProtocolClient c=mcClient();for(Node n:snapshot(RadioProfile.MESHCORE).nodes){counts[0]++;counts[McContacts.state(n,c)]++;}
+        String[] names={"All","Discovered","Approved","Historical"};for(int i=0;i<4;i++){final int value=i;mcContactTabs.addView(chip(names[i]+" ("+counts[i]+")",mcContactFilter==i,()->{mcContactFilter=value;listLimit=100;buildPage();}),new LinearLayout.LayoutParams(dp(i==1?145:125),dp(42)));}
+    }
+    private boolean captureChannelIntent(Intent intent){
+        if(intent==null||!Intent.ACTION_VIEW.equals(intent.getAction())||intent.getData()==null)return false;
+        try{if("https".equalsIgnoreCase(intent.getData().getScheme())){pendingMtChannelLink=MtChannelLink.parse(intent.getDataString()).link();chat=null;selected=5;filter=1;settingsSection="mt_channels";settingsRadio=RadioProfile.MESHTASTIC;return true;}McChannelLink value=McChannelLink.parse(intent.getDataString());pendingChannelLink=value.link();chat=null;selected=5;filter=2;settingsSection="mc_channels";settingsRadio=RadioProfile.MESHCORE;return true;}
+        catch(IllegalArgumentException e){Toast.makeText(this,"Invalid or unsupported channel link",Toast.LENGTH_LONG).show();return false;}
+    }
+    private void mcChannels(ProtocolClient c){
+        section(results,"MESHCORE CHANNELS");
+        if(c==null||!c.ready){results.addView(text("Connect and synchronize your MeshCore radio to manage channels. Saved messages remain on the phone.",14,MUTED));return;}
+        if(c.mcSupportsScope()&&!c.mcScopeLoaded)mcCommandFor(c,ProtocolClient::requestDefaultFloodScope);
+        LinearLayout actions=group(results);menuRow(actions,"channels","Create channel","Private, hashtag or public channel",()->createMcChannel(c),RADIO_MC);channelImportRows(actions,RadioProfile.MESHCORE);
+        menuRow(actions,"refresh","Refresh channels and region","Read current settings from this radio",()->mcCommandFor(c,client->{client.retryMcReads();client.refreshMcChannels();if(client.mcSupportsScope())client.requestDefaultFloodScope();}),RADIO_MC);
+        for(int slot=0;slot<c.channelCount;slot++){
+            Channel channel=c.channels.get(slot);final int index=slot;
+            if(channel==null){menuRow(group(results),"refresh","Read slot "+slot,"Load this slot before editing",()->mcCommandFor(c,client->{client.retryMcReads();client.requestMcChannel(index);}),RADIO_MC);continue;}
+            menuRow(group(results),"channels",channel.enabled?channel.name:"Empty slot "+slot,"Slot "+slot+(c.mcChannelChanging(slot)?" · needs verification; tap to refresh":channel.enabled?" · tap to edit, share or remove":" · tap to configure"),()->mcChannelActions(c,index),RADIO_MC);
+        }
+        results.addView(text("A hashtag channel can be joined by anyone who knows its name. Private channels use a randomly generated key. Radio changes are confirmed by reading the channel back.",13,MUTED));
+    }
+    private int freeMcSlot(ProtocolClient c){for(int i=0;i<c.channelCount;i++){Channel ch=c.channels.get(i);if(ch!=null&&!ch.enabled)return i;}throw Wire.bad("All channel slots are in use. Edit or remove an existing channel first.");}
+    private void createMcChannel(ProtocolClient c){
+        try{int slot=freeMcSlot(c);new AlertDialog.Builder(this).setTitle("Create MeshCore channel").setItems(new String[]{"Private channel","Hashtag channel","Public channel"},(d,i)->editMcChannel(c,slot,i,null)).setNegativeButton("Cancel",null).show();}catch(IllegalArgumentException e){Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show();}
+    }
+    private void mcChannelActions(ProtocolClient c,int slot){
+        Channel ch=c.channels.get(slot);if(ch==null)return;
+        if(c.mcChannelChanging(slot)){new AlertDialog.Builder(this).setTitle("Refresh this channel").setMessage("The channel's current values have not been confirmed. Read them before sending, editing or sharing.").setNegativeButton("Cancel",null).setPositiveButton("Refresh",(d,w)->mcCommandFor(c,client->{client.retryMcReads();client.requestMcChannel(slot);})).show();return;}
+        if(!ch.enabled){editMcChannel(c,slot,0,null);return;}
+        new AlertDialog.Builder(this).setTitle(ch.name).setItems(new String[]{"Open conversation","Edit channel","Share channel link","Remove channel"},(d,i)->{
+            if(mcClient()!=c){Toast.makeText(this,"Radio changed; reopen this channel",Toast.LENGTH_LONG).show();return;}
+            if(i==0)openChat(RadioProfile.MESHCORE,radio(RadioProfile.MESHCORE),Target.channel(ch));
+            else if(i==1)editMcChannel(c,slot,3,null);
+            else if(i==2)shareMcChannel(c,slot);
+            else new AlertDialog.Builder(this).setTitle("Remove this channel?").setMessage("The radio will leave this channel. Saved messages stay on the phone.").setNegativeButton("Cancel",null).setPositiveButton("Remove",(a,b)->{if(c.channels.get(slot)!=ch){Toast.makeText(this,"Channel changed; reopen it",Toast.LENGTH_LONG).show();return;}mcCommandFor(c,client->client.setMcChannel(slot,"",new byte[16]));}).show();
+        }).setNegativeButton("Cancel",null).show();
+    }
+    private void shareMcChannel(ProtocolClient c,int slot){Channel original=c.channels.get(slot);if(original==null)return;shareChannelPrompt(RadioProfile.MESHCORE,()->{if(mcClient()!=c||c.channels.get(slot)!=original)throw Wire.bad("Radio or channel changed; reopen it");return c.shareMcChannel(slot);});}
+    private void importMcChannel(){
+        EditText input=new EditText(this);input.setTextColor(WHITE);input.setHint("meshcore://channel/add?…");input.setText(pendingChannelLink);input.setFilters(new InputFilter[]{new InputFilter.LengthFilter(4096)});
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Import MeshCore channel").setView(input).setNegativeButton("Cancel",null).setPositiveButton("Review",null).create();
+        dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{try{McChannelLink value=McChannelLink.parse(input.getText().toString());ProtocolClient c=mcClient();if(c==null||!c.ready)throw Wire.bad("Connect and synchronize MeshCore before importing");value.requireScope(c.mcSupportsScope(),c.mcScopeLoaded,c.defaultFloodScope);for(Channel existing:c.channels.values())if(existing.enabled&&Arrays.equals(c.channelKeys.get(existing.slot),value.secret)){dialog.dismiss();mcChannelActions(c,existing.slot);return;}int slot=freeMcSlot(c);dialog.dismiss();editMcChannel(c,slot,4,value);}catch(IllegalArgumentException e){input.setError(e.getMessage());}}));dialog.show();
+    }
+    private void editMcChannel(ProtocolClient expected,int slot,int mode,McChannelLink imported){
+        if(mcClient()!=expected||!expected.ready){Toast.makeText(this,"Radio changed; reopen channel settings",Toast.LENGTH_LONG).show();return;}
+        Channel before=expected.channels.get(slot);if(before==null)return;
+        LinearLayout form=column();form.setPadding(dp(20),dp(4),dp(20),dp(8));
+        String title=imported!=null?imported.name:mode==2?"Public":mode==3?before.name:mode==1?"#":"";
+        byte[] initial=imported!=null?imported.secret:mode==2?McChannelLink.secret(McChannelLink.PUBLIC_KEY):mode==3?expected.channelKeys.get(slot):McChannelLink.privateChannel("New channel").secret;
+        EditText name=mcInput(form,"Channel name · slot "+slot,title,android.text.InputType.TYPE_CLASS_TEXT);name.setFilters(new InputFilter[]{new InputFilter.LengthFilter(64)});
+        EditText key=mcInput(form,"Channel key (32 hexadecimal characters)",initial==null?"":Wire.hex(initial),android.text.InputType.TYPE_CLASS_TEXT|android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);key.setFilters(new InputFilter[]{new InputFilter.LengthFilter(128)});
+        if(mode==1||mode==2)key.setVisibility(View.GONE);
+        TextView note=text(mode==1?"The key is derived from the exact hashtag name. Anyone who knows or guesses the name can join.":mode==2?"Public is an open channel with a publicly known key.":"Keep the channel key private. Changing it changes who can communicate on this slot.",13,MUTED);form.addView(note);
+        if(imported!=null&&!imported.scope.isEmpty())form.addView(text("Shared region: "+imported.scope+". Your radio must use this same default region; importing does not change it.",13,MUTED));
+        ScrollView content=new ScrollView(this);content.addView(form);AlertDialog dialog=new AlertDialog.Builder(this).setTitle(mode==3?"Edit MeshCore channel":"Review MeshCore channel").setView(content).setNegativeButton("Cancel",null).setPositiveButton("Save to radio",null).create();
+        dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{try{
+            String label=name.getText().toString().trim();McChannelLink value=mode==1?McChannelLink.hashtag(label):new McChannelLink(label,mode==2?McChannelLink.secret(McChannelLink.PUBLIC_KEY):McChannelLink.secret(key.getText().toString()),imported==null?"":imported.scope);
+            if(mcClient()!=expected||expected.channels.get(slot)!=before)throw Wire.bad("Radio or channel changed; reopen this editor");
+            value.requireScope(expected.mcSupportsScope(),expected.mcScopeLoaded,expected.defaultFloodScope);
+            if(mcCommandFor(expected,c->c.setMcChannel(slot,value.name,value.secret))){pendingChannelLink="";dialog.dismiss();}
+        }catch(IllegalArgumentException e){name.setError(e.getMessage());}}));dialog.show();
+    }
+    private void supportPanel(){
+        if(service==null){Toast.makeText(this,"Wait for the app service to start",Toast.LENGTH_LONG).show();return;}
+        final String report=service.supportReport();
+        new AlertDialog.Builder(this).setTitle("Support diagnostic").setMessage("Includes app/Android versions, phone model, connection states, firmware versions, queue counts and recent event codes. Excludes messages, coordinates, names, device addresses, channel keys, login data and raw packets.").setNegativeButton("Cancel",null).setNeutralButton("Share text",(d,w)->startActivity(Intent.createChooser(new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,report),"Share support diagnostic"))).setPositiveButton("Save file",(d,w)->{pendingDiagnostic=report;startActivityForResult(new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("text/plain").addCategory(Intent.CATEGORY_OPENABLE).putExtra(Intent.EXTRA_TITLE,"MeshCrossway-diagnostic.txt"),54);}).show();
+    }
+    private void mcCommand(java.util.function.Consumer<ProtocolClient> action){RadioService.Session s=service==null?null:service.sessions.get(RadioProfile.MESHCORE);if(s==null||!s.verified){Toast.makeText(this,"Connect and synchronize the MeshCore radio first",Toast.LENGTH_LONG).show();return;}service.configureMeshCore(s.address,action);scheduleRefresh();}
+    private void meshCoreSettingsRows(RadioService.Session session){
+        ProtocolClient c=mcClient();boolean online=session!=null&&session.verified;if(c!=null)mcSettingsBanner(c);
+        section(results,"DEVICE INFO");LinearLayout device=group(results);menuRow(device,"info",c!=null&&!c.localName.isEmpty()?c.localName:"MeshCore radio",online?"Connected":"Not synchronized",()->openSettings("mc_device",RadioProfile.MESHCORE),RADIO_MC);
+        menuRow(device,"channels","Channels","Create, edit and share MeshCore channels",()->openSettings("mc_channels",RadioProfile.MESHCORE),RADIO_MC);
+        section(results,"NODE SETTINGS");LinearLayout node=group(results);
+        menuRow(node,"info","Node Name",c==null?"":c.localName,()->openSettings("mc_name",RadioProfile.MESHCORE),RADIO_MC);
+        menuRow(node,"radio","Radio Settings",c==null||c.frequencyMhz==0?"Frequency, bandwidth, spreading factor, power":String.format(Locale.ROOT,"%.3f MHz · %.1f kHz · SF%d",c.frequencyMhz,c.bandwidthKhz,c.spreadingFactor),()->openSettings("mc_radio",RadioProfile.MESHCORE),RADIO_MC);
+        menuRow(node,"map","Regions","Default flood region and scope",()->openSettings("mc_regions",RadioProfile.MESHCORE),RADIO_MC);
+        menuRow(node,"radio","Radio stats","Noise floor, RSSI, SNR and airtime",()->openSettings("mc_stats",RadioProfile.MESHCORE),RADIO_MC);
+        menuRow(node,"info","Telemetry","Battery, storage and device status",()->openSettings("mc_telemetry",RadioProfile.MESHCORE),RADIO_MC);
+        menuRow(node,"tracks","Node ID size in paths",c==null||c.pathHashMode<0?"Firmware default":(c.pathHashMode+1)+" byte"+(c.pathHashMode==0?"":"s"),()->openSettings("mc_path",RadioProfile.MESHCORE),RADIO_MC);
+        section(results,"LOCATION");LinearLayout location=group(results);
+        menuRow(location,"gps","Location",c!=null&&c.hasLocation?String.format(Locale.ROOT,"%.6f, %.6f",c.latitude,c.longitude):"GPS coordinates not set",()->openSettings("mc_location",RadioProfile.MESHCORE),RADIO_MC);
+        menuRow(location,"contacts","Contact Settings","How contacts are added",()->openSettings("mc_contacts",RadioProfile.MESHCORE),RADIO_MC);
+        menuRow(location,"info","Privacy Settings","Control location and telemetry sharing",()->openSettings("mc_privacy",RadioProfile.MESHCORE),RADIO_MC);
+        section(results,"APP SETTINGS");LinearLayout app=group(results);
+        menuRow(app,"settings","App Settings","Notifications, messaging, and map preferences",()->openSettings("messages",null),ORANGE);
+        menuRow(app,"filter","Message filter","Hide spam and repeated messages",()->openSettings("messages",null),ORANGE);
+        section(results,"ACTIONS");LinearLayout actions=group(results);
+        menuRow(actions,"radio","Announce my presence",c==null||c.mcAdvertStatus.isEmpty()?"Send a nearby or mesh-wide announcement":c.mcAdvertStatus,this::announceMcPresence,RADIO_MC);
+        menuRow(actions,"sync","Sync Time","Set device clock to phone time",()->mcCommand(client->client.setDeviceTime(System.currentTimeMillis()/1000)),RADIO_MC);
+        menuRow(actions,"refresh","Refresh Contacts","Reload contact list from device",()->mcCommand(ProtocolClient::refreshContacts),RADIO_MC);
+        menuRow(actions,"radio","Reboot Device","Restart the MeshCore device",()->new AlertDialog.Builder(this).setTitle("Reboot MeshCore device?").setMessage("The radio will disconnect and reconnect after it restarts.").setPositiveButton("Reboot",(d,w)->mcCommand(ProtocolClient::reboot)).setNegativeButton("Cancel",null).show(),ORANGE);
+    }
+    private void meshCoreSettingsDetail(){
+        ProtocolClient c=mcClient();
+        if(c==null){RadioService.Session session=service==null?null:service.sessions.get(RadioProfile.MESHCORE);if(session!=null&&session.pendingMcEdit!=null){menuRow(group(results),"info","Waiting for the radio to reconnect","The previous change will be checked after synchronization. It will not be sent again.",null,RADIO_MC);}else results.addView(text("Connect and synchronize the MeshCore radio to configure it.",14,MUTED));return;}
+        if(mcSettingsBanner(c))return;
+        switch(settingsSection){
+            case "mc_channels":mcChannels(c);return;
+            case "mc_name":section(results,"NODE NAME");menuRow(group(results),"info","Change Node Name",c==null?"":c.localName,this::editMcName,RADIO_MC);return;
+            case "mc_radio":meshCoreRadioSettings(c);return;
+            case "mc_path":meshCorePathSettings(c);return;
+            case "mc_location":meshCoreLocationSettings(c);return;
+            case "mc_contacts":meshCoreContactSettings(c);return;
+            case "mc_privacy":meshCorePrivacySettings(c);return;
+            case "mc_stats":meshCoreStats(c);return;
+            case "mc_telemetry":meshCoreTelemetry(c);return;
+            case "mc_regions":meshCoreRegions(c);return;
+            case "mc_device":meshCoreDeviceInfo(c);return;
+        }
+    }
+    private boolean mcSettingsBanner(ProtocolClient c){
+        if(c.mcAdmin.edit!=null){
+            boolean paused=c.mcAdmin.edit.deadline==Long.MAX_VALUE;
+            menuRow(group(results),"info",paused?"Radio change not confirmed":"Verifying radio settings",c.mcAdmin.status,null,paused?RED:RADIO_MC);
+            if(paused){LinearLayout actions=group(results);menuRow(actions,"refresh","Check change again","Read the radio without repeating the save",()->mcCommand(client->client.mcAdmin.verify()),RADIO_MC);menuRow(actions,"settings","Use current settings","Stop waiting and refresh values from the radio",()->mcCommand(client->client.mcAdmin.discard()),RADIO_MC);}
+            else {ProgressBar progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);progress.setIndeterminate(true);progress.setContentDescription("Verifying MeshCore settings");results.addView(progress,new LinearLayout.LayoutParams(-1,dp(4)));}
+            return true;
+        }
+        String error=!c.mcAdmin.error.isEmpty()?c.mcAdmin.error:!c.mcError.isEmpty()?c.mcError:c.mcFullContacts?"Radio contacts are full. Review contacts before approving more devices.":"";
+        String status=!error.isEmpty()?error:!c.mcAdmin.status.isEmpty()?c.mcAdmin.status:c.mcStatus;
+        if(!status.isEmpty())menuRow(group(results),"info",error.isEmpty()?"Radio settings":"Radio settings need attention",status,null,error.isEmpty()?RADIO_MC:RED);
+        if(c.mcNameNeedsRepair)menuRow(group(results),"info","Radio name needs repair","The stored name contains invalid text. Save a new name with at most 31 UTF-8 bytes.",null,RED);
+        return false;
+    }
+    private EditText mcInput(LinearLayout parent,String label,String value,int inputType){TextView title=text(label,13,MUTED);title.setPadding(0,dp(8),0,dp(3));parent.addView(title);EditText field=new EditText(this);field.setSingleLine(true);field.setText(value);field.setTextSize(16);field.setTextColor(WHITE);field.setInputType(inputType);field.setPadding(dp(12),dp(8),dp(12),dp(8));field.setBackground(surface(PANEL2));parent.addView(field,new LinearLayout.LayoutParams(-1,dp(50)));return field;}
+    private void editMcName(){
+        ProtocolClient c=mcClient();if(c==null)return;EditText field=new EditText(this);field.setSingleLine(true);field.setText(c.localName);field.setTextColor(WHITE);field.setHint("Up to 31 UTF-8 bytes");
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Node Name").setView(field).setNegativeButton("Cancel",null).setPositiveButton("Save",null).create();
+        dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{try{String value=field.getText().toString().trim();Wire.text(value,31);if(mcClient()!=c)throw Wire.bad("Radio changed; reopen the name editor");mcCommand(client->client.setName(value));dialog.dismiss();}catch(IllegalArgumentException e){field.setError(e.getMessage());}}));dialog.show();
+    }
+    private void meshCoreRadioSettings(ProtocolClient c){
+        section(results,"RADIO SETTINGS");
+        if(c==null){results.addView(text("Connect to the MeshCore radio to read or change its radio parameters.",14,MUTED));return;}
+        LinearLayout info=group(results);menuRow(info,"radio","Frequency, bandwidth, SF and coding rate",String.format(Locale.ROOT,"%.3f MHz · %.1f kHz · SF%d · CR%d",c.frequencyMhz,c.bandwidthKhz,c.spreadingFactor,c.codingRate),()->editMcRadio(c),RADIO_MC);
+        menuRow(info,"radio","TX Power",!c.hasTxPower?"Unknown":c.txPower+" dBm"+(c.maxTxPower>0?" · max "+c.maxTxPower+" dBm":""),()->editMcPower(c),RADIO_MC);
+        results.addView(text("Changing radio parameters may require a reboot on some firmware. Use the frequency and power permitted in your country.",13,MUTED));
+    }
+    private void editMcRadio(ProtocolClient c){LinearLayout form=column();form.setPadding(dp(20),dp(4),dp(20),dp(4));EditText freq=mcInput(form,"Frequency (MHz)",String.format(Locale.ROOT,"%.3f",c.frequencyMhz),android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);EditText bw=mcInput(form,"Bandwidth (kHz)",Double.toString(c.bandwidthKhz),android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);EditText sf=mcInput(form,"Spreading Factor",Integer.toString(c.spreadingFactor),android.text.InputType.TYPE_CLASS_NUMBER);EditText cr=mcInput(form,"Coding Rate (5 = 4/5)",Integer.toString(c.codingRate),android.text.InputType.TYPE_CLASS_NUMBER);final int[] presetPathMode={-1};final Button[] presetsRef={null};Button presets=button("Choose preset",()->{presetsRef[0].setText("Loading presets…");MeshCorePresets.fetch("MeshCrossway/"+installedVersion()+" (Android)",(items,error)->{presetsRef[0].setText("Choose preset");if(items.isEmpty()){Toast.makeText(this,error,Toast.LENGTH_LONG).show();return;}String[] names=new String[items.size()];for(int i=0;i<items.size();i++)names[i]=items.get(i).title+" · "+items.get(i).frequency+" MHz / SF"+items.get(i).spreadingFactor+" / BW"+items.get(i).bandwidth+" / CR"+items.get(i).codingRate;new AlertDialog.Builder(this).setTitle("MeshCore radio presets").setItems(names,(dialog,index)->{MeshCorePresets.Preset p=items.get(index);freq.setText(Double.toString(p.frequency));bw.setText(Double.toString(p.bandwidth));sf.setText(Integer.toString(p.spreadingFactor));cr.setText(Integer.toString(p.codingRate));presetPathMode[0]=p.pathHashBytes>0?p.pathHashBytes-1:-1;}).setNegativeButton("Cancel",null).show();});});presetsRef[0]=presets;LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,-2);bp.topMargin=dp(10);form.addView(presets,bp);TextView note=text("Presets are community suggestions. Verify the right frequency for your local mesh and location.",12,MUTED);note.setPadding(0,dp(8),0,0);form.addView(note);new AlertDialog.Builder(this).setTitle("Radio Settings").setView(form).setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->{try{double f=Double.parseDouble(freq.getText().toString()),b=Double.parseDouble(bw.getText().toString());int s=Integer.parseInt(sf.getText().toString()),r=Integer.parseInt(cr.getText().toString());if(!Double.isFinite(f)||!Double.isFinite(b)||f<150||f>2500||b<7||b>500||s<5||s>12||r<5||r>8)throw new IllegalArgumentException();mcCommand(client->{client.setRadioAndPath(f,b,s,r,client.mcSupportsPath()?presetPathMode[0]:-1);});}catch(Exception e){Toast.makeText(this,"Enter valid radio values (SF 5–12, CR 5–8)",Toast.LENGTH_LONG).show();}}).show();}
+    private void editMcPower(ProtocolClient c){EditText field=new EditText(this);field.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_SIGNED);field.setText(Integer.toString(c.txPower));field.setTextColor(WHITE);new AlertDialog.Builder(this).setTitle("TX Power (dBm)").setView(field).setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->{try{int value=Integer.parseInt(field.getText().toString());if(!c.hasTxPower||value < -9||value>c.maxTxPower)throw new IllegalArgumentException();mcCommand(client->client.setTxPower(value));}catch(Exception e){Toast.makeText(this,"Power must be between -9 and "+c.maxTxPower+" dBm",Toast.LENGTH_LONG).show();}}).show();}
+    private void meshCorePathSettings(ProtocolClient c){section(results,"NODE ID SIZE IN PATHS");if(c==null||!c.mcSupportsPath()){results.addView(text("Path hash size requires Companion protocol v10 or newer.",14,MUTED));return;}int current=Math.max(0,c.pathHashMode);String[] sizes={"1 byte","2 bytes","3 bytes"};menuRow(group(results),"tracks","Path ID size",sizes[Math.min(2,current)],()->new AlertDialog.Builder(this).setTitle("Node ID size in paths").setSingleChoiceItems(sizes,current,(d,i)->{if(c!=null&&c.firmwareCode>=10)mcCommand(client->client.setPathHashMode(i));else Toast.makeText(this,"This setting needs MeshCore companion firmware v1.14 or newer",Toast.LENGTH_LONG).show();d.dismiss();}).setNegativeButton("Cancel",null).show(),RADIO_MC);results.addView(text("Larger IDs reduce collisions. Older repeaters can drop packets using 2- or 3-byte IDs.",13,MUTED));}
+    private void meshCoreLocationSettings(ProtocolClient c){section(results,"LOCATION");menuRow(group(results),"gps","Set GPS coordinates",c!=null&&c.hasLocation?String.format(Locale.ROOT,"%.6f, %.6f",c.latitude,c.longitude):"Not set",()->editMcLocation(c),RADIO_MC);}
+    private void editMcLocation(ProtocolClient c){LinearLayout form=column();form.setPadding(dp(20),dp(4),dp(20),dp(4));EditText lat=mcInput(form,"Latitude",c!=null&&c.hasLocation?Double.toString(c.latitude):"",android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_SIGNED|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);EditText lon=mcInput(form,"Longitude",c!=null&&c.hasLocation?Double.toString(c.longitude):"",android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_SIGNED|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);new AlertDialog.Builder(this).setTitle("Location").setView(form).setMessage("Leave both fields empty to remove your location.").setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->{try{String a=lat.getText().toString().trim(),b=lon.getText().toString().trim();double x=a.isEmpty()?0:Double.parseDouble(a),y=b.isEmpty()?0:Double.parseDouble(b);if(a.isEmpty()!=b.isEmpty()||Math.abs(x)>90||Math.abs(y)>180)throw new IllegalArgumentException();mcCommand(client->client.setLocation(x,y));}catch(Exception e){Toast.makeText(this,"Enter valid latitude and longitude",Toast.LENGTH_LONG).show();}}).show();}
+    private void meshCoreContactSettings(ProtocolClient c){section(results,"CONTACT SETTINGS");if(c==null)return;if(!c.mcSupportsOther()){results.addView(text("Contact/privacy settings require newer Companion firmware.",14,MUTED));return;}toggleRow(group(results),"Manual contact approval","Do not add newly heard contacts automatically",c.manualAddContacts,on->mcCommand(client->client.setOtherParams(on,client.telemetryModes,client.advertLocationPolicy,client.multiAcks)));}
+    private void meshCorePrivacySettings(ProtocolClient c){section(results,"PRIVACY SETTINGS");if(c==null)return;if(!c.mcSupportsOther()){results.addView(text("Privacy settings require newer Companion firmware.",14,MUTED));return;}toggleRow(group(results),"Share location in adverts","Include coordinates in your node advertisement",c.advertLocationPolicy!=0,on->mcCommand(client->client.setOtherParams(client.manualAddContacts,client.telemetryModes,on?1:0,client.multiAcks)));String[] modes={"Deny","Follow contact permissions","Allow all"};int loc=(c.telemetryModes>>2)&3,env=(c.telemetryModes>>4)&3;LinearLayout group=group(results);menuRow(group,"info","Location telemetry",modes[Math.min(2,loc)],()->singleMcChoice("Location telemetry",modes,loc,i->mcCommand(client->client.setOtherParams(client.manualAddContacts,(client.telemetryModes&0xF3)|(i<<2),client.advertLocationPolicy,client.multiAcks))),RADIO_MC);menuRow(group,"info","Sensor telemetry",modes[Math.min(2,env)],()->singleMcChoice("Sensor telemetry",modes,env,i->mcCommand(client->client.setOtherParams(client.manualAddContacts,(client.telemetryModes&0xCF)|(i<<4),client.advertLocationPolicy,client.multiAcks))),RADIO_MC);toggleRow(group,"Extra acknowledgements","Send additional ACK packets",c.multiAcks,on->mcCommand(client->client.setOtherParams(client.manualAddContacts,client.telemetryModes,client.advertLocationPolicy,on)));}
+    private void singleMcChoice(String title,String[] options,int selected,java.util.function.IntConsumer save){new AlertDialog.Builder(this).setTitle(title).setSingleChoiceItems(options,selected,(d,i)->{save.accept(i);d.dismiss();}).setNegativeButton("Cancel",null).show();}
+    private void meshCoreStats(ProtocolClient c){section(results,"SIGNAL");if(c==null){results.addView(text("Connect to the MeshCore radio to load live radio statistics.",14,MUTED));return;}if(!c.mcSupportsStats()){results.addView(text("Radio statistics require Companion protocol v8 or newer.",14,MUTED));return;}if(c.hasRadioStats){LinearLayout group=group(results);menuRow(group,"radio","Noise floor",c.noiseFloor+" dBm",null,RADIO_MC);menuRow(group,"radio","Last RSSI",c.lastRssi+" dBm",null,RADIO_MC);menuRow(group,"radio","Last SNR",String.format(Locale.ROOT,"%.2f dB",c.lastSnrQuarter/4.0),null,RADIO_MC);section(results,"AIRTIME");LinearLayout air=group(results);menuRow(air,"radio","TX airtime (total)",c.txAirSecs+" s",null,RADIO_MC);menuRow(air,"radio","RX airtime (total)",c.rxAirSecs+" s",null,RADIO_MC);}addButton(results,"Refresh radio stats",()->mcCommand(client->{client.retryMcReads();client.requestStats(1);}));if(!c.hasRadioStats)mcCommand(client->client.requestStats(1));}
+    private void meshCoreTelemetry(ProtocolClient c){section(results,"DEVICE TELEMETRY");if(c==null)return;if(c.hasBattery){LinearLayout data=group(results);menuRow(data,"info","Battery",c.batteryMv+" mV",null,RADIO_MC);if(c.usedKb>=0)menuRow(data,"info","Storage",c.usedKb+" / "+c.totalKb+" KB",null,RADIO_MC);if(c.uptimeSecs>0)menuRow(data,"info","Uptime",(c.uptimeSecs/3600)+" h "+((c.uptimeSecs/60)%60)+" min",null,RADIO_MC);}results.addView(text("Sensor values such as MCU temperature depend on the hardware and firmware telemetry channel.",13,MUTED));addButton(results,"Refresh telemetry",()->mcCommand(client->{client.retryMcReads();client.requestBattery();if(client.mcSupportsStats())client.requestStats(0);}));if(!c.hasBattery)mcCommand(client->{client.requestBattery();if(client.mcSupportsStats())client.requestStats(0);});}
+    private void meshCoreRegions(ProtocolClient c){section(results,"REGION MANAGEMENT");if(c==null){results.addView(text("Connect to the MeshCore radio to read its default flood region.",14,MUTED));return;}if(!c.mcSupportsScope()){results.addView(text("Default flood regions require Companion protocol v11 or newer.",14,MUTED));return;}if(c.mcScopeLoaded==false)mcCommand(ProtocolClient::requestDefaultFloodScope);String current=c.defaultFloodScope.isEmpty()?"None":c.defaultFloodScope;menuRow(group(results),"map","Default region",current,null,RADIO_MC);addButton(results,"Refresh region",()->mcCommand(client->{client.retryMcReads();client.requestDefaultFloodScope();}));addButton(results,"Set default region",()->editMcDefaultRegion());if(!c.defaultFloodScope.isEmpty())addButton(results,"Clear default region",()->new AlertDialog.Builder(this).setTitle("Clear default region?").setPositiveButton("Clear",(d,w)->mcCommand(ProtocolClient::clearDefaultFloodScope)).setNegativeButton("Cancel",null).show());results.addView(text("MeshCore Companion firmware stores the default flood scope name and key. Fetching and managing the repeater region tree requires repeater region commands; this screen can set a default scope when its name and key are known.",13,MUTED));}
+    private void editMcDefaultRegion(){LinearLayout form=column();form.setPadding(dp(20),dp(4),dp(20),dp(4));EditText name=mcInput(form,"Region name", "",android.text.InputType.TYPE_CLASS_TEXT);EditText key=mcInput(form,"Region key (32 hexadecimal characters)","",android.text.InputType.TYPE_CLASS_TEXT);new AlertDialog.Builder(this).setTitle("Default region").setView(form).setMessage("Enter the region name and key provided by your MeshCore repeater network.").setNegativeButton("Cancel",null).setPositiveButton("Save",(d,w)->{try{String n=name.getText().toString().trim(),hex=key.getText().toString().trim().replace(" ","");if(hex.length()!=32||!hex.matches("(?i)[0-9a-f]{32}"))throw new IllegalArgumentException();byte[] raw=new byte[16];for(int i=0;i<16;i++)raw[i]=(byte)Integer.parseInt(hex.substring(i*2,i*2+2),16);mcCommand(client->client.setDefaultFloodScope(n,raw));}catch(Exception e){Toast.makeText(this,"Enter a region name and 32-character hex key",Toast.LENGTH_LONG).show();}}).show();}
+    private void meshCoreDeviceInfo(ProtocolClient c){section(results,"DEVICE INFO");if(c==null){results.addView(text("Connect to a MeshCore radio to view device details.",14,MUTED));return;}LinearLayout info=group(results);menuRow(info,"radio","Connection",service.sessions.get(RadioProfile.MESHCORE).status,null,RADIO_MC);menuRow(info,"info","Hardware",c.hardware.isEmpty()?"Unknown":c.hardware,null,RADIO_MC);menuRow(info,"info","Firmware",c.firmware.isEmpty()?"Unknown":c.firmware,null,RADIO_MC);menuRow(info,"info","Node Name",c.localName,null,RADIO_MC);menuRow(info,"info","Public Key",c.publicKey.isEmpty()?"Unknown":c.publicKey,null,RADIO_MC);menuRow(info,"contacts","Contacts",Integer.toString(c.nodes.size()),null,RADIO_MC);menuRow(info,"channels","Channels",Integer.toString(c.channels.size()),null,RADIO_MC);if(c.pathHashMode>=0)menuRow(info,"tracks","Path ID size",(c.pathHashMode+1)+" byte",null,RADIO_MC);}
     private void exportFullBackup(){
         if(backupBusy)return;
         if(service==null||trackService==null){
@@ -908,7 +1727,11 @@ public final class MainActivity extends Activity {
     private void requestPhonePosition(){if(!position.permitted()){requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION},8);return;}getSharedPreferences("ui",MODE_PRIVATE).edit().putBoolean("gpsEnabled",true).apply();if(resumed)position.start();if(position.location==null)Toast.makeText(this,"Waiting for phone location • check Android Location settings",Toast.LENGTH_LONG).show();if(mapPanel!=null)mapPanel.update();if(selected==5)rebuildContent();}
     private void quickReply(){ArrayList<String> templates=new ArrayList<>();for(String line:getSharedPreferences("ui",MODE_PRIVATE).getString("quickReplies","OK\nOn my way\nNeed assistance").split("\n")){String trimmed=line.trim();if(!trimmed.isEmpty()&&templates.size()<8)templates.add(trimmed.substring(0,Math.min(120,trimmed.length())));}ArrayList<String> choices=new ArrayList<>(templates);int locationIndex=-1;if(position.location!=null&&phoneEnabled()&&System.currentTimeMillis()-position.location.getTime()<120000){locationIndex=choices.size();choices.add("Insert phone coordinates");}int editIndex=choices.size();choices.add("Edit saved replies…");final int coordinateChoice=locationIndex;final RadioProfile network=chatProfile;final String key=draftKey();new AlertDialog.Builder(this).setTitle("Insert into "+network.title+" draft").setItems(choices.toArray(new String[0]),(d,index)->{if(index==editIndex){editQuickReplies();return;}if(chat==null||composer==null||!key.equals(draftKey()))return;String value=index==coordinateChoice?String.format(Locale.ROOT,"%.5f,%.5f",position.location.getLatitude(),position.location.getLongitude()):templates.get(index);if(composer.length()>0)value=composer.getText()+" "+value;composer.setText(value);composer.setSelection(composer.length());}).setNegativeButton("Cancel",null).show();}
     private void editQuickReplies(){EditText editor=new EditText(this);editor.setText(getSharedPreferences("ui",MODE_PRIVATE).getString("quickReplies","OK\nOn my way\nNeed assistance"));editor.setMinLines(4);editor.setTextColor(WHITE);new AlertDialog.Builder(this).setTitle("Quick replies").setMessage("One reply per line. Up to 8 replies, 120 characters each.").setView(editor).setPositiveButton("Save",(a,b)->getSharedPreferences("ui",MODE_PRIVATE).edit().putString("quickReplies",editor.getText().toString().substring(0,Math.min(2000,editor.length()))).apply()).setNegativeButton("Cancel",null).show();}
-    @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);if(result!=RESULT_OK||data==null||data.getData()==null)return;if(request==50||request==51){handleFullBackup(request,data.getData());return;}
+    @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);com.google.zxing.integration.android.IntentResult scan=com.google.zxing.integration.android.IntentIntegrator.parseActivityResult(request,result,data);if(scan!=null){if(scan.getContents()!=null)receiveChannelCode(scan.getContents());return;}if(result==RESULT_OK&&request==55&&data!=null&&data.getData()!=null){readChannelImage(data.getData());return;}if(result!=RESULT_OK||data==null||data.getData()==null)return;if(request==50||request==51){handleFullBackup(request,data.getData());return;}
+        if(request==54){
+            String report=pendingDiagnostic;pendingDiagnostic="";android.net.Uri target=data.getData();if(report.isEmpty()){Toast.makeText(this,"Diagnostic expired; create a new report",Toast.LENGTH_LONG).show();return;}
+            new Thread(()->{boolean success=false;try(java.io.OutputStream output=getContentResolver().openOutputStream(target)){if(output==null)throw new java.io.IOException();output.write(report.getBytes(StandardCharsets.UTF_8));success=true;}catch(java.io.IOException|SecurityException ignored){}final boolean saved=success;runOnUiThread(()->Toast.makeText(this,saved?"Diagnostic exported":"Could not export diagnostic",Toast.LENGTH_LONG).show());},"support-export").start();return;
+        }
         if(request==53){
             android.net.Uri photo=data.getData();
             Toast.makeText(this,"Applying photo background…",Toast.LENGTH_SHORT).show();

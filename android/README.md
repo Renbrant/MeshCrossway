@@ -1,12 +1,12 @@
-# MeshCrossway Android development
+# MeshCrossway Android
 
-**Current published beta: 0.4.8 (versionCode 42).** Recent releases are built from `baseline/android-0.1.0`; the branch name is historical but the branch is active. `main` holds public documentation and the website, and its Android directory currently contains older 0.2.6 sources. Use the immutable `android-v0.4.8` tag to inspect the shipped app. Do not build this directory assuming it matches the latest APK.
+**Current published beta: 0.4.8 (versionCode 42).** `main` is the canonical Android development and release branch. Its Android code is integrated from the immutable `android-v0.4.8` tag, originally published from the historical `baseline/android-0.1.0` branch. Use release tags to audit the exact source of a shipped APK.
 
-[Install the current APK](../docs/android-apk.md) · [Release/source history](../docs/android-version-history.md) · [Report a bug](https://github.com/Renbrant/MeshCrossway/issues)
-
-The development notes below include historical implementation details; consult the release tag for current behavior and build configuration.
+[Install the current APK](../docs/android-apk.md) · [Release/source history](../docs/android-version-history.md) · [Contribution and release workflow](../CONTRIBUTING.md)
 
 Native ARM64 Android 8.0+ app for **two independent, simultaneous BLE radio sessions**: one Meshtastic and one MeshCore Companion. The application does **not** bridge, route or relay messages across networks. Its primary UI includes chats, channels, contacts, offline MapLibre areas, local phone GPS tracks/GPX and saved message history.
+
+**Clerk and cloud sync beta:** hosted sign-in/sign-up and opt-in, manual synchronization of recent conversations and favorites are available with the development Worker. Ordinary messages retain seven days; favorites persist until removed. Optional GPS track sync transfers saved GPX routes when separately enabled, up to five tracks and 5 MiB per track. GPS tracks reveal location history and cloud copies are not end-to-end encrypted. Deleting a local track does not delete its cloud copy. Settings, contacts and live location are not synchronized. This development service is for testing, not production use. See [Clerk setup](CLERK_SETUP.md).
 
 ## New in 0.2.2 — Browser chats, channels, and visual offline maps
 
@@ -79,7 +79,7 @@ Public Android APKs will use **one permanent release signing identity**, so futu
 
 **Important:** 0.2.2 and earlier debug-signed APKs used different certificates and may require one final manual migration. Do not uninstall an older version before exporting its history/GPX or using the optional one-time ADB migration script. The current 0.2.2 APK cannot retroactively export the new complete ZIP; the ADB migration helper can extract this data from debuggable installations. Android operating-system permissions and offline map tile blobs are not part of the ZIP. Normal in-place updates do retain offline maps and permissions.
 
-**Windows ADB backup (one-click):** with the old app still installed and USB debugging authorized, run `scripts/MeshCrossway-Backup-Windows.cmd` from the [Android source branch](https://github.com/Renbrant/MeshCrossway/tree/baseline/android-0.1.0). The launcher requires Android Platform Tools and Python 3, checks that the debug APK is accessible through `adb run-as`, and saves a timestamped, CRC-checked and schema-checked ZIP at `%USERPROFILE%\\MeshCrossway-Backups`. It does **not** uninstall the existing app or upload any data. The optional `verify` command can recheck an existing ZIP. Preserve your 0.2.2 installation until the first permanent-key release and the migration are safe. **Subsequent updates:** drag an officially signed APK onto `scripts/MeshCrossway-Update-Windows.cmd` to run a safe `adb install -r` without uninstalling; an incompatible signature is rejected rather than wiping private data.
+**Windows ADB backup (one-click):** with the old app still installed and USB debugging authorized, run `scripts/MeshCrossway-Backup-Windows.cmd` from the [Android source branch](https://github.com/Renbrant/MeshCrossway/tree/main). The launcher requires Android Platform Tools and Python 3, checks that the debug APK is accessible through `adb run-as`, and saves a timestamped, CRC-checked and schema-checked ZIP at `%USERPROFILE%\\MeshCrossway-Backups`. It does **not** uninstall the existing app or upload any data. The optional `verify` command can recheck an existing ZIP. Preserve your 0.2.2 installation until the first permanent-key release and the migration are safe. **Subsequent updates:** drag an officially signed APK onto `scripts/MeshCrossway-Update-Windows.cmd` to run a safe `adb install -r` without uninstalling; an incompatible signature is rejected rather than wiping private data.
 
 See [Permanent signing & data migration](../docs/android-permanent-signing-backup.md) for detailed precautions and private GitHub secret setup. The complete ZIP contains private messages and GPS history **without encryption**: store it securely.
 
@@ -107,7 +107,9 @@ The `android/app/build/outputs/apk/debug/app-arm64-v8a-debug.apk` output is a de
 - **0.2.3**: first permanent release signing and complete backup/restore; one-time recovery from old debug-signed APKs.
 - **0.2.4**: System, Color, Gradient (Linear/Mesh) and Photo appearance options, with persistent customization.
 - **0.2.5**: compact Home, two leading connection cards, true per-radio BLE RSSI bars, no duplicate section headings.
-- **0.2.3+**: subsequent small fixes; **0.3.0** or later for larger feature releases; **1.0.0** remains a future production milestone.
+- **0.2.8**: Clerk sign-in and opt-in cloud sync for recent messages and favorite chats.
+- **0.2.9**: optional, user-triggered GPX track synchronization with a five-track / 5 MiB-per-track cloud quota.
+- **0.3.0** or later for larger feature releases; **1.0.0** remains a future production milestone.
 
 The installed app may be signed with a different CI debug key. If Android rejects an update due to a signing conflict, first export JSON history and required GPX tracks, then uninstall/reinstall. **Uninstalling deletes local application data.**
 
@@ -118,3 +120,19 @@ Technical implementation and limitations: [Android remote workspace design](../d
 The Android launcher icon uses `app/src/main/res/drawable-nodpi/meshcrossway_app_icon.png`, a copy of the approved `docs/logo/meshcrossway-app-icon.png` mark (charcoal background and orange mountain). The Home tab and notifications render the **official symbol geometry** as Android vector drawables. The optional local HTTPS workspace serves a matching `/favicon.svg` and shows the symbol in its header. Theme selection and separate Meshtastic/MeshCore identities remain unchanged.
 
 This source change is **not included in the already-published Android 0.2.5 APK**. A subsequent version must be built, signed with the existing permanent key and tested before release. Do not replace or re-sign the 0.2.5 release artifact.
+
+### Radio settings save progress (0.3.4)
+
+Meshtastic settings now show save progress in place through submission, a possible radio restart, reconnection and verification. The page updates automatically. A mismatched readback restores the current radio values and unlocks controls. An unanswered verification offers a retry without automatically sending the change again. Install over 0.3.3 using **Update**, without uninstalling or clearing app data. Physical radio validation is still required.
+
+### Preset confirmation and Home (0.3.5)
+
+Home displays the synchronized Meshtastic preset beneath Ready, or Manual LoRa for manual mode. Preset save verification accepts the firmware normalization of coding rate 0 to 5 while still rejecting incorrect presets and missing custom overrides. Firmware source reference: [AdminModule LoRa validation](https://github.com/meshtastic/firmware/blob/d9c9916e73952caa1740d4becc367374c5e28e44/src/modules/AdminModule.cpp#L1025) and [preset coding-rate resolution](https://github.com/meshtastic/firmware/blob/d9c9916e73952caa1740d4becc367374c5e28e44/src/mesh/RadioInterface.cpp#L1352).
+
+### Compact Home and recent nodes (0.3.6)
+
+The Meshtastic preset is inline beside Ready. The radio cards omit Bluetooth device names, keeping connection state and signal strength. Both node cards show activity within 15 minutes. While Home is visible the recent counts are reevaluated every 30 seconds, including when no packets arrive. Recent activity is not proof that a node is reachable now; the large number remains the total saved nodes.
+
+### Account toolbar placement (0.3.7)
+
+The account shortcut is part of the toolbar alongside Settings and More. Each button has reserved layout space; the Application no longer inserts a floating shortcut into the content window on resume. This prevents the account icon from covering the Settings icon or the Home logo.

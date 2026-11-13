@@ -1,24 +1,83 @@
 name: Android permanent-key release
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-permanent-release.yml'
+      - 'android/app/build.gradle'
+      - 'android/app/src/main/**'
+      - 'android/app/src/test/**'
+      - 'android/app/src/androidTest/**'
+      - 'scripts/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'scripts/**'
+      - '.github/workflows/android-permanent-release.yml'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish, such as 0.2.3 (must match android/app/build.gradle)'
+        description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.2.3'
+        default: '0.4.8'
         type: string
 permissions:
   contents: write
 concurrency:
   group: android-permanent-release
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
+  meshtastic-storage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [29, 35]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build storage instrumentation
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug assembleDebugAndroidTest
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify data migration and reply/node persistence
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: |
+            adb install -r android/app/build/outputs/apk/debug/app-x86_64-debug.apk
+            adb install -r android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb shell am instrument -w -r -e mtOnly true com.meshcrossway.mobile.test/com.meshcrossway.android.SmokeInstrumentation > mt-storage-result.txt
+            cat mt-storage-result.txt
+            grep -F 'OK (1 test)' mt-storage-result.txt
   release:
-    if: github.ref == 'refs/heads/baseline/android-0.1.0'
+    needs: meshtastic-storage
+    # Normal branch pushes validate storage but must never publish an APK.
+    # A maintainer explicitly dispatches this workflow on main
+    # with a requested version, after real-radio acceptance.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
       GH_TOKEN: ${{ github.token }}
+      ORG_GRADLE_PROJECT_clerkPublishableKey: ${{ vars.CLERK_PUBLISHABLE_KEY }}
+      ORG_GRADLE_PROJECT_cloudApiBaseUrl: ${{ vars.CLOUD_API_BASE_URL || 'https://meshcrossway-cloud.meshcrossway.workers.dev' }}
       MCX_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
       MCX_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
       MCX_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
@@ -32,7 +91,7 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
         with:
-          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+          packages: 'platform-tools platforms;android-36 build-tools;35.0.0'
       - uses: gradle/actions/setup-gradle@v4
       - name: Verify requested version and permanent signing credentials
         shell: bash
@@ -59,9 +118,10 @@ jobs:
         run: |
           bash scripts/test_android_probe.sh
           node scripts/test_android_remote_web.cjs
+          python3 scripts/test_android_migration.py
       - name: Build permanent-key signed release and lint
         working-directory: android
-        run: ./gradlew --no-daemon assembleRelease lintRelease
+        run: ./gradlew --no-daemon testDebugUnitTest assembleRelease lintRelease
       - name: Verify APK signature identity and version before publishing
         shell: bash
         env:
@@ -77,6 +137,9 @@ jobs:
           test -n "$actual" && test "$actual" = "$expected" ||
             { echo "Release signing certificate changed: refusing to publish"; exit 1; }
           "$TOOLS/aapt" dump badging "$APK" | grep -F "versionName='$REQUESTED'"
+          EXPECTED_CODE=$(sed -n 's/^[[:space:]]*versionCode[[:space:]]*\([0-9][0-9]*\).*$/\1/p' android/app/build.gradle | head -n 1)
+          test -n "$EXPECTED_CODE" && "$TOOLS/aapt" dump badging "$APK" | grep -F "versionCode='$EXPECTED_CODE'"
+          if [ "$REQUESTED" = "0.4.0" ]; then test "$EXPECTED_CODE" = 34; fi
           mkdir -p release
           cp "$APK" "release/MeshCrossway-$REQUESTED.apk"
           (cd release && sha256sum *.apk > SHA256SUMS.txt)
@@ -88,7 +151,13 @@ jobs:
           REQUESTED: ${{ inputs.version }}
         run: |
           set -euo pipefail
+          CURRENT_HEAD=$(git ls-remote origin refs/heads/main | cut -f1)
+          test "$CURRENT_HEAD" = "$GITHUB_SHA" || { echo "Source superseded; refusing to publish an outdated APK"; exit 1; }
+          # Preserve the immutable historical android-v0.4.0 release, which
+          # contained an earlier numbering mistake (versionCode 31).
+          # The newly approved Android 0.4.0 has versionCode 34 and a distinct tag.
           TAG="android-v$REQUESTED"
+          if [ "$REQUESTED" = "0.4.0" ]; then TAG="android-v0.4.0-stage1"; fi
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Version already published; never overwrite an APK/certificate"
             exit 1
@@ -97,23 +166,44 @@ jobs:
             echo "Tag already exists; refusing to overwrite"
             exit 1
           fi
-          cat > release-notes.md <<EOF
-          ## MeshCrossway Android $REQUESTED — permanently signed beta
+          if [ "$REQUESTED" = "0.4.0" ]; then
+            cp docs/android-release-notes-0.4.0.md release-notes.md
+            RELEASE_TITLE="Android 0.4.0 beta — reliable messaging and LoRa reception"
+          elif [ "$REQUESTED" = "0.4.1" ]; then
+            cp docs/android-release-notes-0.4.1.md release-notes.md
+            RELEASE_TITLE="Android 0.4.1 field beta — MeshCore repeater diagnostics"
+          elif [ "$REQUESTED" = "0.4.2" ]; then
+            cp docs/android-release-notes-0.4.2.md release-notes.md
+            RELEASE_TITLE="Android 0.4.2 field beta — MeshCore repeater response diagnostics"
+          elif [ "$REQUESTED" = "0.4.3" ]; then
+            cp docs/android-release-notes-0.4.3.md release-notes.md
+            RELEASE_TITLE="Android 0.4.3 beta — MeshCore repeater protocol compatibility"
+          elif [ "$REQUESTED" = "0.4.5" ]; then
+            cp docs/android-release-notes-0.4.5.md release-notes.md
+            RELEASE_TITLE="Android 0.4.5 beta — editable repeater settings cards"
+          elif [ "$REQUESTED" = "0.4.8" ]; then
+            cp docs/android-release-notes-0.4.8.md release-notes.md
+            RELEASE_TITLE="Android 0.4.8 beta — GPS following and travel arrow"
+          elif [ "$REQUESTED" = "0.4.7" ]; then
+            cp docs/android-release-notes-0.4.7.md release-notes.md
+            RELEASE_TITLE="Android 0.4.7 beta — follow GPS and travel direction"
+          elif [ "$REQUESTED" = "0.4.6" ]; then
+            cp docs/android-release-notes-0.4.6.md release-notes.md
+            RELEASE_TITLE="Android 0.4.6 beta — editable repeater settings and verified feedback"
+          else
+            RELEASE_TITLE="Android $REQUESTED beta"
+            cat > release-notes.md <<EOF
+          ## MeshCrossway Android $REQUESTED beta
 
-          **First persistent-signing release**: every future compatible APK must use the same long-lived signing certificate. Updates from this APK onward can be installed over the existing app while retaining its private SQLite databases, settings, network selections, favorites, tracks and downloaded offline maps.
+          Two independent Meshtastic and MeshCore radios, with separate messaging and settings. This is an experimental Android release; read the full documentation and test with your own compatible hardware.
 
-          **New install / starting fresh**: Install this permanently signed 0.2.3 APK normally. No ADB, ZIP backup or migration is needed. It begins saving messages, favorites, settings, selected radios, GPS tracks and map regions in the phone's persistent local storage. Every future compatible APK signed with the same key can be installed **over** the existing app, retaining that data. Never uninstall to update.
-
-          **Only for users who still have the old 0.2.2 debug APK with data:** earlier public betas used different signing certificates. A one-time migration may be needed before the new permanent signing line. Save history JSON/GPX in the older app, or use the optional private ADB/ZIP migration tool while that version is still installed; the new export feature cannot be retroactively added to an older APK. Android system permissions do not transfer through ZIP backups.
-
-          The full ZIP backup includes both radio histories, favorites, radio preferences, settings, all track points and track folders. Offline MapLibre tiles remain on the phone across normal in-place upgrades; a full uninstall removes private offline tiles and they must be downloaded again.
-
-          Signer fingerprint: see SIGNING-CERT-SHA256.txt. Keep this certificate unchanged for every release. Existing radio independence, HTTPS local access, numeric PIN, chats, channels, tracks and visual offline maps remain available. Physical device testing is required before a final 1.0 release.
+          Upgrade over a permanently signed installation without uninstalling the app. The release uses the permanent Android signing certificate, and includes SHA-256 integrity and signing certificate information. Never remove the app just to update.
           EOF
+          fi
           gh release create "$TAG" "release/MeshCrossway-$REQUESTED.apk" \
              release/SHA256SUMS.txt release/SIGNING-CERT-SHA256.txt \
              --target "$GITHUB_SHA" \
-             --title "Android $REQUESTED — persistent signing and complete backups beta" \
+             --title "$RELEASE_TITLE" \
              --notes-file release-notes.md --prerelease --latest=false
       - name: Remove ephemeral keystore
         if: always()

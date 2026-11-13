@@ -4,16 +4,20 @@ import java.util.*;
 
 final class MeshData {
     static final class Node {
+        int mcState;long mcAdvert,mcModified,mcReceived;String mcRaw="";
+        boolean statusKnown,licensed;String shortName="",status="";int hardwareModel,role;final LinkedHashMap<String,String> metrics=new LinkedHashMap<>();final ArrayList<String> metricHistory=new ArrayList<>();
         String id="",name="",key="";long heard;double lat,lon;boolean position,unmessagable;int battery=-1,type;
-        Node(){} Node(Node n){id=n.id;name=n.name;key=n.key;heard=n.heard;lat=n.lat;lon=n.lon;position=n.position;unmessagable=n.unmessagable;battery=n.battery;type=n.type;}
+        Node(){} Node(Node n){mcState=n.mcState;mcAdvert=n.mcAdvert;mcModified=n.mcModified;mcReceived=n.mcReceived;mcRaw=n.mcRaw;licensed=n.licensed;statusKnown=n.statusKnown;shortName=n.shortName;status=n.status;hardwareModel=n.hardwareModel;role=n.role;metrics.putAll(n.metrics);metricHistory.addAll(n.metricHistory);id=n.id;name=n.name;key=n.key;heard=n.heard;lat=n.lat;lon=n.lon;position=n.position;unmessagable=n.unmessagable;battery=n.battery;type=n.type;}
     }
     static final class Channel {
-        int slot;String name="",identity="";boolean enabled;
+        int slot;String name="",identity="",legacyIdentity="";boolean enabled;
         String topic(){return "c:"+slot+":"+identity;}
     }
     static final class Target {
+        long replyId;boolean reaction;
         final String topic,title,peer,identity;final int slot;final boolean group;
         Target(String topic,String title,String peer,String identity,int slot,boolean group){this.topic=topic;this.title=title;this.peer=peer;this.identity=identity;this.slot=slot;this.group=group;}
+        Target reply(long id,boolean emoji){Target result=new Target(topic,title,peer,identity,slot,group);result.replyId=id;result.reaction=emoji;return result;}
         static Target channel(Channel c){return new Target(c.topic(),c.name,"",c.identity,c.slot,true);}
         static Target node(Node n){return new Target("d:"+(n.id.length()==64?n.id.substring(0,12):n.id),n.name.isEmpty()?n.id:n.name,n.id,"",0,false);}
     }

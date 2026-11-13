@@ -20,3 +20,13 @@ Read the [licensing policy and release checks](docs/licensing.md) before distrib
 ## Validation
 
 Run checks relevant to the change. For firmware, use the existing preflight scripts and documented build workflow, record the exact source version and report physical tests separately. Documentation-only changes should preserve local links and accurately state review limitations.
+
+## Android development and releases
+
+Use `main` as the base and target of Android pull requests. It contains the app source alongside firmware, cloud code, documentation and the website. The historical `baseline/android-0.1.0` branch produced Android releases through 0.4.8; continue development on `main` after that integration.
+
+Audit a shipped APK using its immutable `android-v<version>` tag, not a moving branch. Android 0.4.8 is tagged at `bf0f0c7fe74b3278edd0c134add80f32019bfe01` (versionCode 42). This integration preserves its Android build configuration, runtime code and tests; it does not republish the APK or move existing tags.
+
+Before merging Android changes, require the Android unit/build/lint checks and API 29/35 storage instrumentation to pass. Report real-radio validation separately. Run `bash scripts/test_android_probe.sh`, `node scripts/test_android_remote_web.cjs` and `python3 scripts/test_android_migration.py` for the local fixture checks.
+
+Publish subsequent versions by manually running **Android permanent-key release** on `main`, with a version matching `android/app/build.gradle` and a strictly increasing versionCode. Pushes and pull requests validate code without publishing. The release job accepts only `main`, rejects a superseded source commit or existing tag/release, and verifies the permanent signing identity. Keep existing tags and release assets unchanged; install compatible updates without uninstalling to retain app data.
