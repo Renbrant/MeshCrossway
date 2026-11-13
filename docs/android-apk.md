@@ -1,22 +1,24 @@
-# MeshCrossway Android — 0.4.2 experimental field beta
+# MeshCrossway Android — 0.4.8 beta
 
-> **Current experimental field beta: 0.4.2 (versionCode 36).** Version 0.4.2 changes the MeshCore remote-repeater manual request interval to **30 seconds per repeater**, updates the button automatically when the limit expires, and reports the **data-byte count** of an unexpected remote status/neighbor response. This helps diagnose a real 0.4.1 field-test incompatibility; it **does not guarantee the reply is now parsable**.
+[Download signed MeshCrossway-0.4.8.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.8/MeshCrossway-0.4.8.apk) · [Release notes and checksums](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.8) · [Installation page](https://meshcrossway.renbrant.com/android/)
 
-[Download signed MeshCrossway-0.4.2.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.2/MeshCrossway-0.4.2.apk) · [0.4.2 release notes, SHA-256 checksum and signing certificate](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.2) · [Android installation page](https://meshcrossway.renbrant.com/android/)
+Current published beta: **0.4.8, versionCode 42**. Android 8.0+ on ARM64; two independent compatible Bluetooth radios for simultaneous Meshtastic and MeshCore. No cross-network forwarding.
 
-**Requirements:** Android 8.0+ on ARM64. Two separate compatible Bluetooth radios are needed to use Meshtastic and MeshCore simultaneously, one radio per network. The networks remain independent; no bridging or relaying between them.
+Install over a compatible permanently signed installation without uninstalling or clearing storage. Back up important data first. Old debug-signed 0.2.2-or-earlier installations require the [migration guide](android-permanent-signing-backup.md). Android normally blocks downgrades to a lower versionCode.
 
-**Safe install/update:** Back up important data, then install the permanently signed 0.4.2 APK **over** 0.4.1 or another compatible permanently signed build. Do **not** uninstall or clear storage. Only old debug-signed 0.2.2-or-earlier installations need the [one-time signing migration](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-permanent-signing-backup.md).
+## Recent changes and limits
 
-**Airtime warning:** All remote MeshCore repeater status/neighbors requests require explicit confirmation. **One request every 30 seconds per repeater**, shared across status, neighbor pages and Bluetooth reconnects. Flood routing can create multiple relay transmissions. No background polling or automatic retries. A local-radio acceptance is not proof of a real remote reply.
+- **0.4.8:** continuous GPS following and a vector movement arrow. Map gestures pause following; tapping GPS resumes. Direction uses fresh movement data, not phone orientation. Field testing remains pending.
+- **0.4.5–0.4.6:** editable MeshCore repeater cards with sequential reads and save/readback feedback after administrator login. Available controls vary by firmware. Advanced console, password and reboot controls are separate.
+- **0.4.3:** status decoding accepts known fields with additional firmware bytes; neighbor parsing uses declared record counts and bounded trailing data, addressing the observed 60-byte response incompatibility.
 
-**Field acceptance:** Your first 0.4.1 real-repeater status test produced an unsupported format. If 0.4.2 still reports an error, record **only the number of reply data bytes and the repeater firmware version** when filing an issue; do not publish full public keys, raw packet bytes, messages or credentials.
+Remote repeater tools remain experimental. Manual diagnostic status/neighbor queries share a 30-second per-repeater cooldown and can create flood relay traffic. Repeater administration explicitly reads settings after login; do not confuse these reads with periodic background monitoring. No automatic retries. A local radio accepting a command does not prove a remote reply.
 
-**Previous releases:** [0.4.1 signed beta](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.1) and [0.4.0 Stage 1](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.0-stage1) remain available. Android normally blocks in-place downgrades from versionCode 36 to 35 or 34; back up securely before updating.
+See [version history and source branches](android-version-history.md) for exact source tags and historical numbering. Report reproducible problems with the app, phone and radio firmware versions; omit credentials, raw packets and private message/location data.
 
 ## Previous releases (historical details)
 
-The sections below describe earlier development betas and their behavior **at the time**. Use the 0.4.2 link above for the current experimental field beta.
+The sections below describe earlier development betas and their behavior **at the time**. Use the 0.4.8 link above for the current experimental field beta.
 
 ## Channels, links and QR Codes in 0.3.12
 
