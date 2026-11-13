@@ -40,6 +40,34 @@ public final class ProtocolClientTest {
         byte[] incoming=new byte[14];incoming[0]=8;Wire.put32(incoming,4,1700000000);System.arraycopy("hello!".getBytes(),0,incoming,8,6);mc.receive(incoming,111);check(b.messages.size()==1,"MC channel receive");String uid=b.messages.get(0).uid;byte[] v3=new byte[17];v3[0]=17;System.arraycopy(incoming,1,v3,4,incoming.length-1);mc.receive(v3,112);check(uid.equals(b.messages.get(1).uid),"backlog dedup ignores SNR/path metadata");
         byte[] direct=new byte[18];direct[0]=7;System.arraycopy(Wire.unhex(mc.nodes.values().iterator().next().id),0,direct,1,6);Wire.put32(direct,9,1700000001);System.arraycopy("reply".getBytes(),0,direct,13,5);mc.receive(direct,113);String directUid=b.messages.get(2).uid;check(md.topic.equals(b.messages.get(2).topic),"MC send and receive share conversation");mc.nodes.values().iterator().next().name="Renamed";mc.receive(direct,114);check(directUid.equals(b.messages.get(3).uid),"Contact rename cannot duplicate backlog");
         rejects(()->mc.receive(new byte[]{17},115));check(a.messages.size()==1,"MC cannot inject MT history");
+        // Stage 2 end-to-end Companion fixture: local code 6 is NOT a
+        // remote reply; only a matching asynchronous 0x8c frame completes it.
+        ProtocolClient remote=mc(new Events());
+        remote.active=null;remote.commands.clear();remote.firmwareCode=14;
+        remote.lastPoll=200000;remote.mcBacklogDrained=true;
+        Node repeater=new Node();byte[] publicKey=new byte[32];Arrays.fill(publicKey,(byte)0xab);
+        repeater.id=Wire.hex(publicKey);repeater.type=2;
+        repeater.mcState=ProtocolClient.MC_APPROVED;
+        remote.nodes.put(repeater.id,repeater);
+        remote.requestMcRepeater(McRemoteDiagnostics.Kind.STATUS,repeater.id,0,200000);
+        ProtocolClient.Command request=remote.next(200001);
+        check(request.data[0]==50&&request.data.length==34,"Remote status uses Companion binary command");
+        check(remote.mcRemote.find(repeater.id).stats==null,"Not delivered from enqueue");
+        remote.written(200002);
+        byte[] localAck=new byte[10];localAck[0]=6;
+        Wire.put32(localAck,2,0xabcdefL);Wire.put32(localAck,6,5000);
+        remote.receive(localAck,200003);
+        check(remote.mcRemote.find(repeater.id).stats==null,"Local radio accepted is not remote status");
+        byte[] push=new byte[6+52];push[0]=(byte)0x8c;
+        Wire.put32(push,2,0xabcdefL);Wire.put32(push,6+20,3600);
+        remote.receive(push,200004);
+        check(remote.mcRemote.find(repeater.id).stats!=null
+            &&remote.mcRemote.find(repeater.id).stats.uptime==3600L,
+            "Tagged remote status data not dispatched correctly");
+        rejects(()->remote.requestMcRepeater(McRemoteDiagnostics.Kind.STATUS,
+            repeater.id,0,200010)); // cooldown even after successful response
+        check(a.messages.size()==1,"Remote queries must not create Meshtastic chat");
+
         Snapshot snap=new Snapshot(new ArrayList<>(),new ArrayList<>(),b.messages);check(snap.conversations().size()==2&&snap.unread()==4,"unread aggregation");
         check(Wire.field(Wire.fields(mt.next(31000).data),7)!=null,"PhoneAPI keepalive");
         System.out.println("Protocol clients: bootstrap, text, PKI, ACK ordering, dedup, isolation, limits passed");

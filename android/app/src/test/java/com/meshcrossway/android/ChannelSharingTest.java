@@ -1,0 +1,19 @@
+package com.meshcrossway.android;
+import java.util.*;
+import static com.meshcrossway.android.MeshData.*;
+public final class ChannelSharingTest {
+    static int checks;
+    static void check(boolean value){checks++;if(!value)throw new AssertionError("Channel sharing check "+checks);}
+    static void bad(Runnable value){boolean failed=false;try{value.run();}catch(IllegalArgumentException e){failed=true;}check(failed);}
+    public static void main(String[] args){
+        MtChannelLink official=MtChannelLink.parse("https://meshtastic.org/e/#CgMSAQESAggB");check(official.channels.size()==1);check(Arrays.equals(Wire.bytes(Wire.fields(official.channels.get(0)),2),new byte[]{1}));check(official.link().equals("https://meshtastic.org/e/#CgMSAQESAggB"));
+        byte[] privateA=MtChannelLink.privateSettings("Equipe"),privateB=MtChannelLink.privateSettings("Equipe");check(!Arrays.equals(privateA,privateB));MtChannelLink shared=new MtChannelLink(Arrays.asList(official.channels.get(0),privateA),new Wire.Out().scalar(1,1).scalar(2,6).scalar(11,12).array());check(MtChannelLink.parse(shared.link()).channels.size()==2);check(Arrays.equals(privateA,MtChannelLink.parse(shared.link()).channels.get(1)));
+        for(String url:new String[]{"https://evil.example/e/#CgMSAQESAggB","http://meshtastic.org/e/#CgMSAQESAggB","https://meshtastic.org@evil.example/e/#CgMSAQESAggB","https://meshtastic.org/e/#", "https://meshtastic.org/e/#???","meshcore://channel/add?name=x"})bad(()->MtChannelLink.parse(url));
+        for(String key:new String[]{"zz","0011","0","ff"})bad(()->MtChannelLink.key(key));for(String key:new String[]{"","00","01","0a","11".repeat(16),"22".repeat(32)})check(MtChannelLink.key(key)!=null);
+        bad(()->MtChannelLink.privateSettings("é".repeat(6)));bad(()->MtChannelLink.validate(new Wire.Out().bytes(3,new byte[]{(byte)255}).array()));bad(()->MtChannelLink.validate(new Wire.Out().bytes(2,new byte[17]).array()));bad(()->MtChannelLink.validate(new Wire.Out().bytes(2,new byte[16]).bytes(2,new byte[16]).array()));bad(()->MtChannelLink.validate(new Wire.Out().scalar(8,1).array()));bad(()->new MtChannelLink(Collections.emptyList(),Wire.EMPTY));bad(()->new MtChannelLink(Collections.nCopies(9,privateA),Wire.EMPTY));
+        byte[] local=new Wire.Out().scalar(1,1).scalar(2,0).scalar(7,1).scalar(8,3).scalar(9,1).scalar(10,20).scalar(12,1).array();byte[] merged=shared.mergedLora(local);check(Wire.number(Wire.fields(merged),7,0)==1);check(Wire.number(Wire.fields(merged),10,0)==20);check(Wire.number(Wire.fields(merged),12,0)==1);check(Wire.number(Wire.fields(merged),2,0)==6);check(Wire.number(Wire.fields(merged),11,0)==12);check(!shared.sameLora(local));check(shared.sameLora(merged));
+        ProtocolClient c=new ProtocolClient(RadioProfile.MESHTASTIC,1,new ProtocolClient.Listener(){public void node(Node n){}public void channel(Channel ch){}public void message(Message m){}public void delivery(String uid,String state){} });c.ready=true;c.firmware="2.8.1";c.mtConfigs.put(6,local);byte[] primary=new Wire.Out().scalar(1,0).bytes(2,official.channels.get(0)).scalar(3,1).array();byte[] disabled=new Wire.Out().scalar(1,1).scalar(3,0).array();c.mtChannels.put(0,primary);c.mtChannels.put(1,disabled);
+        bad(()->c.setMtChannel(0,Wire.EMPTY,0));bad(()->c.setMtChannel(1,privateA,1));bad(()->c.setMtChannel(7,privateA,2));c.setMtChannel(1,privateA,2);check(c.admin.edit!=null&&c.admin.edit.index==1&&c.admin.edit.setField==33);check(Arrays.equals(c.mtChannels.get(1),disabled));bad(()->c.shareMtChannel(0));c.admin.edit=null;c.mtChannels.put(1,new Wire.Out().scalar(1,1).bytes(2,privateA).scalar(3,2).array());MtChannelLink exported=MtChannelLink.parse(c.shareMtChannel(1));check(exported.channels.size()==2);check(Arrays.equals(exported.channels.get(0),official.channels.get(0)));check(MtChannelLink.parse(c.shareMtChannel(0)).channels.size()==1);
+        System.out.println("Channel sharing checks passed: "+checks);
+    }
+}

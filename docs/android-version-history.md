@@ -37,7 +37,7 @@ Android installation ordering uses `versionCode`, not the displayed version name
 
 ## Source and release distinction
 
-Recent Android releases are built from `baseline/android-0.1.0`. That branch name is historical, but its role is active. Website/docs are on `main`, whose Android sources currently lag the released app. Use each release tag for the exact shipped source, rather than assuming `main` matches the APK. Consolidating the source branches is separate work.
+Android releases through 0.4.8 were built from `baseline/android-0.1.0`. That history is preserved. The 0.4.8 Android source is now integrated into `main`, the canonical branch for development, contributions and subsequent releases. Use each immutable release tag to audit the exact source of its shipped APK. See [the contribution and release workflow](../CONTRIBUTING.md).
 
 Older alpha labels (including 0.4.0-alpha05) predate the public beta numbering. Historical artifacts retain their original tags; the new 0.4.0 beta's special `-stage1` tag prevents overwriting the earlier mistakenly numbered 0.4.0.
 

@@ -5,6 +5,9 @@ import static com.meshcrossway.android.MeshData.*;
 
 /** A combined view retains each source network/radio identity all the way to the composer. */
 final class UiFeed {
+    static final long RECENT_NODE_SECONDS=15*60;
+    /** Recently heard is evidence of activity, not a live reachability check. */
+    static int recentlyHeard(List<Node> nodes,long now){int total=0;for(Node node:nodes)if(node.heard>0&&node.heard<=now&&node.heard>=now-RECENT_NODE_SECONDS)total++;return total;}
     static final class Item {final RadioProfile profile;final String radio;final Conversation conversation;Item(RadioProfile p,String r,Conversation c){profile=p;radio=r;conversation=c;}}
     static List<Item> conversations(Map<RadioProfile,Snapshot> snapshots,Map<RadioProfile,String> radios,int network,boolean unreadOnly,boolean pinnedOnly,String search){
         ArrayList<Item> result=new ArrayList<>();String q=search.toLowerCase(Locale.ROOT);

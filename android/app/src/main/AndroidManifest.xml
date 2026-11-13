@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
@@ -14,10 +16,14 @@
     <!-- Remote workspace is an opt-in, phone-hosted local HTTPS server. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <application android:theme="@style/AppTheme" android:label="MeshCrossway" android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules" tools:targetApi="s" android:supportsRtl="true" android:icon="@drawable/meshcrossway_app_icon" android:roundIcon="@drawable/meshcrossway_app_icon">
+    <application android:name=".MeshCrosswayApplication" android:theme="@style/AppTheme" android:label="MeshCrossway" android:allowBackup="false" android:fullBackupContent="false" android:dataExtractionRules="@xml/data_extraction_rules" tools:targetApi="s" android:supportsRtl="true" android:icon="@drawable/meshcrossway_app_icon" android:roundIcon="@drawable/meshcrossway_app_icon">
         <activity android:name="com.meshcrossway.android.MainActivity" android:exported="true">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+            <intent-filter><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.DEFAULT" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="meshcore" android:host="channel" android:path="/add" /></intent-filter>
+            <intent-filter><action android:name="android.intent.action.VIEW" /><category android:name="android.intent.category.DEFAULT" /><category android:name="android.intent.category.BROWSABLE" /><data android:scheme="https" android:host="meshtastic.org" android:pathPrefix="/e" /><data android:scheme="https" android:host="www.meshtastic.org" android:pathPrefix="/e" /></intent-filter>
         </activity>
+        <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.channelqr" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/channel_qr_paths" /></provider>
+        <activity android:name=".ClerkAccountActivity" android:exported="false" />
         <service android:name="com.meshcrossway.android.RadioService" android:exported="false" android:foregroundServiceType="connectedDevice" />
         <service android:name="com.meshcrossway.android.TrackService" android:exported="false" android:foregroundServiceType="location" />
     </application>

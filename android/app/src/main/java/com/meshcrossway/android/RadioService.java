@@ -14,6 +14,7 @@ import java.util.*;
 /** All mutable state is confined to the main looper; each radio owns its GATT queue. */
 @SuppressLint("MissingPermission")
 public final class RadioService extends Service {
+    final SupportReport supportLog=new SupportReport();
     public final class LocalBinder extends Binder { public RadioService service(){return RadioService.this;} }
     public final class Session {
         public final RadioProfile profile;
@@ -30,7 +31,7 @@ public final class RadioService extends Service {
         private BluetoothGattCharacteristic tx, rx, notice;
         private final ArrayDeque<Op> queue=new ArrayDeque<>();
         private Op active;
-        ProtocolClient client;
+        ProtocolClient client;MtAdmin.Edit pendingMtEdit;String pendingMtAddress="";McAdmin.Edit pendingMcEdit;String pendingMcAddress="";final List<ProtocolClient.Sent> pendingMcDeliveries=new ArrayList<>();
         boolean desired, transportReady, persisting;
         int retries, mtu=23;
         String phase="Idle",pendingAddress;boolean forcePair;long phaseAt;
@@ -118,13 +119,21 @@ public final class RadioService extends Service {
     void reloadSavedSelection(){for(Session s:sessions.values())if(!s.connected&&!s.desired){s.address=getSharedPreferences("radios",MODE_PRIVATE).getString(s.profile.name(),s.address);history.select(s.profile,s.address);}}
     boolean shouldResume(){for(Session s:sessions.values())if(s.desired&&!s.address.isEmpty())return autoReconnect;return false;}
 
-    void phase(Session s,String phase,String detail){s.phase=phase;s.phaseAt=now();s.status=detail;s.events.addLast((now()/1000)+"s · "+phase+" · "+detail);while(s.events.size()>12)s.events.removeFirst();changed();}
+    void phase(Session s,String phase,String detail){supportLog.record(s.profile,SupportReport.Event.PHASE,SupportReport.phase(phase),now());s.phase=phase;s.phaseAt=now();s.status=detail;s.events.addLast((now()/1000)+"s · "+phase+" · "+detail);while(s.events.size()>12)s.events.removeFirst();changed();}
     private void releaseSetup(Session s){RadioProfile next=gate.release(s.profile);if(next!=null)handler.postDelayed(()->{Session waiting=sessions.get(next);if(running&&waiting.desired&&"Queued".equals(waiting.phase)&&waiting.pendingAddress!=null)open(waiting,waiting.pendingAddress);},350);}
     void connectSaved(){for(Session s:sessions.values())if(!s.address.isEmpty()&&!s.connected){s.desired=true;s.retries=0;open(s,s.address);}}
     void pair(RadioProfile profile){Session s=sessions.get(profile);if(s.address.isEmpty())return;s.forcePair=true;connect(profile,s.address);}
     java.util.List<BluetoothDevice> discovered(RadioProfile profile){if(!allowed())return Collections.emptyList();ArrayList<BluetoothDevice> result=new ArrayList<>();String selected=sessions.get(profile).address;for(BluetoothDevice d:devices.values()){RadioProfile hint=hints.get(d.getAddress());if(showOtherDevices||hint==profile||d.getAddress().equals(selected)||(hint==null&&d.getBondState()==BluetoothDevice.BOND_BONDED))result.add(d);}result.sort((a,b)->{String aa=a.getAddress(),bb=b.getAddress();int ar=aa.equals(selected)?3:hints.get(aa)==profile?2:a.getBondState()==BluetoothDevice.BOND_BONDED?1:0,br=bb.equals(selected)?3:hints.get(bb)==profile?2:b.getBondState()==BluetoothDevice.BOND_BONDED?1:0;return ar!=br?Integer.compare(br,ar):Integer.compare(signal.getOrDefault(bb,-127),signal.getOrDefault(aa,-127));});return result;}
     String discoveryLabel(BluetoothDevice d){String address=d.getAddress();RadioProfile hint=hints.get(address);return deviceName(d)+" · "+(hint==null?"unverified service":hint.title)+"\n"+signal.getOrDefault(address,-127)+" dBm"+(d.getBondState()==BluetoothDevice.BOND_BONDED?" · paired":"");}
     String diagnostics(RadioProfile p){Session s=sessions.get(p);return p.title+" · "+s.phase+"\nMTU "+s.mtu+" · "+s.frames+" frames\n"+String.join("\n",s.events);}
+    String supportReport(){
+        List<SupportReport.Session> state=new ArrayList<>();for(Session s:sessions.values()){
+            SupportReport.Session item=new SupportReport.Session();item.profile=s.profile;item.phase=SupportReport.phase(s.phase);item.mtu=s.mtu;item.retries=s.retries;item.frames=s.frames;item.connected=s.connected;item.ready=s.verified;item.queued=s.queue.size()+(s.active==null?0:1);
+            if(s.client!=null){ProtocolClient c=s.client;item.protocolQueued=c.commands.size()+(c.active==null?0:1);item.firmware=c.firmware;item.protocol=s.profile==RadioProfile.MESHCORE?c.firmwareCode:-1;item.pending=s.profile==RadioProfile.MESHCORE?c.mcAdmin.edit!=null||!c.mcUnverifiedChannels.isEmpty():c.admin.edit!=null;item.approved=c.nodes.size();item.discovered=c.mcDiscoveries.size();}else item.pending=s.pendingMcEdit!=null||s.pendingMtEdit!=null;state.add(item);
+        }
+        String version="unknown";try{version=getPackageManager().getPackageInfo(getPackageName(),0).versionName;}catch(PackageManager.NameNotFoundException ignored){}
+        return supportLog.render(version,Build.VERSION.SDK_INT,Build.MANUFACTURER+" "+Build.MODEL,state);
+    }
     private final BroadcastReceiver adapterChanges=new BroadcastReceiver(){
         @Override public void onReceive(Context c,Intent i){
             if(BluetoothDevice.ACTION_BOND_STATE_CHANGED.equals(i.getAction())){
@@ -236,6 +245,8 @@ public final class RadioService extends Service {
             public void message(MeshData.Message m){history.message(profile,radio,m,muted->{if(!muted&&!m.outgoing&&!uiVisible&&s.address.equals(radio)&&System.currentTimeMillis()/1000-m.timestamp<120)alerts.show(profile,radio,m);});}
             public void delivery(String uid,String state){history.delivery(profile,radio,uid,state);}
         });
+        if(profile==RadioProfile.MESHCORE){if(s.pendingMcAddress.equals(address)){if(s.pendingMcEdit!=null)s.client.mcAdmin.restore(s.pendingMcEdit);s.client.mcRestoreDeliveries(s.pendingMcDeliveries,now());}else{s.pendingMcEdit=null;s.pendingMcDeliveries.clear();}s.pendingMcAddress=address;}
+        if(profile==RadioProfile.MESHTASTIC&&s.pendingMtEdit!=null&&s.pendingMtAddress.equals(address))s.client.admin.restore(s.pendingMtEdit);else{s.pendingMtEdit=null;s.pendingMtAddress="";}
         try{
             BluetoothDevice device=adapter.getRemoteDevice(address);s.name=deviceName(device);
             if((s.profile==RadioProfile.MESHTASTIC||s.forcePair)&&device.getBondState()!=BluetoothDevice.BOND_BONDED){
@@ -270,9 +281,84 @@ public final class RadioService extends Service {
             s.persisting=false;history.draft(profile,radio,target.topic,"");result.accept("");advance(s);
         },()->{client.cancel(message.uid);if(s.client==client)s.persisting=false;result.accept("Could not save message • transmission cancelled; draft kept");});
     }
+    /**
+     * Network-airtime safeguard, persisted across BLE reconnections and process
+     * restarts. One 30-second window per full repeater key, regardless of
+     * whether the user asks for status or a neighbor page.
+     * A queued request consumes the allowance even if delivery is uncertain.
+     */
+    long remoteRepeaterCooldownMs(String fullKey){
+        if(fullKey==null||!fullKey.matches("(?i)[0-9a-f]{64}"))return 0;
+        long last=getSharedPreferences("mc_remote_query_limits",MODE_PRIVATE)
+            .getLong(fullKey.toLowerCase(java.util.Locale.ROOT),0L);
+        return McRemoteDiagnostics.remainingFromWallClock(last,System.currentTimeMillis());
+    }
+    void requestRemoteRepeater(String radio,ProtocolClient expected,
+                               McRemoteDiagnostics.Kind kind,String fullKey,int offset){
+        configureMeshCore(radio,client->{
+            if(client!=expected)throw Wire.bad("Selected MeshCore radio changed; reopen repeater");
+            long remain=remoteRepeaterCooldownMs(fullKey);
+            if(remain>0)throw Wire.bad(McRemoteDiagnostics.remainingLabel(remain));
+            client.requestMcRepeater(kind,fullKey,offset,now());
+            // Saved only after the request was accepted into the local queue.
+            getSharedPreferences("mc_remote_query_limits",MODE_PRIVATE).edit()
+                .putLong(fullKey.toLowerCase(java.util.Locale.ROOT),System.currentTimeMillis()).apply();
+        });
+    }
+    void administerRepeater(String radio,ProtocolClient expected,String key,String value,boolean login){
+        configureMeshCore(radio,client->{
+            if(client!=expected)throw Wire.bad("Radio changed; reopen the repeater");
+            long remaining=remoteRepeaterCooldownMs(key);
+            if(remaining>0)throw Wire.bad(McRemoteDiagnostics.remainingLabel(remaining));
+            client.administerRepeater(key,value,login,now());
+            client.mcError="";
+            getSharedPreferences("mc_remote_query_limits",MODE_PRIVATE).edit()
+                .putLong(key.toLowerCase(java.util.Locale.ROOT),System.currentTimeMillis()).apply();
+        });
+    }
+    String saveRepeaterSetting(String radio,ProtocolClient expected,String key,McRepeaterSettings.Field field,String value){
+        Session s=sessions.get(RadioProfile.MESHCORE);
+        if(s==null||!s.address.equals(radio)||!s.connected||!s.verified||s.client!=expected)
+            return "Radio changed or disconnected; reopen the repeater";
+        try{expected.saveRepeaterSetting(key,field,value,now());expected.mcError="";advance(s);changed();return "";}
+        catch(IllegalArgumentException error){return error.getMessage();}
+    }
+    void configureMeshCore(String radio,java.util.function.Consumer<ProtocolClient> action){
+        Session s=sessions.get(RadioProfile.MESHCORE);
+        if(s==null||!s.address.equals(radio)||!s.connected||!s.verified||s.client==null){
+            if(listener!=null)listener.run();return;
+        }
+        try{
+            final ProtocolClient client=s.client;
+            final McRemoteDiagnostics.Result prior=client.mcRemote.pending;
+            client.mcAdmin.clock=now();
+            action.accept(client);
+            McRemoteDiagnostics.Result request=client.mcRemote.pending;
+            if(request!=null&&request!=prior){
+                // Two bounded UI-only deadline checks. Neither queries the radio.
+                // The Companion request may be queued, locally accepted, or remote
+                // pending; a timeout must never trigger automatic retransmission.
+                handler.postDelayed(()->expireRemote(s,client,request),32_000);
+                handler.postDelayed(()->expireRemote(s,client,request),124_000);
+            }
+            advance(s);changed();
+        }
+        catch(IllegalArgumentException e){s.client.mcError=e.getMessage();s.client.mcRevision++;phase(s,"Settings",e.getMessage());}
+    }
+    private void expireRemote(Session s,ProtocolClient client,McRemoteDiagnostics.Result request){
+        if(s.client!=client||client.mcRemote.pending!=request)return;
+        long prior=client.mcRemote.revision;
+        client.checkRemoteDeadline(now());
+        if(prior!=client.mcRemote.revision)changed();
+    }
+    void configureMeshtastic(String radio,java.util.function.Consumer<ProtocolClient> action){
+        Session s=sessions.get(RadioProfile.MESHTASTIC);
+        if(s==null||!s.address.equals(radio)||!s.connected||!s.verified||s.client==null){if(listener!=null)listener.run();return;}
+        try{action.accept(s.client);advance(s);changed();}catch(IllegalArgumentException e){s.client.admin.error=e.getMessage();s.client.admin.revision++;phase(s,"Settings",e.getMessage());changed();}
+    }
     private void advance(Session s){
         if(!running||!s.transportReady||s.gatt==null||s.client==null||s.persisting||s.rssiPending||s.active!=null||!s.queue.isEmpty()||now()<s.nextWriteAt)return;
-        try{ProtocolClient.Command command=s.client.next(now());if(command!=null)enqueue(s,2,command.data);}
+        try{long revision=s.client.admin.revision,mcRevision=s.client.mcRevision;ProtocolClient.Command command=s.client.next(now());if(s.client.admin.revision!=revision||s.client.mcRevision!=mcRevision)changed();if(command!=null)enqueue(s,2,command.data);}
         catch(IllegalArgumentException e){close(s,e.getMessage());}
     }
     private void arm(Session s,String reason){arm(s,reason,30000);}
@@ -286,7 +372,7 @@ public final class RadioService extends Service {
         if(s.retry!=null)handler.removeCallbacks(s.retry);s.retry=null;
         if(s.rssiPoll!=null)handler.removeCallbacks(s.rssiPoll);
         s.rssiPoll=null;s.rssiPending=false;s.rssiCurrentLink=false;
-        if(s.client!=null)history.uncertain(s.profile,s.address);s.client=null;s.transportReady=false;s.persisting=false;
+        if(s.client!=null){history.uncertain(s.profile,s.address);if(s.profile==RadioProfile.MESHTASTIC){s.pendingMtEdit=s.client.admin.edit!=null&&s.client.admin.edit.writeId!=0?s.client.admin.edit:null;s.pendingMtAddress=s.address;}else{s.pendingMcEdit=s.client.pendingMcSave();s.pendingMcAddress=s.address;s.pendingMcDeliveries.clear();s.pendingMcDeliveries.addAll(s.client.mcRetainDeliveries(now()));s.client.clearRepeaterAdministration();}}s.client=null;s.transportReady=false;s.persisting=false;
         cancelTimeout(s);if(s.probeTimeout!=null)handler.removeCallbacks(s.probeTimeout);if(s.poll!=null)handler.removeCallbacks(s.poll);
         BluetoothGatt old=s.gatt;s.gatt=null;s.queue.clear();s.active=null;s.connected=s.verified=s.readPending=false;
         s.tx=s.rx=s.notice=null;phase(s,"Disconnected",reason);
@@ -306,7 +392,9 @@ public final class RadioService extends Service {
             }else if(s.active.kind==2){if(s.active.data.length>s.profile.payloadLimit(s.mtu)){close(s,"Command exceeds negotiated Bluetooth frame size • not sent");return;}s.tx.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);s.tx.setValue(s.active.data);ok=s.gatt.writeCharacteristic(s.tx);}
             else ok=s.gatt.readCharacteristic(s.rx);
         }catch(SecurityException|IllegalStateException e){ok=false;}
-        if(!ok){close(s,"Bluetooth operation failed • reconnect");return;}arm(s,"Bluetooth operation timed out • reconnect");
+        if(!ok){supportLog.record(s.profile,SupportReport.Event.TRANSPORT_ERROR,-1,now());close(s,"Bluetooth operation failed • reconnect");return;}
+        if(s.active.kind==2&&s.client!=null){s.client.writeAccepted(s.active.data);supportLog.record(s.profile,SupportReport.Event.WRITE_ACCEPTED,s.profile==RadioProfile.MESHCORE?s.active.data[0]&255:0,now());}
+        arm(s,"Bluetooth operation timed out • reconnect");
     }
     private void done(Session s){cancelTimeout(s);s.active=null;pump(s);handler.postDelayed(()->advance(s),90);}
     private void read(Session s){if(s.gatt!=null && s.transportReady && !s.readPending){s.readPending=true;enqueue(s,3,null);}}
@@ -317,9 +405,9 @@ public final class RadioService extends Service {
         if(s.profile==RadioProfile.MESHTASTIC){s.poll=new Runnable(){public void run(){if(s.gatt!=null){read(s);handler.postDelayed(this,3000);}}};handler.postDelayed(s.poll,100);}
     }
     private void received(Session s,byte[] data){
-        if(data.length==0||s.client==null)return;s.frames++;
+        if(data.length==0||s.client==null)return;s.frames++;supportLog.record(s.profile,SupportReport.Event.RX_CODE,s.profile==RadioProfile.MESHCORE?data[0]&255:0,now());
         try{
-            boolean wasReady=s.verified;s.client.receive(data,now());s.verified=s.client.ready;s.status=s.client.description;if(s.verified&&!wasReady){phase(s,"Ready",s.status);startSignalMonitoring(s);}
+            boolean wasReady=s.verified;s.client.receive(data,now());s.verified=s.client.ready;s.status=s.client.description;if(s.profile==RadioProfile.MESHCORE&&s.client.mcAdmin.edit==null)s.pendingMcEdit=null;if(s.verified&&!wasReady){phase(s,"Ready",s.status);startSignalMonitoring(s);}
             if(s.verified){handler.removeCallbacks(s.probeTimeout);s.retries=0;getSharedPreferences("radios",MODE_PRIVATE).edit().putString(s.profile.name(),s.address).putBoolean(s.profile.name()+".desired",s.desired).apply();}
         }catch(IllegalArgumentException e){close(s,e.getMessage());return;}changed();handler.postDelayed(()->advance(s),90);
     }
@@ -374,6 +462,7 @@ public final class RadioService extends Service {
             });
         }
         @Override public void onConnectionStateChange(BluetoothGatt g,int status,int state){onCurrent(g,()->{
+            supportLog.record(s.profile,SupportReport.Event.CONNECTION_STATE,state,now());if(status!=0)supportLog.record(s.profile,SupportReport.Event.TRANSPORT_ERROR,status,now());
             if(status!=BluetoothGatt.GATT_SUCCESS || state==BluetoothProfile.STATE_DISCONNECTED){close(s,"Disconnected (GATT "+status+") • tap reconnect");return;}
             if(state==BluetoothProfile.STATE_CONNECTED){s.connected=true;phase(s,"Discovering","Connected • discovering radio services");arm(s,"Service discovery timed out • check pairing and other mesh apps");handler.postDelayed(()->{if(s.gatt!=g)return;try{if(!g.discoverServices())close(s,"Service discovery could not start");}catch(SecurityException e){close(s,"Bluetooth permission revoked");}},350);}
         });}
@@ -394,6 +483,7 @@ public final class RadioService extends Service {
             if(status!=0){close(s,"Notification subscription failed ("+status+") • pair and reconnect");return;}done(s);beginProbe(s);
         });}
         @Override public void onCharacteristicWrite(BluetoothGatt g,BluetoothGattCharacteristic c,int status){onCurrent(g,()->{
+            supportLog.record(s.profile,SupportReport.Event.WRITE_COMPLETE,status,now());
             if(status!=0){close(s,"Radio write failed ("+status+") • check system pairing");return;}try{if(s.client!=null)s.client.written(now());}catch(IllegalArgumentException e){close(s,e.getMessage());return;}s.nextWriteAt=now()+80;done(s);
         });}
         @Override public void onCharacteristicRead(BluetoothGatt g,BluetoothGattCharacteristic c,int status){byte[] value=c.getValue();byte[] copy=value==null?new byte[0]:value.clone();onCurrent(g,()->{

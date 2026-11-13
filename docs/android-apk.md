@@ -106,7 +106,7 @@ The web server uses a local TLS identity with its private key encrypted at rest 
 
 **Current limitations:** remote maps are selected by numeric geographic bounds (not by drawing a rectangle); the phone and PC must share a reachable Wi-Fi LAN; no cloud or cellular remote access; browser trust requires fingerprint verification; screen-off/Doze, Wi-Fi handovers and real simultaneous dual BLE have not yet been field-tested with this feature.
 
-[Remote workspace technical design](https://github.com/Renbrant/MeshCrossway/blob/baseline/android-0.1.0/docs/android-remote-workspace.md).
+[Remote workspace technical design](https://github.com/Renbrant/MeshCrossway/blob/main/docs/android-remote-workspace.md).
 
 ## What changed in the remote browser (0.2.2)
 
@@ -164,6 +164,6 @@ Wardriving/MeshMapper upload is a future possibility and is **not included** in 
 
 ## Development references
 
-[Android source/build guide](https://github.com/Renbrant/MeshCrossway/tree/baseline/android-0.1.0/android) · [Development history and wire references](android-development-history.md) · [Technical hub](TECHNICAL_DOCUMENTATION.md)
+[Android source/build guide](https://github.com/Renbrant/MeshCrossway/tree/main/android) · [Development history and wire references](android-development-history.md) · [Technical hub](TECHNICAL_DOCUMENTATION.md)
 
 The source build guide contains historical alpha references; this page and the public release define the current beta number and download.

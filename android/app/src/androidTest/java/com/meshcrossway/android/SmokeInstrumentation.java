@@ -14,26 +14,101 @@ import static com.meshcrossway.android.MeshData.*;
 
 /** Device/emulator tests with no radio and no third-party runner dependency. */
 public final class SmokeInstrumentation extends Instrumentation {
-    @Override public void onCreate(Bundle args){super.onCreate(args);start();}
+    private boolean mtOnly;
+    @Override public void onCreate(Bundle args){mtOnly=args!=null&&"true".equals(args.getString("mtOnly"));super.onCreate(args);start();}
     private static void check(boolean condition,String message){if(!condition)throw new AssertionError(message);}
     private static void await(CountDownLatch latch)throws Exception{check(latch.await(10,TimeUnit.SECONDS),"Async storage timed out");}
     private static Message message(String id,String body){Message m=new Message();m.uid=id;m.body=body;m.topic="c:0:hash";m.title="Test";m.timestamp=1700000000;m.group=true;return m;}
     private void barrier(HistoryStore store,int id)throws Exception{CountDownLatch done=new CountDownLatch(1);store.outgoing(RadioProfile.MESHCORE,"barrier",message("barrier"+id,"test"),done::countDown,()->{throw new AssertionError("Barrier failed");});await(done);}
     private void database()throws Exception{
         Context context=getTargetContext();String name="instrumentation-only.db";context.deleteDatabase(name);HistoryStore store=new HistoryStore(context,name);
-        Message inbound=message("same-id","hello");inbound.rx.hops=6;inbound.rx.width=2;inbound.rx.kind="flood";inbound.rx.snr=1.25;store.message(RadioProfile.MESHTASTIC,"radio-a",inbound);store.message(RadioProfile.MESHTASTIC,"radio-a",inbound);store.message(RadioProfile.MESHCORE,"radio-a",message("same-id","other network"));store.message(RadioProfile.MESHTASTIC,"radio-b",message("same-id","other radio"));store.draft(RadioProfile.MESHTASTIC,"radio-a",inbound.topic,"draft 👋");barrier(store,1);
+        Message inbound=message("same-id","hello");inbound.rx.hops=6;inbound.rx.width=2;inbound.rx.kind="flood";inbound.rx.snr=1.25;inbound.rx.packetId=123;inbound.rx.source=200;inbound.rx.replyId=122;inbound.rx.emoji=true;store.message(RadioProfile.MESHTASTIC,"radio-a",inbound);store.message(RadioProfile.MESHTASTIC,"radio-a",inbound);store.message(RadioProfile.MESHCORE,"radio-a",message("same-id","other network"));store.message(RadioProfile.MESHTASTIC,"radio-b",message("same-id","other radio"));store.draft(RadioProfile.MESHTASTIC,"radio-a",inbound.topic,"draft 👋");barrier(store,1);
         SQLiteDatabase db=store.getReadableDatabase();check(HistoryStore.load(db,RadioProfile.MESHTASTIC,"radio-a").messages.size()==1,"Duplicate message inserted");check(HistoryStore.load(db,RadioProfile.MESHCORE,"radio-a").messages.get(0).body.equals("other network"),"Network isolation failed");check(HistoryStore.load(db,RadioProfile.MESHTASTIC,"radio-b").messages.get(0).body.equals("other radio"),"Radio isolation failed");
         check(HistoryStore.load(db,RadioProfile.MESHTASTIC,"radio-a").messages.get(0).rx.hops==6,"Initial receive metadata not saved");store.read(RadioProfile.MESHTASTIC,"radio-a",inbound.topic);Message enriched=message("same-id","hello");enriched.rx.hops=2;enriched.rx.width=2;enriched.rx.kind="flood";enriched.rx.path="1234abcd";enriched.rx.observed=true;enriched.rx.snr=1.25;store.message(RadioProfile.MESHTASTIC,"radio-a",enriched);store.message(RadioProfile.MESHTASTIC,"radio-a",inbound);Message out=message("out","outgoing");out.outgoing=true;out.state="queued";store.message(RadioProfile.MESHTASTIC,"radio-a",out);store.delivery(RadioProfile.MESHTASTIC,"radio-a",out.uid,"delivered");store.delivery(RadioProfile.MESHTASTIC,"radio-a",out.uid,"submitted");store.uncertain(RadioProfile.MESHTASTIC,"radio-a");barrier(store,2);
-        Snapshot snapshot=HistoryStore.load(db,RadioProfile.MESHTASTIC,"radio-a");check(snapshot.unread()==0,"Replay reset read state");check(snapshot.messages.stream().anyMatch(m->m.uid.equals("same-id")&&m.rx.hops==2&&m.rx.snr==1.25&&m.rx.observed&&m.rx.path.equals("1234abcd")),"Receive metadata lost or downgraded");check(snapshot.messages.stream().anyMatch(m->m.uid.equals("out")&&m.state.equals("delivered")),"Late write downgraded delivery");store.close();
-        HistoryStore reopened=new HistoryStore(context,name);check(HistoryStore.load(reopened.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-a").messages.size()==2,"History lost after reopen");CountDownLatch draft=new CountDownLatch(1);reopened.loadDraft(RadioProfile.MESHTASTIC,"radio-a",inbound.topic,value->{check(value.equals("draft 👋"),"Draft lost");draft.countDown();});await(draft);reopened.close();
+        Snapshot snapshot=HistoryStore.load(db,RadioProfile.MESHTASTIC,"radio-a");check(snapshot.unread()==0,"Replay reset read state");check(snapshot.messages.stream().anyMatch(m->m.uid.equals("same-id")&&m.rx.hops==2&&m.rx.snr==1.25&&m.rx.observed&&m.rx.path.equals("1234abcd")),"Receive metadata lost or downgraded");check(snapshot.messages.stream().anyMatch(m->m.uid.equals("out")&&m.state.equals("delivered")),"Late write downgraded delivery");
+        // Stage 1: RF history is persisted-message metadata scoped by network,
+        // physical radio and full native node identity; it never polls LoRa.
+        CountDownLatch mtHistory=new CountDownLatch(1);
+        store.receptionHistory(RadioProfile.MESHTASTIC,"radio-a","200",samples->{
+            check(samples.size()==1&&samples.get(0).hasSnr()&&samples.get(0).hops==2,
+                "Saved Meshtastic reception history missing or duplicated");
+            mtHistory.countDown();
+        });
+        await(mtHistory);
+        CountDownLatch wrongRadio=new CountDownLatch(1);
+        store.receptionHistory(RadioProfile.MESHTASTIC,"radio-b","200",samples->{
+            check(samples.isEmpty(),"RF history leaked across radio selection");
+            wrongRadio.countDown();
+        });
+        await(wrongRadio);
+        Message mcDirect=message("mc-rf","test");mcDirect.group=false;
+        mcDirect.peer=Wire.hex(new byte[32]);mcDirect.rx=RxInfo.meshcore(255);
+        mcDirect.rx.snr=-4.5;
+        store.message(RadioProfile.MESHCORE,"radio-a",mcDirect);
+        CountDownLatch mcHistory=new CountDownLatch(1);
+        store.receptionHistory(RadioProfile.MESHCORE,"radio-a",mcDirect.peer,samples->{
+            check(samples.size()==1&&samples.get(0).hasSnr()&&!samples.get(0).hasHops(),
+                "MeshCore direct-key RF history was not isolated");
+            mcHistory.countDown();
+        });
+        await(mcHistory);
+        store.close();
+        HistoryStore reopened=new HistoryStore(context,name);Message persisted=HistoryStore.load(reopened.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-a").messages.stream().filter(m->m.uid.equals("same-id")).findFirst().get();check(persisted.rx.packetId==123&&persisted.rx.replyId==122&&persisted.rx.emoji,"Structured reply/reaction association lost after reopen");check(HistoryStore.load(reopened.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-a").messages.size()==2,"History lost after reopen");CountDownLatch draft=new CountDownLatch(1);reopened.loadDraft(RadioProfile.MESHTASTIC,"radio-a",inbound.topic,value->{check(value.equals("draft 👋"),"Draft lost");draft.countDown();});await(draft);reopened.close();
     }
+    /** Stage 1: persisted send states are radio-scoped and never blindly replayed. */
+    private void outboxRecovery()throws Exception{
+        Context context=getTargetContext();String name="outbox-stage1.db";
+        context.deleteDatabase(name);HistoryStore store=new HistoryStore(context,name);
+
+        Message mtPending=message("mt-pending","hello");mtPending.outgoing=true;mtPending.state="queued";
+        Message mtLate=message("mt-late","hello");mtLate.outgoing=true;mtLate.state="submitted";
+        Message incoming=message("received","hello");incoming.state="received";
+        Message mcOther=message("mc-other","MC only");mcOther.outgoing=true;mcOther.state="queued";
+        Message mtOther=message("mt-other","Other radio");mtOther.outgoing=true;mtOther.state="queued";
+        store.message(RadioProfile.MESHTASTIC,"radio-a",mtPending);
+        store.message(RadioProfile.MESHTASTIC,"radio-a",mtLate);
+        store.message(RadioProfile.MESHTASTIC,"radio-a",incoming);
+        store.message(RadioProfile.MESHCORE,"radio-a",mcOther);
+        store.message(RadioProfile.MESHTASTIC,"radio-b",mtOther);
+        store.uncertain(RadioProfile.MESHTASTIC,"radio-a");
+        // ACK received after a timeout/reconnect may upgrade unknown to delivered.
+        store.delivery(RadioProfile.MESHTASTIC,"radio-a","mt-late","delivered");
+        // A delayed local write callback must never downgrade the remote ACK.
+        store.delivery(RadioProfile.MESHTASTIC,"radio-a","mt-late","submitted");
+        store.delivery(RadioProfile.MESHTASTIC,"radio-a","mt-late","uncertain");
+        // A delivery callback must never rewrite an inbound message.
+        store.delivery(RadioProfile.MESHTASTIC,"radio-a","received","delivered");
+        barrier(store,400);
+        Snapshot mt=HistoryStore.load(store.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-a");
+        check(mt.messages.stream().anyMatch(m->m.uid.equals("mt-pending")&&m.state.equals("uncertain")),
+            "An interrupted pending send must become unknown, not replayed");
+        check(mt.messages.stream().anyMatch(m->m.uid.equals("mt-late")&&m.state.equals("delivered")),
+            "Late ACK was overwritten by submitted/uncertain");
+        check(mt.messages.stream().anyMatch(m->m.uid.equals("received")&&m.state.equals("received")),
+            "Inbound message was modified by an outgoing delivery callback");
+        check(HistoryStore.load(store.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-b")
+                .messages.get(0).state.equals("queued"),"Another radio's outbox was modified");
+        check(HistoryStore.load(store.getReadableDatabase(),RadioProfile.MESHCORE,"radio-a")
+                .messages.stream().anyMatch(m->m.uid.equals("mc-other")&&m.state.equals("queued")),
+            "MeshCore outgoing messages were changed by a Meshtastic timeout");
+        store.close();
+
+        HistoryStore reopened=new HistoryStore(context,name);
+        Snapshot restored=HistoryStore.load(reopened.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-a");
+        check(restored.messages.stream().anyMatch(m->m.uid.equals("mt-pending")&&m.state.equals("uncertain")),
+            "Unknown delivery was lost after process/database reopen");
+        check(restored.messages.stream().anyMatch(m->m.uid.equals("mt-late")&&m.state.equals("delivered")),
+            "Confirmed delivery was lost after process/database reopen");
+        reopened.close();
+    }
+
     private void backups()throws Exception{
         Context context=getTargetContext();String sourceName="backup-source.db",targetName="backup-target.db",rejectedName="backup-rejected.db";context.deleteDatabase(sourceName);context.deleteDatabase(targetName);context.deleteDatabase(rejectedName);
-        HistoryStore source=new HistoryStore(context,sourceName);Node node=new Node();node.id="123";node.name="Saved node";node.position=true;node.lat=40;node.lon=-105;source.node(RadioProfile.MESHTASTIC,"radio-one",node);source.message(RadioProfile.MESHTASTIC,"radio-one",message("backup-message","Private test message"));source.flag(RadioProfile.MESHTASTIC,"radio-one","node","123","favorite",true);source.poi("Test POI",40,-105);source.draft(RadioProfile.MESHTASTIC,"radio-one","c:0:hash","Draft survives backup");barrier(source,10);
+        HistoryStore source=new HistoryStore(context,sourceName);Node node=new Node();node.id="123";node.name="Saved node";node.shortName="SN";node.licensed=true;node.status="Active";node.statusKnown=true;node.hardwareModel=43;node.metrics.put("Environment","temperature: 22.5");node.metricHistory.add("1700000000 · Environment: temperature: 22.5");node.position=true;node.lat=40;node.lon=-105;source.node(RadioProfile.MESHTASTIC,"radio-one",node);source.message(RadioProfile.MESHTASTIC,"radio-one",message("backup-message","Private test message"));source.flag(RadioProfile.MESHTASTIC,"radio-one","node","123","favorite",true);source.poi("Test POI",40,-105);source.draft(RadioProfile.MESHTASTIC,"radio-one","c:0:hash","Draft survives backup");barrier(source,10);
         ByteArrayOutputStream bytes=new ByteArrayOutputStream();CountDownLatch exported=new CountDownLatch(1);java.util.concurrent.atomic.AtomicReference<String> error=new java.util.concurrent.atomic.AtomicReference<>();source.exportBackup(bytes,result->{error.set(result);exported.countDown();});await(exported);check(error.get().isEmpty(),"Export failed");
-        HistoryStore restored=new HistoryStore(context,targetName);CountDownLatch imported=new CountDownLatch(1);restored.importBackup(new ByteArrayInputStream(bytes.toByteArray()),result->{error.set(result);imported.countDown();});await(imported);check(error.get().isEmpty(),"Import failed: "+error.get());Snapshot snapshot=HistoryStore.load(restored.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-one");check(snapshot.nodes.size()==1&&snapshot.messages.size()==1&&snapshot.flags("node","123").favorite,"Backup lost history/favorite");try(android.database.Cursor c=restored.getReadableDatabase().rawQuery("SELECT count(*) FROM pois",null)){c.moveToFirst();check(c.getInt(0)==1,"POI backup missing");}
+        HistoryStore restored=new HistoryStore(context,targetName);CountDownLatch imported=new CountDownLatch(1);restored.importBackup(new ByteArrayInputStream(bytes.toByteArray()),result->{error.set(result);imported.countDown();});await(imported);check(error.get().isEmpty(),"Import failed: "+error.get());Snapshot snapshot=HistoryStore.load(restored.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-one");check(snapshot.nodes.size()==1&&snapshot.nodes.get(0).shortName.equals("SN")&&snapshot.nodes.get(0).licensed&&snapshot.nodes.get(0).metrics.containsKey("Environment")&&snapshot.messages.size()==1&&snapshot.flags("node","123").favorite,"Backup lost history/favorite");try(android.database.Cursor c=restored.getReadableDatabase().rawQuery("SELECT count(*) FROM pois",null)){c.moveToFirst();check(c.getInt(0)==1,"POI backup missing");}
         org.json.JSONObject invalid=new org.json.JSONObject(new String(bytes.toByteArray(),java.nio.charset.StandardCharsets.UTF_8));invalid.getJSONObject("tables").getJSONArray("messages").getJSONObject(0).put("network","INVALID");HistoryStore rejected=new HistoryStore(context,rejectedName);CountDownLatch failed=new CountDownLatch(1);rejected.importBackup(new ByteArrayInputStream(invalid.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)),result->{error.set(result);failed.countDown();});await(failed);check(!error.get().isEmpty(),"Invalid backup accepted");check(HistoryStore.load(rejected.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-one").nodes.isEmpty(),"Rejected import was not atomic");org.json.JSONObject legacyJson=new org.json.JSONObject(new String(bytes.toByteArray(),java.nio.charset.StandardCharsets.UTF_8));org.json.JSONArray oldMessages=legacyJson.getJSONObject("tables").getJSONArray("messages");for(int i=0;i<oldMessages.length();i++)oldMessages.getJSONObject(i).remove("rx_meta");String legacyBackupName="legacy-backup.db";context.deleteDatabase(legacyBackupName);HistoryStore legacyBackup=new HistoryStore(context,legacyBackupName);CountDownLatch legacyImported=new CountDownLatch(1);legacyBackup.importBackup(new ByteArrayInputStream(legacyJson.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)),result->{error.set(result);legacyImported.countDown();});await(legacyImported);check(error.get().isEmpty()&&HistoryStore.load(legacyBackup.getReadableDatabase(),RadioProfile.MESHTASTIC,"radio-one").messages.get(0).rx.hops==-1,"Old backup did not import with unknown metadata");legacyBackup.close();source.close();restored.close();rejected.close();
-        String legacyName="migration-test.db";context.deleteDatabase(legacyName);SQLiteDatabase old=context.openOrCreateDatabase(legacyName,0,null);old.execSQL("CREATE TABLE messages(uid TEXT PRIMARY KEY,body TEXT)");old.execSQL("INSERT INTO messages VALUES('retained','old data')");old.setVersion(1);old.close();HistoryStore upgraded=new HistoryStore(context,legacyName);SQLiteDatabase db=upgraded.getWritableDatabase();check(db.getVersion()==3,"Schema did not migrate");try(android.database.Cursor c=db.rawQuery("SELECT body FROM messages WHERE uid='retained'",null)){check(c.moveToFirst()&&c.getString(0).equals("old data"),"Migration erased history");}try(android.database.Cursor c=db.rawQuery("SELECT count(*) FROM flags",null)){check(c.moveToFirst(),"Migration missing local flags");}upgraded.close();
+        String legacyName="migration-test.db";context.deleteDatabase(legacyName);SQLiteDatabase old=context.openOrCreateDatabase(legacyName,0,null);old.execSQL("CREATE TABLE messages(uid TEXT PRIMARY KEY,body TEXT)");old.execSQL("CREATE TABLE nodes(network TEXT,radio TEXT,id TEXT,name TEXT,key TEXT,heard INTEGER,lat REAL,lon REAL,position INTEGER,battery INTEGER,type INTEGER,blocked INTEGER,PRIMARY KEY(network,radio,id))");old.execSQL("INSERT INTO messages VALUES('retained','old data')");old.setVersion(1);old.close();HistoryStore upgraded=new HistoryStore(context,legacyName);SQLiteDatabase db=upgraded.getWritableDatabase();check(db.getVersion()==5,"Schema did not migrate");try(android.database.Cursor c=db.rawQuery("SELECT body FROM messages WHERE uid='retained'",null)){check(c.moveToFirst()&&c.getString(0).equals("old data"),"Migration erased history");}try(android.database.Cursor c=db.rawQuery("SELECT count(*) FROM flags",null)){check(c.moveToFirst(),"Migration missing local flags");}upgraded.close();
     }
     private void tracks()throws Exception{
         Context context=getTargetContext();String name="track-instrumentation.db";context.deleteDatabase(name);TrackStore store=new TrackStore(context,name);CountDownLatch started=new CountDownLatch(1);store.start("Field & trail",ok->{check(ok,"Track did not start");started.countDown();});await(started);CountDownLatch loaded=new CountDownLatch(1);store.barrier(loaded::countDown);await(loaded);String id=store.tracks.get(0).id;
@@ -106,7 +181,8 @@ public final class SmokeInstrumentation extends Instrumentation {
     private void maps(MainActivity activity)throws Exception{
         java.lang.reflect.Field field=MainActivity.class.getDeclaredField("service");field.setAccessible(true);waitUntil(()->{try{return field.get(activity)!=null;}catch(Exception e){throw new RuntimeException(e);}},"Service did not bind");
         onUi(()->{try{RadioService service=(RadioService)field.get(activity);Node mt=new Node();mt.id="123";mt.name="MT test";mt.position=true;mt.lat=40;mt.lon=-105;mt.heard=System.currentTimeMillis()/1000;Node mc=new Node();mc.id="0909090909090909090909090909090909090909090909090909090909090909";mc.name="MC test";mc.position=true;mc.lat=40.001;mc.lon=-105.001;mc.heard=mt.heard;service.sessions.get(RadioProfile.MESHTASTIC).address="map-mt";service.sessions.get(RadioProfile.MESHCORE).address="map-mc";service.history.select(RadioProfile.MESHTASTIC,"map-mt");service.history.select(RadioProfile.MESHCORE,"map-mc");service.history.node(RadioProfile.MESHTASTIC,"map-mt",mt);service.history.node(RadioProfile.MESHCORE,"map-mc",mc);activity.showMap(40,-105);}catch(Exception e){throw new RuntimeException(e);}});
-        waitUntil(()->activity.mapPanel!=null&&activity.mapPanel.styleReady&&activity.mapPanel.markerCount==2,"Native map did not load both network sources");waitUntil(()->{MapPanel panel=activity.mapPanel;return panel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,panel.mapView.getWidth(),panel.mapView.getHeight()),"mesh-points").size()==2;},"Native renderer did not draw both network markers");screenshot(activity,"dual-map");
+        try{waitUntil(()->activity.mapPanel!=null&&activity.mapPanel.styleReady&&activity.mapPanel.markerCount==2,"Native map did not load both network sources");}
+        catch(AssertionError error){onUi(()->{try{RadioService service=(RadioService)field.get(activity);android.util.Log.e("MeshCrosswayTest","Map fixture: panel="+(activity.mapPanel!=null)+" style="+(activity.mapPanel!=null&&activity.mapPanel.styleReady)+" markers="+(activity.mapPanel==null?-1:activity.mapPanel.markerCount)+" MT="+service.data(RadioProfile.MESHTASTIC).nodes.size()+" MC="+service.data(RadioProfile.MESHCORE).nodes.size()+" listener="+(service.listener!=null));}catch(Exception failure){throw new RuntimeException(failure);}});screenshot(activity,"map-failure");throw error;}waitUntil(()->{MapPanel panel=activity.mapPanel;return panel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,panel.mapView.getWidth(),panel.mapView.getHeight()),"mesh-points").size()==2;},"Native renderer did not draw both network markers");screenshot(activity,"dual-map");
         final OfflineMaps[] offline=new OfflineMaps[1];onUi(()->{offline[0]=activity.mapPanel.offline;offline[0].create("Offline test","asset://map-test-style.json",org.maplibre.android.geometry.LatLngBounds.from(40.002,-104.998,39.998,-105.002),10,1);});waitUntil(()->offline[0].areas.stream().anyMatch(a->a.name.equals("Offline test")),"Offline region was not persisted");
         onUi(()->{OfflineMaps.Area area=offline[0].areas.stream().filter(a->a.name.equals("Offline test")).findFirst().get();offline[0].pause();offline[0].start(area);offline[0].pause();offline[0].delete(area);});waitUntil(()->offline[0].areas.stream().noneMatch(a->a.name.equals("Offline test")),"Offline region deletion failed");
     }
@@ -127,6 +203,49 @@ public final class SmokeInstrumentation extends Instrumentation {
         onUi(()->activity.mapPanel.openTool("layers"));waitForIdleSync();onUi(()->{View view=find(activity.getWindow().getDecorView(),"Group nearby nodes");check(view instanceof Switch,"Clustering switch missing");((Switch)view).setChecked(false);});waitUntil(()->activity.mapPanel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,activity.mapPanel.mapView.getWidth(),activity.mapPanel.mapView.getHeight()),"mesh-points").size()==2,"Ungrouped map lost individual nodes");screenshot(activity,"map-layers");
         onUi(()->{check(activity.mapPanel.mapView.getHeight()>0,"Panel hid the map");activity.mapPanel.closePanel();activity.mapPanel.map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.zoomTo(3));activity.mapPanel.setClustering(true);});waitUntil(()->!activity.mapPanel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,activity.mapPanel.mapView.getWidth(),activity.mapPanel.mapView.getHeight()),"mesh-clusters").isEmpty(),"Clustering did not return");onUi(()->activity.mapPanel.setClustering(false));waitUntil(()->activity.mapPanel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,activity.mapPanel.mapView.getWidth(),activity.mapPanel.mapView.getHeight()),"mesh-points").size()==2,"Ungrouped mode failed at low zoom");
         onUi(()->activity.mapPanel.openTool("offline"));screenshot(activity,"map-offline");click(activity,"Download visible area…");screenshot(activity,"map-download");onUi(()->activity.mapPanel.openTool("tracks"));screenshot(activity,"map-tracks");onUi(activity::onBackPressed);check(activity.mapPanel!=null,"Back left map instead of closing panel");
+    }
+    private void mapMarkerImage(MapPanel panel,String name,double lat,double lon)throws Exception{
+        long deadline=android.os.SystemClock.elapsedRealtime()+8000;android.graphics.Bitmap bitmap=null;int blue=0;
+        do{
+            CountDownLatch captured=new CountDownLatch(1);java.util.concurrent.atomic.AtomicReference<android.graphics.Bitmap> image=new java.util.concurrent.atomic.AtomicReference<>();android.graphics.PointF[] point=new android.graphics.PointF[1];
+            onUi(()->{point[0]=panel.map.getProjection().toScreenLocation(new org.maplibre.android.geometry.LatLng(lat,lon));panel.map.snapshot(frame->{image.set(frame);captured.countDown();});});await(captured);
+            bitmap=image.get();check(bitmap!=null,"Map snapshot missing");blue=0;
+            for(int y=Math.max(0,(int)point[0].y-45);y<Math.min(bitmap.getHeight(),(int)point[0].y+45);y++)for(int x=Math.max(0,(int)point[0].x-45);x<Math.min(bitmap.getWidth(),(int)point[0].x+45);x++){int color=bitmap.getPixel(x,y);if(android.graphics.Color.blue(color)>240&&android.graphics.Color.red(color)>50&&android.graphics.Color.red(color)<115&&android.graphics.Color.green(color)>130&&android.graphics.Color.green(color)<180)blue++;}
+            if(blue>15)break;Thread.sleep(100);
+        }while(android.os.SystemClock.elapsedRealtime()<deadline);
+        java.io.File imageFile=new java.io.File(getTargetContext().getExternalFilesDir(null),name+".png");
+        try(FileOutputStream out=new FileOutputStream(imageFile)){bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}
+        String exported="/data/local/tmp/mcx-native-"+name+".png";shell("cp "+imageFile.getAbsolutePath()+" "+exported);
+        try(android.os.ParcelFileDescriptor fd=getUiAutomation().executeShellCommand("cat "+exported);InputStream input=new android.os.ParcelFileDescriptor.AutoCloseInputStream(fd)){
+            byte[] signature=new byte[8];int read=0,n;while(read<8&&(n=input.read(signature,read,8-read))>0)read+=n;
+            check(read==8&&signature[0]==(byte)137&&signature[1]==80&&signature[2]==78&&signature[3]==71,"Exported map snapshot is not a PNG: "+name);
+        }
+        check(blue>15,"Phone marker has no visible phone-blue pixels: "+name+" (blue="+blue+")");
+    }
+    private android.location.Location movingFix(double lat,double lon,float speed,float bearing,long age){
+        android.location.Location fix=new android.location.Location("gps");fix.setLatitude(lat);fix.setLongitude(lon);fix.setAccuracy(3);fix.setSpeed(speed);fix.setSpeedAccuracyMetersPerSecond(.2f);fix.setBearing(bearing);fix.setBearingAccuracyDegrees(5);fix.setTime(System.currentTimeMillis()-age);fix.setElapsedRealtimeNanos(android.os.SystemClock.elapsedRealtimeNanos()-age*1000000);return fix;
+    }
+    private void mapFollow(MainActivity activity)throws Exception{
+        MapPanel panel=activity.mapPanel;android.location.Location previous=activity.position.location;
+        boolean enabled=activity.getSharedPreferences("ui",0).getBoolean("gpsEnabled",false);
+        try{
+            onUi(()->{panel.followPhone();activity.position.stop();activity.position.location=movingFix(40,-105,0,0,0);panel.update();});
+            waitUntil(()->GeoMath.distance(40,-105,panel.map.getCameraPosition().target.getLatitude(),panel.map.getCameraPosition().target.getLongitude())<2,"GPS did not center");
+            onUi(()->{panel.map.moveCamera(org.maplibre.android.camera.CameraUpdateFactory.newCameraPosition(new org.maplibre.android.camera.CameraPosition.Builder(panel.map.getCameraPosition()).zoom(13).bearing(35).build()));activity.position.location=movingFix(40.001,-104.999,10,90,0);panel.update();});
+            waitUntil(()->GeoMath.distance(40.001,-104.999,panel.map.getCameraPosition().target.getLatitude(),panel.map.getCameraPosition().target.getLongitude())<2,"Camera did not follow the next position");
+            onUi(()->{check(panel.followingPhone(),"Programmatic camera movement stopped following");check(Math.abs(panel.map.getCameraPosition().zoom-13)<.01,"Following reset chosen zoom");check(Math.abs(panel.map.getCameraPosition().bearing-35)<.01,"Following reset map rotation");check(panel.motion.moving&&Math.abs(panel.motion.bearing-90)<.01,"Travel bearing not applied");});
+            waitUntil(()->!panel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,panel.mapView.getWidth(),panel.mapView.getHeight()),"phone-arrow").isEmpty(),"Moving arrow not rendered");mapMarkerImage(panel,"moving-arrow",40.001,-104.999);screenshot(activity,"map-follow-arrow");
+            onUi(()->{activity.position.location=movingFix(40.001,-104.999,0,90,0);panel.update();});
+            waitUntil(()->!panel.motion.moving&&!panel.map.queryRenderedFeatures(new android.graphics.RectF(0,0,panel.mapView.getWidth(),panel.mapView.getHeight()),"phone-point").isEmpty(),"Stopped marker did not return to dot");mapMarkerImage(panel,"stopped-dot",40.001,-104.999);screenshot(activity,"map-stopped-dot");
+            onUi(()->{long time=android.os.SystemClock.uptimeMillis();float x=panel.mapView.getWidth()*.35f,y=panel.mapView.getHeight()*.35f;for(int i=0;i<=10;i++){android.view.MotionEvent event=android.view.MotionEvent.obtain(time,time+i*20,i==0?android.view.MotionEvent.ACTION_DOWN:i==10?android.view.MotionEvent.ACTION_UP:android.view.MotionEvent.ACTION_MOVE,x+i*12,y,0);panel.mapView.dispatchTouchEvent(event);event.recycle();}});
+            waitUntil(()->!panel.followingPhone(),"Dragging the map did not pause following");
+            final org.maplibre.android.geometry.LatLng[] panned=new org.maplibre.android.geometry.LatLng[1];waitForIdleSync();
+            onUi(()->{panel.map.cancelTransitions();panned[0]=panel.map.getCameraPosition().target;activity.position.location=movingFix(40.003,-104.997,12,45,0);panel.update();});
+            onUi(()->check(GeoMath.distance(panned[0].getLatitude(),panned[0].getLongitude(),panel.map.getCameraPosition().target.getLatitude(),panel.map.getCameraPosition().target.getLongitude())<2,"Paused map snapped back"));
+            onUi(()->{panel.followPhone();activity.position.stop();activity.position.location=movingFix(40.003,-104.997,12,45,0);panel.update();});
+            waitUntil(()->GeoMath.distance(40.003,-104.997,panel.map.getCameraPosition().target.getLatitude(),panel.map.getCameraPosition().target.getLongitude())<2,"GPS button did not resume following");
+            onUi(()->{activity.position.location=movingFix(40.003,-104.997,12,45,20000);panel.update();check(!panel.motion.moving,"Old GPS still shown as moving");});
+        }finally{onUi(()->{panel.stopFollowing();activity.position.location=previous;activity.getSharedPreferences("ui",0).edit().putBoolean("gpsEnabled",enabled).apply();panel.update();if(enabled)activity.position.start();});}
     }
     private View find(View root,String label){if(root instanceof TextView&&((TextView)root).getText().toString().equals(label))return root;if(root instanceof ViewGroup){ViewGroup group=(ViewGroup)root;for(int i=0;i<group.getChildCount();i++){View found=find(group.getChildAt(i),label);if(found!=null)return found;}}return null;}
     private void click(MainActivity activity,String label){onUi(()->{View view=find(activity.getWindow().getDecorView(),label);check(view!=null,"Missing navigation: "+label);while(!view.isClickable()&&view.getParent() instanceof View)view=(View)view.getParent();check(view.performClick(),"Cannot click "+label);});waitForIdleSync();}
@@ -412,6 +531,128 @@ public final class SmokeInstrumentation extends Instrumentation {
             !BleSignal.recent(System.currentTimeMillis()-25L*60*60*1000,
                 System.currentTimeMillis()),"Old RSSI should not be treated as current");
     }
+    private Switch settingsSwitch(View root,String title){
+        if(root instanceof Switch&&title.contentEquals(root.getContentDescription()))return (Switch)root;
+        if(root instanceof ViewGroup){ViewGroup group=(ViewGroup)root;for(int i=0;i<group.getChildCount();i++){Switch found=settingsSwitch(group.getChildAt(i),title);if(found!=null)return found;}}
+        return null;
+    }
+    /** Render the real settings views with default and excluded-module fixtures. */
+    private void meshtasticSettingsViews()throws Exception{
+        MainActivity activity=(MainActivity)startActivitySync(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        waitForIdleSync();
+        try{onUi(()->{try{
+            java.lang.reflect.Field resultsField=MainActivity.class.getDeclaredField("results");resultsField.setAccessible(true);
+            LinearLayout panel=new LinearLayout(activity);panel.setOrientation(LinearLayout.VERTICAL);resultsField.set(activity,panel);
+            Method device=MainActivity.class.getDeclaredMethod("mtDeviceSettings",ProtocolClient.class);device.setAccessible(true);
+            Method security=MainActivity.class.getDeclaredMethod("mtSecuritySettings",ProtocolClient.class);security.setAccessible(true);
+            Method modules=MainActivity.class.getDeclaredMethod("mtModuleSettings",ProtocolClient.class);modules.setAccessible(true);
+            ProtocolClient c=new ProtocolClient(RadioProfile.MESHTASTIC,42,new ProtocolClient.Listener(){
+                public void node(Node n){}public void channel(Channel channel){}public void message(Message message){}public void delivery(String uid,String state){}
+            });
+            c.firmware="2.8.1";c.mtConfigs.put(1,Wire.EMPTY);c.mtConfigs.put(7,Wire.EMPTY);c.mtConfigs.put(8,Wire.EMPTY);
+            device.invoke(activity,c);check(find(panel,"Enabled: false")!=null,"Default Bluetooth must render disabled");
+            panel.removeAllViews();security.invoke(activity,c);Switch serial=settingsSwitch(panel,"Serial Console");
+            check(serial!=null&&!serial.isChecked(),"Default serial switch must render disabled");
+            c.mtModules.put(1,Wire.EMPTY);c.mtModules.put(14,Wire.EMPTY);c.mtExcludedModules=1;
+            panel.removeAllViews();modules.invoke(activity,c);check(find(panel,"Status Message")!=null&&find(panel,"Not set")!=null,"Excluded MQTT must not hide the loaded status editor");
+            View status=find(panel,"Status Message");check(((View)status.getParent().getParent()).isClickable(),"Loaded supported status must be editable");
+            c.mtExcludedModules=1L<<13;panel.removeAllViews();modules.invoke(activity,c);
+            check(settingsSwitch(panel,"MQTT Enabled")!=null,"Excluded status must not hide MQTT");
+            status=find(panel,"Status Message");check(!((View)status.getParent().getParent()).isClickable(),"Excluded status must not expose an action");
+            c.mtExcludedModules=0;c.firmware="2.7.19";panel.removeAllViews();modules.invoke(activity,c);
+            check(find(panel,"Requires firmware 2.7.20 or newer")!=null,"Old firmware status availability must be explained");
+            status=find(panel,"Status Message");check(!((View)status.getParent().getParent()).isClickable(),"Old firmware status must not expose an action");
+            System.out.println("Meshtastic settings views: default booleans and independent module controls passed");
+        }catch(Exception e){throw new RuntimeException(e);}});}finally{onUi(activity::finish);waitForIdleSync();}
+    }
+    private void meshcoreContactPersistence()throws Exception{
+        Context context=getTargetContext();String name="mc-contact-lifecycle-fixture.db";context.deleteDatabase(name);HistoryStore store=new HistoryStore(context,name);
+        Node discovered=new Node();discovered.id="08"+"00".repeat(31);discovered.key=discovered.id;discovered.name="Discovered";discovered.type=1;discovered.mcState=ProtocolClient.MC_DISCOVERED;discovered.mcAdvert=1700000000L;discovered.mcModified=1794337200L;discovered.mcReceived=1794337260L;discovered.heard=discovered.mcReceived;discovered.mcRaw="00".repeat(148);
+        store.node(RadioProfile.MESHCORE,"mc-lifecycle",discovered);barrier(store,90);Thread.sleep(250);barrier(store,91);
+        Snapshot first=HistoryStore.load(store.getReadableDatabase(),RadioProfile.MESHCORE,"mc-lifecycle");check(first.nodes.size()==1&&first.nodes.get(0).mcState==ProtocolClient.MC_DISCOVERED,"Discovery status did not persist");check(first.nodes.get(0).mcRaw.equals(discovered.mcRaw)&&first.nodes.get(0).mcReceived==discovered.mcReceived,"Approval/activity metadata did not persist");
+        Message historical=message("mc-lifecycle-message","Retain history");store.message(RadioProfile.MESHCORE,"mc-lifecycle",historical);Node retired=new Node(discovered);retired.mcState=ProtocolClient.MC_RETIRED;store.node(RadioProfile.MESHCORE,"mc-lifecycle",retired);barrier(store,92);Thread.sleep(250);barrier(store,93);
+        Snapshot last=HistoryStore.load(store.getReadableDatabase(),RadioProfile.MESHCORE,"mc-lifecycle");check(last.nodes.get(0).mcState==ProtocolClient.MC_RETIRED,"Retired status was lost during metadata merge");check(last.messages.size()==1,"Removing radio approval deleted local history");
+        Channel channel=new Channel();channel.slot=0;channel.name="Team";channel.identity="first-key";channel.enabled=true;store.channel(RadioProfile.MESHCORE,"mc-lifecycle",channel);barrier(store,94);channel=new Channel();channel.slot=0;channel.name="Changed";channel.identity="new-key";channel.enabled=true;store.channel(RadioProfile.MESHCORE,"mc-lifecycle",channel);barrier(store,95);Snapshot changed=HistoryStore.load(store.getReadableDatabase(),RadioProfile.MESHCORE,"mc-lifecycle");check(changed.messages.size()==1&&changed.channels.get(0).identity.equals("new-key"),"Channel key replacement lost history or failed to update current identity");channel.enabled=false;channel.name="";store.channel(RadioProfile.MESHCORE,"mc-lifecycle",channel);barrier(store,96);Snapshot cleared=HistoryStore.load(store.getReadableDatabase(),RadioProfile.MESHCORE,"mc-lifecycle");check(!cleared.channels.get(0).enabled&&cleared.messages.size()==1,"Channel removal must retain old messages while disabling the slot");store.close();
+    }
+    private void meshcoreSettingsViews()throws Exception{
+        MainActivity activity=(MainActivity)startActivitySync(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));waitForIdleSync();
+        try{onUi(()->{try{
+            java.lang.reflect.Field resultsField=MainActivity.class.getDeclaredField("results");resultsField.setAccessible(true);LinearLayout panel=new LinearLayout(activity);panel.setOrientation(LinearLayout.VERTICAL);resultsField.set(activity,panel);
+            ProtocolClient c=new ProtocolClient(RadioProfile.MESHCORE,42,new ProtocolClient.Listener(){public void node(Node n){}public void channel(Channel channel){}public void message(Message message){}public void delivery(String uid,String state){}});c.commands.clear();c.firmwareCode=3;
+            for(String method:new String[]{"meshCoreStats","meshCoreRegions","meshCorePathSettings"}){panel.removeAllViews();Method render=MainActivity.class.getDeclaredMethod(method,ProtocolClient.class);render.setAccessible(true);render.invoke(activity,c);check(c.commands.isEmpty(),"Old-firmware screen queued an unsupported command: "+method);}
+            c.firmwareCode=14;c.hasTxPower=true;c.txPower=-5;c.maxTxPower=30;c.frequencyMhz=915;c.bandwidthKhz=62.5;c.spreadingFactor=7;c.codingRate=5;
+            panel.removeAllViews();Method radio=MainActivity.class.getDeclaredMethod("meshCoreRadioSettings",ProtocolClient.class);radio.setAccessible(true);radio.invoke(activity,c);check(find(panel,"-5 dBm · max 30 dBm")!=null,"Signed power or advertised maximum is displayed incorrectly");
+            c.mcNameNeedsRepair=true;panel.removeAllViews();Method banner=MainActivity.class.getDeclaredMethod("mcSettingsBanner",ProtocolClient.class);banner.setAccessible(true);banner.invoke(activity,c);check(find(panel,"Radio name needs repair")!=null,"Legacy invalid-name repair hint is missing");
+            McAdmin.Edit pending=new McAdmin.Edit("node name",new byte[][]{{8,65}},new McAdmin.Check(ProtocolProbe.meshcoreAppStart(),5,58,new byte[]{65},"Node name"));pending.deadline=1000;c.mcAdmin.edit=pending;c.mcAdmin.status="Reading radio values";panel.removeAllViews();check((Boolean)banner.invoke(activity,c),"Pending save must block settings editors");check(find(panel,"Verifying radio settings")!=null,"Pending-save progress is missing");
+            pending.deadline=Long.MAX_VALUE;panel.removeAllViews();banner.invoke(activity,c);check(find(panel,"Check change again")!=null&&find(panel,"Use current settings")!=null,"Paused save must offer readback retry and current-settings recovery");
+        }catch(Exception e){throw new RuntimeException(e);}});}finally{onUi(activity::finish);waitForIdleSync();}
+    }
+    private void meshcoreUserFeatureViews()throws Exception{
+        MainActivity activity=(MainActivity)startActivitySync(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));waitForIdleSync();
+        try{onUi(()->{try{
+            java.lang.reflect.Field results=MainActivity.class.getDeclaredField("results");results.setAccessible(true);LinearLayout panel=new LinearLayout(activity);panel.setOrientation(LinearLayout.VERTICAL);results.set(activity,panel);
+            ProtocolClient c=new ProtocolClient(RadioProfile.MESHCORE,42,new ProtocolClient.Listener(){public void node(Node n){}public void channel(Channel ch){}public void message(Message m){}public void delivery(String id,String state){}});c.commands.clear();c.ready=true;c.firmwareCode=14;c.mcScopeLoaded=true;c.channelCount=2;
+            byte[] secret=new byte[16];java.util.Arrays.fill(secret,(byte)9);Channel enabled=new Channel();enabled.slot=0;enabled.name="Team";enabled.enabled=true;enabled.identity=Wire.hash(secret);c.channels.put(0,enabled);c.channelKeys.put(0,secret);Channel empty=new Channel();empty.slot=1;c.channels.put(1,empty);c.channelKeys.put(1,new byte[16]);
+            Method manager=MainActivity.class.getDeclaredMethod("mcChannels",ProtocolClient.class);manager.setAccessible(true);manager.invoke(activity,c);
+            for(String label:new String[]{"Create channel","Import channel link","Refresh channels and region","Scan QR Code","Read QR Code from image","Team","Empty slot 1"})check(find(panel,label)!=null,"Channel manager is missing: "+label);
+            check(find(panel,Wire.hex(secret))==null,"Channel manager must not expose keys before an explicit share/editor action");
+            c.mcUnverifiedChannels.add(0);panel.removeAllViews();manager.invoke(activity,c);check(find(panel,"Slot 0 · needs verification; tap to refresh")!=null,"An unresolved channel must explain that current values need a refresh");c.mcUnverifiedChannels.clear();
+            Method free=MainActivity.class.getDeclaredMethod("freeMcSlot",ProtocolClient.class);free.setAccessible(true);check((Integer)free.invoke(activity,c)==1,"Channel creation should select a loaded empty slot");
+            Method capture=MainActivity.class.getDeclaredMethod("captureChannelIntent",Intent.class);capture.setAccessible(true);String uri=new McChannelLink("Équipe + 1",secret,"").link();check((Boolean)capture.invoke(activity,new Intent(Intent.ACTION_VIEW,android.net.Uri.parse(uri))),"Official channel deep link was not handled");
+            java.lang.reflect.Field pending=MainActivity.class.getDeclaredField("pendingChannelLink");pending.setAccessible(true);check(McChannelLink.parse((String)pending.get(activity)).name.equals("Équipe + 1"),"Deep-link preview lost the channel name");check(c.commands.isEmpty(),"Opening a channel link must never write to a radio automatically");
+            Method bound=MainActivity.class.getDeclaredMethod("mcCommandFor",ProtocolClient.class,java.util.function.Consumer.class);bound.setAccessible(true);java.util.function.Consumer<ProtocolClient> action=client->client.announceSelf(false);check(!(Boolean)bound.invoke(activity,c,action)&&!c.mcAdvertPending,"A stale radio action must not send to the current session");
+            SupportReport log=new SupportReport();SupportReport.Session state=new SupportReport.Session();state.profile=RadioProfile.MESHCORE;state.firmware="v1.18.0-private-label";log.record(RadioProfile.MESHCORE,SupportReport.Event.TRANSPORT_ERROR,147,1000);String report=log.render("0.4.0",android.os.Build.VERSION.SDK_INT,"AA:BB:CC:DD:EE:FF "+Wire.hex(secret),java.util.Arrays.asList(state));check(report.contains("TRANSPORT_ERROR code=147")&&!report.contains("private-label")&&!report.contains(Wire.hex(secret))&&!report.contains("AA:BB"),"Android diagnostic export did not retain error codes and exclude identifiers");
+            check(McChannelLink.parse(uri).name.equals("Équipe + 1"),"Channel URI codec is incompatible with this Android API");
+            ProtocolClient mt=new ProtocolClient(RadioProfile.MESHTASTIC,43,new ProtocolClient.Listener(){public void node(Node n){}public void channel(Channel ch){}public void message(Message m){}public void delivery(String id,String state){}});mt.commands.clear();mt.ready=true;mt.mtChannels.put(0,new Wire.Out().bytes(2,new Wire.Out().bytes(2,new byte[]{1}).array()).scalar(3,1).array());mt.mtChannels.put(1,new Wire.Out().scalar(1,1).scalar(3,0).array());panel.removeAllViews();Method mtManager=MainActivity.class.getDeclaredMethod("mtChannelSettings",ProtocolClient.class);mtManager.setAccessible(true);mtManager.invoke(activity,mt);for(String label:new String[]{"Create channel","Import channel link","Scan QR Code","Read QR Code from image","Empty slot 1"})check(find(panel,label)!=null,"Meshtastic channel manager is missing: "+label);
+            Intent mtLink=new Intent(Intent.ACTION_VIEW,android.net.Uri.parse("https://meshtastic.org/e/#CgMSAQESAggB"));check((Boolean)capture.invoke(activity,mtLink),"Meshtastic deep link was not accepted");check(mt.commands.isEmpty(),"Opening a Meshtastic link must not change a radio");
+            Method qr=MainActivity.class.getDeclaredMethod("showChannelShare",RadioProfile.class,String.class);qr.setAccessible(true);qr.invoke(activity,RadioProfile.MESHTASTIC,"https://meshtastic.org/e/#CgMSAQESAggB");
+
+        }catch(Exception e){throw new RuntimeException(e);}});}finally{onUi(activity::finish);waitForIdleSync();}
+    }
+    private void repeaterSettingsViews()throws Exception{
+        MainActivity activity=(MainActivity)startActivitySync(new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));waitForIdleSync();
+        java.lang.reflect.Field serviceField=MainActivity.class.getDeclaredField("service");serviceField.setAccessible(true);
+        waitUntil(()->{try{return serviceField.get(activity)!=null;}catch(Exception e){return false;}},"Service not bound for repeater view");
+        RadioService service=(RadioService)serviceField.get(activity);RadioService.Session session=service.sessions.get(RadioProfile.MESHCORE);
+        ProtocolClient previous=session.client;String address=session.address;boolean verified=session.verified,connected=session.connected;
+        Snapshot previousSnapshot=service.data(RadioProfile.MESHCORE);
+        ProtocolClient fixture=new ProtocolClient(RadioProfile.MESHCORE,75,new ProtocolClient.Listener(){public void node(Node n){}public void channel(Channel ch){}public void message(Message m){}public void delivery(String uid,String state){}});
+        Node node=new Node();node.id="abababababababababababababababababababababababababababababababab";node.name="Repeater test";node.type=2;node.mcState=ProtocolClient.MC_APPROVED;
+        try{
+            onUi(()->{try{
+                session.address="repeater-fixture";session.client=fixture;session.verified=true;session.connected=true;
+                fixture.commands.clear();fixture.ready=true;fixture.mcBacklogDrained=true;fixture.firmwareCode=14;fixture.nodes.put(node.id,node);
+                fixture.mcRepeaterAdmin.key=node.id;fixture.mcRepeaterAdmin.admin=true;fixture.mcRepeaterAdmin.expires=android.os.SystemClock.elapsedRealtime()+600000;
+                service.history.snapshots.put(RadioProfile.MESHCORE,new Snapshot(java.util.Collections.singletonList(node),new java.util.ArrayList<>(),new java.util.ArrayList<>()));
+                Method open=MainActivity.class.getDeclaredMethod("showRepeaterDossier",Node.class);open.setAccessible(true);open.invoke(activity,node);
+                McRepeaterSettings settings=fixture.mcRepeaterSettings;
+                for(McRepeaterSettings.Field field:McRepeaterSettings.Field.values()){
+                    String raw=field==McRepeaterSettings.Field.NAME?"Repeater test":field==McRepeaterSettings.Field.RADIO?"910.525,62.5,7,5":field==McRepeaterSettings.Field.LAT?"12.345670":field==McRepeaterSettings.Field.LON?"-45.6789":field.toggle()?"on":field==McRepeaterSettings.Field.TX?"22":"10";
+                    McRepeaterSettings.Value value=settings.values.get(field);value.raw=raw;value.valid=true;value.state="";
+                }
+                settings.started=true;settings.status="Settings loaded · tap a card to edit";
+                Method refresh=MainActivity.class.getDeclaredMethod("rebuildContent");refresh.setAccessible(true);refresh.invoke(activity);
+                View screen=activity.getWindow().getDecorView();
+                for(String value:new String[]{"22 dBm","12.345670 °","-45.6789 °","Maximum flood hops","Guest read-only access"})check(find(screen,value)!=null,"Missing repeater card: "+value);
+                check(find(screen,"Read current value")==null&&find(screen,"Configuration")==null,"Nested configuration menus remain");
+                check(fixture.commands.isEmpty(),"Rendering populated cards must not queue writes");
+            }catch(Exception e){throw new RuntimeException(e);}});
+            waitForIdleSync();screenshot(activity,"repeater-settings");click(activity,"TX power");
+            android.view.accessibility.AccessibilityNodeInfo root=getUiAutomation().getRootInActiveWindow();
+            java.util.List<android.view.accessibility.AccessibilityNodeInfo> fields=root.findAccessibilityNodeInfosByText("22");
+            boolean numeric=false;for(android.view.accessibility.AccessibilityNodeInfo field:fields)if(field.isEditable())numeric=(field.getInputType()&android.text.InputType.TYPE_MASK_CLASS)==android.text.InputType.TYPE_CLASS_NUMBER;
+            check(numeric,"TX power editor must be prefilled with 22 and use a numeric keyboard");
+            screenshot(activity,"repeater-power-editor");
+            java.util.List<android.view.accessibility.AccessibilityNodeInfo> cancel=root.findAccessibilityNodeInfosByText("Cancel");check(!cancel.isEmpty(),"Power editor Cancel missing");cancel.get(0).performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK);waitForIdleSync();
+            check(fixture.commands.isEmpty(),"Opening/cancelling an editor must not write to the radio");
+            onUi(()->{try{
+                fixture.mcRepeaterAdmin.label="ver";fixture.mcRepeaterAdmin.reply="MeshCore console response";
+                java.lang.reflect.Field show=MainActivity.class.getDeclaredField("repeaterConsoleResult");show.setAccessible(true);show.setBoolean(activity,true);
+                Method refresh=MainActivity.class.getDeclaredMethod("rebuildContent");refresh.setAccessible(true);refresh.invoke(activity);
+                check(find(activity.getWindow().getDecorView(),"MeshCore console response")!=null,"Advanced console response is hidden");
+            }catch(Exception e){throw new RuntimeException(e);}});
+        }finally{onUi(()->{fixture.clearRepeaterAdministration();session.client=previous;session.address=address;session.verified=verified;session.connected=connected;service.history.snapshots.put(RadioProfile.MESHCORE,previousSnapshot);activity.finish();});waitForIdleSync();waitUntil(activity::isDestroyed,"Repeater fixture activity did not finish");}
+    }
     private void activity()throws Exception{
         MainActivity.mapStyleOverride="asset://map-test-style.json";Intent intent=new Intent(getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);MainActivity activity=(MainActivity)startActivitySync(intent);waitForIdleSync();
         onUi(()->{
@@ -446,10 +687,10 @@ public final class SmokeInstrumentation extends Instrumentation {
         });
         screenshot(activity,"settings-appearance");
         onUi(activity::onBackPressed);
-        for(String page:new String[]{"Contacts","Chats","Channels","Map","Settings","Home"})click(activity,page);menus(activity);recording(activity);maps(activity);mapPanels(activity);click(activity,"Home");receptionDetails(activity);
+        for(String page:new String[]{"Contacts","Chats","Channels","Map","Settings","Home"})click(activity,page);menus(activity);recording(activity);maps(activity);mapPanels(activity);mapFollow(activity);click(activity,"Home");receptionDetails(activity);
         Method open=MainActivity.class.getDeclaredMethod("openChat",RadioProfile.class,String.class,Target.class);open.setAccessible(true);onUi(()->{try{open.invoke(activity,RadioProfile.MESHTASTIC,"offline-test",new Target("c:0:test","Test channel","","test",0,true));EditText entry=composer(activity.getWindow().getDecorView());check(entry!=null,"Composer missing");entry.setText("Draft survives rotation 👋");}catch(Exception e){throw new RuntimeException(e);}});
         waitForIdleSync();screenshot(activity,"chat-draft");Method settings=MainActivity.class.getDeclaredMethod("openSettings",String.class,RadioProfile.class);settings.setAccessible(true);onUi(()->{try{settings.invoke(activity,"data",null);}catch(Exception e){throw new RuntimeException(e);}});screenshot(activity,"settings-data");
         ActivityMonitor monitor=addMonitor(MainActivity.class.getName(),null,false);onUi(activity::recreate);MainActivity recreated=(MainActivity)waitForMonitorWithTimeout(monitor,10000);check(recreated!=null,"Activity recreation timed out");waitForIdleSync();onUi(recreated::onBackPressed);waitForIdleSync();java.util.concurrent.atomic.AtomicReference<String> restored=new java.util.concurrent.atomic.AtomicReference<>("");long deadline=android.os.SystemClock.elapsedRealtime()+10000;do{onUi(()->{EditText entry=composer(recreated.getWindow().getDecorView());restored.set(entry==null?"<no composer>":entry.getText().toString());});if(restored.get().equals("Draft survives rotation 👋"))break;Thread.sleep(50);}while(android.os.SystemClock.elapsedRealtime()<deadline);screenshot(recreated,"chat-restored");check(restored.get().equals("Draft survives rotation 👋"),"Rotation lost composer draft: "+restored.get());onUi(recreated::finish);removeMonitor(monitor);
     }
-    @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();backups();tracks();appearance();bleSignal();activity();sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
+    @Override public void onStart(){Bundle status=new Bundle();status.putString("id","MeshCrossway");status.putString("class",getClass().getName());status.putString("test","databaseAndNavigation");status.putInt("numtests",1);status.putInt("current",1);sendStatus(1,status);Bundle result=new Bundle();try{database();outboxRecovery();backups();meshcoreContactPersistence();meshtasticSettingsViews();meshcoreSettingsViews();meshcoreUserFeatureViews();if(!mtOnly){tracks();appearance();bleSignal();activity();repeaterSettingsViews();}sendStatus(0,status);result.putString("stream","\nOK (1 test)\n");finish(Activity.RESULT_OK,result);}catch(Throwable error){status.putString("stack",android.util.Log.getStackTraceString(error));sendStatus(-2,status);result.putString("stream",status.getString("stack"));finish(Activity.RESULT_CANCELED,result);}}
 }
