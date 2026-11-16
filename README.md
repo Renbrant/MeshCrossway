@@ -55,6 +55,8 @@ Try MeshCrossway with your radios and help shape the app. Check that both radios
 - [Release history and version numbering](docs/android-version-history.md)
 - [MeshCore repeater tools and technical compatibility](docs/android-apk.md)
 - [Android source and development guide](android/README.md)
+- [Google Play launch guide](docs/google-play-launch.md)
+- [Privacy policy](https://meshcrossway.renbrant.com/privacy/)
 - [ESP32 controller project and Web Flasher](https://meshcrossway.renbrant.com/esp32/) — secondary development track; stable firmware v0.10.5
 
 ## Contributing and license

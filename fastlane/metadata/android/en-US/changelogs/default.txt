@@ -1,0 +1,1 @@
+First Google Play release. Use Meshtastic and MeshCore radios together with shared chats, contacts and map, GPS following, offline maps and GPX tracks. You can now delete your optional account and cloud data directly in the app.

@@ -16,6 +16,7 @@ import android.widget.TextView
 import android.widget.Toast
 
 class ClerkAccountActivity : Activity() {
+    companion object { const val PRIVACY_POLICY_URL = "https://meshcrossway.renbrant.com/privacy/" }
     private val pageBackground = Color.rgb(9, 12, 16)
     private val panel = Color.rgb(24, 29, 36)
     private val orange = Color.rgb(255, 138, 36)
@@ -85,6 +86,9 @@ class ClerkAccountActivity : Activity() {
                     render()
                 })
             })
+            if (CloudSyncClient.configured()) root.addView(actionButton("Delete account and cloud data") { confirmDeleteAccount() }.apply {
+                setBackgroundColor(Color.rgb(176, 38, 38))
+            })
         } else {
             root.addView(cardText("Sign in or create an account using the providers enabled for MeshCrossway in Clerk."))
             root.addView(actionButton("Sign in or create account") {
@@ -146,7 +150,32 @@ class ClerkAccountActivity : Activity() {
             }.apply { isEnabled = radioService != null && (!tracksEnabled || trackService != null) })
             if (radioService == null || (tracksEnabled && trackService == null)) root.addView(text("Preparing local sync storage…", 13, muted).apply { setPadding(dp(4), dp(8), dp(4), 0) })
         }
-        setContentView(root)
+        root.addView(text("Privacy policy", 14, orange).apply {
+            setPadding(dp(4), dp(22), dp(4), dp(8))
+            paintFlags = paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG
+            setOnClickListener {
+                try { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(PRIVACY_POLICY_URL))) }
+                catch (_: android.content.ActivityNotFoundException) { Toast.makeText(this@ClerkAccountActivity, PRIVACY_POLICY_URL, Toast.LENGTH_LONG).show() }
+            }
+        })
+        setContentView(android.widget.ScrollView(this).apply { setBackgroundColor(pageBackground); fitsSystemWindows = true; addView(root) })
+    }
+
+    private fun confirmDeleteAccount() {
+        android.app.AlertDialog.Builder(this)
+            .setTitle("Delete account?")
+            .setMessage("This permanently deletes your MeshCrossway account, every synchronized message, favorite and GPX track stored in the cloud. Data saved only on this phone (radios, chats, maps and local tracks) is not affected. This cannot be undone.")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Delete permanently") { _, _ ->
+                Toast.makeText(this, "Deleting account…", Toast.LENGTH_SHORT).show()
+                CloudSyncClient.deleteAccount(this) { message, success ->
+                    runOnUiThread {
+                        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                        if (success) ClerkBridge.signOut(Runnable { render() }) else render()
+                    }
+                }
+            }
+            .show()
     }
 
     private fun cardText(value: String): TextView {

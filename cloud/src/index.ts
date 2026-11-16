@@ -4,6 +4,8 @@ interface Env {
   CLERK_ISSUER: string;
   CLERK_JWKS_URL?: string;
   WEB_ORIGIN?: string;
+  /** Worker secret (wrangler secret put CLERK_SECRET_KEY). Needed to delete the sign-in identity itself. */
+  CLERK_SECRET_KEY?: string;
 }
 
 type Network = "MESHTASTIC" | "MESHCORE";
@@ -275,6 +277,38 @@ async function handleTracks(request: Request, env: Env, userId: string, trackId:
   return json({ saved: true, byteSize: bytes.byteLength, maxFileBytes: MAX_TRACK_BYTES, maxTracks: MAX_TRACKS });
 }
 
+/**
+ * Permanently deletes every record and GPX object owned by the account, then
+ * the Clerk identity itself. Required by Google Play's account deletion policy.
+ * The body must be {"confirm":"DELETE"} so a stray request cannot erase data.
+ */
+async function handleAccount(request: Request, env: Env, userId: string): Promise<Response> {
+  if (request.method !== "DELETE") return error("METHOD_NOT_ALLOWED", 405);
+  const body = await readJson(request, 1024);
+  if (!body || body.confirm !== "DELETE") return error("CONFIRMATION_REQUIRED", 400);
+  let cursor: string | undefined;
+  do {
+    const page = await env.TRACKS.list({ prefix: `${userId}/`, cursor });
+    if (page.objects.length) await env.TRACKS.delete(page.objects.map(object => object.key));
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM messages WHERE user_id=?").bind(userId),
+    env.DB.prepare("DELETE FROM conversations WHERE user_id=?").bind(userId),
+    env.DB.prepare("DELETE FROM tracks WHERE user_id=?").bind(userId),
+  ]);
+  let identityDeleted = false;
+  if (env.CLERK_SECRET_KEY) {
+    const response = await fetch(`https://api.clerk.com/v1/users/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+      headers: { authorization: `Bearer ${env.CLERK_SECRET_KEY}` },
+    });
+    identityDeleted = response.ok || response.status === 404;
+    if (!identityDeleted) return json({ error: "IDENTITY_DELETE_FAILED", cloudDataDeleted: true }, 502);
+  }
+  return json({ deleted: true, cloudDataDeleted: true, identityDeleted });
+}
+
 const worker = {
   async fetch(request: Request, env: Env): Promise<Response> {
     const headers = cors(request, env);
@@ -287,6 +321,7 @@ const worker = {
     let response: Response;
     if (url.pathname === "/v1/messages") response = await handleMessages(request, env, userId);
     else if (url.pathname === "/v1/favorites") response = await handleFavorites(request, env, userId);
+    else if (url.pathname === "/v1/account") response = await handleAccount(request, env, userId);
     else if (url.pathname === "/v1/tracks") response = await handleTracks(request, env, userId, null);
     else {
       const match = /^\/v1\/tracks\/([^/]+)$/.exec(url.pathname);

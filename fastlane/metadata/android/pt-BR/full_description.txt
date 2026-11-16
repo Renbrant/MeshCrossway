@@ -1,0 +1,34 @@
+Duas redes. Dois rádios. Um app.
+
+O MeshCrossway permite usar Meshtastic e MeshCore juntos no seu celular Android. Conecte dois rádios LoRa Bluetooth independentes, um com Meshtastic e outro com o firmware MeshCore Companion, e mantenha mensagens, contatos e nós das duas redes em um só lugar.
+
+Cada rede mantém suas próprias conversas e configurações. O MeshCrossway não repassa mensagens de uma rede para a outra.
+
+O QUE VOCÊ PODE FAZER
+• Reunir conversas, canais, contatos e favoritos das duas redes
+• Criar e entrar em canais, e compartilhá-los por link e QR Code
+• Ver os nós das duas redes em um único mapa
+• Baixar áreas do mapa antes de ficar sem internet
+• Seguir sua posição no mapa, com uma seta indicando a direção do deslocamento
+• Salvar locais, gravar trajetos GPS e exportar arquivos GPX
+• Ver detalhes das mensagens, como número de saltos e informações de recepção
+• Verificar e ajustar repetidores MeshCore compatíveis como administrador
+• Usar o Acesso Remoto opcional a partir de um computador na mesma rede Wi-Fi
+• Personalizar cores, fundos, notificações e backups
+
+FUNCIONA OFFLINE
+Mensagens por rádio e mapas salvos funcionam sem sinal de celular ou internet. A internet só é necessária para baixar mapas e para os recursos opcionais de nuvem.
+
+PRIVADO POR PADRÃO
+Suas mensagens, contatos e localização ficam no seu celular. Sem anúncios e sem analytics. A conta é opcional e só é usada se você quiser sincronizar mensagens recentes, favoritos e trajetos GPX entre dispositivos. Você pode excluir sua conta e os dados na nuvem pelo app a qualquer momento.
+
+DO QUE VOCÊ PRECISA
+• Um celular Android com Bluetooth
+• Um rádio LoRa compatível com firmware Meshtastic
+• Um segundo rádio compatível, separado, com firmware MeshCore Companion BLE
+Os rádios não acompanham o app. O desenvolvimento usa rádios Heltec V3; outros modelos ainda precisam de testes.
+
+CÓDIGO ABERTO
+O MeshCrossway é um projeto independente de código aberto (Licença MIT). Código-fonte, documentação e relato de problemas: github.com/Renbrant/MeshCrossway
+
+O MeshCrossway não é afiliado nem endossado pelos projetos Meshtastic ou MeshCore. Meshtastic® é marca registrada da Meshtastic LLC. A entrega de mensagens depende dos rádios, do terreno e da cobertura da rede mesh. O MeshCrossway é experimental e não deve ser seu único meio de comunicação em uma emergência. O app está em inglês.

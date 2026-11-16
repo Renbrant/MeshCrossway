@@ -9,16 +9,27 @@ android {
     defaultConfig {
         applicationId 'com.meshcrossway.mobile'
         minSdk 26
-        targetSdk 35
-        versionCode 42
-        versionName '0.4.8'
+        targetSdk 36
+        versionCode 43
+        versionName '0.4.9'
         buildConfigField 'String', 'CLERK_PUBLISHABLE_KEY', '"' + (providers.gradleProperty('clerkPublishableKey').getOrElse('')) + '"'
         buildConfigField 'String', 'CLOUD_API_BASE_URL', '"' + (providers.gradleProperty('cloudApiBaseUrl').getOrElse('https://meshcrossway-cloud.meshcrossway.workers.dev')) + '"'
         testInstrumentationRunner 'com.meshcrossway.android.SmokeInstrumentation'
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = '17' }
-    splits { abi { enable true; reset(); include 'arm64-v8a', 'x86_64'; universalApk false } }
+    // GitHub APKs use per-ABI splits. Google Play App Bundles (bundleRelease) cannot
+    // combine splits with abiFilters, so bundles restrict ABIs via ndk.abiFilters and
+    // Play generates the per-device split APKs itself.
+    def buildingBundle = gradle.startParameter.taskNames.any { it.toLowerCase().contains('bundle') }
+    if (buildingBundle) {
+        defaultConfig { ndk { abiFilters 'arm64-v8a', 'x86_64' } }
+    }
+    splits { abi { enable !buildingBundle; reset(); include 'arm64-v8a', 'x86_64'; universalApk false } }
+    bundle {
+        // Keep every UI language in the base APK so in-app text never depends on device locale downloads.
+        language { enableSplit = false }
+    }
     packaging {
         jniLibs { useLegacyPackaging true }
         resources { excludes += 'META-INF/versions/9/OSGI-INF/MANIFEST.MF' }

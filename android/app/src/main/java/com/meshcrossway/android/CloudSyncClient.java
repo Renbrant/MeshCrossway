@@ -18,6 +18,18 @@ final class CloudSyncClient {
     private static final ExecutorService executor=Executors.newSingleThreadExecutor(r->{Thread t=new Thread(r,"mesh-cloud-sync");t.setDaemon(true);return t;});
     static boolean configured(){return BuildConfig.CLOUD_API_BASE_URL.trim().startsWith("https://");}
 
+    /** Permanently deletes the account's cloud data and sign-in identity, then disables sync locally. */
+    static void deleteAccount(Context context,Callback callback){
+        if(!configured()){callback.complete("Cloud API is not configured in this build",false);return;}
+        ClerkBridge.sessionToken(token->{if(token==null||token.isEmpty()){callback.complete("Sign in again to delete your account",false);return;}executor.execute(()->{
+            try{
+                request("DELETE","/v1/account",token,"{\"confirm\":\"DELETE\"}","application/json; charset=utf-8");
+                context.getSharedPreferences("cloud_sync",Context.MODE_PRIVATE).edit().clear().apply();
+                callback.complete("Account and cloud data deleted",true);
+            }catch(Exception error){String message=error.getMessage();callback.complete("Account deletion failed • "+(message==null||message.isEmpty()?"check your connection and try again":message),false);}
+        });});
+    }
+
     static void sync(Context context,RadioService service,TrackService trackService,Callback callback){
         if(!configured()){callback.complete("Cloud API is not configured in this build",false);return;}
         if(service==null||service.history==null){callback.complete("Local history is not ready",false);return;}
