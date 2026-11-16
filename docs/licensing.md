@@ -1,13 +1,13 @@
 # Licensing policy
 
-Decision recorded: 2026-10-28. Original MeshCrossway code and documentation remain under [MIT](../LICENSE). This policy explains scope and review practices; it does not replace upstream licenses or add restrictions to MIT.
+Decision recorded: 2026-11-16 (replaces the MIT decision of 2026-10-28). Original MeshCrossway code, documentation and assets are source-available under the [PolyForm Strict License 1.0.0](../LICENSE), with an additional permission for anyone to install and use official builds. Commits up to `fab12ad` and releases up to Android 0.4.10 remain under MIT; the change does not withdraw those grants. This policy explains scope and review practices; it does not replace upstream licenses.
 
 ## Scope
 
 | Material | Treatment |
 |---|---|
-| Original Core firmware, scripts and documentation | MIT, preserving copyright and permission notices |
-| Combined display firmware | Original MIT code plus Waveshare and resolved third-party components under their own terms; do not describe the entire binary as MIT-only |
+| Original Android app, Core firmware, cloud code, scripts and documentation | PolyForm Strict 1.0.0 plus the official-build permission in `LICENSE`; earlier MIT copies keep their MIT notices |
+| Combined display firmware | Original PolyForm Strict code plus Waveshare and resolved third-party components under their own terms; do not describe the entire binary as covered by one license |
 | Native Radio Pod firmware | Separate upstream licenses, including any modifications and redistribution obligations |
 | Original archived KiCad designs | No license change in this decision; preserve existing grants and third-party library notices |
 | Vendor CAD, photographs, maps, fonts and other assets | Their own terms; availability for download is not permission to redistribute |
@@ -29,7 +29,7 @@ Before incorporating or upgrading third-party material:
 
 1. Record its source URL, exact revision/version, paths, license and copyright notices in the dependency review. Record whether it is incorporated, separately distributed, downloaded for a build, or research only.
 2. Read the license at that revision, including exceptions, file-level notices, bundled libraries and transitive dependencies. An upstream repository's main license is not sufficient for all of its contents.
-3. For GPL/AGPL material, assess whether the proposed distribution creates a combined work, and which precise license versions apply. MIT originals may remain MIT within a GPL-covered combination, but MIT alone cannot describe the whole distribution. Do not import GPL code into an MIT-only release without resolving this scope.
+3. For GPL/AGPL material, assess whether the proposed distribution creates a combined work, and which precise license versions apply. MIT originals may remain MIT within a GPL-covered combination, but MIT alone cannot describe the whole distribution. Do not import GPL code into MeshCrossway: GPL terms are incompatible with the PolyForm Strict distribution model.
 4. Preserve required notices, license texts and modification statements. For copyleft binaries, prepare corresponding source, build material and any applicable installation information according to the upstream license.
 5. Record unresolved items explicitly. Do not label a release fully audited while they remain unresolved.
 
@@ -47,7 +47,5 @@ MIT, Apache and GPL permit commercial use. GPL does not require royalties or sub
 Current outstanding release work is tracked in the [dependency review](third-party-licenses.md#open-review-items). These are manual review requirements; no automatic license scanner or complete SBOM is claimed.
 
 ## Future license decisions
-
-Consider GPLv3 for original software if distributed derivatives should preserve source access or an incorporated dependency requires a GPL-covered combination. Check `-only` versus `-or-later` compatibility explicitly. Review AGPL only for a concrete network-service requirement.
 
 Any future change must identify affected paths, release boundary, authorship and compatible third-party permissions. Preserve existing MIT notices and previously granted rights; new terms cannot withdraw permissions on copies already released under MIT.

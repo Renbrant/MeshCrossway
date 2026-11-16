@@ -31,4 +31,4 @@ This directory tracks **potential** integrations, interoperability work and comm
 4. Contact maintainers with a narrow proposal; record their response and any permissions.
 5. Promote to roadmap only after feasibility and explicit project approval.
 
-Avoid copying GPL-licensed code into MIT-distributed MeshCrossway components without a separate license review. Prefer documented protocol interoperability and independent implementations.
+Avoid copying GPL-licensed code into MeshCrossway components without a separate license review. Prefer documented protocol interoperability and independent implementations.

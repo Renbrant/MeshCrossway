@@ -59,6 +59,6 @@ Try MeshCrossway with your radios and help shape the app. Check that both radios
 
 ## Contributing and license
 
-Feedback, testing and contributions are welcome. [Report a problem](https://github.com/Renbrant/MeshCrossway/issues) with your app version, phone and radio models, or read [CONTRIBUTING.md](CONTRIBUTING.md).
+Feedback, testing and bug reports are welcome. [Report a problem](https://github.com/Renbrant/MeshCrossway/issues) with your app version, phone and radio models, or read [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Original project code and documentation use the [MIT License](LICENSE); see [licensing](docs/licensing.md) and [third-party notices](THIRD_PARTY_NOTICES.md). MeshCrossway is experimental and should not be your only means of communication in an emergency.
+MeshCrossway is **source-available, not open source**: original code and documentation are under the [PolyForm Strict License 1.0.0](LICENSE). You may read the code and use it noncommercially, but you may not redistribute it, publish it in app stores or publish modified versions. Official builds may be installed and used by anyone. Versions up to Android 0.4.10 were released under MIT. See [licensing](docs/licensing.md) and [third-party notices](THIRD_PARTY_NOTICES.md). MeshCrossway is experimental and should not be your only means of communication in an emergency.

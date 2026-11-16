@@ -201,7 +201,7 @@ Sources: [Reticulum License][RNS-license], [LXMF license][LXMF-license], [Sideba
 
 The current Reticulum License includes conditions concerning intentional harm to people, use in AI/ML training datasets and model development, and preservation of notices. Those clauses should not be paraphrased as a blanket prohibition on all AI-assisted application development. Check the actual text attached to the selected version before incorporating its code. This page does not resolve legal compatibility between different components.
 
-MeshCrossway's own MIT license does not change third-party licenses. A future implementation decision needs a concrete list of software components and versions, including any map data or services, alongside its technical assessment.
+MeshCrossway's own license does not change third-party licenses. A future implementation decision needs a concrete list of software components and versions, including any map data or services, alongside its technical assessment.
 
 ## Evaluation stages and decision gates
 

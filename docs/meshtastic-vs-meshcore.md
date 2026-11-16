@@ -476,7 +476,7 @@ Links throughout the guide point to official documentation, versioned source or 
 
 When revising this page, update the review date and release baseline, check default-role behavior, routing and security changes, and distinguish stock firmware from optional builds and app features. Preserve the date and context of historical reports. Do not turn a personal opinion into a specification or an estimated path into guaranteed coverage.
 
-MeshCrossway is independent of both upstream projects. Third-party code and documentation retain their respective licenses; MeshCrossway's MIT license does not relicense them.
+MeshCrossway is independent of both upstream projects. Third-party code and documentation retain their respective licenses; MeshCrossway's own license does not relicense them.
 
 [MT-intro]: https://meshtastic.org/docs/introduction/
 [MT-releases]: https://github.com/meshtastic/firmware/releases

@@ -103,7 +103,7 @@ If upstream maintainers stop development, a retained self-hosted deployment and 
 
 ## License and relationship
 
-wanderer is AGPLv3; MeshCrossway originals remain under the repository's MIT license. This documentation does not incorporate wanderer code or install a dependency. API interoperability is the intended boundary, not a blanket exemption from license review.
+wanderer is AGPLv3; MeshCrossway originals remain under the repository's license. This documentation does not incorporate wanderer code or install a dependency. API interoperability is the intended boundary, not a blanket exemption from license review.
 
 The license permits compliant use, including commercial use, without a bespoke partnership. Modified AGPL network services and redistributed components have applicable corresponding-source/notice obligations. Review the concrete implementation, SDKs, copied code and assets before distribution; follow the [licensing policy](licensing.md).
 

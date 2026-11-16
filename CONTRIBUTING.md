@@ -4,7 +4,7 @@ Open an issue or pull request with the affected hardware revision, software vers
 
 ## Licensing and provenance
 
-Original contributions are accepted under the repository's [MIT license](LICENSE), unless explicitly identified as third-party material with its own compatible terms. Contribute only material you are entitled to provide. This policy does not require copyright assignment and does not relicense third-party code.
+This repository is source-available under the [PolyForm Strict License 1.0.0](LICENSE), which does not let others publish modified versions. By submitting a contribution (pull request, patch, code snippet, image or documentation), you grant Renato Brant a perpetual, worldwide, irrevocable, royalty-free license to use, modify, sublicense and distribute it as part of MeshCrossway under any terms, and you confirm you are entitled to provide it. Third-party material must be identified with its own compatible terms; this policy does not relicense third-party code.
 
 When adding or changing a dependency, copied code, generated binding, image, font, CAD model or dataset, include:
 
