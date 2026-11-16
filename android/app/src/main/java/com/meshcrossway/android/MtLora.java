@@ -66,6 +66,50 @@ final class MtLora {
     static int codingSelection(int preset,int stored){return stored==0||stored>=5&&stored<=presetCodingRate(preset)?0:stored;}
     static String currentPreset(ProtocolClient c){if(!c.mtConfigLoaded(5))return "Reading preset…";List<Wire.F> fs=Wire.fields(c.mtConfig(5));return Wire.number(fs,1,0)!=0?presetName((int)Wire.number(fs,2,0)):"Manual LoRa";}
     static boolean codingMatches(byte[] actual,byte[] desired){List<Wire.F> a=Wire.fields(actual),d=Wire.fields(desired);int preset=(int)Wire.number(d,2,0);return Wire.number(d,1,0)!=0&&Wire.number(a,1,0)!=0&&Wire.number(a,2,0)==preset&&codingSelection(preset,(int)Wire.number(a,5,0))==codingSelection(preset,(int)Wire.number(d,5,0));}
+    /** Firmware DisplayFormatters long preset names. A blank primary channel name is hashed as this name. */
+    static String presetDisplayName(int preset,boolean usePreset){if(!usePreset)return "Custom";switch(preset){case 0:return "LongFast";case 1:return "LongSlow";case 2:return "VLongSlow";case 3:return "MediumSlow";case 4:return "MediumFast";case 5:return "ShortSlow";case 6:return "ShortFast";case 7:return "LongMod";case 8:return "ShortTurbo";case 9:return "LongTurbo";case 10:return "LiteFast";case 11:return "LiteSlow";case 12:return "NarrowFast";case 13:return "NarrowSlow";case 14:return "TinyFast";case 15:return "TinySlow";case 16:return "MediumTurbo";default:return "Invalid";}}
+    /** djb2, as RadioInterface::hash, over the UTF-8 bytes of the primary channel name. */
+    static long djb2(String text){long h=5381;for(byte b:text.getBytes(java.nio.charset.StandardCharsets.UTF_8))h=(h*33+(b&255))&0xffffffffL;return h;}
+    /** Firmware 2.8 RegionInfo.overrideSlot: explicit default slot for regions that pin one; 0 = channel-name hash. */
+    static int overrideSlot(int region){switch(region){case 32:return 1;case 27:return 26;case 28:return 51;case 33:return 33;case 34:case 36:case 37:return 37;case 35:return 137;default:return 0;}}
+    /** Raw name of the primary channel (role PRIMARY, else slot 0); empty when it uses the preset name. */
+    static String primaryChannelName(ProtocolClient c){byte[] primary=null;for(Map.Entry<Integer,byte[]> e:c.mtChannels.entrySet())if(Wire.number(Wire.fields(e.getValue()),3,0)==1){primary=e.getValue();break;}if(primary==null)primary=c.mtChannels.get(0);if(primary==null)return null;try{return Wire.utf8(Wire.bytes(Wire.fields(Wire.bytes(Wire.fields(primary),2)),3));}catch(IllegalArgumentException e){return null;}}
+    static final class Frequency{
+        final double mhz,bandwidthKhz;final int slot,slots;final boolean override,automatic;final String hashedName;
+        Frequency(double mhz,double bw,int slot,int slots,boolean override,boolean automatic,String hashedName){this.mhz=mhz;bandwidthKhz=bw;this.slot=slot;this.slots=slots;this.override=override;this.automatic=automatic;this.hashedName=hashedName;}
+        String brief(){return String.format(Locale.ROOT,"%.3f MHz",mhz);}
+        String source(){if(override)return "Frequency override";if(!automatic)return "Frequency slot "+slot+" of "+slots;return "Automatic slot "+slot+" of "+slots+(hashedName==null?" (region default)":" (from channel name \""+hashedName+"\")");}
+    }
+    /** Centre frequency the firmware tunes for this LoRa config, using the same arithmetic as
+     *  RadioInterface::applyModemConfig (2.8+ slot width/rounding; 2.7 floor and modulo). Null when not computable. */
+    static Frequency frequency(ProtocolClient c,byte[] lora){
+        List<Wire.F> fs=Wire.fields(lora);int region=(int)Wire.number(fs,7,0);Region r=regionInfo(region);if(region==0||r==null)return null;
+        boolean usePreset=Wire.number(fs,1,0)!=0;int preset=(int)Wire.number(fs,2,0);double bw;
+        try{bw=usePreset?presetBandwidth(preset,region):manualBandwidth(Wire.number(fs,3,0),region);}catch(IllegalArgumentException e){return null;}
+        Wire.F offsetField=Wire.field(fs,6),overrideField=Wire.field(fs,14);
+        double offset=offsetField!=null&&offsetField.wire==5?Float.intBitsToFloat((int)offsetField.number):0;if(!Double.isFinite(offset))offset=0;
+        double override=overrideField!=null&&overrideField.wire==5?Float.intBitsToFloat((int)overrideField.number):0;
+        boolean modern=c.mtAtLeast(8,0);
+        double slotWidth=modern?r.spacing+2*r.padding+bw/1000:r.spacing+bw/1000;
+        int slots=modern?(int)Math.round((r.end-r.start+r.spacing)/slotWidth):(int)Math.floor((r.end-r.start)/slotWidth);
+        if(override>0&&Double.isFinite(override))return new Frequency(override+offset,bw,0,slots,true,false,null);
+        if(slots<=0)return null;
+        long channel=Wire.number(fs,11,0);String name=primaryChannelName(c);String hashed=name==null?null:name.isEmpty()?presetDisplayName(preset,usePreset):name;
+        int index;boolean automatic;
+        if(modern){int pinned=overrideSlot(region);
+            if(channel>0&&channel<=slots&&channel!=pinned){index=(int)channel-1;automatic=false;}
+            else if(pinned>0&&pinned<=slots){index=pinned-1;automatic=true;hashed=null;}
+            else {if(hashed==null)return null;index=(int)(djb2(hashed)%slots);automatic=true;}}
+        else {if(channel>0){index=(int)((channel-1)%slots);automatic=false;}else{if(hashed==null)return null;index=(int)(djb2(hashed)%slots);automatic=true;}}
+        double mhz=modern?r.start+bw/2000+r.padding+index*slotWidth:r.start+bw/2000+index*(bw/1000);
+        return new Frequency(mhz+offset,bw,index+1,slots,false,automatic,automatic?hashed:null);
+    }
+    static String loraSummary(byte[] lora){List<Wire.F> fs=Wire.fields(lora);int region=(int)Wire.number(fs,7,0);boolean use=Wire.number(fs,1,0)!=0;int preset=(int)Wire.number(fs,2,0);
+        String radio;if(use){double bw=regionInfo(region)==null?0:presetBandwidth(preset,region);radio=String.format(Locale.ROOT,"BW %s kHz · SF%d · CR 4/%d",trim(bw),presetSpreadingFactor(preset),Math.max(presetCodingRate(preset),(int)Wire.number(fs,5,0)));}
+        else {String bw;try{bw=trim(manualBandwidth(Wire.number(fs,3,0),region));}catch(IllegalArgumentException e){bw="?";}radio="BW "+bw+" kHz · SF"+Wire.number(fs,4,0)+" · CR 4/"+Wire.number(fs,5,0);}
+        return radio;}
+    static String trim(double value){return value==Math.rint(value)?Long.toString((long)value):String.format(Locale.ROOT,"%.3f",value).replaceAll("0+$","");}
+    static int presetSpreadingFactor(int preset){switch(preset){case 0:return 11;case 1:return 12;case 2:return 12;case 3:return 10;case 4:return 9;case 5:return 8;case 6:return 7;case 7:return 11;case 8:return 7;case 9:return 11;case 10:return 9;case 11:return 10;case 12:return 7;case 13:return 8;case 14:return 7;case 15:return 8;case 16:return 9;default:return 0;}}
     static final int SF_UNKNOWN=0,SF_RF95=1,SF_MODERN=2;
     static int sfCapability(int hardware){
         // Only unambiguous modem models. TBEAM and other multi-modem variants remain unknown.
