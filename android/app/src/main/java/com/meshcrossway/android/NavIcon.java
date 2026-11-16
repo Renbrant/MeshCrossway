@@ -37,6 +37,7 @@ final class NavIcon extends View {
             case "tracks":c.drawCircle(5,19,2,paint);c.drawCircle(19,5,2,paint);Path path=new Path();path.moveTo(5,17);path.cubicTo(4,7,20,20,19,7);c.drawPath(path,paint);break;
             case "backup":c.drawRoundRect(4,3,20,21,2,2,paint);line(c,8,3,8,10);line(c,8,10,16,10);line(c,16,10,16,3);c.drawRect(8,15,16,21,paint);break;
             case "bell":c.drawArc(6,4,18,18,180,180,false,paint);line(c,6,10,6,17);line(c,18,10,18,17);line(c,4,18,20,18);c.drawArc(9,17,15,23,0,180,false,paint);break;
+            case "battery":c.drawRoundRect(2,8,19,16,2,2,paint);paint.setStyle(Paint.Style.FILL);c.drawRect(19.5f,10.5f,21.5f,13.5f,paint);paint.setStyle(Paint.Style.STROKE);break;
             case "bluetooth":line(c,7,7.5f,17,16.5f);line(c,17,16.5f,12,21);line(c,12,21,12,3);line(c,12,3,17,7.5f);line(c,17,7.5f,7,16.5f);break;
             case "info":c.drawCircle(12,12,9,paint);line(c,12,10,12,17);line(c,12,6,12,6);break;
             default:c.drawCircle(12,12,7,paint);line(c,8,12,16,12);

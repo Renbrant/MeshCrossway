@@ -157,7 +157,7 @@ public final class MainActivity extends Activity {
                         Math.max(0,(System.currentTimeMillis()-session.rssiMeasuredAtMs)/60000):-1)
                     .append(':').append(BleSignal.live(session.verified,session.rssiCurrentLink,
                         session.rssiMeasuredAtMs,System.currentTimeMillis()));
-                if(session.client!=null)key.append(':').append(session.client.mtRevision).append(':').append(session.client.frequencyMhz).append(':').append(session.client.ready);
+                if(session.client!=null)key.append(':').append(session.client.mtRevision).append(':').append(session.client.frequencyMhz).append(':').append(session.client.ready).append(':').append(RadioBattery.level(session.client));
             }
         }
         key.append(':').append(phoneEnabled());
@@ -420,13 +420,25 @@ public final class MainActivity extends Activity {
             params.rightMargin=dp(3);
             indicator.addView(bar,params);
         }
+        // Radio battery (not the phone's) beside the Bluetooth bars.
+        int battery=session!=null&&session.verified?RadioBattery.level(session.client):RadioBattery.UNKNOWN;
+        String batteryText=RadioBattery.label(battery);
+        if(!batteryText.isEmpty()){
+            int batteryColor=battery!=RadioBattery.POWERED&&battery<=15?RED:WHITE;
+            LinearLayout.LayoutParams iconSize=new LinearLayout.LayoutParams(dp(18),dp(17));iconSize.leftMargin=dp(6);
+            indicator.addView(new NavIcon(this,"battery",batteryColor),iconSize);
+            TextView level=text(batteryText,11,batteryColor);level.setMaxLines(1);
+            LinearLayout.LayoutParams levelSize=new LinearLayout.LayoutParams(-2,-2);levelSize.leftMargin=dp(2);
+            indicator.addView(level,levelSize);
+        }
         // The bars carry the reading; the dBm text stays in the accessibility description only.
         TextView freq=text(frequency,10,MUTED);
-        freq.setMaxLines(1);
+        freq.setMaxLines(1);freq.setEllipsize(android.text.TextUtils.TruncateAt.END);
         freq.setGravity(Gravity.END|Gravity.BOTTOM);
         indicator.addView(freq,new LinearLayout.LayoutParams(0,-2,1));
         indicator.setContentDescription("Bluetooth signal. "+
             readingLabel+". "+bars+" of four bars. "+(current?"Current link.":"Cached or unavailable.")+
+            (batteryText.isEmpty()?"":" Radio battery "+(battery==RadioBattery.POWERED?"external power":batteryText)+".")+
             (frequency.isEmpty()?"":" LoRa frequency "+frequency+"."));
         tile.addView(indicator);
     }
