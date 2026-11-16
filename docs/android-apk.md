@@ -1,13 +1,14 @@
-# MeshCrossway Android — 0.4.9 beta
+# MeshCrossway Android — 0.4.10 beta
 
-[Download signed MeshCrossway-0.4.9.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.9/MeshCrossway-0.4.9.apk) · [Release notes and checksums](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.9) · [Installation page](https://meshcrossway.renbrant.com/android/)
+[Download signed MeshCrossway-0.4.10.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.10/MeshCrossway-0.4.10.apk) · [Release notes and checksums](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.10) · [Installation page](https://meshcrossway.renbrant.com/android/)
 
-Current published beta: **0.4.9, versionCode 43**. Android 8.0+ on ARM64; two independent compatible Bluetooth radios for simultaneous Meshtastic and MeshCore. No cross-network forwarding.
+Current published beta: **0.4.10, versionCode 44**. Android 8.0+ on ARM64; two independent compatible Bluetooth radios for simultaneous Meshtastic and MeshCore. No cross-network forwarding.
 
 Install over a compatible permanently signed installation without uninstalling or clearing storage. Back up important data first. Old debug-signed 0.2.2-or-earlier installations require the [migration guide](android-permanent-signing-backup.md). Android normally blocks downgrades to a lower versionCode.
 
 ## Recent changes and limits
 
+- **0.4.10:** radio cards keep one height with state and detail on one line; the radio page shows its settings summary as static information in the top card.
 - **0.4.9:** Meshtastic radio settings summary with the tuned LoRa frequency, post-restart check of LoRa saves, and a compact Bluetooth indicator with a small frequency on Home. Field testing remains pending.
 - **0.4.8:** continuous GPS following and a vector movement arrow. Map gestures pause following; tapping GPS resumes. Direction uses fresh movement data, not phone orientation. Field testing remains pending.
 - **0.4.5–0.4.6:** editable MeshCore repeater cards with sequential reads and save/readback feedback after administrator login. Available controls vary by firmware. Advanced console, password and reboot controls are separate.
@@ -19,7 +20,7 @@ See [version history and source branches](android-version-history.md) for exact 
 
 ## Previous releases (historical details)
 
-The sections below describe earlier development betas and their behavior **at the time**. Use the 0.4.9 link above for the current experimental field beta.
+The sections below describe earlier development betas and their behavior **at the time**. Use the 0.4.10 link above for the current experimental field beta.
 
 ## Channels, links and QR Codes in 0.3.12
 
