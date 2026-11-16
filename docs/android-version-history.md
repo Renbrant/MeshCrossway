@@ -28,6 +28,7 @@ The current published beta is **Android 0.4.8**, versionCode **42**, tag **`andr
 | 0.4.6 | Editable repeater settings and corrected save/readback and console feedback; versionCode 40 | Historical signed beta |
 | 0.4.7 | Continuous GPS following and travel direction; versionCode 41 | Historical signed beta |
 | 0.4.8 | Vector travel arrow and map camera padding corrections; versionCode 42 | Current signed beta; field testing pending |
+| 0.4.9 | Google Play readiness: in-app account deletion, privacy policy link, Android 16 target and App Bundle builds; versionCode 43 | In preparation |
 
 ## Numbering rule
 

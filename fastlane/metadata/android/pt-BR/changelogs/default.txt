@@ -1,0 +1,1 @@
+Primeira versão no Google Play. Use rádios Meshtastic e MeshCore juntos, com conversas, contatos e mapa compartilhados, GPS seguindo sua posição, mapas offline e trajetos GPX. Agora é possível excluir a conta opcional e os dados na nuvem direto no app.

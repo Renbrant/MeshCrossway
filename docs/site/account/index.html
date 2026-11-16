@@ -61,11 +61,16 @@
         <div class="quota"><div class="quota-top"><strong id="quota-label">0 of 5 tracks · 0 B of 25 MiB</strong><span id="quota-file-limit">Maximum 5 MiB per track</span></div><div class="quota-track"><div id="quota-fill"></div></div></div>
         <div id="tracks" class="track-list"><p class="muted">Loading tracks…</p></div>
       </section>
+      <section id="delete-account" class="panel data-panel danger-panel">
+        <div class="eyebrow">Danger zone</div><h2>Delete account</h2>
+        <p class="muted">Permanently delete your MeshCrossway account together with every synchronized message, favorite and GPX track stored in the cloud. Data saved only on your phone is not affected. This cannot be undone.</p>
+        <button id="delete-account-button" class="button danger-button" type="button">Delete account and cloud data</button>
+      </section>
       <p id="dashboard-status" class="status-text" role="status" aria-live="polite"></p>
     </section>
   </main>
 
-  <footer><div class="wrap">MeshCrossway cloud sync is optional. This account page can only access data associated with the account currently signed in.</div></footer>
+  <footer><div class="wrap">MeshCrossway cloud sync is optional. This account page can only access data associated with the account currently signed in. <a href="../privacy/">Privacy policy</a> · <a href="../delete-account/">Account deletion</a></div></footer>
   <script src="config.js"></script>
   <script src="account.js" defer></script>
 </body>

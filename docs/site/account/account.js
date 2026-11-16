@@ -280,6 +280,22 @@
     } catch (error) { setStatus(`Could not upload GPX: ${error.message}.`, "error-text"); }
   }
 
+  async function deleteAccount(button) {
+    if (!confirm("Permanently delete your MeshCrossway account and all synchronized messages, favorites and GPX tracks? Data stored only on your phone is not affected. This cannot be undone.")) return;
+    if (prompt('Type DELETE to confirm.') !== "DELETE") { setStatus("Account deletion cancelled."); return; }
+    button.disabled = true;
+    setStatus("Deleting your account…");
+    try {
+      await api("/v1/account", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ confirm: "DELETE" }) });
+      setStatus("Your account and cloud data were deleted.", "success-text");
+      await clerk.signOut();
+    } catch (error) {
+      setStatus(`Could not delete account: ${error.message}.`, "error-text");
+      button.disabled = false;
+    }
+  }
+
+  document.getElementById("delete-account-button").addEventListener("click", (event) => { void deleteAccount(event.currentTarget); });
   document.getElementById("refresh-button").addEventListener("click", () => { void refresh(); });
   document.getElementById("track-upload").addEventListener("change", (event) => {
     const input = event.currentTarget;

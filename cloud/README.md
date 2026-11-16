@@ -27,6 +27,7 @@ All `/v1/*` endpoints require a Clerk session JWT in `Authorization: Bearer <tok
 | `PUT /v1/tracks/{trackId}?name=…` | Uploads one GPX as `application/gpx+xml`; enforces file, count and total caps |
 | `GET /v1/tracks/{trackId}` | Downloads one of the authenticated user's GPX files |
 | `DELETE /v1/tracks/{trackId}` | Deletes the user's track and R2 object |
+| `DELETE /v1/account` | Body `{ "confirm": "DELETE" }`. Permanently deletes all of the user's messages, favorites, track rows and R2 GPX objects, then the Clerk user when the `CLERK_SECRET_KEY` Worker secret is set (`wrangler secret put CLERK_SECRET_KEY`). Required by Google Play's account deletion policy |
 
 Messages use Unix timestamps in seconds, matching the Android app's current local history. Request batches are bounded. The daily Worker cron removes expired non-favorite messages; writes also prune expired messages for that user. Use the returned `nextCursor` to fetch another page; send no cursor for the first page.
 
@@ -46,6 +47,6 @@ The Pages workflow writes a generated `docs/site/account/config.js` into the dep
 
 ## Privacy and current scope
 
-The API accepts message text in plaintext after the app has decrypted/decoded the radio payload. The service does not provide client-side end-to-end encryption. The app must disclose cloud storage clearly and require the user to enable it before upload. Authentication, per-user authorization, HTTPS, bounded input and account-scoped object keys are included. Account deletion/export controls and recovery remain future work.
+The API accepts message text in plaintext after the app has decrypted/decoded the radio payload. The service does not provide client-side end-to-end encryption. The app must disclose cloud storage clearly and require the user to enable it before upload. Authentication, per-user authorization, HTTPS, bounded input and account-scoped object keys are included. Account deletion is available in the app, on the account website and through `DELETE /v1/account`; export controls and recovery remain future work.
 
-The Android sync button is manual in this first slice. It uploads message history for the last seven days plus favorite-chat history, merges messages and favorite changes from the account, and requires the user to sign in and explicitly enable sync. Track sync is separately opt-in. The account site provides cloud track upload, download, rename, and deletion; account deletion/export controls, billing and end-to-end encryption remain future work. Do not switch Clerk to production mode until the account website and multi-device behavior have been validated.
+The Android sync button is manual in this first slice. It uploads message history for the last seven days plus favorite-chat history, merges messages and favorite changes from the account, and requires the user to sign in and explicitly enable sync. Track sync is separately opt-in. The account site provides cloud track upload, download, rename, and deletion; account deletion is available; export controls, billing and end-to-end encryption remain future work. Do not switch Clerk to production mode until the account website and multi-device behavior have been validated.

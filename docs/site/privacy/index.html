@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="How MeshCrossway for Android handles your data: local-first radio messaging, optional account and cloud sync.">
+  <title>Privacy Policy — MeshCrossway</title>
+  <link rel="stylesheet" href="../assets/site.css">
+  <link rel="icon" type="image/png" href="../assets/meshcrossway-favicon.png">
+  <link rel="apple-touch-icon" href="../assets/meshcrossway-app-touch-icon.png">
+</head>
+<body>
+  <nav class="nav"><div class="wrap navin"><a class="brand" href="../" aria-label="MeshCrossway home"><img src="../assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44"></a><details class="site-menu"><summary>Explore</summary><div class="site-menu-panel"><a href="../account/">Account &amp; cloud data</a><a href="../android/">Android app</a><a href="../privacy/">Privacy policy</a><a href="../faq/">FAQ</a><a href="https://github.com/Renbrant/MeshCrossway">GitHub repository</a></div></details><a class="cta" href="../">Home</a></div></nav>
+<main>
+<section class="pagehero"><div class="wrap prose"><div class="eyebrow">Legal</div><h1>Privacy policy</h1><p class="lead">MeshCrossway for Android is built to work locally with your own radios. Nothing leaves your phone unless you turn on an online feature.</p><p class="sectionintro">Effective November 16, 2026 · Applies to the MeshCrossway Android app (package <code>com.meshcrossway.mobile</code>), this website and the optional MeshCrossway cloud account.</p></div></section>
+<section class="section"><div class="wrap prose">
+<h2>Who we are</h2>
+<p>MeshCrossway is an independent open-source project published by Renbrant. The source code is public on <a href="https://github.com/Renbrant/MeshCrossway">GitHub</a>. For privacy questions, use the contact email shown on the app's Google Play listing or open an issue on GitHub (do not post personal data in public issues).</p>
+
+<h2>Data that stays on your phone</h2>
+<p>The following data is stored only in the app's private storage on your device and is never sent to us:</p>
+<ul>
+<li>Messages, channels, contacts, favorites and node information received from or sent through your Meshtastic and MeshCore radios.</li>
+<li>Bluetooth identifiers and settings for the radios you pair.</li>
+<li>Your phone's location, used to show your position on the map, follow you while moving and record GPS tracks. Location is used while the app is in use and, when you start track recording, by a visible foreground service. The app does not send your phone's location to either mesh network.</li>
+<li>Saved places, GPX tracks, downloaded offline map areas, appearance settings and backups you create.</li>
+</ul>
+<p>Messages you send are transmitted by your radios over the public or private mesh channels you choose. Anyone on those networks with the right channel keys can receive them; this happens radio-to-radio and is outside our control.</p>
+
+<h2>Camera</h2>
+<p>The camera is used only when you choose to scan a channel QR Code. Images are processed on the device and are not stored or uploaded.</p>
+
+<h2>Map tiles</h2>
+<p>When online, the map downloads tiles and styles from OpenFreeMap (<code>tiles.openfreemap.org</code>) and OpenStreetMap (<code>tile.openstreetmap.org</code>). Like any web request, these services receive your IP address and the map area being requested. Their own privacy policies apply.</p>
+
+<h2>Remote Access (optional)</h2>
+<p>If you enable Remote Access, the phone hosts an encrypted web page on your local Wi-Fi network so a computer on the same network can use the app. It is off by default, is not reachable from the internet through any MeshCrossway server, and stops when you turn it off.</p>
+
+<h2>Optional account and cloud sync</h2>
+<p>Creating an account is optional and is only needed for cloud synchronization. If you sign in:</p>
+<ul>
+<li><strong>Account data:</strong> sign-in is handled by <a href="https://clerk.com/legal/privacy">Clerk</a>, which stores your email address and the sign-in methods you choose.</li>
+<li><strong>Synchronized content:</strong> only if you also turn on sync, the app uploads conversation messages from the last seven days, your favorite conversations and, if separately enabled, saved GPX tracks. Data is stored on <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare</a> infrastructure (Workers, D1 and R2).</li>
+<li>Sync does not upload Bluetooth identifiers, contacts, radio settings or your live location. GPX tracks do contain location history, so they are uploaded only when you enable track sync.</li>
+<li>Data is encrypted in transit (HTTPS) and protected by per-account access controls. It is <strong>not end-to-end encrypted</strong>.</li>
+<li>Ordinary messages are removed from the cloud after seven days. Messages in favorite conversations and GPX tracks are kept until you remove them or delete your account.</li>
+</ul>
+
+<h2>How we use data</h2>
+<p>Cloud data is used only to provide synchronization to you across your devices and on the <a href="../account/">account website</a>. We do not sell data, show ads, use analytics or tracking SDKs, or share data with third parties except the service providers named above, which process it on our behalf.</p>
+
+<h2>Your choices and deleting your data</h2>
+<ul>
+<li>Turn off sync at any time in <em>Account &amp; sync</em>. Delete individual cloud tracks or favorites on the account website.</li>
+<li>Delete your account and all cloud data from the app (<em>Account &amp; sync → Delete account and cloud data</em>) or from the <a href="../account/">account website</a>. See <a href="../delete-account/">account deletion</a> for details. Deletion is immediate and permanent.</li>
+<li>Local data is removed when you clear the app's storage or uninstall it. Export a backup first if you want to keep it.</li>
+</ul>
+
+<h2>Children</h2>
+<p>MeshCrossway is not directed to children under 13 and we do not knowingly collect their personal information.</p>
+
+<h2>Security</h2>
+<p>We use HTTPS, verified sign-in tokens, per-account storage isolation and size limits. No method of storage or transmission is completely secure.</p>
+
+<h2>Changes</h2>
+<p>We will update this page when our practices change and adjust the effective date above. Significant changes will also be noted in the app's release notes.</p>
+</div></section>
+</main>
+  <footer>
+    <div class="wrap">MeshCrossway is an independent open-source project. <a href="../privacy/">Privacy policy</a> · <a href="../delete-account/">Account deletion</a></div>
+  </footer>
+</body>
+</html>
