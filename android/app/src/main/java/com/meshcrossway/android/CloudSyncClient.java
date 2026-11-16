@@ -56,6 +56,23 @@ final class CloudSyncClient {
         });});
     }
 
+    /** Permanently deletes the Clerk account and every cloud copy (messages, favorites, GPX tracks). Local data on this phone is kept. */
+    static void deleteAccount(Context context,Callback callback){
+        if(!configured()){callback.complete("Cloud API is not configured in this build",false);return;}
+        ClerkBridge.sessionToken(token->{if(token==null||token.isEmpty()){callback.complete("Sign in again to delete your account",false);return;}executor.execute(()->{
+            try{
+                request("DELETE","/v1/account",token,new JSONObject().put("confirm","DELETE").toString(),"application/json; charset=utf-8");
+                context.getSharedPreferences("cloud_sync",Context.MODE_PRIVATE).edit().clear().apply();
+                callback.complete("Account and cloud data deleted",true);
+            }catch(Exception e){
+                String code=e.getMessage()==null?"":e.getMessage();
+                if(code.equals("ACCOUNT_DELETION_NOT_CONFIGURED"))callback.complete("Account deletion is temporarily unavailable • use the web form at meshcrossway.renbrant.com/delete-account",false);
+                else if(code.equals("CLERK_DELETE_FAILED"))callback.complete("Cloud data deleted, but the account could not be removed yet • try again",false);
+                else callback.complete(code.isEmpty()?"Could not delete account • check your connection and try again":"Could not delete account • "+code,false);
+            }
+        });});
+    }
+
     private static TrackSyncResult syncTracks(Context context,TrackStore store,String token)throws Exception{
         List<TrackStore.Track> local=await(store::cloudTracks);
         Map<String,TrackStore.Track> localByCloud=new HashMap<>();
