@@ -31,7 +31,7 @@ public final class RadioService extends Service {
         private BluetoothGattCharacteristic tx, rx, notice;
         private final ArrayDeque<Op> queue=new ArrayDeque<>();
         private Op active;
-        ProtocolClient client;MtAdmin.Edit pendingMtEdit;String pendingMtAddress="";McAdmin.Edit pendingMcEdit;String pendingMcAddress="";final List<ProtocolClient.Sent> pendingMcDeliveries=new ArrayList<>();
+        ProtocolClient client;MtAdmin.Edit pendingMtEdit,pendingMtRestartCheck;String pendingMtAddress="",pendingMtLastSave="";McAdmin.Edit pendingMcEdit;String pendingMcAddress="";final List<ProtocolClient.Sent> pendingMcDeliveries=new ArrayList<>();
         boolean desired, transportReady, persisting;
         int retries, mtu=23;
         String phase="Idle",pendingAddress;boolean forcePair;long phaseAt;
@@ -246,7 +246,7 @@ public final class RadioService extends Service {
             public void delivery(String uid,String state){history.delivery(profile,radio,uid,state);}
         });
         if(profile==RadioProfile.MESHCORE){if(s.pendingMcAddress.equals(address)){if(s.pendingMcEdit!=null)s.client.mcAdmin.restore(s.pendingMcEdit);s.client.mcRestoreDeliveries(s.pendingMcDeliveries,now());}else{s.pendingMcEdit=null;s.pendingMcDeliveries.clear();}s.pendingMcAddress=address;}
-        if(profile==RadioProfile.MESHTASTIC&&s.pendingMtEdit!=null&&s.pendingMtAddress.equals(address))s.client.admin.restore(s.pendingMtEdit);else{s.pendingMtEdit=null;s.pendingMtAddress="";}
+        if(profile==RadioProfile.MESHTASTIC&&s.pendingMtAddress.equals(address)){if(s.pendingMtEdit!=null)s.client.admin.restore(s.pendingMtEdit);s.client.admin.restartCheck=s.pendingMtRestartCheck;s.client.admin.restartCheckPending=s.pendingMtRestartCheck!=null;s.client.admin.lastSave=s.pendingMtLastSave;}else{s.pendingMtEdit=null;s.pendingMtRestartCheck=null;s.pendingMtLastSave="";s.pendingMtAddress="";}
         try{
             BluetoothDevice device=adapter.getRemoteDevice(address);s.name=deviceName(device);
             if((s.profile==RadioProfile.MESHTASTIC||s.forcePair)&&device.getBondState()!=BluetoothDevice.BOND_BONDED){
@@ -372,7 +372,7 @@ public final class RadioService extends Service {
         if(s.retry!=null)handler.removeCallbacks(s.retry);s.retry=null;
         if(s.rssiPoll!=null)handler.removeCallbacks(s.rssiPoll);
         s.rssiPoll=null;s.rssiPending=false;s.rssiCurrentLink=false;
-        if(s.client!=null){history.uncertain(s.profile,s.address);if(s.profile==RadioProfile.MESHTASTIC){s.pendingMtEdit=s.client.admin.edit!=null&&s.client.admin.edit.writeId!=0?s.client.admin.edit:null;s.pendingMtAddress=s.address;}else{s.pendingMcEdit=s.client.pendingMcSave();s.pendingMcAddress=s.address;s.pendingMcDeliveries.clear();s.pendingMcDeliveries.addAll(s.client.mcRetainDeliveries(now()));s.client.clearRepeaterAdministration();}}s.client=null;s.transportReady=false;s.persisting=false;
+        if(s.client!=null){history.uncertain(s.profile,s.address);if(s.profile==RadioProfile.MESHTASTIC){s.pendingMtEdit=s.client.admin.edit!=null&&s.client.admin.edit.writeId!=0?s.client.admin.edit:null;s.pendingMtRestartCheck=s.pendingMtEdit==null?s.client.admin.restartCheck:null;s.pendingMtLastSave=s.client.admin.lastSave;s.pendingMtAddress=s.address;}else{s.pendingMcEdit=s.client.pendingMcSave();s.pendingMcAddress=s.address;s.pendingMcDeliveries.clear();s.pendingMcDeliveries.addAll(s.client.mcRetainDeliveries(now()));s.client.clearRepeaterAdministration();}}s.client=null;s.transportReady=false;s.persisting=false;
         cancelTimeout(s);if(s.probeTimeout!=null)handler.removeCallbacks(s.probeTimeout);if(s.poll!=null)handler.removeCallbacks(s.poll);
         BluetoothGatt old=s.gatt;s.gatt=null;s.queue.clear();s.active=null;s.connected=s.verified=s.readPending=false;
         s.tx=s.rx=s.notice=null;phase(s,"Disconnected",reason);

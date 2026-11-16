@@ -157,7 +157,7 @@ public final class MainActivity extends Activity {
                         Math.max(0,(System.currentTimeMillis()-session.rssiMeasuredAtMs)/60000):-1)
                     .append(':').append(BleSignal.live(session.verified,session.rssiCurrentLink,
                         session.rssiMeasuredAtMs,System.currentTimeMillis()));
-                if(session.client!=null)key.append(':').append(session.client.mtRevision);
+                if(session.client!=null)key.append(':').append(session.client.mtRevision).append(':').append(session.client.frequencyMhz).append(':').append(session.client.ready);
             }
         }
         key.append(':').append(phoneEnabled());
@@ -394,7 +394,7 @@ public final class MainActivity extends Activity {
         return tile;
     }
     /** Four BLE bars reflect measured phone-to-radio RSSI, never a LoRa signal report. */
-    private void signalIndicator(LinearLayout tile,RadioService.Session session,int accent){
+    private void signalIndicator(LinearLayout tile,RadioService.Session session,int accent,String frequency){
         final int rssi=session==null?BleSignal.UNKNOWN:session.rssiDbm;
         final long measuredAt=session==null?0:session.rssiMeasuredAtMs;
         final long now=System.currentTimeMillis();
@@ -406,6 +406,7 @@ public final class MainActivity extends Activity {
         LinearLayout indicator=row();
         indicator.setGravity(Gravity.BOTTOM|Gravity.START);
         indicator.setPadding(0,dp(9),0,0);
+        indicator.addView(new NavIcon(this,"bluetooth",current?accent:MUTED),new LinearLayout.LayoutParams(dp(16),dp(17)));
         for(int index=0;index<4;index++){
             View bar=new View(this);
             int color=!valid?PANEL2:
@@ -419,15 +420,23 @@ public final class MainActivity extends Activity {
             params.rightMargin=dp(3);
             indicator.addView(bar,params);
         }
-        TextView reading=text(readingLabel,11,MUTED);
-        reading.setMaxLines(1);
-        reading.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        LinearLayout.LayoutParams textParams=new LinearLayout.LayoutParams(0,dp(19),1);
-        textParams.leftMargin=dp(5);
-        indicator.addView(reading,textParams);
+        // The bars carry the reading; the dBm text stays in the accessibility description only.
+        TextView freq=text(frequency,10,MUTED);
+        freq.setMaxLines(1);
+        freq.setGravity(Gravity.END|Gravity.BOTTOM);
+        indicator.addView(freq,new LinearLayout.LayoutParams(0,-2,1));
         indicator.setContentDescription("Bluetooth signal. "+
-            readingLabel+". "+bars+" of four bars. "+(current?"Current link.":"Cached or unavailable."));
+            readingLabel+". "+bars+" of four bars. "+(current?"Current link.":"Cached or unavailable.")+
+            (frequency.isEmpty()?"":" LoRa frequency "+frequency+"."));
         tile.addView(indicator);
+    }
+    /** Small LoRa frequency label for the Home radio tiles; empty until the radio reports it. */
+    private String homeFrequency(RadioProfile profile,ProtocolClient c){
+        if(c==null||!c.ready)return "";
+        if(profile==RadioProfile.MESHCORE)return c.frequencyMhz>0?String.format(Locale.ROOT,"%.3f MHz",c.frequencyMhz):"";
+        if(!c.mtConfigLoaded(5))return "";
+        MtLora.Frequency f=MtLora.frequency(c,c.mtConfig(5));
+        return f==null?"":f.brief();
     }
     private void openDashboardNetwork(RadioProfile profile,int destination){
         filter=profile.ordinal()+1;
@@ -463,7 +472,7 @@ public final class MainActivity extends Activity {
                 LinearLayout.LayoutParams size=new LinearLayout.LayoutParams(0,-2,1);size.leftMargin=dp(6);stateRow.addView(label,size);tile.addView(stateRow,2);
                 tile.setContentDescription(profile.title+". "+state+". "+preset);
             }
-            signalIndicator(tile,session,accent);
+            signalIndicator(tile,session,accent,ready?homeFrequency(profile,session.client):"");
         }
         LinearLayout nodes=dashboardRow();
         for(RadioProfile profile:RadioProfile.values()){
@@ -1385,6 +1394,7 @@ public final class MainActivity extends Activity {
     private void mtCommand(java.util.function.Consumer<ProtocolClient> action){RadioService.Session s=service==null?null:service.sessions.get(RadioProfile.MESHTASTIC);if(s==null||!s.verified){Toast.makeText(this,"Connect and synchronize the Meshtastic radio first",Toast.LENGTH_LONG).show();return;}service.configureMeshtastic(s.address,action);scheduleRefresh();}
     private void meshtasticSettingsRows(RadioService.Session session){
         ProtocolClient c=mtClient();boolean online=session!=null&&session.verified;if(c!=null&&c.ready&&!c.mtAdminRequested){c.mtAdminRequested=true;mtCommand(ProtocolClient::requestMtSessionKey);}
+        if(online)mtRadioSummary(c);
         section(results,"CONFIGURATION");LinearLayout conf=group(results);
         menuRow(conf,"info","User",c!=null&&!c.mtOwnerIsEmpty()?c.mtOwnerName():"Node identity and status message",()->openSettings("mt_user",RadioProfile.MESHTASTIC),RADIO_MT);
         menuRow(conf,"radio","LoRa",c==null?"Region, preset and radio behavior":c.regionName()+" · hop limit "+c.hopLimit,()->openSettings("mt_lora",RadioProfile.MESHTASTIC),RADIO_MT);
@@ -1395,6 +1405,23 @@ public final class MainActivity extends Activity {
         menuRow(conf,"settings","Administration","Admin keys, logs and managed-device controls",()->openSettings("mt_admin",RadioProfile.MESHTASTIC),RADIO_MT);
         section(results,"BACKUP & RESTORE");LinearLayout backup=group(results);menuRow(backup,"backup","Import configuration","Restore a Meshtastic configuration file",()->Toast.makeText(this,"Configuration import is not supported by this radio transport yet",Toast.LENGTH_LONG).show(),MUTED);menuRow(backup,"backup","Export configuration","Save a Meshtastic configuration file",()->Toast.makeText(this,"Configuration export is not supported by this radio transport yet",Toast.LENGTH_LONG).show(),MUTED);
         if(!online)results.addView(text("Connect to the Meshtastic radio to read and change its settings.",13,MUTED));
+    }
+    /** Read-only overview of what the radio itself reports, so a save can be checked at a glance. */
+    private void mtRadioSummary(ProtocolClient c){
+        section(results,"CURRENT RADIO SETTINGS");LinearLayout box=group(results);
+        if(c==null||!c.ready||!c.mtConfigLoaded(5)){menuRow(box,"info","Reading settings from radio…","These values are read back from the radio, not from an unsaved draft.",null,MUTED);return;}
+        byte[] lora=c.mtConfig(5);List<Wire.F> fs=Wire.fields(lora);int region=(int)Wire.number(fs,7,0),preset=(int)Wire.number(fs,2,0);boolean use=Wire.number(fs,1,0)!=0;
+        Runnable lora_=()->openSettings("mt_lora",RadioProfile.MESHTASTIC);
+        MtLora.Frequency f=MtLora.frequency(c,lora);
+        menuRow(box,"radio",f==null?"Frequency unavailable":"Frequency "+f.brief(),f!=null?f.source():region==0?"Region not set — the radio will not transmit":"Waiting for the primary channel",lora_,RADIO_MT);
+        menuRow(box,"radio",use?"Preset "+MtLora.presetName(preset):"Manual LoRa",MtLora.loraSummary(lora),lora_,RADIO_MT);
+        MtLora.Region r=MtLora.regionInfo(region);long power=Wire.number(fs,10,0);
+        menuRow(box,"map","Region "+MtLora.regionName(region),(r==null||region==0?"":MtLora.trim(r.start)+"–"+MtLora.trim(r.end)+" MHz · ")+"hop limit "+Wire.number(fs,8,0)+" · "+(Wire.number(fs,9,0)!=0?"TX "+(power==0?"region default power":power+" dBm"):"TX disabled"),lora_,RADIO_MT);
+        String name=MtLora.primaryChannelName(c);
+        menuRow(box,"channels","Primary channel",name==null?"Reading channels…":name.isEmpty()?"Default name ("+MtLora.presetDisplayName(preset,use)+")":name,()->openSettings("mt_channels",RadioProfile.MESHTASTIC),RADIO_MT);
+        menuRow(box,"info",c.hardware.isEmpty()?"Meshtastic radio":c.hardware,"Firmware "+(c.firmware.isEmpty()?"unknown":c.firmware),null,RADIO_MT);
+        if(!c.admin.lastSave.isEmpty()){boolean bad=c.admin.lastSave.startsWith("After")||c.admin.lastSave.startsWith("Change not");menuRow(box,"info","Last settings save",c.admin.lastSave,null,bad?RED:RADIO_MT);}
+        if(!c.mtNotices.isEmpty())menuRow(box,"bell","Message from radio",c.mtNotices.get(c.mtNotices.size()-1),null,ORANGE);
     }
     private void meshtasticSettingsDetail(){ProtocolClient c=mtClient();if(c==null){RadioService.Session session=service==null?null:service.sessions.get(RadioProfile.MESHTASTIC);if(session!=null&&session.pendingMtEdit!=null&&session.pendingMtAddress.equals(session.address)){boolean reconnecting=session.desired&&session.retries<5&&service.autoReconnect;mtSaveProgress(reconnecting?"Waiting for the radio to reconnect":"Radio offline — confirmation paused",session.status+". "+(reconnecting?"This page updates automatically; settings will be checked after synchronization.":"Reconnect to check whether the change was applied."),reconnecting);menuRow(group(results),"refresh","Reconnect radio","Continue checking the previous save",()->withPermission(()->service.connect(RadioProfile.MESHTASTIC,session.address)),RADIO_MT);}else results.addView(text("Connect to the Meshtastic radio to load this configuration.",14,MUTED));return;}mtAdminStatus(c);if(c.admin.edit!=null)return;switch(settingsSection){case "mt_user":mtUserSettings(c);return;case "mt_lora":mtLoraSettings(c);return;case "mt_channels":mtChannelSettings(c);return;case "mt_device":mtDeviceSettings(c);return;case "mt_security":mtSecuritySettings(c);return;case "mt_modules":mtModuleSettings(c);return;case "mt_admin":section(results,"ADMINISTRATION");results.addView(text("Admin-key management and device logs are not yet available through MeshCrossway.",14,MUTED));return;}}
     private void mtSaveProgress(String title,String detail,boolean busy){
@@ -1422,11 +1449,12 @@ public final class MainActivity extends Activity {
     private void editMtOwner(ProtocolClient c,boolean shortName){editMtText(shortName?"Short Name":"Long Name",c.mtOwnerValue(shortName?3:2),shortName?4:c.mtAtLeast(8,0)?24:39,false,value->mtCommand(client->client.setMtOwnerName(shortName,value)));}
     private void editMtText(String title,String current,int max,boolean empty,java.util.function.Consumer<String> save){EditText input=new EditText(this);input.setSingleLine(true);input.setText(current);input.setTextColor(WHITE);AlertDialog dialog=new AlertDialog.Builder(this).setTitle(title).setView(input).setNegativeButton("Discard",null).setPositiveButton("Save",null).create();dialog.setOnShowListener(v->dialog.getButton(-1).setOnClickListener(w->{try{String value=input.getText().toString().trim();if(empty)Wire.optionalText(value,max);else Wire.text(value,max);save.accept(value);dialog.dismiss();}catch(IllegalArgumentException e){input.setError(e.getMessage());}}));dialog.show();}
     private void mtLoraSettings(ProtocolClient c){if(!mtLoaded(c,c.mtConfigLoaded(5),()->mtCommand(client->client.requestMtConfig(5))))return;String address=radio(RadioProfile.MESHTASTIC);if(!address.equals(mtDraftRadio)){mtLoraDraft=null;mtDraftRadio=address;}if(mtLoraSaving&&c.admin.edit==null){mtLoraSaving=false;mtLoraDraft=null;}if(mtLoraDraft==null){mtLoraDraft=c.mtConfig(5).clone();mtLoraBase=mtLoraDraft.clone();}List<Wire.F> fields=Wire.fields(mtLoraDraft);int region=(int)Wire.number(fields,7,0),preset=(int)Wire.number(fields,2,0);boolean use=Wire.number(fields,1,0)!=0;section(results,"OPTIONS");LinearLayout options=group(results);
+        {byte[] now=c.mtConfig(5);List<Wire.F> nf=Wire.fields(now);MtLora.Frequency nowFreq=MtLora.frequency(c,now);menuRow(options,"info","Radio is using: "+(Wire.number(nf,1,0)!=0?MtLora.presetName((int)Wire.number(nf,2,0)):"Manual LoRa"),MtLora.regionName((int)Wire.number(nf,7,0))+(nowFreq==null?"":" · "+nowFreq.brief())+" · "+MtLora.loraSummary(now)+(Arrays.equals(mtLoraDraft,now)?"":" · unsaved changes below"),null,Arrays.equals(mtLoraDraft,now)?RADIO_MT:ORANGE);}
         menuRow(options,"radio","Region",MtLora.regionName(region),()->mtOption("Region",MtLora.regions(c),region,value->{try{mtLoraDraft=MtLora.regionChange(c,mtLoraDraft,value);rebuildContent();}catch(IllegalArgumentException e){Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show();}}),RADIO_MT);
         toggleRow(options,"Use preset","Changes are staged until Save",use,on->{mtLoraDraft=Wire.replace(mtLoraDraft,1,on?1:0);mtLoraDraft=Wire.replace(mtLoraDraft,5,on?0:5);if(!on){if(Wire.number(fields,3,0)==0)mtLoraDraft=Wire.replace(mtLoraDraft,3,250);if(Wire.number(fields,4,0)==0)mtLoraDraft=Wire.replace(mtLoraDraft,4,11);}rebuildContent();});
         if(use){menuRow(options,"radio","Preset",MtLora.presetName(preset),()->mtOption("Preset",MtLora.presets(c,region),preset,value->{mtLoraDraft=Wire.replace(Wire.replace(mtLoraDraft,2,value),5,0);rebuildContent();}),RADIO_MT);if(c.mtAtLeast(7,18)){List<MtLora.Option> rates=new ArrayList<>();rates.add(new MtLora.Option(0,"Preset default"));for(int rate=MtLora.presetCodingRate(preset)+1;rate<=8;rate++)rates.add(new MtLora.Option(rate,"4/"+rate));int cr=MtLora.codingSelection(preset,(int)Wire.number(fields,5,0));menuRow(options,"radio","Coding rate override",cr==0?"Preset default (4/"+MtLora.presetCodingRate(preset)+")":"4/"+cr,()->mtOption("Coding rate override",rates,cr,v->mtDraftNumber(5,v)),RADIO_MT);}}
         else {options.addView(text(MtLora.manualSfHint(c.mtHardware),13,MUTED));mtDraftNumeric(options,fields,3,"Bandwidth (kHz; 2.4 GHz codes 200/400/800)",1,region==13?800:500);mtDraftNumeric(options,fields,4,"Spreading factor",5,12);mtDraftNumeric(options,fields,5,"Coding rate denominator (4/n)",5,8);}
-        section(results,"ADVANCED");LinearLayout adv=group(results);mtDraftToggle(adv,fields,104,"Ignore MQTT");mtDraftToggle(adv,fields,105,"OK to MQTT");mtDraftToggle(adv,fields,9,"Transmit enabled");mtDraftToggle(adv,fields,12,"Override duty cycle");mtDraftToggle(adv,fields,13,"RX boosted gain");mtDraftNumeric(adv,fields,8,"Hop limit",0,7);mtDraftNumeric(adv,fields,11,"Frequency slot (0 = automatic)",0,65535);mtDraftNumeric(adv,fields,10,"Transmit power (0 = region default)",0,36);menuRow(adv,"radio","Frequency override (0 = automatic)",Float.toString(Float.intBitsToFloat((int)Wire.number(fields,14,0)))+" MHz",()->editMtFloat("Frequency override (MHz)",Wire.number(fields,14,0),v->{if(!Double.isFinite(v)||v<0||v>2500)throw Wire.bad("Frequency must be finite and within 0–2500 MHz");mtLoraDraft=Wire.floatField(mtLoraDraft,14,(float)v);rebuildContent();}),RADIO_MT);
+        section(results,"ADVANCED");LinearLayout adv=group(results);mtDraftToggle(adv,fields,104,"Ignore MQTT");mtDraftToggle(adv,fields,105,"OK to MQTT");mtDraftToggle(adv,fields,9,"Transmit enabled");mtDraftToggle(adv,fields,12,"Override duty cycle");mtDraftToggle(adv,fields,13,"RX boosted gain");mtDraftNumeric(adv,fields,8,"Hop limit",0,7);mtDraftNumeric(adv,fields,11,"Frequency slot (0 = automatic)",0,65535);mtDraftNumeric(adv,fields,10,"Transmit power (0 = region default)",0,36);menuRow(adv,"radio","Frequency override (0 = automatic)",Float.toString(Float.intBitsToFloat((int)Wire.number(fields,14,0)))+" MHz",()->editMtFloat("Frequency override (MHz)",Wire.number(fields,14,0),v->{if(!Double.isFinite(v)||v<0||v>2500)throw Wire.bad("Frequency must be finite and within 0–2500 MHz");mtLoraDraft=Wire.floatField(mtLoraDraft,14,(float)v);rebuildContent();}),RADIO_MT);{MtLora.Frequency tuned=MtLora.frequency(c,mtLoraDraft);menuRow(adv,"radio","Tuned frequency: "+(tuned==null?"unavailable":tuned.brief()),tuned==null?"Set a region to calculate the frequency":tuned.source()+(Arrays.equals(mtLoraDraft,c.mtConfig(5))?"":" · after saving"),null,RADIO_MT);}
         LinearLayout actions=row();actions.addView(button("Discard",()->{mtLoraDraft=null;rebuildContent();}),new LinearLayout.LayoutParams(0,dp(48),1));actions.addView(button("Save",()->{try{if(!Arrays.equals(mtLoraBase,c.mtConfig(5)))throw Wire.bad("Radio settings changed while editing. Discard this draft and review the current values.");MtLora.validate(mtLoraDraft,c);byte[] draft=mtLoraDraft.clone();mtConfirm("Save LoRa settings",true,()->{if(mtClient()!=c){mtLoraDraft=null;Toast.makeText(this,"Radio reconnected; review the current settings before saving",Toast.LENGTH_LONG).show();rebuildContent();return;}mtCommand(client->client.setMtConfig(5,draft));mtLoraSaving=c.admin.edit!=null;rebuildContent();});}catch(IllegalArgumentException e){Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show();}}),new LinearLayout.LayoutParams(0,dp(48),1));results.addView(actions);}
     private void mtOption(String title,List<MtLora.Option> options,int selected,java.util.function.IntConsumer save){String[] names=new String[options.size()];int current=-1;for(int i=0;i<options.size();i++){names[i]=options.get(i).label;if(options.get(i).value==selected)current=i;}choice(title,names,current,i->save.accept(options.get(i).value));}
     private void mtDraftNumber(int field,long value){mtLoraDraft=Wire.replace(mtLoraDraft,field,value);rebuildContent();}
@@ -1575,6 +1603,7 @@ public final class MainActivity extends Activity {
     private void mcCommand(java.util.function.Consumer<ProtocolClient> action){RadioService.Session s=service==null?null:service.sessions.get(RadioProfile.MESHCORE);if(s==null||!s.verified){Toast.makeText(this,"Connect and synchronize the MeshCore radio first",Toast.LENGTH_LONG).show();return;}service.configureMeshCore(s.address,action);scheduleRefresh();}
     private void meshCoreSettingsRows(RadioService.Session session){
         ProtocolClient c=mcClient();boolean online=session!=null&&session.verified;if(c!=null)mcSettingsBanner(c);
+        if(online&&c!=null&&c.frequencyMhz>0){section(results,"CURRENT RADIO SETTINGS");LinearLayout now=group(results);menuRow(now,"radio",String.format(Locale.ROOT,"Frequency %.3f MHz",c.frequencyMhz),"BW "+MtLora.trim(c.bandwidthKhz)+" kHz · SF"+c.spreadingFactor+" · CR 4/"+c.codingRate+(c.txPower!=-1?" · TX "+c.txPower+" dBm":""),()->openSettings("mc_radio",RadioProfile.MESHCORE),RADIO_MC);}
         section(results,"DEVICE INFO");LinearLayout device=group(results);menuRow(device,"info",c!=null&&!c.localName.isEmpty()?c.localName:"MeshCore radio",online?"Connected":"Not synchronized",()->openSettings("mc_device",RadioProfile.MESHCORE),RADIO_MC);
         menuRow(device,"channels","Channels","Create, edit and share MeshCore channels",()->openSettings("mc_channels",RadioProfile.MESHCORE),RADIO_MC);
         section(results,"NODE SETTINGS");LinearLayout node=group(results);

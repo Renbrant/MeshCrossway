@@ -7,7 +7,7 @@ final class MtAdmin {
     interface Host {void enqueue(byte[] admin,long id,boolean response);void apply(int kind,int index,byte[] body);}
     static final class Edit {
         final int kind,index,setField;final byte[] body,expected;final boolean restart;
-        boolean dispatched;long writeId,deadline,verifyAt=Long.MAX_VALUE;
+        boolean dispatched,restored;long verifiedAt;long writeId,deadline,verifyAt=Long.MAX_VALUE;
         Edit(int k,int i,int s,byte[] b,byte[] e,boolean r){kind=k;index=i;setField=s;body=b;expected=e;restart=r;}
     }
     private static final class Read {int kind,index;boolean verification;long deadline;Read(int k,int i,long d){kind=k;index=i;deadline=d;}}
@@ -15,6 +15,10 @@ final class MtAdmin {
     final Host host;final Map<Long,Read> reads=new LinkedHashMap<>();
     byte[] key=Wire.EMPTY;long keyAt=-1,serial=(System.nanoTime()&0x7fffffffL)+1,revision;
     Edit edit;String status="",error="";long clock;boolean recovering;
+    /** A restart-requiring save verified before the radio rebooted; re-checked once after the next synchronization. */
+    Edit restartCheck;boolean restartCheckPending;static final long RESTART_CHECK_MS=10*60*1000L;
+    /** Human-readable outcome of the latest save, retained across reconnects for the settings summary. */
+    String lastSave="";
     MtAdmin(Host h){host=h;}
     long id(){serial=(serial+1)&0xffffffffL;if(serial==0)serial=1;return serial;}
     void tick(long now){clock=now;Iterator<Map.Entry<Long,Read>> it=reads.entrySet().iterator();boolean expired=false;while(it.hasNext()){Read r=it.next().getValue();if(now>=r.deadline){failedReads.add(r.kind+":"+r.index);it.remove();expired=true;}}
@@ -29,7 +33,7 @@ final class MtAdmin {
         Wire.Out msg=new Wire.Out();if(kind==4)msg.scalar(3,1);else if(kind==6)msg.scalar(5,index);else if(kind==8)msg.scalar(7,index);else if(kind==2)msg.scalar(1,index+1);else if(kind==13)msg.scalar(12,1);else throw Wire.bad("Unsupported admin read");
         if(fresh())msg.bytes(101,key);long id=id();reads.put(id,new Read(kind,index,clock+30000));try{host.enqueue(msg.array(),id,true);}catch(IllegalArgumentException e){reads.remove(id);failedReads.add(kind+":"+index);error=e.getMessage();status="Request could not be sent";revision++;}
     }
-    void save(Edit next){if(edit!=null)throw Wire.bad("Verify the pending save before changing another setting");edit=next;error="";edit.deadline=clock+45000;status="Preparing save";revision++;if(fresh())dispatch();else{status="Refreshing admin session";read(13,0);}}
+    void save(Edit next){if(edit!=null)throw Wire.bad("Verify the pending save before changing another setting");edit=next;restartCheck=null;restartCheckPending=false;error="";edit.deadline=clock+45000;status="Preparing save";revision++;if(fresh())dispatch();else{status="Refreshing admin session";read(13,0);}}
     private void dispatch(){if(edit==null||edit.dispatched||edit.writeId!=0)return;edit.writeId=id();byte[] value=edit.kind==6||edit.kind==8?new Wire.Out().bytes(edit.index+1,edit.body).array():edit.body;
         try{host.enqueue(new Wire.Out().bytes(edit.setField,value).bytes(101,key).array(),edit.writeId,false);}catch(IllegalArgumentException e){error=e.getMessage();status="Save cancelled before transmission";edit=null;revision++;return;}status=edit.restart?"Saving — radio may restart; verification pending":"Saving — waiting for radio";revision++;}
     void written(long id){if(edit!=null&&edit.writeId==id){edit.dispatched=true;edit.verifyAt=clock+2000;status=edit.restart?"Settings sent — waiting for radio restart or confirmation":"Settings sent — waiting for confirmation";revision++;}}
@@ -43,7 +47,7 @@ final class MtAdmin {
         if(r.kind==2&&(int)Wire.number(Wire.fields(body),1,0)!=r.index)return;
         reads.remove(request);byte[] incoming=Wire.bytes(fs,101);if(incoming.length>0){key=incoming;keyAt=clock;}
         host.apply(r.kind,r.index,body);revision++;
-        if(edit!=null&&edit.dispatched&&edit.kind==r.kind&&edit.index==r.index&&r.verification){if(matches(body,edit)){status="Saved and verified by radio"+(edit.kind==6&&edit.index==5&&Wire.number(Wire.fields(body),1,0)!=0?" — "+MtLora.presetName((int)Wire.number(Wire.fields(body),2,0)):"");error="";edit=null;recovering=false;}else{String detail=edit.kind==6&&edit.index==5?MtLora.readbackDifference(body,edit.body):edit.setField==18?"Returned identity differs from the requested licensed identity":"";status="Change not confirmed"+(detail.isEmpty()?"":" — "+detail)+" — showing current radio settings";error=status;edit=null;recovering=false;}revision++;}
+        if(edit!=null&&edit.dispatched&&edit.kind==r.kind&&edit.index==r.index&&r.verification){if(matches(body,edit)){boolean early=edit.restart&&!edit.restored;status="Saved and verified by radio"+loraName(edit,body)+(early?" — will check again after the radio restarts":"");error="";lastSave=(early?"Accepted before restart":"Verified after restart")+loraName(edit,body);if(early)edit.verifiedAt=clock;restartCheck=early?edit:null;restartCheckPending=false;edit=null;recovering=false;}else{String detail=edit.kind==6&&edit.index==5?MtLora.readbackDifference(body,edit.body):edit.setField==18?"Returned identity differs from the requested licensed identity":"";status="Change not confirmed"+(detail.isEmpty()?"":" — "+detail)+" — showing current radio settings";error=status;lastSave=status;restartCheck=null;edit=null;recovering=false;}revision++;}
         if(edit!=null&&!edit.dispatched&&edit.writeId==0&&fresh())dispatch();
     }
     private boolean matches(byte[] body,Edit edit){if(edit.kind==6&&edit.index==5)return MtLora.readbackDifference(body,edit.body).isEmpty();if(edit.kind!=2)return Wire.containsFields(body,edit.expected);for(Wire.F f:Wire.fields(edit.expected)){if(f.tag==2){if(!Wire.containsFields(Wire.bytes(Wire.fields(body),2),f.bytes))return false;}else if(!Wire.containsFields(body,new Wire.Out().add(f).array()))return false;}return true;}
@@ -57,6 +61,14 @@ final class MtAdmin {
         for(Read r:reads.values())if(r.kind==edit.kind&&r.index==edit.index)r.verification=true;
         revision++;
     }
-    void restore(Edit previous){edit=previous;edit.dispatched=true;edit.verifyAt=Long.MAX_VALUE;recovering=true;status="Radio reconnected — checking previous save";edit.deadline=Long.MAX_VALUE;revision++;}
+    private static String loraName(Edit e,byte[] body){return e.kind==6&&e.index==5&&Wire.number(Wire.fields(body),1,0)!=0?" — "+MtLora.presetName((int)Wire.number(Wire.fields(body),2,0)):"";}
+    /** Compare the configuration reported after a restart with the save verified before it. */
+    void checkAfterRestart(byte[] current){Edit e=restartCheck;if(e==null||!restartCheckPending)return;restartCheck=null;restartCheckPending=false;
+        // Only a reconnect shortly after the save can be the restart that save caused.
+        if(clock-e.verifiedAt>RESTART_CHECK_MS)return;
+        if(matches(current,e)){status="Confirmed after radio restart"+loraName(e,current);error="";lastSave="Verified after restart"+loraName(e,current);}
+        else {String detail=e.kind==6&&e.index==5?MtLora.readbackDifference(current,e.body):"";error="After restarting, the radio reports different settings"+(detail.isEmpty()?"":" — "+detail);status=error;lastSave=error;}
+        revision++;}
+    void restore(Edit previous){edit=previous;edit.dispatched=true;edit.restored=true;edit.verifyAt=Long.MAX_VALUE;recovering=true;status="Radio reconnected — checking previous save";edit.deadline=Long.MAX_VALUE;revision++;}
     void ready(){if(recovering&&edit!=null){recovering=false;verify();}}
 }

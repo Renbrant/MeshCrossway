@@ -63,7 +63,7 @@ final class ProtocolClient {
     }
     Command next(long now){
         if(profile==RadioProfile.MESHCORE)checkRemoteDeadline(now);
-        if(profile==RadioProfile.MESHTASTIC){admin.tick(now);if(ready)admin.ready();}else{mcAdmin.tick(now);if(ready)mcAdmin.ready();mcLateSent.entrySet().removeIf(e->now>=e.getValue().retainUntil);}
+        if(profile==RadioProfile.MESHTASTIC){admin.tick(now);if(ready){admin.ready();checkRestartedConfig();}}else{mcAdmin.tick(now);if(ready)mcAdmin.ready();mcLateSent.entrySet().removeIf(e->now>=e.getValue().retainUntil);}
         for(Iterator<Map.Entry<Long,Sent>> it=sent.entrySet().iterator();it.hasNext();){Map.Entry<Long,Sent> entry=it.next();Sent pending=entry.getValue();if(now>=pending.deadline){listener.delivery(pending.uid,"uncertain");if(profile==RadioProfile.MESHCORE&&pending.ackKnown){pending.retainUntil=now+600000;long savedKey=entry.getKey();while(mcLateSent.containsKey(savedKey))savedKey++;mcLateSent.put(savedKey,pending);trim(mcLateSent,128);}it.remove();}}
 
         if(active!=null){if(now>=active.deadline){if(profile==RadioProfile.MESHCORE&&active.mcEdit!=null)mcAdmin.timeout(active.mcEdit);throw Wire.bad("Radio command timed out • reconnect to restore response ordering");}if(active.written&&active.replied){if(active.repeaterAdmin)Arrays.fill(active.data,(byte)0);active=null;}else return null;}
@@ -97,6 +97,7 @@ final class ProtocolClient {
             else if(f.tag==10){applyMtChannel(f.bytes);}
             else if(f.tag==13){applyMtMetadata(f.bytes);}
             else if(f.tag==19){mtRegionMap=f.bytes;mtRevision++;}
+            else if(f.tag==16&&f.wire==2){notice(f.bytes);}
             else if(f.tag==2){if(!ready){if(earlyPackets.size()>=256)throw Wire.bad("Too many packets during synchronization");earlyPackets.add(f.bytes);}else mtPacket(f.bytes,now);}
             else if(f.tag==11){List<Wire.F> qs=Wire.fields(f.bytes);Sent s=sent.get(Wire.number(qs,4,0));if(s!=null){long code=Wire.number(qs,1,0);listener.delivery(s.uid,code==0?"radio accepted":"rejected");if(code!=0)sent.values().remove(s);}}
         }
@@ -131,6 +132,10 @@ final class ProtocolClient {
     void requestMtSessionKey(){admin.read(13,0);}
     void requestMtOwner(){admin.read(4,0);}
     void requestMtConfig(int type){admin.read(6,type);}
+    /** Firmware ClientNotification text (e.g. a preset or slot the radio clamped), newest last. */
+    final List<String> mtNotices=new ArrayList<>();
+    private void notice(byte[] body){try{String text=Wire.utf8(Wire.bytes(Wire.fields(body),4)).trim();if(text.isEmpty())return;mtNotices.add(text);while(mtNotices.size()>5)mtNotices.remove(0);mtRevision++;}catch(IllegalArgumentException ignored){}}
+    private void checkRestartedConfig(){MtAdmin.Edit e=admin.restartCheck;if(e==null||!admin.restartCheckPending)return;byte[] current=e.kind==6?mtConfigs.get(e.index+1):e.kind==8?mtModules.get(e.index+1):null;if(current==null){if(e.kind!=6&&e.kind!=8){admin.restartCheck=null;admin.restartCheckPending=false;}return;}admin.checkAfterRestart(current);mtRevision++;}
     void requestMtModule(int type){if(mtModuleSupported(type))admin.read(8,type);}
     byte[] mtModule(int type){return mtModules.getOrDefault(type+1,Wire.EMPTY);}
     byte[] mtConfig(int type){return mtConfigs.getOrDefault(type+1,Wire.EMPTY);}
