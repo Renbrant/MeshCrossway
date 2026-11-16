@@ -27,6 +27,7 @@ All `/v1/*` endpoints require a Clerk session JWT in `Authorization: Bearer <tok
 | `PUT /v1/tracks/{trackId}?name=…` | Uploads one GPX as `application/gpx+xml`; enforces file, count and total caps |
 | `GET /v1/tracks/{trackId}` | Downloads one of the authenticated user's GPX files |
 | `DELETE /v1/tracks/{trackId}` | Deletes the user's track and R2 object |
+| `DELETE /v1/account` | Body: `{ "confirm": "DELETE" }`. Permanently deletes every message, conversation/favorite and track row plus all R2 objects for the user, then deletes the Clerk user through the Clerk Backend API. Returns `503 ACCOUNT_DELETION_NOT_CONFIGURED` (deleting nothing) until `CLERK_SECRET_KEY` is set; returns `502 CLERK_DELETE_FAILED` if cloud data was deleted but Clerk was not, so the client can retry. Required by Google Play's account deletion policy. |
 
 Messages use Unix timestamps in seconds, matching the Android app's current local history. Request batches are bounded. The daily Worker cron removes expired non-favorite messages; writes also prune expired messages for that user. Use the returned `nextCursor` to fetch another page; send no cursor for the first page.
 
@@ -41,11 +42,12 @@ The Pages workflow writes a generated `docs/site/account/config.js` into the dep
 1. Create a Cloudflare D1 database named `meshcrossway-cloud` and an R2 bucket named `meshcrossway-user-data`.
 2. Replace `database_id` in `wrangler.toml` with the D1 ID. Set `CLERK_ISSUER` to the exact issuer for the Clerk application. Configure `CLERK_JWKS_URL` only if the issuer's standard JWKS URL is not correct.
 3. Set `WEB_ORIGIN` to the eventual account-site origin. Native Android calls omit `Origin`; browser calls from other origins are rejected.
-4. Apply all outstanding migrations with Wrangler, then deploy the Worker.
-5. Android builds default to `https://meshcrossway-cloud.meshcrossway.workers.dev`. To use another environment, set Gradle property `cloudApiBaseUrl` locally or the GitHub repository variable `CLOUD_API_BASE_URL`. Do not add service secrets or private credentials to this repository.
+4. Store the Clerk **secret** key as a Worker secret for account deletion: `npx wrangler secret put CLERK_SECRET_KEY` (value `sk_test_…` or `sk_live_…`, matching the instance in `CLERK_ISSUER`). Never commit it or put it in the app or website.
+5. Apply all outstanding migrations with Wrangler, then deploy the Worker.
+6. Android builds default to `https://meshcrossway-cloud.meshcrossway.workers.dev`. To use another environment, set Gradle property `cloudApiBaseUrl` locally or the GitHub repository variable `CLOUD_API_BASE_URL`. Do not add service secrets or private credentials to this repository.
 
 ## Privacy and current scope
 
-The API accepts message text in plaintext after the app has decrypted/decoded the radio payload. The service does not provide client-side end-to-end encryption. The app must disclose cloud storage clearly and require the user to enable it before upload. Authentication, per-user authorization, HTTPS, bounded input and account-scoped object keys are included. Account deletion/export controls and recovery remain future work.
+The API accepts message text in plaintext after the app has decrypted/decoded the radio payload. The service does not provide client-side end-to-end encryption. The app must disclose cloud storage clearly and require the user to enable it before upload. Authentication, per-user authorization, HTTPS, bounded input and account-scoped object keys are included. Account deletion is available in the Android app (Account & sync → Delete account) and on the account website; export controls and recovery remain future work.
 
-The Android sync button is manual in this first slice. It uploads message history for the last seven days plus favorite-chat history, merges messages and favorite changes from the account, and requires the user to sign in and explicitly enable sync. Track sync is separately opt-in. The account site provides cloud track upload, download, rename, and deletion; account deletion/export controls, billing and end-to-end encryption remain future work. Do not switch Clerk to production mode until the account website and multi-device behavior have been validated.
+The Android sync button is manual in this first slice. It uploads message history for the last seven days plus favorite-chat history, merges messages and favorite changes from the account, and requires the user to sign in and explicitly enable sync. Track sync is separately opt-in. The account site provides cloud track upload, download, rename, and deletion; account export controls, billing and end-to-end encryption remain future work. Do not switch Clerk to production mode until the account website and multi-device behavior have been validated.

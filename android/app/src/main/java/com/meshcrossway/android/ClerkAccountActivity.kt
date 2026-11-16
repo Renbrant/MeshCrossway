@@ -1,16 +1,20 @@
 package com.meshcrossway.android
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.view.Gravity
 import android.view.ViewGroup
+import android.view.WindowInsets
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
@@ -40,10 +44,13 @@ class ClerkAccountActivity : Activity() {
         override fun onServiceDisconnected(name: ComponentName) { trackService = null }
     }
 
+    @Suppress("DEPRECATION")
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
-        window.statusBarColor = pageBackground
-        window.navigationBarColor = pageBackground
+        if (Build.VERSION.SDK_INT < 35) {
+            window.statusBarColor = pageBackground
+            window.navigationBarColor = pageBackground
+        }
         bound = bindService(Intent(this, RadioService::class.java), serviceConnection, BIND_AUTO_CREATE)
         trackBound = bindService(Intent(this, TrackService::class.java), trackServiceConnection, BIND_AUTO_CREATE)
         render()
@@ -70,10 +77,14 @@ class ClerkAccountActivity : Activity() {
         header.addView(back)
         root.addView(header)
         root.addView(text("MESHCROSSWAY ACCOUNT", 12, orange), LinearLayout.LayoutParams(-1, dp(34)))
+        root.addView(text("Privacy policy", 14, orange).apply {
+            setPadding(0, 0, 0, dp(10))
+            setOnClickListener { startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://meshcrossway.renbrant.com/privacy/"))) }
+        })
 
         if (!ClerkBridge.isConfigured()) {
             root.addView(cardText("This build does not have a Clerk publishable key. Sign-in becomes available after the Clerk application is configured for the app."))
-            setContentView(root)
+            show(root)
             return
         }
 
@@ -85,6 +96,7 @@ class ClerkAccountActivity : Activity() {
                     render()
                 })
             })
+            root.addView(actionButton("Delete account") { confirmDeleteAccount() }.apply { setBackgroundColor(Color.rgb(170, 40, 40)) })
         } else {
             root.addView(cardText("Sign in or create an account using the providers enabled for MeshCrossway in Clerk."))
             root.addView(actionButton("Sign in or create account") {
@@ -146,7 +158,63 @@ class ClerkAccountActivity : Activity() {
             }.apply { isEnabled = radioService != null && (!tracksEnabled || trackService != null) })
             if (radioService == null || (tracksEnabled && trackService == null)) root.addView(text("Preparing local sync storage…", 13, muted).apply { setPadding(dp(4), dp(8), dp(4), 0) })
         }
-        setContentView(root)
+        show(root)
+    }
+
+    /**
+     * Android 15+ (target SDK 35/36) draws apps edge-to-edge, so pad the page by the
+     * system bar insets and make it scrollable to keep every action reachable.
+     */
+    @Suppress("DEPRECATION")
+    private fun show(root: LinearLayout) {
+        val baseLeft = root.paddingLeft
+        val baseTop = root.paddingTop
+        val baseRight = root.paddingRight
+        val baseBottom = root.paddingBottom
+        val scroll = ScrollView(this).apply {
+            setBackgroundColor(pageBackground)
+            isFillViewport = true
+            addView(root, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        }
+        scroll.setOnApplyWindowInsetsListener { _, insets ->
+            if (Build.VERSION.SDK_INT >= 30) {
+                val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                root.setPadding(baseLeft + bars.left, baseTop + bars.top, baseRight + bars.right, baseBottom + bars.bottom)
+            } else {
+                root.setPadding(baseLeft + insets.systemWindowInsetLeft, baseTop + insets.systemWindowInsetTop, baseRight + insets.systemWindowInsetRight, baseBottom + insets.systemWindowInsetBottom)
+            }
+            insets
+        }
+        setContentView(scroll)
+        scroll.requestApplyInsets()
+    }
+
+    private fun confirmDeleteAccount() {
+        if (!CloudSyncClient.configured()) {
+            Toast.makeText(this, "Account deletion needs the cloud API • use meshcrossway.renbrant.com/delete-account", Toast.LENGTH_LONG).show()
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Delete account?")
+            .setMessage("This permanently deletes your MeshCrossway account and every cloud copy of your messages, favorites and GPX tracks. It cannot be undone.\n\nMessages, tracks, maps and settings stored on this phone are kept.")
+            .setNegativeButton("Cancel", null)
+            .setPositiveButton("Delete permanently") { _, _ ->
+                Toast.makeText(this, "Deleting account…", Toast.LENGTH_SHORT).show()
+                CloudSyncClient.deleteAccount(this) { message, success ->
+                    runOnUiThread {
+                        if (success) {
+                            ClerkBridge.signOut(Runnable {
+                                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                                render()
+                            })
+                        } else {
+                            Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                            render()
+                        }
+                    }
+                }
+            }
+            .show()
     }
 
     private fun cardText(value: String): TextView {

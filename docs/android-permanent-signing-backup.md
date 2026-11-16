@@ -32,7 +32,7 @@ To get the signer fingerprint (enter the password when requested):
 
     keytool -list -v -keystore MeshCrossway-release.p12 -alias meshcrossway-release
 
-Publish by running Actions > Android permanent-key release > Run workflow, selecting the **baseline/android-0.1.0** branch (this is the Android app source branch; `main` hosts the site), and entering the version (0.2.3). The workflow refuses publication unless the five secrets exist, the version matches the Gradle app, and the signed APK's SHA-256 signer certificate matches the pinned fingerprint. A release cannot overwrite an existing version tag.
+Publish by running Actions > Android permanent-key release > Run workflow, selecting the **main** branch (Android source moved to `main` after 0.4.8), and entering the version that matches `android/app/build.gradle`. The workflow refuses publication unless the five secrets exist, the version matches the Gradle app, and the signed APK's SHA-256 signer certificate matches the pinned fingerprint. A release cannot overwrite an existing version tag.
 
 **Never publish a CI debug APK as a public release again.** Keep the .p12 for every future Android version; losing it breaks compatibility.
 
@@ -48,7 +48,7 @@ The original debug signing key is no longer available through the published APK.
 
 1. On the Windows PC, install [official Android Platform Tools](https://developer.android.com/tools/releases/platform-tools) (the `adb.exe` utility) and [Python 3](https://www.python.org/downloads/windows/). Add ADB to PATH, or put the official `platform-tools` directory directly inside your local MeshCrossway project folder.
 2. On the phone, enable **Developer options** (Settings → About phone → Software information → tap Build number seven times) and then **USB debugging** in Developer options. Connect the phone to the PC by USB, unlock it, and approve the computer's debugging authorization.
-3. Download/clone this repository's **Android source branch** `baseline/android-0.1.0`. In Windows Explorer double-click `scripts/MeshCrossway-Backup-Windows.cmd`. The batch launcher detects Python and ADB; no command-line typing or Android root access is necessary.
+3. Download/clone this repository's `main` branch. In Windows Explorer double-click `scripts/MeshCrossway-Backup-Windows.cmd`. The batch launcher detects Python and ADB; no command-line typing or Android root access is necessary.
 4. The utility first verifies the device connection and access to the *debuggable* MeshCrossway package `com.meshcrossway.mobile`. Only then does it temporarily **force-stop** the application to snapshot its SQLite databases and preferences. It **never** uninstalls, wipes, installs or sends data to any server. Your radios may disconnect until the next time you open the app.
 5. A timestamped file, such as `MeshCrossway-migration-20261109-190000-UTC.zip`, is written in **`%USERPROFILE%\MeshCrossway-Backups`**. The script checks SQLite integrity, counts records, validates ZIP CRCs, manifests, settings and backup schemas, and prints the ZIP's SHA-256. It never prints private message content or locations.
 6. **Verify and keep a second copy** of this ZIP outside the app and preferably on another local drive. You can verify a saved file again by opening Command Prompt in the repository and running:
@@ -110,3 +110,7 @@ Android Auto Backup/cloud is deliberately disabled due to the sensitivity of sto
 Verify a same-signature APK upgrade retains all databases and preferences; signing digest remains unchanged across releases; ZIP export and import restore every track point and both radio histories; malformed track backups roll back without deleting the existing records; Android API29 and API35 builds/tests pass.
 
 Official sources: https://developer.android.com/studio/publish/app-signing and https://developer.android.com/identity/data/autobackup
+
+## Google Play
+
+The Play Store build must use this same permanent key as its **app signing key**, so people who installed the GitHub APK can update from Google Play (and the reverse) without uninstalling. See [Google Play release](google-play-release.md).

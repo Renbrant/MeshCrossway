@@ -299,5 +299,32 @@
     Promise.resolve(action).catch((error) => setStatus(error.message || "Track operation failed.", "error-text")).finally(() => { if (button.isConnected) button.disabled = false; });
   });
 
+  const deleteInput = document.getElementById("delete-confirm-input");
+  const deleteButton = document.getElementById("delete-account-button");
+  const deleteStatus = document.getElementById("delete-status");
+  deleteInput.addEventListener("input", () => { deleteButton.disabled = deleteInput.value.trim() !== "DELETE"; });
+  deleteButton.addEventListener("click", async () => {
+    if (deleteInput.value.trim() !== "DELETE") return;
+    if (!window.confirm("Permanently delete your MeshCrossway account and all cloud data? This cannot be undone.")) return;
+    deleteButton.disabled = true;
+    deleteStatus.className = "status-text";
+    deleteStatus.textContent = "Deleting your account…";
+    try {
+      await api("/v1/account", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: "DELETE" }),
+      });
+      deleteStatus.className = "status-text success-text";
+      deleteStatus.textContent = "Your account and cloud data were deleted.";
+      deleteInput.value = "";
+      await clerk.signOut().catch(() => {});
+    } catch (error) {
+      deleteStatus.className = "status-text error-text";
+      deleteStatus.textContent = `Could not delete the account: ${error instanceof Error ? error.message : "unknown error"}. Try again, or open an issue on GitHub if it keeps failing.`;
+      deleteButton.disabled = deleteInput.value.trim() !== "DELETE";
+    }
+  });
+
   void loadClerk();
 })();
