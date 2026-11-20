@@ -1,13 +1,14 @@
-# MeshCrossway Android — 0.4.11 beta
+# MeshCrossway Android — 0.4.12 beta
 
-[Download signed MeshCrossway-0.4.11.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.11/MeshCrossway-0.4.11.apk) · [Release notes and checksums](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.11) · [Installation page](https://meshcrossway.renbrant.com/android/)
+[Download signed MeshCrossway-0.4.12.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.12/MeshCrossway-0.4.12.apk) · [Release notes and checksums](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.12) · [Installation page](https://meshcrossway.renbrant.com/android/)
 
-Current published beta: **0.4.11, versionCode 45**. Android 8.0+ on ARM64; two independent compatible Bluetooth radios for simultaneous Meshtastic and MeshCore. No cross-network forwarding.
+Current published beta: **0.4.12, versionCode 46**. Android 8.0+ on ARM64; two independent compatible Bluetooth radios for simultaneous Meshtastic and MeshCore. No cross-network forwarding.
 
 Install over a compatible permanently signed installation without uninstalling or clearing storage. Back up important data first. Old debug-signed 0.2.2-or-earlier installations require the [migration guide](android-permanent-signing-backup.md). Android normally blocks downgrades to a lower versionCode.
 
 ## Recent changes and limits
 
+- **0.4.12:** Settings → RF coexistence: dashboard of interference between the two radios, Meshtastic transmission on/off, presets applied with verified readback and restart warnings, antenna spacing, and advanced settings with pros and cons.
 - **0.4.11:** each Home radio card shows the radio's own battery beside the Bluetooth bars (Meshtastic level or USB power; MeshCore voltage as approximate charge).
 - **0.4.10:** radio cards keep one height with state and detail on one line; the radio page shows its settings summary as static information in the top card.
 - **0.4.9:** Meshtastic radio settings summary with the tuned LoRa frequency, post-restart check of LoRa saves, and a compact Bluetooth indicator with a small frequency on Home. Field testing remains pending.
@@ -21,7 +22,7 @@ See [version history and source branches](android-version-history.md) for exact 
 
 ## Previous releases (historical details)
 
-The sections below describe earlier development betas and their behavior **at the time**. Use the 0.4.11 link above for the current experimental field beta.
+The sections below describe earlier development betas and their behavior **at the time**. Use the 0.4.12 link above for the current experimental field beta.
 
 ## Channels, links and QR Codes in 0.3.12
 
