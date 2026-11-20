@@ -343,7 +343,7 @@ everyday use.
 | 1 | **Vertical separation.** Place one antenna directly above the other, collinear. Vertical whips have a null along their axis. | I_V ≈ 28 dB at 1 λ (33 cm), ≈ 40 dB at 2 λ (66 cm) | Needs a small mast. Taller mount. |
 | 2 | **More horizontal distance.** For example, one antenna at the mount and the other at the far end of the solar panel. | +6 dB per doubling: ≈ 20 dB at 40 cm, ≈ 24 dB at 66 cm | Longer cable for one radio, small cable loss. |
 | 3 | **Lower transmit power** on the busier radio (usually Meshtastic). | 1 dB per dB. 28 → 22 dBm = 6 dB less power at the other radio (one quarter). | Less range for that network. |
-| 4 | **Turn off relaying (rebroadcast)** on both radios. See [10.1](#101-turning-off-relaying-rebroadcast). | Fewer transmissions = proportionally less loss on the other radio. In a busy mesh, loss can drop from over 10 % to about 1 %. | Less help to the mesh. Does not reduce the peak power at the other radio. |
+| 4 | **Turn off relaying and other automatic transmissions** (position, telemetry) on both radios. See [10.1](#101-turning-off-relaying-rebroadcast) to [10.3](#103-background-transmission-budget). | Fewer transmissions = proportionally less loss on the other radio. In a busy mesh, loss can drop from over 10 % to about 1 %. | Less help to the mesh. Does not reduce the peak power at the other radio. |
 | 5 | **Filtering.** | Not practical. 3.65 MHz apart at 908 MHz needs a cavity filter per radio. SAW filters for the 902–928 MHz band pass both channels. | Large, heavy, expensive. |
 | 6 | **Separate the radios physically** (for example one on the roof, one inside the car). | Car body adds large isolation. | Loses the single-mount concept. |
 
@@ -383,6 +383,121 @@ reasonable choice and friendly to the mesh.
 **Exception.** Where there is little or no fixed infrastructure (remote roads, mountains, off-grid
 events), consider turning relaying back on in Meshtastic for that trip. There, helping the mesh is
 worth more than a few lost packets on the other radio, and traffic is usually low anyway.
+
+### 10.2 Minimum-transmission configuration
+
+Relaying is only one source of automatic transmissions. Each radio can also transmit on its own,
+without the user doing anything: node info, position, telemetry and replies to other nodes. The
+tables below list every setting that reduces those background transmissions.
+
+Messages, adverts and requests that **you** send are not included here. They are the reason to
+have the radios and cannot be avoided. The goal is to make every other transmission as rare as
+possible.
+
+Setting names follow the official Meshtastic and MeshCore apps. MeshCrossway exposes many of them;
+for anything it does not show, use the official app once, then go back to MeshCrossway.
+
+#### Meshtastic
+
+| Area | Setting | Recommended value | Why |
+| --- | --- | --- | --- |
+| Device | Role | **Client** (or **Client Mute**) | App-connected messaging device. |
+| Device | Rebroadcast Mode | **None** | No relaying of other nodes' packets (section 10.1). |
+| Device | Node Info Broadcast Interval | **The longest value the app allows** (default 3 h, minimum 1 h) | Node info is the largest automatic packet (≈ 1 s on air). It cannot be turned off completely, because other nodes need it to know your name and public key. |
+| Position | GPS Mode | **Disabled / Not present** | The reference Heltec V4 has no GPS. Make sure the firmware is not waiting for one. |
+| Position | Fixed Position | **Off** | A fixed position is broadcast like a GPS position. |
+| Position | Smart Position | **Off** | With smart position on, a moving car can send a position as often as every 30 s (default minimum interval 30 s and minimum distance 100 m). This is by far the largest automatic source while driving. |
+| Position | Position Broadcast Interval | **The longest value allowed** | Fallback in case a position source is ever present. |
+| Channels | Position sharing / precision on each channel | **Off / disabled** | Master switch: no position is sent on that channel, whatever the other settings say. |
+| Phone app | Provide phone location to mesh | **Off** | Without this, the phone feeds its GPS position to the radio, which then broadcasts it. |
+| Telemetry module | Device metrics to the mesh | **Off** (on firmware that has this switch), otherwise **the longest interval allowed** | Battery and channel-use reports, by default about every 30 min. The phone still gets them over Bluetooth. |
+| Telemetry module | Environment, air quality, power and health metrics | **Off** | Only transmit if a sensor is fitted, but leave them off. |
+| Modules | Neighbor Info | **Off** | Periodic neighbour reports. Off by default. |
+| Modules | Range Test, Store & Forward, Detection Sensor, Paxcounter | **Off** | All can transmit on their own. Off by default. |
+| Modules | MQTT | **Off**, or at least **downlink off** | Downlinked MQTT messages are transmitted over LoRa. |
+| LoRa | Transmit enabled | **On** | Turning it off makes the radio receive-only. That removes all interference from it, but you can no longer send. |
+| LoRa | TX power | **Lower than maximum** if your range allows (for example 20–22 dBm) | Does not reduce the number of transmissions, but reduces the peak power at the other radio (section 7). |
+
+What still cannot be removed on Meshtastic:
+
+- Node info at the configured interval.
+- Replies triggered by other nodes: acknowledgements of direct messages sent to you, node-info
+  replies when a new node asks for yours, and traceroute replies.
+
+#### MeshCore (Companion Radio BLE firmware)
+
+| Area | Setting | Recommended value | Why |
+| --- | --- | --- | --- |
+| Firmware | Firmware type | **Companion Radio (BLE)** | Companions do not relay. Only Repeater and Room Server firmware forward traffic. |
+| Firmware | Companion repeat mode | **Off** | Only exists for off-grid radio settings. Not available on the public USA/Canada preset. |
+| Adverts | Send advert | **Only when needed**, prefer **zero-hop** | MeshCore companions only advertise when the user asks, so there is no automatic advert to turn off. A zero-hop advert is heard only by nearby nodes and is not relayed. |
+| Privacy | Location telemetry | **Deny** | Otherwise other nodes can ask for your location and the radio answers. |
+| Privacy | Sensor telemetry | **Deny** | Same, for sensor data. |
+| Privacy | Extra acknowledgements | **Off** | When on, each acknowledgement is sent more than once. |
+| Privacy | Share location in adverts | **Off** (optional) | Does not add transmissions, but keeps your position out of adverts. |
+| Contacts | Manual contact approval | **Your choice** | Does not affect transmissions. |
+| Radio | TX power | **Lower than maximum** if your range allows | Same reason as for Meshtastic. |
+
+What still cannot be removed on MeshCore:
+
+- Acknowledgements (and return paths) for direct messages other people send to you.
+- Answers to status or telemetry requests you have allowed.
+
+### 10.3 Background transmission budget
+
+The figures below estimate how much each radio transmits **with no action from the user**, and the
+resulting loss on the other radio, using the airtimes of section 8.1 and the loss model of section
+8.2.
+
+**Assumed packet airtimes:**
+
+| Radio | Packet | Approx. LoRa payload | Airtime |
+| --- | --- | --- | --- |
+| Meshtastic LongFast | Node info | 110 bytes | ≈ 1.05 s |
+| Meshtastic LongFast | Position | 60 bytes | ≈ 0.68 s |
+| Meshtastic LongFast | Device telemetry | 50 bytes | ≈ 0.64 s |
+| Meshtastic LongFast | Relayed packet (average) | 50–100 bytes | ≈ 0.75 s |
+| MeshCore SF7 / 62.5 kHz | Advert | 130 bytes | ≈ 0.45 s |
+| MeshCore SF7 / 62.5 kHz | Acknowledgement | 8 bytes | ≈ 0.09 s |
+| MeshCore SF7 / 62.5 kHz | Telemetry answer | 40 bytes | ≈ 0.18 s |
+
+#### Meshtastic background transmissions and loss on the MeshCore radio
+
+The relaying rates (120 and 600 packets per hour) represent a normal and a busy mesh. Position
+figures only apply if the radio has a position source (GPS, fixed position or the phone's location).
+
+| Scenario | Automatic packets per hour | Airtime per hour | Share of time transmitting | Expected loss on MeshCore |
+| --- | --- | --- | --- | --- |
+| Defaults, parked (position every 15 min, telemetry every 30 min, node info every 3 h) | ≈ 6 | ≈ 4 s | 0.12 % | **≈ 0.2 %** |
+| Defaults, driving with smart position (position every ≈ 30 s) | ≈ 122 | ≈ 84 s | 2.3 % | **≈ 3 %** |
+| Defaults, parked, relaying a normal mesh (120 / h) | ≈ 126 | ≈ 94 s | 2.6 % | **≈ 3.3 %** |
+| Defaults, driving, relaying a busy mesh (600 / h) | ≈ 722 | ≈ 534 s | 14.8 % | **≈ 17 %** |
+| **Minimum configuration** (node info every 3 h only) | ≈ 0.3 | ≈ 0.4 s | 0.01 % | **≈ 0.01 %** |
+| Minimum configuration + 2 replies per hour to other nodes | ≈ 2.3 | ≈ 2.5 s | 0.07 % | **≈ 0.08 %** |
+| Minimum configuration, node info every 1 h, + 2 replies per hour | ≈ 3 | ≈ 3.2 s | 0.09 % | **≈ 0.1 %** |
+
+#### MeshCore background transmissions and loss on the Meshtastic radio
+
+| Scenario | Automatic packets per hour | Airtime per hour | Expected loss on Meshtastic |
+| --- | --- | --- | --- |
+| Companion, telemetry denied, extra ACKs off, no incoming direct messages | 0 | 0 s | **0 %** |
+| Same, with 10 incoming direct messages per hour (10 ACKs) | ≈ 10 | ≈ 1 s | **≈ 0.2 %** |
+| Same, with extra acknowledgements on (≈ 2 ACKs per message) | ≈ 20 | ≈ 2 s | **≈ 0.4 %** |
+
+#### Reading the budget
+
+- With the minimum configuration, **background transmissions practically disappear**: about one
+  second per hour for Meshtastic and nothing at all for the MeshCore companion. Almost all remaining
+  interference then comes from messages the user sends, which is the expected and unavoidable part.
+- The two largest automatic sources are **relaying** and **smart position while driving**. Turning
+  off those two alone removes more than 99 % of the background airtime of the Meshtastic radio in
+  the busy scenario.
+- These settings reduce how **often** the other radio is overloaded. They do not reduce **how
+  strongly** it is overloaded each time. For the hardware margin, see sections 7 and 10 (measures 1
+  to 3).
+- Lower background traffic also saves battery, which matters for a solar-powered mount.
+- The cost is visibility: other users will not see your position or battery on the map, and node
+  info about you will refresh less often. For a vehicle node that is usually acceptable.
 
 ---
 
@@ -488,6 +603,10 @@ or a guarantee.
 - Meshtastic documentation: LoRa configuration and modem presets (US LongFast, 906.875 MHz).
 - MeshCore documentation and community guides: USA/Canada recommended preset
   (910.525 MHz, SF7, 62.5 kHz, CR 4:5).
+- MeshCore FAQ: companion clients only advertise when the user asks; repeaters advertise on a
+  timer. MeshCore companion protocol: `CMD_SEND_SELF_ADVERT` (zero-hop or flood).
+- Meshtastic documentation: device roles (Client, Client Mute), rebroadcast modes, position,
+  telemetry and module settings.
 
 ---
 
