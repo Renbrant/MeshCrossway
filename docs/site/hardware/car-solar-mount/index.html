@@ -24,12 +24,22 @@ img{max-width:100%;height:auto}.mount-hero>*,.photo-grid>*,.downloads>*,.buy-lis
 .downloads .card .button{margin-top:16px}
 .buy-list{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.buy-list .card{display:flex;flex-direction:column}.buy-list .card p{flex:1}.buy-list .button{margin-top:16px;align-self:flex-start}.support-note{margin-top:24px;border:1px solid #57402f;border-left:3px solid var(--accent);background:#1f1915;border-radius:14px;padding:18px 20px;color:#e6ddd4}
 .rf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}.rf-grid>*{min-width:0}.rf-note{border:1px solid #74572d;border-left:4px solid var(--accent);background:#261d10;border-radius:14px;padding:22px 24px;color:#ffd69e;font-size:17px}.rf-note strong{color:#fff}.rf-status{margin-top:16px;border:1px solid #2f5a3c;background:#13201a;border-radius:14px;padding:16px 20px;color:#bfe8cb}
+.rf-warning{background:#3a1410;border-block:2px solid #e2533b}.rf-warning .wrap{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:start;padding:34px 0}.rf-warning-icon{font-size:56px;line-height:1;color:#ff6a4d}.rf-warning h2{font-size:clamp(26px,3.4vw,40px);line-height:1.15;letter-spacing:-.02em;margin:0 0 12px;color:#fff}.rf-warning p{margin:0 0 10px;color:#ffd9cf;font-size:17px;max-width:900px}.rf-warning strong{color:#fff}.rf-warning .actions{margin-top:16px}.rf-warning .button.primary{background:#ff6a4d;border-color:#ff6a4d;color:#1a0805}@media(max-width:800px){.rf-warning .wrap{grid-template-columns:1fr;gap:10px}.rf-warning-icon{font-size:44px}}
 @media(max-width:800px){.mount-hero,.photo-grid,.downloads,.buy-list,.rf-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body class="landing">
 <nav class="nav"><div class="wrap navin"><a class="brand" href="../../" aria-label="MeshCrossway home"><img src="../../assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44"></a><details class="site-menu"><summary>Explore</summary><div class="site-menu-panel"><a href="../">Hardware</a><a href="../../android/">Android app</a><a href="../../esp32/">ESP32 project</a><a href="../../faq/">FAQ</a><a href="https://github.com/Renbrant/MeshCrossway">GitHub repository</a></div></details><a class="cta" href="#download-stl">Download STL</a></div></nav>
 <main>
+<section class="rf-warning" role="alert" aria-labelledby="rf-warning-title"><div class="wrap">
+<div class="rf-warning-icon" aria-hidden="true">⚠</div>
+<div>
+<h2 id="rf-warning-title">Warning: two radios with antennas 20 cm apart interfere with each other.</h2>
+<p>While one radio transmits, <strong>the other one is overloaded and cannot receive</strong>. At full power (the high-power Heltec V4 reaches 28 dBm), the receiving radio gets about <strong>+8 to +14 dBm</strong> at its antenna input, <strong>above conservative design margins</strong> for LoRa receivers. Long-term effects on the hardware are not characterised.</p>
+<p>The reference build is used every day and <strong>works</strong>, with relaying, automatic position and telemetry turned off to keep losses near zero. Build it only if you understand and accept this limitation, and read the analysis before changing transmit power, boards, antennas or spacing.</p>
+<div class="actions"><a class="button primary" href="https://github.com/Renbrant/MeshCrossway/blob/main/hardware/3D/car-dual-solar-mount/RF-COEXISTENCE.md" target="_blank" rel="noopener">Read the interference analysis on GitHub ↗</a><a class="button secondary" href="#rf-coexistence">Summary on this page</a></div>
+</div>
+</div></section>
 <section class="section"><div class="wrap mount-hero">
 <div>
 <div class="eyebrow">3D-print suggestion · car roof</div>
