@@ -539,26 +539,36 @@ public final class MainActivity extends Activity {
         dashboardTile(tools,"TRACKS",trackValue,trackDetail,ORANGE,this::manageTracks,false);
         rfHomeDashboard();
     }
-    /** Home: compact interference health with the two RF coexistence gauges; tap opens the full page. */
+    /** Home: one slim row with the interference health as two thin bars; tap opens the full page. */
     private void rfHomeDashboard(){
         ProtocolClient mt=rfClient(RadioProfile.MESHTASTIC),mc=rfClient(RadioProfile.MESHCORE);
         if(mt!=null||mc!=null)rfRead(mt,mc);
         RfCoexistence.Report r=RfCoexistence.analyze(mt,mc,rfGeometry());RfCoexistence.Level level=r.overall();int color=rfLevelColor(level);
-        LinearLayout panel=column();GradientDrawable background=surface(PANEL);background.setStroke(dp(1),level==RfCoexistence.Level.UNKNOWN?PANEL2:color);
-        panel.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33ffffff),background,null));panel.setPadding(dp(12),dp(11),dp(12),dp(8));
-        LinearLayout heading=row();TextView label=text("RF COEXISTENCE",11,ORANGE);label.setTypeface(null,Typeface.BOLD);label.setLetterSpacing(.05f);heading.addView(label,new LinearLayout.LayoutParams(0,-2,1));
-        String state=level==RfCoexistence.Level.GOOD?"Low interference":level==RfCoexistence.Level.ATTENTION?"Some interference":level==RfCoexistence.Level.HIGH?"High interference risk":"Connect radios to analyse";
-        TextView status=text(state,12,level==RfCoexistence.Level.UNKNOWN?MUTED:color);status.setTypeface(null,Typeface.BOLD);heading.addView(status);heading.addView(new NavIcon(this,"arrow",MUTED),new LinearLayout.LayoutParams(dp(14),dp(14)));panel.addView(heading);
-        LinearLayout gauges=row();gauges.setPadding(0,dp(6),0,0);
+        LinearLayout panel=row();panel.setPadding(dp(14),dp(10),dp(14),dp(10));panel.setMinimumHeight(dp(64));
+        panel.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33ffffff),surface(PANEL),null));
+        panel.addView(new NavIcon(this,"radio",level==RfCoexistence.Level.UNKNOWN?MUTED:color),new LinearLayout.LayoutParams(dp(24),dp(24)));
+        LinearLayout body=column();body.setPadding(dp(14),0,dp(8),0);
+        String state=level==RfCoexistence.Level.GOOD?"Low":level==RfCoexistence.Level.ATTENTION?"Some":level==RfCoexistence.Level.HIGH?"High":"—";
+        LinearLayout heading=row();TextView title=text("RF interference",15,WHITE);title.setTypeface(null,Typeface.BOLD);heading.addView(title,new LinearLayout.LayoutParams(0,-2,1));
+        TextView status=text(level==RfCoexistence.Level.UNKNOWN?"Connect radios":state+(r.mtConnected&&r.mt.txOff?" · MT TX off":""),12,level==RfCoexistence.Level.UNKNOWN?MUTED:color);status.setTypeface(null,Typeface.BOLD);heading.addView(status);body.addView(heading);
         double loss=r.worstLoss(),peak=r.worstPeak();boolean hasPeak=peak>-99;
-        gauges.addView(new RfGauge(this,rfLossPosition(r),(r.mt.known||r.mc.known)?RfCoexistence.percent(loss):"—","Packets lost to the other radio",rfLevelColor(r.traffic),PANEL2,WHITE,MUTED),new LinearLayout.LayoutParams(0,-2,1));
-        gauges.addView(new RfGauge(this,rfPeakPosition(r),hasPeak?RfCoexistence.dbm(peak):"—","Peak at the other radio",rfLevelColor(r.hardware),PANEL2,WHITE,MUTED),new LinearLayout.LayoutParams(0,-2,1));
-        panel.addView(gauges);
-        if(r.mtConnected&&r.mt.txOff){TextView tx=text("Meshtastic transmission is off (receive only)",12,RF_GREEN);tx.setPadding(0,dp(2),0,0);panel.addView(tx);}
-        else if(r.changes()>0){TextView hint=text(r.changes()+" setting(s) can reduce interference · tap to review",12,MUTED);hint.setPadding(0,dp(2),0,0);panel.addView(hint);}
-        panel.setFocusable(true);panel.setContentDescription("RF coexistence. "+state+". Packets lost "+RfCoexistence.percent(loss)+". Peak "+(hasPeak?RfCoexistence.dbm(peak):"unknown"));
+        LinearLayout bars=row();bars.setPadding(0,dp(6),0,0);
+        bars.addView(rfMiniBar("Loss",(r.mt.known||r.mc.known)?RfCoexistence.percent(loss):"—",rfLossPosition(r),rfLevelColor(r.traffic)),new LinearLayout.LayoutParams(0,-2,1));
+        LinearLayout.LayoutParams second=new LinearLayout.LayoutParams(0,-2,1);second.leftMargin=dp(12);
+        bars.addView(rfMiniBar("Peak",hasPeak?RfCoexistence.dbm(peak):"—",rfPeakPosition(r),rfLevelColor(r.hardware)),second);
+        body.addView(bars);panel.addView(body,new LinearLayout.LayoutParams(0,-2,1));
+        panel.addView(new NavIcon(this,"arrow",MUTED),new LinearLayout.LayoutParams(dp(16),dp(16)));
+        panel.setFocusable(true);panel.setContentDescription("RF interference "+state+". Packets lost "+RfCoexistence.percent(loss)+". Peak at the other radio "+(hasPeak?RfCoexistence.dbm(peak):"unknown"));
         panel.setOnClickListener(v->openSettings("rf_coexistence",null));
-        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=dp(5);results.addView(panel,lp);
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=dp(6);results.addView(panel,lp);
+    }
+    /** Label + value over a 4 dp bar filled to the gauge position in the level colour. */
+    private View rfMiniBar(String label,String value,float position,int color){
+        LinearLayout box=column();LinearLayout top=row();top.addView(text(label,11,MUTED),new LinearLayout.LayoutParams(0,-2,1));TextView v=text(value,11,WHITE);v.setTypeface(null,Typeface.BOLD);top.addView(v);box.addView(top);
+        LinearLayout track=row();GradientDrawable bg=new GradientDrawable();bg.setColor(PANEL2);bg.setCornerRadius(dp(2));track.setBackground(bg);
+        float f=Float.isNaN(position)?0:Math.max(.03f,Math.min(1,position));View fill=new View(this);GradientDrawable fg=new GradientDrawable();fg.setColor(Float.isNaN(position)?PANEL2:color);fg.setCornerRadius(dp(2));fill.setBackground(fg);
+        track.addView(fill,new LinearLayout.LayoutParams(0,dp(4),f));if(f<1)track.addView(new View(this),new LinearLayout.LayoutParams(0,dp(4),1-f));
+        LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-1,dp(4));tp.topMargin=dp(3);box.addView(track,tp);return box;
     }
     private float rfLossPosition(RfCoexistence.Report r){if(!r.mt.known&&!r.mc.known)return Float.NaN;double loss=r.worstLoss();return (float)(loss<.01?loss/.01/3:loss<.05?1/3f+(loss-.01)/.04/3:2/3f+Math.min(1,(loss-.05)/.10)/3);}
     private float rfPeakPosition(RfCoexistence.Report r){double peak=r.worstPeak();return peak>-99?(float)Math.max(0,Math.min(1,(peak+10)/30)):Float.NaN;}
@@ -1537,7 +1547,7 @@ public final class MainActivity extends Activity {
     private void toggleMtConfig(ProtocolClient c,int type,int field,String title){boolean current=c.mtConfigFlag(type,field);new AlertDialog.Builder(this).setTitle(title).setMessage("Set this setting to "+(current?"off":"on")+"?"+(type==6&&current?" Bluetooth will disconnect and must be re-enabled on the radio or through USB to reconnect.":" The radio may restart; settings will be verified after reconnection.")).setPositiveButton("Save",(d,w)->mtCommand(client->client.setMtConfigField(type,field,current?0:1))).setNegativeButton("Cancel",null).show();}
     private void mtSecuritySettings(ProtocolClient c){if(!mtLoaded(c,c.mtConfigLoaded(7),()->mtCommand(client->client.requestMtConfig(7))))return;if(!c.mtConfigLoaded(7))mtCommand(client->client.requestMtConfig(7));byte[] sec=c.mtConfig(7);List<Wire.F> fields=Wire.fields(sec);section(results,"PACKET AUTHENTICITY");String[] policy={"Compatible · accept unsigned","Balanced · sign, accept unsigned","Strict · require signatures"};int selected=(int)Wire.number(fields,9,0);menuRow(group(results),"settings","Protection level",(c.mtHasSignatures?policy[Math.min(2,Math.max(0,selected))]:"Unsupported by connected firmware"),c.mtHasSignatures?()->choice("Protection level",policy,selected,i->mtConfirm("Packet protection",true,()->mtCommand(client->client.setMtConfigField(7,9,i)))):null,RADIO_MT);section(results,"KEYS & LOGS");LinearLayout logs=group(results);menuRow(logs,"info","Admin keys",Long.toString(fields.stream().filter(f->f.tag==3).count())+" configured",null,RADIO_MT);toggleRow(logs,"Serial Console","Serial Console over the Stream API",c.mtConfigFlag(7,5),on->mtConfirm("Serial Console",true,()->mtCommand(client->client.setMtConfigField(7,5,on?1:0))));toggleRow(logs,"Debug Logs","Output live debug logging over serial and Bluetooth",Wire.number(fields,6,0)!=0,on->mtConfirm("Debug Logs",true,()->mtCommand(client->client.setMtConfigField(7,6,on?1:0))));menuRow(logs,"info","Managed Device",Wire.number(fields,4,0)!=0?"Enabled · configured remotely":"Disabled",null,RADIO_MT);results.addView(text("Private keys are not displayed here. Key generation, backup and restoration are not yet implemented.",13,MUTED));}
     // ------------------------------------------------------------------ RF coexistence page
-    private final List<RfCoexistence.Step> rfQueue=new ArrayList<>();private RfCoexistence.Step rfActive;private String rfQueueName="",rfQueueStatus="";private int rfQueueTotal;private long rfStepAt,rfStatsAt;
+    private boolean rfAdvancedOpen;private final List<RfCoexistence.Step> rfQueue=new ArrayList<>();private RfCoexistence.Step rfActive;private String rfQueueName="",rfQueueStatus="";private int rfQueueTotal;private long rfStepAt,rfStatsAt;
     private static final int RF_AMBER=0xffe0a43a,RF_RED=0xffe2533b,RF_GREEN=0xff3fae7a;
     private ProtocolClient rfClient(RadioProfile p){RadioService.Session s=service==null?null:service.sessions.get(p);return s!=null&&s.verified&&s.client!=null&&s.client.ready?s.client:null;}
     private RfCoexistence.Geometry rfGeometry(){SharedPreferences p=getSharedPreferences("ui",MODE_PRIVATE);return new RfCoexistence.Geometry(p.getInt("rfSpacingCm",RfCoexistence.DEFAULT_SPACING_CM),p.getBoolean("rfVertical",false));}
@@ -1631,11 +1641,14 @@ public final class MainActivity extends Activity {
             String sub=p.summary+"\n"+(pending.isEmpty()?"✓ Already applied":pending.size()+" change(s)"+(restarts>0?" · ⚠ Meshtastic restarts "+(restarts==1?"once":"up to "+restarts+" times"):" · no restart"));
             menuRow(card,p==RfCoexistence.Profile.MINIMUM?"settings":"info",p.title+(p==RfCoexistence.Profile.MINIMUM?" (recommended)":""),sub,busy||pending.isEmpty()?null:()->rfConfirmSteps(p.title,pending),p==RfCoexistence.Profile.MINIMUM?RF_GREEN:ORANGE);}
         TextView presetNote=text("Presets never change frequencies or channels' keys, and never turn transmission off. Changes are applied one at a time and each one is read back from the radio.",12,MUTED);presetNote.setPadding(dp(4),dp(6),dp(4),0);results.addView(presetNote);
-        // Antenna spacing
-        section(results,"ANTENNA SPACING");menuRow(group(results),"radio",geometry.label(),String.format(Locale.ROOT,"≈ %.0f dB isolation between the antennas. Tap to change.",r.isolationDb),this::rfChooseSpacing,ORANGE);
-        // Advanced
-        section(results,"ADVANCED SETTINGS · MESHTASTIC");rfItems(r.mtItems,mt,true);
-        section(results,"ADVANCED SETTINGS · MESHCORE");rfItems(r.mcItems,mc,false);
+        // Advanced: collapsed by default so the basic setup stays simple.
+        LinearLayout advanced=group(results);LinearLayout.LayoutParams ap=(LinearLayout.LayoutParams)advanced.getLayoutParams();ap.topMargin=dp(14);advanced.setLayoutParams(ap);
+        menuRow(advanced,"settings",(rfAdvancedOpen?"▾ ":"▸ ")+"Advanced settings",rfAdvancedOpen?"Tap to hide":"Every setting one by one, with pros and cons, and the antenna spacing"+(r.changes()>0?" · "+r.changes()+" can be improved":""),()->{rfAdvancedOpen=!rfAdvancedOpen;rebuildContent();},ORANGE);
+        if(rfAdvancedOpen){
+            section(results,"ANTENNA SPACING");menuRow(group(results),"radio",geometry.label(),String.format(Locale.ROOT,"≈ %.0f dB isolation between the antennas. Tap to change.",r.isolationDb),this::rfChooseSpacing,ORANGE);
+            section(results,"MESHTASTIC");rfItems(r.mtItems,mt,true);
+            section(results,"MESHCORE");rfItems(r.mcItems,mc,false);
+        }
         rfLinks();
     }
     private LinearLayout.LayoutParams rfHalf(int left){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(0,-2,1);p.leftMargin=left;return p;}
