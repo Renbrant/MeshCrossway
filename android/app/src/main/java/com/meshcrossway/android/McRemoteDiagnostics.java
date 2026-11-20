@@ -21,6 +21,8 @@ final class McRemoteDiagnostics {
     private final LinkedHashMap<String,Long> lastRequested=new LinkedHashMap<>();
     private final LinkedHashMap<String,Neighbors> neighborLists=new LinkedHashMap<>();
     Result pending;
+    /** The request that most recently completed successfully. */
+    Result lastCompleted;
     Neighbors allNeighbors(String key){return neighborLists.get(key.toLowerCase(Locale.ROOT));}
     long revision;
 
@@ -227,7 +229,7 @@ final class McRemoteDiagnostics {
             }
             pending.state="Received from repeater (tag-correlated)";
             pending.completedAt=now;
-            pending=null;revision++;
+            lastCompleted=pending;pending=null;revision++;
         }catch(IllegalArgumentException malformed){
             // Only expose envelope dimensions, never raw response bytes, public keys,
             // packet identifiers or private payloads in a support screenshot.
