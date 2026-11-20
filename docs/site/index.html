@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="./assets/site.css"><link rel="stylesheet" href="./assets/landing.css?v=20261119b">
 <link rel="icon" type="image/png" href="./assets/meshcrossway-favicon.png"><link rel="apple-touch-icon" href="./assets/meshcrossway-app-touch-icon.png">
 <script src="./assets/landing.js" defer></script>
+<style>.rf-feature{display:grid;grid-template-columns:minmax(0,.55fr) minmax(0,1fr);gap:56px;align-items:start}.rf-feature>*{min-width:0}.rf-phone{margin:0;max-width:340px}.rf-phone img{width:100%;height:auto;display:block;border:1px solid #3a434d;border-radius:18px}.rf-points{list-style:none;padding:0;margin:0 0 24px;display:grid;gap:16px}.rf-points li{color:var(--muted);font-size:16px;border-left:3px solid var(--accent);padding-left:16px}.rf-points strong{color:#fff;display:block;margin-bottom:2px}.rf-home img{width:100%;height:auto;display:block;border:1px solid #3a434d;border-radius:14px}@media(max-width:800px){.rf-feature{grid-template-columns:1fr;gap:28px}.rf-phone{margin:0 auto}}</style>
 </head>
 <body class="landing">
 <a class="skip" href="#main">Skip to content</a>
@@ -55,6 +56,23 @@
 <figure><a class="image-zoom" href="./media/android-2026-11-15/conversation.webp"><img src="./media/android-2026-11-15/conversation.webp" alt="MeshCore channel conversation with messages, hop counts and expandable reception details" width="709" height="1536" loading="lazy"></a><figcaption><h3>Look closer at each message.</h3><p>Chat on either network and open the available reception details, including hop counts and signal information.</p></figcaption></figure>
 </div><p class="small muted">Screenshots shared on November 15, 2026, from a real two-radio setup. Appearance and features may change as the beta develops. Map markers show stored positions, not guaranteed live availability.</p>
 </div></section>
+<section class="section" id="rf-coexistence"><div class="wrap">
+<div class="section-heading"><div class="eyebrow">Two radios, side by side</div><h2>See and reduce the<br>interference between them.</h2><p class="sectionintro">When both radios sit close together, one cannot receive while the other transmits. MeshCrossway reads the real settings of both radios and shows how much they disturb each other.</p></div>
+<div class="rf-feature">
+<figure class="rf-phone"><a class="image-zoom" href="./media/rf-coexistence/rf-coexistence-page.webp"><img src="./media/rf-coexistence/rf-coexistence-page.webp" alt="RF coexistence page with a status banner, gauges for packets lost and peak power at the other radio, and a card for each radio" width="709" height="1270" loading="lazy"></a></figure>
+<div>
+<ul class="rf-points">
+<li><strong>Dashboard from your real settings.</strong> Estimated packets lost to the other radio, peak power reaching the other radio, and how much each radio transmits on its own every hour, next to the airtime the radios measure themselves.</li>
+<li><strong>One-tap presets.</strong> Minimum interference, Balanced or Help the mesh. Each change is read back from the radio, and the app tells you beforehand when the Meshtastic radio will restart.</li>
+<li><strong>Transmit on or off.</strong> Make the Meshtastic radio receive-only when you are not using it, and turn it back on over Bluetooth.</li>
+<li><strong>Advanced settings when you want them.</strong> Every setting of both radios with its pros and cons, plus the spacing of your antennas.</li>
+<li><strong>Health at a glance.</strong> A slim row on Home shows the same two values as thin bars.</li>
+</ul>
+<a class="image-zoom rf-home" href="./media/rf-coexistence/home-rf-row.webp"><img src="./media/rf-coexistence/home-rf-row.webp" alt="Home screen radio cards above the slim RF interference row with Loss and Peak bars" width="864" height="412" loading="lazy"></a>
+<p class="small muted" style="margin-top:14px">Available in Android 0.4.12 and later. Figures are estimates. <a style="text-decoration:underline" href="https://github.com/Renbrant/MeshCrossway/blob/main/hardware/3D/car-dual-solar-mount/RF-COEXISTENCE.md">Read the technical analysis</a>.</p>
+</div>
+</div>
+</div></section>
 <section class="section" id="features"><div class="wrap">
 <div class="section-heading"><div class="eyebrow">More ways to use your mesh</div><h2>From your first message<br>to your next trip.</h2></div>
 <div class="feature-grid">
@@ -63,7 +81,7 @@
 <article><h3>Your routes, saved</h3><p>Record tracks and export GPX files to keep a record of your outings or use them in other mapping tools.</p></article>
 <article><h3>Favorites &amp; recent contacts</h3><p>Find people and repeaters, keep favorites close and filter contacts by network or recent activity.</p></article>
 <article><h3>A view from your computer</h3><p>Enable optional Remote Access on your phone to use the browser workspace from a computer on the same local Wi-Fi.</p></article>
-<article><h3>Make it feel like yours</h3><p>Choose app colors and backgrounds, adjust notifications and back up your chats, settings and tracks.</p></article>
+<article><h3>Two radios, less interference</h3><p>See how much your two radios disturb each other, apply a preset to cut automatic transmissions, or switch Meshtastic transmission off and back on.</p></article><article><h3>Make it feel like yours</h3><p>Choose app colors and backgrounds, adjust notifications and back up your chats, settings and tracks.</p></article>
 </div></div></section>
 <section class="section" id="on-the-road"><div class="wrap">
 <div class="road-heading"><div><div class="eyebrow">One setup, many ways to carry it</div><h2>Ready for your<br>next outing.</h2></div><p class="sectionintro">Carry your radios in a pack, use them at home or build a setup for your vehicle. Bluetooth gives you flexibility in where you place them, within connection range.</p></div>
