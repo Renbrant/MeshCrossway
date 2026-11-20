@@ -49,7 +49,8 @@ of isolation between the radios. The channels do not overlap (906.875 MHz vs 910
 while one radio transmits, the other one is overloaded and cannot receive, and at high transmit
 power the receiving radio's front end sees more power than conservative design margins allow.
 The reference build is in daily use and works, with a small packet loss that depends on how much
-each radio transmits.
+each radio transmits. The reference build keeps that loss low by turning off relaying
+(Meshtastic Rebroadcast Mode set to None; the MeshCore Companion firmware does not relay).
 
 Read the full technical analysis, mitigation options and test procedure in
 [**RF-COEXISTENCE.md**](RF-COEXISTENCE.md) before changing transmit power, boards or antenna spacing.

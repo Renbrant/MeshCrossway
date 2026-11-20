@@ -314,6 +314,8 @@ Notes:
   shows the real share of time it spends transmitting.
 - A MeshCore companion radio does not relay, so it transmits only when you send something, plus
   adverts and acknowledgements. It is usually the quieter of the two.
+- Turning off relaying on the Meshtastic radio removes the relayed traffic and keeps only its own
+  transmissions. See [10.1](#101-turning-off-relaying-rebroadcast).
 - Both protocols have retries and redundancy (multiple relays, acknowledgements), so a lost
   packet is often recovered by a repeat. A few percent of loss is usually invisible to the user.
 
@@ -341,12 +343,46 @@ everyday use.
 | 1 | **Vertical separation.** Place one antenna directly above the other, collinear. Vertical whips have a null along their axis. | I_V ≈ 28 dB at 1 λ (33 cm), ≈ 40 dB at 2 λ (66 cm) | Needs a small mast. Taller mount. |
 | 2 | **More horizontal distance.** For example, one antenna at the mount and the other at the far end of the solar panel. | +6 dB per doubling: ≈ 20 dB at 40 cm, ≈ 24 dB at 66 cm | Longer cable for one radio, small cable loss. |
 | 3 | **Lower transmit power** on the busier radio (usually Meshtastic). | 1 dB per dB. 28 → 22 dBm = 6 dB less power at the other radio (one quarter). | Less range for that network. |
-| 4 | **Reduce relayed traffic** (for example Meshtastic role or rebroadcast settings, if appropriate for your mesh). | Fewer transmissions = proportionally less loss on the other radio. | Less help to the mesh. Follow your community's guidance. |
+| 4 | **Turn off relaying (rebroadcast)** on both radios. See [10.1](#101-turning-off-relaying-rebroadcast). | Fewer transmissions = proportionally less loss on the other radio. In a busy mesh, loss can drop from over 10 % to about 1 %. | Less help to the mesh. Does not reduce the peak power at the other radio. |
 | 5 | **Filtering.** | Not practical. 3.65 MHz apart at 908 MHz needs a cavity filter per radio. SAW filters for the 902–928 MHz band pass both channels. | Large, heavy, expensive. |
 | 6 | **Separate the radios physically** (for example one on the roof, one inside the car). | Car body adds large isolation. | Loses the single-mount concept. |
 
 Combining 2 and 3 (for example 40 cm and 22 dBm) already moves the power at the other radio from
 about +14 dBm to about +2 dBm.
+
+### 10.1 Turning off relaying (rebroadcast)
+
+The cheapest mitigation is a settings change, with no hardware work: make sure neither radio
+relays other nodes' packets. This is how the reference build is configured.
+
+**Meshtastic.** In the device settings, keep the role **Client** and set **Rebroadcast Mode** to
+**None**. This has the same effect as the **Client Mute** role. Save while connected to the radio,
+then reconnect and confirm the value stuck.
+
+**MeshCore.** Nothing to change. The role comes from the firmware, not from a menu: the
+**Companion Radio (BLE)** firmware does not relay packets by default, and only the Repeater
+firmware forwards traffic. The optional companion repeat mode only works on dedicated off-grid
+radio settings, so on the public USA/Canada preset (910.525 MHz) the companion does not relay.
+
+**What it fixes.** Interference only happens while the other radio transmits (section 8). Without
+relaying, each radio transmits only its own traffic: messages, acknowledgements, node info,
+position and telemetry. That moves a radio from the "busy" row of the loss table in section 8.2
+(≈ 13 %) towards the "quiet" row (≈ 1 % or less).
+
+**What it does not fix.** Each remaining transmission still delivers the same +8 to +14 dBm to the
+other radio. Fewer transmissions mean less cumulative stress on the front end, but not a lower
+peak. To improve the hardware margin, lower the transmit power or increase the antenna isolation
+(measures 1 to 3).
+
+**Effect on the mesh.** A car-roof node at 28 dBm could be a strong relay, but a moving node makes
+a poor one: it appears and disappears, creates unstable paths and, in dense areas, adds redundant
+retransmissions. Meshtastic suggests the Client Mute role for this kind of situation, and MeshCore
+is designed so that only fixed repeaters relay. For a vehicle node, turning off relaying is a
+reasonable choice and friendly to the mesh.
+
+**Exception.** Where there is little or no fixed infrastructure (remote roads, mountains, off-grid
+events), consider turning relaying back on in Meshtastic for that trip. There, helping the mesh is
+worth more than a few lost packets on the other radio, and traffic is usually low anyway.
 
 ---
 
