@@ -42,6 +42,19 @@ You will also need screws, nuts and washers for the cover, the boards, the panel
 | ![Opened mount next to its cover](../../../docs/site/media/car-dual-solar-mount/01-open-overview.webp) | ![Closed mount at an angle](../../../docs/site/media/car-dual-solar-mount/02-closed-angle.webp) |
 | ![Inside: two Heltec V4 and the battery](../../../docs/site/media/car-dual-solar-mount/04-interior.webp) | ![Heltec V4 detail](../../../docs/site/media/car-dual-solar-mount/05-heltec-v4-detail.webp) |
 
+## RF coexistence notice
+
+The two antennas are only about 20 cm apart (≈ 0.6 wavelength), which gives roughly 13–15 dB
+of isolation between the radios. The channels do not overlap (906.875 MHz vs 910.525 MHz), but
+while one radio transmits, the other one is overloaded and cannot receive, and at high transmit
+power the receiving radio's front end sees more power than conservative design margins allow.
+The reference build is in daily use and works, with a small packet loss that depends on how much
+each radio transmits. The reference build keeps that loss low by turning off relaying
+(Meshtastic Rebroadcast Mode set to None; the MeshCore Companion firmware does not relay).
+
+Read the full technical analysis, mitigation options and test procedure in
+[**RF-COEXISTENCE.md**](RF-COEXISTENCE.md) before changing transmit power, boards or antenna spacing.
+
 ## Notes
 
 - This is a personal build shared as a suggestion, not a certified product.

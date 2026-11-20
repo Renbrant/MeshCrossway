@@ -23,7 +23,8 @@ img{max-width:100%;height:auto}.mount-hero>*,.photo-grid>*,.downloads>*,.buy-lis
 .downloads{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:28px}
 .downloads .card .button{margin-top:16px}
 .buy-list{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.buy-list .card{display:flex;flex-direction:column}.buy-list .card p{flex:1}.buy-list .button{margin-top:16px;align-self:flex-start}.support-note{margin-top:24px;border:1px solid #57402f;border-left:3px solid var(--accent);background:#1f1915;border-radius:14px;padding:18px 20px;color:#e6ddd4}
-@media(max-width:800px){.mount-hero,.photo-grid,.downloads,.buy-list{grid-template-columns:1fr}}
+.rf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px}.rf-grid>*{min-width:0}.rf-note{border:1px solid #74572d;border-left:4px solid var(--accent);background:#261d10;border-radius:14px;padding:22px 24px;color:#ffd69e;font-size:17px}.rf-note strong{color:#fff}.rf-status{margin-top:16px;border:1px solid #2f5a3c;background:#13201a;border-radius:14px;padding:16px 20px;color:#bfe8cb}
+@media(max-width:800px){.mount-hero,.photo-grid,.downloads,.buy-list,.rf-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body class="landing">
@@ -35,6 +36,7 @@ img{max-width:100%;height:auto}.mount-hero>*,.photo-grid>*,.downloads>*,.buy-lis
 <h1 style="font-size:clamp(38px,5vw,60px);line-height:1.05;letter-spacing:-.04em;margin:14px 0 20px">Two Heltec V4 radios.<br>One solar panel.<br>On your roof.</h1>
 <p class="sectionintro">A low-profile, magnetic mount that carries one Meshtastic radio and one MeshCore radio on the car roof, powered by a shared 10,000 mAh battery and topped up by a small solar panel. Your phone runs MeshCrossway inside the car and connects to both radios over Bluetooth.</p>
 <div class="actions"><a class="button primary" href="#download-stl">Download the STL files</a><a class="button secondary" href="#parts">Parts list</a></div>
+<p class="small muted" style="margin-top:18px">Before you build: read the <a style="text-decoration:underline" href="#rf-coexistence">RF coexistence notice</a> about running two radios with antennas 20 cm apart.</p>
 </div>
 <a class="image-zoom" href="../../media/car-dual-solar-mount/03-closed-top.webp"><img src="../../media/car-dual-solar-mount/03-closed-top.webp" alt="Closed mount seen from above: textured cover with two red antennas in front of a black solar panel" width="1600" height="1200"></a>
 </div></section>
@@ -63,6 +65,18 @@ img{max-width:100%;height:auto}.mount-hero>*,.photo-grid>*,.downloads>*,.buy-lis
 <p class="small muted" style="margin-top:14px">You will also need screws, nuts and washers to close the cover, fix the boards and attach the panel and magnets.</p>
 <div class="support-note"><strong>Support the project.</strong> These are affiliate links. If you buy through them, you pay the same price and a small commission helps MeshCrossway’s creator keep building and sharing projects like this one. Thank you! <span class="muted">As an Amazon Associate I earn from qualifying purchases.</span></div>
 <div class="notice" style="margin-top:28px"><b>A personal build, not a certified product.</b> This is the setup MeshCrossway’s creator built for a personal car. Check that the antennas suit your radio band, that the magnets hold firmly at highway speeds, and that the battery, wiring and solar charging are safe in heat and sun. Remove the mount before car washes. Print in a heat- and UV-resistant material such as PETG or ASA.</div>
+</div></section>
+
+<section class="section" id="rf-coexistence"><div class="wrap">
+<div class="section-heading"><div class="eyebrow">RF coexistence notice</div><h2>Two radios, 20 cm apart: what to know.</h2></div>
+<div class="rf-note"><strong>The two antennas are very close in radio terms.</strong> At about 20 cm (≈ 0.6 wavelength at 908 MHz) they are only about <strong>13–15 dB</strong> apart. The Meshtastic (906.875 MHz) and MeshCore (910.525 MHz) channels do not overlap, but <strong>while one radio transmits, the other one is overloaded and cannot receive</strong>. At full power (the high-power Heltec V4 reaches 28 dBm), the receiving radio’s front end gets roughly <strong>+8 to +14 dBm</strong>, which is above conservative design margins for LoRa receivers.</div>
+<div class="rf-grid">
+<article class="card"><div class="num">WHAT HAPPENS</div><h3>Short “deaf” moments</h3><p>Each time one radio transmits, the other misses whatever arrives during that packet (about 0.1–1 s). The loss is roughly the share of time the other radio spends transmitting: under 1 % in a quiet mesh, a few percent in a normal one, more if the Meshtastic radio relays a busy mesh.</p></article>
+<article class="card"><div class="num">HARDWARE MARGIN</div><h3>Power matters</h3><p>The SX1262 transceiver itself is rated for +10 dBm maximum input. On the Heltec V4 an external front-end module takes this power first. Long-term stress at full power is not characterised, and boards without a front end, or with stronger amplifiers, have less margin.</p></article>
+<article class="card"><div class="num">HOW TO REDUCE IT</div><h3>Separate, then lower power</h3><p>Stacking one antenna above the other (≈ 28 dB at 33 cm), moving one antenna further away (≈ 6 dB per doubling of distance) or lowering transmit power all help. Turning off relaying is the easiest step: set Meshtastic’s Rebroadcast Mode to None (MeshCore Companion firmware already does not relay), so each radio only transmits its own traffic. A filter cannot fix it: the channels are only 3.65 MHz apart.</p></article>
+</div>
+<div class="rf-status"><strong>The reference build works.</strong> MeshCrossway’s creator uses this exact build every day with both radios on the default US presets. Both radios send and receive normally and no hardware failure has been observed. This notice explains a physical limit of any two-radio build so you can decide with full information, especially if you change transmit power, boards, antennas or spacing.</div>
+<div class="actions"><a class="button primary" href="https://github.com/Renbrant/MeshCrossway/blob/main/hardware/3D/car-dual-solar-mount/RF-COEXISTENCE.md">Read the full technical analysis</a><a class="button secondary" href="https://github.com/Renbrant/MeshCrossway/blob/main/hardware/3D/car-dual-solar-mount/RF-COEXISTENCE.md#11-test-procedure">How to test your build</a></div>
 </div></section>
 
 <section class="section" id="download-stl" style="background:linear-gradient(120deg,#322319,#161b21 75%);border-block:1px solid #4e392c"><div class="wrap">
