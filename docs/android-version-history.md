@@ -1,6 +1,6 @@
 # Android release history and numbering
 
-The current published beta is **Android 0.4.14**, versionCode **48**, tag **`android-v0.4.14`**. Latest GPS/map and repeater administration changes still require field testing. The historical tag `android-v0.4.0` is the mistakenly numbered versionCode 31; the later significant 0.4.0 milestone uses `android-v0.4.0-stage1` (34). Historical tags remain unchanged.
+The current published beta is **Android 0.4.15**, versionCode **49**, tag **`android-v0.4.15`**. Latest GPS/map and repeater administration changes still require field testing. The historical tag `android-v0.4.0` is the mistakenly numbered versionCode 31; the later significant 0.4.0 milestone uses `android-v0.4.0-stage1` (34). Historical tags remain unchanged.
 
 ## Recent revisions
 
@@ -27,7 +27,8 @@ The current published beta is **Android 0.4.14**, versionCode **48**, tag **`and
 | 0.4.5 | Direct repeater configuration cards, automatic initial reads after administrator login; versionCode 39 | Historical signed beta |
 | 0.4.6 | Editable repeater settings and corrected save/readback and console feedback; versionCode 40 | Historical signed beta |
 | 0.4.7 | Continuous GPS following and travel direction; versionCode 41 | Historical signed beta |
-| 0.4.14 | Slim interference row on Home; RF coexistence advanced settings behind a button; versionCode 48 | Current signed beta; field testing pending |
+| 0.4.15 | Same voltage curve for both radios' battery; voltage beside a filled battery icon on Home; versionCode 49 | Current signed beta; field testing pending |
+| 0.4.14 | Slim interference row on Home; RF coexistence advanced settings behind a button; versionCode 48 | Previous signed beta |
 | 0.4.13 | Interference health gauges on Home in place of the unified map shortcut; versionCode 47 | Previous signed beta |
 | 0.4.12 | RF coexistence page: interference dashboard, Meshtastic TX on/off, presets, advanced settings; versionCode 46 | Previous signed beta |
 | 0.4.11 | Radio battery beside the Bluetooth bars on Home; versionCode 45 | Previous signed beta |
@@ -47,4 +48,4 @@ Android releases through 0.4.8 were built from `baseline/android-0.1.0`. That hi
 
 Older alpha labels (including 0.4.0-alpha05) predate the public beta numbering. Historical artifacts retain their original tags; the new 0.4.0 beta's special `-stage1` tag prevents overwriting the earlier mistakenly numbered 0.4.0.
 
-[Current 0.4.14 APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.14/MeshCrossway-0.4.14.apk) · [0.4.2 release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.2) · [MeshCore tools guide](android-meshcore-everyday-tools.md)
+[Current 0.4.15 APK](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.15/MeshCrossway-0.4.15.apk) · [0.4.2 release notes](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.2) · [MeshCore tools guide](android-meshcore-everyday-tools.md)

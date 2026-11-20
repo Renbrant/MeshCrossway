@@ -1,6 +1,6 @@
 package com.meshcrossway.android;
 
-/** Home card battery: MeshCore millivolts to percent, Meshtastic battery_level, and periodic MeshCore reads. */
+/** Home card battery: both radios' millivolts to percent with one curve, voltage labels, and periodic MeshCore reads. */
 public final class RadioBatteryTest {
     static void check(boolean yes,String label){if(!yes)throw new AssertionError(label);}
     public static void main(String[] args){
@@ -8,18 +8,20 @@ public final class RadioBatteryTest {
         check(RadioBattery.percentFromMillivolts(3800)==50&&RadioBattery.percentFromMillivolts(3300)==0&&RadioBattery.percentFromMillivolts(3000)==0,"curve anchors");
         check(RadioBattery.percentFromMillivolts(3960)==75,"interpolates between anchors");
         check(RadioBattery.percentFromMillivolts(0)==RadioBattery.UNKNOWN,"no reading");
-        check(RadioBattery.label(87).equals("87%")&&RadioBattery.label(RadioBattery.POWERED).equals("USB")&&RadioBattery.label(RadioBattery.UNKNOWN).isEmpty(),"labels");
+        check(RadioBattery.label(51,3728).equals("3.73 V")&&RadioBattery.label(RadioBattery.POWERED,-1).equals("USB")&&RadioBattery.label(RadioBattery.UNKNOWN,-1).isEmpty(),"labels show the voltage");
 
         ProtocolClient mt=ProtocolClientTest.mt(new ProtocolClientTest.Events());
         check(RadioBattery.level(mt)==RadioBattery.UNKNOWN,"no Meshtastic reading yet");
-        byte[] metrics=new Wire.Out().scalar(1,64).array();
-        byte[] telemetry=new Wire.Out().bytes(2,metrics).array();
-        byte[] data=new Wire.Out().scalar(1,67).bytes(2,telemetry).array();
+        // Firmware battery_level 64 is ignored: the level comes from the voltage with the MeshCrossway curve.
+        byte[] noVoltage=new Wire.Out().scalar(1,101).array();
+        byte[] data0=new Wire.Out().scalar(1,67).bytes(2,new Wire.Out().bytes(2,noVoltage).array()).array();
+        mt.receive(ProtocolClientTest.wrapped(2,new Wire.Out().fixed(1,100).fixed(2,0xffffffffL).fixed(6,76).bytes(4,data0).array()),49);
+        check(RadioBattery.level(mt)==RadioBattery.POWERED&&RadioBattery.millivolts(mt)==-1,"101 without voltage means external power");
+        byte[] metrics=new Wire.Out().scalar(1,64).fixed(2,Float.floatToIntBits(3.735f)).array();
+        byte[] data=new Wire.Out().scalar(1,67).bytes(2,new Wire.Out().bytes(2,metrics).array()).array();
         mt.receive(ProtocolClientTest.wrapped(2,new Wire.Out().fixed(1,100).fixed(2,0xffffffffL).fixed(6,77).bytes(4,data).array()),50);
-        check(RadioBattery.level(mt)==64,"own-node device telemetry");
-        byte[] powered=new Wire.Out().scalar(1,67).bytes(2,new Wire.Out().bytes(2,new Wire.Out().scalar(1,101).array()).array()).array();
-        mt.receive(ProtocolClientTest.wrapped(2,new Wire.Out().fixed(1,100).fixed(2,0xffffffffL).fixed(6,78).bytes(4,powered).array()),51);
-        check(RadioBattery.level(mt)==RadioBattery.POWERED,"101 means external power");
+        check(RadioBattery.millivolts(mt)==3735,"own-node voltage in millivolts");
+        check(RadioBattery.level(mt)==37&&RadioBattery.level(mt)==RadioBattery.percentFromMillivolts(3735),"same curve as MeshCore, firmware level ignored");
 
         McIntegrationTest.clock=100;
         ProtocolClient mc=McIntegrationTest.fresh();
@@ -29,6 +31,6 @@ public final class RadioBatteryTest {
         byte[] battery=new byte[11];battery[0]=12;Wire.put32(battery,1,3960);mc.receive(battery,McIntegrationTest.clock++);
         check(RadioBattery.level(mc)==75,"MeshCore battery shown as percent");
         McIntegrationTest.clock+=20001;q=McIntegrationTest.take(mc);check(q.data[0]==10,"battery is not re-read on every poll");
-        System.out.println("Radio battery: MeshCore voltage curve, Meshtastic levels and periodic reads passed");
+        System.out.println("Radio battery: one voltage curve for both radios, voltage labels and periodic reads passed");
     }
 }

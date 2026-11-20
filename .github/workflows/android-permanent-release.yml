@@ -20,7 +20,7 @@ on:
       version:
         description: 'Version to publish (must match android/app/build.gradle)'
         required: true
-        default: '0.4.14'
+        default: '0.4.15'
         type: string
 permissions:
   contents: write
@@ -240,6 +240,9 @@ jobs:
           elif [ "$REQUESTED" = "0.4.5" ]; then
             cp docs/android-release-notes-0.4.5.md release-notes.md
             RELEASE_TITLE="Android 0.4.5 beta — editable repeater settings cards"
+          elif [ "$REQUESTED" = "0.4.15" ]; then
+            cp docs/android-release-notes-0.4.15.md release-notes.md
+            RELEASE_TITLE="Android 0.4.15 beta — same battery curve for both radios"
           elif [ "$REQUESTED" = "0.4.14" ]; then
             cp docs/android-release-notes-0.4.14.md release-notes.md
             RELEASE_TITLE="Android 0.4.14 beta — compact interference row and advanced settings button"
