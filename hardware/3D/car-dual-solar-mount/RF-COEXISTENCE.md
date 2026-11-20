@@ -44,6 +44,7 @@ risks are, how to reduce them and how to measure them on your own build.
 | Can a filter fix it? | **Not in practice.** 3.65 MHz at 908 MHz is a 0.4 % separation. ISM-band SAW filters are about 26 MHz wide. Only bulky cavity filters are selective enough. |
 | Can it damage the radios? | **It is a margin question, not a certainty.** With the Heltec V4 high-power amplifier at full power, the power reaching the other radio's antenna port is in the +7 to +14 dBm range, at or above the +10 dBm maximum RF input rating of the SX1262 itself. On the V4 that power first meets the external front-end module, which limits what reaches the SX1262. The reference build has shown no failures, but long-term stress at full power is not characterised. |
 | What helps most? | Vertical separation of the antennas, then more horizontal distance, then lower transmit power. |
+| How do I check my own radios? | The MeshCrossway Android app (0.4.12 and later) has an **RF coexistence** page that reads both radios and shows the estimated loss and peak power, with presets and a Meshtastic transmit on/off switch. See [10.4](#104-checking-and-changing-it-in-the-meshcrossway-app). |
 
 ---
 
@@ -498,6 +499,66 @@ figures only apply if the radio has a position source (GPS, fixed position or th
 - Lower background traffic also saves battery, which matters for a solar-powered mount.
 - The cost is visibility: other users will not see your position or battery on the map, and node
   info about you will refresh less often. For a vehicle node that is usually acceptable.
+
+### 10.4 Checking and changing it in the MeshCrossway app
+
+The MeshCrossway Android app (version 0.4.12 and later) applies this analysis to the real
+settings of your two radios. Open **Settings → RF coexistence**, or tap the **RF interference**
+row on the Home screen.
+
+<p align="center">
+  <img src="../../../docs/site/media/rf-coexistence/rf-coexistence-page.webp" alt="MeshCrossway RF coexistence page: status banner, two gauges for packets lost and peak power at the other radio, and a card per radio with transmit state, power and airtime" width="340">
+</p>
+
+**Dashboard.** Built from the settings read from both radios:
+
+- **Status banner:** low, some or high interference, and how many settings can still be improved.
+- **Packets lost to the other radio:** the loss model of section 8.2 applied to every automatic
+  transmission the radios are configured to make (relaying, node info, position, telemetry,
+  neighbor info, range test). Green below 1 %, red above 5 %.
+- **Peak at the other radio:** the configured transmit power minus the antenna isolation of
+  section 4 for the spacing you choose. Green at 0 dBm or less, red above +10 dBm (section 7).
+- **A card per radio:** transmit on or off, transmit power, automatic airtime and packets per
+  hour, the airtime measured by the radio itself (Meshtastic air util TX for the last hour,
+  MeshCore time transmitting since boot) and the loss it causes on the other radio.
+- **Where the Meshtastic airtime goes:** one bar per automatic source, as in section 10.3.
+
+**Meshtastic transmission switch.** Turns LoRa transmission off or on. With transmission off
+the radio only receives, so it causes no interference at all; Bluetooth stays connected so it can
+be turned back on from the same page. MeshCore has no such switch, but the Companion firmware only
+transmits when you send something.
+
+**Presets.** Three ready-made configurations, applied one change at a time, each change read back
+from the radio before the next one:
+
+| Preset | Meshtastic | MeshCore |
+| --- | --- | --- |
+| **Minimum interference** (recommended for vehicles) | Relaying off, node info every 12 h, smart position off, position every 12 h, position not shared on channels, device and sensor telemetry to the mesh off, neighbor info and range test off | Location and sensor telemetry denied, extra acknowledgements off |
+| **Balanced** | Relaying off, node info every 3 h, smart position off, position every hour, device telemetry to the mesh off, neighbor info and range test off | Location telemetry follows contact permissions, sensor telemetry denied, extra acknowledgements off |
+| **Help the mesh** | Relaying on, node info every 3 h, device telemetry to the mesh off, range test off | Same as Balanced |
+
+Before anything is saved, the confirmation lists every change and says **how many times the
+Meshtastic radio will restart** (position, telemetry, neighbor info and range test changes each
+restart it). Presets never change frequencies, channel keys or transmit power, and never turn
+transmission off.
+
+**Advanced settings.** A button expands the antenna spacing choice (side by side or one above the
+other) and every individual setting of both radios, each with its current and recommended value,
+its advantage (+), its disadvantage (−) and a notice (⟳) when changing it restarts the radio.
+
+**Home screen.** A slim row shows the same two values as thin bars, so the health of the
+interference is visible at a glance without taking space from the main information.
+
+<p align="center">
+  <img src="../../../docs/site/media/rf-coexistence/home-rf-row.webp" alt="MeshCrossway Home: Meshtastic and MeshCore radio cards above a slim RF interference row with Loss and Peak bars" width="520">
+</p>
+
+**Reference build, as configured by the author.** The screenshots above were taken on the
+reference mount after applying the minimum-interference settings, with both radios at 20 dBm:
+about 0.1 seconds per hour of automatic Meshtastic airtime, no automatic MeshCore airtime,
+**less than 0.1 % estimated loss** on either radio and **about +7 dBm** at the other radio's
+antenna input. That is inside the radios' working range but above the conservative 0 dBm margin of
+section 7, which is why the status shows "some interference" rather than "low".
 
 ---
 
