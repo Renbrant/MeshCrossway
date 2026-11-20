@@ -226,7 +226,7 @@ public final class MainActivity extends Activity {
             if(selected==1){LinearLayout options=row();options.addView(chip(favoritesOnly?"Favorites ✓":"Favorites",favoritesOnly,()->{favoritesOnly=!favoritesOnly;buildPage();}),new LinearLayout.LayoutParams(0,dp(44),1));options.addView(chip("Sort: "+new String[]{"Recent","Name","Distance"}[nodeOrder],false,this::sortMenu),new LinearLayout.LayoutParams(0,dp(44),1));options.addView(chip(new String[]{"All types","Clients","Repeaters","Rooms","Sensors"}[nodeType],nodeType!=0,this::typeMenu),new LinearLayout.LayoutParams(0,dp(44),1));tools.addView(options);}
             if(selected==1&&filter==2){HorizontalScrollView states=new HorizontalScrollView(this);states.setHorizontalScrollBarEnabled(false);mcContactTabs=row();states.addView(mcContactTabs);tools.addView(states);refreshMcContactTabs();}
             if(selected==3){LinearLayout options=row();options.addView(chip("Unread",unreadOnly,()->{unreadOnly=!unreadOnly;buildPage();}),new LinearLayout.LayoutParams(0,dp(40),1));options.addView(chip("Pinned",pinnedOnly,()->{pinnedOnly=!pinnedOnly;buildPage();}),new LinearLayout.LayoutParams(0,dp(40),1));tools.addView(options);}body.addView(tools);}
-        scroll=new ScrollView(this);results=column();results.setPadding(dp(selected==0?10:16),dp(selected==0?8:16),dp(selected==0?10:16),dp(20));scroll.addView(results);body.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));refreshContent();int restore=scrollPositions.getOrDefault(renderedRoute,0);ScrollView target=scroll;target.post(()->target.scrollTo(0,restore));
+        scroll=new ScrollView(this);results=column();results.setPadding(dp(selected==0?10:16),dp(selected==0?8:16),dp(selected==0?10:16),dp(20));scroll.addView(results);body.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));refreshContent();int restore=scrollPositions.getOrDefault(renderedRoute,0);ScrollView target=scroll;target.post(()->target.scrollTo(0,restore));scrollToNewMessages();
     }
     private boolean included(RadioProfile p){return filter==0||filter==p.ordinal()+1;}
     private boolean matches(String value){return value.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT));}
@@ -248,7 +248,7 @@ public final class MainActivity extends Activity {
         if(mapPanel!=null)mapPanel.update();
         if(results==null)return;if(selected==0&&results.getChildCount()>0&&!rendering&&homeFingerprint().equals(homeFingerprint))return;homeFingerprint=homeFingerprint();if(selected==5&&results.getChildCount()>0&&!rendering){String fingerprint=settingsFingerprint();if(fingerprint.equals(settingsFingerprint))return;}settingsFingerprint=settingsFingerprint();int y=scroll==null?0:scroll.getScrollY();boolean bottom=scroll!=null&&(results.getHeight()-scroll.getHeight()-y<dp(80));results.removeAllViews();
         if(service!=null&&!service.history.error.isEmpty())results.addView(text(service.history.error,14,RED));
-        if(chat!=null&&selected==3){messages();ScrollView target=scroll;LinearLayout contents=results;if(target!=null)target.post(()->target.scrollTo(0,bottom?contents.getHeight():y));return;}
+        if(chat!=null&&selected==3){messages();ScrollView target=scroll;LinearLayout contents=results;if(target!=null)target.post(()->target.scrollTo(0,bottom?contents.getHeight():y));scrollToNewMessages();return;}
         if(selected==0)home();else if(selected==5)settings();else lists();
         ScrollView target=scroll;if(target!=null)target.post(()->target.scrollTo(0,y));
     }
@@ -421,19 +421,6 @@ public final class MainActivity extends Activity {
             params.rightMargin=dp(3);
             indicator.addView(bar,params);
         }
-        // Radio battery (not the phone's) beside the Bluetooth bars.
-        int battery=session!=null&&session.verified?RadioBattery.level(session.client):RadioBattery.UNKNOWN;
-        int batteryMv=session!=null&&session.verified?RadioBattery.millivolts(session.client):-1;
-        String batteryText=RadioBattery.label(battery,batteryMv);
-        if(!batteryText.isEmpty()){
-            boolean low=battery>=0&&battery!=RadioBattery.POWERED&&battery<=15;
-            int radioColor=accent;
-            LinearLayout.LayoutParams iconSize=new LinearLayout.LayoutParams(dp(24),dp(12));iconSize.leftMargin=dp(6);
-            indicator.addView(new BatteryIcon(this,battery,low?RED:radioColor,low?RED:MUTED),iconSize);
-            TextView level=text(batteryText,11,low?RED:WHITE);level.setMaxLines(1);
-            LinearLayout.LayoutParams levelSize=new LinearLayout.LayoutParams(-2,-2);levelSize.leftMargin=dp(5);
-            indicator.addView(level,levelSize);
-        }
         // The bars carry the reading; the dBm text stays in the accessibility description only.
         TextView freq=text(frequency,10,MUTED);
         freq.setMaxLines(1);freq.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -441,7 +428,6 @@ public final class MainActivity extends Activity {
         indicator.addView(freq,new LinearLayout.LayoutParams(0,-2,1));
         indicator.setContentDescription("Bluetooth signal. "+
             readingLabel+". "+bars+" of four bars. "+(current?"Current link.":"Cached or unavailable.")+
-            (batteryText.isEmpty()?"":" Radio battery "+(battery==RadioBattery.POWERED?"external power":(battery>=0?battery+" percent, ":"")+batteryText)+".")+
             (frequency.isEmpty()?"":" LoRa frequency "+frequency+"."));
         tile.addView(indicator);
     }
@@ -467,6 +453,21 @@ public final class MainActivity extends Activity {
         if(body.length()>56)body=body.substring(0,56)+"…";
         return sender+": "+(body.isEmpty()?"Message":body);
     }
+    /** Radio battery (not the phone's) in the card's top bar, beside the network name: filled icon + voltage. */
+    private String radioBatteryHeading(LinearLayout tile,RadioService.Session session,int accent){
+        int battery=session!=null&&session.verified?RadioBattery.level(session.client):RadioBattery.UNKNOWN;
+        int batteryMv=session!=null&&session.verified?RadioBattery.millivolts(session.client):-1;
+        String batteryText=RadioBattery.label(battery,batteryMv);
+        if(batteryText.isEmpty()||!(tile.getChildAt(0) instanceof LinearLayout))return "";
+        LinearLayout heading=(LinearLayout)tile.getChildAt(0);int at=Math.max(1,heading.getChildCount()-1);
+        boolean low=battery>=0&&battery!=RadioBattery.POWERED&&battery<=15;
+        LinearLayout.LayoutParams iconSize=new LinearLayout.LayoutParams(dp(22),dp(11));iconSize.leftMargin=dp(6);
+        heading.addView(new BatteryIcon(this,battery,low?RED:accent,low?RED:MUTED),at,iconSize);
+        TextView volts=text(batteryText,11,low?RED:WHITE);volts.setMaxLines(1);
+        LinearLayout.LayoutParams voltsSize=new LinearLayout.LayoutParams(-2,-2);voltsSize.leftMargin=dp(4);voltsSize.rightMargin=dp(6);
+        heading.addView(volts,at+1,voltsSize);
+        return ". Radio battery "+(battery==RadioBattery.POWERED?"external power":(battery>=0?battery+" percent, ":"")+batteryText);
+    }
     private void home(){
         // First screen content: the two radios. No duplicate ready line,
         // global summary card, or section headings between card rows.
@@ -485,7 +486,8 @@ public final class MainActivity extends Activity {
             LinearLayout stateRow=row();stateRow.setGravity(Gravity.CENTER_VERTICAL);stateRow.addView(status,new LinearLayout.LayoutParams(-2,-2));
             TextView label=text(tag,12,connecting||ready?accent:MUTED);label.setTypeface(null,Typeface.BOLD);label.setMaxLines(1);label.setEllipsize(android.text.TextUtils.TruncateAt.END);
             LinearLayout.LayoutParams size=new LinearLayout.LayoutParams(0,-2,1);size.leftMargin=dp(6);stateRow.addView(label,size);tile.addView(stateRow,2);
-            tile.setContentDescription(profile.title+". "+state+(tag.isEmpty()?"":". "+tag));
+            String batteryNote=radioBatteryHeading(tile,session,accent);
+            tile.setContentDescription(profile.title+". "+state+(tag.isEmpty()?"":". "+tag)+batteryNote);
             signalIndicator(tile,session,accent,ready?homeFrequency(profile,session.client):"");
         }
         LinearLayout nodes=dashboardRow();
@@ -1053,7 +1055,7 @@ public final class MainActivity extends Activity {
     private void mtNodeMetrics(Node saved){ProtocolClient c=mtClient();Node live=c==null?null:c.nodes.get(saved.id);Node n=live==null?saved:live;StringBuilder content=new StringBuilder("Latest reported values\n");for(Map.Entry<String,String> entry:n.metrics.entrySet())content.append("\n").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");if(n.metrics.isEmpty())content.append("No telemetry received yet.\n");content.append("\nRecent samples\n");for(int i=n.metricHistory.size()-1;i>=0;i--)content.append(n.metricHistory.get(i)).append("\n\n");TextView data=text(content.toString(),13,WHITE);data.setPadding(dp(18),dp(12),dp(18),dp(12));ScrollView scroll=new ScrollView(this);scroll.addView(data);new AlertDialog.Builder(this).setTitle(nodeName(RadioProfile.MESHTASTIC,n)).setView(scroll).setPositiveButton("Request telemetry",(d,w)->mtCommand(client->client.requestMtMetrics(n.id,false))).setNeutralButton("Traceroute",(d,w)->mtConfirm("Request a new traceroute",false,()->mtCommand(client->client.requestMtMetrics(n.id,true)))).setNegativeButton("Back",null).show();}
     void showMap(double lat,double lon){mapFocus=new org.maplibre.android.geometry.LatLng(lat,lon);page(4);}
     private void conversationOptions(RadioProfile p,String radio,Target target){Flags flags=snapshot(p).flags("chat",target.topic);new AlertDialog.Builder(this).setTitle(p.title+" · "+target.title).setItems(new String[]{flags.pinned?"Unpin conversation":"Pin conversation",flags.muted?"Unmute notifications":"Mute notifications"},(d,index)->{if(service!=null)service.history.flag(p,radio,"chat",target.topic,index==0?"pinned":"muted",index==0?!flags.pinned:!flags.muted);}).setNegativeButton("Close",null).show();}
-    private void openChat(RadioProfile p,String radio,Target target){saveDraft();remember();selected=3;chatProfile=p;chatRadio=radio;chat=target;chatLimit=100;buildPage();}
+    private void openChat(RadioProfile p,String radio,Target target){saveDraft();remember();selected=3;chatProfile=p;chatRadio=radio;chat=target;chatLimit=100;chatOpenKey="";buildPage();}
     private String draftKey(){return chatProfile+"|"+chatRadio+"|"+(chat==null?"":chat.topic);}
     private void saveDraft(){handler.removeCallbacks(saveDraftTask);if(chat==null||composer==null)return;String value=composer.getText().toString();drafts.put(draftKey(),value);if(service!=null)service.history.draft(chatProfile,chatRadio,chat.topic,value);}
     private void applyDraft(String value){applyingDraft=true;composer.setText(value);applyingDraft=false;}
@@ -1071,11 +1073,23 @@ public final class MainActivity extends Activity {
         composer.addTextChangedListener(watcher(()->{composerRevision++;drafts.put(draftKey(),composer.getText().toString());updateComposer();if(!applyingDraft){handler.removeCallbacks(saveDraftTask);handler.postDelayed(saveDraftTask,500);}}));if(drafts.containsKey(draftKey()))applyDraft(drafts.get(draftKey()));loadDraft();refreshContent();scroll.post(()->scroll.fullScroll(View.FOCUS_DOWN));}
     private void updateComposer(){if(composer==null)return;int size=composer.getText().toString().getBytes(StandardCharsets.UTF_8).length;count.setText(size+" UTF-8 bytes"+(chat!=null&&chat.replyId!=0?" · replying #"+Long.toUnsignedString(chat.replyId):""));sendButton.setEnabled(!sending&&ready(chatProfile,chatRadio)&&size>0);sendButton.setText(sending?"Saving…":"Send");}
     private void send(){if(service==null||chat==null||sending)return;final String value=composer.getText().toString(),key=draftKey();saveDraft();sending=true;updateComposer();withPermission(()->service.send(chatProfile,chatRadio,chat,value,error->{sending=false;if(!error.isEmpty())Toast.makeText(this,error,Toast.LENGTH_LONG).show();else if(chat!=null&&key.equals(draftKey())&&composer!=null&&composer.getText().toString().equals(value)){composer.setText("");chat=chat.reply(0,false);saveDraft();}else if(chat!=null&&key.equals(draftKey()))saveDraft();updateComposer();scheduleRefresh();}));}
+    /** Once per opening: start reading at the first message that was unread, just below the divider. */
+    private void scrollToNewMessages(){if(!chatScrollToNew||chatNewDivider==null||scroll==null)return;ScrollView target=scroll;View divider=chatNewDivider;target.post(()->target.post(()->{if(chatNewDivider!=divider)return;chatScrollToNew=false;target.scrollTo(0,Math.max(0,divider.getTop()-dp(8)));}));}
     private void messages(){
         ArrayList<Message> visibleMessages=new ArrayList<>();if(radio(chatProfile).equals(chatRadio))for(Message m:snapshot(chatProfile).messages)if(m.topic.equals(chat.topic))visibleMessages.add(m);
+        // Remember which messages were unread when the conversation was opened: they stay marked
+        // until the conversation is left, and the first one is where reading starts.
+        String openKey=chatProfile+"|"+chatRadio+"|"+chat.topic;
+        if(!openKey.equals(chatOpenKey)){chatOpenKey=openKey;chatNewUids.clear();int first=-1;for(int i=0;i<visibleMessages.size();i++){Message m=visibleMessages.get(i);if(!m.read&&!m.outgoing){chatNewUids.add(m.uid);if(first<0)first=i;}}
+            if(first>=0){chatLimit=Math.max(chatLimit,Math.min(2000,visibleMessages.size()-first+5));chatScrollToNew=true;}}
+        chatNewDivider=null;
         if(visibleMessages.size()>chatLimit)addButton(results,"Show earlier messages",()->{chatLimit+=100;refreshContent();});
         boolean connected=ready(chatProfile,chatRadio);chatStatus.setText(chatProfile.title+" • "+(connected?"ready":"offline / synchronizing • draft stays here"));updateComposer();int shown=0;boolean unread=false;
-        for(Message m:visibleMessages.subList(Math.max(0,visibleMessages.size()-chatLimit),visibleMessages.size())){shown++;LinearLayout c=card(results);c.setBackground(surface(m.outgoing?PANEL2:PANEL));TextView author=text(m.outgoing?"You":m.sender,13,m.outgoing?ORANGE:GREEN);author.setTypeface(null,Typeface.BOLD);c.addView(author);space(c,6);
+        for(Message m:visibleMessages.subList(Math.max(0,visibleMessages.size()-chatLimit),visibleMessages.size())){shown++;boolean isNew=chatNewUids.contains(m.uid);int netColor=chatProfile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC;
+            if(isNew&&chatNewDivider==null){LinearLayout divider=row();divider.setPadding(0,dp(6),0,dp(6));View left=new View(this);left.setBackgroundColor(netColor);divider.addView(left,new LinearLayout.LayoutParams(0,dp(1),1));TextView label=text("  "+chatNewUids.size()+" new message"+(chatNewUids.size()==1?"":"s")+"  ",12,netColor);label.setTypeface(null,Typeface.BOLD);divider.addView(label);View right=new View(this);right.setBackgroundColor(netColor);divider.addView(right,new LinearLayout.LayoutParams(0,dp(1),1));results.addView(divider,new LinearLayout.LayoutParams(-1,-2));chatNewDivider=divider;}
+            LinearLayout c=card(results);GradientDrawable cardBg=surface(m.outgoing?PANEL2:PANEL);if(isNew)cardBg.setStroke(dp(2),netColor);c.setBackground(cardBg);
+            if(isNew){TextView badge=text("● NEW",11,netColor);badge.setTypeface(null,Typeface.BOLD);badge.setPadding(0,0,0,dp(4));c.addView(badge);}
+            TextView author=text(m.outgoing?"You":m.sender,13,m.outgoing?ORANGE:GREEN);author.setTypeface(null,Typeface.BOLD);c.addView(author);space(c,6);
             RadioProfile network=chatProfile;String sourceRadio=chatRadio;
             View.OnLongClickListener actions=v->{v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);messageActions(network,sourceRadio,m);return true;};
             c.setOnLongClickListener(actions);author.setOnLongClickListener(actions);
@@ -1549,7 +1563,7 @@ public final class MainActivity extends Activity {
     private void toggleMtConfig(ProtocolClient c,int type,int field,String title){boolean current=c.mtConfigFlag(type,field);new AlertDialog.Builder(this).setTitle(title).setMessage("Set this setting to "+(current?"off":"on")+"?"+(type==6&&current?" Bluetooth will disconnect and must be re-enabled on the radio or through USB to reconnect.":" The radio may restart; settings will be verified after reconnection.")).setPositiveButton("Save",(d,w)->mtCommand(client->client.setMtConfigField(type,field,current?0:1))).setNegativeButton("Cancel",null).show();}
     private void mtSecuritySettings(ProtocolClient c){if(!mtLoaded(c,c.mtConfigLoaded(7),()->mtCommand(client->client.requestMtConfig(7))))return;if(!c.mtConfigLoaded(7))mtCommand(client->client.requestMtConfig(7));byte[] sec=c.mtConfig(7);List<Wire.F> fields=Wire.fields(sec);section(results,"PACKET AUTHENTICITY");String[] policy={"Compatible · accept unsigned","Balanced · sign, accept unsigned","Strict · require signatures"};int selected=(int)Wire.number(fields,9,0);menuRow(group(results),"settings","Protection level",(c.mtHasSignatures?policy[Math.min(2,Math.max(0,selected))]:"Unsupported by connected firmware"),c.mtHasSignatures?()->choice("Protection level",policy,selected,i->mtConfirm("Packet protection",true,()->mtCommand(client->client.setMtConfigField(7,9,i)))):null,RADIO_MT);section(results,"KEYS & LOGS");LinearLayout logs=group(results);menuRow(logs,"info","Admin keys",Long.toString(fields.stream().filter(f->f.tag==3).count())+" configured",null,RADIO_MT);toggleRow(logs,"Serial Console","Serial Console over the Stream API",c.mtConfigFlag(7,5),on->mtConfirm("Serial Console",true,()->mtCommand(client->client.setMtConfigField(7,5,on?1:0))));toggleRow(logs,"Debug Logs","Output live debug logging over serial and Bluetooth",Wire.number(fields,6,0)!=0,on->mtConfirm("Debug Logs",true,()->mtCommand(client->client.setMtConfigField(7,6,on?1:0))));menuRow(logs,"info","Managed Device",Wire.number(fields,4,0)!=0?"Enabled · configured remotely":"Disabled",null,RADIO_MT);results.addView(text("Private keys are not displayed here. Key generation, backup and restoration are not yet implemented.",13,MUTED));}
     // ------------------------------------------------------------------ RF coexistence page
-    private boolean rfAdvancedOpen;private final List<RfCoexistence.Step> rfQueue=new ArrayList<>();private RfCoexistence.Step rfActive;private String rfQueueName="",rfQueueStatus="";private int rfQueueTotal;private long rfStepAt,rfStatsAt;
+    private boolean rfAdvancedOpen;private String chatOpenKey="";private final HashSet<String> chatNewUids=new HashSet<>();private View chatNewDivider;private boolean chatScrollToNew;private final List<RfCoexistence.Step> rfQueue=new ArrayList<>();private RfCoexistence.Step rfActive;private String rfQueueName="",rfQueueStatus="";private int rfQueueTotal;private long rfStepAt,rfStatsAt;
     private static final int RF_AMBER=0xffe0a43a,RF_RED=0xffe2533b,RF_GREEN=0xff3fae7a;
     private ProtocolClient rfClient(RadioProfile p){RadioService.Session s=service==null?null:service.sessions.get(p);return s!=null&&s.verified&&s.client!=null&&s.client.ready?s.client:null;}
     private RfCoexistence.Geometry rfGeometry(){SharedPreferences p=getSharedPreferences("ui",MODE_PRIVATE);return new RfCoexistence.Geometry(p.getInt("rfSpacingCm",RfCoexistence.DEFAULT_SPACING_CM),p.getBoolean("rfVertical",false));}

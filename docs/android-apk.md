@@ -1,13 +1,14 @@
-# MeshCrossway Android — 0.4.15 beta
+# MeshCrossway Android — 0.4.16 beta
 
-[Download signed MeshCrossway-0.4.15.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.15/MeshCrossway-0.4.15.apk) · [Release notes and checksums](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.15) · [Installation page](https://meshcrossway.renbrant.com/android/)
+[Download signed MeshCrossway-0.4.16.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.4.16/MeshCrossway-0.4.16.apk) · [Release notes and checksums](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.4.16) · [Installation page](https://meshcrossway.renbrant.com/android/)
 
-Current published beta: **0.4.15, versionCode 49**. Android 8.0+ on ARM64; two independent compatible Bluetooth radios for simultaneous Meshtastic and MeshCore. No cross-network forwarding.
+Current published beta: **0.4.16, versionCode 50**. Android 8.0+ on ARM64; two independent compatible Bluetooth radios for simultaneous Meshtastic and MeshCore. No cross-network forwarding.
 
 Install over a compatible permanently signed installation without uninstalling or clearing storage. Back up important data first. Old debug-signed 0.2.2-or-earlier installations require the [migration guide](android-permanent-signing-backup.md). Android normally blocks downgrades to a lower versionCode.
 
 ## Recent changes and limits
 
+- **0.4.16:** Home battery icon and voltage moved to the card's top bar; conversations open at the first unread message with a divider and NEW marks.
 - **0.4.15:** both radios' battery level now uses the same MeshCrossway voltage curve; Home shows the voltage beside a battery icon filled to the charge level.
 - **0.4.14:** Home interference panel reduced to one slim row with two thin bars; RF coexistence advanced settings behind an expandable button.
 - **0.4.13:** Home shows interference health between the two radios (packets lost to the other radio and peak power at the other radio) in place of the unified map shortcut; tap it for the RF coexistence page.
@@ -25,7 +26,7 @@ See [version history and source branches](android-version-history.md) for exact 
 
 ## Previous releases (historical details)
 
-The sections below describe earlier development betas and their behavior **at the time**. Use the 0.4.15 link above for the current experimental field beta.
+The sections below describe earlier development betas and their behavior **at the time**. Use the 0.4.16 link above for the current experimental field beta.
 
 ## Channels, links and QR Codes in 0.3.12
 
