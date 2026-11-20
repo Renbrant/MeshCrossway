@@ -22,8 +22,8 @@
 .photo-grid figure{margin:0}.photo-grid figcaption{color:var(--muted);font-size:13px;margin:10px 0 0}
 .downloads{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:28px}
 .downloads .card .button{margin-top:16px}
-.parts{columns:2;gap:40px;color:#c5bbb2;padding-left:20px}.parts li{margin-bottom:8px;break-inside:avoid}
-@media(max-width:800px){.mount-hero,.photo-grid,.downloads{grid-template-columns:1fr}.parts{columns:1}}
+.buy-list{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.buy-list .card{display:flex;flex-direction:column}.buy-list .card p{flex:1}.buy-list .button{margin-top:16px;align-self:flex-start}.support-note{margin-top:24px;border:1px solid #57402f;border-left:3px solid var(--accent);background:#1f1915;border-radius:14px;padding:18px 20px;color:#e6ddd4}
+@media(max-width:800px){.mount-hero,.photo-grid,.downloads,.buy-list{grid-template-columns:1fr}}
 </style>
 </head>
 <body class="landing">
@@ -34,7 +34,7 @@
 <div class="eyebrow">3D-print suggestion · car roof</div>
 <h1 style="font-size:clamp(38px,5vw,60px);line-height:1.05;letter-spacing:-.04em;margin:14px 0 20px">Two Heltec V4 radios.<br>One solar panel.<br>On your roof.</h1>
 <p class="sectionintro">A low-profile, magnetic mount that carries one Meshtastic radio and one MeshCore radio on the car roof, powered by a shared 10,000 mAh battery and topped up by a small solar panel. Your phone runs MeshCrossway inside the car and connects to both radios over Bluetooth.</p>
-<div class="actions"><a class="button primary" href="#download-stl">Download the STL files</a><a class="button secondary" href="#gallery">See the photos</a></div>
+<div class="actions"><a class="button primary" href="#download-stl">Download the STL files</a><a class="button secondary" href="#parts">Parts list</a></div>
 </div>
 <a class="image-zoom" href="../../media/car-dual-solar-mount/03-closed-top.webp"><img src="../../media/car-dual-solar-mount/03-closed-top.webp" alt="Closed mount seen from above: textured cover with two red antennas in front of a black solar panel" width="1600" height="1200"></a>
 </div></section>
@@ -51,15 +51,17 @@
 </div></section>
 
 <section class="section"><div class="wrap">
-<div class="section-heading"><div class="eyebrow">What goes inside</div><h2>Parts used in this build.</h2></div>
-<ul class="parts">
-<li><strong>2 × Heltec V4</strong> (WiFi LoRa 32 V4): one with Meshtastic firmware, one with MeshCore companion firmware.</li>
-<li><strong>1 × 3.7 V LiPo battery, 10,000 mAh</strong> (about 37 Wh), shared by both radios.</li>
-<li><strong>1 × small solar panel</strong> bolted to the base, wired to keep the battery charged.</li>
-<li><strong>2 × LoRa antennas</strong> with SMA connectors and u.FL-to-SMA pigtails, one per radio.</li>
-<li><strong>4 × rubber-coated mounting magnets</strong>: two under the base, two under the far end of the panel.</li>
-<li>Screws, nuts and washers to close the cover, fix the boards and attach the panel and magnets.</li>
-</ul>
+<div class="section-heading" id="parts"><div class="eyebrow">What goes inside</div><h2>Parts used in this build.</h2></div>
+<p class="sectionintro" style="margin-bottom:24px">These are the exact parts used in the build above. Buying the same ones avoids surprises with fit and connectors.</p>
+<div class="buy-list">
+<article class="card"><div class="num">RADIOS · BUY 2</div><h3>Heltec V4 ESP32-S3 LoRa board (SX1262, no OLED)</h3><p>Choose the <strong>“Standard without GPS”</strong> option. One runs Meshtastic, the other MeshCore companion firmware.</p><a class="button primary" href="https://link.amazon/B03tfSWa8" rel="sponsored noopener" target="_blank">View on Amazon</a></article>
+<article class="card"><div class="num">ANTENNAS · 1 PACK (2 SETS)</div><h3>Slinkdsco 915 MHz LoRa whip antenna, red</h3><p>Two antennas with u.FL-to-SMA pigtails, one per radio. 915 MHz is the US band; choose the antenna that matches your region.</p><a class="button primary" href="https://link.amazon/B00lC4s3M" rel="sponsored noopener" target="_blank">View on Amazon</a></article>
+<article class="card"><div class="num">BATTERY · BUY 1</div><h3>ETWOWUP 3.7 V 10,000 mAh LiPo (1S, PH 2.0 plug)</h3><p>About 37 Wh with built-in protection circuit, shared by both radios in the central bay.</p><a class="button primary" href="https://link.amazon/B0h4jtn9k" rel="sponsored noopener" target="_blank">View on Amazon</a></article>
+<article class="card"><div class="num">SOLAR · 1 PACK</div><h3>Soshine 5 V 6 W USB solar panel (2-pack)</h3><p>Monocrystalline panel with DC cable, bolted to the base to keep the battery charged. Choose the <strong>“6W x2”</strong> option.</p><a class="button primary" href="https://link.amazon/B081g0vdr" rel="sponsored noopener" target="_blank">View on Amazon</a></article>
+<article class="card"><div class="num">MOUNTING · 1 PACK OF 6</div><h3>DIYMAG rubber-coated magnets, 1/4 in stud</h3><p>Choose <strong>“1/4in-30LB-1.69in”</strong>, 6 pieces. The build uses four: two under the base, two under the far end of the panel.</p><a class="button primary" href="https://link.amazon/B00f6AqAr" rel="sponsored noopener" target="_blank">View on Amazon</a></article>
+</div>
+<p class="small muted" style="margin-top:14px">You will also need screws, nuts and washers to close the cover, fix the boards and attach the panel and magnets.</p>
+<div class="support-note"><strong>Support the project.</strong> These are affiliate links. If you buy through them, you pay the same price and a small commission helps MeshCrossway’s creator keep building and sharing projects like this one. Thank you! <span class="muted">As an Amazon Associate I earn from qualifying purchases.</span></div>
 <div class="notice" style="margin-top:28px"><b>A personal build, not a certified product.</b> This is the setup MeshCrossway’s creator built for a personal car. Check that the antennas suit your radio band, that the magnets hold firmly at highway speeds, and that the battery, wiring and solar charging are safe in heat and sun. Remove the mount before car washes. Print in a heat- and UV-resistant material such as PETG or ASA.</div>
 </div></section>
 
