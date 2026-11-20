@@ -136,6 +136,7 @@ public final class MainActivity extends Activity {
     private LinearLayout card(LinearLayout l){LinearLayout c=column();c.setPadding(dp(14),dp(12),dp(14),dp(12));c.setBackground(surface(PANEL));LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.bottomMargin=dp(8);l.addView(c,p);return c;}
     private String homeFingerprint(){
         StringBuilder key=new StringBuilder();
+        {RfCoexistence.Report rf=RfCoexistence.analyze(rfClient(RadioProfile.MESHTASTIC),rfClient(RadioProfile.MESHCORE),rfGeometry());key.append(rf.overall()).append(RfCoexistence.percent(rf.worstLoss())).append(rf.worstPeak()).append(rf.changes()).append(rf.mt.txOff).append(':');}
         for(RadioProfile p:RadioProfile.values()){
             Snapshot data=snapshot(p);
             key.append(data.nodes.size()).append(':').append(data.channels.size()).append(':')
@@ -536,10 +537,31 @@ public final class MainActivity extends Activity {
         String trackValue=current==null?"No active track":current.state;
         String trackDetail=current==null?"Record and export GPX":current.name+" · "+current.summary();
         dashboardTile(tools,"TRACKS",trackValue,trackDetail,ORANGE,this::manageTracks,false);
-        LinearLayout shortcuts=group(results);
-        menuRow(shortcuts,"map","Open unified map","Meshtastic + MeshCore · offline areas · POIs",
-            ()->page(4),ORANGE);
+        rfHomeDashboard();
     }
+    /** Home: compact interference health with the two RF coexistence gauges; tap opens the full page. */
+    private void rfHomeDashboard(){
+        ProtocolClient mt=rfClient(RadioProfile.MESHTASTIC),mc=rfClient(RadioProfile.MESHCORE);
+        if(mt!=null||mc!=null)rfRead(mt,mc);
+        RfCoexistence.Report r=RfCoexistence.analyze(mt,mc,rfGeometry());RfCoexistence.Level level=r.overall();int color=rfLevelColor(level);
+        LinearLayout panel=column();GradientDrawable background=surface(PANEL);background.setStroke(dp(1),level==RfCoexistence.Level.UNKNOWN?PANEL2:color);
+        panel.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33ffffff),background,null));panel.setPadding(dp(12),dp(11),dp(12),dp(8));
+        LinearLayout heading=row();TextView label=text("RF COEXISTENCE",11,ORANGE);label.setTypeface(null,Typeface.BOLD);label.setLetterSpacing(.05f);heading.addView(label,new LinearLayout.LayoutParams(0,-2,1));
+        String state=level==RfCoexistence.Level.GOOD?"Low interference":level==RfCoexistence.Level.ATTENTION?"Some interference":level==RfCoexistence.Level.HIGH?"High interference risk":"Connect radios to analyse";
+        TextView status=text(state,12,level==RfCoexistence.Level.UNKNOWN?MUTED:color);status.setTypeface(null,Typeface.BOLD);heading.addView(status);heading.addView(new NavIcon(this,"arrow",MUTED),new LinearLayout.LayoutParams(dp(14),dp(14)));panel.addView(heading);
+        LinearLayout gauges=row();gauges.setPadding(0,dp(6),0,0);
+        double loss=r.worstLoss(),peak=r.worstPeak();boolean hasPeak=peak>-99;
+        gauges.addView(new RfGauge(this,rfLossPosition(r),(r.mt.known||r.mc.known)?RfCoexistence.percent(loss):"—","Packets lost to the other radio",rfLevelColor(r.traffic),PANEL2,WHITE,MUTED),new LinearLayout.LayoutParams(0,-2,1));
+        gauges.addView(new RfGauge(this,rfPeakPosition(r),hasPeak?RfCoexistence.dbm(peak):"—","Peak at the other radio",rfLevelColor(r.hardware),PANEL2,WHITE,MUTED),new LinearLayout.LayoutParams(0,-2,1));
+        panel.addView(gauges);
+        if(r.mtConnected&&r.mt.txOff){TextView tx=text("Meshtastic transmission is off (receive only)",12,RF_GREEN);tx.setPadding(0,dp(2),0,0);panel.addView(tx);}
+        else if(r.changes()>0){TextView hint=text(r.changes()+" setting(s) can reduce interference · tap to review",12,MUTED);hint.setPadding(0,dp(2),0,0);panel.addView(hint);}
+        panel.setFocusable(true);panel.setContentDescription("RF coexistence. "+state+". Packets lost "+RfCoexistence.percent(loss)+". Peak "+(hasPeak?RfCoexistence.dbm(peak):"unknown"));
+        panel.setOnClickListener(v->openSettings("rf_coexistence",null));
+        LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=dp(5);results.addView(panel,lp);
+    }
+    private float rfLossPosition(RfCoexistence.Report r){if(!r.mt.known&&!r.mc.known)return Float.NaN;double loss=r.worstLoss();return (float)(loss<.01?loss/.01/3:loss<.05?1/3f+(loss-.01)/.04/3:2/3f+Math.min(1,(loss-.05)/.10)/3);}
+    private float rfPeakPosition(RfCoexistence.Report r){double peak=r.worstPeak();return peak>-99?(float)Math.max(0,Math.min(1,(peak+10)/30)):Float.NaN;}
     private void lists(){
         int shown=0;
         if(selected==1){refreshMcContactTabs();if(filter==2){LinearLayout actions=group(results);menuRow(actions,"radio","Announce my presence",mcClient()==null||mcClient().mcAdvertStatus.isEmpty()?"Help other MeshCore devices discover your radio":mcClient().mcAdvertStatus,this::announceMcPresence,RADIO_MC);menuRow(actions,"refresh","Refresh radio contacts","Check current contact membership",()->mcCommand(ProtocolClient::refreshContacts),RADIO_MC);}ArrayList<MapPanel.Located> nodes=mapNodes();nodes.removeIf(ref->!included(ref.profile)||!matches(nodeName(ref.profile,ref.node)+" "+ref.node.id)||(favoritesOnly&&!ref.favorite)||(nodeType!=0&&contactType(ref.profile,ref.node)!=nodeType)||(filter==2&&mcContactFilter!=0&&McContacts.state(ref.node,mcClient())!=mcContactFilter));
@@ -1580,8 +1602,8 @@ public final class MainActivity extends Activity {
         TextView dt=text(detail.trim(),13,WHITE);dt.setPadding(0,dp(6),0,0);banner.addView(dt);LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,-2);bp.topMargin=dp(12);results.addView(banner,bp);
         // Gauges
         section(results,"DASHBOARD");LinearLayout gauges=row();gauges.setBackground(surface(PANEL));gauges.setPadding(dp(8),dp(12),dp(8),dp(8));
-        double loss=r.worstLoss();float lossPos=(r.mt.known||r.mc.known)?(float)(loss<.01?loss/.01/3:loss<.05?1/3f+(loss-.01)/.04/3:2/3f+Math.min(1,(loss-.05)/.10)/3):Float.NaN;
-        double peak=r.worstPeak();boolean hasPeak=peak>-99;float peakPos=hasPeak?(float)Math.max(0,Math.min(1,(peak+10)/30)):Float.NaN;
+        double loss=r.worstLoss();float lossPos=rfLossPosition(r);
+        double peak=r.worstPeak();boolean hasPeak=peak>-99;float peakPos=rfPeakPosition(r);
         gauges.addView(new RfGauge(this,lossPos,RfCoexistence.percent(loss),"Packets lost to the other radio",rfLevelColor(r.traffic),PANEL2,WHITE,MUTED),new LinearLayout.LayoutParams(0,-2,1));
         gauges.addView(new RfGauge(this,peakPos,hasPeak?RfCoexistence.dbm(peak):"—","Peak at the other radio",rfLevelColor(r.hardware),PANEL2,WHITE,MUTED),new LinearLayout.LayoutParams(0,-2,1));
         results.addView(gauges,new LinearLayout.LayoutParams(-1,-2));
