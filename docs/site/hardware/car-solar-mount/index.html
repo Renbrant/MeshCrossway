@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="A 3D-printable car-roof mount for two Heltec V4 radios, a 10,000 mAh battery and a solar panel. Free STL downloads from the MeshCrossway project.">
+<title>Dual Heltec V4 solar car-roof mount — MeshCrossway</title>
+<link rel="canonical" href="https://meshcrossway.renbrant.com/hardware/car-solar-mount/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="MeshCrossway">
+<meta property="og:title" content="Dual Heltec V4 solar car-roof mount — free STL files">
+<meta property="og:description" content="Two independent radios, one battery and a solar panel in a magnetic 3D-printed roof mount. Download the STL files.">
+<meta property="og:url" content="https://meshcrossway.renbrant.com/hardware/car-solar-mount/">
+<meta property="og:image" content="https://meshcrossway.renbrant.com/media/car-dual-solar-mount/03-closed-top.webp">
+<link rel="stylesheet" href="../../assets/site.css">
+<link rel="stylesheet" href="../../assets/landing.css">
+<link rel="icon" type="image/png" href="../../assets/meshcrossway-favicon.png">
+<link rel="apple-touch-icon" href="../../assets/meshcrossway-app-touch-icon.png">
+<style>
+.mount-hero{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.mount-hero img,.photo-grid img{width:100%;height:auto;display:block;border-radius:16px;border:1px solid #3a434d}
+.photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.photo-grid figure{margin:0}.photo-grid figcaption{color:var(--muted);font-size:13px;margin:10px 0 0}
+.downloads{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:28px}
+.downloads .card .button{margin-top:16px}
+.parts{columns:2;gap:40px;color:#c5bbb2;padding-left:20px}.parts li{margin-bottom:8px;break-inside:avoid}
+@media(max-width:800px){.mount-hero,.photo-grid,.downloads{grid-template-columns:1fr}.parts{columns:1}}
+</style>
+</head>
+<body class="landing">
+<nav class="nav"><div class="wrap navin"><a class="brand" href="../../" aria-label="MeshCrossway home"><img src="../../assets/meshcrossway-logo.svg" alt="MeshCrossway" width="330" height="44"></a><details class="site-menu"><summary>Explore</summary><div class="site-menu-panel"><a href="../">Hardware</a><a href="../../android/">Android app</a><a href="../../esp32/">ESP32 project</a><a href="../../faq/">FAQ</a><a href="https://github.com/Renbrant/MeshCrossway">GitHub repository</a></div></details><a class="cta" href="#download-stl">Download STL</a></div></nav>
+<main>
+<section class="section"><div class="wrap mount-hero">
+<div>
+<div class="eyebrow">3D-print suggestion · car roof</div>
+<h1 style="font-size:clamp(38px,5vw,60px);line-height:1.05;letter-spacing:-.04em;margin:14px 0 20px">Two Heltec V4 radios.<br>One solar panel.<br>On your roof.</h1>
+<p class="sectionintro">A low-profile, magnetic mount that carries one Meshtastic radio and one MeshCore radio on the car roof, powered by a shared 10,000 mAh battery and topped up by a small solar panel. Your phone runs MeshCrossway inside the car and connects to both radios over Bluetooth.</p>
+<div class="actions"><a class="button primary" href="#download-stl">Download the STL files</a><a class="button secondary" href="#gallery">See the photos</a></div>
+</div>
+<a class="image-zoom" href="../../media/car-dual-solar-mount/03-closed-top.webp"><img src="../../media/car-dual-solar-mount/03-closed-top.webp" alt="Closed mount seen from above: textured cover with two red antennas in front of a black solar panel" width="1600" height="1200"></a>
+</div></section>
+
+<section class="section" id="gallery" style="padding-top:20px"><div class="wrap">
+<div class="section-heading"><div class="eyebrow">The real build</div><h2>Printed, assembled and ready to ride.</h2></div>
+<div class="photo-grid">
+<figure><a class="image-zoom" href="../../media/car-dual-solar-mount/01-open-overview.webp"><img src="../../media/car-dual-solar-mount/01-open-overview.webp" alt="Mount opened next to its cover: two Heltec V4 boards on either side of a 10,000 mAh battery, with the solar panel bolted to the base" width="1600" height="1133" loading="lazy"></a><figcaption>Opened: cover on the left, both radios and the battery in the base, solar panel bolted alongside.</figcaption></figure>
+<figure><a class="image-zoom" href="../../media/car-dual-solar-mount/02-closed-angle.webp"><img src="../../media/car-dual-solar-mount/02-closed-angle.webp" alt="Closed mount at an angle with two antennas and the solar panel" width="1600" height="1200" loading="lazy"></a><figcaption>Closed: the cover is held with four screws and each radio gets its own antenna.</figcaption></figure>
+<figure><a class="image-zoom" href="../../media/car-dual-solar-mount/04-interior.webp"><img src="../../media/car-dual-solar-mount/04-interior.webp" alt="Inside the base: one Heltec V4 in each side pocket and a 10,000 mAh 3.7 V battery in the centre" width="1600" height="1200" loading="lazy"></a><figcaption>Inside: a pocket for each Heltec V4 and a central bay for the battery.</figcaption></figure>
+<figure><a class="image-zoom" href="../../media/car-dual-solar-mount/05-heltec-v4-detail.webp"><img src="../../media/car-dual-solar-mount/05-heltec-v4-detail.webp" alt="Close-up of a Heltec V4 board screwed into its pocket" width="1600" height="1200" loading="lazy"></a><figcaption>Detail: each Heltec V4 is screwed into its own pocket.</figcaption></figure>
+<figure><a class="image-zoom" href="../../media/car-dual-solar-mount/06-cad-render.webp"><img src="../../media/car-dual-solar-mount/06-cad-render.webp" alt="CAD render of the base and cover with the solar panel outline" width="732" height="377" loading="lazy"></a><figcaption>CAD model of the base and transparent cover.</figcaption></figure>
+</div>
+</div></section>
+
+<section class="section"><div class="wrap">
+<div class="section-heading"><div class="eyebrow">What goes inside</div><h2>Parts used in this build.</h2></div>
+<ul class="parts">
+<li><strong>2 × Heltec V4</strong> (WiFi LoRa 32 V4): one with Meshtastic firmware, one with MeshCore companion firmware.</li>
+<li><strong>1 × 3.7 V LiPo battery, 10,000 mAh</strong> (about 37 Wh), shared by both radios.</li>
+<li><strong>1 × small solar panel</strong> bolted to the base, wired to keep the battery charged.</li>
+<li><strong>2 × LoRa antennas</strong> with SMA connectors and u.FL-to-SMA pigtails, one per radio.</li>
+<li><strong>4 × rubber-coated mounting magnets</strong>: two under the base, two under the far end of the panel.</li>
+<li>Screws, nuts and washers to close the cover, fix the boards and attach the panel and magnets.</li>
+</ul>
+<div class="notice" style="margin-top:28px"><b>A personal build, not a certified product.</b> This is the setup MeshCrossway’s creator built for a personal car. Check that the antennas suit your radio band, that the magnets hold firmly at highway speeds, and that the battery, wiring and solar charging are safe in heat and sun. Remove the mount before car washes. Print in a heat- and UV-resistant material such as PETG or ASA.</div>
+</div></section>
+
+<section class="section" id="download-stl" style="background:linear-gradient(120deg,#322319,#161b21 75%);border-block:1px solid #4e392c"><div class="wrap">
+<div class="eyebrow">Free download</div><h2>Print your own.</h2>
+<p class="sectionintro">Two parts: a base that holds the radios, battery and panel, and a textured cover with antenna openings.</p>
+<div class="downloads">
+<article class="card"><div class="num">PART 1 · BASE</div><h3>MeshCrossway-car-dual-solar-base.stl</h3><p>About 209 × 100 × 26 mm · 4.4 MB</p><a class="button primary" href="https://github.com/Renbrant/MeshCrossway/raw/main/hardware/3D/car-dual-solar-mount/MeshCrossway-car-dual-solar-base.stl" download>Download base STL</a></article>
+<article class="card"><div class="num">PART 2 · COVER</div><h3>MeshCrossway-car-dual-solar-cover.stl</h3><p>About 215 × 95 × 19 mm · 1.7 MB</p><a class="button primary" href="https://github.com/Renbrant/MeshCrossway/raw/main/hardware/3D/car-dual-solar-mount/MeshCrossway-car-dual-solar-cover.stl" download>Download cover STL</a></article>
+</div>
+<p class="small muted" style="margin-top:22px">Files and assembly notes are also in the <a style="text-decoration:underline" href="https://github.com/Renbrant/MeshCrossway/tree/main/hardware/3D/car-dual-solar-mount">GitHub repository</a>. Free to print for personal, noncommercial use under the repository’s <a style="text-decoration:underline" href="https://github.com/Renbrant/MeshCrossway/blob/main/LICENSE">license</a>. Please do not resell the files or the printed parts. Share your build or improvements in <a style="text-decoration:underline" href="https://github.com/Renbrant/MeshCrossway/issues/new/choose">GitHub feedback</a>.</p>
+</div></section>
+</main>
+<footer><div class="wrap footer-top"><img src="../../assets/meshcrossway-logo.svg" width="220" height="30" alt="MeshCrossway"><div><a href="https://github.com/Renbrant/MeshCrossway">GitHub &amp; technical documentation</a><a href="../">Hardware</a><a href="../../privacy/">Privacy</a></div></div><div class="wrap footer-note">An independent source-available project. Heltec, Meshtastic and MeshCore belong to their respective owners and projects. MeshCrossway is experimental and should not be your only means of communication in an emergency.</div></footer>
+<dialog class="image-dialog" aria-label="Expanded photo"><button type="button" class="close-image" aria-label="Close expanded photo">Close ×</button><img alt=""><p></p></dialog>
+<script src="../../assets/landing.js" defer></script>
+</body></html>
