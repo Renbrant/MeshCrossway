@@ -17,12 +17,23 @@ Web page: <https://meshcrossway.renbrant.com/hardware/car-solar-mount/>
 
 ## Parts used in the reference build
 
-- 2 × Heltec V4 (WiFi LoRa 32 V4): one with Meshtastic, one with MeshCore companion firmware
-- 1 × 3.7 V LiPo battery, 10,000 mAh (≈37 Wh), shared by both radios
-- 1 × small solar panel bolted to the base, wired to keep the battery charged
-- 2 × LoRa antennas (SMA) with u.FL-to-SMA pigtails, one per radio
-- 4 × rubber-coated mounting magnets (two under the base, two under the far end of the panel)
-- Screws, nuts and washers for the cover, the boards, the panel and the magnets
+These are the exact parts used in the photos. Buying the same ones avoids surprises with fit and connectors.
+
+| Qty | Part | Option to choose | Link |
+| --- | --- | --- | --- |
+| 2 | Heltec V4 ESP32-S3 LoRa board (SX1262, no OLED): one for Meshtastic, one for MeshCore | Standard without GPS | [Amazon](https://link.amazon/B03tfSWa8) |
+| 1 pack (2 sets) | Slinkdsco 915 MHz LoRa whip antenna with u.FL-to-SMA pigtail (choose the band for your region) | Red | [Amazon](https://link.amazon/B00lC4s3M) |
+| 1 | ETWOWUP 3.7 V 10,000 mAh LiPo battery, 1S, PH 2.0 plug, protection circuit (≈37 Wh) | 1PC | [Amazon](https://link.amazon/B0h4jtn9k) |
+| 1 pack | Soshine 5 V 6 W USB solar panel with DC cable, keeps the battery charged | 6W x2 | [Amazon](https://link.amazon/B081g0vdr) |
+| 1 pack (uses 4) | DIYMAG rubber-coated mounting magnets, 1/4 in stud: two under the base, two under the panel | 1/4in-30LB-1.69in, 6 pcs | [Amazon](https://link.amazon/B00f6AqAr) |
+
+You will also need screws, nuts and washers for the cover, the boards, the panel and the magnets.
+
+> **Support the project.** These are affiliate links. If you buy through them, you pay the same
+> price and a small commission helps MeshCrossway's creator keep building and sharing projects
+> like this one. Thank you!
+>
+> *As an Amazon Associate I earn from qualifying purchases.*
 
 ## Photos
 
