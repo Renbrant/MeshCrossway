@@ -32,6 +32,8 @@ final class ProtocolClient {
     final Map<Integer,byte[]> mtConfigs=new HashMap<>(),mtModules=new HashMap<>(),mtChannels=new HashMap<>();
     byte[] mtSessionKey=Wire.EMPTY,mtOwner=Wire.EMPTY;boolean mtAdminRequested,mtOwnerLoaded,mtHasSignatures;int mtHardware;long mtExcludedModules,mtRevision;byte[] mtRegionMap=Wire.EMPTY;final MtAdmin admin;final LinkedHashMap<Long,Long> mtTraces=new LinkedHashMap<>();final Set<Integer> mtRefreshingChannels=new HashSet<>();
     private final LinkedHashMap<String,RxInfo.Observation> observedRoutes=new LinkedHashMap<>();
+    /** Radio links for the map; RadioService keeps one store per radio across reconnects. */
+    MeshLinks links=new MeshLinks();
     private final LinkedHashMap<String,Message> receivedChannels=new LinkedHashMap<>();
     Command active;boolean ready;String description="Synchronizing…",localName="",firmware="",hardware="",build="",publicKey="",defaultFloodScope="";long myNum,lastPoll,lastBatteryPoll,idlePolls,lastStamp,lastWrite,uptimeSecs;int hopLimit=3,region,channelCount,nextChannel,contactsExpected,contactsSeen,payloadLimit=173,firmwareCode=-1,maxTxPower=-1,txPower=-1,pathHashMode=-1,batteryMv=-1,usedKb=-1,totalKb=-1,noiseFloor=-999,lastRssi=-999,lastSnrQuarter=0;long txAirSecs,rxAirSecs;double latitude,longitude,frequencyMhz,bandwidthKhz;int spreadingFactor,codingRate,telemetryModes,advertLocationPolicy;boolean txEnabled,pki,waiting,contactsStarted,manualAddContacts,multiAcks,hasLocation,hasRadioStats,hasBattery;
     ProtocolClient(RadioProfile profile,long nonce,Listener listener){this.profile=profile;this.listener=listener;probe=new ProtocolProbe(nonce);admin=new MtAdmin(new MtAdmin.Host(){public void enqueue(byte[] value,long id,boolean response){queue(mtAdminPacket(value,id,response),-1,"");}public void apply(int kind,int index,byte[] body){applyMtAdmin(kind,index,body);}});
@@ -94,6 +96,7 @@ final class ProtocolClient {
         for(Wire.F f:fs){
             if(f.tag==3){myNum=Wire.number(Wire.fields(f.bytes),1,0);}
             else if(f.tag==4){List<Wire.F> ns=Wire.fields(f.bytes);long id=Wire.number(ns,1,0);if(id==0)continue;Node n=node(Long.toString(id));
+                mtNodeLink(ns,id,now);
                 for(Wire.F nf:ns){if(nf.tag==2)user(nf.bytes,n);if(nf.tag==3)position(nf.bytes,n);if(nf.tag==5)n.heard=nf.number;if(nf.tag==6){n.battery=(int)Wire.number(Wire.fields(nf.bytes),1,-1);int mv=RadioBattery.millivolts(nf.bytes);if(mv>0)n.batteryMv=mv;metric(n,"Device",MtMetrics.describe(2,nf.bytes),n.heard);}}publish(n);
             }else if(f.tag==5){applyMtConfig(f.bytes,false);}
             else if(f.tag==9){applyMtConfig(f.bytes,true);}
@@ -108,12 +111,13 @@ final class ProtocolClient {
     }
     private void mtPacket(byte[] bytes,long now){
         List<Wire.F> ps=Wire.fields(bytes);long from=Wire.number(ps,1,0),to=Wire.number(ps,2,0),id=Wire.number(ps,6,0),time=Wire.number(ps,7,0);int slot=(int)Wire.number(ps,3,0);
+        heardDirectly(ps,from,now);
         byte[] decoded=Wire.bytes(ps,4);if(decoded.length==0)return;List<Wire.F> ds=Wire.fields(decoded);int port=(int)Wire.number(ds,1,0);byte[] payload=Wire.bytes(ds,2);
         if(port==6){MtAdmin.Edit before=admin.edit;admin.response(from,to,myNum,Wire.number(ds,6,0),payload);mtSessionKey=admin.key;if(before!=null&&before.setField==18&&admin.edit==null&&admin.error.isEmpty()){requestMtConfig(5);for(int index=0;index<8;index++){mtRefreshingChannels.add(index);admin.read(2,index);}}return;}
         if(port==5){long request=Wire.number(ds,6,0);Wire.F error=Wire.field(Wire.fields(payload),3);admin.ack(from,to,myNum,request,error==null?0:error.number);Sent s=sent.get(request);
             if(s!=null&&to==myNum&&(from==myNum||Long.toString(from).equals(s.peer))){long code=error==null?0:error.number;boolean delivered=code==0&&from!=myNum&&to==myNum&&s.peer.equals(Long.toString(from));listener.delivery(s.uid,(error!=null&&error.number!=0)?"rejected":delivered?"delivered":"radio accepted");if(delivered||code!=0)sent.remove(request);}return;}
         if(from==0)return;
-        if(port==3||port==4||port==36||port==67||port==70||port==71){Node n=node(Long.toString(from));if(port==3){position(payload,n);if(n.position)metric(n,"Position",String.format(Locale.ROOT,"%.7f, %.7f",n.lat,n.lon),time);}else if(port==4)user(payload,n);else if(port==36){n.status=Wire.utf8(Wire.bytes(Wire.fields(payload),1));n.statusKnown=true;}else if(port==67){List<Wire.F> telemetry=Wire.fields(payload);long stamp=Wire.number(telemetry,1,time);for(Wire.F f:telemetry)if(f.wire==2){if(f.tag==2){n.battery=(int)Wire.number(Wire.fields(f.bytes),1,-1);int mv=RadioBattery.millivolts(f.bytes);if(mv>0)n.batteryMv=mv;}metric(n,MtMetrics.kind(f.tag),MtMetrics.describe(f.tag,f.bytes),stamp);}}else if(port==71){StringBuilder edges=new StringBuilder();for(Wire.F f:Wire.fields(payload))if(f.tag==4){List<Wire.F> edge=Wire.fields(f.bytes);edges.append(String.format(Locale.ROOT,"!%08x",Wire.number(edge,1,0))).append(" SNR ").append(Float.intBitsToFloat((int)Wire.number(edge,2,0))).append(" dB; ");}metric(n,"Neighbors",edges.toString(),time);}else if(port==70){long request=Wire.number(ds,6,0);Long expected=mtTraces.get(request);if(to!=myNum||expected==null||expected!=from)return;mtTraces.remove(request);metric(n,"Traceroute","Outbound: "+mtRoute(payload,1)+"; return: "+mtRoute(payload,3),time);}n.heard=Math.max(n.heard,time);publish(n);return;}
+        if(port==3||port==4||port==36||port==67||port==70||port==71){Node n=node(Long.toString(from));if(port==3){position(payload,n);if(n.position)metric(n,"Position",String.format(Locale.ROOT,"%.7f, %.7f",n.lat,n.lon),time);}else if(port==4)user(payload,n);else if(port==36){n.status=Wire.utf8(Wire.bytes(Wire.fields(payload),1));n.statusKnown=true;}else if(port==67){List<Wire.F> telemetry=Wire.fields(payload);long stamp=Wire.number(telemetry,1,time);for(Wire.F f:telemetry)if(f.wire==2){if(f.tag==2){n.battery=(int)Wire.number(Wire.fields(f.bytes),1,-1);int mv=RadioBattery.millivolts(f.bytes);if(mv>0)n.batteryMv=mv;}metric(n,MtMetrics.kind(f.tag),MtMetrics.describe(f.tag,f.bytes),stamp);}}else if(port==71){StringBuilder edges=new StringBuilder();for(Wire.F f:Wire.fields(payload))if(f.tag==4){List<Wire.F> edge=Wire.fields(f.bytes);edges.append(String.format(Locale.ROOT,"!%08x",Wire.number(edge,1,0))).append(" SNR ").append(Float.intBitsToFloat((int)Wire.number(edge,2,0))).append(" dB; ");}metric(n,"Neighbors",edges.toString(),time);links.meshtasticNeighbors(payload,from,now);}else if(port==70){long request=Wire.number(ds,6,0);Long expected=mtTraces.get(request);if(to!=myNum||expected==null||expected!=from)return;mtTraces.remove(request);links.meshtasticTrace(payload,myNum,from,now);metric(n,"Traceroute","Outbound: "+mtRoute(payload,1)+"; return: "+mtRoute(payload,3),time);}n.heard=Math.max(n.heard,time);publish(n);return;}
         if(port!=1 || id==0 || payload.length==0 || payload.length>237 || (to!=0xffffffffL&&to!=myNum&&from!=myNum))return;
         if(from==myNum&&sent.containsKey(id)){listener.delivery(sent.get(id).uid,"radio accepted");return;}
         Message m=new Message();m.uid="mt:"+from+":"+id;m.body=Wire.utf8(payload);m.outgoing=from==myNum;m.read=m.outgoing;m.timestamp=time>=1577836800L?time:System.currentTimeMillis()/1000;m.slot=slot;m.sender=nodeName(Long.toString(from));m.group=to==0xffffffffL;
@@ -123,6 +127,22 @@ final class ProtocolClient {
         m.state=m.outgoing?"radio accepted":"received";listener.message(m);
     }
     private void metric(Node n,String kind,String value,long time){if(value.isEmpty())return;if(value.length()>1000)value=value.substring(0,1000);n.metrics.put(kind,value);String sample=(time>0?time:System.currentTimeMillis()/1000)+" · "+kind+": "+value;if(n.metricHistory.isEmpty()||!n.metricHistory.get(n.metricHistory.size()-1).equals(sample))n.metricHistory.add(sample);while(n.metricHistory.size()>20)n.metricHistory.remove(0);}
+    /** hop_start equal to hop_limit means no relay touched the packet; MQTT copies are not RF. */
+    private void heardDirectly(List<Wire.F> ps,long from,long now){
+        if(!MeshLinks.mtNode(myNum)||!MeshLinks.mtNode(from)||from==myNum||Wire.number(ps,14,0)!=0)return;
+        long start=Wire.number(ps,15,0),limit=Wire.number(ps,9,0);Wire.F snr=Wire.field(ps,8),rssi=Wire.field(ps,12);
+        if(start<=0||start>7||limit!=start||snr==null||snr.wire!=5)return;
+        float value=Float.intBitsToFloat((int)snr.number);if(!Float.isFinite(value))return;
+        links.add(MeshLinks.mt(myNum),MeshLinks.mt(from),MeshLinks.Source.HEARD,value,rssi==null?MeshLinks.NO_RSSI:(int)rssi.number,now);
+    }
+    /** NodeInfo from the radio's database: hops_away 0 with an SNR is the last direct reception. */
+    private void mtNodeLink(List<Wire.F> ns,long id,long now){
+        Wire.F hops=Wire.field(ns,9),snr=Wire.field(ns,4);
+        if(hops==null||hops.number!=0||snr==null||snr.wire!=5||Wire.number(ns,8,0)!=0||id==myNum||!MeshLinks.mtNode(myNum))return;
+        float value=Float.intBitsToFloat((int)snr.number);long heard=Wire.number(ns,5,0),epoch=System.currentTimeMillis()/1000;
+        if(!Float.isFinite(value)||value==0f||heard<=0||heard>epoch+300)return;
+        links.add(MeshLinks.mt(myNum),MeshLinks.mt(id),MeshLinks.Source.HEARD,value,MeshLinks.NO_RSSI,now-Math.max(0,epoch-heard)*1000L);
+    }
     private String mtRoute(byte[] payload,int field){StringBuilder result=new StringBuilder();for(Wire.F f:Wire.fields(payload))if(f.tag==field){if(f.wire==2){if(f.bytes.length%4!=0)throw Wire.bad("Invalid packed route");for(int i=0;i<f.bytes.length;i+=4){if(result.length()>0)result.append(" → ");result.append(String.format(Locale.ROOT,"!%08x",Wire.u32(f.bytes,i)));}}else if(f.wire==5){if(result.length()>0)result.append(" → ");result.append(String.format(Locale.ROOT,"!%08x",f.number));}}return result.length()==0?"No intermediate nodes":result.toString();}
     void requestMtMetrics(String nodeId,boolean trace){if(!ready||region==0||!txEnabled)throw Wire.bad("Connect and enable LoRa transmission first");long dest=Long.parseLong(nodeId),id=admin.id();Wire.Out data=new Wire.Out().scalar(1,trace?70:67).bytes(2,trace?Wire.EMPTY:new Wire.Out().bytes(2,Wire.EMPTY).array()).scalar(3,1);Wire.Out packet=new Wire.Out().fixed(2,dest).fixed(6,id).bytes(4,data.array()).scalar(9,hopLimit).scalar(10,1);if(trace){if(mtTraces.size()>=8)mtTraces.remove(mtTraces.keySet().iterator().next());mtTraces.put(id,dest);}queue(new Wire.Out().bytes(1,packet.array()).array(),-1,"");}
     private void applyMtMetadata(byte[] body){List<Wire.F> fs=Wire.fields(body);firmware=Wire.utf8(Wire.bytes(fs,1));mtHardware=(int)Wire.number(fs,9,0);hardware=MtLora.hardwareName(mtHardware);pki=Wire.number(fs,11,0)!=0;mtExcludedModules=Wire.number(fs,12,0);mtHasSignatures=Wire.number(fs,14,0)!=0;mtRevision++;}
@@ -224,9 +244,9 @@ final class ProtocolClient {
         myNum=1;mcRevision++;
     }
     private void meshcore(byte[] data,long now){
-        if(data.length==0||data.length>176)throw Wire.bad("Invalid MeshCore frame");int code=data[0]&255;if(code==136){observeChannel(data,now);return;}
+        if(data.length==0||data.length>176)throw Wire.bad("Invalid MeshCore frame");int code=data[0]&255;if(code==136){links.meshcoreLog(data,publicKey,now);observeChannel(data,now);return;}
         if(code==0x85||code==0x86){mcRepeaterAdmin.loginResponse(data,now);mcRevision++;return;}
-        if(code==McRemoteDiagnostics.PUSH_BINARY){long revision=mcRemote.revision;mcRemote.receive(data,now);if(mcRemote.revision!=revision)mcRevision++;return;}
+        if(code==McRemoteDiagnostics.PUSH_BINARY){long revision=mcRemote.revision;mcRemote.receive(data,now);if(mcRemote.revision!=revision){mcRevision++;McRemoteDiagnostics.Result done=mcRemote.lastCompleted;if(done!=null&&done.kind==McRemoteDiagnostics.Kind.NEIGHBORS&&done.neighbors!=null)links.meshcoreRepeater(done.fullKey,mcRemote.allNeighbors(done.fullKey),now);}return;}
         Command current=active;int command=current==null?-1:current.data[0]&255;
         boolean matched=current!=null&&(code==current.response||code==1||code==15||(command==4&&code==4)||(command==10&&(code==7||code==8||code==16||code==17||code==27)));
         if(command==31&&code==18)matched=data.length>=2&&data[1]==current.data[1];

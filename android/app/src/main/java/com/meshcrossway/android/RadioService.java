@@ -18,6 +18,8 @@ public final class RadioService extends Service {
     public final class LocalBinder extends Binder { public RadioService service(){return RadioService.this;} }
     public final class Session {
         public final RadioProfile profile;
+        /** Map links survive reconnects to the same radio and are cleared for a different one. */
+        final MeshLinks links=new MeshLinks();
         public String address="", name="", status="Disconnected";
         public long frames;
         public boolean connected, verified;
@@ -234,7 +236,7 @@ public final class RadioService extends Service {
         if(!gate.acquire(s.profile)){phase(s,"Queued","Waiting for "+gate.owner().title+" Bluetooth setup");return;}
         stopScan();release(s,"Connecting…");s.mtu=23;
         if(!address.equals(s.address)){
-            s.rssiDbm=BleSignal.UNKNOWN;s.rssiMeasuredAtMs=0;
+            s.rssiDbm=BleSignal.UNKNOWN;s.rssiMeasuredAtMs=0;s.links.clear();
         }
         s.address=address;s.frames=0;history.select(s.profile,address);
         long nonce=(new SecureRandom().nextInt() & 0x7fffffffL)+1;if(nonce==69420||nonce==69421)nonce+=2;
@@ -245,6 +247,7 @@ public final class RadioService extends Service {
             public void message(MeshData.Message m){history.message(profile,radio,m,muted->{if(!muted&&!m.outgoing&&!uiVisible&&s.address.equals(radio)&&System.currentTimeMillis()/1000-m.timestamp<120)alerts.show(profile,radio,m);});}
             public void delivery(String uid,String state){history.delivery(profile,radio,uid,state);}
         });
+        s.client.links=s.links;
         if(profile==RadioProfile.MESHCORE){if(s.pendingMcAddress.equals(address)){if(s.pendingMcEdit!=null)s.client.mcAdmin.restore(s.pendingMcEdit);s.client.mcRestoreDeliveries(s.pendingMcDeliveries,now());}else{s.pendingMcEdit=null;s.pendingMcDeliveries.clear();}s.pendingMcAddress=address;}
         if(profile==RadioProfile.MESHTASTIC&&s.pendingMtAddress.equals(address)){if(s.pendingMtEdit!=null)s.client.admin.restore(s.pendingMtEdit);s.client.admin.restartCheck=s.pendingMtRestartCheck;s.client.admin.restartCheckPending=s.pendingMtRestartCheck!=null;s.client.admin.lastSave=s.pendingMtLastSave;}else{s.pendingMtEdit=null;s.pendingMtRestartCheck=null;s.pendingMtLastSave="";s.pendingMtAddress="";}
         try{
