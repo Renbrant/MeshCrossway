@@ -1,13 +1,14 @@
-# MeshCrossway Android — 0.5.0 beta
+# MeshCrossway Android — 0.5.1 beta
 
-[Download signed MeshCrossway-0.5.0.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.5.0/MeshCrossway-0.5.0.apk) · [Release notes and checksums](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.5.0) · [Installation page](https://meshcrossway.renbrant.com/android/)
+[Download signed MeshCrossway-0.5.1.apk](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.5.1/MeshCrossway-0.5.1.apk) · [Release notes and checksums](https://github.com/Renbrant/MeshCrossway/releases/tag/android-v0.5.1) · [Installation page](https://meshcrossway.renbrant.com/android/)
 
-Current published beta: **0.5.0, versionCode 51**. Android 8.0+ on ARM64; two independent compatible Bluetooth radios for simultaneous Meshtastic and MeshCore. No cross-network forwarding.
+Current published beta: **0.5.1, versionCode 52**. Android 8.0+ on ARM64; two independent compatible Bluetooth radios for simultaneous Meshtastic and MeshCore. No cross-network forwarding.
 
 Install over a compatible permanently signed installation without uninstalling or clearing storage. Back up important data first. Old debug-signed 0.2.2-or-earlier installations require the [migration guide](android-permanent-signing-backup.md). Android normally blocks downgrades to a lower versionCode.
 
 ## Recent changes and limits
 
+- **0.5.1:** connection lines styled per network: Meshtastic and MeshCore can be turned on/off independently, each with its own thickness (1–8 dp), opacity (10–100%), color per signal level and an option to hide reported (dashed) lines. **Layers → Line style**.
 - **0.5.0:** new map layer **Connections and signal strength** (Layers panel): lines between nodes that heard each other, green/yellow/red by SNR margin above the LoRa decoding limit for the spreading factor. Solid = measured by your radio; dashed = Meshtastic neighbor info or traceroute, MeshCore repeater neighbor lists or flood paths. Tap a line for details; lines fade over 24 hours.
 - **0.4.16:** Home battery icon and voltage moved to the card's top bar; conversations open at the first unread message with a divider and NEW marks.
 - **0.4.15:** both radios' battery level now uses the same MeshCrossway voltage curve; Home shows the voltage beside a battery icon filled to the charge level.
@@ -27,7 +28,7 @@ See [version history and source branches](android-version-history.md) for exact 
 
 ## Previous releases (historical details)
 
-The sections below describe earlier development betas and their behavior **at the time**. Use the 0.5.0 link above for the current experimental field beta.
+The sections below describe earlier development betas and their behavior **at the time**. Use the 0.5.1 link above for the current experimental field beta.
 
 ## Channels, links and QR Codes in 0.3.12
 
