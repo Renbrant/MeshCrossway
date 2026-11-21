@@ -166,9 +166,9 @@ final class MapPanel {
     private void updateLinks(Style style){
         GeoJsonSource source=style.getSourceAs("mesh-links");if(source==null)return;shownLinks.clear();ArrayList<Feature> lines=new ArrayList<>();linksSeen=host.linksRevision();
         if(connections()){long now=android.os.SystemClock.elapsedRealtime();
-            for(MeshLinks.Line line:host.links()){if(network!=0&&network!=line.profile.ordinal()+1)continue;LinkStyle style=linkStyles.get(line.profile);if(style==null||!style.enabled||!line.local()&&!style.reported)continue;double lon2=line.b.lon;while(lon2-line.a.lon>180)lon2-=360;while(lon2-line.a.lon< -180)lon2+=360;
+            for(MeshLinks.Line line:host.links()){if(network!=0&&network!=line.profile.ordinal()+1)continue;LinkStyle look=linkStyles.get(line.profile);if(look==null||!look.enabled||!line.local()&&!look.reported)continue;double lon2=line.b.lon;while(lon2-line.a.lon>180)lon2-=360;while(lon2-line.a.lon< -180)lon2+=360;
                 Feature f=Feature.fromGeometry(LineString.fromLngLats(Arrays.asList(Point.fromLngLat(line.a.lon,line.a.lat),Point.fromLngLat(lon2,line.b.lat))));
-                f.addStringProperty("link",line.key);f.addStringProperty("color",LinkStyle.hex(style.color(line.quality)));f.addBooleanProperty("local",line.local());f.addNumberProperty("opacity",style.opacity(MeshLinks.opacity(now-line.primary.at)));f.addNumberProperty("width",line.local()?style.solidWidth():style.dashedWidth());
+                f.addStringProperty("link",line.key);f.addStringProperty("color",LinkStyle.hex(look.color(line.quality)));f.addBooleanProperty("local",line.local());f.addNumberProperty("opacity",look.opacity(MeshLinks.opacity(now-line.primary.at)));f.addNumberProperty("width",line.local()?look.solidWidth():look.dashedWidth());
                 lines.add(f);shownLinks.put(line.key,line);}
         }
         source.setGeoJson(FeatureCollection.fromFeatures(lines));
