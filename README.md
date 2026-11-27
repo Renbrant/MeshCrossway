@@ -6,7 +6,7 @@
 
 Connect **two independent Bluetooth radios**: one running Meshtastic and one running MeshCore Companion BLE firmware. Each keeps its own network and conversations. MeshCrossway does not forward messages between the networks.
 
-**[Download Android 0.5.0 beta](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.5.0/MeshCrossway-0.5.0.apk)** · [Visit the website](https://meshcrossway.renbrant.com/) · [Installation help](https://meshcrossway.renbrant.com/android/)
+**[Download Android 0.5.1 beta](https://github.com/Renbrant/MeshCrossway/releases/download/android-v0.5.1/MeshCrossway-0.5.1.apk)** · [Visit the website](https://meshcrossway.renbrant.com/) · [Installation help](https://meshcrossway.renbrant.com/android/)
 
 > Public beta for testing. Android 8.0+ on ARM64. Version 1.0 has not been released; compatibility and field testing continue.
 
