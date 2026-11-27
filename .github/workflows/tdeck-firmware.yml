@@ -1,0 +1,39 @@
+name: T-Deck Plus firmware build (no website deployment)
+
+on:
+  pull_request:
+    paths:
+      - "firmware/tdeck-plus/**"
+      - "firmware/display-prototype/meshcrossway_ble*"
+      - "firmware/display-prototype/meshcrossway_mesh*"
+      - "firmware/display-prototype/meshcrossway_sd_history.h"
+      - "firmware/display-prototype/meshcrossway_history_store.h"
+      - "firmware/display-prototype/meshcrossway_conversations.h"
+      - "docs/site/flasher/index.html"
+      - "scripts/build_tdeck_firmware.sh"
+      - "scripts/write_tdeck_firmware.py"
+      - "scripts/test_tdeck_flasher.py"
+      - ".github/workflows/tdeck-firmware.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and package T-Deck Plus firmware (ESP-IDF 5.3.2)
+        env:
+          MESH_TDECK_OUTPUT_DIR: ${{ github.workspace }}/_tdeck/tdeck-plus
+        run: |
+          set -euo pipefail
+          bash scripts/build_tdeck_firmware.sh
+          python3 scripts/test_tdeck_flasher.py --catalog _tdeck/tdeck-plus/catalog.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: meshcrossway-tdeck-plus
+          path: _tdeck/tdeck-plus
+          retention-days: 30

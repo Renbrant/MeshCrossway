@@ -9,6 +9,10 @@ on:
       - "docs/images/meshcrossway_mountain_connectivity_concept.png"
       - "docs/images/meshcrossway-modular-hero.jpg"
       - "firmware/display-prototype/**"
+      - "firmware/tdeck-plus/**"
+      - "scripts/build_tdeck_firmware.sh"
+      - "scripts/write_tdeck_firmware.py"
+      - "scripts/test_tdeck_flasher.py"
       - "scripts/build_firmware_versions.sh"
       - "scripts/write_firmware_*.py"
       - "scripts/verify_firmware_version.py"
@@ -138,6 +142,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/build_firmware_versions.sh
+      - name: Build LilyGO T-Deck Plus firmware (always EXPERIMENTAL until hardware-tested)
+        run: |
+          set -euo pipefail
+          bash scripts/build_tdeck_firmware.sh
+          python3 scripts/test_tdeck_flasher.py --catalog _site/flasher/firmware/tdeck-plus/catalog.json
       - name: Package source notices and emoji attribution
         run: python3 scripts/write_firmware_notices.py --output _site/flasher/firmware/notices
       - name: Verify selectable manifests and binaries

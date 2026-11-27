@@ -1,0 +1,6 @@
+## LVGL 8.4 pinned by tag (same major/minor as the Waveshare controller).
+dependencies:
+  idf: "5.3.2"
+  lvgl:
+    git: https://github.com/lvgl/lvgl.git
+    version: v8.4.0

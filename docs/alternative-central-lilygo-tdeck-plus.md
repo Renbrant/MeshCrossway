@@ -1,6 +1,6 @@
 # Alternative central controller: LilyGO T-Deck Plus (proposal)
 
-**Status:** Candidate / feasibility assessment, not implemented or validated on hardware.
+**Status:** v0.1.0 implemented (`firmware/tdeck-plus`) and offered in the Web Flasher as EXPERIMENTAL; not yet validated on hardware. Scope: two BLE radios, minimal keyboard/trackball UI (radios, chats, contacts), no map.
 **Recorded:** 2026-10-28
 **Role:** Optional drop-in *functional replacement* for the Waveshare ESP32-S3 Touch LCD 3.5 central console, **not** a pin-compatible hardware replacement.
 
