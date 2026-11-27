@@ -31,6 +31,7 @@ final class NavIcon extends View {
             case "fit":line(c,3,9,3,3);line(c,3,3,9,3);line(c,15,3,21,3);line(c,21,3,21,9);line(c,21,15,21,21);line(c,21,21,15,21);line(c,9,21,3,21);line(c,3,21,3,15);break;
             case "back":line(c,20,12,4,12);line(c,4,12,10,6);line(c,4,12,10,18);break;
             case "more":paint.setStyle(Paint.Style.FILL);for(int y=5;y<=19;y+=7)c.drawCircle(12,y,1.5f,paint);break;
+            case "offline":line(c,6,6,18,18);line(c,18,6,6,18);break;
             case "arrow":line(c,9,6,15,12);line(c,15,12,9,18);break;
             case "radio":c.drawRoundRect(5,8,19,21,2,2,paint);line(c,8,8,15,2);c.drawCircle(12,15,3,paint);break;
             case "gps":c.drawCircle(12,12,7,paint);c.drawCircle(12,12,2,paint);line(c,12,2,12,5);line(c,12,19,12,22);line(c,2,12,5,12);line(c,19,12,22,12);break;

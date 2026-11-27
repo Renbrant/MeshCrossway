@@ -144,7 +144,7 @@ public final class MainActivity extends Activity {
             long latest=0,heard=0;
             for(Message message:data.messages)latest=Math.max(latest,message.timestamp);
             for(Node node:data.nodes)heard=Math.max(heard,node.heard);
-            key.append(':').append(latest).append(':').append(heard).append(':').append(UiFeed.recentlyHeard(data.nodes,System.currentTimeMillis()/1000));
+            key.append(':').append(latest).append(':').append(heard).append(':').append(recentNodes(p,data));
             // Refresh when a recent item expires, even if no new message arrives.
             key.append(':').append(OutgoingStatus.homeBrief(data,System.currentTimeMillis()/1000));
             if(service!=null){
@@ -408,6 +408,16 @@ public final class MainActivity extends Activity {
         indicator.setGravity(Gravity.BOTTOM|Gravity.START);
         indicator.setPadding(0,dp(9),0,0);
         indicator.addView(new NavIcon(this,"bluetooth",current?accent:MUTED),new LinearLayout.LayoutParams(dp(16),dp(17)));
+        // Radio offline: an X instead of the last reading, which would look like a live signal.
+        final boolean online=session!=null&&session.verified;
+        if(!online){
+            indicator.addView(new NavIcon(this,"offline",RED),new LinearLayout.LayoutParams(dp(17),dp(17)));
+            TextView none=text("No signal",10,MUTED);none.setMaxLines(1);none.setGravity(Gravity.END|Gravity.BOTTOM);
+            indicator.addView(none,new LinearLayout.LayoutParams(0,-2,1));
+            indicator.setContentDescription("Bluetooth signal. Radio offline, no signal.");
+            tile.addView(indicator);
+            return;
+        }
         for(int index=0;index<4;index++){
             View bar=new View(this);
             int color=!valid?PANEL2:
@@ -438,6 +448,12 @@ public final class MainActivity extends Activity {
         if(!c.mtConfigLoaded(5))return "";
         MtLora.Frequency f=MtLora.frequency(c,c.mtConfig(5));
         return f==null?"":f.brief();
+    }
+    private boolean radioOnline(RadioProfile profile){RadioService.Session s=service==null?null:service.sessions.get(profile);return s!=null&&s.verified;}
+    /** 15-minute node count that drops to zero once the radio has been offline for 15 minutes. */
+    private int recentNodes(RadioProfile profile,Snapshot data){
+        RadioService.Session s=service==null?null:service.sessions.get(profile);
+        return UiFeed.recentlyHeard(data.nodes,System.currentTimeMillis()/1000,s!=null&&s.verified,s==null?0:s.onlineAtMs/1000);
     }
     private void openDashboardNetwork(RadioProfile profile,int destination){
         filter=profile.ordinal()+1;
@@ -493,9 +509,10 @@ public final class MainActivity extends Activity {
         LinearLayout nodes=dashboardRow();
         for(RadioProfile profile:RadioProfile.values()){
             Snapshot data=snapshot(profile);
-            int recent=UiFeed.recentlyHeard(data.nodes,System.currentTimeMillis()/1000);
+            int recent=recentNodes(profile,data);
+            String offline=radioOnline(profile)?"":" · radio offline";
             dashboardTile(nodes,profile==RadioProfile.MESHTASTIC?"MT · NODES":"MC · NODES",
-                String.valueOf(data.nodes.size()),recent+(profile==RadioProfile.MESHCORE?" active/updated in 15 min":" heard in the last 15 min"),
+                String.valueOf(data.nodes.size()),recent+(profile==RadioProfile.MESHCORE?" active/updated in 15 min":" heard in the last 15 min")+offline,
                 profile==RadioProfile.MESHTASTIC?RADIO_MT:RADIO_MC,
                 ()->openDashboardNetwork(profile,1),false);
         }
@@ -554,10 +571,11 @@ public final class MainActivity extends Activity {
         LinearLayout body=column();body.setPadding(dp(14),0,dp(8),0);
         String state=level==RfCoexistence.Level.GOOD?"Low":level==RfCoexistence.Level.ATTENTION?"Some":level==RfCoexistence.Level.HIGH?"High":"—";
         LinearLayout heading=row();TextView title=text("RF interference",15,WHITE);title.setTypeface(null,Typeface.BOLD);heading.addView(title,new LinearLayout.LayoutParams(0,-2,1));
-        TextView status=text(level==RfCoexistence.Level.UNKNOWN?"Connect radios":state+(r.mtConnected&&r.mt.txOff?" · MT TX off":""),12,level==RfCoexistence.Level.UNKNOWN?MUTED:color);status.setTypeface(null,Typeface.BOLD);heading.addView(status);body.addView(heading);
+        boolean oneOff=r.oneOffline();if(oneOff)state="None";
+        TextView status=text(level==RfCoexistence.Level.UNKNOWN?"Connect radios":oneOff?"None · "+r.offlineRadio()+" offline":state+(r.mtConnected&&r.mt.txOff?" · MT TX off":""),12,level==RfCoexistence.Level.UNKNOWN||oneOff?MUTED:color);status.setTypeface(null,Typeface.BOLD);heading.addView(status);body.addView(heading);
         double loss=r.worstLoss(),peak=r.worstPeak();boolean hasPeak=peak>-99;
         LinearLayout bars=row();bars.setPadding(0,dp(6),0,0);
-        bars.addView(rfMiniBar("Loss",(r.mt.known||r.mc.known)?RfCoexistence.percent(loss):"—",rfLossPosition(r),rfLevelColor(r.traffic)),new LinearLayout.LayoutParams(0,-2,1));
+        bars.addView(rfMiniBar("Loss",(oneOff||r.mt.known||r.mc.known)?RfCoexistence.percent(loss):"—",rfLossPosition(r),rfLevelColor(r.traffic)),new LinearLayout.LayoutParams(0,-2,1));
         LinearLayout.LayoutParams second=new LinearLayout.LayoutParams(0,-2,1);second.leftMargin=dp(12);
         bars.addView(rfMiniBar("Peak",hasPeak?RfCoexistence.dbm(peak):"—",rfPeakPosition(r),rfLevelColor(r.hardware)),second);
         body.addView(bars);panel.addView(body,new LinearLayout.LayoutParams(0,-2,1));
@@ -574,7 +592,7 @@ public final class MainActivity extends Activity {
         track.addView(fill,new LinearLayout.LayoutParams(0,dp(4),f));if(f<1)track.addView(new View(this),new LinearLayout.LayoutParams(0,dp(4),1-f));
         LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-1,dp(4));tp.topMargin=dp(3);box.addView(track,tp);return box;
     }
-    private float rfLossPosition(RfCoexistence.Report r){if(!r.mt.known&&!r.mc.known)return Float.NaN;double loss=r.worstLoss();return (float)(loss<.01?loss/.01/3:loss<.05?1/3f+(loss-.01)/.04/3:2/3f+Math.min(1,(loss-.05)/.10)/3);}
+    private float rfLossPosition(RfCoexistence.Report r){if(r.oneOffline())return 0;if(!r.mt.known&&!r.mc.known)return Float.NaN;double loss=r.worstLoss();return (float)(loss<.01?loss/.01/3:loss<.05?1/3f+(loss-.01)/.04/3:2/3f+Math.min(1,(loss-.05)/.10)/3);}
     private float rfPeakPosition(RfCoexistence.Report r){double peak=r.worstPeak();return peak>-99?(float)Math.max(0,Math.min(1,(peak+10)/30)):Float.NaN;}
     private void lists(){
         int shown=0;
@@ -1636,9 +1654,9 @@ public final class MainActivity extends Activity {
         // Overall banner
         RfCoexistence.Level overall=r.overall();int color=rfLevelColor(overall);
         LinearLayout banner=column();GradientDrawable bg=new GradientDrawable();bg.setColor((color&0x00ffffff)|0x26000000);bg.setStroke(dp(2),color);bg.setCornerRadius(dp(16));banner.setBackground(bg);banner.setPadding(dp(16),dp(14),dp(16),dp(14));
-        String headline=overall==RfCoexistence.Level.GOOD?"Low interference":overall==RfCoexistence.Level.ATTENTION?"Some interference":overall==RfCoexistence.Level.HIGH?"High interference risk":"Not enough data yet";
+        String headline=r.oneOffline()?"No interference right now":overall==RfCoexistence.Level.GOOD?"Low interference":overall==RfCoexistence.Level.ATTENTION?"Some interference":overall==RfCoexistence.Level.HIGH?"High interference risk":"Not enough data yet";
         TextView h=text(headline,22,WHITE);h.setTypeface(null,Typeface.BOLD);banner.addView(h);
-        String detail=(r.changes()>0?r.changes()+" setting(s) can be improved. ":"Settings already minimise automatic transmissions. ")+(r.hardware==RfCoexistence.Level.HIGH?"Transmit power is high for antennas this close.":"");
+        String detail=(r.oneOffline()?"The "+r.offlineRadio()+" radio is offline, so the two radios cannot disturb each other. The settings below still apply when both are on. ":"")+(r.changes()>0?r.changes()+" setting(s) can be improved. ":"Settings already minimise automatic transmissions. ")+(r.hardware==RfCoexistence.Level.HIGH?"Transmit power is high for antennas this close.":"");
         TextView dt=text(detail.trim(),13,WHITE);dt.setPadding(0,dp(6),0,0);banner.addView(dt);LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1,-2);bp.topMargin=dp(12);results.addView(banner,bp);
         // Gauges
         section(results,"DASHBOARD");LinearLayout gauges=row();gauges.setBackground(surface(PANEL));gauges.setPadding(dp(8),dp(12),dp(8),dp(8));

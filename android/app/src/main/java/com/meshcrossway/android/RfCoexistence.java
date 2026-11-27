@@ -84,6 +84,10 @@ final class RfCoexistence {
         double mtAirUtilTx=Double.NaN,mcTxPercent=Double.NaN;
         final List<Item> mtItems=new ArrayList<>(),mcItems=new ArrayList<>();
         Level traffic=Level.UNKNOWN,hardware=Level.UNKNOWN;
+        /** Exactly one radio is connected: the radios cannot interfere right now. */
+        boolean oneOffline(){return mtConnected!=mcConnected;}
+        /** Short name of the offline radio when exactly one is connected, else empty. */
+        String offlineRadio(){return !oneOffline()?"":mtConnected?"MeshCore":"Meshtastic";}
         double worstLoss(){double a=Double.isNaN(lossOnMc)?0:lossOnMc,b=Double.isNaN(lossOnMt)?0:lossOnMt;return Math.max(a,b);}
         double worstPeak(){double a=Double.isNaN(peakAtMc)?-99:peakAtMc,b=Double.isNaN(peakAtMt)?-99:peakAtMt;return Math.max(a,b);}
         Level overall(){if(traffic==Level.HIGH||hardware==Level.HIGH)return Level.HIGH;if(traffic==Level.ATTENTION||hardware==Level.ATTENTION)return Level.ATTENTION;if(traffic==Level.UNKNOWN&&hardware==Level.UNKNOWN)return Level.UNKNOWN;return Level.GOOD;}
@@ -148,6 +152,9 @@ final class RfCoexistence {
         if(mc!=null&&mc.ready){r.mcConnected=true;analyzeMeshCore(mc,r);}
         if(r.mtConnected)r.mtPacketAirtime=mtAir(mt,BYTES_TYPICAL);
         if(r.mcConnected)r.mcPacketAirtime=mcAir(mc,BYTES_TYPICAL);
+        // Interference needs both radios on: with one offline nothing can disturb anything, so the
+        // live figures are zero and no peak is shown. The settings analysis above still runs.
+        if(r.oneOffline()){r.lossOnMc=0;r.lossOnMt=0;r.traffic=Level.GOOD;return r;}
         if(r.mt.known)r.lossOnMc=r.mt.lossOn(r.mcPacketAirtime);
         if(r.mc.known)r.lossOnMt=r.mc.lossOn(r.mtPacketAirtime);
         if(r.mtTxDbm!=Integer.MIN_VALUE&&!r.mt.txOff)r.peakAtMc=r.mtTxDbm-r.isolationDb;
