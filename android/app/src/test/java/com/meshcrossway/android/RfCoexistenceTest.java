@@ -45,6 +45,16 @@ public final class RfCoexistenceTest {
         check(r.mc.sources.isEmpty()&&r.lossOnMt==0,"MeshCore companion has no automatic transmissions");
         check(r.changes()>=6,"several recommended changes "+r.changes());
 
+        // One radio offline: no interference and no peak, while its own settings are still analysed.
+        RfCoexistence.Report alone=RfCoexistence.analyze(mt,null,new RfCoexistence.Geometry(20,false));
+        check(alone.oneOffline()&&alone.offlineRadio().equals("MeshCore"),"MeshCore reported offline");
+        check(alone.worstLoss()==0&&alone.worstPeak()<=-99,"offline radio means zero loss and no peak");
+        check(alone.traffic==RfCoexistence.Level.GOOD&&alone.hardware==RfCoexistence.Level.UNKNOWN,"levels reflect no interference");
+        check(alone.changes()>=5,"Meshtastic settings still analysed while MeshCore is offline "+alone.changes());
+        alone=RfCoexistence.analyze(null,mc,new RfCoexistence.Geometry(20,false));
+        check(alone.offlineRadio().equals("Meshtastic")&&alone.worstLoss()==0&&Double.isNaN(alone.peakAtMt),"Meshtastic offline: no MeshCore peak");
+        check(!RfCoexistence.analyze(null,null,new RfCoexistence.Geometry(20,false)).oneOffline(),"both offline is not the one-offline case");
+
         // Minimum preset plan, compliance after applying the targets, and restart count.
         List<RfCoexistence.Step> plan=RfCoexistence.plan(RfCoexistence.Profile.MINIMUM,mt,mc);
         List<RfCoexistence.Step> todo=RfCoexistence.pending(plan,mt,mc);

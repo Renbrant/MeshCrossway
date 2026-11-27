@@ -23,6 +23,11 @@ public final class FieldFeaturesTest {
         check(UiFeed.recentlyHeard(activity,now)==3,"15-minute activity window excludes old, missing and future timestamps");
         check(UiFeed.recentlyHeard(activity.subList(0,3),now+901)==0,"recent count expires with time even without incoming activity");
         check(UiFeed.recentlyHeard(Collections.emptyList(),now)==0,"empty radio snapshot has no recent nodes");
+        check(UiFeed.recentlyHeard(activity,now,true,0)==3,"online radio keeps the normal 15-minute count");
+        check(UiFeed.recentlyHeard(activity,now,false,now-60)==3,"recently offline radio keeps what it heard before going offline");
+        check(UiFeed.recentlyHeard(activity,now,false,now-900)==0,"count is zero once the radio has been offline for 15 minutes");
+        check(UiFeed.recentlyHeard(activity,now,false,0)==0,"offline since an unknown time counts nothing");
+        check(UiFeed.recentlyHeard(activity,now,false,now-890)==2,"nodes stamped after the radio went offline are not counted");
         System.out.println("Field features: geometry, offline bounds, streaming budget, handshake sequencing and dual inbox passed");
     }
 }

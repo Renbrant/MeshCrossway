@@ -8,6 +8,16 @@ final class UiFeed {
     static final long RECENT_NODE_SECONDS=15*60;
     /** Recently heard is evidence of activity, not a live reachability check. */
     static int recentlyHeard(List<Node> nodes,long now){int total=0;for(Node node:nodes)if(node.heard>0&&node.heard<=now&&node.heard>=now-RECENT_NODE_SECONDS)total++;return total;}
+    /**
+     * Recent nodes for a radio that may be offline. While it is online this is the normal 15-minute
+     * count. Once it goes offline nothing new can be heard, so the count keeps only what arrived
+     * before, and is zero as soon as the radio has been offline for 15 minutes (or since an unknown time).
+     */
+    static int recentlyHeard(List<Node> nodes,long now,boolean online,long lastOnline){
+        if(online)return recentlyHeard(nodes,now);
+        if(lastOnline<=0||now-lastOnline>=RECENT_NODE_SECONDS)return 0;
+        int total=0;for(Node node:nodes)if(node.heard>0&&node.heard<=now&&node.heard<=lastOnline+60&&node.heard>=now-RECENT_NODE_SECONDS)total++;return total;
+    }
     static final class Item {final RadioProfile profile;final String radio;final Conversation conversation;Item(RadioProfile p,String r,Conversation c){profile=p;radio=r;conversation=c;}}
     static List<Item> conversations(Map<RadioProfile,Snapshot> snapshots,Map<RadioProfile,String> radios,int network,boolean unreadOnly,boolean pinnedOnly,String search){
         ArrayList<Item> result=new ArrayList<>();String q=search.toLowerCase(Locale.ROOT);

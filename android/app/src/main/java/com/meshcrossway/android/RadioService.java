@@ -27,6 +27,9 @@ public final class RadioService extends Service {
         public int rssiDbm=BleSignal.UNKNOWN;
         public long rssiMeasuredAtMs;
         public boolean rssiCurrentLink;
+        /** Last moment this radio was connected and ready (ms); 0 = unknown. Persisted. */
+        public long onlineAtMs;
+        private long onlineSavedAtMs;
         private boolean rssiPending;
         private Runnable rssiPoll;
         private BluetoothGatt gatt;
@@ -168,6 +171,7 @@ public final class RadioService extends Service {
                     s.rssiDbm=previous;s.rssiMeasuredAtMs=measured;
                 }
             }
+            s.onlineAtMs=radios.getLong(p.name()+".online.at",0);
             sessions.put(p,s);history.select(p,s.address);history.uncertain(p,s.address);
         }
         BluetoothManager manager=getSystemService(BluetoothManager.class);adapter=manager==null?null:manager.getAdapter();
@@ -371,7 +375,13 @@ public final class RadioService extends Service {
     }
     private void cancelTimeout(Session s){if(s.timeout!=null)handler.removeCallbacks(s.timeout);s.timeout=null;}
     private void close(Session s,String reason){release(s,reason);releaseSetup(s);scheduleReconnect(s);}
+    /** Records that the radio is ready now; persisted at most once a minute, and always on disconnect. */
+    private void markOnline(Session s,boolean force){
+        long t=System.currentTimeMillis();s.onlineAtMs=t;
+        if(force||t-s.onlineSavedAtMs>=60000){s.onlineSavedAtMs=t;getSharedPreferences("radios",MODE_PRIVATE).edit().putLong(s.profile.name()+".online.at",t).apply();}
+    }
     private void release(Session s,String reason){
+        if(s.verified)markOnline(s,true);
         if(s.retry!=null)handler.removeCallbacks(s.retry);s.retry=null;
         if(s.rssiPoll!=null)handler.removeCallbacks(s.rssiPoll);
         s.rssiPoll=null;s.rssiPending=false;s.rssiCurrentLink=false;
@@ -411,7 +421,7 @@ public final class RadioService extends Service {
         if(data.length==0||s.client==null)return;s.frames++;supportLog.record(s.profile,SupportReport.Event.RX_CODE,s.profile==RadioProfile.MESHCORE?data[0]&255:0,now());
         try{
             boolean wasReady=s.verified;s.client.receive(data,now());s.verified=s.client.ready;s.status=s.client.description;if(s.profile==RadioProfile.MESHCORE&&s.client.mcAdmin.edit==null)s.pendingMcEdit=null;if(s.verified&&!wasReady){phase(s,"Ready",s.status);startSignalMonitoring(s);}
-            if(s.verified){handler.removeCallbacks(s.probeTimeout);s.retries=0;getSharedPreferences("radios",MODE_PRIVATE).edit().putString(s.profile.name(),s.address).putBoolean(s.profile.name()+".desired",s.desired).apply();}
+            if(s.verified){markOnline(s,!wasReady);handler.removeCallbacks(s.probeTimeout);s.retries=0;getSharedPreferences("radios",MODE_PRIVATE).edit().putString(s.profile.name(),s.address).putBoolean(s.profile.name()+".desired",s.desired).apply();}
         }catch(IllegalArgumentException e){close(s,e.getMessage());return;}changed();handler.postDelayed(()->advance(s),90);
     }
     /**
