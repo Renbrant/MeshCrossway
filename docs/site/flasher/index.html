@@ -18,15 +18,30 @@
 #flasher-app .steps{margin-top:18px}
 #flasher-app .step:before{background:#422a16;color:#ffb665}
 #flasher-app a.inset-link{color:#ffad58;text-decoration:underline}
+#flasher-app .board-picker{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;max-width:640px;margin:12px 0 22px;border:0;padding:0}
+#flasher-app .board-picker legend{font-weight:800;margin-bottom:8px}
+#flasher-app .board-option{display:flex;gap:10px;align-items:flex-start;padding:14px;border:1px solid #5a432c;border-radius:12px;background:#19212b;cursor:pointer}
+#flasher-app .board-option:has(input:checked){border-color:#ff8a24;background:#2a1d10}
+#flasher-app .board-option input{width:18px;height:18px;margin-top:3px;accent-color:#ff8a24}
+#flasher-app .board-option b{display:block;color:#fff}
+#flasher-app .board-option span{font-size:13px;color:#aebdcc}
+#flasher-app [data-board][hidden]{display:none}
 </style>
 <main id="flasher-app"><section class="pagehero"><div class="wrap prose">
 <div class="eyebrow" style="color:#ff993c">USB firmware installer</div>
 <h1>MeshCrossway Web Flasher.</h1>
-<p class="sectionintro">Firmware v0.10.5 is the recommended stable release. The Web Flasher keeps the v0.9.32 and v0.9.28 stable images available for recovery, plus the v0.9.16 legacy recovery image; newer experimental builds require explicit confirmation.</p>
+<p class="sectionintro">Choose your hardware first. Each board has its own firmware line and checksum-verified images; experimental builds always require explicit confirmation.</p>
+<p class="sectionintro" data-board="waveshare">Waveshare: firmware v0.10.5 is the recommended stable release. The Web Flasher keeps the v0.9.32 and v0.9.28 stable images available for recovery, plus the v0.9.16 legacy recovery image.</p>
+<p class="sectionintro" data-board="tdeck-plus" hidden>LilyGO T-Deck Plus: a new, compact controller with keyboard and trackball for two Bluetooth radios (Meshtastic + MeshCore). It has no hardware-tested build yet, so no version is preselected.</p>
+<fieldset class="board-picker" id="board-picker">
+<legend>1. Select your hardware</legend>
+<label class="board-option"><input type="radio" name="board" value="waveshare" checked><div><b>Waveshare ESP32-S3-Touch-LCD-3.5</b><span>Rev2.0, non-B touchscreen display. Full maps, Wi-Fi and dual radios.</span></div></label>
+<label class="board-option"><input type="radio" name="board" value="tdeck-plus"><div><b>LilyGO T-Deck Plus</b><span>Keyboard + trackball. Chats, channels and contacts for two BLE radios. Experimental.</span></div></label>
+</fieldset>
 <div class="flashbox">
 <span class="status" id="build-status">CHECKING VERSION ARCHIVE</span>
-<h2>Display / Host — Waveshare ESP32-S3-Touch-LCD-3.5</h2>
-<label for="firmware-picker" style="font-weight:800">Select firmware version</label>
+<h2 id="board-title">Display / Host — Waveshare ESP32-S3-Touch-LCD-3.5</h2>
+<label for="firmware-picker" style="font-weight:800">2. Select firmware version</label>
 <select id="firmware-picker" class="version-select" disabled><option value="">Loading versions...</option></select>
 <div class="version-info" aria-live="polite">
 <div style="font-size:12px;color:#ffb366;font-weight:800;letter-spacing:.12em">SELECTED FIRMWARE</div>
@@ -36,11 +51,12 @@
 </div>
 <div id="version-warning" class="warning-panel" hidden><b id="warning-title">EXPERIMENTAL / NOT TESTED.</b> <span id="warning-text">This firmware has not been physically validated. Use a tested version for normal operation.</span></div>
 <label id="verify-risk" hidden><input id="allow-unstable" type="checkbox">I understand this build is experimental or has known issues and want to install it anyway.</label>
-<p class="note"><b>Preserve Wi-Fi and Bluetooth pairing:</b> when ESP Web Tools asks "Erase device", leave the checkbox <b>UNCHECKED</b>. Erasing deletes the device NVS (saved Wi-Fi and Bluetooth bond keys). Full erase is only for an intentional factory reset.</p>
+<p class="note"><b id="preserve-title">Preserve Wi-Fi and Bluetooth pairing:</b> when ESP Web Tools asks "Erase device", leave the checkbox <b>UNCHECKED</b>. Erasing deletes the device NVS (saved Wi-Fi and Bluetooth bond keys). Full erase is only for an intentional factory reset.</p>
 <p id="build-message" role="status">Checking available firmware versions...</p>
 <div id="installer" hidden></div>
 <p class="note" id="build-version"></p>
 </div>
+<div data-board="waveshare">
 <h2>Recovery: touchscreen freezes or display reboots</h2>
 <div class="steps">
 <div class="step">Connect the Waveshare Rev2.0 display to your computer with a USB data cable. Leave the computer on its normal Wi-Fi network.</div>
@@ -49,6 +65,17 @@
 <div class="step">Always leave the <b>Erase device</b> checkbox <b>unchecked</b> for normal updates. An erase resets NVS and deletes saved Wi-Fi and BLE bonds. From v0.5.8, the split image writes bootloader, partition table and application without targeting NVS. Older merged installers can overwrite settings even without Erase. An SD Wi-Fi backup is plaintext and should be created before erasing. For a clean downgrade, you can choose <b>Erase device</b> in the installer. This will also erase saved Wi-Fi credentials and other settings.</div>
 </div>
 <div class="notice"><b>Target limitation:</b> these images are for the Waveshare ESP32-S3-Touch-LCD-3.5 <b>non-B, Rev2.0</b> display. Do not flash a XIAO radio module or a Waveshare 3.5B with this image. Firmware installation may overwrite data.</div>
+</div>
+<div data-board="tdeck-plus" hidden>
+<h2>Install on the LilyGO T-Deck Plus</h2>
+<div class="steps">
+<div class="step">Connect the T-Deck Plus to your computer with a USB-C <b>data</b> cable and switch it on.</div>
+<div class="step">If the serial port does not appear, or the device keeps restarting: switch it off, <b>press and hold the trackball</b>, switch it on, then release. This enters ESP32-S3 download mode.</div>
+<div class="step">Leave <b>Erase device</b> unchecked for updates so saved Bluetooth pairings remain. For the first install over another firmware (Meshtastic, MeshOS, Launcher), erasing gives a clean start.</div>
+<div class="step">After installing, switch the T-Deck off and on. Use the trackball to move, press it (or Enter) to select, and type with the keyboard. Pair your Meshtastic and MeshCore Bluetooth radios under <b>Meshtastic radio</b> and <b>MeshCore radio</b>.</div>
+</div>
+<div class="notice"><b>Target limitation:</b> this image is for the LilyGO <b>T-Deck Plus</b> (ESP32-S3FN16R8). It replaces the firmware currently on the device; to go back, install that firmware again from its own flasher. The onboard LoRa radio is not used yet: both networks use separate Bluetooth radios. No map or Wi-Fi in this edition.</div>
+</div>
 <h2>How versions are maintained</h2>
 <p>The newest candidate is <b>automatically published after the GitHub Actions build and checks succeed</b>; it remains labeled experimental until hardware validation. The latest stable firmware is selected by default. Firmware images are <b>compiled automatically in GitHub Actions</b> from pinned source commits. The browser installs the compiled binary; it does not compile ESP-IDF source code locally. Each selectable build keeps its own manifest and SHA-256 checksum. Obsolete and known-broken versions are excluded from the active Web Flasher list; historical source commits remain in GitHub.</p>
 <p><a class="inset-link" href="https://github.com/Renbrant/MeshCrossway/actions">View build and deployment history on GitHub</a></p>
@@ -56,7 +83,13 @@
 <script>
 (() => {
   'use strict';
-  const base='../flasher/firmware/';
+  const boards={
+    'waveshare':{catalog:'../flasher/firmware/catalog.json',title:'Display / Host — Waveshare ESP32-S3-Touch-LCD-3.5',port:'the Waveshare display',experimentalOnly:false,preserve:'Preserve Wi-Fi and Bluetooth pairing:'},
+    'tdeck-plus':{catalog:'../flasher/firmware/tdeck-plus/catalog.json',title:'Controller — LilyGO T-Deck Plus',port:'the T-Deck Plus',experimentalOnly:true,preserve:'Preserve Bluetooth pairing:'}
+  };
+  const boardTitle=document.getElementById('board-title');
+  const preserveTitle=document.getElementById('preserve-title');
+  let board=boards.waveshare,boardGeneration=0;
   const select=document.getElementById('firmware-picker');
   const status=document.getElementById('build-status');
   const release=document.getElementById('firmware-release');
@@ -112,7 +145,7 @@
     release.textContent=entry.version;
     description.textContent=entry.description;
     commit.textContent='Source commit '+entry.commit+' · '+entry.label;
-    versionDetails.textContent='ESP32-S3 • '+Math.round(entry.size/1024)+' KiB • SHA-256 '+entry.sha256.slice(0,16)+'…';
+    versionDetails.textContent=board.title.split(' — ')[1]+' • ESP32-S3 • '+Math.round(entry.size/1024)+' KiB • SHA-256 '+entry.sha256.slice(0,16)+'…';
     if(entry.status!=='hardware-tested'){
       warning.hidden=false;verifyRisk.hidden=entry.status==='known-issue';
       if(entry.status==='known-issue'){
@@ -120,7 +153,7 @@
         warningText.textContent=entry.description+' Installation of this known-broken image is blocked; use the tested release instead.';
       }else{
         warningTitle.textContent='EXPERIMENTAL / NOT HARDWARE TESTED.';
-        warningText.textContent='This build may malfunction, freeze or require a rollback. It is not approved for critical communication. A tested version is available in the list.';
+        warningText.textContent='This build may malfunction, freeze or require a rollback. It is not approved for critical communication. '+(versions.some(v=>v.status==='hardware-tested')?'A tested version is available in the list.':'No hardware-tested version exists yet for this board.');
       }
     }
     status.textContent='CHECKING '+entry.version;
@@ -146,17 +179,31 @@
       }));
       if(ticket!==generation) return;
       status.textContent=entry.status==='known-issue'?'KNOWN ISSUE — EXPERIMENTAL':entry.status==='hardware-tested'?'HARDWARE-TESTED BUILD AVAILABLE':'EXPERIMENTAL BUILD AVAILABLE';
-      message.textContent='Ready to install '+entry.version+'. Make sure the USB port belongs to the Waveshare display.';
+      message.textContent='Ready to install '+entry.version+'. Make sure the USB port belongs to '+board.port+'.';
       makeInstaller(entry);
     } catch(e) {
       if(ticket===generation)error(entry.version+': '+e.message);
     }
   }
   async function load() {
+    const ticket=++boardGeneration;
+    ++generation; // Discard any version check still running for the previous board.
+    versions=[];
+    installer.hidden=true;warning.hidden=true;verifyRisk.hidden=true;allowUnstable.checked=false;
+    select.disabled=true;
+    select.replaceChildren(new Option('Loading versions...',''));
+    status.textContent='CHECKING VERSION ARCHIVE';
+    release.textContent='Checking...';
+    description.textContent='Retrieving compiled and archived images.';
+    commit.textContent='Build information unavailable';
+    versionDetails.textContent='';
+    message.textContent='Checking available firmware versions...';
     try {
-      const resp=await fetch(base+'catalog.json?check='+Date.now(),{cache:'no-store'});
+      const resp=await fetch(board.catalog+'?check='+Date.now(),{cache:'no-store'});
+      if(ticket!==boardGeneration)return;
       if(!resp.ok)throw Error('Version archive has not been published yet');
       const catalog=await resp.json();
+      if(ticket!==boardGeneration)return;
       if(!Array.isArray(catalog.versions)||!catalog.versions.length)throw Error('Version archive is empty');
       versions=catalog.versions;
       select.replaceChildren();
@@ -170,11 +217,21 @@
       select.onchange=()=>choose(select.value);
       // Never select an experimental image by default.
       const recommended=find(catalog.recommended);
-      if(!recommended || recommended.status!=='hardware-tested')
-        throw Error('No hardware-tested default available');
+      if(!recommended || recommended.status!=='hardware-tested'){
+        if(!board.experimentalOnly)throw Error('No hardware-tested default available');
+        // A new board with only experimental builds: nothing is preselected.
+        const placeholder=new Option('Choose a version (experimental builds only)','');
+        placeholder.disabled=true;select.prepend(placeholder);select.value='';
+        status.textContent='NO HARDWARE-TESTED BUILD YET';
+        release.textContent='Choose a version';
+        description.textContent='This board has no hardware-tested release yet. Select an experimental build to see its details.';
+        message.textContent='Select a version above to continue.';
+        return;
+      }
       select.value=recommended.version;
       await choose(select.value);
     }catch(e){
+      if(ticket!==boardGeneration)return;
       select.replaceChildren(new Option('Version archive unavailable',''));
       select.disabled=true;
       release.textContent='Not available';
@@ -182,6 +239,18 @@
       error(e.message);
     }
   }
-  load();
+  function selectBoard(id,updateUrl) {
+    if(!boards[id])id='waveshare';
+    board=boards[id];
+    boardTitle.textContent=board.title;
+    preserveTitle.textContent=board.preserve;
+    for(const block of document.querySelectorAll('[data-board]'))block.hidden=block.dataset.board!==id;
+    for(const input of document.querySelectorAll('input[name="board"]'))input.checked=input.value===id;
+    if(updateUrl){const url=new URL(location.href);url.searchParams.set('board',id);history.replaceState(null,'',url);}
+    load();
+  }
+  for(const input of document.querySelectorAll('input[name="board"]'))
+    input.addEventListener('change',()=>{if(input.checked)selectBoard(input.value,true);});
+  selectBoard(new URLSearchParams(location.search).get('board')||'waveshare',false);
 })();
 </script><footer><div class="wrap">MeshCrossway is an independent source-available experimental project. Meshtastic, MeshCore and referenced hardware brands remain the property of their respective projects and owners. Not a certified emergency device.</div></footer></body></html>
